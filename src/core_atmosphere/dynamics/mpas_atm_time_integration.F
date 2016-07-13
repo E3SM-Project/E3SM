@@ -5220,7 +5220,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND) :: uph
 
 
-      write(0,*) ' in atm_compute_convective_diagnostics '
+!      write(0,*) ' in atm_compute_convective_diagnostics '
 
       call mpas_pool_get_dimension(dims, 'nCells', nCells)
       call mpas_pool_get_dimension(dims, 'nVertLevels', nVertLevels)

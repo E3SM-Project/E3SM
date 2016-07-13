@@ -84,7 +84,7 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- write(0,*) '--- enter subroutine physics_namelist_check:'
+! write(0,*) '--- enter subroutine physics_namelist_check:'
 
  call mpas_pool_get_config(configs,'config_physics_suite'    ,config_physics_suite    )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )

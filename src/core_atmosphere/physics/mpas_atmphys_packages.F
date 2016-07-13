@@ -46,8 +46,8 @@
 
  ierr = 0
 
- write(0,*)
- write(0,*) '--- enter subroutine atmphys_setup_packages:'
+! write(0,*)
+! write(0,*) '--- enter subroutine atmphys_setup_packages:'
 
 !--- initialization of all packages for parameterizations of cloud microphysics:
 

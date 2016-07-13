@@ -172,7 +172,7 @@
        rthdynten(k,i) = coeff*tend_rtheta_adv(k,i)/mass(k,i)
     enddo
     enddo
-    write(0,*) '--- end calculate rthdynten:'
+!    write(0,*) '--- end calculate rthdynten:'
  end if
 !do i = 200,200
 !do k = 1, nVertLevels
@@ -326,7 +326,7 @@
  deallocate(theta)
  deallocate(tend_th)
 
- if(rk_step .eq. 3) then
+! if(rk_step .eq. 3) then
 !    write(0,*)
 !    write(0,*) '--- enter subroutine physics_addtend:'
 !    write(0,*) 'max rthblten   = ',maxval(rthblten(:,1:nCellsSolve))
@@ -339,7 +339,7 @@
 !    write(0,*) 'min rthratensw = ',minval(rthratensw(:,1:nCellsSolve))
 !    write(0,*) '--- end subroutine physics_addtend'
 !    write(0,*)
- endif
+! endif
 
 !formats:
  201 format(2i6,10(1x,e15.8))

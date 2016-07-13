@@ -84,8 +84,8 @@
   real(kind=RKIND):: f_coriolis
 
 !---------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_oml1d:'
+! write(0,*)
+! write(0,*) '--- enter subroutine driver_oml1d:'
 
 ! namelist parameters for ocean mixed layer model
  call mpas_pool_get_config(configs,'config_oml1d'               ,config_oml1d )

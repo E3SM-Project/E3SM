@@ -379,8 +379,8 @@
  real(kind=RKIND):: min_rthcuten
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
+! write(0,*)
+! write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
 
  call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
  call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
@@ -548,8 +548,8 @@
  real(kind=RKIND),pointer:: len_disp
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine convection_from_MPAS:'
+! write(0,*)
+! write(0,*) '--- enter subroutine convection_from_MPAS:'
 
  call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
  call mpas_pool_get_array(diag_physics,'raincv',raincv)
