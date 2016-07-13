@@ -425,6 +425,12 @@ add_default($nl, 'cpl_decomp');
 add_default($nl, 'wall_time_limit');
 add_default($nl, 'force_stop_at');
 
+if ( $xmlvars{'FLDS_WISO'} eq "TRUE" ) {
+   add_default($nl, 'flds_wiso', 'val'=>".true.",  'xml'=>'FLDS_WISO');
+} else {
+   add_default($nl, 'flds_wiso', 'val'=>".false.", 'xml'=>'FLDS_WISO');
+}
+
 add_default($nl, 'do_histinit');
 add_default($nl, 'shr_map_dopole');
 add_default($nl, 'cpl_cdf64');

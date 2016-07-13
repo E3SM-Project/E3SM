@@ -1,5 +1,114 @@
 ======================================================================
 
+Originator: fischer-ncar 
+Date: July 7, 2016 
+Tag: cime4.5.22
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:  Fix broken compset names
+
+User interface changes: 
+
+Modified files: git diff --name-status
+
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+
+======================================================================
+
+Originator: cacraigucar, fischer-ncar
+Date: July 7, 2016
+Tag: cime4.5.21
+Answer Changes: Possible answer changes only on corip1
+Tests: Ran with CAM tag geotrace3_cac_n59_cam5_4_57
+Dependencies: None
+
+Brief Summary:
+   Incorporating water isotopes
+   Update modules for corip1
+
+User interface changes: none
+
+Modified files: git diff --name-status
+M       ChangeLog
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/config_pes.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       driver_cpl/bld/build-namelist
+M       driver_cpl/bld/namelist_files/namelist_definition_drv.xml
+M       driver_cpl/cime_config/config_component.xml
+A       driver_cpl/driver/mrg_mod.F90
+M       driver_cpl/driver/prep_ice_mod.F90
+M       driver_cpl/driver/prep_ocn_mod.F90
+M       driver_cpl/driver/prep_rof_mod.F90
+M       driver_cpl/driver/seq_diag_mct.F90
+M       driver_cpl/driver/seq_flux_mct.F90
+M       driver_cpl/shr/seq_flds_mod.F90
+M       share/csm_share/shr/shr_const_mod.F90
+M       share/csm_share/shr/shr_flux_mod.F90
+A       share/csm_share/shr/water_isotopes.F90
+A       share/csm_share/shr/water_types.F90
+
+======================================================================
+
+Originator: fischer-ncar, Brain Kauffman 
+Date: 6 July 2016
+Tag: cime4.5.20
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary: Updates to config_files.xml and config_grids.xml to support mpas-o
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/config_grids.xml
+
+======================================================================
+
+Originator: apcraig
+Date: 6 July 2016
+Tag: cime4.5.19
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary: Addition of ice to ocean coupling fields Fioi_bcphi, 
+               Fioi_bcpho, Fioi_flxdst
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       driver_cpl/shr/seq_flds_mod.F90
+
+======================================================================
+
+Originator: fischer-ncar, jtruesdal 
+Date: 6 July 2016 
+Tag: cime4.5.18
+Answer Changes: Answer changes for compset with WaveWatch turned on.
+                All others are bit-for-bit.
+Tests: Namelist test ran on yellowstone, WAV_GRID manually looked at.
+Dependencies:
+
+Brief Summary: Add support to run WaveWatch.  Allactive    
+               compset not being tested were removed.
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/config_pes.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_grids.xml
+
+======================================================================
+
 Originator: fischer-ncar
 Date: 21 June 2016
 Tag: cime4.5.17
