@@ -23,40 +23,42 @@ def _main_func():
 
     caseroot = parse_input(sys.argv)
 
-    with Case(caseroot) as case:
-        cimeroot = case.get_value("CIMEROOT")
-        caseroot = case.get_value("CASEROOT")
-        casebuild = case.get_value("CASEBUILD")
-        rundir = case.get_value("RUNDIR")
-        grid = case.get_value("GRID")
-        atm_grid = case.get_value("ATM_GRID")
-        lnd_grid = case.get_value("LND_GRID")
-        ocn_grid = case.get_value("OCN_GRID")
-        rof_grid = case.get_value("ROF_GRID")
-        wav_grid = case.get_value("WAV_GRID")
-        comp_atm = case.get_value("COMP_ATM")
-        pio_version = case.get_value("PIO_VERSION")
+    case = Case(caseroot)
 
-        confdir = os.path.join(casebuild, "cplconf")
-        if not os.path.isdir(confdir):
-            os.makedirs(confdir)
+    cimeroot	= case.get_value("CIMEROOT")
+    caseroot	= case.get_value("CASEROOT")
+    casebuild	= case.get_value("CASEBUILD")
+    rundir	= case.get_value("RUNDIR")
+    grid	= case.get_value("GRID")
+    atm_grid	= case.get_value("ATM_GRID")
+    lnd_grid	= case.get_value("LND_GRID")
+    ocn_grid	= case.get_value("OCN_GRID")
+    rof_grid	= case.get_value("ROF_GRID")
+    wav_grid	= case.get_value("WAV_GRID")
+    comp_atm	= case.get_value("COMP_ATM")
+    pio_version = case.get_value("PIO_VERSION")
 
-        # create cplconf/namelist
-        infile_text = ""
-        if comp_atm == 'cam':
-            # *** FIXME - this is confusing!!!***
-            # cam is actually changing the driver namelist settings
-            cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
-            if "adiabatic" in cam_config_opts:
-                infile_text = "atm_adiabatic = .true."
-            if "ideal" in cam_config_opts:
-                infile_text = "atm_ideal_phys = .true."
-            if "aquaplanet" in cam_config_opts:
-                infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
+    confdir = os.path.join(casebuild, "cplconf")
+    if not os.path.isdir(confdir):
+        os.makedirs(confdir)
 
-        user_nl_file = os.path.join(caseroot, "user_nl_cpl")
-        namelist_infile = os.path.join(confdir, "namelist")
-        create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
+    # create cplconf/namelist
+
+    infile_text = ""
+    if comp_atm == 'cam':
+        # *** FIXME - this is confusing!!!***
+        # cam is actually changing the driver namelist settings
+        cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
+        if "adiabatic" in cam_config_opts:
+            infile_text = "atm_adiabatic = .true."
+        if "ideal" in cam_config_opts:
+            infile_text = "atm_ideal_phys = .true."
+        if "aquaplanet" in cam_config_opts:
+            infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
+
+    user_nl_file = os.path.join(caseroot, "user_nl_cpl")
+    namelist_infile = os.path.join(confdir, "namelist")
+    create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
 
     # call build-namelist
 
