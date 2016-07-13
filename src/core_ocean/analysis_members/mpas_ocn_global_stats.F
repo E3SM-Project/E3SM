@@ -574,6 +574,19 @@ contains
             maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+            verticalSumMins_tmp(variableIndex) = 0.0_RKIND
+            verticalSumMaxes_tmp(variableIndex) = 0.0_RKIND
+            sums(variableIndex) = 0.0_RKIND
+            sumSquares(variableIndex) = 0.0_RKIND
+            mins(variableIndex) = 0.0_RKIND
+            maxes(variableIndex) = 0.0_RKIND
+            verticalSumMins(variableIndex) = 0.0_RKIND
+            verticalSumMaxes(variableIndex) = 0.0_RKIND
          end if
 
          ! highFreqThickness
@@ -593,6 +606,19 @@ contains
             maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+            verticalSumMins_tmp(variableIndex) = 0.0_RKIND
+            verticalSumMaxes_tmp(variableIndex) = 0.0_RKIND
+            sums(variableIndex) = 0.0_RKIND
+            sumSquares(variableIndex) = 0.0_RKIND
+            mins(variableIndex) = 0.0_RKIND
+            maxes(variableIndex) = 0.0_RKIND
+            verticalSumMins(variableIndex) = 0.0_RKIND
+            verticalSumMaxes(variableIndex) = 0.0_RKIND
          end if
 
          ! active Tracers
