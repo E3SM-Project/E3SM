@@ -245,6 +245,25 @@ contains
     integer, save :: index_x2i_Faxa_rain
     integer, save :: index_x2i_Faxa_snow
     integer, save :: index_x2i_Fixx_rofi
+    !wiso fields:
+    integer, save :: index_a2x_Faxa_rainc_16O
+    integer, save :: index_a2x_Faxa_rainl_16O
+    integer, save :: index_a2x_Faxa_snowc_16O
+    integer, save :: index_a2x_Faxa_snowl_16O
+    integer, save :: index_x2i_Faxa_rain_16O
+    integer, save :: index_x2i_Faxa_snow_16O
+    integer, save :: index_a2x_Faxa_rainc_18O
+    integer, save :: index_a2x_Faxa_rainl_18O
+    integer, save :: index_a2x_Faxa_snowc_18O
+    integer, save :: index_a2x_Faxa_snowl_18O
+    integer, save :: index_x2i_Faxa_rain_18O 
+    integer, save :: index_x2i_Faxa_snow_18O
+    integer, save :: index_a2x_Faxa_rainc_HDO
+    integer, save :: index_a2x_Faxa_rainl_HDO
+    integer, save :: index_a2x_Faxa_snowc_HDO
+    integer, save :: index_a2x_Faxa_snowl_HDO
+    integer, save :: index_x2i_Faxa_rain_HDO
+    integer, save :: index_x2i_Faxa_snow_HDO
     logical, save :: first_time = .true.
     logical       :: iamroot
     character(CL),allocatable :: mrgstr(:)   ! temporary string
@@ -271,6 +290,28 @@ contains
        index_x2i_Faxa_rain  = mct_aVect_indexRA(x2i_i,'Faxa_rain' )
        index_x2i_Faxa_snow  = mct_aVect_indexRA(x2i_i,'Faxa_snow' )
        index_x2i_Fixx_rofi  = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
+
+       ! Water isotope fields
+       index_a2x_Faxa_snowc_16O = mct_aVect_indexRA(a2x_i,'Faxa_snowc_16O', perrWith='quiet')
+       index_a2x_Faxa_snowl_16O = mct_aVect_indexRA(a2x_i,'Faxa_snowl_16O', perrWith='quiet')
+       index_a2x_Faxa_rainc_16O = mct_aVect_indexRA(a2x_i,'Faxa_rainc_16O', perrWith='quiet')
+       index_a2x_Faxa_rainl_16O = mct_aVect_indexRA(a2x_i,'Faxa_rainl_16O', perrWith='quiet')
+       index_x2i_Faxa_rain_16O  = mct_aVect_indexRA(x2i_i,'Faxa_rain_16O',  perrWith='quiet' )
+       index_x2i_Faxa_snow_16O  = mct_aVect_indexRA(x2i_i,'Faxa_snow_16O',  perrWith='quiet' )
+
+       index_a2x_Faxa_snowc_18O = mct_aVect_indexRA(a2x_i,'Faxa_snowc_18O', perrWith='quiet')
+       index_a2x_Faxa_snowl_18O = mct_aVect_indexRA(a2x_i,'Faxa_snowl_18O', perrWith='quiet')
+       index_a2x_Faxa_rainc_18O = mct_aVect_indexRA(a2x_i,'Faxa_rainc_18O', perrWith='quiet')
+       index_a2x_Faxa_rainl_18O = mct_aVect_indexRA(a2x_i,'Faxa_rainl_18O', perrWith='quiet')
+       index_x2i_Faxa_rain_18O  = mct_aVect_indexRA(x2i_i,'Faxa_rain_18O',  perrWith='quiet' )
+       index_x2i_Faxa_snow_18O  = mct_aVect_indexRA(x2i_i,'Faxa_snow_18O',  perrWith='quiet' )
+
+       index_a2x_Faxa_snowc_HDO = mct_aVect_indexRA(a2x_i,'Faxa_snowc_HDO', perrWith='quiet')
+       index_a2x_Faxa_snowl_HDO = mct_aVect_indexRA(a2x_i,'Faxa_snowl_HDO', perrWith='quiet')
+       index_a2x_Faxa_rainc_HDO = mct_aVect_indexRA(a2x_i,'Faxa_rainc_HDO', perrWith='quiet')
+       index_a2x_Faxa_rainl_HDO = mct_aVect_indexRA(a2x_i,'Faxa_rainl_HDO', perrWith='quiet')
+       index_x2i_Faxa_rain_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_rain_HDO',  perrWith='quiet' )
+       index_x2i_Faxa_snow_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_snow_HDO',  perrWith='quiet' )
 
        do i = 1,niflds
           field = mct_aVect_getRList2c(i, x2i_i)
@@ -309,6 +350,26 @@ contains
        mrgstr(index_x2i_Fixx_rofi) = trim(mrgstr(index_x2i_Fixx_rofi))//' = '// &
           '(g2x%Figg_rofi + r2x%Firr_rofi)*flux_epbalfact'
 
+       !--- water isotope document manual merges ---
+       if ( index_x2i_Faxa_rain_16O /= 0 ) then
+          mrgstr(index_x2i_Faxa_rain_16O) = trim(mrgstr(index_x2i_Faxa_rain_16O))//' = '// &
+             '(a2x%Faxa_rainc_16O + a2x%Faxa_rainl_16O)*flux_epbalfact'
+          mrgstr(index_x2i_Faxa_snow_16O) = trim(mrgstr(index_x2i_Faxa_snow_16O))//' = '// &
+             '(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O)*flux_epbalfact'
+       end if
+       if ( index_x2i_Faxa_rain_18O /= 0 ) then
+          mrgstr(index_x2i_Faxa_rain_18O) = trim(mrgstr(index_x2i_Faxa_rain_18O))//' = '// &
+             '(a2x%Faxa_rainc_18O + a2x%Faxa_rainl_18O)*flux_epbalfact'
+          mrgstr(index_x2i_Faxa_snow_18O) = trim(mrgstr(index_x2i_Faxa_snow_18O))//' = '// &
+             '(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O)*flux_epbalfact'
+       end if
+       if ( index_x2i_Faxa_rain_HDO /= 0 ) then
+          mrgstr(index_x2i_Faxa_rain_HDO) = trim(mrgstr(index_x2i_Faxa_rain_HDO))//' = '// &
+             '(a2x%Faxa_rainc_HDO + a2x%Faxa_rainl_HDO)*flux_epbalfact'
+          mrgstr(index_x2i_Faxa_snow_HDO) = trim(mrgstr(index_x2i_Faxa_snow_HDO))//' = '// &
+             '(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO)*flux_epbalfact'
+       end if
+
     endif
 
 !    call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector)
@@ -332,6 +393,36 @@ contains
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = x2i_i%rAttr(index_x2i_Faxa_rain,i) * flux_epbalfact
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = x2i_i%rAttr(index_x2i_Faxa_snow,i) * flux_epbalfact
        x2i_i%rAttr(index_x2i_Fixx_rofi,i) = x2i_i%rAttr(index_x2i_Fixx_rofi,i) * flux_epbalfact
+
+       ! For water isotopes
+       if ( index_x2i_Faxa_rain_16O /= 0 ) then
+          x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_16O,i) + &
+                                               a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
+          x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_16O,i) + &
+                                               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i) 
+   
+          x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) * flux_epbalfact
+          x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) * flux_epbalfact
+       end if
+       if ( index_x2i_Faxa_rain_18O /= 0 ) then
+          x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_18O,i) + &
+                                               a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
+          x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_18O,i) + &
+                                               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i) 
+   
+          x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) * flux_epbalfact
+          x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) * flux_epbalfact
+       end if
+       if ( index_x2i_Faxa_rain_HDO /= 0 ) then
+          x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_HDO,i) + &
+                                               a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
+          x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_HDO,i) + &
+                                               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i) 
+   
+          x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) * flux_epbalfact
+          x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) * flux_epbalfact
+       end if
+
     end do
 
     if (first_time) then

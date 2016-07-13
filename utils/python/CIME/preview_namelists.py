@@ -10,6 +10,9 @@ import glob, shutil
 logger = logging.getLogger(__name__)
 
 def preview_namelists(case, dryrun=False, casedir=None):
+    # refresh case xml files from object
+    case.flush()
+
     # Get data from XML
     exeroot = case.get_value("EXEROOT")
     libroot = case.get_value("LIBROOT")
@@ -72,7 +75,8 @@ def preview_namelists(case, dryrun=False, casedir=None):
             run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot))
         else:
             run_cmd("%s %s" % (cmd, caseroot))
-
+    # refresh case xml object from file
+    case.read_xml(caseroot)
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
         os.makedirs(docdir)
