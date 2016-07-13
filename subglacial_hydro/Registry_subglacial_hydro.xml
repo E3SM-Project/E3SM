@@ -105,8 +105,10 @@
 		<var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
 		     description="pressure in subglacial system from previous time step" />
                 <!-- inputs -->
-		<var name="meltInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-		     description="meltwater input" />
+		<var name="basalMeltInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+		     description="basal meltwater input" />
+		<var name="externalWaterInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+		     description="external water input" />
 		<var name="frictionAngle" type="real" dimensions="nCells Time" units="None"
 		     description="till friction angle" />
                 <!-- convenience variables -->

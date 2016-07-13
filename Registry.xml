@@ -424,7 +424,8 @@
 			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
-			<var name="meltInput" packages="hydro"/>
+			<var name="basalMeltInput" packages="hydro"/>
+			<var name="externalWaterInput" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
 		</stream>
 
