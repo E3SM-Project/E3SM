@@ -870,29 +870,33 @@ class TestCimeCase(TestCreateTestCommon):
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
-        case = Case(casedir)
 
-        build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertFalse(build_complete,
-                         msg="Build complete had wrong value '%s'" % build_complete)
+        with Case(casedir) as case:
+            build_complete = case.get_value("BUILD_COMPLETE")
+            self.assertFalse(build_complete,
+                             msg="Build complete had wrong value '%s'" %
+                             build_complete)
 
-        case.set_value("BUILD_COMPLETE", True)
-        build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertTrue(build_complete,
-                        msg="Build complete had wrong value '%s'" % build_complete)
+            case.set_value("BUILD_COMPLETE", True)
+            build_complete = case.get_value("BUILD_COMPLETE")
+            self.assertTrue(build_complete,
+                            msg="Build complete had wrong value '%s'" %
+                            build_complete)
 
-        case.flush()
+            case.flush()
 
-        build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value", from_dir=casedir)
-        self.assertTrue(build_complete,
-                        msg="Build complete had wrong value '%s'" % build_complete)
+            build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value",
+                                     from_dir=casedir)
+            self.assertTrue(build_complete,
+                            msg="Build complete had wrong value '%s'" %
+                            build_complete)
 
-        # Test some test properties
-        self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
-        self.assertEqual(case.get_value("MPILIB"), "mpi-serial")
+            # Test some test properties
+            self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+            self.assertEqual(case.get_value("MPILIB"), "mpi-serial")
 
-        # Serial cases should not be using pnetcdf
-        self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
+            # Serial cases should not be using pnetcdf
+            self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
 
 ###############################################################################
 class TestSingleSubmit(TestCreateTestCommon):

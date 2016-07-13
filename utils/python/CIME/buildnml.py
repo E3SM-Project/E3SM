@@ -42,12 +42,13 @@ def build_xcpl_nml(argv, compclass):
 
     caseroot = parse_input(argv)
 
-    case = Case(caseroot)
-
-    rundir = case.get_value("RUNDIR")
-    ninst  = case.get_value("NINST_%s" % compclass.upper())
-    nx     = case.get_value("%s_NX" % compclass.upper())
-    ny     = case.get_value("%s_NY" % compclass.upper())
+    with Case(caseroot) as case:
+        rundir = case.get_value("RUNDIR")
+        ninst  = case.get_value("NINST_%s" % compclass.upper())
+        nx     = case.get_value("%s_NX" % compclass.upper())
+        ny     = case.get_value("%s_NY" % compclass.upper())
+        if compname == "xrof":
+            flood_mode = case.get_value('XROF_FLOOD_MODE')
 
     extras = []
     dtype = 1
@@ -69,7 +70,6 @@ def build_xcpl_nml(argv, compclass):
         dtype = 4
     elif compname == "xrof":
         dtype = 11
-        flood_mode = Case('XROF_FLOOD_MODE')
         if flood_mode == "ACTIVE":
             extras = [[".true.", "flood flag"]]
         else:
@@ -98,10 +98,15 @@ def build_xcpl_nml(argv, compclass):
 ###############################################################################
 def build_data_nml(argv, compclass):
 ###############################################################################
-
+    # This function is just a wrapper for the one below, to avoid having to
+    # indent everything for the "with" block.
     caseroot = parse_input(argv)
+    with Case(caseroot) as case:
+        _build_data_nml(case, compclass)
 
-    case = Case(caseroot)
+###############################################################################
+def _build_data_nml(case, compclass):
+###############################################################################
 
     cimeroot = case.get_value("CIMEROOT")
     rundir   = case.get_value("RUNDIR")

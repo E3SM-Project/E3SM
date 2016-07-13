@@ -84,28 +84,28 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=None, subgroup=None,
               append=None, noecho=False, warn=None, force=False):
-    case = Case(caseroot)
-    if(listofsettings ):
-        for setting in listofsettings:
-            (xmlid, xmlval) = setting.split('=', 1)
-            type_str = case.get_type_info(xmlid)
-            if(append is True):
+    with Case(caseroot) as case:
+        if listofsettings:
+            for setting in listofsettings:
+                (xmlid, xmlval) = setting.split('=', 1)
+                type_str = case.get_type_info(xmlid)
+                if(append is True):
+                    value = case.get_value(xmlid, resolved=False,
+                                           subgroup=subgroup)
+                    xmlval = "%s %s" %(xmlval, value)
+                if not force:
+                    xmlval = convert_to_type(xmlval, type_str, xmlid)
+                case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+        else:
+            if append is True:
                 value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
                 xmlval = "%s %s" %(xmlval, value)
+            type_str = case.get_type_info(xmlid)
             if not force:
                 xmlval = convert_to_type(xmlval, type_str, xmlid)
             case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
-    else:
-        if(append is True):
-            value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
-            xmlval = "%s %s" %(xmlval, value)
-        type_str = case.get_type_info(xmlid)
-        if not force:
-            xmlval = convert_to_type(xmlval, type_str, xmlid)
-        case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
-    case.flush()
 
-    if (noecho is False):
+    if not noecho:
         argstr = ""
         for arg in sys.argv:
             argstr += "%s "%arg

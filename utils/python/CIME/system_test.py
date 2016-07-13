@@ -529,12 +529,12 @@ class SystemTest(object):
         shutil.copy(os.path.join(test_dir,"env_run.xml"),
                     os.path.join(lockedfiles, "env_run.orig.xml"))
 
-        case = Case(test_dir)
-        case.set_value("SHAREDLIBROOT",
-                       os.path.join(self._test_root,
-                                    "sharedlibroot.%s"%self._test_id))
+        with Case(test_dir) as case:
+            case.set_value("SHAREDLIBROOT",
+                           os.path.join(self._test_root,
+                                        "sharedlibroot.%s"%self._test_id))
+            envtest.set_initial_values(case)
 
-        envtest.set_initial_values(case)
         return True
 
     ###########################################################################

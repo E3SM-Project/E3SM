@@ -67,11 +67,10 @@ class Case(object):
         if case_root is None:
             case_root = os.getcwd()
 
-        # Init first, if no valid case_root expect fails and tears down object, __del__ expects self._env_files_that_need_rewrite
-        self._env_files_that_need_rewrite = set()
-
         logger.debug("Initializing Case.")
         self.read_xml(case_root)
+
+        self._env_files_that_need_rewrite = set()
 
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
@@ -91,8 +90,18 @@ class Case(object):
         self._component_config_files = []
         self._component_classes = []
 
+    # Define __enter__ and __exit__ so that we can use this as a context manager
+    # and force a flush on exit.
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.flush()
+        return False
+
     def read_xml(self, case_root):
-        expect(len(self._env_files_that_need_rewrite)==0,"Case object has modifications that would be overwritten by read_xml")
+        expect(len(self._env_files_that_need_rewrite)==0,
+               "Case object has modifications that would be overwritten by read_xml")
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvRun(case_root))
         self._env_entryid_files.append(EnvBuild(case_root))
@@ -105,9 +114,6 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
         self._files = self._env_entryid_files + self._env_generic_files
-
-    def __del__(self):
-        self.flush()
 
     def _get_env(self, short_name):
         full_name = "env_%s.xml" % (short_name)
