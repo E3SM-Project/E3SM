@@ -203,7 +203,7 @@
     <desc compset="_CLM45%[^_]*CROP"     >clm4.5 prognostic crop:</desc>
     <desc compset="_CLM45%[^_]*VIC"      >clm4.5 vic hydrology:</desc>
     <desc compset="_CLM45%[^_]*ED"       >clm4.5 ED (Ecosystem Demography): (experimental)</desc>
-    <desc compset="_CLM45%[^_]*BGCDV"    >clm4.5 BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg
+    <desc compset="_CLM45%[^_]*BGCDV"    >clm4.5 BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg</desc>
     <desc compset="_CLM45%[^_]*CRDCTCBC"   >alm1.0 C only, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
     <desc compset="_CLM45%[^_]*CNRDCTCBC"  >alm1.0 C-N, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
     <desc compset="_CLM45%[^_]*CNPRDCTCBC" >alm1.0 C-N-P, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
