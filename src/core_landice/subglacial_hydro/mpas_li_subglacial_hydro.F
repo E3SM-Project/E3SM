@@ -190,6 +190,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: waterThicknessOld
+      real (kind=RKIND), dimension(:), pointer :: waterThicknessTendency
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -328,6 +329,7 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
          call mpas_pool_get_array(hydroPool, 'waterThicknessOld', waterThicknessOld)
+         call mpas_pool_get_array(hydroPool, 'waterThicknessTendency', waterThicknessTendency)
          call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
          call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
@@ -341,6 +343,7 @@ module li_subglacial_hydro
          waterThickness = waterThickness * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
          waterThickness = max(0.0_RKIND, waterThickness)
          divergence = divergence * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations for more convenient viz
+         waterThicknessTendency = (waterThickness - waterThicknessOld) / deltatSGH
 
          block => block % next
       end do
