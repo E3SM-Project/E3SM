@@ -65,12 +65,12 @@ def _main_func(description):
 
     svn_loc, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
-    with Case() as case:
-        sys.exit(0 if check_input_data(case,
-                                       svn_loc=svn_loc,
-                                       input_data_root=input_data_root,
-                                       data_list_dir=data_list_dir,
-                                       download=download) else 1)
+    case = Case()
+    sys.exit(0 if check_input_data(case,
+                                   svn_loc=svn_loc,
+                                   input_data_root=input_data_root,
+                                   data_list_dir=data_list_dir,
+                                   download=download) else 1)
 
 ###############################################################################
 

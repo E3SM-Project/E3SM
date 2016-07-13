@@ -68,9 +68,9 @@ class Case(object):
             case_root = os.getcwd()
 
         logger.debug("Initializing Case.")
-        self.read_xml(case_root)
-
         self._env_files_that_need_rewrite = set()
+        self._read_only_mode = True
+        self.read_xml(case_root)
 
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
@@ -93,11 +93,19 @@ class Case(object):
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
     def __enter__(self):
+        self._read_only_mode = False
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.flush()
+        self._read_only_mode = True
         return False
+
+    def schedule_rewrite(self, env_file):
+        assert not self._read_only_mode, \
+            "case.py scripts error: attempted to modify an env file while in " \
+            "read-only mode"
+        self._env_files_that_need_rewrite.add(env_file)
 
     def read_xml(self, case_root):
         expect(len(self._env_files_that_need_rewrite)==0,
@@ -144,11 +152,9 @@ class Case(object):
     def flush(self, flushall=False):
         if flushall:
             for env_file in self._files:
-                env_file.write()
-        else:
-            for env_file in self._env_files_that_need_rewrite:
-                env_file.write()
-
+                self.schedule_rewrite(env_file)
+        for env_file in self._env_files_that_need_rewrite:
+            env_file.write()
         self._env_files_that_need_rewrite = set()
 
     def get_value(self, item, attribute=None, resolved=True, subgroup=None):
@@ -268,7 +274,7 @@ class Case(object):
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file %s",env_file.filename)
-                self._env_files_that_need_rewrite.add(env_file)
+                self.schedule_rewrite(env_file)
                 return result
         if result is None:
             if item in self.lookups.keys() and self.lookups[item] is not None:
@@ -516,7 +522,7 @@ class Case(object):
             nodes = machobj.get_first_child_nodes(item)
             for node in nodes:
                 env_mach_specific_obj.add_child(node)
-        self._env_files_that_need_rewrite.add(env_mach_specific_obj)
+        self.schedule_rewrite(env_mach_specific_obj)
 
         #--------------------------------------------
         # pe payout
@@ -575,7 +581,7 @@ class Case(object):
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
         env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime)
-        self._env_files_that_need_rewrite.add(env_batch)
+        self.schedule_rewrite(env_batch)
 
         self.set_value("COMPSET",self._compsetname)
 

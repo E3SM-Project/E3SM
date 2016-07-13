@@ -105,26 +105,24 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False,
     True
     """
     # Initialize case ; read in all xml files from caseroot
-    with Case(caseroot) as case:
-        values  = []
-        results = [] # List of formatted strings containing the search results
+    case    = Case(caseroot)
+    values  = []
+    results = [] # List of formatted strings containing the search results
 
-        if(listofattributes and len(listofattributes) >= 1):
+    if(listofattributes and len(listofattributes) >= 1):
 
-            for xmlattr in listofattributes:
-                # type_str = case.get_type_info(xmlattr)
-                logger.debug("Searching for %s", xmlattr)
-                attribute_hits = case.get_values(xmlattr, resolved=args.resolve,
-                                                 subgroup=subgroup)
-                results       += attribute_hits
+        for xmlattr in listofattributes:
+            # type_str = case.get_type_info(xmlattr)
+            logger.debug("Searching for %s", xmlattr)
+            attribute_hits = case.get_values(xmlattr, resolved=args.resolve, subgroup=subgroup)
+      
+            results       += attribute_hits
 
-        elif (args.listall):
-            logger.warning("Retrieving all values.")
-            results = case.get_values(None, resolved=args.resolve,
-                                      subgroup=subgroup)
-        else:
-            logger.warning("No attributes (%s) or listall option",
-                           listofattributes)
+    elif (args.listall):
+        logger.warning("Retrieving all values.")
+        results = case.get_values(None, resolved=args.resolve, subgroup=subgroup)
+    else:
+        logger.warning("No attributes (%s) or listall option" , listofattributes)
 
     # Formatting of return strings
     if ( len(results) > 0) :
