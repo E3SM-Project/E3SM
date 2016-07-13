@@ -165,7 +165,8 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (arg_stdout is _hack):
         arg_stdout = subprocess.PIPE
     if (arg_stderr is _hack):
-        arg_stderr = subprocess.PIPE
+        arg_stderr = subprocess.STDOUT
+    
 
     if (verbose or logger.level == logging.DEBUG):
         logger.info("RUN: %s" % cmd)
@@ -198,13 +199,8 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (ok_to_fail):
         return stat, output, errput
     else:
-        if (arg_stderr is not None):
-            errput = errput if errput is not None else open(arg_stderr.name, "r").read()
-            expect(stat == 0, "Command: '%s' failed with error '%s'%s" %
-                   (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
-        else:
-            expect(stat == 0, "Command: '%s' failed%s. See terminal output" %
-                   (cmd, "" if from_dir is None else " from dir '%s'" % from_dir))
+        expect(stat == 0, "Command: '%s' failed%s. See terminal output" %
+               (cmd, "" if from_dir is None else " from dir '%s'" % from_dir))
         return output
 
 def check_minimum_python_version(major, minor):

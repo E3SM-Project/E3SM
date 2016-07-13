@@ -337,7 +337,10 @@ class Machines(GenericXML):
         executable, args = self.get_mpirun(mpi_attribs, check_members, case, job)
 
         mpi_arg_string = " ".join(args.values())
-
+        batch_system = self.get_value("BATCH_SYSTEM")
+        if batch_system == "cobalt":
+            mpi_arg_string += " : "
+        
         return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def print_values(self):

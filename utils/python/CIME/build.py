@@ -7,7 +7,6 @@ from CIME.utils                 import expect, run_cmd, get_model, append_status
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from CIME.preview_namelists     import preview_namelists
 from CIME.check_input_data      import check_input_data
-
 import glob, shutil, time, threading, gzip
 
 logger = logging.getLogger(__name__)
@@ -94,10 +93,11 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
     file_build = os.path.join(exeroot, "%s.bldlog.%s" % (cime_model, lid))
 
     config_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
-    stat = run_cmd("%s/buildexe %s %s %s >> %s 2>&1" %
-                   (config_dir, caseroot, bldroot, libroot, file_build),
-                   from_dir=bldroot, ok_to_fail=True, verbose=True)[0]
-
+    f = open(file_build, "w")
+    stat = run_cmd("%s/buildexe %s %s %s" %
+                   (config_dir, caseroot, bldroot, libroot),
+                   from_dir=bldroot, ok_to_fail=True, verbose=True, arg_stdout=f)[0]
+    f.close()
     expect(stat == 0, "ERROR: buildexe failed, cat %s" % file_build)
 
     # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
@@ -492,14 +492,13 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
             os.makedirs(full_lib_path)
 
         file_build = os.path.join(sharedpath, "%s.bldlog.%s" % (lib, lid))
+        my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
         with open(file_build, "w") as fd:
             fd.write("Current env:\n%s" % "\n".join(["  %s = %s" % (env, os.environ[env]) for env in sorted(os.environ)]))
-
-        my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
-        stat = run_cmd("%s %s %s >> %s 2>&1" %
-                       (my_file, sharedpath, caseroot, file_build),
+            stat = run_cmd("%s %s %s" %
+                       (my_file, sharedpath, caseroot),
                        from_dir=exeroot,
-                       ok_to_fail=True, verbose=True)[0]
+                       ok_to_fail=True, verbose=True, arg_stdout=fd)[0]
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
 
@@ -527,10 +526,11 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
 def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build,
                         thread_bad_results):
 ###############################################################################
+    with open(file_build, "w") as fd:
+        stat = run_cmd("%s/buildlib %s %s %s " %
+                       (config_dir, caseroot, bldroot, libroot),
+                       from_dir=bldroot, ok_to_fail=True,verbose=True, arg_stdout=fd)[0]
 
-    stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
-                   (config_dir, caseroot, bldroot, libroot, file_build),
-                   from_dir=bldroot, ok_to_fail=True,verbose=True)[0]
     if (stat != 0):
         thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (compclass, file_build))
 
