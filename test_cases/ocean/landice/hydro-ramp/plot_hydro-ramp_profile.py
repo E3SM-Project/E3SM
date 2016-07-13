@@ -49,7 +49,12 @@ days = f.variables['daysSinceStart'][:]
 melt = f.variables['meltInput'][time_slice,:]
 xtime= f.variables['xtime']
 
-print "Using time level ", time_slice, ", which is xtime=", xtime[time_slice,:]
+
+#print "attempting to get input data from landice_grid.nc!"
+#fin = netCDF4.Dataset('landice_grid.nc','r')
+#H = fin.variables['thickness'][0,:]
+
+print "Using time level ", time_slice, ", which is xtime=",''.join( xtime[time_slice,:])
 
 
 totalMelt = (melt * (h>0.0)).sum() / 2.0 * 10000.0 * 100000.0
@@ -69,6 +74,7 @@ ax1 = fig.add_subplot(311)
 plt.plot(x, h[ind] * u[ind] * 10000.0, '.-')
 plt.xlabel('X-position (km)')
 plt.ylabel('water flux (m^3/s)')
+plt.grid(True)
 
 
 ax = fig.add_subplot(312, sharex=ax1)
@@ -76,11 +82,15 @@ plt.plot(x, h[ind]*10000.0, '.-')
 plt.xlabel('X-position (km)')
 plt.ylabel('xsect area (m^2)')
 plt.yscale('log')
+plt.grid(True)
 
 ax = fig.add_subplot(313, sharex=ax1)
-plt.plot(x, N[ind]/1.0e6, '.-')
+plt.plot(x, N[ind]/1.0e6, '.-', label='modeled transient to SS')
+plt.plot(x, (melt[ind]/900.0*1.0e13/h[ind]) / 1.0e6, '.--r', label='SS N=f(h)')  # steady state N=f(h) from the cavity evolution eqn
 plt.xlabel('X-position (km)')
 plt.ylabel('effective pressure (MPa)')
+plt.grid(True)
+plt.legend()
 
 
 
@@ -91,12 +101,14 @@ for i in ind:
     plt.plot(days/365.0, f.variables['waterThickness'][:,i])
 plt.xlabel('Years since start')
 plt.ylabel('water thickness (m)')
+plt.grid(True)
 
 ax = fig.add_subplot(212, sharex=ax1)
 for i in ind:
     plt.plot(days/365.0, f.variables['effectivePressure'][:,i]/1.0e6)
 plt.xlabel('Years since start')
 plt.ylabel('effective pressure (MPa)')
+plt.grid(True)
 
 
 
