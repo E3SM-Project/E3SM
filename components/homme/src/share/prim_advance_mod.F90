@@ -2969,9 +2969,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ==============================================
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2,u_m_umet,v_m_vmet,t_m_tmet)
-#endif
      vertloop: do k=1,nlev
         do j=1,np
            do i=1,np
