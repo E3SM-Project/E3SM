@@ -185,7 +185,8 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
-      real (kind=RKIND), dimension(:), pointer :: meltInput
+      real (kind=RKIND), dimension(:), pointer :: basalMeltInput
+      real (kind=RKIND), dimension(:), pointer :: externalWaterInput
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterThickness
@@ -234,11 +235,12 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
          call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
-         call mpas_pool_get_array(hydroPool, 'meltInput', meltInput)
+         call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
+         call mpas_pool_get_array(hydroPool, 'externalWaterInput', externalWaterInput)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          WtillOld = Wtill
-         Wtill = Wtill + deltatSGH * (meltInput / rho_water - Cd)
+         Wtill = Wtill + deltatSGH * ( (basalMeltInput + externalWaterInput) / rho_water - Cd)
          Wtill = Wtill * li_mask_is_grounded_ice_int(cellMask)  ! zero Wtill in non-grounded locations
          Wtill = min(Wtill, tillmax)
          Wtill = max(0.0_RKIND, Wtill)
@@ -333,12 +335,13 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
          call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
-         call mpas_pool_get_array(hydroPool, 'meltInput', meltInput)
+         call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
+         call mpas_pool_get_array(hydroPool, 'externalWaterInput', externalWaterInput)
          call mpas_pool_get_array(hydroPool, 'divergence', divergence)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          waterThicknessOld = waterThickness
-         waterThickness = waterThicknessOld + deltatSGH * (meltInput / rho_water - divergence  &
+         waterThickness = waterThicknessOld + deltatSGH * ( (basalMeltInput + externalWaterInput) / rho_water - divergence  &
              - (Wtill - WtillOld) / deltatSGH)
          waterThickness = waterThickness * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
          waterThickness = max(0.0_RKIND, waterThickness)
@@ -841,7 +844,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: zeroOrderSum
       real (kind=RKIND), dimension(:), pointer :: closingRate
       real (kind=RKIND), dimension(:), pointer :: openingRate
-      real (kind=RKIND), dimension(:), pointer :: meltInput
+      real (kind=RKIND), dimension(:), pointer :: basalMeltInput
+      real (kind=RKIND), dimension(:), pointer :: externalWaterInput
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: basalSpeed
@@ -886,7 +890,8 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'closingRate', closingRate)
       call mpas_pool_get_array(hydroPool, 'openingRate', openingRate)
       call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
-      call mpas_pool_get_array(hydroPool, 'meltInput', meltInput)
+      call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
+      call mpas_pool_get_array(hydroPool, 'externalWaterInput', externalWaterInput)
       call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
       call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
       call mpas_pool_get_array(hydroPool, 'divergence', divergence)
@@ -897,13 +902,13 @@ module li_subglacial_hydro
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:))
-      !openingRate(:) = bedRough * basalSpeed(:) + meltInput(:) / rhoi  ! Hewitt 2011 opening
+      !openingRate(:) = bedRough * basalSpeed(:) + basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
       openingRate = max(0.0_RKIND, openingRate)
 
       closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
       !closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND  ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
 
-      zeroOrderSum = closingRate - openingRate + meltInput / rho_water - (Wtill - WtillOld) / deltatSGH
+      zeroOrderSum = closingRate - openingRate + (basalMeltInput + externalWaterInput) / rho_water - (Wtill - WtillOld) / deltatSGH
 
       waterPressureOld = waterPressure
 

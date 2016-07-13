@@ -40,14 +40,17 @@ f = netCDF4.Dataset(options.filename,'r')
 #xtime = f.variables['xtime'][:]
 xCell = f.variables['xCell'][:]
 yCell = f.variables['yCell'][:]
+yVertex = f.variables['yVertex'][:]
 #xEdge = f.variables['xEdge'][:]
 #yEdge = f.variables['yEdge'][:]
 h = f.variables['waterThickness'][time_slice,:]
 u = f.variables['waterVelocityCellX'][time_slice,:]
 N = f.variables['effectivePressure'][time_slice,:]
 days = f.variables['daysSinceStart'][:]
-melt = f.variables['meltInput'][time_slice,:]
+basalmelt = f.variables['basalMeltInput'][time_slice,:]
+surfmelt = f.variables['externalWaterInput'][time_slice,:]
 xtime= f.variables['xtime']
+areaCell = f.variables['areaCell'][:]
 
 
 #print "attempting to get input data from landice_grid.nc!"
@@ -57,8 +60,8 @@ xtime= f.variables['xtime']
 print "Using time level ", time_slice, ", which is xtime=",''.join( xtime[time_slice,:])
 
 
-totalMelt = (melt * (h>0.0)).sum() / 2.0 * 10000.0 * 100000.0
-print "Total melt volume rate for half the domain (m^3/s)=", totalMelt
+totalMelt = ( (basalmelt + surfmelt)/1000.0 * areaCell * (h>0.0)).sum() / (yVertex.max() - yVertex.min()) / 2.0 * 10000.0  # 10000.0 is the 10 km width that Hewitt uses; 2 is because we want half the domain since we reflect it
+print "Total water input volume rate for half the domain (m^3/s)=", totalMelt
 
 # Find center row  - currently files are set up to have central row at y=0
 unique_ys=np.unique(yCell[:])
@@ -72,6 +75,7 @@ print "start plotting."
 fig = plt.figure(1, facecolor='w')
 ax1 = fig.add_subplot(311)
 plt.plot(x, h[ind] * u[ind] * 10000.0, '.-')
+plt.plot(1000.0, totalMelt, 'r*')
 plt.xlabel('X-position (km)')
 plt.ylabel('water flux (m^3/s)')
 plt.grid(True)
@@ -86,9 +90,10 @@ plt.grid(True)
 
 ax = fig.add_subplot(313, sharex=ax1)
 plt.plot(x, N[ind]/1.0e6, '.-', label='modeled transient to SS')
-plt.plot(x, (melt[ind]/900.0*1.0e13/h[ind]) / 1.0e6, '.--r', label='SS N=f(h)')  # steady state N=f(h) from the cavity evolution eqn
+plt.plot(x, (basalmelt[ind]/900.0*1.0e13/h[ind]) / 1.0e6, '.--r', label='SS N=f(h)')  # steady state N=f(h) from the cavity evolution eqn
 plt.xlabel('X-position (km)')
 plt.ylabel('effective pressure (MPa)')
+plt.ylim((0.0, 0.1))
 plt.grid(True)
 plt.legend()
 

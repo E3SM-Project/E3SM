@@ -53,7 +53,8 @@ bedTopography[:] = -900.0/1000.0 * minH - 1.0  # subtract one extra meter to mak
 layerThicknessFractions[:] = 1.0 / nVertLevels
 
 # melt
-gridfile.variables['meltInput'][:] = 4.0e-10 * 1000.0  # From Ian's email, 9/21/12
+gridfile.variables['basalMeltInput'][:] = 2.0e-10 * 1000.0  # From Ian's email, 9/21/12
+gridfile.variables['externalWaterInput'][:] = 2.0e-10 * 1000.0  # From Ian's email, 9/21/12
 
 # velocity
 gridfile.variables['uReconstructX'][:] = 1.0e-7  # doesn't matter because no sliding opening in the test case

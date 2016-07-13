@@ -69,14 +69,15 @@ bedTopography[:] = 0.0
 layerThicknessFractions[:] = 1.0 / nVertLevels
 
 # melt
-gridfile.variables['meltInput'][:] = 0.0
-gridfile.variables['meltInput'][:] = 0.0002
+gridfile.variables['basalMeltInput'][:] = 0.0
+#gridfile.variables['basalMeltInput'][:] = 4.0e-10 * 1000.0 * 10000.0
 # Use this line to only add a source term to the center cell - useful for debugging divergence
-#gridfile.variables['meltInput'][0,r==0.0] = 2.0e-9  + 0.06/3.0e5 + (1.0e-7 * 10.0**5)   # From Ian Hewitt email
+gridfile.variables['basalMeltInput'][0,r==0.0] = 4.0e-10 * 1000.0 *100 # value from ramp
 
 # velocity
+gridfile.variables['uReconstructX'][:] = 0.0
 velo = r*0.0
-velo = (r-5000.0)*100.0/3.14e7/22500.0
+velo = (r-5000.0)*1.0/3.14e7/22500.0
 velo[r<5000.0]=0.0
 gridfile.variables['uReconstructX'][0,:,-1] = velo
 gridfile.variables['uReconstructX'][0,thickness[0,:]==0.0,:] = 0.0
