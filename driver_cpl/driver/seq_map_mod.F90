@@ -18,11 +18,6 @@ module seq_map_mod
   use shr_mct_mod, only: shr_mct_sMatPInitnc, shr_mct_queryConfigFile
   use mct_mod
   use seq_comm_mct
-#ifdef USE_ESMF_LIB
-  use esmf
-  use esmfshr_mod
-  use seq_map_esmf
-#endif
   use component_type_mod
   use seq_map_type_mod
 
@@ -40,9 +35,6 @@ module seq_map_mod
   public :: seq_map_map             ! cpl pes
   public :: seq_map_mapvect         ! cpl pes
   public :: seq_map_readdata        ! cpl pes
-#ifdef USE_ESMF_LIB
-  public :: seq_map_register        ! cpl pes
-#endif
 
   interface seq_map_avNorm
      module procedure seq_map_avNormArr
@@ -64,34 +56,6 @@ module seq_map_mod
 !=======================================================================
 contains
 !=======================================================================
-
-#ifdef USE_ESMF_LIB
-  subroutine seq_map_register(petlist, comp, import_state, export_state)
-
-    implicit none
-
-    integer, pointer                  :: petlist(:)
-    type(ESMF_GridComp), intent(out)  :: comp
-    type(ESMF_State),    intent(out)  :: import_state, export_state
-
-    integer            :: rc
-
-    comp = ESMF_GridCompCreate(name="seq map comp", petList=petlist, rc=rc)
-    if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create seq map comp')
-
-    call ESMF_GridCompSetServices(comp, seq_map_esmf_register, rc=rc)
-    if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to register atm comp')
-
-    import_state = ESMF_StateCreate(name="seq map import", stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
-    if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create import seq map state')
-
-    export_state = ESMF_StateCreate(name="seq map export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
-    if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create export seq map state')
-
-  end subroutine
-#endif
-
- !===============================================================================
 
   subroutine seq_map_init_rcfile( mapper, comp_s, comp_d, &
        maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
@@ -120,17 +84,6 @@ contains
     character(CL)               :: maptype
     integer(IN)                 :: mapid
     integer(IN)                 :: ssize,dsize
-#ifdef USE_ESMF_LIB
-    type(ESMF_GridComp)         :: comp
-    type(ESMF_State)            :: imp_state, exp_state
-    type(ESMF_Array)            :: gindex_s, gindex_d
-    type(ESMF_Array)            :: factorArray, factorIndexArray
-    integer, pointer            :: factorIndexList(:,:)
-    real(ESMF_KIND_R8), pointer :: factorList(:)
-    integer                     :: rc, urc, row_idx, col_idx, wgt_idx, nwgt
-    logical                     :: has_weight=.true.
-    integer, pointer            :: petmap(:)
-#endif
     character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
     !-----------------------------------------------------
 
@@ -192,102 +145,7 @@ contains
           if (present(esmf_map)) mapper%esmf_map = esmf_map
 
           if (mapper%esmf_map) then
-#ifdef USE_ESMF_LIB
-             !------------------------------------------------------
-             ! ESMF:
-             ! Set up routehandle
-             !   This section of the code handles the creation of routehandle
-             ! for ESMF SMM communication calls. First, the existing MCT
-             ! sparsematmul descriptor is reused (although this part can be
-             ! done completely without MCT, doing a distributed IO from maprcfile).
-             ! The weight matrix and indicies vectors are wrapped into ESMF Arrays
-             ! based on simple block distributed DistGrid.
-             !   These Arrays are passed into a coupler component set up during
-             ! CESM driver initialization and stored in global seq_comm_type array
-             ! at the driver level. The coupler component is indexed by CPLID in
-             ! the seq_comm_type array. In the coupler component initialization phase
-             ! the SMM routehandle is computed and attached to export state of
-             ! a specific mapper object. Routehandle in a mapper object can be reused
-             ! for the same regridding model component pair.
-             !
-             ! Fei Liu
-             !------------------------------------------------------
-             ! has_weight can be controlled through namelist to determine
-             ! if weights are computed offline or to be computed online
-             ! during initialization.
-             if(has_weight) then
-               ! Retrieve weights and indicies from mapper object
-               row_idx = mct_sMat_indexIA(mapper%sMatp%matrix, 'grow')
-               col_idx = mct_sMat_indexIA(mapper%sMatp%matrix, 'gcol')
-               wgt_idx = mct_sMat_indexRA(mapper%sMatp%matrix, 'weight')
-               nwgt = size(mapper%sMatp%matrix%data%rattr(wgt_idx, :))
-               !write(logunit,*) trim(string), row_idx, col_idx, wgt_idx, nwgt
-               allocate(factorIndexList(2, nwgt), factorList(nwgt), stat=rc)
-               if(rc /= 0) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-               factorIndexList(1,:) = mapper%sMatp%matrix%data%iattr(col_idx, :)
-               factorIndexList(2,:) = mapper%sMatp%matrix%data%iattr(row_idx, :)
-               factorList = mapper%sMatp%matrix%data%rattr(wgt_idx,:)
-
-               ! Get coupler pet map in global setting
-               call seq_comm_petlist(CPLID, petmap)
-
-               ! Set up temporary arrays to compute ESMF SMM routes.
-               gindex_s = mct2esmf_create(gsMap_s, mpicom=mpicom, petmap=petmap, &
-                   name="gindex_s", rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               gindex_d = mct2esmf_create(gsMap_d, mpicom=mpicom, petmap=petmap, &
-                   name="gindex_d", rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               factorArray = mct2esmf_create(factorList, mpicom=mpicom, petmap=petmap, &
-                   name="factorArray", rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               factorIndexArray = mct2esmf_create(factorIndexList, mpicom=mpicom, &
-                   petmap=petmap, name="factorIndexArray", rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               ! Get the coupler component
-               ! Create mapper specific import and export States
-               call seq_comm_getcompstates(CPLID, comp=comp)
-
-               mapper%imp_state = ESMF_StateCreate(name="import", stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
-               if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create import atm state')
-               mapper%exp_state = ESMF_StateCreate(name="export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
-               if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create export atm state')
-
-               ! Attach Arrays to the States
-               call ESMF_StateAdd(mapper%imp_state, (/gindex_s/), rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               call ESMF_StateAdd(mapper%exp_state, (/gindex_d/), rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               call ESMF_StateAdd(mapper%exp_state, (/factorArray/), rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               call ESMF_StateAdd(mapper%exp_state, (/factorIndexArray/), rc=rc)
-               if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               ! Call into ESMF init method
-               call ESMF_GridCompInitialize(comp, importState=mapper%imp_state, exportState=mapper%exp_state, &
-                 userRc=urc, rc=rc)
-               if (urc /= ESMF_SUCCESS) call ESMF_Finalize(rc=urc, endflag=ESMF_END_ABORT)
-               if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-               deallocate(factorIndexList, factorList)
-
-             else
-               ! Compute the routehandle online here:
-               ! 1. Read in source and destination Grid description files
-               ! 2. Construct Grids or Meshes and dummy Fields on top
-               ! 3. Call FieldRegridStore to compute routehandle
-               ! 4. Save routehandle in mapper
-             endif
-#else
-             call shr_sys_abort(subname//' ERROR: esmf SMM not allowed without USE_ESMF_LIB')
-#endif
+             call shr_sys_abort(subname//' ERROR: esmf SMM not supported')
           endif  ! esmf_map
 
        endif  ! mapid >= 0
@@ -965,12 +823,6 @@ contains
     logical                :: lnorm
     character(*),parameter :: subName = '(seq_map_avNormArr) '
     character(len=*),parameter :: ffld = 'norm8wt'  ! want something unique
-#ifdef USE_ESMF_LIB
-    type(ESMF_Array)    :: array_s, array_d, temparray_s, temparray_d
-    type(ESMF_DistGrid) :: distgrid
-    type(ESMF_GridComp) :: comp
-    integer             :: rc, urc
-#endif
     !-----------------------------------------------------
 
     sMatp   = mapper%sMatp
@@ -1025,83 +877,11 @@ contains
     !--- map ---
 
     if (mapper%esmf_map) then
-#ifdef USE_ESMF_LIB
-       !--- ESMF SMM ---
-       !   The 2nd part of the code in seq_map_mod.F90 handles the execution of ESMF SMM. Based
-       ! on the number of input and output physical fields, temporary input and output ESMF Arrays
-       ! are created and reference data pointer directly in input/output MCT AttributeVectors. These
-       ! Arrays are attached to the import and export State retrieved from the mapper object of
-       ! the regridding model component pair prior to the component run method.
-       ! Inside the component run method, a SMM execution is performed with the input/output Arrays
-       ! and the routehandle. Afterwards, the temporary input/output Array are removed from
-       ! the States and destroyed.
-
-       ! Create the temporary input array and attach to import State
-       !
-       ! Query DistGrid
-       call ESMF_StateGet(mapper%imp_state, itemName='temparray_s', array=temparray_s, rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-       call ESMF_ArrayGet(temparray_s, distgrid=distgrid, rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       ! Create the temporary input array
-       array_s = ESMF_ArrayCreate(distgrid=distgrid, farrayPtr=avp_i%rattr, &
-           distgridToArrayMap=(/2/), &
-           name='array_s', rc=rc)
-       if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       call ESMF_AttributeSet(array_s, name='mct_names', &
-           value=trim(mct_aVect_exportRList2c(avp_i)), rc=rc)
-       if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       ! Attach to import State
-       call ESMF_StateAdd(mapper%imp_state, (/array_s/), rc=rc)
-       if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       ! Create the temporary output array and attach to export State
-       call ESMF_StateGet(mapper%exp_state, itemName='temparray_d', array=temparray_d, rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-       call ESMF_ArrayGet(temparray_d, distgrid=distgrid, rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       array_d = ESMF_ArrayCreate(distgrid=distgrid, farrayPtr=avp_o%rattr, &
-           distgridToArrayMap=(/2/), &
-           name='array_d', rc=rc)
-       if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       call ESMF_AttributeSet(array_d, name='mct_names', &
-           value=trim(mct_aVect_exportRList2c(avp_o)), rc=rc)
-       if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       call ESMF_StateAdd(mapper%exp_state, (/array_d/), rc=rc)
-       if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       ! Query coupler gridcomp component and call into ESMF comp run method for SMM execution
-       call seq_comm_getcompstates(CPLID, comp=comp)
-       call ESMF_GridCompRun(comp, importState=mapper%imp_state, exportState=mapper%exp_state, &
-           userRc=urc, rc=rc)
-       if (urc /= ESMF_SUCCESS) call ESMF_Finalize(rc=urc, endflag=ESMF_END_ABORT)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       ! Remove the input/output arrays from import/export States and destroy them
-       call ESMF_StateRemove(mapper%imp_state, itemName='array_s', rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-       call ESMF_ArrayDestroy(array_s, rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       call ESMF_StateRemove(mapper%exp_state, itemName='array_d', rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-       call ESMF_ArrayDestroy(array_d, rc=rc)
-       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-#else
-       call shr_sys_abort(subname//' ERROR: esmf SMM not allowed without USE_ESMF_LIB')
-#endif
-
+       call shr_sys_abort(subname//' ERROR: esmf SMM not supported')
     else
        ! MCT based SMM
        call mct_sMat_avMult(avp_i, sMatp, avp_o, VECTOR=mct_usevector)
     endif
-
 
     !--- renormalize avp_o by mapped norm_i  ---
 
