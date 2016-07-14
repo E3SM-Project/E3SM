@@ -110,8 +110,12 @@ class Case(object):
         self._env_files_that_need_rewrite.add(env_file)
 
     def read_xml(self, case_root):
-        expect(len(self._env_files_that_need_rewrite)==0,
-               "Case object has modifications that would be overwritten by read_xml")
+        if(len(self._env_files_that_need_rewrite)>0):
+            files = ""
+            for env_file in self._env_files_that_need_rewrite:
+                files += " "+env_file.filename
+            expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
+
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvRun(case_root))
         self._env_entryid_files.append(EnvBuild(case_root))
@@ -191,9 +195,9 @@ class Case(object):
         """
         Return info object for given item, return all info for all item if item is empty.
         """
-        
+
         logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
-        
+
         # Empty result list
         results = []
 
@@ -225,11 +229,11 @@ class Case(object):
                     for r in result :
                         if r['group'] == subgroup :
                             found.append(r)
-                    results += found        
-                else:                 
+                    results += found
+                else:
                     results = results + result
-                    
-        logger.debug("(get_values) Return value:  %s" , results )            
+
+        logger.debug("(get_values) Return value:  %s" , results )
         return results
 
 
@@ -275,8 +279,8 @@ class Case(object):
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
-                logger.debug("Will rewrite file %s",env_file.filename)
-                self.schedule_rewrite(env_file)
+                logger.debug("Will rewrite file %s %s",env_file.filename, item)
+                self._env_files_that_need_rewrite.add(env_file)
                 return result
         if result is None:
             if item in self.lookups.keys() and self.lookups[item] is not None:
