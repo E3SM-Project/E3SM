@@ -859,6 +859,8 @@ CONTAINS
         IF((XLAND(I)-1.5).GE.0)THEN                                            
 ! ww: EC version
           ZNT(I)=CZO*UST(I)*UST(I)/G+0.11*1.5E-5/UST(I)
+! ww: Add limit
+          ZNT(I)=MIN(ZNT(I),2.85e-3)
 !         ZNT(I)=CZO*UST(I)*UST(I)/G+OZO
 ! AHW: change roughness length, and hence the drag coefficients Ck and Cd
           IF ( PRESENT(ISFTCFLX) ) THEN
