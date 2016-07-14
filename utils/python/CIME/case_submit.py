@@ -66,6 +66,7 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
 
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
+    logger.warn("submit_jobs %s"%job)
     case.submit_jobs(no_batch=no_batch, job=job)
 
 def check_case(case, caseroot):

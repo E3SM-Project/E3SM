@@ -313,6 +313,12 @@ class EnvBatch(EnvBase):
         for arg in submit_arg_nodes:
             flag = arg.get("flag")
             name = arg.get("name")
+            if self.batchtype == "cobalt" and job == "case.st_archive":
+                if flag == "-n":
+                    name = 1
+                if flag == "--mode":
+                    continue
+
             if name is None:
                 submitargs+=" %s"%flag
             else:
@@ -344,9 +350,9 @@ class EnvBatch(EnvBase):
             startindex = alljobs.index(job)
 
         for index, job in enumerate(alljobs):
+            logger.debug( "Index %d job %s startindex %d"%(index, job, startindex))
             if index < startindex:
                 continue
-            logger.debug( "Index %d job %s"%(index, job))
             try:
                 prereq = case.get_resolved_value(self.get_value('prereq', subgroup=job))
                 prereq = eval(prereq)
@@ -354,6 +360,8 @@ class EnvBatch(EnvBase):
                 expect(False,"Unable to evaluate prereq expression '%s' for job '%s'"%(self.get_value('prereq',subgroup=job), job))
             if prereq:
                 jobs.append((job,self.get_value('dependency', subgroup=job)))
+            if self.batchtype == "cobalt":
+                break
         depid = {}
         for job, dependency in jobs:
             if dependency is not None:
@@ -377,9 +385,13 @@ class EnvBatch(EnvBase):
             if slen == 0:
                 jobid = None
 
+            logger.warn("job is %s"%job)
             depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch)
+            if self.batchtype == "cobalt":
+                break
 
     def submit_single_job(self, case, job, depid=None, no_batch=False):
+        logger.warn("Submit job %s"%job)
         caseroot = case.get_value("CASEROOT")
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:

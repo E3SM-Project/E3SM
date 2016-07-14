@@ -39,7 +39,7 @@
      <batch_directive></batch_directive>
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
-    <walltime_format>%H:%M:%S</walltime_format>
+     <walltime_format>%M</walltime_format>
      <submit_args>
        <arg flag="--cwd" name="CASEROOT"/>
        <arg flag="-A" name="PROJECT"/>
