@@ -44,6 +44,8 @@ class NCK(SystemTestsCommon):
                     if ( ntasks > 1 ):
                         self._case.set_value("NTASKS_%s"%comp, ntasks/2)
                         self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
+                    else:
+                        self._case.set_value("NINST_%s"%comp, 1)
             self._case.flush()
 
             case_setup(self._case, test_mode=True, reset=True)
