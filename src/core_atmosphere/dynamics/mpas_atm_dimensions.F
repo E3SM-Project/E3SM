@@ -32,6 +32,9 @@ module mpas_atm_dimensions
 
     subroutine mpas_atm_set_dims(nVertLevels_val, maxEdges_val, maxEdges2_val, num_scalars_val)
 
+        use mpas_kind_types, only : StrKIND
+        use mpas_io_units, only : stderrUnit
+
         implicit none
 
         integer, intent(in) :: nVertLevels_val
@@ -40,32 +43,59 @@ module mpas_atm_dimensions
         integer, intent(in) :: num_scalars_val
 
 #ifdef CONST_INNER_DIMS
+
+        integer :: nerrors
+        character(len=StrKIND) :: errbuf
+
+        nerrors = 0
+        write(errbuf,*) ''
+     
         if (nVertLevels /= nVertLevels_val) then
-            write(0,*) '********************************************************************************'
-            write(0,*) 'ERROR: Dimension nVertLevels read from input file does not match the value used'
-            write(0,*) '       when compiling MPAS-Atmosphere (CONST_NVERTLEVELS=', CONST_NVERTLEVELS ,')'
-            call mpas_dmpar_global_abort('********************************************************************************')
+            write(stderrUnit,'(a)') '********************************************************************************'
+            write(stderrUnit,'(a)') 'ERROR: Dimension nVertLevels read from input file does not match the value used'
+            write(stderrUnit,'(a)') '       when compiling MPAS-Atmosphere:'
+            write(stderrUnit,'(a,i4)') '       At compile, CONST_NVERTLEVELS=', CONST_NVERTLEVELS
+            write(stderrUnit,'(a,i4)') '       At runtime, nVertLevels=', nVertLevels_val
+            write(stderrUnit,'(a)') '********************************************************************************'
+            write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' nVertlevels: ', CONST_NVERTLEVELS, '/', nVertLevels_val, '    '
+            nerrors = nerrors + 1
         end if
 
         if (maxEdges /= maxEdges_val) then
-            write(0,*) '********************************************************************************'
-            write(0,*) 'ERROR: Dimension maxEdges read from input file does not match the value used'
-            write(0,*) '       when compiling MPAS-Atmosphere (CONST_MAXEDGES=', CONST_MAXEDGES ,')'
-            call mpas_dmpar_global_abort('********************************************************************************')
+            write(stderrUnit,'(a)')'********************************************************************************'
+            write(stderrUnit,'(a)')'ERROR: Dimension maxEdges read from input file does not match the value used'
+            write(stderrUnit,'(a)')'       when compiling MPAS-Atmosphere:'
+            write(stderrUnit,'(a,i4)')'       At compile, CONST_MAXEDGES=', CONST_MAXEDGES
+            write(stderrUnit,'(a,i4)')'       At runtime, maxEdges=', maxEdges_val
+            write(stderrUnit,'(a)') '********************************************************************************'
+            write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' maxEdges: ', CONST_MAXEDGES, '/', maxEdges_val, '    '
+            nerrors = nerrors + 1
         end if
 
         if (maxEdges2 /= maxEdges2_val) then
-            write(0,*) '********************************************************************************'
-            write(0,*) 'ERROR: Dimension maxEdges2 read from input file does not match the value used'
-            write(0,*) '       when compiling MPAS-Atmosphere (CONST_MAXEDGES2=', CONST_MAXEDGES2 ,')'
-            call mpas_dmpar_global_abort('********************************************************************************')
+            write(stderrUnit,'(a)')'********************************************************************************'
+            write(stderrUnit,'(a)')'ERROR: Dimension maxEdges2 read from input file does not match the value used'
+            write(stderrUnit,'(a)')'       when compiling MPAS-Atmosphere:'
+            write(stderrUnit,'(a,i4)')'       At compile, CONST_MAXEDGES2=', CONST_MAXEDGES2
+            write(stderrUnit,'(a,i4)')'       At runtime, maxEdges2=', maxEdges2_val
+            write(stderrUnit,'(a)') '********************************************************************************'
+            write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' maxEdges2: ', CONST_MAXEDGES2, '/', maxEdges2_val, '    '
+            nerrors = nerrors + 1
         end if
 
         if (num_scalars /= num_scalars_val) then
-            write(0,*) '********************************************************************************'
-            write(0,*) 'ERROR: Number of scalars read from input file does not match the value used'
-            write(0,*) '       when compiling MPAS-Atmosphere (CONST_NUM_SCALARS=', CONST_NUM_SCALARS ,')'
-            call mpas_dmpar_global_abort('********************************************************************************')
+            write(stderrUnit,'(a)')'********************************************************************************'
+            write(stderrUnit,'(a)')'ERROR: Number of scalars read from input file does not match the value used'
+            write(stderrUnit,'(a)')'       when compiling MPAS-Atmosphere:'
+            write(stderrUnit,'(a,i4)')'       At compile, CONST_NUM_SCALARS=', CONST_NUM_SCALARS
+            write(stderrUnit,'(a,i4)')'       At runtime, num_scalars=', num_scalars_val
+            write(stderrUnit,'(a)') '********************************************************************************'
+            write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' num_scalars: ', CONST_NUM_SCALARS, '/', num_scalars_val, '    '
+            nerrors = nerrors + 1
+        end if
+
+        if (nerrors > 0) then
+            call mpas_dmpar_global_abort(trim(errbuf))
         end if
 #else
         nVertLevels = nVertLevels_val
