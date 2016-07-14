@@ -60,7 +60,7 @@ module module_cu_tiedtke
 
      real,private :: r5alvcp,r5alscp,ralvdcp,ralsdcp,ralfdcp,rtwat,rtber,rtice 
      real,private :: entrdd,cmfcmax,cmfcmin,cmfdeps,zdnoprc,cprcon
-     integer,private :: ntrigger,momtrans,p950,p650
+     integer,private :: momtrans,p950,p650
 
      parameter(         &
       rcpd=1.0/cpd,     &
@@ -84,10 +84,10 @@ module module_cu_tiedtke
       rtice=tmelt-23.,            &
       vtmpc1=rv/rd-1.0 )
 !
-!     entrdd: average entrainment & detrainment rate for downdrafts
+!     jntrdd: average entrainment & detrainment rate for downdrafts
 !     ------
 !
-      parameter(entrdd = 3.0e-4)
+      parameter(entrdd = 2.0e-4)
 !
 !     cmfcmax:   maximum massflux value allowed for updrafts etc
 !     -------
@@ -104,7 +104,7 @@ module module_cu_tiedtke
 !
       parameter(cmfdeps = 0.30)
 
-!     zdnoprc:   deep cloud is thicker than this height
+!     zdnoprc:   deep cloud is thicker than this height (Unit:Pa)
 !
       parameter(zdnoprc = 2.0e4)
 !     -------
@@ -149,7 +149,7 @@ contains
                  dt,itimestep,stepcu                            &
                 ,raincv,pratec,qfx,hfx                          &
                 ,u3d,v3d,w,t3d,qv3d,qc3d,qi3d,pi3d,rho3d        &
-                ,qnvften,thften                                  &
+                ,qvften,thften                                  &
                 ,dz8w,pcps,p8w,xland,cu_act_flag,dx             &
                 ,ids,ide, jds,jde, kds,kde                      &
                 ,ims,ime, jms,jme, kms,kme                      &
@@ -173,8 +173,8 @@ contains
 !-- p8w         3d hydrostatic pressure at full levels (pa)
 !-- pcps        3d hydrostatic pressure at half levels (pa)
 !-- pi3d        3d exner function (dimensionless)
-!-- qvften      3d total advective moisture tendency (kg kg-1 s-1)
-!-- thften      3d total advective temperature tendency (k s-1)
+!-- qvften      3d total advective + PBL moisture tendency (kg kg-1 s-1)
+!-- thften      3d total advective + PBL + radiative temperature tendency (k s-1)
 !-- rthcuten      theta tendency due to 
 !                 cumulus scheme precipitation (k/s)
 !-- rucuten       u wind tendency due to 
@@ -791,7 +791,7 @@ contains
       real     pmflxr(klon,klevp1),    pmflxs(klon,klevp1)
       real     zhcbase(klon),& 
      &         zmfub(klon),            zmfub1(klon),&
-     &         zdqpbl(klon),           zdhpbl(klon)          
+     &         zdhpbl(klon)          
       real     zsfl(klon),             zdpmel(klon,klev),&
      &         pcte(klon,klev),        zcape(klon),&
      &         zcape1(klon),           zcape2(klon),&
@@ -1153,6 +1153,17 @@ contains
       end if
     end do
 
+    if ( .not. lmfscv .or. .not. lmfpen ) then
+      do jl = 1,klon
+        llo2(jl) = .false.
+        if ( (.not. lmfscv .and. ktype(jl) == 2) .or. &
+             (.not. lmfpen .and. ktype(jl) == 1) ) then
+          llo2(jl) = .true.
+          ldcum(jl) = .false.
+        end if
+      end do
+    end if
+
 !*   6.7  set downdraft mass fluxes to zero above cloud top
 !----------------------------------------------------
     do jl = 1,klon
@@ -1200,7 +1211,7 @@ contains
       call cudtdqn(klon,klev,itopm2,kctop,idtop,ldcum,loddraf, &
                  ztmst,paph,zgeoh,pgeo,pten,ztenh,pqen,zqenh,pqsen,     &
                  zlglac,plude,pmfu,pmfd,zmfus,zmfds,zmfuq,zmfdq,zmful,   &
-                 zdmfup,zdpmel,ptte,pqte,pcte)
+                 zdmfup,zdmfdp,zdpmel,ptte,pqte,pcte)
 !----------------------------------------------------------------
 !*    9.0      update tendencies for u and u in subroutine cududv
 !----------------------------------------------------------------
@@ -1339,6 +1350,31 @@ contains
         end do
 
       end if
+
+!----------------------------------------------------------------------
+!*   10.           IN CASE THAT EITHER DEEP OR SHALLOW IS SWITCHED OFF
+! NEED TO SET SOME VARIABLES A POSTERIORI TO ZERO
+! ---------------------------------------------------
+    if ( .not. lmfscv .or. .not. lmfpen ) then
+      do jk = 2 , klev
+        do jl = 1, klon
+          if ( llo2(jl) .and. jk >= kctop(jl)-1 ) then
+            ptu(jl,jk) = pten(jl,jk)
+            pqu(jl,jk) = pqen(jl,jk)
+            plu(jl,jk) = 0.
+            pmfude_rate(jl,jk) = 0.
+            pmfdde_rate(jl,jk) = 0.
+          end if
+        end do
+      end do
+      do jl = 1, klon
+        if ( llo2(jl) ) then
+          kctop(jl) = klev - 1
+          kcbot(jl) = klev - 1
+        end if
+      end do
+    end if
+
       return
       end subroutine cumastrn
 
@@ -1405,10 +1441,13 @@ contains
       do jl=1,klon
         ptenh(jl,jk)=(max(cpd*pten(jl,jk-1)+pgeo(jl,jk-1), &
      &             cpd*pten(jl,jk)+pgeo(jl,jk))-pgeoh(jl,jk))*rcpd
+        pqenh(jl,jk) = pqen(jl,jk-1)
         pqsenh(jl,jk)= pqsen(jl,jk-1)
         zph(jl)=paph(jl,jk)
         loflag(jl)=.true.
       end do
+
+      if ( jk >= klev-1 .or. jk < 2 ) cycle
       ik=jk
       icall=0
       call cuadjtqn(klon,klev,ik,zph,ptenh,pqsenh,loflag,icall)
@@ -1576,7 +1615,6 @@ contains
         ldcum(jl)=.false.
       end do
 
-      if(lmfscv) then
 !-----------------------------------------------------------
 ! let's do test,and check the shallow convection first
 ! the first level is klev
@@ -1765,9 +1803,6 @@ contains
        end do
       end do
       
-      end if ! if activate shallow convection
-
-      if(lmfpen) then
 !-----------------------------------------------------------
 ! next, let's check the deep convection
 ! the first level is klevm1-1
@@ -1861,8 +1896,8 @@ contains
         do jl=1,klon
            if(loflag(jl)) then
 ! define the fscale
-             fscale = min(1.,(pqsen(jl,jk)/pqsen(jl,klev))**3)
-             eta(jl) = 0.8*1.75e-3*fscale
+             fscale = min(1.,(pqsen(jl,jk)/pqsen(jl,levels))**3)
+             eta(jl) = 1.75e-3*fscale
              dz(jl)  = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
              coef(jl)= 0.5*eta(jl)*dz(jl)
              dhen(jl,jk) = pgeoh(jl,jk) + cpd*ptenh(jl,jk)
@@ -1992,7 +2027,6 @@ contains
 
       end do ! end all cycles
 
-      end if ! end actiavating deep convection
       return
       end subroutine cutypen
 
@@ -2356,7 +2390,7 @@ contains
               end if
             end if
             if ( klab(jl,jk+1) == 2 ) then
-              if ( zbuo(jl,jk) < 0. .and. klab(jl,jk+1) == 2 ) then
+              if ( zbuo(jl,jk) < 0. ) then
                 ptenh(jl,jk) = 0.5*(pten(jl,jk)+pten(jl,jk-1))
                 pqenh(jl,jk) = 0.5*(pqen(jl,jk)+pqen(jl,jk-1))
                 zbuo(jl,jk) = zbc - ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk))
@@ -2375,7 +2409,7 @@ contains
               end if
               kup(jl,jk) = (kup(jl,jk+1)*(1.-zdken)+zdkbuo) / &
                            (1.+zdken)
-              if ( zbuo(jl,jk) < 0. .and. klab(jl,jk+1) == 2 ) then
+              if ( zbuo(jl,jk) < 0. ) then
                 zkedke = kup(jl,jk)/max(1.e-10,kup(jl,jk+1))
                 zkedke = max(0.,min(1.,zkedke))
                 zmfun = sqrt(zkedke)*pmfu(jl,jk+1)
@@ -2383,7 +2417,7 @@ contains
                 plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
                 pmfu(jl,jk) = pmfu(jl,jk+1) + zdmfen(jl) - zdmfde(jl)
               end if
-              if ( zbuo(jl,jk) >-0.2 .and. klab(jl,jk+1) == 2 ) then
+              if ( zbuo(jl,jk) > 0. ) then
                 ikb = kcbot(jl)
                 zoentr(jl) = 1.75e-3*(0.3-(min(1.,pqen(jl,jk-1) /    &
                   pqsen(jl,jk-1))-1.))*(pgeoh(jl,jk-1)-pgeoh(jl,jk)) * &
@@ -2431,7 +2465,9 @@ contains
               zdshrd = 3.e-4
             end if
             ikb=kcbot(jl)
+! ww: allowing cloud water to change to rain water at all cloud levels when cloud water > zdshrd
             if ( plu(jl,jk) > zdshrd .and.(paph(jl,ikb)-paph(jl,jk))>zdnoprc)then
+!           if ( plu(jl,jk) > zdshrd ) then
               zwu = min(15.0,sqrt(2.*max(0.1,kup(jl,jk+1))))
               zprcon = zprcdgw/(0.75*zwu)
 ! PARAMETERS FOR BERGERON-FINDEISEN PROCESS (T < -5C)
@@ -3109,7 +3145,7 @@ contains
             pmfuq(jl,jk)=pmfuq(jl,jk)-pmfu(jl,jk)*pqenh(jl,jk)
             plglac(jl,jk)=pmfu(jl,jk)*plglac(jl,jk)
             llddraf = lddraf(jl) .and. jk >= kdtop(jl)
-            if ( llddraf ) then
+            if ( llddraf .and.jk.ge.kdtop(jl)) then
               pmfds(jl,jk) = pmfds(jl,jk)-pmfd(jl,jk) * &
                            (cpd*ptenh(jl,jk)+pgeoh(jl,jk))
               pmfdq(jl,jk) = pmfdq(jl,jk)-pmfd(jl,jk)*pqenh(jl,jk)
@@ -3286,7 +3322,7 @@ contains
      subroutine cudtdqn(klon,klev,ktopm2,kctop,kdtop,ldcum, &
                      lddraf,ztmst,paph,pgeoh,pgeo,pten,ptenh,pqen,  &
                      pqenh,pqsen,plglac,plude,pmfu,pmfd,pmfus,pmfds, &
-                     pmfuq,pmfdq,pmful,pdmfup,pdpmel,ptent,ptenq,pcte)
+                     pmfuq,pmfdq,pmful,pdmfup,pdmfdp,pdpmel,ptent,ptenq,pcte)
     implicit none
     integer  klon,klev,ktopm2
     integer  kctop(klon),  kdtop(klon)
@@ -3301,14 +3337,14 @@ contains
              pmfus(klon,klev),  pmfds(klon,klev),&
              pmfuq(klon,klev),  pmfdq(klon,klev),&
              pmful(klon,klev),  pdmfup(klon,klev),&
-             pdpmel(klon,klev)
+             pdpmel(klon,klev), pdmfdp(klon,klev)
     real     ptent(klon,klev),  ptenq(klon,klev)
     real     pcte(klon,klev)
 
 ! local variables
     integer  jk , ik , jl
     real     zalv , zzp
-    real     zmfus(klon,klev) , zmfuq(klon,klev) 
+    real     zmfus(klon,klev) , zmfuq(klon,klev)
     real     zmfds(klon,klev) , zmfdq(klon,klev)
     real     zdtdt(klon,klev) , zdqdt(klon,klev) , zdp(klon,klev)
     !*    1.0          SETUP AND INITIALIZATIONS
@@ -3335,10 +3371,10 @@ contains
             zdtdt(jl,jk) = zdp(jl,jk)*rcpd * &
               (zmfus(jl,jk+1)-zmfus(jl,jk)+zmfds(jl,jk+1) - &
                zmfds(jl,jk)+alf*plglac(jl,jk)-alf*pdpmel(jl,jk) - &
-               zalv*(pmful(jl,jk+1)-pmful(jl,jk)-plude(jl,jk)-pdmfup(jl,jk)))
+               zalv*(pmful(jl,jk+1)-pmful(jl,jk)-plude(jl,jk)-pdmfup(jl,jk)-pdmfdp(jl,jk)))
             zdqdt(jl,jk) = zdp(jl,jk)*(zmfuq(jl,jk+1) - &
               zmfuq(jl,jk)+zmfdq(jl,jk+1)-zmfdq(jl,jk)+pmful(jl,jk+1) - &
-              pmful(jl,jk)-plude(jl,jk)-pdmfup(jl,jk))
+              pmful(jl,jk)-plude(jl,jk)-pdmfup(jl,jk)-pdmfdp(jl,jk))
           end if
         end do
       else
@@ -3347,9 +3383,9 @@ contains
             zalv = foelhm(pten(jl,jk))
             zdtdt(jl,jk) = -zdp(jl,jk)*rcpd * &
               (zmfus(jl,jk)+zmfds(jl,jk)+alf*pdpmel(jl,jk) - &
-               zalv*(pmful(jl,jk)+pdmfup(jl,jk)))
+               zalv*(pmful(jl,jk)+pdmfup(jl,jk)+pdmfdp(jl,jk)))
             zdqdt(jl,jk) = -zdp(jl,jk)*(zmfuq(jl,jk) + &
-              zmfdq(jl,jk)+(pmful(jl,jk)+pdmfup(jl,jk)))
+              zmfdq(jl,jk)+(pmful(jl,jk)+pdmfup(jl,jk)+pdmfdp(jl,jk)))
           end if
         end do
       end if
@@ -3362,7 +3398,7 @@ contains
        if ( ldcum(jl) ) then
          ptent(jl,jk) = ptent(jl,jk) + zdtdt(jl,jk)
          ptenq(jl,jk) = ptenq(jl,jk) + zdqdt(jl,jk)
-         pcte(jl,jk)  = zdp(jl,jk)*plude(jl,jk) 
+         pcte(jl,jk)  = zdp(jl,jk)*plude(jl,jk)
        end if
      end do
     end do
