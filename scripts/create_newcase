@@ -135,41 +135,39 @@ def _main_func():
 ###############################################################################
     cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
 
-    case, compset, grid, machine, compiler, \
+    caseroot, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, user_mods_dir, user_compset, pesfile, \
         user_grid, gridfile, srcroot, test, ninst, walltime \
         = parse_command_line(sys.argv, cimeroot)
 
-    caseroot = os.path.abspath(case)
-    case = os.path.basename(case)
+    caseroot = os.path.abspath(caseroot)
 
     # create_test creates the caseroot before calling create_newcase
     # otherwise throw an error if this directory exists
     expect(not (os.path.exists(caseroot) and not test),
            "Case directory %s already exists"%caseroot)
 
-    # Set the case object
-    caseobj = Case(caseroot)
+    with Case(caseroot, read_only=False) as case:
+        # Set values for env_case.xml
+        case.set_value("CASE", os.path.basename(caseroot))
+        case.set_value("CASEROOT", caseroot)
+        case.set_value("SRCROOT", srcroot)
 
-    # Set values for env_case.xml
-    caseobj.set_value("CASE", os.path.basename(case))
-    caseobj.set_value("CASEROOT", caseroot)
-    caseobj.set_value("SRCROOT", srcroot)
+        # Configure the Case
+        case.configure(compset, grid, machine_name=machine, project=project,
+                          pecount=pecount, compiler=compiler, mpilib=mpilib,
+                          user_compset=user_compset, pesfile=pesfile,
+                          user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                          walltime=walltime)
 
-    # Configure the Case
-    caseobj.configure(compset, grid, machine_name=machine, project=project,
-                      pecount=pecount, compiler=compiler, mpilib=mpilib,
-                      user_compset=user_compset, pesfile=pesfile,
-                      user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                      walltime=walltime)
+        case.create_caseroot()
 
-    caseobj.create_caseroot()
+        # Write out the case files
+        case.flush(flushall=True)
 
-    # Write out the case files
-    caseobj.flush(flushall=True)
+        case.apply_user_mods(user_mods_dir)
 
-    caseobj.apply_user_mods(user_mods_dir)
     # Copy env_case.xml into LockedFiles
     copyfile(os.path.join(caseroot,"env_case.xml"),
              os.path.join(caseroot,"LockedFiles","env_case.xml"))
