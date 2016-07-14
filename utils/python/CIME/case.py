@@ -62,7 +62,7 @@ class Case(object):
     by reading and interpreting the CIME config classes.
 
     """
-    def __init__(self, case_root=None):
+    def __init__(self, case_root=None, read_only=True):
 
         if case_root is None:
             case_root = os.getcwd()
@@ -70,6 +70,7 @@ class Case(object):
         logger.debug("Initializing Case.")
         self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
+        self._force_read_only = read_only
         self.read_xml(case_root)
 
         # Hold arbitary values. In create_newcase we may set values
@@ -93,7 +94,8 @@ class Case(object):
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
     def __enter__(self):
-        self._read_only_mode = False
+        if not self._force_read_only:
+            self._read_only_mode = False
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):

@@ -66,7 +66,7 @@ def _main_func():
     expect(os.path.isdir(cloneroot),
            "Missing cloneroot directory %s " % cloneroot)
 
-    with Case(cloneroot) as clone:
+    with Case(cloneroot, read_only=False) as clone:
         clone.create_clone(case, keepexe, mach_dir, project)
 
 ###############################################################################

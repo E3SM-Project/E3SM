@@ -871,7 +871,7 @@ class TestCimeCase(TestCreateTestCommon):
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
-        with Case(casedir) as case:
+        with Case(casedir, read_only=False) as case:
             build_complete = case.get_value("BUILD_COMPLETE")
             self.assertFalse(build_complete,
                              msg="Build complete had wrong value '%s'" %

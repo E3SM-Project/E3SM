@@ -56,7 +56,7 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, job, no_batch, prereq = parse_command_line(sys.argv, description)
-    with Case(caseroot) as case:
+    with Case(caseroot, read_only=False) as case:
         submit(case, job=job, no_batch=no_batch, prereq_jobid=prereq)
 
 if __name__ == "__main__":

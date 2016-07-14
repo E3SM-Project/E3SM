@@ -529,7 +529,7 @@ class SystemTest(object):
         shutil.copy(os.path.join(test_dir,"env_run.xml"),
                     os.path.join(lockedfiles, "env_run.orig.xml"))
 
-        with Case(test_dir) as case:
+        with Case(test_dir, read_only=False) as case:
             case.set_value("SHAREDLIBROOT",
                            os.path.join(self._test_root,
                                         "sharedlibroot.%s"%self._test_id))

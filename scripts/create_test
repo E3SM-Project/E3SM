@@ -256,7 +256,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     testcase_dirs = glob.glob("%s/*%s*/TestStatus" % (test_root, test_id))
     expect(testcase_dirs, "No test case dirs found!?")
     first_case = os.path.abspath(os.path.dirname(testcase_dirs[0]))
-    with Case(first_case) as case:
+    with Case(first_case, read_only=False) as case:
         env_batch = case._get_env("batch")
 
         directives = env_batch.get_batch_directives(case, "case.run", raw=True)
