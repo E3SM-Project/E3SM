@@ -18,7 +18,7 @@ class PFS(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
 
     def run(self):
-        self._case_set_value("STOP_OPTION", "ndays")
+        self._case.set_value("STOP_OPTION", "ndays")
         self._case.set_value("STOP_N", 20)
         self._case.set_value("REST_OPTION","none")
         self._case.set_value("CONTINUE_RUN", False)
