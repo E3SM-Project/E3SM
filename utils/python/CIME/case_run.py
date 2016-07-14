@@ -5,19 +5,19 @@ from CIME.XML.files                 import Files
 from CIME.XML.component             import Component
 from CIME.XML.machines              import Machines
 from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd, append_status
+from CIME.utils                     import expect, get_model, run_cmd, append_status, touch
 from CIME.XML.env_mach_specific import EnvMachSpecific
-from CIME.utils                     import expect
+from CIME.utils                     import expect, gzip_existing_file
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.preview_namelists         import preview_namelists
 from CIME.task_maker                import TaskMaker
 
-import gzip, shutil, time, sys, os
+import gzip, shutil, time, sys, os, getpass, tarfile, glob, signal
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def preRunCheck(case):
+def pre_run_check(case):
 ###############################################################################
 
     # Pre run initialization code..
@@ -82,7 +82,7 @@ def preRunCheck(case):
     logger.info( "-------------------------------------------------------------------------")
 
 ###############################################################################
-def runModel(case):
+def run_model(case):
 ###############################################################################
 
     # Set OMP_NUM_THREADS
@@ -103,7 +103,7 @@ def runModel(case):
     logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
 ###############################################################################
-def postRunCheck(case, lid):
+def post_run_check(case, lid):
 ###############################################################################
 
     caseroot = case.get_value("CASEROOT")
@@ -137,7 +137,162 @@ def postRunCheck(case, lid):
                 expect (False, msg)
 
 ###############################################################################
-def getTimings(case, lid):
+def _get_batch_job_id(case):
+###############################################################################
+    mach = case.get_value("MACH")
+    if mach == 'titan':
+        return os.environ("PBS_JOBID")
+    elif mach in ['edison', 'corip1']:
+        return os.environ("SLURM_JOB_ID")
+    elif mach == 'mira':
+        return os.environ("COBALT_JOBID")
+    else:
+        return None
+
+###############################################################################
+def save_timing_setup_acme(case, lid):
+###############################################################################
+    if not case.get_value("SAVE_TIMING") or case.get_value("MODEL") != "acme":
+        return
+
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
+    if timing_dir is None:
+        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
+        return
+
+    rundir = case.get_value("RUNDIR")
+    caseroot = case.get_value("CASEROOT")
+    cimeroot = case.get_value("CIMEROOT")
+    base_case = case.get_value("CASEBASEID")
+    full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
+    expect(not os.path.exists(full_timing_dir), "%s already exists" % full_timing_dir)
+
+    os.makedirs(full_timing_dir)
+    mach = case.get_value("MACH")
+    compiler = case.get_value("COMPILER")
+
+    # For some batch machines save queue info
+    job_id = _get_batch_job_id(case)
+    if mach == "mira":
+        for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
+            run_cmd("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
+            gzip_existing_file(os.path.join(full_timing_dir, filename))
+    elif mach == ["corip1", "edison"]:
+        for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
+            run_cmd("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
+            gzip_existing_file(os.path.join(full_timing_dir, filename))
+    elif mach == "titan":
+        for cmd, filename in [("xtdb2proc -f xtdb2proc", "xtdb2procf"),
+                              ("qstat -f > qstat", "qstatf"),
+                              ("qstat -f %s > qstatf_jobid" % job_id, "qstatf_jobid"),
+                              ("xtnodestat > xtnodestat", "xtnodestatf"),
+                              ("showq > showqf", "showqf")]:
+            run_cmd(cmd, from_dir=full_timing_dir)
+            gzip_existing_file(os.path.join(full_timing_dir, filename))
+
+        mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce")
+        run_cmd("./mdiag_reduce.csh > %s" % mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
+        gzip_existing_file(mdiag_reduce)
+
+    # copy/tar SourceModes
+    source_mods_dir = os.path.join(caseroot, "SourceMods")
+    if os.path.isdir(source_mods_dir):
+        with tarfile.open(os.path.join(full_timing_dir, "SourceMods.tar.gz"), "w:gz") as tfd:
+            tfd.add(source_mods_dir)
+
+    # Save various case configuration items
+    case_docs = os.path.join(full_timing_dir, "CaseDocs")
+    os.mkdir(case_docs)
+    globs_to_copy = [
+        "CaseDocs/*",
+        "*.run",
+        "*.xml",
+        "user_nl_*",
+        "*env_mach_specific*",
+        "Macros",
+        "README.case",
+        "Depends.%s" % mach,
+        "Depends.%s" % compiler,
+        "Depends.%s.%s" % (mach, compiler),
+        "software_environment.txt"
+        ]
+    for glob_to_copy in globs_to_copy:
+        for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
+            shutil.copy(item, case_docs)
+
+    if job_id is not None:
+        sample_interval = case.get_value("SYSLOG_N")
+        if sample_interval > 0:
+            archive_checkpoints = os.path.join(full_timing_dir, "checkpoints")
+            os.mkdir(archive_checkpoints)
+            touch("%s/acme.log.%s" % (rundir, lid))
+            syslog_jobid = run_cmd("./mach_syslog %d %s %s %s %s/timing/checkpoints %s/checkpoints >& /dev/null & echo $!" % (sample_interval, job_id, lid, rundir, rundir, archive_checkpoints), from_dir=os.path.join(caseroot, "Tools"))
+            with open(os.path.join(rundir, "syslog_jobid", ".%s" % job_id), "w") as fd:
+                fd.write("%s\n" % syslog_jobid)
+
+    # Save state of repo
+    run_cmd("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE"), from_dir=cimeroot)
+
+###############################################################################
+def save_timing_cesm(case, lid):
+###############################################################################
+    rundir = case.get_value("RUNDIR")
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
+    timing_dir = os.path.join(timing_dir, case.get_value("CASE"))
+    shutil.move(os.path.join(rundir,"timing"),
+                os.path.join(timing_dir,"timing."+lid))
+
+###############################################################################
+def save_timing_acme(case, lid):
+###############################################################################
+    rundir = case.get_value("RUNDIR")
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
+    caseroot = case.get_value("CASEROOT")
+    mach = case.get_value("MACH")
+    base_case = case.get_value("CASEBASEID")
+    full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
+
+    # Kill mach_syslog
+    job_id = _get_batch_job_id(case)
+    if job_id is not None:
+        syslog_jobid_path = os.path.join(rundir, "syslog_jobid", ".%s" % job_id)
+        if os.path.exists(syslog_jobid_path):
+            try:
+                with open(syslog_jobid_path, "r") as fd:
+                    syslog_jobid = int(fd.read().strip())
+                os.kill(syslog_jobid, signal.SIGTERM)
+            except (ValueError, OSError) as e:
+                logger.warning("Failed to kill syslog: %s" % e)
+            finally:
+                os.remove(syslog_jobid_path)
+
+    # copy/tar timings
+    with tarfile.open(os.path.join(full_timing_dir, "timing.tar.gz"), "w:gz") as tfd:
+        tfd.add(os.path.join(rundir, "timing"))
+
+    #
+    # save output files and logs
+    #
+    globs_to_copy = []
+    if mach == "titan":
+        globs_to_copy.append("%s*OU" % job_id)
+    elif mach == "mira":
+        globs_to_copy.append("%s*output" % job_id)
+        globs_to_copy.append("%s*cobaltlog" % job_id)
+    elif mach in ["edison", "corip1"]:
+        globs_to_copy.append("%s" % case.get_value("CASE"))
+
+    globs_to_copy.append("logs/acme.log.%s.gz" % lid)
+    globs_to_copy.append("logs/cpl.log.%s.gz" % lid)
+    globs_to_copy.append("timing/*.%s" % lid)
+    globs_to_copy.append("CaseStatus")
+
+    for glob_to_copy in globs_to_copy:
+        for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
+            shutil.copy(item, full_timing_dir)
+
+###############################################################################
+def get_timings(case, lid):
 ###############################################################################
     check_timing = case.get_value("CHECK_TIMING")
     if check_timing:
@@ -150,27 +305,25 @@ def getTimings(case, lid):
         cmd = "%s -lid %s " %(os.path.join(caseroot,"Tools","getTiming"), lid)
         run_cmd(cmd)
 
-        # save the timing files if desired
+        # save the timing files if desired. Some of the details here are
+        # model dependent.
+        model = case.get_value("MODEL")
         save_timing = case.get_value("SAVE_TIMING")
         if save_timing:
-            rundir = case.get_value("RUNDIR")
-            shutil.move(os.path.join(rundir,"timing"),
-                        os.path.join(rundir,"timing."+lid))
+            if model == "acme":
+                save_timing_acme(case, lid)
+            else:
+                save_timing_cesm(case, lid)
 
         # compress relevant timing files
         logger.info( "gzipping timing stats.." )
-        model = case.get_value("MODEL")
         timingfile = os.path.join(timingDir, model + "_timing_stats." + lid)
-        with open(timingfile, 'rb') as f_in:
-            with gzip.open(timingfile + '.gz', 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        os.remove(timingfile)
+        gzip_existing_file(timingfile)
         logger.info("Done with timings")
 
 ###############################################################################
-def saveLogs(case, lid):
+def save_logs(case, lid):
 ###############################################################################
-
     logdir = case.get_value("LOGDIR")
     if logdir is not None and len(logdir) > 0:
         if not os.path.isdir(logdir):
@@ -192,17 +345,12 @@ def saveLogs(case, lid):
         for comp in comps:
             logfile = os.path.join(rundir, comp + '.log.' + lid)
             if os.path.isfile(logfile):
-                with open(logfile, 'r') as f_in:
-                    with gzip.open(logfile + '.gz', 'wb') as f_out:
-                        f_out.writelines(f_in)
-
-                os.remove(logfile)
-                logfile_copy = logfile + '.gz'
-                shutil.copy(logfile_copy,
-                            os.path.join(caseroot, logdir, os.path.basename(logfile_copy)))
+                logfile_gz = gzip_existing_file(logfile)
+                shutil.copy(logfile_gz,
+                            os.path.join(caseroot, logdir, os.path.basename(logfile_gz)))
 
 ###############################################################################
-def resubmitCheck(case):
+def resubmit_check(case):
 ###############################################################################
 
     # check to see if we need to do resubmission from this particular job,
@@ -229,7 +377,7 @@ def resubmitCheck(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def DoDataAssimilation(case, da_script, lid):
+def do_data_assimilation(case, da_script, lid):
 ###############################################################################
     cmd = da_script + "1> da.log.%s 2>&1" %(lid)
     logger.debug("running %s" %da_script)
@@ -255,15 +403,17 @@ def case_run(case):
     lid = time.strftime("%y%m%d-%H%M%S")
     os.environ["LID"] = lid
 
-    for _ in range(data_assimilation_cycles):
-        preRunCheck(case)
-        runModel(case)
-        postRunCheck(case, lid)
-        saveLogs(case, lid)       # Copy log files back to caseroot
-        getTimings(case, lid)     # Run the getTiming script
-        if data_assimilation:
-           DoDataAssimilation(case, data_assimilation_script, lid)
+    save_timing_setup_acme(case, lid)
 
-    resubmitCheck(case)
+    for _ in range(data_assimilation_cycles):
+        pre_run_check(case)
+        run_model(case)
+        post_run_check(case, lid)
+        save_logs(case, lid)       # Copy log files back to caseroot
+        get_timings(case, lid)     # Run the getTiming script
+        if data_assimilation:
+            do_data_assimilation(case, data_assimilation_script, lid)
+
+    resubmit_check(case)
 
     return True

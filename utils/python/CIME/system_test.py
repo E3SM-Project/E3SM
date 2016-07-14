@@ -44,10 +44,12 @@ class SystemTest(object):
                  project=None, parallel_jobs=None,
                  xml_machine=None, xml_compiler=None, xml_category=None,
                  xml_testlist=None, walltime=None, proc_pool=None,
-                 use_existing=False):
+                 use_existing=False, save_timing=False):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
+
+        self._save_timing = save_timing
 
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
@@ -533,6 +535,8 @@ class SystemTest(object):
         case.set_value("SHAREDLIBROOT",
                        os.path.join(self._test_root,
                                     "sharedlibroot.%s"%self._test_id))
+        if self._save_timing:
+            case.set_value("SAVE_TIMING", True)
 
         envtest.set_initial_values(case)
         return True

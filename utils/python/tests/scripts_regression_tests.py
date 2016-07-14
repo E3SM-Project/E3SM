@@ -918,6 +918,27 @@ class TestSingleSubmit(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
+class TestSaveTimings(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def test_save_timings(self):
+    ###########################################################################
+        create_test_cmd =  "%s/create_test SMS_Ln9_Mmpi-serial.f19_g16_rx1.A --save-timing --walltime 0:15:00 -t %s" % (SCRIPT_DIR, self._baseline_name)
+        if NO_BATCH:
+            create_test_cmd += " --no-batch"
+
+        stat, output, errput = run_cmd(create_test_cmd, ok_to_fail=True)
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+        if (self._hasbatch):
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
+                                           ok_to_fail=True, from_dir=self._testroot)
+            self.assertEqual(stat, 0,
+                             msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+###############################################################################
 class TestXMLQuery(unittest.TestCase):
 # Testing command line scripts
 ###############################################################################

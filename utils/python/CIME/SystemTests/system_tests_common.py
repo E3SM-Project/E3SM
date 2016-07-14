@@ -84,6 +84,7 @@ class SystemTestsCommon(object):
             # being marked FAIL
             success = False
             self._runstatus = "FAIL"
+            logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
 
         return success
 
