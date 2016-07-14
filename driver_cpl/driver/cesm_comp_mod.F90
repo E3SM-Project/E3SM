@@ -43,16 +43,6 @@ module cesm_comp_mod
    ! component model interfaces (init, run, final methods)
    !----------------------------------------------------------------------------
 
-#ifdef ESMF_INTERFACE
-   use atm_comp_esmf , only: atm_register_esmf
-   use lnd_comp_esmf , only: lnd_register_esmf
-   use ocn_comp_esmf , only: ocn_register_esmf
-   use ice_comp_esmf , only: ice_register_esmf
-   use glc_comp_esmf , only: glc_register_esmf
-   use wav_comp_esmf , only: wav_register_esmf
-   use rof_comp_esmf , only: rof_register_esmf
-   use esp_comp_esmf , only: esp_register_esmf
-#else
    use atm_comp_mct  , only: atm_init=>atm_init_mct, atm_run=>atm_run_mct, atm_final=>atm_final_mct
    use lnd_comp_mct  , only: lnd_init=>lnd_init_mct, lnd_run=>lnd_run_mct, lnd_final=>lnd_final_mct
    use ocn_comp_mct  , only: ocn_init=>ocn_init_mct, ocn_run=>ocn_run_mct, ocn_final=>ocn_final_mct
@@ -61,7 +51,6 @@ module cesm_comp_mod
    use wav_comp_mct  , only: wav_init=>wav_init_mct, wav_run=>wav_run_mct, wav_final=>wav_final_mct
    use rof_comp_mct  , only: rof_init=>rof_init_mct, rof_run=>rof_run_mct, rof_final=>rof_final_mct
    use esp_comp_mct  , only: esp_init=>esp_init_mct, esp_run=>esp_run_mct, esp_final=>esp_final_mct
-#endif
 
    !----------------------------------------------------------------------------
    ! cpl7 modules
@@ -81,11 +70,8 @@ module cesm_comp_mod
     use seq_comm_mct, only: num_inst_total, num_inst_max
     use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
     use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
-    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
-    use seq_comm_mct, only: seq_comm_petlist
-#ifdef USE_ESMF_LIB
-    use seq_comm_mct, only: seq_comm_setcompstates
-#endif
+    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs 
+    use seq_comm_mct, only: seq_comm_petlist 
 
    ! clock & alarm routines and variables
    use seq_timemgr_mod, only: seq_timemgr_type
@@ -164,10 +150,6 @@ module cesm_comp_mod
    use component_mod      , only: component_init_cc, component_init_cx, component_run, component_final
    use component_mod      , only: component_init_areacor, component_init_aream
    use component_mod      , only: component_exch, component_diag
-#ifdef ESMF_INTERFACE
-   use component_mod      , only: component_init_update_petlist
-   use cpl_comp_esmf
-#endif
 
    ! prep routines (includes mapping routines between components and merging routines)
    use prep_lnd_mod
@@ -191,17 +173,9 @@ module cesm_comp_mod
    private
 
    public cesm_pre_init1, cesm_pre_init2, cesm_init, cesm_run, cesm_final
-#ifdef USE_ESMF_LIB
-   public cesm_comp_register
-#endif
    public timing_dir, mpicom_GLOID
 
 #include <mpif.h>
-
-#ifdef ESMF_INTERFACE
-   type(ESMF_GridComp)   :: cplgc
-   type(ESMF_State)      :: c2x_cx_state, x2c_cx_state
-#endif
 
    !----------------------------------------------------------------------------
    ! temporary variables
@@ -781,12 +755,7 @@ subroutine cesm_pre_init1()
 #else
       write(logunit,'(2A)') subname,' USE_ESMF_LIB is NOT set, using esmf_wrf_timemgr'
 #endif
-#ifdef MCT_INTERFACE
       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
-#endif
-#ifdef ESMF_INTERFACE
-      write(logunit,'(2A)') subname,' ESMF_INTERFACE is set'
-#endif
    endif
 
    !
@@ -1121,16 +1090,9 @@ end subroutine cesm_pre_init2
 !*******************************************************************************
 !===============================================================================
 
-#ifdef USE_ESMF_LIB
-subroutine cesm_init(drvcomp)
-#else
 subroutine cesm_init()
-#endif
 
   implicit none
-#ifdef USE_ESMF_LIB
-  type(ESMF_CplComp) :: drvcomp
-#endif
 
  101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
  102  format( A, 2i8, A, 8L3 )
@@ -1171,52 +1133,9 @@ subroutine cesm_init()
    call component_init_pre(esp, ESPID, CPLESPID, CPLALLESPID, infodata, ntype='esp')
    call t_stopf('comp_init_pre_all')
 
-#ifdef ESMF_INTERFACE
    call t_startf('comp_init_cc_atm')
    call t_adj_detailf(+2)
-   call component_init_cc(Eclock_a, drvcomp, atm, atm_register_esmf, infodata, NLFilename)
-   call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_atm')
 
-   call t_startf('comp_init_cc_lnd')
-   call t_adj_detailf(+2)
-   call component_init_cc(Eclock_l, drvcomp, lnd, lnd_register_esmf, infodata, NLFilename)
-   call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_lnd')
-
-   call t_startf('comp_init_cc_rof')
-   call t_adj_detailf(+2)
-   call component_init_cc(Eclock_r, drvcomp, rof, rof_register_esmf, infodata, NLFilename)
-   call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_rof')
-
-   call t_startf('comp_init_cc_ocn')
-   call t_adj_detailf(+2)
-   call component_init_cc(Eclock_o, drvcomp, ocn, ocn_register_esmf, infodata, NLFilename)
-   call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_ocn')
-
-   call t_startf('comp_init_cc_ice')
-   call t_adj_detailf(+2)
-   call component_init_cc(Eclock_i, drvcomp, ice, ice_register_esmf, infodata, NLFilename)
-   call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_ice')
-
-   call t_startf('comp_init_cc_glc')
-   call t_adj_detailf(+2)
-   call component_init_cc(Eclock_g, drvcomp, glc, glc_register_esmf, infodata, NLFilename)
-   call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_glc')
-
-   call t_startf('comp_init_cc_wav')
-   call t_adj_detailf(+2)
-   call component_init_cc(Eclock_w, drvcomp, wav, wav_register_esmf, infodata, NLFilename)
-   call component_init_cc(Eclock_e, drvcomp, esp, esp_register_esmf, infodata, NLFilename)
-   call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_wav')
-#else
-   call t_startf('comp_init_cc_atm')
-   call t_adj_detailf(+2)
    call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cc_atm')
@@ -1255,9 +1174,9 @@ subroutine cesm_init()
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_w, wav, wav_init, infodata, NLFilename)
    call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
+
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cc_wav')
-#endif
 
    call t_startf('comp_init_cx_all')
    call t_adj_detailf(+2)
@@ -1271,14 +1190,6 @@ subroutine cesm_init()
    call component_init_cx(esp, infodata)
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cx_all')
-
-#ifdef ESMF_INTERFACE
-   if (iamin_CPLID) then
-      call ESMF_GridCompInitialize(cplgc, importState=c2x_cx_state, exportState=x2c_cx_state, &
-           rc=rc)
-      if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   endif
-#endif
 
    ! Determine complist (list of comps for each id)
 
@@ -2008,11 +1919,7 @@ subroutine cesm_init()
       enddo
 
       ! Run atm_init_mct with init phase of 2
-#ifdef ESMF_INTERFACE
-      call component_init_cc(Eclock_a, drvcomp, atm, atm_register_esmf, &
-#else
       call component_init_cc(Eclock_a, atm, atm_init,                   &
-#endif
            infodata, NLFilename,                                        &
            seq_flds_x2c_fluxes=seq_flds_x2a_fluxes,                     &
            seq_flds_c2x_fluxes=seq_flds_a2x_fluxes)
@@ -2638,11 +2545,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (ice_present .and. icerun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_i, ice, infodata, &
-#else
          call component_run(Eclock_i, ice, ice_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2i_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_i2x_fluxes, &
               comp_prognostic=ice_prognostic, comp_num=comp_num_ice, &
@@ -2655,11 +2558,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (lnd_present .and. lndrun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_l, lnd, infodata, &
-#else
          call component_run(Eclock_l, lnd, lnd_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2l_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_l2x_fluxes, &
               comp_prognostic=lnd_prognostic, comp_num=comp_num_lnd, &
@@ -2672,11 +2571,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (rof_present .and. rofrun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_r, rof, infodata, &
-#else
          call component_run(Eclock_r, rof, rof_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2r_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_r2x_fluxes, &
               comp_prognostic=rof_prognostic, comp_num=comp_num_rof, &
@@ -2689,11 +2584,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (wav_present .and. wavrun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_w, wav, infodata, &
-#else
          call component_run(Eclock_w, wav, wav_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2w_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_w2x_fluxes, &
               comp_prognostic=wav_prognostic, comp_num=comp_num_wav, &
@@ -2708,11 +2599,7 @@ end subroutine cesm_init
       if ((trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT'   ) .and. &
           ocn_present .and. ocnrun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_o, ocn, infodata, &
-#else
          call component_run(Eclock_o, ocn, ocn_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
               comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
@@ -3339,11 +3226,7 @@ end subroutine cesm_init
       if ((trim(cpl_seq_option) /= 'CESM1_ORIG_TIGHT' .and. &
            trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT'   ) .and. &
           ocn_present .and. ocnrun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_o, ocn, infodata, &
-#else
          call component_run(Eclock_o, ocn, ocn_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
               comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
@@ -3356,11 +3239,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (atm_present .and. atmrun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_a, atm, infodata, &
-#else
          call component_run(Eclock_a, atm, atm_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2a_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_a2x_fluxes, &
               comp_prognostic=atm_prognostic, comp_num=comp_num_atm, &
@@ -3373,11 +3252,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (glc_present .and. glcrun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_g, glc, infodata, &
-#else
          call component_run(Eclock_g, glc, glc_run, infodata, &
-#endif
               seq_flds_x2c_fluxes=seq_flds_x2g_fluxes, &
               seq_flds_c2x_fluxes=seq_flds_g2x_fluxes, &
               comp_prognostic=glc_prognostic, comp_num=comp_num_glc, &
@@ -3389,11 +3264,7 @@ end subroutine cesm_init
       !| RUN ESP MODEL
       !----------------------------------------------------------
       if (esp_present .and. esprun_alarm) then
-#ifdef ESMF_INTERFACE
-         call component_run(Eclock_e, esp, infodata, &
-#else
          call component_run(Eclock_e, esp, esp_run, infodata, &
-#endif
               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
               timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
@@ -3874,15 +3745,6 @@ end subroutine cesm_init
    call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
    call shr_mem_getusage(msize,mrss)
 
-#ifdef ESMF_INTERFACE
-   call component_final(EClock_a, atm)
-   call component_final(EClock_l, lnd)
-   call component_final(EClock_r, rof)
-   call component_final(EClock_i, ice)
-   call component_final(EClock_o, ocn)
-   call component_final(EClock_g, glc)
-   call component_final(EClock_w, wav)
-#else
    call component_final(EClock_a, atm, atm_final)
    call component_final(EClock_l, lnd, lnd_final)
    call component_final(EClock_r, rof, rof_final)
@@ -3890,7 +3752,6 @@ end subroutine cesm_init
    call component_final(EClock_o, ocn, ocn_final)
    call component_final(EClock_g, glc, glc_final)
    call component_final(EClock_w, wav, wav_final)
-#endif
 
    !------------------------------------------------------------------------
    ! End the run cleanly
@@ -3996,187 +3857,6 @@ subroutine seq_cesm_printlogheader()
   write(logunit,*)' '
 
 end subroutine seq_cesm_printlogheader
-
-!===============================================================================
-
-#ifdef USE_ESMF_LIB
-
-subroutine cesm_comp_init(drvcomp, importState, exportState, clock, rc)
-   use esmfshr_attribute_mod
-   implicit none
-
-   !---------------------------------------------------------------
-   !
-   ! Arguments
-   type(ESMF_CplComp)   :: drvcomp  !top level cap gridded component
-   type(ESMF_State)     :: importState, exportState !not used
-   type(ESMF_Clock)     :: clock
-   integer, intent(out) :: rc
-
-   ! Local variables
-   type(ESMF_State)      :: attState
-   type(ESMF_GridComp)   :: mapComp
-   type(ESMF_State)      :: map_imp_state, map_exp_state
-   type(ESMF_GridComp)   :: atmComp, lndComp, iceComp, ocnComp
-   type(ESMF_GridComp)   :: rofComp, glcComp, wavComp
-   type(ESMF_VM)         :: vm
-   integer, pointer      :: cpl_petlist(:)
-   integer, pointer      :: petlist(:)
-   integer               :: localrc
-   !---------------------------------------------------------------
-
-   rc = ESMF_SUCCESS
-
-   !------
-   ! Create a state object to which the field level attributes will be
-   ! attached, and link the state to the specified component
-   !------
-   attState = ESMF_StateCreate(name="cesm_atts", rc=localrc)
-   if (localrc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to create state for attributes')
-
-   call ESMF_AttributeLink(drvcomp, attState, rc=localrc)
-   if (localrc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to link attributes')
-
-   !------
-   ! Create and setup cplgc and mapComp gridded components on the pl pes
-   ! import and export states are inout variables to register subroutines and their
-   ! values are changed in each iteration and saved in the seq_comm_type array.
-   !------
-
-   call seq_comm_petlist(CPLID, cpl_petlist)
-
-   mapComp = ESMF_GridCompCreate(name="seq map comp", petList=cpl_petlist, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to create seq map comp')
-   call ESMF_GridCompSetServices(mapComp, seq_map_esmf_register, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to register mapComp')
-   map_imp_state = ESMF_StateCreate(name="seq map import", stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to create import seq map state')
-   map_exp_state = ESMF_StateCreate(name="seq map export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to create export seq map state')
-
-   call seq_comm_setcompstates(CPLID, mapComp, map_imp_state, map_exp_state)
-
-#ifdef ESMF_INTERFACE
-   cplgc = ESMF_GridCompCreate(name="seq cpl comp", petList=cpl_petlist, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to create seq cpl comp')
-   call ESMF_GridCompSetServices(cplgc, cpl_esmf_register, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to register cplgc')
-   c2x_cx_state = ESMF_StateCreate(name="seq cpl import", stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to create import seq cpl state')
-   x2c_cx_state = ESMF_StateCreate(name="seq cpl export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
-   if(rc /= ESMF_SUCCESS) call shr_sys_abort(subname//' failed to create export seq cpl state')
-
-   call seq_comm_setcompstates(CPLID, cplgc, c2x_cx_state, x2c_cx_state)
-#endif
-
-   !------
-   ! Process the CESM initialization
-   !------
-   call cesm_init(drvcomp)
-
-#ifdef USE_ESMF_METADATA
-   !------
-   ! Set the application and field level attributes
-   !------
-   call esmfshr_attribute_appl_init(drvcomp, rc=localrc)
-   !call esmfshr_attribute_fields_init(attState, rc=localrc)
-#endif
-
-   !------
-   ! Get the VM and root pet list to be used for the AttributeUpdate call
-   !------
-   call ESMF_VMGetCurrent(vm, rc=localrc)
-   if (localrc /= 0) call shr_sys_abort(subname//' failed to get VM')
-
-#ifdef ESMF_INTERFACE
-   !-------------------------------------------------------------------------
-   ! The attribute handling part of the code is updated to loop
-   ! through ensemble instances.
-   !-------------------------------------------------------------------------
-   call component_init_update_petlist(atm, vm)
-   call component_init_update_petlist(lnd, vm)
-   call component_init_update_petlist(ice, vm)
-   call component_init_update_petlist(ocn, vm)
-   call component_init_update_petlist(glc, vm)
-   call component_init_update_petlist(rof, vm)
-   call component_init_update_petlist(wav, vm)
-
-#ifdef USE_ESMF_METADATA
-   !------
-   ! Write out all of the attributes to the CIM compliant XML file
-   !------
-   if (iamroot_GLOID) then
-      call ESMF_AttributeWrite( &
-              comp, &
-              convention='CIM', &
-              purpose='Model Component Simulation Description', &
-              attwriteflag=ESMF_ATTWRITE_XML, rc=localrc)
-   endif
-#endif
-
-#endif
-
-   rc = localrc
-
-end subroutine cesm_comp_init
-
-!===============================================================================
-
-subroutine cesm_comp_run(drvcomp, importState, exportState, clock, rc)
-   implicit none
-   type(ESMF_CplComp)   :: drvcomp
-   type(ESMF_State)     :: importState, exportState
-   type(ESMF_Clock)     :: clock
-   integer, intent(out) :: rc
-
-   rc = ESMF_SUCCESS
-
-   call cesm_run()
-
-end subroutine cesm_comp_run
-
-!===============================================================================
-
-subroutine cesm_comp_final(drvcomp, importState, exportState, clock, rc)
-   implicit none
-   type(ESMF_CplComp)   :: drvcomp
-   type(ESMF_State)     :: importState, exportState
-   type(ESMF_Clock)     :: clock
-   integer, intent(out) :: rc
-
-   rc = ESMF_SUCCESS
-
-   call cesm_final()
-
-end subroutine cesm_comp_final
-
-
-!===============================================================================
-!
-! This subroutine registers the initialization, run and finalization routines
-! for the specified driver/coupler component.
-!
-subroutine cesm_comp_register(drvcomp, rc)
-   implicit none
-   type(ESMF_CplComp)   :: drvcomp
-   integer, intent(out) :: rc
-
-   rc = ESMF_SUCCESS
-
-   call ESMF_CplCompSetEntryPoint(drvcomp, ESMF_METHOD_INITIALIZE, &
-                                  userRoutine=cesm_comp_init, rc=rc)
-
-   call ESMF_CplCompSetEntryPoint(drvcomp, ESMF_METHOD_RUN, &
-                                  userRoutine=cesm_comp_run, rc=rc)
-
-   call ESMF_CplCompSetEntryPoint(drvcomp, ESMF_METHOD_FINALIZE, &
-                                  userRoutine=cesm_comp_final, rc=rc)
-
-end subroutine cesm_comp_register
-
-!===============================================================================
-
-#endif
 
 !===============================================================================
 

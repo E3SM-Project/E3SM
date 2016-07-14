@@ -72,9 +72,12 @@ def preview_namelists(case, dryrun=False, casedir=None):
         cmd = os.path.join(config_dir, "buildnml")
         logger.info("Running %s"%cmd)
         if (logger.level == logging.DEBUG):
-            run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot))
+            rc, out, err = run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot), ok_to_fail=True)
+            expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
         else:
-            run_cmd("%s %s" % (cmd, caseroot))
+            rc, out, err = run_cmd("%s %s" % (cmd, caseroot), ok_to_fail=True)
+            expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
+
     # refresh case xml object from file
     case.read_xml(caseroot)
     # Save namelists to docdir

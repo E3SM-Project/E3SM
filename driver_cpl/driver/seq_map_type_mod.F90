@@ -7,11 +7,6 @@ module seq_map_type_mod
   use shr_const_mod
   use seq_comm_mct,  only: logunit, CPLID, seq_comm_iamroot
   use mct_mod
-#ifdef USE_ESMF_LIB
-  use esmf
-  use esmfshr_mod
-  use seq_map_esmf
-#endif
 
   type seq_map
      logical                 :: copy_only
@@ -39,12 +34,6 @@ module seq_map_type_mod
      real(R8), pointer       :: clat_d(:)
      integer(IN)             :: mpicom    ! mpicom
      !
-#ifdef USE_ESMF_LIB
-     !---- import and export States for this mapper object,
-     !---- routehandle is stored in the exp_state for repeated remapping use
-     type(ESMF_State)        :: imp_state
-     type(ESMF_State)        :: exp_state
-#endif
   end type seq_map
   public seq_map
 

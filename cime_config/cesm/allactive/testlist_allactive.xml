@@ -250,15 +250,6 @@
       </options>
     </machines>
   </test>
-  <test name="NOC" grid="f09_g16" compset="B1850" testmods="allactive/defaultio">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha"/>
-      <machine name="yellowstone" compiler="intel" category="prebeta"/>
-      <options>
-	<option name="wallclock"> 00:20 </option>
-      </options>
-    </machines>
-  </test>
   <test name="PEA_P1" grid="f45_g37" compset="B1850" testmods="allactive/defaultio">
     <machines>
       <machine name="hobart" compiler="intel" category="prebeta"/>
