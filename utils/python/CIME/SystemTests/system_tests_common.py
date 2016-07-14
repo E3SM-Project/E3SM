@@ -46,6 +46,7 @@ class SystemTestsCommon(object):
 
         case_setup(self._case, reset=True, test_mode=True)
         self._case.set_value("TEST",True)
+        self._case.flush()
 
     def build(self, sharedlib_only=False, model_only=False):
         build.case_build(self._caseroot, case=self._case,
