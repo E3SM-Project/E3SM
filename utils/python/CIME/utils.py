@@ -8,7 +8,6 @@ import sys
 import os
 import time
 import re
-from ConfigParser import SafeConfigParser as config_parser
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -40,6 +39,8 @@ def _read_cime_config_file():
     CIME_MODEL=acme,cesm
     PROJECT=someprojectnumber
     """
+    from ConfigParser import SafeConfigParser as config_parser
+
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
     cime_config = config_parser()
