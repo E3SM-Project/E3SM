@@ -45,7 +45,7 @@ class NCK(SystemTestsCommon):
                         self._case.set_value("NTASKS_%s"%comp, ntasks/2)
                         self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
                     else:
-                        self._case.set_value("NINST_%s"%comp, 1)
+                        self._case.set_value("NTASKS_%s"%comp, 2)
             self._case.flush()
 
             case_setup(self._case, test_mode=True, reset=True)
@@ -108,6 +108,8 @@ class NCK(SystemTestsCommon):
                         "%s/%s.exe" % (exeroot, cime_model))
             shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")
             shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+            shutil.copy("LockedFiles/env_mach_pes.NCK2.xml", "env_mach_pes.xml")
+            shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
 
             logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
             success = SystemTestsCommon._run(self, "multiinst")
