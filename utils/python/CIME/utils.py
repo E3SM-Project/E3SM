@@ -60,6 +60,13 @@ def get_cime_config():
 
     return _CIMECONFIG
 
+def reset_cime_config():
+    """
+    Useful to keep unit tests from interfering with each other
+    """
+    global _CIMECONFIG
+    _CIMECONFIG = None
+
 def get_python_libs_location_within_cime():
     """
     From within CIME, return subdirectory of python libraries
@@ -104,6 +111,7 @@ def get_model():
     >>> set_model('rocky')
     >>> get_model()
     'rocky'
+    >>> reset_cime_config()
     """
     model = os.environ.get("CIME_MODEL")
     if (model is not None):
