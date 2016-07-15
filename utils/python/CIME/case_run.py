@@ -12,7 +12,7 @@ from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.preview_namelists         import preview_namelists
 from CIME.task_maker                import TaskMaker
 
-import gzip, shutil, time, sys, os, getpass, tarfile, glob, signal
+import shutil, time, sys, os, getpass, tarfile, glob, signal
 
 logger = logging.getLogger(__name__)
 
@@ -175,11 +175,11 @@ def save_timing_setup_acme(case, lid):
     job_id = _get_batch_job_id(case)
     if mach == "mira":
         for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
-            run_cmd("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
+            run_cmd("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == ["corip1", "edison"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
-            run_cmd("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
+            run_cmd("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
         for cmd, filename in [("xtdb2proc -f xtdb2proc", "xtdb2procf"),
@@ -187,17 +187,17 @@ def save_timing_setup_acme(case, lid):
                               ("qstat -f %s > qstatf_jobid" % job_id, "qstatf_jobid"),
                               ("xtnodestat > xtnodestat", "xtnodestatf"),
                               ("showq > showqf", "showqf")]:
-            run_cmd(cmd, from_dir=full_timing_dir)
-            gzip_existing_file(os.path.join(full_timing_dir, filename))
+            run_cmd(cmd + "." + lid, from_dir=full_timing_dir)
+            gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
-        mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce")
+        mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce." + lid)
         run_cmd("./mdiag_reduce.csh > %s" % mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
         gzip_existing_file(mdiag_reduce)
 
     # copy/tar SourceModes
     source_mods_dir = os.path.join(caseroot, "SourceMods")
     if os.path.isdir(source_mods_dir):
-        with tarfile.open(os.path.join(full_timing_dir, "SourceMods.tar.gz"), "w:gz") as tfd:
+        with tarfile.open(os.path.join(full_timing_dir, "SourceMods.%s.tar.gz" % lid), "w:gz") as tfd:
             tfd.add(source_mods_dir)
 
     # Save various case configuration items
@@ -218,7 +218,7 @@ def save_timing_setup_acme(case, lid):
         ]
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
-            shutil.copy(item, case_docs)
+            shutil.copy(item, os.path.join(case_docs, os.path.basename(item) + "." + lid))
 
     if job_id is not None:
         sample_interval = case.get_value("SYSLOG_N")
@@ -267,7 +267,7 @@ def save_timing_acme(case, lid):
                 os.remove(syslog_jobid_path)
 
     # copy/tar timings
-    with tarfile.open(os.path.join(full_timing_dir, "timing.tar.gz"), "w:gz") as tfd:
+    with tarfile.open(os.path.join(full_timing_dir, "timing.%s.tar.gz" % lid), "w:gz") as tfd:
         tfd.add(os.path.join(rundir, "timing"))
 
     #
