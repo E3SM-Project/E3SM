@@ -1529,15 +1529,17 @@
                        +lhs*(qi2-qi1)/(cpm*tbar)     &
                        +(rm/cpm-rd/cp)*alog(p2/p1) )
 
-          if(i.gt.90) print *,i,th2,thlast,th2-thlast
-          if(i.gt.100)then
+          if(i .gt. 90 .and. debug_level .gt. 0) print *,i,th2,thlast,th2-thlast
+          if(i .gt. 100)then
 !            print *
 !            print *,'  Error:  lack of convergence'
 !            print *
 !            print *,'  ... stopping iteration '
 !            print *
 !            stop 1001
-            write(0,*) 'getcape: lack of convergence'
+            if (debug_level .gt. 0) then
+               write(0,*) 'getcape: lack of convergence'
+            end if
             return
           endif
           if( abs(th2-thlast).gt.converge )then
