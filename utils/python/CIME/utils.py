@@ -807,7 +807,7 @@ def wait_for_unlocked(filepath):
             file_object = open(filepath, 'a', buffer_size)
             if file_object:
                 locked = False
-        except IOError, message:
+        except IOError:
             locked = True
             time.sleep(1)
         finally:
