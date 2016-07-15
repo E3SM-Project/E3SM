@@ -892,6 +892,15 @@
     <desc>logical to save timing files in rundir</desc>
   </entry>
 
+  <entry id="SAVE_TIMING_DIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Where to auto archive timing data</desc>
+  </entry>
+
   <entry id="TIMER_LEVEL">
     <type>integer</type>
     <default_value>12</default_value>
