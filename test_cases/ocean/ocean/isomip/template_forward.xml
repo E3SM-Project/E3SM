@@ -3,7 +3,7 @@
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_dt">'00:05:00'</option>
 		<option name="config_run_duration">'0000_00:10:00'</option>
-		<option name="config_block_decomp_file_prefix">'ic/graph.info.part.'</option>
+		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
 		<option name="config_use_mom_del2">.true.</option>
 		<option name="config_use_tracer_del2">.true.</option>
@@ -30,13 +30,13 @@
 
 	<streams>
 		<stream name="mesh">
-			<attribute name="filename_template">ic/ocean.nc</attribute>
+			<attribute name="filename_template">init.nc</attribute>
 		</stream>
 		<stream name="input">
-			<attribute name="filename_template">ic/ocean.nc</attribute>
+			<attribute name="filename_template">init.nc</attribute>
 		</stream>
 		<stream name="forcing_data">
-			<attribute name="filename_template">ic/init_mode_forcing_data.nc</attribute>
+			<attribute name="filename_template">forcing_data.nc</attribute>
 			<attribute name="input_interval">initial_only</attribute>
 			<attribute name="type">input</attribute>
 			<attribute name="name">forcing_data</attribute>

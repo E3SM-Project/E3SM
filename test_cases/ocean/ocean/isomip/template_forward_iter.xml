@@ -1,0 +1,33 @@
+<template>
+	<streams>
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="forcing_data">
+			<attribute name="filename_template">forcing_data.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="name">forcing_data</attribute>
+			<add_contents>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="output_ssh">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">output_ssh.nc</attribute>
+			<attribute name="output_interval">0000_01:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<add_contents>
+				<member name="ssh" type="var"/>
+				<member name="density" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
