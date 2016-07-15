@@ -2,12 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging
-import logging.config
-import sys
-import os
-import time
-import re
+import sys, os, time, re, logging, gzip, shutil
 from ConfigParser import SafeConfigParser as config_parser
 
 # Return this error code if the scripts worked but tests failed
@@ -123,12 +118,9 @@ def get_model():
             model = 'acme'
         logger.info("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
 
-
     if model is not None:
         set_model(model)
         return model
-
-
 
     modelroot = os.path.join(get_cime_root(), "cime_config")
     models = os.listdir(modelroot)
@@ -826,3 +818,35 @@ def get_build_threaded(case):
         if case.get_value("NTHRDS_%s"%comp_class) > 1:
             return True
     return False
+
+def gunzip_existing_file(filepath):
+    with gzip.open(filepath, "rb") as fd:
+        return fd.read()
+
+def gzip_existing_file(filepath):
+    """
+    Gzips an existing file, removes the unzipped version, returns path to zip file
+
+    >>> import tempfile
+    >>> fd, filename = tempfile.mkstemp(text=True)
+    >>> _ = os.write(fd, "Hello World")
+    >>> os.close(fd)
+    >>> gzfile = gzip_existing_file(filename)
+    >>> gunzip_existing_file(gzfile)
+    'Hello World'
+    >>> os.remove(gzfile)
+    """
+    gzpath = '%s.gz' % filepath
+    with open(filepath, "rb") as f_in:
+        with gzip.open(gzpath, "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+    os.remove(filepath)
+
+    return gzpath
+
+def touch(fname):
+    if os.path.exists(fname):
+        os.utime(fname, None)
+    else:
+        open(fname, 'a').close()
