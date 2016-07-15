@@ -212,7 +212,7 @@ def check_minimum_python_version(major, minor):
     >>>
     """
     expect(sys.version_info[0] == major and sys.version_info[1] >= minor,
-           "Python %d.%d+ is required, you have %d.%d" %
+           "Python %d, minor verion %d+ is required, you have %d.%d" %
            (major, minor, sys.version_info[0], sys.version_info[1]))
 
 def normalize_case_id(case_id):
