@@ -38,14 +38,13 @@ class NCK(SystemTestsCommon):
             machpes = os.path.join("LockedFiles","env_mach_pes.NCK%s.xml"%bld)
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 self._case.set_value("NINST_%s"%comp, bld)
-                if(bld == 2):
-                    ntasks      = self._case.get_value("NTASKS_%s"%comp)
-                    rootpe      = self._case.get_value("ROOTPE_%s"%comp)
+                ntasks      = self._case.get_value("NTASKS_%s"%comp)
+                if(bld == 1):
                     if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
-                        self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
-                    else:
-                        self._case.set_value("NTASKS_%s"%comp, 2)
+                        self._case.set_value("NTASKS_%s"%comp, int(ntasks/2))
+                else:
+                    self._case.set_value("NTASKS_%s"%comp, ntasks*2)
+
             self._case.flush()
 
             case_setup(self._case, test_mode=True, reset=True)
