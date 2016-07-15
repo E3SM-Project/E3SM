@@ -124,12 +124,9 @@ def get_model():
             model = 'acme'
         logger.info("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
 
-
     if model is not None:
         set_model(model)
         return model
-
-
 
     modelroot = os.path.join(get_cime_root(), "cime_config")
     models = os.listdir(modelroot)
@@ -138,7 +135,6 @@ def get_model():
                       if os.path.isdir(os.path.join(modelroot,model))
                       and model != "xml_schemas"])
     expect(False, msg)
-
 
 _hack=object()
 def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
@@ -379,7 +375,8 @@ def get_cime_location_within_acme():
     """
     return "cime"
 
-def get_model_config_location_within_cime(model=get_model()):
+def get_model_config_location_within_cime(model=None):
+    model = get_model() if model is None else model
     return os.path.join("cime_config", model)
 
 def get_acme_root():
@@ -408,13 +405,14 @@ def get_python_libs_root():
     """
     return os.path.join(get_cime_root(), get_python_libs_location_within_cime())
 
-def get_model_config_root(model=get_model()):
+def get_model_config_root(model=None):
     """
     Get absolute path to model config area"
 
     >>> os.path.isdir(get_model_config_root())
     True
     """
+    model = get_model() if model is None else model
     return os.path.join(get_cime_root(), get_model_config_location_within_cime(model))
 
 def stop_buffering_output():
