@@ -1026,6 +1026,14 @@ class TestXMLQuery(unittest.TestCase):
         self.assertEqual(searchObj.group() , group_out)
 
 ###############################################################################
+class CheckCode(unittest.TestCase):
+###############################################################################
+
+    ###########################################################################
+    def check_code(self):
+    ###########################################################################
+        stat, output, _ = run_cmd(os.path.join(TOOLS_DIR, "code_checker 2>&1"), ok_to_fail=True)
+        self.assertEqual(stat, 0, msg=output)
 
 # Machinery for Macros generation tests.
 
@@ -1041,11 +1049,11 @@ class MockMachines(object):
         """Return the name we were given."""
         return self.name
 
-    def is_valid_compiler(self, _): # pylint:disable=no-self-use
+    def is_valid_compiler(self, _):
         """Assume all compilers are valid."""
         return True
 
-    def is_valid_MPIlib(self, _): # pylint:disable=no-self-use
+    def is_valid_MPIlib(self, _):
         """Assume all MPILIB settings are valid."""
         return True
 
@@ -1274,7 +1282,7 @@ class TestMacrosBasic(unittest.TestCase):
     error-handling in the routine.
     """
 
-    def test_script_is_callable(self): # pylint: disable=no-self-use
+    def test_script_is_callable(self):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
         maker = MacroMaker("SomeOS", MockMachines("mymachine"))
@@ -1298,7 +1306,7 @@ class TestMacrosBasic(unittest.TestCase):
 
 
 ###############################################################################
-class TestMakeMacros(unittest.TestCase): # pylint: disable=too-many-public-methods
+class TestMakeMacros(unittest.TestCase):
 ###############################################################################
 
     """Makefile macros tests.
