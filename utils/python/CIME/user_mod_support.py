@@ -26,7 +26,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                 for comp_inst in xrange(1, ninst[comp]+1):
                     case_user_nl_inst = case_user_nl + "_%4.4d"%comp_inst
                     logger.info("Pre-pending file %s"%case_user_nl_inst)
-                    if os.path.isfile(case_user_nl):
+                    if os.path.isfile(case_user_nl_inst):
                         with open(case_user_nl_inst, "r") as fd:
                             old_contents = fd.read()
                             contents = contents + old_contents
