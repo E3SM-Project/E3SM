@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+
+"""
+Ensure that all CIME python files are free of errors
+and follow the PEP8 standard.
+"""
+
+from standard_script_setup import *
+
+from CIME.utils import run_cmd, expect, get_python_libs_root
+
+import argparse, sys, os, doctest
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Check code \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--dir", default=get_python_libs_root(),
+                        help="The root directory containing python files to check.")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.dir
+
+###############################################################################
+def check_code(dir_to_check):
+###############################################################################
+    """
+    Check all python files in the given directory
+
+    Returns True if all files had no problems
+    """
+    # Pylint won't work right if the imports within the checked files fails
+    if "PYTHONPATH" in os.environ:
+        os.environ["PYTHONPATH"] += dir_to_check
+    else:
+        os.environ["PYTHONPATH"] = dir_to_check
+
+    # Get list of files to check
+    all_ok = True
+    files_to_check = run_cmd('find %s -name "*.py"' % dir_to_check).splitlines()
+    for file_to_check in files_to_check:
+        stat = run_cmd("pylint --disable C,R,logging-not-lazy,wildcard-import,unused-wildcard-import %s" % file_to_check, ok_to_fail=True)[0]
+        if stat != 0:
+            print "File", file_to_check, "has pylint problems, please fix"
+            all_ok = False
+        else:
+            print "File", file_to_check, "has no pylint issues"
+
+    return all_ok
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    dir_to_check = parse_command_line(sys.argv, description)
+
+    sys.exit(0 if check_code(dir_to_check) else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

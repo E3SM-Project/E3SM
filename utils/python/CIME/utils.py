@@ -71,13 +71,14 @@ def get_cime_root():
     if(cime_config.has_option('main','CIMEROOT')):
         cimeroot = cime_config.get('main','CIMEROOT')
     else:
-        try:
+        if "CIMEROOT" in os.environ:
             cimeroot = os.environ["CIMEROOT"]
-        except KeyError:
+        else:
             script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
             cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
         cime_config.set('main','CIMEROOT',cimeroot)
+
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
 
