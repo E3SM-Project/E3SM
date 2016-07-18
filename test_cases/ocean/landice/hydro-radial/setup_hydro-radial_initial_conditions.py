@@ -84,7 +84,7 @@ gridfile.variables['uReconstructX'][0,thickness[0,:]==0.0,:] = 0.0
 
 # IC on thickness
 gridfile.variables['waterThickness'][0,:] = (r-5000.0)/r0 * 0.5 
-##gridfile.variables['waterThickness'][0,r<5000.0] = 0.0
+gridfile.variables['waterThickness'][0,gridfile.variables['waterThickness'][0,:]<0.0] = 0.0
 #gridfile.variables['waterThickness'][0,:] = 0.05
 
 gridfile.close()

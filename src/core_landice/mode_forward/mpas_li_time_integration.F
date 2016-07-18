@@ -107,6 +107,7 @@ module li_time_integration
       character (len=StrKIND), pointer :: config_time_integration
       logical, pointer :: config_adaptive_timestep
       real (kind=RKIND), pointer :: deltat !< the current time step in seconds, on each block
+      logical, pointer :: config_SGH_adaptive_timestep
 
       ! Other local variables
       type (MPAS_TimeInterval_type) :: timeStepInterval !< the current time step as an interval
@@ -122,6 +123,7 @@ module li_time_integration
 
       call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
 
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
@@ -183,7 +185,7 @@ module li_time_integration
       ! ===
       ! Set time step in clock object since the time step could have changed
       ! Need to get value out of a block, but all blocks should have the same value, so just use first block
-      if (config_adaptive_timestep) then
+      if (config_adaptive_timestep .or. config_SGH_adaptive_timestep) then
          block => domain % blocklist
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
