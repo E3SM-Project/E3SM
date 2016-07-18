@@ -70,14 +70,14 @@ layerThicknessFractions[:] = 1.0 / nVertLevels
 
 # melt
 gridfile.variables['basalMeltInput'][:] = 0.0
-#gridfile.variables['basalMeltInput'][:] = 4.0e-10 * 1000.0 * 10000.0
+gridfile.variables['basalMeltInput'][:] = 0.2 / (365.0*24.0*3600.0) * 1000.0  # 20 cm/yr as SI mass rate
 # Use this line to only add a source term to the center cell - useful for debugging divergence
-gridfile.variables['basalMeltInput'][0,r==0.0] = 4.0e-10 * 1000.0 *100 # value from ramp
+#gridfile.variables['basalMeltInput'][0,r==0.0] = 4.0e-10 * 1000.0 *100 # value from ramp
 
 # velocity
 gridfile.variables['uReconstructX'][:] = 0.0
 velo = r*0.0
-velo = (r-5000.0)*1.0/3.14e7/22500.0
+velo = 100.0/(3600.0*24.0*365.0) * (r-5000.0)**5 / (22500.0 - 5000.0)**5
 velo[r<5000.0]=0.0
 gridfile.variables['uReconstructX'][0,:,-1] = velo
 gridfile.variables['uReconstructX'][0,thickness[0,:]==0.0,:] = 0.0
