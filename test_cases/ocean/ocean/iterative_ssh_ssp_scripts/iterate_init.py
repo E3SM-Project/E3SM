@@ -10,22 +10,37 @@ from netCDF4 import Dataset
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("--iteration_count", dest="iteration_count", default=1, type=int, help="The number of iterations between init and forward mode for computing a balanced sea-surface pressure.")
 parser.add_argument("--first_iteration", dest="first_iteration", default=0, type=int, help="The iteration to start from (for continuing iteration if iterrupted or insufficient)")
-parser.add_argument("--plot_ssh_ssp", dest="plot_ssh_ssp", action='store_true', help="If present, plot Cartesian ssh, ssp and deltaSSH fields for debugging.")
 parser.add_argument("--plot_globalStats", dest="plot_globalStats", action='store_true', help="If present, plot mean and max KE, min layer thickness and mean temperature for debugging.")
+parser.add_argument("--variable_to_modify", dest="variable_to_modify", default='ssh', help="Which variable, either ssh or ssp, to modify at each iteration.")
 
 args = parser.parse_args()
 base_path = os.getcwd()
 dev_null = open('/dev/null', 'w')
 error = False
 
-if(args.first_iteration == 0):
-  subprocess.check_call(['ln', '-sfn', '../init_step2/', 'forward_iter/ic'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+subprocess.check_call(['ln', '-sfn', '../init_step2/graph.info', 'forward_iter/graph.info'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+
+if args.variable_to_modify == 'ssh':
+  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'forward_iter/init0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'forward_iter/forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+elif args.variable_to_modify == 'ssp':
+  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'forward_iter/init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'forward_iter/forcing_data0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+else:
+  print "Error: unknown variable to modify", args.variable_to_modify
+
+if args.plot_globalStats:
   subprocess.check_call(['mkdir', '-p', 'forward_iter/statsPlots'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
 for iterIndex in range(args.first_iteration,args.iteration_count):
     print " * Iteration %i/%i"%(iterIndex+1,args.iteration_count)
     os.chdir(base_path)
     os.chdir('forward_iter')
+
+    if args.variable_to_modify == 'ssh':
+      subprocess.check_call(['ln', '-sfn', 'init%i.nc'%iterIndex, 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+    else:
+      subprocess.check_call(['ln', '-sfn', 'forcing_data%i.nc'%iterIndex, 'forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
     print "   * Running forward_iter"
     # ./run.py
@@ -38,40 +53,79 @@ for iterIndex in range(args.first_iteration,args.iteration_count):
                                'kineticEnergyCellAvg', 'layerThicknessMin'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
         print " - Complete"
 
-    os.chdir(base_path)
-    os.chdir('init_iter')
 
-    print "   * Running init_iter"
-    # ./run.py
-    subprocess.check_call(['./run.py'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-    print "   - Complete"
+    print "   * Updating SSH and SSP"
+
+    # copy the init file first
+
+    if args.variable_to_modify == 'ssh':
+      subprocess.check_call(['cp', 'init%i.nc'%iterIndex, 'init%i.nc'%(iterIndex+1)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+      subprocess.check_call(['ln', '-sfn', 'init%i.nc'%(iterIndex+1), 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+      initFile = Dataset('init.nc','r+')
+      forcingFile = Dataset('forcing_data.nc','r')
+    else:
+      subprocess.check_call(['cp', 'forcing_data%i.nc'%iterIndex, 'forcing_data%i.nc'%(iterIndex+1)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+      subprocess.check_call(['ln', '-sfn', 'forcing_data%i.nc'%(iterIndex+1), 'forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+      initFile = Dataset('init.nc','r')
+      forcingFile = Dataset('forcing_data.nc','r+')
+
+    nVertLevels = len(initFile.dimensions['nVertLevels'])
+    initSSH = initFile.variables['ssh'][0,:]
+    bottomDepth = initFile.variables['bottomDepth'][:]
+    landIceFraction = initFile.variables['landIceFraction'][0,:]
+    ssp = forcingFile.variables['seaSurfacePressure'][0,:]
+    lonCell = initFile.variables['lonCell'][:]
+    latCell = initFile.variables['latCell'][:]
+    maxLevelCell = initFile.variables['maxLevelCell'][:]
+
+    inSSHFile = Dataset('output_ssh.nc','r')
+    nTime = len(inSSHFile.dimensions['Time'])
+    finalSSH = inSSHFile.variables['ssh'][nTime-1,:]
+    topDensity = inSSHFile.variables['density'][nTime-1,:,0]
+    inSSHFile.close()
+
+    mask = numpy.logical_and(maxLevelCell > 0, landIceFraction > 0.0)
+
+    deltaSSH = mask*(finalSSH - initSSH)
+
+    # then, modifty the SSH or SSP
+    if args.variable_to_modify == 'ssh':
+      outInitFile.variables['ssh'][0,:] = finalSSH
+      # we also need to stretch layerThickness to be compatible with the new SSH
+      stretch = (finalSSH + bottomDepth)/(initialSSH + bottomDepth)
+      var = initFile.variables['layerThickness']
+      for k in range(nVertLevels):
+        layerThickness[0,:,k] *= stretch
+    else:
+      # Moving the SSH up or down by deltaSSH would change the SSP by density(SSH)*g*deltaSSH.
+      # If deltaSSH is positive (moving up), it means the SSP is too small and if deltaSSH
+      # is negative (moving down), it means SSP is too large, the sign of the second term
+      # makes sense.
+      gravity = 9.80616
+      deltaSSP = topDensity*gravity*deltaSSH
+
+      ssp = numpy.maximum(0.0, ssp + deltaSSP)
+
+      forcingFile.variables['seaSurfacePressure'][0,:] = ssp
+
+      finalSSH = initSSH
+
+    initFile.close()
+    forcingFile.close()
 
     # Write the largest change in SSH and its lon/lat to a file
-    outFile = open('maxDeltaSSH_%03i.log'%iterIndex,'w')
-    inFile = Dataset('ocean.nc','r')
+    logFile = open('maxDeltaSSH_%03i.log'%iterIndex,'w')
 
-    deltaSSH = inFile.variables['deltaSSH'][0,:]
-    lonCell = inFile.variables['lonCell'][:]
-    latCell = inFile.variables['latCell'][:]
-    ssh = inFile.variables['ssh'][0,:]
-    ssp = inFile.variables['seaSurfacePressure'][0,:]
-    inFile.close()
     indices = numpy.nonzero(ssp)[0]
     index = numpy.argmax(numpy.abs(deltaSSH[indices]))
     iCell = indices[index]
-    outFile.write('deltaSSHMax: %g, lon/lat: %f %f, ssh: %g, ssp: %g\n'%(deltaSSH[iCell],
+    logFile.write('deltaSSHMax: %g, lon/lat: %f %f, ssh: %g, ssp: %g\n'%(deltaSSH[iCell],
                                                                          180./numpy.pi*lonCell[iCell],
                                                                          180./numpy.pi*latCell[iCell],
-                                                                         ssh[iCell], ssp[iCell]))
-    outFile.close()
+                                                                         finalSSH[iCell], ssp[iCell]))
+    logFile.close()
 
-    if args.plot_ssh_ssp:
-        print "   * Plotting fields"
-        subprocess.check_call(['../plot_cart_ssh_ssp.py', '--iterIndex=%i'%iterIndex], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-        print "   - Complete"
-
-    os.chdir(base_path)
-    subprocess.check_call(['ln', '-sfn', '../init_iter/', 'forward_iter/ic'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+    print "   - Complete"
 
 os.chdir(base_path)
 
