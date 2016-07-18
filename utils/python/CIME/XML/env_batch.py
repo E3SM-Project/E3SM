@@ -420,9 +420,6 @@ class EnvBatch(EnvBase):
             if  string is not None:
                 submitcmd += string + " "
 
-        if self.batchtype == "pbs":
-            submitcmd += " -F \"--caseroot %s\""%caseroot
-
         logger.info("Submitting job script %s"%submitcmd)
         output = run_cmd(submitcmd)
         jobid = self.get_job_id(output)

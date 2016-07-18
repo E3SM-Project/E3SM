@@ -7,7 +7,7 @@ batch directives. Use case.submit from the command line to run your case.
 """
 
 import os, sys
-
+os.chdir( '{{ caseroot }}')
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
     raise SystemExit("ERROR: must set CIMEROOT environment variable")
