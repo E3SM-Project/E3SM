@@ -762,6 +762,7 @@ module li_subglacial_hydro
          proposedDt = min(proposedDt, deltat)
 
          write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
+
       else ! not SGH adaptive
          ! master dt could change if using master adaptive time stepper, so update it in case
          proposedDt = deltat
@@ -771,8 +772,15 @@ module li_subglacial_hydro
       block => domain % blocklist
       do while (associated(block))
 
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
          deltatSGH = proposedDt
+
+         ! For now, hijack master dt. TODO subcycle hydro under master dt
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         deltat = proposedDt
+
 
          block => block % next
       end do
