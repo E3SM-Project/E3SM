@@ -3,7 +3,6 @@ CIME ERI test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.utils import run_cmd
 
 import shutil, glob, os
 
@@ -36,14 +35,11 @@ class ERI(SystemTestsCommon):
         #
         # clone the main case to create ref1 and ref2 cases
         #
-        clones = []
         for clone_path in [clone1_path, clone2_path]:
             if os.path.exists(clone_path):
                 shutil.rmtree(clone_path)
 
-            clones.append(self._case.create_clone(clone_path, keepexe=True))
-
-        clone1, clone2 = clones
+        clone1, clone2 = [self._case.create_clone(clone_path, keepexe=True) for clone_path in [clone1_path, clone2_path]]
         orig_case = self._case
         orig_casevar = orig_case.get_value("CASE")
 
@@ -120,7 +116,7 @@ class ERI(SystemTestsCommon):
         self._set_active_case(clone2)
 
         # Set startdate to start2, set ref date based on ref1 restart
-        refdate_2 = run_cmd(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr1)
+        refdate_2 = run_cmd_no_fail(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr1)
         refsec_2 = "00000"
 
         logger.info("ref2 hybrid: doing a %s %s startup hybrid run" % (stop_n2, stop_option))
@@ -167,7 +163,7 @@ class ERI(SystemTestsCommon):
         os.chdir(caseroot)
         self._set_active_case(orig_case)
 
-        refdate_3 = run_cmd(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr2)
+        refdate_3 = run_cmd_no_fail(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr2)
         refsec_3 = "00000"
 
         logger.info("branch: doing a %s %s branch" % (stop_n3, stop_option))

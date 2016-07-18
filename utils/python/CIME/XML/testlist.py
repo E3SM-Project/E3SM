@@ -5,7 +5,6 @@ It supports versions 1.0 and 2.0 of the testlist.xml file
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.generic_xml import GenericXML
-from CIME.utils import expect, get_cime_root, get_model
 
 logger = logging.getLogger(__name__)
 

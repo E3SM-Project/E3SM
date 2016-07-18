@@ -10,10 +10,9 @@ count are modified the second time.
 
 import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
 import CIME.utils
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ class PEM(SystemTestsCommon):
         initialize a test object
         """
         SystemTestsCommon.__init__(self, case)
-        
+
     def build(self, sharedlib_only=False, model_only=False):
         """
         Build two cases.  Case one uses defaults, case2 uses half the number of threads
@@ -46,7 +45,7 @@ class PEM(SystemTestsCommon):
             logging.warn("Starting bld %s"%bld)
 
             if (bld == 2):
-                # halve the number of tasks 
+                # halve the number of tasks
                 for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
                     ntasks    = self._case.get_value("NTASKS_%s"%comp)
                     if ( ntasks > 1 ):
@@ -101,7 +100,7 @@ class PEM(SystemTestsCommon):
 
         expect(os.path.isfile("env_mach_pes.xml.2"),
                "ERROR: env_mach_pes.xml.2 does not exist, run case.build" )
-      
+
         shutil.copy("env_mach_pes.xml.2", "env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml.2", "LockedFiles/env_mach_pes.xml")
 
@@ -123,7 +122,7 @@ class PEM(SystemTestsCommon):
         self._case.flush()
         logger.info("doing an %d %s initial test, no restarts written" % (stop_n, stop_option))
 
-        return SystemTestsCommon._run(self, "modpes")
+        success = SystemTestsCommon._run(self, "modpes")
 
         if success:
             return self._component_compare_test("base", "modpes")

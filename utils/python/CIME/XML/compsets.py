@@ -3,7 +3,6 @@ Common interface to XML files which follow the compsets format,
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, convert_to_string, convert_to_type
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.entry_id import EntryID
 

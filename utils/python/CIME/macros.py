@@ -710,7 +710,6 @@ class MacroMaker(object):
                  Macros file, opened for writing.
         """
         # Set up writer for this build system.
-        # pylint: disable=redefined-variable-type
         if build_system == "Makefile":
             writer = MakeMacroWriter(output)
         elif build_system == "CMake":
@@ -719,7 +718,6 @@ class MacroMaker(object):
             expect(False,
                    "Unrecognized build system provided to write_macros: " +
                    build_system)
-        # pylint: enable=redefined-variable-type
 
         # Start processing the file.
         value_lists = dict()

@@ -4,7 +4,6 @@ Interface to the config_component.xml files.  This class inherits from EntryID.p
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.entry_id import EntryID
-from CIME.utils import expect, get_cime_root, get_model
 from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)

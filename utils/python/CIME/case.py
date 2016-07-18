@@ -18,7 +18,6 @@ from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
 from CIME.XML.pio                   import PIO
-from CIME.XML.archive               import Archive
 
 from CIME.XML.env_test              import EnvTest
 from CIME.XML.env_mach_specific     import EnvMachSpecific
@@ -29,7 +28,6 @@ from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
-from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
 from CIME.macros import MacroMaker
@@ -90,6 +88,9 @@ class Case(object):
         self._components = []
         self._component_config_files = []
         self._component_classes = []
+        self._env_entryid_files = []
+        self._env_generic_files = []
+        self._files = []
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -98,7 +99,7 @@ class Case(object):
             self._read_only_mode = False
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *_):
         self.flush()
         self._read_only_mode = True
         return False
@@ -139,7 +140,7 @@ class Case(object):
 
     def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
         newcase = deepcopy(self)
-        for env_file in newcase._files:
+        for env_file in newcase._files: # pylint: disable=protected-access
             basename = os.path.basename(env_file.filename)
             env_file.filename = os.path.join(newcaseroot,basename)
 
@@ -351,7 +352,7 @@ class Case(object):
         expect(compset is not None,
                "ERROR: compset is not set")
         # the first element is always the date operator - skip it
-        elements = compset.split('_')[1:]
+        elements = compset.split('_')[1:] # pylint: disable=maybe-no-member
         for element in elements:
             # ignore the possible BGC or TEST modifier
             if element.startswith("BGC%") or element.startswith("TEST"):
@@ -393,7 +394,7 @@ class Case(object):
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
-	    node_name = 'CONFIG_' + comp_class + '_FILE'
+            node_name = 'CONFIG_' + comp_class + '_FILE'
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
             expect(comp_config_file is not None,"No config file for component %s"%comp_name)
             compobj = Component(comp_config_file)

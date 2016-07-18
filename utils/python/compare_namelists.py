@@ -1,4 +1,4 @@
-import argparse, sys, os, re, logging
+import os, re, logging
 
 from CIME.utils  import expect
 logger=logging.getLogger(__name__)

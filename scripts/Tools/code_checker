@@ -7,7 +7,7 @@ and follow the PEP8 standard.
 
 from standard_script_setup import *
 
-from CIME.utils import run_cmd, expect, get_python_libs_root
+from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_python_libs_root
 
 import argparse, sys, os, doctest
 
@@ -58,11 +58,13 @@ def check_code(dir_to_check):
 
     # Get list of files to check
     all_ok = True
-    files_to_check = run_cmd('find %s -name "*.py"' % dir_to_check).splitlines()
+    files_to_check = run_cmd_no_fail('find %s -name "*.py"' % dir_to_check).splitlines()
     for file_to_check in files_to_check:
-        stat = run_cmd("pylint --disable C,R,logging-not-lazy,wildcard-import,unused-wildcard-import %s" % file_to_check, ok_to_fail=True)[0]
+        cmd = "pylint --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % file_to_check
+        stat = run_cmd(cmd)[0]
         if stat != 0:
             print "File", file_to_check, "has pylint problems, please fix"
+            print "    Use command:", cmd
             all_ok = False
         else:
             print "File", file_to_check, "has no pylint issues"

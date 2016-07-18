@@ -2,10 +2,9 @@
 functions for building CIME models
 """
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import expect, run_cmd, get_model, append_status
+from CIME.utils                 import get_model, append_status
 from CIME.preview_namelists     import preview_namelists
 from CIME.check_input_data      import check_input_data
-import getpass
 
 import glob, shutil, time, threading, gzip
 
@@ -95,7 +94,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     config_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
     stat = run_cmd("%s/buildexe %s %s %s >> %s 2>&1" %
                    (config_dir, caseroot, bldroot, libroot, file_build),
-                   from_dir=bldroot, ok_to_fail=True, verbose=True)[0]
+                   from_dir=bldroot, verbose=True)[0]
 
     expect(stat == 0, "ERROR: buildexe failed, cat %s" % file_build)
 
@@ -162,7 +161,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     if not sharedlib_only:
         check_all_input_data(case)
 
-    run_cmd("./Tools/check_lockedfiles --caseroot %s" % caseroot)
+    run_cmd_no_fail("./Tools/check_lockedfiles --caseroot %s" % caseroot)
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
@@ -238,7 +237,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
     # experiment there may be many builds of the same case.
-    lid               = run_cmd("date +%y%m%d-%H%M%S")
+    lid               = run_cmd_no_fail("date +%y%m%d-%H%M%S")
     os.environ["LID"] = lid
 
     # Set the overall USE_PETSC variable to TRUE if any of the
@@ -498,7 +497,7 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
         stat = run_cmd("%s %s %s >> %s 2>&1" %
                        (my_file, sharedpath, caseroot, file_build),
                        from_dir=exeroot,
-                       ok_to_fail=True, verbose=True)[0]
+                       verbose=True)[0]
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
 
@@ -529,7 +528,7 @@ def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incro
 
     stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
                    (config_dir, caseroot, bldroot, libroot, file_build),
-                   from_dir=bldroot, ok_to_fail=True,verbose=True)[0]
+                   from_dir=bldroot, verbose=True)[0]
     if (stat != 0):
         thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (compclass, file_build))
 
@@ -573,7 +572,7 @@ def clean(case, cleanlist=None):
     for item in cleanlist:
         cmd = cmd + " clean" + item
     logger.info("calling %s "%(cmd))
-    run_cmd(cmd)
+    run_cmd_no_fail(cmd)
 
     # unlink Locked files directory
     locked_env_build = os.path.join(caseroot,"LockedFiles/env_build.xml")

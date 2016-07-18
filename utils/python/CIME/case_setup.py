@@ -9,7 +9,7 @@ from CIME.preview_namelists import preview_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
-from CIME.utils             import expect, run_cmd, append_status
+from CIME.utils             import append_status
 
 import shutil, time, glob
 
@@ -41,7 +41,7 @@ def _check_pelayouts_require_rebuild(case, models):
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logger.warn("%s pe change requires clean build" % comp)
                     cleanflag = comp.lower()
-                    run_cmd("./case.build --clean %s" % cleanflag)
+                    run_cmd_no_fail("./case.build --clean %s" % cleanflag)
 
         os.remove(locked_pes)
 
@@ -182,7 +182,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             case.flush()
             check_lockedfiles()
 
-            pestot = int(run_cmd("Tools/taskmaker.pl -sumonly"))
+            pestot = int(run_cmd_no_fail("Tools/taskmaker.pl -sumonly"))
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
@@ -219,7 +219,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
 
             # Use BatchFactory to get the appropriate instance of a BatchMaker,
             # use it to create our batch scripts
-            env_batch = case._get_env("batch")
+            env_batch = case.get_env("batch")
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
@@ -247,7 +247,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             logger.info("Building %s usernl files"%model)
             _build_usernl_files(case, model, comp)
             if comp == "cism":
-                run_cmd("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
+                run_cmd_no_fail("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
 
         _build_usernl_files(case, "drv", "cpl")
 
@@ -263,7 +263,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         if os.path.exists("env_test.xml"):
             if not os.path.exists("case.test"):
                 logger.info("Starting testcase.setup")
-                run_cmd("./testcase.setup -caseroot %s" % caseroot)
+                run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
         msg = "case.setup complete"

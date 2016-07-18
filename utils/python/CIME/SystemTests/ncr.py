@@ -7,10 +7,11 @@ Lay all of the components out concurrently
 """
 import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
 import CIME.utils
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
+
+logger = logging.getLogger(__name__)
 
 class NCR(SystemTestsCommon):
 
@@ -20,7 +21,7 @@ class NCR(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self):
+    def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
@@ -50,7 +51,7 @@ class NCR(SystemTestsCommon):
 
             case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
-            SystemTestsCommon.build(self)
+            SystemTestsCommon.build(self, sharedlib_only, model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCR%s.xml"%bld))

@@ -7,12 +7,14 @@ from CIME.XML.standard_module_setup import *
 from CIME.task_maker import TaskMaker
 from CIME.utils import convert_to_type
 from CIME.XML.env_base import EnvBase
-from CIME.utils import convert_to_string, transform_vars, get_cime_root
+from CIME.utils import transform_vars, get_cime_root
 from copy import deepcopy
 
 import re
 
 logger = logging.getLogger(__name__)
+
+# pragma pylint: disable=attribute-defined-outside-init
 
 class EnvBatch(EnvBase):
 
@@ -32,7 +34,7 @@ class EnvBatch(EnvBase):
             # the correct format - if we find we have more exceptions
             # than this we may need to generalize this further
             walltime_format = self.get_value("walltime_format", subgroup=None)
-            if walltime_format is not None and walltime_format.count(":") != value.count(":"):
+            if walltime_format is not None and walltime_format.count(":") != value.count(":"): # pylint: disable=maybe-no-member
                 if value.count(":") == 1:
                     t = time.strptime(value,"%H:%M")
                 elif value.count(":") == 2:
@@ -92,12 +94,12 @@ class EnvBatch(EnvBase):
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
-             
-        
+
+
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         # for job in self.get_nodes("job") :
-        
+
         groups = self.get_nodes("group")
 
         for group in groups :
@@ -122,14 +124,14 @@ class EnvBatch(EnvBase):
                 # seach in all entry nodes
                 for node in nodes:
 
-                    
+
                     # Build return structure
                     attr          = node.get('id')
                     group_name     = None
-                    
+
                     # determine group
                     if (root.tag == "job") :
-                        group_name = root.get('name') 
+                        group_name = root.get('name')
                     else:
                         group_name = root.get('id')
 
@@ -141,9 +143,9 @@ class EnvBatch(EnvBase):
 
                     tmp = { 'group' : group_name , 'attribute' : attr , 'value' : val , 'type' : attribute_type , 'description' : desc , 'default' : default , 'file' : filename}
                     logger.debug("Found node with value for %s = %s" , item , tmp )
-                    
+
                     # add single result to list
-                    results.append(tmp) 
+                    results.append(tmp)
 
         logger.debug("(get_values) Return value:  %s" , results )
 
@@ -319,9 +321,9 @@ class EnvBatch(EnvBase):
                 val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
-                        
+
                 if val is not None and len(val) > 0 and val != "None":
-                    # Try to evaluate val 
+                    # Try to evaluate val
                     try:
                         rval = eval(val)
                     except:
@@ -384,10 +386,10 @@ class EnvBatch(EnvBase):
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
             # Import here to avoid circular include
-            from CIME.case_test       import case_test
-            from CIME.case_run        import case_run
-            from CIME.case_st_archive import case_st_archive
-            from CIME.case_lt_archive import case_lt_archive
+            from CIME.case_test       import case_test # pylint: disable=unused-variable
+            from CIME.case_run        import case_run # pylint: disable=unused-variable
+            from CIME.case_st_archive import case_st_archive # pylint: disable=unused-variable
+            from CIME.case_lt_archive import case_lt_archive # pylint: disable=unused-variable
 
             logger.info("Starting job script %s" % job)
 
@@ -396,7 +398,7 @@ class EnvBatch(EnvBase):
             cimeroot = get_cime_root()
             testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
             if job == "case.test" and testcase is not None and os.path.exists(testscript):
-                run_cmd("%s --caseroot %s" % (os.path.join(".", job), caseroot))
+                run_cmd_no_fail("%s --caseroot %s" % (os.path.join(".", job), caseroot))
             else:
                 # This is what we want longterm
                 function_name = job.replace(".", "_")
@@ -408,7 +410,7 @@ class EnvBatch(EnvBase):
 
         if depid is not None:
             dep_string = self.get_value("depend_string", subgroup=None)
-            dep_string = dep_string.replace("jobid",depid.strip())
+            dep_string = dep_string.replace("jobid",depid.strip()) # pylint: disable=maybe-no-member
             submitargs += " " + dep_string
 
         batchsubmit = self.get_value("batch_submit", subgroup=None)
@@ -424,7 +426,7 @@ class EnvBatch(EnvBase):
             submitcmd += " -F \"--caseroot %s\""%caseroot
 
         logger.info("Submitting job script %s"%submitcmd)
-        output = run_cmd(submitcmd)
+        output = run_cmd_no_fail(submitcmd)
         jobid = self.get_job_id(output)
         logger.debug("Submitted job id is %s"%jobid)
         return jobid

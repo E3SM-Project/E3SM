@@ -7,8 +7,8 @@ import shutil, glob, re, os
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.env_archive           import EnvArchive
-from CIME.utils                     import run_cmd, expect, append_status
-from os.path                        import isfile, isdir, join
+from CIME.utils                     import append_status
+from os.path                        import isdir, join
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +60,8 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
 
     # archive the rpointer files associated with datename
     casename = case.get_value("CASE")
-    compname, compclass = archive.get_entry_info(archive_entry)
-    ninst, ninst_strings = _get_ninst_info(case, compclass)
+    compclass = archive.get_entry_info(archive_entry)[1]
+    ninst_strings = _get_ninst_info(case, compclass)[1]
 
     if datename_is_last:
         # Copy of all rpointer files for latest restart date
@@ -177,7 +177,7 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
     if rest_hist_varname != 'unset':
         rundir = case.get_value("RUNDIR")
         cmd = "ncdump -v %s %s " %(rest_hist_varname, os.path.join(rundir, restfile))
-        rc, out, error = run_cmd(cmd, ok_to_fail=True)
+        rc, out, error = run_cmd(cmd)
         if rc != 0:
             logger.warn(" WARNING: %s failed rc=%d\nout=%s\nerr=%s" %(cmd, rc, out, error))
 
@@ -224,7 +224,7 @@ def _archive_restarts(case, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
             restfiles = ""
-            pattern = "\." + compname + "\d*" + ".*"
+            pattern = r"\.%s\d*.*" % compname
             if pattern != "dart":
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]

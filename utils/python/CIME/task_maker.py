@@ -3,11 +3,12 @@
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.component import Component
-from CIME.utils import expect, run_cmd
 
 import math
 
 logger = logging.getLogger(__name__)
+
+# pragma pylint: disable=no-member,attribute-defined-outside-init
 
 class TaskMaker(object):
 
