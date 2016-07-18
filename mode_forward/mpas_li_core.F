@@ -98,8 +98,8 @@ module li_core
       type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
       logical, pointer :: config_do_restart
-      real (kind=RKIND), pointer :: deltat_output
-      real (kind=RKIND) :: dtSeconds
+      real (kind=RKIND), pointer :: deltat  ! variable in each block
+      real (kind=RKIND) :: dtSeconds ! local variable
       type (MPAS_Pool_type), pointer :: meshPool
       type (MPAS_TimeInterval_type) :: timeStepInterval
       character (len=StrKIND), pointer :: xtime, simulationStartTime
@@ -186,8 +186,8 @@ module li_core
          daysSinceStart = daysSinceStart / seconds_per_day
 
          ! Initialize dt in seconds
-         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
-         deltat_output = dtSeconds
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         deltat = dtSeconds
 
          block => block % next
       end do

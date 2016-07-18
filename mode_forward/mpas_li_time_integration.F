@@ -106,11 +106,11 @@ module li_time_integration
       character (len=StrKIND), pointer :: simulationStartTime
       character (len=StrKIND), pointer :: config_time_integration
       logical, pointer :: config_adaptive_timestep
-      real (kind=RKIND), pointer :: deltat_output !< variable used for output, in seconds
+      real (kind=RKIND), pointer :: deltat !< the current time step in seconds, on each block
 
       ! Other local variables
       type (MPAS_TimeInterval_type) :: timeStepInterval !< the current time step as an interval
-      real (kind=RKIND) :: dtSeconds !< the current time step in seconds
+      real (kind=RKIND) :: dtSeconds !< the current time step in seconds, local variable
       type (MPAS_Time_Type) :: currTime  !< current time as time type
       character(len=StrKIND) :: timeStamp !< current time as a string
       type (MPAS_Time_type) :: simulationStartTime_timeType
@@ -149,6 +149,16 @@ module li_time_integration
          dtSeconds = 0.0_RKIND
       endif
 
+      ! Assign current value to variabels in all blocks
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         deltat = dtSeconds
+
+         block => block % next
+      end do
+
 
       ! ===
       ! === Perform timestep
@@ -156,7 +166,7 @@ module li_time_integration
       !write(stdoutUnit,*) 'Using ', trim(config_time_integration), ' time integration.'
       select case (config_time_integration)
       case ('forward_euler')
-         call li_time_integrator_forwardeuler(domain, dtSeconds, err_tmp)
+         call li_time_integrator_forwardeuler(domain, err_tmp)
       case ('rk4')
          write(stderrUnit,*) trim(config_time_integration), ' is not currently supported.'
          call mpas_dmpar_abort(domain % dminfo)
@@ -172,9 +182,13 @@ module li_time_integration
       ! === Adaptive timestep: update clock information
       ! ===
       ! Set time step in clock object since the time step could have changed
+      ! Need to get value out of a block, but all blocks should have the same value, so just use first block
       if (config_adaptive_timestep) then
-         ! convert dtSeconds to timeInterval type
-         call mpas_set_timeInterval(timeStepInterval, dt=dtSeconds, ierr=err_tmp)
+         block => domain % blocklist
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         ! convert dt in seconds to timeInterval type
+         call mpas_set_timeInterval(timeStepInterval, dt=deltat, ierr=err_tmp)
          err = ior(err,err_tmp)
          ! update the clock with the timeInterval
          call mpas_set_clock_timestep(domain % clock, timeStepInterval, err_tmp)
@@ -191,7 +205,6 @@ module li_time_integration
       err = ior(err, err_tmp)
       write(stderrUnit,*) '  Completed timestep.  New time is: ', trim(timeStamp)
       write(stdoutUnit,*) '  Completed timestep.  New time is: ', trim(timeStamp)
-      !write(stdoutUnit,*) '  dt (s) = ', dtSeconds
 
 
       block => domain % blocklist
@@ -200,9 +213,6 @@ module li_time_integration
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_array(meshPool, 'xtime', xtime)
          xtime = timeStamp
-
-         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
-         deltat_output = dtSeconds
 
          ! compute time since start of simulation, in days
          call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
