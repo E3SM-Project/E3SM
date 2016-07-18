@@ -81,7 +81,7 @@ def build_xcpl_nml(argv, compclass):
         if ninst == 1:
             filename = os.path.join(rundir, "%s_in" % compname)
         else:
-            filename = os.path.join(rundir, "%s_in%4.4d" % (compname, i))
+            filename = os.path.join(rundir, "%s_in_%4.4d" % (compname, i))
 
         with open(filename, 'w') as infile:
             infile.write("%-20d ! i-direction global dimension\n" % nx)
