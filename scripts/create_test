@@ -14,7 +14,6 @@ import update_acme_tests
 from CIME.system_test import SystemTest, RUN_PHASE
 from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd
 from CIME.XML.machines import Machines
-from CIME.XML.batch import Batch
 from CIME.case import Case
 
 import argparse, math, glob
@@ -76,6 +75,9 @@ OR
 
     parser.add_argument("-u", "--use-existing", action="store_true",
                         help="Use pre-existing case directories. Requires test-id")
+
+    parser.add_argument("--save-timing", action="store_true",
+                        help="Enable archiving of performance data.")
 
     parser.add_argument("--no-batch", action="store_true",
                         help="Do not submit jobs to batch system, run locally."
@@ -208,7 +210,7 @@ OR
         args.test_root, args.baseline_root, args.clean, args.compare, args.generate, \
         args.baseline_name, args.namelists_only, args.project, args.test_id, args.parallel_jobs, \
         args.xml_machine, args.xml_compiler, args.xml_category, args.xml_testlist, args.walltime, \
-        args.single_submit, args.proc_pool, args.use_existing
+        args.single_submit, args.proc_pool, args.use_existing, args.save_timing
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
@@ -314,7 +316,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 baseline_root, clean, compare, generate,
                 baseline_name, namelists_only, project, test_id, parallel_jobs,
                 xml_machine, xml_compiler, xml_category, xml_testlist, walltime,
-                single_submit, proc_pool, use_existing):
+                single_submit, proc_pool, use_existing, save_timing):
 ###############################################################################
     if testargs and machine_name is None and compiler is None:
         for test in testargs:
@@ -341,7 +343,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                       project=project, parallel_jobs=parallel_jobs,
                       xml_machine=xml_machine, xml_compiler=xml_compiler,
                       xml_category=xml_category, xml_testlist=xml_testlist, walltime=walltime,
-                      proc_pool=proc_pool, use_existing=use_existing)
+                      proc_pool=proc_pool, use_existing=use_existing, save_timing=save_timing)
 
     success = impl.system_test()
 
@@ -380,13 +382,13 @@ def _main_func(description):
     testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, parallel_jobs, \
         xml_machine, xml_compiler, xml_category, xml_testlist, walltime, single_submit, proc_pool, \
-        use_existing \
+        use_existing, save_timing \
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                          baseline_root, clean, compare, generate, baseline_name, namelists_only,
                          project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category,
-                         xml_testlist, walltime, single_submit, proc_pool, use_existing))
+                         xml_testlist, walltime, single_submit, proc_pool, use_existing, save_timing))
 
 ###############################################################################
 
