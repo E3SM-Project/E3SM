@@ -694,6 +694,7 @@ module li_subglacial_hydro
       integer :: err_tmp
       real(kind=RKIND), parameter :: bigNumber = 1.0e36_RKIND
       real(kind=RKIND), pointer :: CFLfraction
+      real(kind=RKIND), pointer :: maxDt
       real(kind=RKIND) :: proposedDt
       real(kind=RKIND) :: masterDt
 
@@ -753,13 +754,14 @@ module li_subglacial_hydro
       ! Set time step
       if (config_SGH_adaptive_timestep) then
          call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep_fraction', CFLfraction)
+         call mpas_pool_get_config(liConfigs, 'config_SGH_max_adaptive_timestep', maxDt)
 
          ! Find smallest of 3 limiting time steps
          proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
          proposedDt = proposedDt * CFLfraction
 
          ! Don't let SGH time step exceed master time step - technically need to check the interval til completion, because we might already be partway through the deltat
-         proposedDt = min(proposedDt, deltat)
+         proposedDt = min(proposedDt, maxDt)
 
          write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
 
@@ -916,7 +918,7 @@ module li_subglacial_hydro
       openingRate = max(0.0_RKIND, openingRate)
 
       closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
-      !closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND  ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
+!      closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND  ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
 
       zeroOrderSum = closingRate - openingRate + (basalMeltInput + externalWaterInput) / rho_water - (Wtill - WtillOld) / deltatSGH
 

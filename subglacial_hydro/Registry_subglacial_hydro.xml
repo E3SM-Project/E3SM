@@ -16,6 +16,10 @@
 		            description="fraction of limiting timestep to use"
 		            possible_values="positive real number"
 		/>
+		<nml_option name="config_SGH_max_adaptive_timestep" type="real" default_value="3.15e9" units="s"
+			description="The maximum allowable time step in seconds for the subglacial hydrology model.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds)."
+			possible_values="Any non-negative real value."
+		/>
 		<nml_option name="config_SGH_tangent_slope_calculation" type="character" default_value="from_normal_slope" units="unitless"
 		            description="Selection of the method for calculating the tangent component of slope at edges.
 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
