@@ -2,8 +2,12 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import sys, os, time, re, logging, gzip, shutil
-from ConfigParser import SafeConfigParser as config_parser
+import logging
+import logging.config
+import sys
+import os
+import time
+import re
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -35,6 +39,8 @@ def _read_cime_config_file():
     CIME_MODEL=acme,cesm
     PROJECT=someprojectnumber
     """
+    from ConfigParser import SafeConfigParser as config_parser
+
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
     cime_config = config_parser()
@@ -53,6 +59,13 @@ def get_cime_config():
         _CIMECONFIG = _read_cime_config_file()
 
     return _CIMECONFIG
+
+def reset_cime_config():
+    """
+    Useful to keep unit tests from interfering with each other
+    """
+    global _CIMECONFIG
+    _CIMECONFIG = None
 
 def get_python_libs_location_within_cime():
     """
@@ -98,6 +111,7 @@ def get_model():
     >>> set_model('rocky')
     >>> get_model()
     'rocky'
+    >>> reset_cime_config()
     """
     model = os.environ.get("CIME_MODEL")
     if (model is not None):
@@ -129,7 +143,6 @@ def get_model():
                       if os.path.isdir(os.path.join(modelroot,model))
                       and model != "xml_schemas"])
     expect(False, msg)
-
 
 _hack=object()
 def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
@@ -207,7 +220,7 @@ def check_minimum_python_version(major, minor):
     >>>
     """
     expect(sys.version_info[0] == major and sys.version_info[1] >= minor,
-           "Python %d.%d+ is required, you have %d.%d" %
+           "Python %d, minor verion %d+ is required, you have %d.%d" %
            (major, minor, sys.version_info[0], sys.version_info[1]))
 
 def normalize_case_id(case_id):
@@ -370,7 +383,8 @@ def get_cime_location_within_acme():
     """
     return "cime"
 
-def get_model_config_location_within_cime(model=get_model()):
+def get_model_config_location_within_cime(model=None):
+    model = get_model() if model is None else model
     return os.path.join("cime_config", model)
 
 def get_acme_root():
@@ -399,13 +413,14 @@ def get_python_libs_root():
     """
     return os.path.join(get_cime_root(), get_python_libs_location_within_cime())
 
-def get_model_config_root(model=get_model()):
+def get_model_config_root(model=None):
     """
     Get absolute path to model config area"
 
     >>> os.path.isdir(get_model_config_root())
     True
     """
+    model = get_model() if model is None else model
     return os.path.join(get_cime_root(), get_model_config_location_within_cime(model))
 
 def stop_buffering_output():
@@ -799,7 +814,7 @@ def wait_for_unlocked(filepath):
             file_object = open(filepath, 'a', buffer_size)
             if file_object:
                 locked = False
-        except IOError, message:
+        except IOError:
             locked = True
             time.sleep(1)
         finally:
