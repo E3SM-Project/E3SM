@@ -347,6 +347,7 @@ contains
 
     status = pio_inq_dimid (ncid, trim(dimname), dimid)
     status = pio_inq_dimlen (ncid, dimid, dimlen)
+
     if (dimlen /= value) then
        write(iulog,*) subname//' ERROR: mismatch of input dimension ',dimlen, &
             ' with expected value ',value,' for variable ',trim(dimname)
