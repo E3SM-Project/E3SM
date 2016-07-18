@@ -1752,6 +1752,7 @@ end subroutine interpolate_ce
 
 
 
+
   ! =======================================
   ! interpolate_vector
   !
@@ -1761,9 +1762,13 @@ end subroutine interpolate_ce
   ! input_coords = 0    fld_cube given in lat-lon
   ! input_coords = 1    fld_cube given in contravariant
   !
-  ! Note that it is possible the given element contains none of the interpolation points
+  ! Note that it is possible the given element contains none of the
+  ! interpolation points
   ! =======================================
   subroutine interpolate_vector2d(interpdata,elem,fld_cube,npts,fld,input_coords, fillvalue)
+
+! OG It seems that this routine is not used in SW, so, the new version is not
+! verified
     implicit none
     integer                  ::  npts
     real (kind=real_kind)    ::  fld_cube(npts,npts,2) ! vector field
@@ -1773,18 +1778,25 @@ end subroutine interpolate_ce
     real (kind=real_kind), intent(in), optional :: fillvalue
     integer                  ::  input_coords
 
-
     ! Local variables
     real (kind=real_kind)    ::  fld_contra(npts,npts,2) ! vector field
+    real (kind=real_kind)    ::  fld_lonlat(npts,npts,2) ! vector field in lonlat   
+    real (kind=real_kind)    ::  fld_cart(npts,npts,3) ! vector field in cartesian    
+    real (kind=real_kind), allocatable    ::  fld_cart_interp(:,:) ! vector field in cartesian   
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
     real (kind=real_kind)    ::  v1,v2
     real (kind=real_kind)    ::  D(2,2)   ! derivative of gnomonic mapping
     real (kind=real_kind)    ::  JJ(2,2), tmpD(2,2)   ! derivative of gnomonic mapping
-
+    real (kind=real_kind)    ::  K(3,2) !transform from/to lonlat basis for vectors at interp. point
+    real (kind=real_kind)    ::  llon, llat
+     
     integer :: i,j
+    integer :: ilon, ilat
 
     type (cartesian2D_t) :: cart
+
+if(.FALSE.)then ! -------------------------------------- BEGIN OF OLD VERSION ---------------------------
 
     if(present(fillvalue)) then
        if (any(fld_cube==fillvalue)) then
@@ -1809,8 +1821,9 @@ end subroutine interpolate_ce
 
     if (npts==np) then
        interp => interp_p
+!OG -- that was supposed to be in this else?
     else if (npts==np) then
-       call abortmp('Error in interpolate_vector(): input must be on velocity grid')
+        call abortmp('Error in interpolate_vector(): input must be on velocity grid')
     endif
 
 
@@ -1841,8 +1854,103 @@ end subroutine interpolate_ce
        fld(i,1)=D(1,1)*v1 + D(1,2)*v2
        fld(i,2)=D(2,1)*v1 + D(2,2)*v2
     end do
+endif !-------------------------------------- END OF OLD VERSION ---------------------
+
+    if(present(fillvalue)) then
+       if (any(fld_cube==fillvalue)) then
+          fld = fillvalue
+          return
+       end if
+    end if
+
+    if (npts==np) then
+       interp => interp_p
+    !OG -- that was supposed to be in this else? npts <> np?
+    else if (npts==np) then
+        call abortmp('Error in interpolate_vector2d(): input must be on velocity grid')
+    endif
+        
+    if (input_coords ==1 ) then
+       ! convert to lonlat
+       do j=1,npts
+          do i=1,npts
+             ! contra -> lonlat
+             fld_lonlat(i,j,1) = elem%D(i,j,1,1)*fld_cube(i,j,1) + elem%D(i,j,1,2)*fld_cube(i,j,2)
+             fld_lonlat(i,j,2) = elem%D(i,j,2,1)*fld_cube(i,j,1) + elem%D(i,j,2,2)*fld_cube(i,j,2)
+             
+             ! lonlat -> cart
+             fld_cart(i,j,1) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1) + &
+                               elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2)
+             fld_cart(i,j,2) = elem%vec_sphere2cart(i,j,2,1)*fld_lonlat(i,j,1) + &
+                               elem%vec_sphere2cart(i,j,2,2)*fld_lonlat(i,j,2)
+             ! vec_sphere2cart(...,3,1) = 0
+             ! fld_cart(i,j,3) = elem%vec_sphere2cart(i,j,3,1)*fld_lonlat(i,j,1)
+             ! + elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2)
+             fld_cart(i,j,3) = elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2)           
+          enddo
+       enddo
+    elseif(input_coords == 0) then 
+       fld_lonlat = fld_cube
+       
+       ! lonlat -> cart
+       do j=1,npts
+          do i=1,npts
+             fld_cart(i,j,1) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1) + &
+                               elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2)
+             fld_cart(i,j,2) = elem%vec_sphere2cart(i,j,2,1)*fld_lonlat(i,j,1) + &
+                               elem%vec_sphere2cart(i,j,2,2)*fld_lonlat(i,j,2)
+             ! vec_sphere2cart(...,3,1) = 0
+             ! fld_cart(i,j,3) = elem%vec_sphere2cart(i,j,3,1)*fld_lonlat(i,j,1)
+             ! + elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2)
+             fld_cart(i,j,3) = elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2)  
+          enddo         
+       enddo
+    else
+       call abortmp('Error in interpolate_vector2d(): Unknown value of input_coords. Use 0 or 1.')       
+    endif
+
+    ! Choice for Native (high-order) or Bilinear interpolations
+
+    allocate(fld_cart_interp(interpdata%n_interp,3))
+    
+    if (itype == 0) then
+       do i=1,interpdata%n_interp
+          do j=1,3
+              fld_cart_interp(i,j)=interpolate_2d(interpdata%interp_xy(i),fld_cart(:,:,j),interp,npts)
+          enddo
+       end do
+    elseif (itype == 1) then
+       do i=1,interpdata%n_interp
+          do j=1,3       
+             fld_cart_interp(i,j)=interpol_bilinear(interpdata%interp_xy(i),fld_cart(:,:,j),interp,npts)
+          enddo
+       end do
+    else
+       write(iulog,*) itype
+       call abortmp("Error in interpolate_vector2d(): wrong interpolation type.")
+    endif
+    
+    do i=1,interpdata%n_interp
+       ! convert from cart to lonlat: we need to recover matrix K, for that we
+       ! need lon,lat at the interp. point.
+       ilon = interpdata%ilon(i)
+       ilat = interpdata%ilat(i)
+       llon = lon(ilon)
+       llat = lat(ilat)
+       K(1,1) = -SIN(llon)
+       K(2,1) =  COS(llon)
+       K(3,1) =  0.0_real_kind
+       K(1,2) = -SIN(llat)*COS(llon)
+       K(2,2) = -SIN(llat)*SIN(llon)
+       K(3,2) =  COS(llat)
+       fld(i,1) = K(1,1)*fld_cart_interp(i,1) + K(2,1)*fld_cart_interp(i,2) ! K(3,1) = 0
+       fld(i,2) = K(1,2)*fld_cart_interp(i,1) + K(2,2)*fld_cart_interp(i,2) + K(3,2)*fld_cart_interp(i,3) 
+    end do
+
+    deallocate(fld_cart_interp)
 
   end subroutine interpolate_vector2d
+  
   ! =======================================
   ! interpolate_vector
   !
@@ -1852,9 +1960,10 @@ end subroutine interpolate_ce
   ! input_coords = 0    fld_cube given in lat-lon
   ! input_coords = 1    fld_cube given in contravariant
   !
-  ! Note that it is possible the given element contains none of the interpolation points
+  ! Note that it is possible the given element contains none of the
+  ! interpolation points
   ! =======================================
-  subroutine interpolate_vector3d(interpdata,elem,fld_cube,npts,nlev,fld,input_coords, fillvalue)
+  subroutine interpolate_vector3d(interpdata,elem,fld_cube,npts,nlev,fld,input_coords,fillvalue)
     implicit none
     type (interpdata_t),intent(in)       ::  interpdata
     type (element_t), intent(in)         :: elem
@@ -1866,16 +1975,23 @@ end subroutine interpolate_ce
 
     ! Local variables
     real (kind=real_kind)    ::  fld_contra(npts,npts,2,nlev) ! vector field
+    real (kind=real_kind)    ::  fld_lonlat(npts,npts,2,nlev) ! vector field in lonlat
+    real (kind=real_kind)    ::  fld_cart(npts,npts,3,nlev) ! vector field in cartesian
+    real (kind=real_kind), allocatable    ::  fld_cart_interp(:,:,:) ! vector field in cartesian
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
     real (kind=real_kind)    ::  v1,v2
     real (kind=real_kind)    ::  D(2,2)   ! derivative of gnomonic mapping
     real (kind=real_kind)    ::  JJ(2,2), tmpD(2,2)   ! derivative of gnomonic mapping
-
-
-    integer :: i,j,k
-
+    real (kind=real_kind)    ::  Km(3,2) !transform from/to lonlat basis for vectors at interp. point
+    real (kind=real_kind)    ::  llon, llat
+    
+    integer :: i,j,k 
+    integer :: ilon, ilat
     type (cartesian2D_t) :: cart
+    
+    if(.FALSE.)then  !-------------------------- BEGIN OF OLD VERSION ----------------------------------
+    
     if(present(fillvalue)) then
        if (any(fld_cube==fillvalue)) then
           fld = fillvalue
@@ -1888,8 +2004,10 @@ end subroutine interpolate_ce
           do j=1,npts
              do i=1,npts
                 ! latlon->contra
-                fld_contra(i,j,1,k) = elem%Dinv(i,j,1,1)*fld_cube(i,j,1,k) + elem%Dinv(i,j,1,2)*fld_cube(i,j,2,k)
-                fld_contra(i,j,2,k) = elem%Dinv(i,j,2,1)*fld_cube(i,j,1,k) + elem%Dinv(i,j,2,2)*fld_cube(i,j,2,k)
+                fld_contra(i,j,1,k) = elem%Dinv(i,j,1,1)*fld_cube(i,j,1,k) + &
+                                      elem%Dinv(i,j,1,2)*fld_cube(i,j,2,k)
+                fld_contra(i,j,2,k) = elem%Dinv(i,j,2,1)*fld_cube(i,j,1,k) + &
+                                      elem%Dinv(i,j,2,2)*fld_cube(i,j,2,k)
              enddo
           enddo
        end do
@@ -1903,8 +2021,7 @@ end subroutine interpolate_ce
        call abortmp('Error in interpolate_vector(): input must be on velocity grid')
     endif
 
-
-       ! Choice for Native (high-order) or Bilinear interpolations
+    ! Choice for Native (high-order) or Bilinear interpolations
 
     if (itype == 0) then
        do k=1,nlev
@@ -1938,7 +2055,128 @@ end subroutine interpolate_ce
           fld(i,k,2)=D(2,1)*v1 + D(2,2)*v2
        end do
     end do
+    endif !------------------------ END OF OLD INVERSION -----------------------------------
+    
+    if(present(fillvalue)) then
+       if (any(fld_cube==fillvalue)) then
+          fld = fillvalue
+          return
+       end if
+    end if
+
+    if (npts==np) then
+       interp => interp_p
+    !OG What is supposed to be in else here? npts<>np?   
+    else if (npts==np) then
+       call abortmp('Error in interpolate_vector3d(): input must be on velocity grid')
+    endif
+
+    if (input_coords ==1 ) then
+       ! convert to lonlat
+       do k=1,nlev
+          do j=1,npts
+             do i=1,npts
+                ! contra -> lonlat
+                fld_lonlat(i,j,1,k) = elem%D(i,j,1,1)*fld_cube(i,j,1,k) + elem%D(i,j,1,2)*fld_cube(i,j,2,k)
+                fld_lonlat(i,j,2,k) = elem%D(i,j,2,1)*fld_cube(i,j,1,k) + elem%D(i,j,2,2)*fld_cube(i,j,2,k)
+                
+                ! lonlat -> cart
+                fld_cart(i,j,1,k) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,2,k) = elem%vec_sphere2cart(i,j,2,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,2,2)*fld_lonlat(i,j,2,k)
+                ! vec_sphere2cart(...,3,1) = 0
+                ! fld_cart(i,j,3,k) =
+                ! elem%vec_sphere2cart(i,j,3,1)*fld_lonlat(i,j,1,k) +
+                ! elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,3,k) = elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
+             enddo
+          enddo
+       end do
+    elseif(input_coords == 0) then 
+       fld_lonlat = fld_cube
+       do k=1,nlev
+          do j=1,npts
+             do i=1,npts               
+                ! lonlat -> cart
+                fld_cart(i,j,1,k) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,2,k) = elem%vec_sphere2cart(i,j,2,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,2,2)*fld_lonlat(i,j,2,k)
+                ! vec_sphere2cart(...,3,1) = 0
+                ! fld_cart(i,j,3,k) =
+                ! elem%vec_sphere2cart(i,j,3,1)*fld_lonlat(i,j,1,k) +
+                ! elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,3,k) = elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
+             enddo
+          enddo
+       end do       
+    else
+       call abortmp('Error in interpolate_vector3d(): Unknown value of input_coords. Use 0 or 1.')
+    endif
+
+    allocate(fld_cart_interp(interpdata%n_interp,3,nlev))
+
+    ! Choice for Native (high-order) or Bilinear interpolations
+    if (itype == 0) then
+       do k=1,nlev
+          do i=1,interpdata%n_interp
+             do j=1,3
+                fld_cart_interp(i,j,k)=interpolate_2d(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,npts)
+             enddo
+          end do
+       end do
+    elseif (itype == 1) then
+       do k=1,nlev
+          do i=1,interpdata%n_interp
+             do j=1,3
+                fld_cart_interp(i,j,k)=interpol_bilinear(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,npts)
+             end do
+           enddo  
+       end do
+    else
+       call abortmp("Error in interpolate_vector3d(): wrong interpolation type")
+    endif
+
+
+    do i=1,interpdata%n_interp
+       ! compute D(:,:) at the point elem%interp_cube(i)
+       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
+            elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
+       do k=1,nlev
+          ! convert fld from contra->latlon
+          v1 = fld(i,k,1)
+          v2 = fld(i,k,2)
+
+          fld(i,k,1)=D(1,1)*v1 + D(1,2)*v2
+          fld(i,k,2)=D(2,1)*v1 + D(2,2)*v2
+       end do
+    end do
+    
+    do i=1,interpdata%n_interp
+       ! convert from cart to lonlat: we need to recover matrix K, for that we
+       ! need lon,lat at the interp. point.
+       ilon = interpdata%ilon(i)
+       ilat = interpdata%ilat(i)
+       llon = lon(ilon)
+       llat = lat(ilat)
+       Km(1,1) = -SIN(llon)
+       Km(2,1) =  COS(llon)
+       Km(3,1) =  0.0_real_kind
+       Km(1,2) = -SIN(llat)*COS(llon)
+       Km(2,2) = -SIN(llat)*SIN(llon)
+       Km(3,2) =  COS(llat)
+       do k=1,nlev
+          fld(i,k,1) = Km(1,1)*fld_cart_interp(i,1,k) + Km(2,1)*fld_cart_interp(i,2,k) ! Km(3,1) = 0
+          fld(i,k,2) = Km(1,2)*fld_cart_interp(i,1,k) + Km(2,2)*fld_cart_interp(i,2,k) + Km(3,2)*fld_cart_interp(i,3,k) 
+       enddo
+    end do
+
+    deallocate(fld_cart_interp)
+
   end subroutine interpolate_vector3d
+
+
 
 #ifndef CAM
   function var_is_vector_uvar(name)
