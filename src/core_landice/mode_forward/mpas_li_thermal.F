@@ -608,12 +608,11 @@ module li_thermal
 
 !-----------------------------------------------------------------------
 
-   subroutine li_thermal_solver(domain, deltat, err)
+   subroutine li_thermal_solver(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: deltat  !< Input: time step
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -664,6 +663,8 @@ module li_thermal
       integer, dimension(:), pointer :: &
            thermalCellMask             ! mask for thermal calculations
                                        ! = 1 where thickness > config_thermal_thickness, elsewhere = 0 
+
+      real (kind=RKIND), pointer :: deltat  !< time step in seconds
 
       real (kind=RKIND), dimension(:), pointer :: &
            xCell                       ! x coordinate for each cell (m)
@@ -728,6 +729,11 @@ module li_thermal
       ! check that deltat is valid
       ! Note: With an adaptive time step, deltat is set to 0 at the start of the time step.
       !       Here we make sure the thermal solver is not called while deltat = 0.
+
+      ! Get dt - same on all blocks so just grab first one
+      block => domain % blocklist
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
       if (deltat <= 0.0_RKIND) then
          write(stderrUnit,*) 'ERROR: li_thermal_solver was called with invalid deltat =', deltat
