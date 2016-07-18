@@ -1010,7 +1010,7 @@
          <DESC>ORNL XC30, os is CNL, 16 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>eos</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
-         <COMPILERS>intel</COMPILERS>
+         <COMPILERS>intel,cray,gnu</COMPILERS>
          <MPILIBS>mpich,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
          <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
@@ -1044,6 +1044,57 @@
          <mpirun mpilib="mpi-serial">
            <executable></executable>
          </mpirun>
+	 <module_system type="module">
+	   <init_path lang="sh">$MODULESHOME/init/sh</init_path>
+	   <init_path lang="csh">$MODULESHOME/init/csh</init_path>
+	   <init_path lang="perl">$MODULESHOME/init/perl.pm</init_path>
+	   <init_path lang="python">$MODULESHOME/init/python.py</init_path>
+	   <cmd_path lang="sh">module</cmd_path>
+	   <cmd_path lang="csh">module</cmd_path>
+	   <cmd_path lang="perl">$MODULESHOME/bin/modulecmd perl</cmd_path>
+	   <cmd_path lang="python">$MODULESHOME/bin/modulecmd python</cmd_path>
+	   
+	   <modules>
+	     <command name="rm">intel</command>
+	     <command name="rm">cray</command>
+	     <command name="rm">cray-parallel-netcdf</command>
+	     <command name="rm">cray-libsci</command>
+	     <command name="rm">cray-netcdf</command>
+	     <command name="rm">cray-netcdf-hdf5parallel</command>
+	     <command name="rm">netcdf</command>
+	   </modules>
+	   <modules compiler="intel">
+	     <command name="load">intel/16.0.1.150</command>
+	   </modules>
+	   <modules compiler="cray">
+	     <command name="load">PrgEnv-cray</command>
+	     <command name="switch">cce cce/8.1.9</command>
+	     <command name="load">cray-libsci/12.1.00</command>
+	   </modules>
+	   <modules compiler="gnu">
+	     <command name="load">PrgEnv-gnu</command>
+	     <command name="switch">gcc gcc/4.8.0</command>
+	     <command name="load">cray-libsci/12.1.00</command>
+	   </modules>
+	   <modules mpilib="mpi-serial">
+	     <command name="load">cray-netcdf/4.3.2</command>
+	   </modules>
+	   <modules milib="!mpi-serial">
+	     <command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	     <command name="load">cray-parallel-netcdf/1.6.1</command>
+	   </modules>
+	   <modules>
+	     <command name="load">cmake/2.8.11.2</command>
+	   </modules>
+	   <environment_variables >
+	     <env name="MPICH_ENV_DISPLAY">1</env>
+	     <env name="MPICH_VERSION_DISPLAY">1</env>
+	     <!-- This increases the stack size, which is necessary
+		  for CICE to run threaded on this machine -->
+	     <env name="OMP_STACKSIZE">64M</env>
+	     
+	   </environment_variables>
+
 </machine>
 
 <machine MACH="mustang">
