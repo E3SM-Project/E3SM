@@ -53,12 +53,26 @@ contains
                                                
        do i =1,ncols                                                               
           if (overwrite_flds) then
-             cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)     
-             cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)     
+           ! exclude wsx and wsy from here (always overrided), 
+           ! and add lhf to ensure BFB restart
+           ! when qneg4 correction occur preceding restart file writing
+           ! Not sure why wsx and wsy were included here
+           ! in current design, always override except call during
+           ! initialization of restart run. Modified by Wuyin Lin
+           ! cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)     
+           ! cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)     
              cam_in(c)%shf(i)    = -x2a(index_x2a_Faxx_sen, ig)     
              cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)                
+             cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)     
           endif
-          cam_in(c)%lhf(i)       = -x2a(index_x2a_Faxx_lat, ig)     
+          !Moved wsx and wsy statements outside of the conditional block above
+          !becuase for qneg4 non-BFB restart issue, they are not involved
+          !restart_init flag has never been used throughout until for the fix of 
+          !non-BFB restart due to qneg4
+          cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)     
+          cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)     
+          !Move to the block above to override conditionally
+          !cam_in(c)%lhf(i)       = -x2a(index_x2a_Faxx_lat, ig)     
           cam_in(c)%lwup(i)      = -x2a(index_x2a_Faxx_lwup,ig)    
           cam_in(c)%asdir(i)     =  x2a(index_x2a_Sx_avsdr, ig)  
           cam_in(c)%aldir(i)     =  x2a(index_x2a_Sx_anidr, ig)  

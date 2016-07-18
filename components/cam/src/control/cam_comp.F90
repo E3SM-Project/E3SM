@@ -166,7 +166,9 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
       call cam_read_restart ( cam_in, cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName=filein )
 
-      call hub2atm_alloc( cam_in )
+     ! If below it called during restart run, it woul wipe out all in cam_in
+     ! looks like it is not necessary and it may be a bug (mostly harmless)
+     !call hub2atm_alloc( cam_in )
 #if (defined BFB_CAM_SCAM_IOP)
       call initialize_iop_history()
 #endif
