@@ -46,6 +46,7 @@ class SystemTestsCommon(object):
 
         case_setup(self._case, reset=True, test_mode=True)
         self._case.set_value("TEST",True)
+        self._case.flush()
 
     def build(self, sharedlib_only=False, model_only=False):
         build.case_build(self._caseroot, case=self._case,
@@ -84,6 +85,7 @@ class SystemTestsCommon(object):
             # being marked FAIL
             success = False
             self._runstatus = "FAIL"
+            logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
 
         return success
 

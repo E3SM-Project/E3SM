@@ -62,15 +62,15 @@ class Case(object):
     by reading and interpreting the CIME config classes.
 
     """
-    def __init__(self, case_root=None):
+    def __init__(self, case_root=None, read_only=True):
 
         if case_root is None:
             case_root = os.getcwd()
 
-        # Init first, if no valid case_root expect fails and tears down object, __del__ expects self._env_files_that_need_rewrite
-        self._env_files_that_need_rewrite = set()
-
         logger.debug("Initializing Case.")
+        self._env_files_that_need_rewrite = set()
+        self._read_only_mode = True
+        self._force_read_only = read_only
         self.read_xml(case_root)
 
         # Hold arbitary values. In create_newcase we may set values
@@ -91,8 +91,31 @@ class Case(object):
         self._component_config_files = []
         self._component_classes = []
 
+    # Define __enter__ and __exit__ so that we can use this as a context manager
+    # and force a flush on exit.
+    def __enter__(self):
+        if not self._force_read_only:
+            self._read_only_mode = False
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.flush()
+        self._read_only_mode = True
+        return False
+
+    def schedule_rewrite(self, env_file):
+        assert not self._read_only_mode, \
+            "case.py scripts error: attempted to modify an env file while in " \
+            "read-only mode"
+        self._env_files_that_need_rewrite.add(env_file)
+
     def read_xml(self, case_root):
-        expect(len(self._env_files_that_need_rewrite)==0,"Case object has modifications that would be overwritten by read_xml")
+        if(len(self._env_files_that_need_rewrite)>0):
+            files = ""
+            for env_file in self._env_files_that_need_rewrite:
+                files += " "+env_file.filename
+            expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
+
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvRun(case_root))
         self._env_entryid_files.append(EnvBuild(case_root))
@@ -105,9 +128,6 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
         self._files = self._env_entryid_files + self._env_generic_files
-
-    def __del__(self):
-        self.flush()
 
     def _get_env(self, short_name):
         full_name = "env_%s.xml" % (short_name)
@@ -138,11 +158,9 @@ class Case(object):
     def flush(self, flushall=False):
         if flushall:
             for env_file in self._files:
-                env_file.write()
-        else:
-            for env_file in self._env_files_that_need_rewrite:
-                env_file.write()
-
+                self.schedule_rewrite(env_file)
+        for env_file in self._env_files_that_need_rewrite:
+            env_file.write()
         self._env_files_that_need_rewrite = set()
 
     def get_value(self, item, attribute=None, resolved=True, subgroup=None):
@@ -177,9 +195,9 @@ class Case(object):
         """
         Return info object for given item, return all info for all item if item is empty.
         """
-        
+
         logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
-        
+
         # Empty result list
         results = []
 
@@ -211,11 +229,11 @@ class Case(object):
                     for r in result :
                         if r['group'] == subgroup :
                             found.append(r)
-                    results += found        
-                else:                 
+                    results += found
+                else:
                     results = results + result
-                    
-        logger.debug("(get_values) Return value:  %s" , results )            
+
+        logger.debug("(get_values) Return value:  %s" , results )
         return results
 
 
@@ -261,7 +279,7 @@ class Case(object):
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
-                logger.debug("Will rewrite file %s",env_file.filename)
+                logger.debug("Will rewrite file %s %s",env_file.filename, item)
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
         if result is None:
@@ -510,7 +528,7 @@ class Case(object):
             nodes = machobj.get_first_child_nodes(item)
             for node in nodes:
                 env_mach_specific_obj.add_child(node)
-        self._env_files_that_need_rewrite.add(env_mach_specific_obj)
+        self.schedule_rewrite(env_mach_specific_obj)
 
         #--------------------------------------------
         # pe payout
@@ -569,7 +587,7 @@ class Case(object):
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
         env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime)
-        self._env_files_that_need_rewrite.add(env_batch)
+        self.schedule_rewrite(env_batch)
 
         self.set_value("COMPSET",self._compsetname)
 

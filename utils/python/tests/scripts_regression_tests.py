@@ -870,29 +870,33 @@ class TestCimeCase(TestCreateTestCommon):
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
-        case = Case(casedir)
 
-        build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertFalse(build_complete,
-                         msg="Build complete had wrong value '%s'" % build_complete)
+        with Case(casedir, read_only=False) as case:
+            build_complete = case.get_value("BUILD_COMPLETE")
+            self.assertFalse(build_complete,
+                             msg="Build complete had wrong value '%s'" %
+                             build_complete)
 
-        case.set_value("BUILD_COMPLETE", True)
-        build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertTrue(build_complete,
-                        msg="Build complete had wrong value '%s'" % build_complete)
+            case.set_value("BUILD_COMPLETE", True)
+            build_complete = case.get_value("BUILD_COMPLETE")
+            self.assertTrue(build_complete,
+                            msg="Build complete had wrong value '%s'" %
+                            build_complete)
 
-        case.flush()
+            case.flush()
 
-        build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value", from_dir=casedir)
-        self.assertTrue(build_complete,
-                        msg="Build complete had wrong value '%s'" % build_complete)
+            build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value",
+                                     from_dir=casedir)
+            self.assertTrue(build_complete,
+                            msg="Build complete had wrong value '%s'" %
+                            build_complete)
 
-        # Test some test properties
-        self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
-        self.assertEqual(case.get_value("MPILIB"), "mpi-serial")
+            # Test some test properties
+            self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+            self.assertEqual(case.get_value("MPILIB"), "mpi-serial")
 
-        # Serial cases should not be using pnetcdf
-        self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
+            # Serial cases should not be using pnetcdf
+            self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
 
 ###############################################################################
 class TestSingleSubmit(TestCreateTestCommon):
@@ -916,6 +920,27 @@ class TestSingleSubmit(TestCreateTestCommon):
                                        ok_to_fail=True, from_dir=self._testroot)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+###############################################################################
+class TestSaveTimings(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def test_save_timings(self):
+    ###########################################################################
+        create_test_cmd =  "%s/create_test SMS_Ln9_Mmpi-serial.f19_g16_rx1.A --save-timing --walltime 0:15:00 -t %s" % (SCRIPT_DIR, self._baseline_name)
+        if NO_BATCH:
+            create_test_cmd += " --no-batch"
+
+        stat, output, errput = run_cmd(create_test_cmd, ok_to_fail=True)
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+        if (self._hasbatch):
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
+                                           ok_to_fail=True, from_dir=self._testroot)
+            self.assertEqual(stat, 0,
+                             msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
 class TestXMLQuery(unittest.TestCase):

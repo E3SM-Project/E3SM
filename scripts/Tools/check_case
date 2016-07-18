@@ -54,10 +54,10 @@ def _main_func(description):
 
     check_lockedfiles()
 
-    case  = Case()
-    preview_namelists(case)
+    with Case(read_only=False) as case:
+        preview_namelists(case)
+        build_complete = case.get_value("BUILD_COMPLETE")
 
-    build_complete = case.get_value("BUILD_COMPLETE")
     if not build_complete:
         expect(False,
                "Please rebuild the model interactively by calling case.build")

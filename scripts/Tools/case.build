@@ -91,29 +91,30 @@ def _main_func(description):
     caseroot, sharedlib_only, model_only, cleanlist = parse_command_line(sys.argv, description)
     logging.info("calling build.case_build with caseroot=%s" %caseroot)
 
-    case = Case(caseroot)
-    testname = case.get_value('TESTCASE')
+    with Case(caseroot, read_only=False) as case:
+        testname = case.get_value('TESTCASE')
 
-    if cleanlist:
-        build.clean(case, cleanlist)
-    elif(testname is not None):
-        logging.warn("Building test for %s in directory %s" % (testname, caseroot))
-        try:
-            test = globals()[testname](case)
-        except KeyError:
-            expect(False, "Could not find a test called '%s'" % testname)
-        append_status("case.testbuild starting ",
-                     caseroot=caseroot,sfile="CaseStatus")
-        test.build(sharedlib_only=sharedlib_only, model_only=model_only)
-        append_status("case.testbuild complete",
-                     caseroot=caseroot,sfile="CaseStatus")
-    else:
-        append_status("case.build starting",
-                     caseroot=caseroot,sfile="CaseStatus")
-        build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
-                     model_only=model_only)
-        append_status("case.build complete",
-                     caseroot=caseroot,sfile="CaseStatus")
+        if cleanlist:
+            build.clean(case, cleanlist)
+        elif(testname is not None):
+            logging.warn("Building test for %s in directory %s" %
+                         (testname, caseroot))
+            try:
+                test = globals()[testname](case)
+            except KeyError:
+                expect(False, "Could not find a test called '%s'" % testname)
+            append_status("case.testbuild starting ",
+                         caseroot=caseroot,sfile="CaseStatus")
+            test.build(sharedlib_only=sharedlib_only, model_only=model_only)
+            append_status("case.testbuild complete",
+                         caseroot=caseroot,sfile="CaseStatus")
+        else:
+            append_status("case.build starting",
+                         caseroot=caseroot,sfile="CaseStatus")
+            build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
+                         model_only=model_only)
+            append_status("case.build complete",
+                         caseroot=caseroot,sfile="CaseStatus")
 
 if __name__ == "__main__":
     _main_func(__doc__)

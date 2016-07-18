@@ -55,12 +55,11 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
             logging.info("SUCCESS\n")
             return True
 
-def check_input_data(case=None, svn_loc=None, input_data_root=None, data_list_dir="Buildconf", download=False):
+def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Buildconf", download=False):
     """
     Return True if no files missing
     """
     # Fill in defaults as needed
-    case = Case() if case is None else case
     svn_loc = SVN_LOCS[get_model()] if svn_loc is None else svn_loc
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
