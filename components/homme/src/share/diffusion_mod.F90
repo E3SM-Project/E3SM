@@ -1,7 +1,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include "omp_config.h"
 
 module diffusion_mod
   ! =======================
