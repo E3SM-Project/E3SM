@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config case="forward">
-	<add_link source="../init_iter/ocean.nc" dest="init.nc"/>
-	<add_link source="../init_iter/graph.info" dest="graph.info"/>
-	<add_link source="../init_iter/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../forward_iter/init.nc" dest="init.nc"/>
+	<add_link source="../forward_iter/forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="metis" dest="metis"/>
 
