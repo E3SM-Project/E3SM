@@ -69,6 +69,11 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
         self._force_read_only = read_only
+
+        self._env_entryid_files = []
+        self._env_generic_files = []
+        self._files = []
+
         self.read_xml(case_root)
 
         # Hold arbitary values. In create_newcase we may set values
@@ -88,9 +93,6 @@ class Case(object):
         self._components = []
         self._component_config_files = []
         self._component_classes = []
-        self._env_entryid_files = []
-        self._env_generic_files = []
-        self._files = []
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.

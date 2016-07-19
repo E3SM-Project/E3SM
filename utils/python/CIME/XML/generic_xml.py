@@ -24,6 +24,7 @@ class GenericXML(object):
             # if file is not defined just return
             self.filename = None
             return
+
         if os.path.isfile(infile) and os.access(infile, os.R_OK):
             # If file is defined and exists, read it
             self.filename = infile
