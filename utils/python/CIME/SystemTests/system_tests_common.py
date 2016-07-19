@@ -202,8 +202,12 @@ class SystemTestsCommon(object):
             originaldate = int(memlist[0][0])
             finalmem = float(memlist[-1][1])
             originalmem = float(memlist[0][1])
-            memdiff = (finalmem - originalmem)/originalmem
-            if memdiff < 0.1:
+            memdiff = -1
+            if originalmem > 0:
+                memdiff = (finalmem - originalmem)/originalmem
+            if memdiff < 0:
+                append_status("COMMENT: insuffiencient data for memleak test",sfile="TestStatus")
+            elif memdiff < 0.1:
                 append_status("PASS %s memleak"%(self._case.get_value("CASEBASEID")),
                              sfile="TestStatus")
             else:

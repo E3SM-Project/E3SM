@@ -5,7 +5,7 @@ case.submit - Submit a cesm workflow to the queueing system or run it
 if there is no queueing system.  A cesm workflow may include multiple
 jobs.
 """
-
+import socket
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect
 from CIME.preview_namelists        import preview_namelists
@@ -31,6 +31,9 @@ def submit(case, job=None, resubmit=False, no_batch=False):
         if job in ("case.test","case.run"):
             check_case(case, caseroot)
             check_DA_settings(case)
+            if case.get_value("MACH") == "mira":
+                with open(".original_host","w") as fd:
+                    fd.write( socket.gethostname())
 
     cimeroot = case.get_value("CIMEROOT")
     os.environ["CIMEROOT"] = cimeroot
@@ -62,6 +65,8 @@ def submit(case, job=None, resubmit=False, no_batch=False):
 
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
+
+    logger.warn("submit_jobs %s"%job)
     case.submit_jobs(no_batch=no_batch, job=job)
 
 def check_case(case, caseroot):

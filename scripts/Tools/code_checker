@@ -11,6 +11,7 @@ from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_python_libs_root
 
 import argparse, sys, os, doctest
 from multiprocessing.dummy import Pool as ThreadPool
+from distutils.spawn import find_executable
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -49,7 +50,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def run_pylint(on_file):
 ###############################################################################
-    cmd = "pylint --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % on_file
+    pylint = find_executable("pylint")
+    expect(pylint is not None,"pylint not found")
+
+    cmd = "%s --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % (pylint, on_file)
     stat = run_cmd(cmd)[0]
     if stat != 0:
         sys.stdout.write("File %s has pylint problems, please fix\n    Use command: %s\n" % (on_file, cmd))
