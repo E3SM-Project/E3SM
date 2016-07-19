@@ -87,6 +87,7 @@
       <arg flag="-A" name="PROJECT"/>
     </submit_args>
     <directives>
+      <directive> -V </directive>
       <directive> -N {{ job_id }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->

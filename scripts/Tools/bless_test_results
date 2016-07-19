@@ -179,8 +179,9 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
     baseline_area = os.path.join(baseline_root, baseline_tag)
 
     # The env_mach_specific script may need these to be defined
-    os.environ["COMPILER"] = _MACHINE.get_default_compiler() # this MUST match compiler that cprnc was built with
-    os.environ["MPILIB"] = _MACHINE.get_default_MPIlib()
+    compiler = _MACHINE.get_default_compiler() # this MUST match compiler that cprnc was built with
+    os.environ["COMPILER"]  = compiler
+    os.environ["MPILIB"] = _MACHINE.get_default_MPIlib(attributes={"compiler":compiler})
 
     broken_blesses = []
     for test_status_file in test_status_files:
