@@ -92,12 +92,12 @@ class EnvBatch(EnvBase):
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
-             
-        
+
+
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         # for job in self.get_nodes("job") :
-        
+
         groups = self.get_nodes("group")
 
         for group in groups :
@@ -122,14 +122,14 @@ class EnvBatch(EnvBase):
                 # seach in all entry nodes
                 for node in nodes:
 
-                    
+
                     # Build return structure
                     attr          = node.get('id')
                     group_name     = None
-                    
+
                     # determine group
                     if (root.tag == "job") :
-                        group_name = root.get('name') 
+                        group_name = root.get('name')
                     else:
                         group_name = root.get('id')
 
@@ -141,9 +141,9 @@ class EnvBatch(EnvBase):
 
                     tmp = { 'group' : group_name , 'attribute' : attr , 'value' : val , 'type' : attribute_type , 'description' : desc , 'default' : default , 'file' : filename}
                     logger.debug("Found node with value for %s = %s" , item , tmp )
-                    
+
                     # add single result to list
-                    results.append(tmp) 
+                    results.append(tmp)
 
         logger.debug("(get_values) Return value:  %s" , results )
 
@@ -325,9 +325,9 @@ class EnvBatch(EnvBase):
                 val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
-                        
+
                 if val is not None and len(val) > 0 and val != "None":
-                    # Try to evaluate val 
+                    # Try to evaluate val
                     try:
                         rval = eval(val)
                     except:
@@ -431,14 +431,6 @@ class EnvBatch(EnvBase):
         for string in (batchsubmit, submitargs, batchredirect, job):
             if  string is not None:
                 submitcmd += string + " "
-        
-#        if case.get_value("MACH") == "mira":
-#            if job in ("case.test", "case.run"):
-#                if os.path.isfile(".original_host"):
-#                    with open(".original_host", "r") as fd:
-#                        sshhost = fd.read()
-#                        submitcmd = "ssh %s `%s`"%(sshhost, submitcmd)
-
 
         logger.info("Submitting job script %s"%submitcmd)
         output = run_cmd(submitcmd)
