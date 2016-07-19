@@ -162,7 +162,7 @@
 
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
-<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="72"                     >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160714.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="72"                     >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160719.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 
