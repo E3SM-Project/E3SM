@@ -553,8 +553,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterVelocityCellY', waterVelocityCellY)
 
 
-      ! This is the hydropotential without the water thickness piece
-      hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
 
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
@@ -570,7 +568,7 @@ module li_subglacial_hydro
             waterThicknessEdge(iEdge) = 0.0_RKIND
          endif
 
-         hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell1) - hydropotentialBase(cell2)) / dcEdge(iEdge)
+         hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - hydropotentialBase(cell1)) / dcEdge(iEdge)
       end do
 
 
@@ -606,7 +604,7 @@ module li_subglacial_hydro
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
-         waterVelocity(iEdge) = effectiveConducEdge(iEdge) * hydropotentialBaseSlopeNormal(iEdge)
+         waterVelocity(iEdge) = -1.0_RKIND * effectiveConducEdge(iEdge) * hydropotentialBaseSlopeNormal(iEdge)
          velSign = sign(1.0_RKIND, waterVelocity(iEdge))
          waterThicknessEdgeUpwind(iEdge) = max(velSign * waterThickness(cell1),   &
                      velSign * (-1.0_RKIND) * waterThickness(cell2))
@@ -619,8 +617,7 @@ module li_subglacial_hydro
          if (numGroundedCells < 2) then
             waterFluxDiffu(iEdge) = 0.0_RKIND
          else
-            waterFluxDiffu(iEdge) = diffusivity(iEdge) * &
-                 (waterThickness(cell1) - waterThickness(cell2)) / dcEdge(iEdge)
+            waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) / dcEdge(iEdge)
          endif
       end do
       waterFlux(:) = waterFluxAdvec(:) + waterFluxDiffu(:)
@@ -850,6 +847,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: hydropotential
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: zeroOrderSum
       real (kind=RKIND), dimension(:), pointer :: closingRate
       real (kind=RKIND), dimension(:), pointer :: openingRate
@@ -892,6 +890,7 @@ module li_subglacial_hydro
 
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
       call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterPressureOld', waterPressureOld)
       call mpas_pool_get_array(hydroPool, 'waterPressureTendency', waterPressureTendency)
@@ -952,7 +951,9 @@ module li_subglacial_hydro
       waterPressureTendency = (waterPressure - waterPressureOld) / deltatSGH
 
       effectivePressure = rhoi * gravity * thickness - waterPressure
-      hydropotential = rho_water * gravity * bedTopography + waterPressure + waterThickness
+      ! This is the hydropotential without the water thickness piece
+      hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
+      hydropotential = hydropotentialBase + rho_water * gravity * waterThickness
 
    !--------------------------------------------------------------------
    end subroutine calc_pressure
