@@ -107,7 +107,7 @@ module namelist_mod
   !-----------------
   use thread_mod, only : nthreads, nthreads_accel, omp_set_num_threads, omp_get_max_threads, vert_num_threads, vthreads
   !-----------------
-  use dimensions_mod, only : ne, np, npdg, nnodes, nmpi_per_node, npart, ntrac, ntrac_d, qsize, qsize_d, set_mesh_dimensions
+  use dimensions_mod, only : ne, np, nnodes, nmpi_per_node, npart, ntrac, ntrac_d, qsize, qsize_d, set_mesh_dimensions
   !-----------------
 #ifdef CAM
   use time_mod, only : nsplit, smooth, phys_tscale
@@ -155,21 +155,6 @@ module namelist_mod
 #ifndef CAM
   use fvm_mod, only: fvm_ideal_test, ideal_test_off, ideal_test_analytical_departure, ideal_test_analytical_winds
   use fvm_mod, only: fvm_test_type, ideal_test_boomerang, ideal_test_solidbody
-#endif
-
-!=======================================================================================================!
-!    Adding for SW DG                                                                                   !
-!=======================================================================================================!
-#ifdef _SWDG
-  ! ------------------------
-  use dg_flux_mod, only: riemanntype
-  ! ------------------------
-  use dg_tests_mod, only : alpha_dg, alphatype
-  ! ------------------------
-  use dg_sweq_mod, only: stage_rk
-  ! ------------------------
-  use physical_constants, only: dd_pi
-  ! ------------------------
 #endif
 
 !=======================================================================================================!
@@ -262,7 +247,6 @@ module namelist_mod
                      use_semi_lagrange_transport , &
                      use_semi_lagrange_transport_local_conservation , &
                      tstep_type, &
-                     npdg, &
                      cubed_sphere_map, &
                      qsplit, &
                      rsplit, &
@@ -368,21 +352,6 @@ module namelist_mod
 #endif
 ! ^ ifndef CAM
 
-!=======================================================================================================!
-!   Adding for SW DG                                                                                    !
-!=======================================================================================================!
-#ifdef _SWDG
-    namelist /dg_nl/  &
-        riemanntype,  &
-        alphatype,    &
-        alpha_dg,     &
-        stage_rk
-!=======================================================================================================!
-    riemanntype= 0
-    alphatype= 0
-    alpha_dg = 0.0D0
-    stage_rk = 3
-#endif
 !=======================================================================================================!
     ! ==========================
     ! Set the default partmethod
@@ -581,14 +550,6 @@ module namelist_mod
        if(filter_freq == 0) filter_freq = -1
 #ifndef CAM
 
-#ifdef _PRIMDG
-       write(iulog,*)"reading vert_nl namelist..."
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=vert_nl)
-#else
-       read(*,nml=vert_nl)
-#endif
-#endif
 #ifdef _PRIM
        write(iulog,*)"reading physics namelist..."
        if (test_case=="held_suarez0" .or. &
@@ -698,27 +659,6 @@ module namelist_mod
           endif
        end do
 
-
-!=======================================================================================================!
-!     Adding for SW DG                                                                                  !
-!=======================================================================================================!
-#ifdef _SWDG
-      write(iulog,*)"reading dg namelist..."
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-      read(unit=7,nml=dg_nl)
-#else
-      read(*,nml=dg_nl)
-#endif
-    if (alphatype==0) then
-       alpha_dg= 0.0D0
-    elseif (alphatype==1) then
-       alpha_dg= DD_PI
-    elseif (alphatype==2) then
-       alpha_dg= DD_PI/2.0D0
-    elseif (alphatype==4) then
-       alpha_dg= DD_PI/4.0D0
-    endif
-#endif
 !=======================================================================================================!
 
 #if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
@@ -820,7 +760,6 @@ module namelist_mod
     call MPI_bcast(use_semi_lagrange_transport ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(use_semi_lagrange_transport_local_conservation ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -1044,17 +983,6 @@ module namelist_mod
     end if
 
 !=======================================================================================================!
-!   Adding for SW DG                                                                                    !
-!=======================================================================================================!
-#ifndef CAM
-#ifdef _SWDG
-    call MPI_bcast(riemanntype,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(alphatype,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(alpha_dg,1,MPIreal_t,par%root,par%comm,ierr)
-    call MPI_bcast(stage_rk,1,MPIinteger_t,par%root,par%comm,ierr)
-#endif
-#endif
-!=======================================================================================================!
 #ifdef CAM
     nmpi_per_node=1
 #endif
@@ -1134,7 +1062,6 @@ module namelist_mod
 #endif
 
        write(iulog,*)"readnl: ne,np         = ",NE,np
-       if (npdg>0) write(iulog,*)"readnl: npdg       = ",npdg
        write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
        write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
        write(iulog,*)"readnl: vthreads      = ",vthreads
@@ -1299,15 +1226,7 @@ module namelist_mod
        end if
 #endif
 ! ^ ifndef CAM
-!=======================================================================================================!
-!      Adding for SW DG                                                                                 !
-!=======================================================================================================!
-#ifdef _SWDG
-       write(iulog,*)'dg: riemanntype=',riemanntype
-       write(iulog,*)'dg: alphatype=',alphatype
-       write(iulog,*)'dg: alpha    =',alpha_dg
-       write(iulog,*)'dg: staqge_rk=',stage_rk
-#endif
+
 !=======================================================================================================!
     endif
 

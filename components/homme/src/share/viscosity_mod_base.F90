@@ -133,9 +133,7 @@ logical var_coef1
             do i=1,np
 #ifdef _PRIM
                T(i,j,k)=elem(ie)%state%T(i,j,k,nt) 
-#elif defined _PRIMDG
-               T(i,j,k)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%phis(i,j)
-#else            
+#else
                ! filter surface height, not thickness
                T(i,j,k)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%ps(i,j)
 #endif

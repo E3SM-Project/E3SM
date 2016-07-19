@@ -57,8 +57,6 @@ ENDIF ()
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
-OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" OFF)
-OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
@@ -184,14 +182,6 @@ ENDIF()
 
 IF(${BUILD_HOMME_PREQX_ACC})
   ADD_SUBDIRECTORY(src/preqx_acc)
-ENDIF()
-
-IF(${BUILD_HOMME_SWDGX})
-  ADD_SUBDIRECTORY(src/swdgx)
-ENDIF()
-
-IF(${BUILD_HOMME_PRIMDGX})
-  ADD_SUBDIRECTORY(src/primdgx)
 ENDIF()
 
 IF(${BUILD_HOMME_FVM})

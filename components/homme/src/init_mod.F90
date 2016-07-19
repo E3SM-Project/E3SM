@@ -342,14 +342,11 @@ contains
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
     call initEdgeBuffer(par,edge1,elem,nlev)
-#ifdef _PRIMDG
-    call initEdgeBuffer(par,edge2,elem,4*nlev)
-    call initEdgeBuffer(par,edge3,elem,11*nlev)
-#else
     call initEdgeBuffer(par,edge2,elem,2*nlev)
     call initEdgeBuffer(par,edge3,elem,11*nlev)
-#endif
+
     allocate(global_shared_buf(nelemd,nrepro_vars))
+
     call InitReductionBuffer(red,3*nlev,nthreads)
     call InitReductionBuffer(red_sum,1)
     call InitReductionBuffer(red_sum_int,1)

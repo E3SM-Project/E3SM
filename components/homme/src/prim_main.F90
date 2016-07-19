@@ -8,9 +8,6 @@ program prim_main
   use prim_driver_mod, only : prim_init1, prim_init2, prim_run, prim_finalize,&
                               leapfrog_bootstrap, prim_run_subcycle
   use hybvcoord_mod, only : hvcoord_t, hvcoord_init
-#else
-! use these for dg3d
-
 #endif
 
   ! -----------------------------------------------

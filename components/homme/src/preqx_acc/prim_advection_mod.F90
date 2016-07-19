@@ -504,7 +504,7 @@ contains
   !
   ! ===================================
   use kinds                 , only: real_kind
-  use dimensions_mod        , only: np, npdg, nlev
+  use dimensions_mod        , only: np, nlev
   use hybrid_mod            , only: hybrid_t
   use element_mod           , only: element_t
   use derivative_mod        , only: derivative_t
