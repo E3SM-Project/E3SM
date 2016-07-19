@@ -368,7 +368,7 @@ class SystemTest(object):
             create_newcase_cmd += " --user-mods-dir %s" % test_mod_file
 
         if case_opts is not None:
-            for case_opt in case_opts:
+            for case_opt in case_opts: # pylint: disable=not-an-iterable
                 if case_opt.startswith('M'):
                     mpilib = case_opt[1:]
                     create_newcase_cmd += " --mpilib %s" % mpilib

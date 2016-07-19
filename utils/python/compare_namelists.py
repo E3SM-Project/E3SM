@@ -3,6 +3,8 @@ import os, re, logging
 from CIME.utils  import expect
 logger=logging.getLogger(__name__)
 
+# pragma pylint: disable=unsubscriptable-object
+
 ###############################################################################
 def parse_namelists(namelist_lines, filename):
 ###############################################################################
