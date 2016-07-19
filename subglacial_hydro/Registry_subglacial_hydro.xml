@@ -150,7 +150,7 @@
 		     description="tangent component of gradient of hydropotentialBase" />
                 <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="?"
 		     description="magnitude of the gradient of hydropotentialBase, on Edges" />
-                <var name="divergence" type="real" dimensions="nCells Time" units="m"
+                <var name="divergence" type="real" dimensions="nCells Time" units="m s^-1"
 		     description="flux divergence of water" />
                 <var name="openingRate" type="real" dimensions="nCells Time" units="m s^-1"
 		     description="rate of cavity opening" />

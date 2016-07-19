@@ -484,7 +484,6 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       real (kind=RKIND), dimension(:), pointer :: bedTopography
-      real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
@@ -535,7 +534,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
