@@ -655,7 +655,7 @@ contains
       type (mpas_pool_type), pointer :: meshPool, diagnosticsPool, statePool
       real (kind=RKIND), dimension(:,:), pointer :: zMid
       real (kind=RKIND), dimension(:,:), pointer :: rx1Edge, rx1Cell
-      real (kind=RKIND), dimension(:), pointer :: rx1MaxEdge, rx1MaxCell, ssh
+      real (kind=RKIND), dimension(:), pointer :: rx1MaxEdge, rx1MaxCell, ssh, rx1MaxLevel
       real (kind=RKIND), pointer :: globalRx1Max
 
       integer, pointer :: nCells, nVertLevels, nEdges
@@ -669,6 +669,13 @@ contains
       iErr = 0
 
       localMaxRx1Edge = 0.0_RKIND
+
+      block_ptr => domain % blocklist
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      allocate(rx1MaxLevel(nVertLevels))
+      rx1MaxLevel(:) = 0.0_RKIND
+
 
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
@@ -716,6 +723,7 @@ contains
             rx1 = abs(dzEdgeK+dzEdgeKp1)/(dzVert1+dzVert2)
 
             rx1Edge(k,iEdge) = rx1
+            rx1MaxLevel(k) = max(rx1MaxLevel(k),rx1)
             rx1Cell(k,c1) = max(rx1Cell(k,c1),rx1)
             rx1Cell(k,c2) = max(rx1Cell(k,c2),rx1)
 
@@ -731,8 +739,15 @@ contains
       end do
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
       call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
+      do k = 1,nVertLevels
+         call mpas_dmpar_max_real(domain % dminfo, rx1MaxLevel(k), globalRx1Max)
+         write (stdoutUnit,'(a, i4, a, es10.2)') '  max of rx1 in level', k, ':', globalRx1Max
+      end do
+
       call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
       write (stdoutUnit,'(a, es10.2)') ' global max of rx1:', globalRx1Max
+
+      deallocate(rx1MaxLevel)
 
     end subroutine ocn_compute_Haney_number
 
@@ -1075,8 +1090,8 @@ contains
 
           zTop(:) = ssh(:)
           where(smoothingMask == 1)
-            ! start with maxLevelCell == 1; we will update it when we encounter the bottom
-            maxLevelCell(:) = 1
+            ! start with maxLevelCell == nVertLevels+1; we will update it when we encounter the bottom
+            maxLevelCell(:) = nVertLevels+1
           end where
 
           block_ptr => block_ptr % next
@@ -1113,7 +1128,7 @@ contains
               end if
 
               do iCell = 1, nCells
-                if((smoothingMask(iCell) == 0) .or. (maxLevelCell(iCell) .ne. 1)) cycle
+                if((smoothingMask(iCell) == 0) .or. (maxLevelCell(iCell) .ne. nVertLevels+1)) cycle
 
                 if(-bottomDepth(iCell) > zBot(iCell)) then
                   ! we missed maxLevelCell, either because k < config_rx1_min_levels or
@@ -1152,9 +1167,10 @@ contains
           else
             rx1Goal = config_rx1_max
           end if
-          call constrain_rx1_layer(domain, config_rx1_inner_iter_count, config_rx1_init_inner_weight, rx1Goal, iErr)
+          call constrain_rx1_layer(domain, config_rx1_inner_iter_count, config_rx1_init_inner_weight, &
+                                   rx1Goal, k > config_rx1_min_levels, iErr)
 
-          ! update zInterface, layerThickness, zTop
+          ! update zInterface, zTop
           block_ptr => domain % blocklist
           do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
@@ -1182,6 +1198,22 @@ contains
 
         end do !k
 
+        block_ptr => domain % blocklist
+        do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+
+          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+          call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
+
+          where((smoothingMask(:) == 1) .and. (maxLevelCell(:) == nVertLevels+1))
+            ! we never found the bottom, so it must be the last level
+            maxLevelCell(:) = nVertLevels
+          end where
+
+          block_ptr => block_ptr % next
+        end do
 
         localMaxRx1Edge = -1e30_RKIND
         localStretchMin = 1e30_RKIND
@@ -1337,11 +1369,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine constrain_rx1_layer(domain, iterCount, initIterWeight, rx1Goal, iErr)
+    subroutine constrain_rx1_layer(domain, iterCount, initIterWeight, rx1Goal, checkBelowBottom, iErr)
 
       type (domain_type), intent(inout) :: domain
       integer, intent(in) :: iterCount
       real (kind=RKIND), intent(in) :: initIterWeight, rx1Goal
+      logical :: checkBelowBottom
       integer, intent(out) :: iErr
 
       type (block_type), pointer :: block_ptr
@@ -1406,8 +1439,10 @@ contains
             if((maxLevelCell(c1) <= 0) .or. (maxLevelCell(c2) <= 0)) cycle
             if((smoothingMask(c1) == 0) .and. (smoothingMask(c2) == 0)) cycle
 
-            ! if both cells are definitely below the bathymetry, no need to constrain rx1
-            if((zTop(c1) < -bottomDepth(c1)) .and. (zTop(c2) < -bottomDepth(c2))) cycle
+            if(checkBelowBottom) then
+              ! if both cells are definitely below the bathymetry, no need to constrain rx1
+              if((zTop(c1) < -bottomDepth(c1)) .and. (zTop(c2) < -bottomDepth(c2))) cycle
+            end if
 
             dzEdgeK = zTop(c2)-zTop(c1)
             dzEdgeKp1 = zBot(c2)-zBot(c1)
