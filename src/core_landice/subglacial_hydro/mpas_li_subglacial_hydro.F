@@ -135,6 +135,10 @@ module li_subglacial_hydro
             deltatSGH = deltat
          endif
 
+         ! Initialize diagnostic pressure variables
+         call calc_pressure_diag_vars(block, err_tmp)
+         err = ior(err, err_tmp)
+
          block => block % next
       end do
 
@@ -411,20 +415,6 @@ module li_subglacial_hydro
 
       block => domain % blocklist
       do while (associated(block))
-!         ! Assign the time stamp for this time step
-!         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-!         call mpas_pool_get_array(meshPool, 'xtime', xtime)
-!         xtime = timeStamp
-!
-!         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
-!         deltat_output = dtSeconds
-!
-!         ! compute time since start of simulation, in days
-!         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
-!         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
-!         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-!         call mpas_get_timeInterval(currTime - simulationStartTime_timeType, dt=daysSinceStart)
-!         daysSinceStart = daysSinceStart / seconds_per_day
 
          block => block % next
       end do
@@ -840,14 +830,11 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: velocityPool
-!      real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: waterPressureOld
       real (kind=RKIND), dimension(:), pointer :: waterPressureTendency
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
-      real (kind=RKIND), dimension(:), pointer :: hydropotential
-      real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: zeroOrderSum
       real (kind=RKIND), dimension(:), pointer :: closingRate
       real (kind=RKIND), dimension(:), pointer :: openingRate
@@ -857,7 +844,6 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: basalSpeed
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
-      real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: thickness
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltatSGH
@@ -889,8 +875,6 @@ module li_subglacial_hydro
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
-      call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
-      call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterPressureOld', waterPressureOld)
       call mpas_pool_get_array(hydroPool, 'waterPressureTendency', waterPressureTendency)
@@ -906,7 +890,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'divergence', divergence)
       call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
@@ -950,13 +933,77 @@ module li_subglacial_hydro
       waterPressure = min(waterPressure, rhoi * gravity * thickness)
       waterPressureTendency = (waterPressure - waterPressureOld) / deltatSGH
 
+      call calc_pressure_diag_vars(block, err_tmp)
+      err = ior(err, err_tmp)
+
+   !--------------------------------------------------------------------
+   end subroutine calc_pressure
+
+
+!***********************************************************************
+!
+!  routine calc_pressure_diag_vars
+!
+!> \brief   Calculate SGH diagnostic variables related to  pressure
+!> \author  Matt Hoffman
+!> \date    5 July 2016
+!> \details
+!>  This routine calculates variables related to water pressure
+!-----------------------------------------------------------------------
+   subroutine calc_pressure_diag_vars(block, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pools pointers
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: hydroPool
+      real (kind=RKIND), pointer :: rhoi
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: waterPressure
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
+      real (kind=RKIND), dimension(:), pointer :: waterThickness
+      real (kind=RKIND), dimension(:), pointer :: hydropotential
+      real (kind=RKIND), dimension(:), pointer :: effectivePressure
+
+      err = 0
+
+      ! Get pools things
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+
+      call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
+      call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
+      call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
+
       effectivePressure = rhoi * gravity * thickness - waterPressure
       ! This is the hydropotential without the water thickness piece
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
       hydropotential = hydropotentialBase + rho_water * gravity * waterThickness
 
    !--------------------------------------------------------------------
-   end subroutine calc_pressure
+   end subroutine calc_pressure_diag_vars
 
 
 end module li_subglacial_hydro
