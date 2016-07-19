@@ -218,7 +218,6 @@ class Case(object):
                 traceback.print_exc()
                 logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
 
-
             if result is not None and (len(result) >= 1):
 
                 if resolved :
@@ -238,9 +237,6 @@ class Case(object):
 
         logger.debug("(get_values) Return value:  %s" , results )
         return results
-
-
-
 
     def get_type_info(self, item):
         result = None

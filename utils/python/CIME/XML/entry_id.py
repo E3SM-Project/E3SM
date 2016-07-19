@@ -183,8 +183,7 @@ class EntryID(GenericXML):
         or from the values field if the attribute argument is provided
         and matches
         """
-        expect(subgroup is None, "Subgroup not supported")
-        logger.debug("Get Value")
+        logger.debug("Get Value (%s, %s, %s, %s)" % (vid, attribute, resolved, subgroup))
         val = None
         node = self.get_optional_node("entry", {"id":vid})
 
@@ -221,7 +220,6 @@ class EntryID(GenericXML):
         attribute to its associated value and group
         """
         logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
-        expect(subgroup is None, "Subgroup not supported")
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters

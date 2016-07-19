@@ -44,7 +44,7 @@ OR
 
     args = parser.parse_args(args[1:])
 
-    expect(args.prereq is None, "--prereq not currently supported")
+    CIME.utils.expect(args.prereq is None, "--prereq not currently supported")
 
     CIME.utils.handle_standard_logging_options(args)
 

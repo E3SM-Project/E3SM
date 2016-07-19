@@ -55,7 +55,7 @@ class SystemTestsCommon(object):
         return self._runstatus == "FAIL"
 
     def pass_test(self):
-        if not self.has_failed:
+        if not self.has_failed():
             self._runstatus = "PASS"
 
     def has_passed(self):
