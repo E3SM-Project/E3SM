@@ -357,10 +357,12 @@ def resubmit_check(case):
     # Note that Mira requires special logic
 
     dout_s = case.get_value("DOUT_S")
+    logger.warn("dout_s %s "%(dout_s))
     mach = case.get_value("MACH")
+    logger.warn("mach %s "%(mach))
     testcase = case.get_value("TESTCASE")
     resubmit_num = case.get_value("RESUBMIT")
-    logger.warn("dout_s %s, mach %s resubmit_num "%(dout_s, mach, resubmit_num))
+    logger.warn("resubmit_num %s"%(resubmit_num))
     # If dout_s is True than short-term archiving handles the resubmit
     # If dout_s is True and machine is mira submit the st_archive script
     resubmit = False
@@ -369,8 +371,7 @@ def resubmit_check(case):
     elif dout_s and mach == 'mira':
         caseroot = case.get_value("CASEROOT")
         cimeroot = case.get_value("CIMEROOT")
-        cmd = "ssh cooleylogin1 'cd %s; CIMEROOT=%s ./case.submit %s case.st_archive "%(caseroot, cimeroot, caseroot)
-        
+        cmd = "ssh cooleylogin1 'cd %s; CIMEROOT=%s ./case.submit %s --job case.st_archive' "%(caseroot, cimeroot, caseroot)
         run_cmd(cmd, verbose=True)
 
     if resubmit:
@@ -418,6 +419,7 @@ def case_run(case):
         if data_assimilation:
             do_data_assimilation(case, data_assimilation_script, lid)
 
+    logger.warn("check for resubmit")
     resubmit_check(case)
 
     return True

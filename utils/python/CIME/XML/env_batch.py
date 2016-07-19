@@ -315,7 +315,7 @@ class EnvBatch(EnvBase):
             name = arg.get("name")
             if self.batchtype == "cobalt" and job == "case.st_archive":
                 if flag == "-n":
-                    name = 1
+                    name = 'task_count'
                 if flag == "--mode":
                     continue
 
@@ -431,9 +431,14 @@ class EnvBatch(EnvBase):
         for string in (batchsubmit, submitargs, batchredirect, job):
             if  string is not None:
                 submitcmd += string + " "
+        
+        if case.get_value("MACH") == "mira":
+            if job in ("case.test", "case.run"):
+                if os.path.isfile(".original_host"):
+                    with open(".original_host", "r") as fd:
+                        sshhost = fd.read()
+                        submitcmd = "ssh %s `%s`"%(sshhost, submitcmd)
 
-        if self.batchtype == "pbs":
-            submitcmd += " -F \"--caseroot %s\""%caseroot
 
         logger.info("Submitting job script %s"%submitcmd)
         output = run_cmd(submitcmd)
