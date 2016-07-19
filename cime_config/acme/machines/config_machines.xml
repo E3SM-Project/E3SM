@@ -820,7 +820,6 @@
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
-               <arg name="colon">:</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">

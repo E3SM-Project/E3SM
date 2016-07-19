@@ -157,6 +157,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
+
     if (verbose or logger.level == logging.DEBUG):
         logger.info("RUN: %s" % cmd)
 

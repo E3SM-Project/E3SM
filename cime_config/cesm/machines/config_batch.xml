@@ -63,13 +63,14 @@
      <depend_string> --dependencies</depend_string>
     <walltime_format>%M</walltime_format>
      <submit_args>
-       <arg flag="--cwd" name="$CASEROOT"/>
-       <arg flag="-A" name="$PROJECT"/>
-       <arg flag="-t" name="$JOB_WALLCLOCK_TIME"/>
+       <arg flag="--cwd" name="CASEROOT"/>
+       <arg flag="-A" name="PROJECT"/>
+       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
        <arg flag="-n" name="$TOTALPES/$PES_PER_NODE"/>
-       <arg flag="-q" name="$JOB_QUEUE"/>
+       <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
-     </submit_args>
+       <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
+      </submit_args>
    </batch_system>
 
   <batch_system type="lsf" version="9.1">
@@ -142,21 +143,21 @@
    </batch_system>
 
   <!-- babbage is PBS -->
-  <batch_system MACH="babbage" version="x.y">
+  <batch_system MACH="babbage" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
   <!-- babbageKnc is PBS -->
-  <batch_system MACH="babbageKnc" version="x.y">
+  <batch_system MACH="babbageKnc" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
   <!-- brutus is PBS -->
-  <batch_system type="pbs" MACH="brutus" version="x.y">
+  <batch_system type="pbs" MACH="brutus" >
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -186,14 +187,14 @@
    </batch_system>
 
   <!-- brutus is PBS -->
-  <batch_system MACH="brutus" version="x.y">
+  <batch_system MACH="brutus" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
-    <!-- eos is PBS -->
-    <batch_system MACH="eos" version="x.y">
+  <!-- eos is PBS -->
+  <batch_system MACH="eos" type="pbs">
     <jobid_pattern>^(\d+)</jobid_pattern>
     <directives>
       <directive>-A $PROJECT</directive>
@@ -201,10 +202,10 @@
       <directive>-l  nodes={{ num_nodes }}</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
-   </batch_system>
+  </batch_system>
 
   <!-- erebus is PBS -->
-  <batch_system MACH="erebus" version="x.y">
+  <batch_system MACH="erebus" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -232,14 +233,6 @@
      </walltimes>
    </batch_system>
 
-  <!-- goldbach is PBS -->
-  <batch_system MACH="goldbach" version="x.y">
-    <directives>
-      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
-
   <!-- hobart is PBS -->
   <batch_system type="pbs" MACH="hobart" version="x.y">
     <directives>
@@ -253,27 +246,13 @@
   </batch_system>
 
    <!-- hera is SLURM -->
-   <batch_system MACH="hera">
+   <batch_system MACH="hera" type="slurm">
    <batch_directive>#MSUB</batch_directive>
    <directives>
      <directive>-A ees</directive>
      <directive>-l gres=lscratchd</directive>
    </directives>
    </batch_system>
-
-  <!-- hopper is PBS -->
-  <batch_system MACH="hopper" version="x.y">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
-
-  <!-- janus is PBS -->
-  <batch_system MACH="janus" version="x.y">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
 
   <batch_system MACH="mira" type="cobalt">
     <queues>
@@ -361,7 +340,7 @@
   </batch_system>
 
   <!-- all pleiades machines are PBS -->
-  <batch_system MACH="pleiades-wes" version="x.y">
+  <batch_system MACH="pleiades-wes" version="x.y" type="pbs">
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -372,7 +351,7 @@
   </batch_system>
 
   <!-- sierra is SLURM -->
-   <batch_system MACH="sierra">
+   <batch_system MACH="sierra" type="slurm">
    <batch_directive>#MSUB</batch_directive>
    <directives>
      <directive> </directive>
@@ -431,7 +410,7 @@
    </batch_system>
 
   <!-- titan is PBS -->
-  <batch_system MACH="titan" version="x.y">
+  <batch_system MACH="titan" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
