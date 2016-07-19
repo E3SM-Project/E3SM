@@ -9,11 +9,8 @@ batch directives. Use case.submit from the command line to run your case.
 import sys
 import os
 os.chdir( '{{ caseroot }}' )
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
 
-_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+_LIBDIR = os.path.join("{{ cimeroot }}", "scripts", "Tools")
 sys.path.append(_LIBDIR)
 
 from standard_script_setup          import *
