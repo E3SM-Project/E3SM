@@ -10,6 +10,7 @@ from standard_script_setup import *
 from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_python_libs_root
 
 import argparse, sys, os, doctest
+from multiprocessing.dummy import Pool as ThreadPool
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -36,14 +37,29 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--dir", default=get_python_libs_root(),
                         help="The root directory containing python files to check.")
 
+    parser.add_argument("-j", "--num-procs", type=int, default=8,
+                        help="The number of files to check in parallel")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.dir
+    return args.dir, args.num_procs
 
 ###############################################################################
-def check_code(dir_to_check):
+def run_pylint(on_file):
+###############################################################################
+    cmd = "pylint --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % on_file
+    stat = run_cmd(cmd)[0]
+    if stat != 0:
+        sys.stdout.write("File %s has pylint problems, please fix\n    Use command: %s\n" % (on_file, cmd))
+        return False
+    else:
+        sys.stdout.write("File %s has no pylint problems\n" % on_file)
+        return True
+
+###############################################################################
+def check_code(dir_to_check, num_procs):
 ###############################################################################
     """
     Check all python files in the given directory
@@ -57,19 +73,11 @@ def check_code(dir_to_check):
         os.environ["PYTHONPATH"] = dir_to_check
 
     # Get list of files to check
-    all_ok = True
     files_to_check = run_cmd_no_fail('find %s -name "*.py"' % dir_to_check).splitlines()
-    for file_to_check in files_to_check:
-        cmd = "pylint --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % file_to_check
-        stat = run_cmd(cmd)[0]
-        if stat != 0:
-            print "File", file_to_check, "has pylint problems, please fix"
-            print "    Use command:", cmd
-            all_ok = False
-        else:
-            print "File", file_to_check, "has no pylint issues"
+    pool = ThreadPool(num_procs)
+    results = pool.map(run_pylint, files_to_check)
 
-    return all_ok
+    return False not in results
 
 ###############################################################################
 def _main_func(description):
@@ -78,9 +86,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    dir_to_check = parse_command_line(sys.argv, description)
+    dir_to_check, num_procs = parse_command_line(sys.argv, description)
 
-    sys.exit(0 if check_code(dir_to_check) else 1)
+    sys.exit(0 if check_code(dir_to_check, num_procs) else 1)
 
 ###############################################################################
 
