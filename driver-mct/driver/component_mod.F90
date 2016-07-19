@@ -223,8 +223,10 @@ contains
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
 
+          call t_set_prefixf(comp(1)%oneletterid//"_i:")
           call comp_init( EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc, &
                NLFilename=NLFilename )
+          call t_unset_prefixf()
           
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
@@ -670,7 +672,9 @@ contains
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
              end if
 
+             call t_set_prefixf(comp(1)%oneletterid//":")
              call comp_run(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
+             call t_unset_prefixf()
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
@@ -742,7 +746,9 @@ contains
     do eci = 1,num_inst
        if (comp(eci)%iamin_compid) then
           if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
+          call t_set_prefixf(comp(1)%oneletterid//"_f:")
           call comp_final(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
+          call t_unset_prefixf()
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        end if
     end do

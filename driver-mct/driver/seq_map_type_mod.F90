@@ -44,7 +44,7 @@ module seq_map_type_mod
   ! seq_map_maxcnt is the total number of mappings supported
   ! seq_map_cnt is the total number of mappings initialized any any time
   ! seq_maps are the mappers that have been initialized
-  
+
   integer(IN),parameter :: seq_map_maxcnt = 5000
   integer(IN)           :: seq_map_cnt = 0
   type(seq_map),private,target  :: seq_maps(seq_map_maxcnt)
@@ -62,7 +62,7 @@ contains
 
   subroutine seq_map_mapmatch(mapid,gsMap_s,gsMap_d,mapfile,strategy)
 
-    ! This method searches through the current seq_maps to find a 
+    ! This method searches through the current seq_maps to find a
     ! mapping file that matches the values passed in
 
     implicit none
@@ -142,7 +142,7 @@ contains
 
  subroutine seq_map_mappoint(mapid,mapper)
 
-    ! This method searches through the current seq_maps to find a 
+    ! This method searches through the current seq_maps to find a
     ! mapping file that matches the values passed in
 
     implicit none

@@ -12,15 +12,15 @@ module cesm_comp_mod
 !               data -------- Send data back interpolated from input files.
 !               prognostic -- Prognostically simulate the given component.
 !
-! Method: Call appropriate initialization, run (time-stepping), and 
+! Method: Call appropriate initialization, run (time-stepping), and
 !         finalization routines.
-! 
+!
 !-------------------------------------------------------------------------------
 
    !----------------------------------------------------------------------------
    ! share code & libs
    !----------------------------------------------------------------------------
-   use shr_kind_mod,      only: r8 => SHR_KIND_R8 
+   use shr_kind_mod,      only: r8 => SHR_KIND_R8
    use shr_kind_mod,      only: cs => SHR_KIND_CS
    use shr_kind_mod,      only: cl => SHR_KIND_CL
    use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
@@ -70,8 +70,8 @@ module cesm_comp_mod
     use seq_comm_mct, only: num_inst_total, num_inst_max
     use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
     use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
-    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs 
-    use seq_comm_mct, only: seq_comm_petlist 
+    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
+    use seq_comm_mct, only: seq_comm_petlist
 
    ! clock & alarm routines and variables
    use seq_timemgr_mod, only: seq_timemgr_type
@@ -99,13 +99,13 @@ module cesm_comp_mod
    use seq_timemgr_mod, only: seq_timemgr_alarm_esprun
    use seq_timemgr_mod, only: seq_timemgr_alarm_barrier
 
-   ! "infodata" gathers various control flags into one datatype   
+   ! "infodata" gathers various control flags into one datatype
    use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
    use seq_infodata_mod, only: seq_infodata_init, seq_infodata_exchange
    use seq_infodata_mod, only: seq_infodata_type, seq_infodata_orb_variable_year
    use seq_infodata_mod, only: seq_infodata_print
-        
-   ! domain related routines   
+
+   ! domain related routines
    use seq_domain_mct, only : seq_domain_check
 
    ! history file routines
@@ -146,12 +146,12 @@ module cesm_comp_mod
    use component_type_mod , only: component_get_iamin_compid, component_get_suffix
    use component_type_mod , only: component_get_name, component_get_c2x_cx
    use component_type_mod , only: atm, lnd, ice, ocn, rof, glc, wav, esp
-   use component_mod      , only: component_init_pre 
+   use component_mod      , only: component_init_pre
    use component_mod      , only: component_init_cc, component_init_cx, component_run, component_final
    use component_mod      , only: component_init_areacor, component_init_aream
    use component_mod      , only: component_exch, component_diag
 
-   ! prep routines (includes mapping routines between components and merging routines) 
+   ! prep routines (includes mapping routines between components and merging routines)
    use prep_lnd_mod
    use prep_ice_mod
    use prep_wav_mod
@@ -165,7 +165,7 @@ module cesm_comp_mod
    use seq_map_type_mod
    use seq_map_mod      ! generic mapping
 
-   ! --- timing routines --- 
+   ! --- timing routines ---
    use t_drv_timers_mod
 
    implicit none
@@ -192,10 +192,10 @@ module cesm_comp_mod
    type(mct_aVect) , pointer :: a2x_ax => null()
 
    character(len=CL) :: suffix
-   logical           :: iamin_id 
-   logical           :: iamroot_id 
+   logical           :: iamin_id
+   logical           :: iamroot_id
    integer           :: mpicom
-   character(len=seq_comm_namelen) :: compname 
+   character(len=seq_comm_namelen) :: compname
 
    !----------------------------------------------------------------------------
    ! domains & related
@@ -256,11 +256,11 @@ module cesm_comp_mod
    logical  :: tprof_alarm            ! timing profile alarm
    logical  :: barrier_alarm          ! barrier alarm
    logical  :: t1hr_alarm             ! alarm every hour
-   logical  :: t2hr_alarm             ! alarm every two hours 
-   logical  :: t3hr_alarm             ! alarm every three hours 
-   logical  :: t6hr_alarm             ! alarm every six hours 
-   logical  :: t12hr_alarm            ! alarm every twelve hours 
-   logical  :: t24hr_alarm            ! alarm every twentyfour hours 
+   logical  :: t2hr_alarm             ! alarm every two hours
+   logical  :: t3hr_alarm             ! alarm every three hours
+   logical  :: t6hr_alarm             ! alarm every six hours
+   logical  :: t12hr_alarm            ! alarm every twelve hours
+   logical  :: t24hr_alarm            ! alarm every twentyfour hours
    logical  :: t1yr_alarm             ! alarm every year, at start of year
 
    real(r8) :: days_per_year = 365.0  ! days per year
@@ -309,7 +309,7 @@ module cesm_comp_mod
    real(r8)      :: cktime            ! delta time
    real(r8)      :: cktime_acc(10)    ! cktime accumulator array 1 = all, 2 = atm, etc
    integer       :: cktime_cnt(10)    ! cktime counter array
-   real(r8)      :: max_cplstep_time 
+   real(r8)      :: max_cplstep_time
    character(CL) :: timing_file       ! Local path to tprof filename
    character(CL) :: timing_dir        ! timing directory
    character(CL) :: tchkpt_dir        ! timing checkpoint directory
@@ -364,7 +364,7 @@ module cesm_comp_mod
    logical  :: glc_c2_ice             ! .true.  => glc to ice coupling on
    logical  :: wav_c2_ocn             ! .true.  => wav to ocn coupling on
 
-   logical  :: dead_comps             ! .true.  => dead components 
+   logical  :: dead_comps             ! .true.  => dead components
    logical  :: esmf_map_flag          ! .true.  => use esmf for mapping
 
    logical  :: areafact_samegrid      ! areafact samegrid flag
@@ -380,7 +380,7 @@ module cesm_comp_mod
    logical  :: cpl2ocn_first          ! use to call initial cpl2ocn timer
    logical  :: run_barriers           ! barrier the component run calls
 
-   character(CS) :: aoflux_grid       ! grid for a/o flux calc: atm xor ocn 
+   character(CS) :: aoflux_grid       ! grid for a/o flux calc: atm xor ocn
    character(CS) :: vect_map          ! vector mapping type
 
    character(CL) :: atm_gnam          ! atm grid
@@ -411,6 +411,8 @@ module cesm_comp_mod
    logical  :: reprosum_use_ddpdd     ! setup reprosum, use ddpdd
    real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
    logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
+
+   logical  :: output_perf = .false.  ! require timing data output for this pe
 
    !--- history & budgets ---
    logical :: do_budgets              ! heat/water budgets on
@@ -510,7 +512,7 @@ module cesm_comp_mod
    ! complist: list of comps on this pe
    !----------------------------------------------------------------------------
 
-   ! allow enough room for names of all physical components + coupler, 
+   ! allow enough room for names of all physical components + coupler,
    ! where each string can be up to (max_inst_name_len+1) characters
    ! long (+1 allows for a space before each name)
    character(len=(seq_comm_namelen+1)*(num_inst_phys+1)) :: complist
@@ -526,7 +528,7 @@ module cesm_comp_mod
    integer, parameter :: comp_num_rof = 6
    integer, parameter :: comp_num_wav = 7
    integer, parameter :: comp_num_esp = 8
-   
+
    !----------------------------------------------------------------------------
    ! misc
    !----------------------------------------------------------------------------
@@ -593,9 +595,12 @@ subroutine cesm_pre_init1()
    it=1
    call seq_comm_getinfo(GLOID,mpicom=mpicom_GLOID,&
         iamroot=iamroot_GLOID,nthreads=nthreads_GLOID)
+   if (iamroot_GLOID) output_perf = .true.
+
    call seq_comm_getinfo(CPLID,mpicom=mpicom_CPLID,&
         iamroot=iamroot_CPLID,nthreads=nthreads_CPLID,&
         iam=comp_comm_iam(it))
+   if (iamroot_CPLID) output_perf = .true.
 
    if (iamin_CPLID) complist = trim(complist)//' cpl'
 
@@ -610,11 +615,12 @@ subroutine cesm_pre_init1()
       comp_id(it)    = ATMID(eai)
       comp_iamin(it) = seq_comm_iamin(comp_id(it))
       comp_name(it)  = seq_comm_name(comp_id(it))
-      call seq_comm_getinfo(ATMID(eai), mpicom=comp_comm(it), & 
+      call seq_comm_getinfo(ATMID(eai), mpicom=comp_comm(it), &
            nthreads=nthreads_ATMID, iam=comp_comm_iam(it))
       if (seq_comm_iamin(ATMID(eai))) then
          complist = trim(complist)//' '//trim(seq_comm_name(ATMID(eai)))
       endif
+      if (seq_comm_iamroot(ATMID(eai))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLATMID, mpicom=mpicom_CPLALLATMID)
    iamin_CPLALLATMID = seq_comm_iamin(CPLALLATMID)
@@ -629,6 +635,7 @@ subroutine cesm_pre_init1()
       if (seq_comm_iamin(LNDID(eli))) then
          complist = trim(complist)//' '//trim(seq_comm_name(LNDID(eli)))
       endif
+      if (seq_comm_iamroot(LNDID(eli))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLLNDID, mpicom=mpicom_CPLALLLNDID)
    iamin_CPLALLLNDID = seq_comm_iamin(CPLALLLNDID)
@@ -643,6 +650,7 @@ subroutine cesm_pre_init1()
       if (seq_comm_iamin (OCNID(eoi))) then
          complist = trim(complist)//' '//trim(seq_comm_name(OCNID(eoi)))
       endif
+      if (seq_comm_iamroot(OCNID(eoi))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLOCNID, mpicom=mpicom_CPLALLOCNID)
    iamin_CPLALLOCNID = seq_comm_iamin(CPLALLOCNID)
@@ -657,6 +665,7 @@ subroutine cesm_pre_init1()
       if (seq_comm_iamin (ICEID(eii))) then
          complist = trim(complist)//' '//trim(seq_comm_name(ICEID(eii)))
       endif
+      if (seq_comm_iamroot(ICEID(eii))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLICEID, mpicom=mpicom_CPLALLICEID)
    iamin_CPLALLICEID = seq_comm_iamin(CPLALLICEID)
@@ -670,6 +679,7 @@ subroutine cesm_pre_init1()
       if (seq_comm_iamin (GLCID(egi))) then
          complist = trim(complist)//' '//trim(seq_comm_name(GLCID(egi)))
       endif
+      if (seq_comm_iamroot(GLCID(egi))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLGLCID, mpicom=mpicom_CPLALLGLCID)
    iamin_CPLALLGLCID = seq_comm_iamin(CPLALLGLCID)
@@ -684,6 +694,7 @@ subroutine cesm_pre_init1()
       if (seq_comm_iamin(ROFID(eri))) then
          complist = trim(complist)//' '//trim( seq_comm_name(ROFID(eri)))
       endif
+      if (seq_comm_iamroot(ROFID(eri))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLROFID, mpicom=mpicom_CPLALLROFID)
    iamin_CPLALLROFID = seq_comm_iamin(CPLALLROFID)
@@ -698,6 +709,7 @@ subroutine cesm_pre_init1()
       if (seq_comm_iamin(WAVID(ewi))) then
          complist = trim(complist)//' '//trim(seq_comm_name(WAVID(ewi)))
       endif
+      if (seq_comm_iamroot(WAVID(ewi))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLWAVID, mpicom=mpicom_CPLALLWAVID)
    iamin_CPLALLWAVID = seq_comm_iamin(CPLALLWAVID)
@@ -720,7 +732,7 @@ subroutine cesm_pre_init1()
    !----------------------------------------------------------
 
    if (iamroot_CPLID) then
-      inquire(file='cpl_modelio.nml',exist=exists)      
+      inquire(file='cpl_modelio.nml',exist=exists)
       if (exists) then
          logunit = shr_file_getUnit()
          call shr_file_setIO('cpl_modelio.nml',logunit)
@@ -745,9 +757,10 @@ subroutine cesm_pre_init1()
 #endif
       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
    endif
+
    !
-   !  When using io servers (pio_async_interface=.true.) the server tasks do not return from 
-   !  shr_pio_init2 
+   !  When using io servers (pio_async_interface=.true.) the server tasks do not return from
+   !  shr_pio_init2
    !
    call shr_pio_init2(comp_id,comp_name,comp_iamin,comp_comm,comp_comm_iam)
 
@@ -791,7 +804,7 @@ subroutine cesm_pre_init2()
         nthreads_LNDID,nthreads_ICEID,nthreads_OCNID,nthreads_GLCID, &
         nthreads_ROFID, nthreads_WAVID, nthreads_ESPID, pethreads_GLOID )
 
-   call t_initf(NLFileName, LogPrint=.false., mpicom=mpicom_GLOID, &
+   call t_initf(NLFileName, LogPrint=.true., mpicom=mpicom_GLOID, &
         MasterTask=iamroot_GLOID,MaxThreads=maxthreads)
 
    if (iamin_CPLID) then
@@ -799,12 +812,15 @@ subroutine cesm_pre_init2()
    endif
 
    call t_startf('CPL:INIT')
+   call t_adj_detailf(+1)
 
+   call t_startf('CPL:cesm_pre_init2')
    !----------------------------------------------------------
    !| Memory test
    !----------------------------------------------------------
 
-   call shr_mem_init(prt=.true.)
+!mt   call shr_mem_init(prt=.true.)
+   call shr_mem_init(prt=iamroot_CPLID)
 
    !----------------------------------------------------------
    !| Initialize coupled fields
@@ -874,7 +890,7 @@ subroutine cesm_pre_init2()
         glc_gnam=glc_gnam                         , &
         wav_gnam=wav_gnam                         , &
         tfreeze_option = tfreeze_option           , &
-        cpl_decomp=seq_mctext_decomp              , & 
+        cpl_decomp=seq_mctext_decomp              , &
         shr_map_dopole=shr_map_dopole             , &
         wall_time_limit=wall_time_limit           , &
         force_stop_at=force_stop_at               , &
@@ -883,7 +899,7 @@ subroutine cesm_pre_init2()
         reprosum_recompute=reprosum_recompute, &
         max_cplstep_time=max_cplstep_time)
 
-   ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp 
+   ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
    ! (via a use statement)
 
    call shr_map_setDopole(shr_map_dopole)
@@ -1032,7 +1048,7 @@ subroutine cesm_pre_init2()
    !----------------------------------------------------------
    !| Set aqua_planet and single_column flags
    !  If in single column mode, overwrite flags according to focndomain file
-   !  in ocn_in namelist. SCAM can reset the "present" flags for lnd, 
+   !  in ocn_in namelist. SCAM can reset the "present" flags for lnd,
    !  ocn, ice, rof, and flood.
    !----------------------------------------------------------
 
@@ -1063,6 +1079,11 @@ subroutine cesm_pre_init2()
       call pio_closefile(pioid)
    endif
 
+   call t_stopf('CPL:cesm_pre_init2')
+
+   call t_adj_detailf(-1)
+   call t_stopf('CPL:INIT')
+
 end subroutine cesm_pre_init2
 
 !===============================================================================
@@ -1082,7 +1103,7 @@ subroutine cesm_init()
 
    !-----------------------------------------------------------------------------
    !| Component Initialization
-   !  Note that within each component initialization, the relevant x_present flag 
+   !  Note that within each component initialization, the relevant x_present flag
    !  part of CESMInit can be modified
    !  By default, all these flags are set to true
    !  The atm can reset the lnd_present, ice_present and ocn_present flags based
@@ -1091,6 +1112,9 @@ subroutine cesm_init()
    !  components will set them to true for the purposes of symmetry
    !-----------------------------------------------------------------------------
 
+   call t_startf('cesm_init')
+   call t_adj_detailf(+1)
+
    call t_startf('CPL:init_comps')
    if (iamroot_CPLID )then
       write(logunit,*) ' '
@@ -1098,8 +1122,7 @@ subroutine cesm_init()
       call shr_sys_flush(logunit)
    endif
 
-   call t_adj_detailf(+2)
-
+   call t_startf('comp_init_pre_all')
    call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
    call component_init_pre(lnd, LNDID, CPLLNDID, CPLALLLNDID, infodata, ntype='lnd')
    call component_init_pre(rof, ROFID, CPLROFID, CPLALLROFID, infodata, ntype='rof')
@@ -1108,16 +1131,55 @@ subroutine cesm_init()
    call component_init_pre(glc, GLCID, CPLGLCID, CPLALLGLCID, infodata, ntype='glc')
    call component_init_pre(wav, WAVID, CPLWAVID, CPLALLWAVID, infodata, ntype='wav')
    call component_init_pre(esp, ESPID, CPLESPID, CPLALLESPID, infodata, ntype='esp')
+   call t_stopf('comp_init_pre_all')
+
+   call t_startf('comp_init_cc_atm')
+   call t_adj_detailf(+2)
 
    call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_atm')
+
+   call t_startf('comp_init_cc_lnd')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_l, lnd, lnd_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_lnd')
+
+   call t_startf('comp_init_cc_rof')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_r, rof, rof_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_rof')
+
+   call t_startf('comp_init_cc_ocn')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_o, ocn, ocn_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_ocn')
+
+   call t_startf('comp_init_cc_ice')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_i, ice, ice_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_ice')
+
+   call t_startf('comp_init_cc_glc')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_g, glc, glc_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_glc')
+
+   call t_startf('comp_init_cc_wav')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_w, wav, wav_init, infodata, NLFilename)
    call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
 
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_wav')
+
+   call t_startf('comp_init_cx_all')
+   call t_adj_detailf(+2)
    call component_init_cx(atm, infodata)
    call component_init_cx(lnd, infodata)
    call component_init_cx(rof, infodata)
@@ -1126,9 +1188,13 @@ subroutine cesm_init()
    call component_init_cx(glc, infodata)
    call component_init_cx(wav, infodata)
    call component_init_cx(esp, infodata)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cx_all')
 
    ! Determine complist (list of comps for each id)
 
+   call t_startf('comp_list_all')
+   call t_adj_detailf(+2)
    complist = " "
    if (iamin_CPLID) complist = trim(complist)//' cpl'
 
@@ -1174,6 +1240,7 @@ subroutine cesm_init()
          complist = trim(complist)//' '//trim(compname)
       endif
    enddo
+
    do eei = 1,num_inst_esp
       iamin_ID = component_get_iamin_compid(esp(eei))
       if (iamin_ID) then
@@ -1183,9 +1250,9 @@ subroutine cesm_init()
    enddo
 
    call t_adj_detailf(-2)
+   call t_stopf('comp_list_all')
 
    call t_stopf('CPL:init_comps')
-
    !----------------------------------------------------------
    !| Determine coupling interactions based on present and prognostic flags
    !----------------------------------------------------------
@@ -1207,15 +1274,15 @@ subroutine cesm_init()
         atm_present=atm_present,               &
         lnd_present=lnd_present,               &
         ice_present=ice_present,               &
-        ocn_present=ocn_present,               & 
-        glc_present=glc_present,               & 
-        glclnd_present=glclnd_present,         & 
-        glcocn_present=glcocn_present,         & 
-        glcice_present=glcice_present,         & 
+        ocn_present=ocn_present,               &
+        glc_present=glc_present,               &
+        glclnd_present=glclnd_present,         &
+        glcocn_present=glcocn_present,         &
+        glcice_present=glcice_present,         &
         rof_present=rof_present,               &
         rofice_present=rofice_present,         &
-        wav_present=wav_present,               & 
-        esp_present=esp_present,               & 
+        wav_present=wav_present,               &
+        esp_present=esp_present,               &
         flood_present=flood_present,           &
         atm_prognostic=atm_prognostic,         &
         lnd_prognostic=lnd_prognostic,         &
@@ -1242,8 +1309,8 @@ subroutine cesm_init()
    ! derive samegrid flags
 
    samegrid_ao  = .true.
-   samegrid_al  = .true. 
-   samegrid_lr  = .true. 
+   samegrid_al  = .true.
+   samegrid_lr  = .true.
    samegrid_oi  = .true.
    samegrid_ro  = .true.
    samegrid_aw  = .true.
@@ -1456,12 +1523,11 @@ subroutine cesm_init()
    if (esp_prognostic .and. .not.esp_present) then
       call shr_sys_abort(subname//' ERROR: if prognostic esp must also have esp present')
    endif
+#ifndef CPL_BYPASS
    if ((ice_prognostic .or. ocn_prognostic .or. lnd_prognostic) .and. .not. atm_present) then
       call shr_sys_abort(subname//' ERROR: if prognostic surface model must also have atm present')
    endif
-   if (glc_prognostic .and. .not.lnd_present) then
-      call shr_sys_abort(subname//' ERROR: if prognostic glc must also have lnd present')
-   endif
+#endif
    if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
       call shr_sys_abort(subname//' ERROR: if glcxxx present must also have glc present')
    endif
@@ -1504,19 +1570,20 @@ subroutine cesm_init()
 
    !----------------------------------------------------------
    !| Initialize attribute vectors for prep_c2C_init_avs routines and fractions
-   !| Initialize mapping between components 
+   !| Initialize mapping between components
    !----------------------------------------------------------
 
    if (iamin_CPLID) then
 
       call t_startf('CPL:init_maps')
+      call t_adj_detailf(+2)
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm)
-      
+
       call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
 
-      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn) 
+      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn)
 
       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice )
 
@@ -1527,6 +1594,7 @@ subroutine cesm_init()
       call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+      call t_adj_detailf(-2)
       call t_stopf('CPL:init_maps')
 
    endif
@@ -1536,12 +1604,18 @@ subroutine cesm_init()
    !----------------------------------------------------------
 
    if (iamin_CPLID) then
+      call t_startf ('CPL:init_aream')
+      call t_adj_detailf(+2)
+
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
       call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
            samegrid_ro, samegrid_lg)
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_adj_detailf(-2)
+      call t_stopf ('CPL:init_aream')
    endif ! iamin_CPLID
 
    !----------------------------------------------------------
@@ -1551,6 +1625,9 @@ subroutine cesm_init()
    !----------------------------------------------------------
 
    if (iamin_CPLID) then
+      call t_startf ('CPL:init_domain_check')
+      call t_adj_detailf(+2)
+
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (domain_check) then
          if (iamroot_CPLID) then
@@ -1565,6 +1642,9 @@ subroutine cesm_init()
 
       endif
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_adj_detailf(-2)
+      call t_stopf ('CPL:init_domain_check')
    endif ! iamin_CPLID
 
    !----------------------------------------------------------
@@ -1575,13 +1655,16 @@ subroutine cesm_init()
 
    areafact_samegrid = .false.
 #if (defined BFB_CAM_SCAM_IOP )
-   if (.not.samegrid_alo) then 
+   if (.not.samegrid_alo) then
       call shr_sys_abort(subname//' ERROR: samegrid_alo is false - Must run with same atm/ocn/lnd grids when configured for scam iop')
    else
       areafact_samegrid = .true.
    endif
 #endif
    if (single_column) areafact_samegrid = .true.
+
+   call t_startf ('CPL:init_areacor')
+   call t_adj_detailf(+2)
 
    call mpi_barrier(mpicom_GLOID,ierr)
    if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
@@ -1604,11 +1687,17 @@ subroutine cesm_init()
    call mpi_barrier(mpicom_GLOID,ierr)
    if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
 
+   call t_adj_detailf(-2)
+   call t_stopf ('CPL:init_areacor')
+
    !----------------------------------------------------------
    !| global sum diagnostics for IC data
    !----------------------------------------------------------
 
    if (iamin_CPLID .and. info_debug > 1) then
+      call t_startf ('CPL:init_diag')
+      call t_adj_detailf(+2)
+
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (atm_present) then
          call component_diag(infodata, atm, flow='c2x', comment='recv IC atm', &
@@ -1639,6 +1728,9 @@ subroutine cesm_init()
               info_debug=info_debug)
       endif
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_adj_detailf(-2)
+      call t_stopf ('CPL:init_diag')
    endif
 
    !----------------------------------------------------------
@@ -1646,6 +1738,9 @@ subroutine cesm_init()
    !----------------------------------------------------------
 
    if (iamin_CPLID) then
+      call t_startf ('CPL:init_fracs')
+      call t_adj_detailf(+2)
+
       allocate(fractions_ax(num_inst_frc))
       allocate(fractions_lx(num_inst_frc))
       allocate(fractions_ox(num_inst_frc))
@@ -1670,7 +1765,7 @@ subroutine cesm_init()
               fractions_ax(efi), fractions_ix(efi), fractions_lx(efi), &
               fractions_ox(efi), fractions_gx(efi), fractions_rx(efi), &
               fractions_wx(efi))
-         
+
          if (iamroot_CPLID) then
             write(logunit,*) ' '
             if (efi == 1) write(logunit,F00) 'Setting fractions'
@@ -1681,6 +1776,9 @@ subroutine cesm_init()
 
       enddo
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_adj_detailf(-2)
+      call t_stopf ('CPL:init_fracs')
    endif
 
    !----------------------------------------------------------
@@ -1688,7 +1786,7 @@ subroutine cesm_init()
    !----------------------------------------------------------
 
    if (iamin_CPLID) then
-      call prep_aoflux_init(infodata, fractions_ox, fractions_ax) 
+      call prep_aoflux_init(infodata, fractions_ox, fractions_ax)
    endif
 
    !----------------------------------------------------------
@@ -1697,6 +1795,9 @@ subroutine cesm_init()
 
    if (iamin_CPLID) then
       if (ocn_present) then
+         call t_startf ('CPL:init_aoflux')
+         call t_adj_detailf(+2)
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (iamroot_CPLID) then
             write(logunit,*) ' '
@@ -1731,15 +1832,18 @@ subroutine cesm_init()
          enddo
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+         call t_adj_detailf(-2)
+         call t_stopf ('CPL:init_aoflux')
       endif
    endif
 
    !----------------------------------------------------------
-   !| ATM PREP for recalculation of initial solar 
+   !| ATM PREP for recalculation of initial solar
    !  Note that ocean albedos are ALWAYS CALCULATED on the ocean grid
    !  If aoflux_grid = 'ocn' , xao_ox is input for atm/ocn fluxes and xao_ax is output
-   !  If aoflux_grid = 'atm' , xao_ax is input for atm/ocn fluxes and xao_ox is not used 
-   !  If aoflux_grid = 'exch', xao_ax is input for atm/ocn /fluxes and xao_ox is not used 
+   !  If aoflux_grid = 'atm' , xao_ax is input for atm/ocn fluxes and xao_ox is not used
+   !  If aoflux_grid = 'exch', xao_ax is input for atm/ocn /fluxes and xao_ox is not used
    !  Merge atmosphere input state and run atmospheric radiation
    !----------------------------------------------------------
 
@@ -1768,14 +1872,14 @@ subroutine cesm_init()
             ! Get atm/ocn fluxes on atm grid
             if (trim(aoflux_grid) == 'ocn') then
                call prep_aoflux_calc_xao_ax(fractions_ox, flds='states_and_fluxes', &
-                    timer='CPL:init_atminit') 
+                    timer='CPL:init_atminit')
             endif
          endif
 
          if (lnd_present .or. ocn_present) then
             ! Merge input to atmosphere on coupler pes
             xao_ax => prep_aoflux_get_xao_ax()
-            if (associated(xao_ax)) then  
+            if (associated(xao_ax)) then
                call  prep_atm_mrg(infodata, &
                     fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
             endif
@@ -1789,11 +1893,14 @@ subroutine cesm_init()
 
    !----------------------------------------------------------
    !| Second phase of atmosphere component initialization
-   !  Recalculate solar based on input albedo's from surface components. 
+   !  Recalculate solar based on input albedo's from surface components.
    !  Data or dead atmosphere may just return on this phase.
    !----------------------------------------------------------
 
    if (atm_present) then
+      call t_startf('comp_init_cc_atm2')
+      call t_adj_detailf(+2)
+
       if (iamroot_CPLID) then
          write(logunit,F00) 'Calling atm_init_mct phase 2'
       endif
@@ -1828,6 +1935,8 @@ subroutine cesm_init()
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
       endif
 
+      call t_adj_detailf(-2)
+      call t_stopf('comp_init_cc_atm2')
    endif   ! atm present
 
    !----------------------------------------------------------
@@ -1835,6 +1944,8 @@ subroutine cesm_init()
    !----------------------------------------------------------
 
    call t_startf('CPL:init_readrestart')
+   call t_adj_detailf(+2)
+
    call seq_diag_zero_mct(mode='all')
    if (read_restart) then
       call seq_rest_read(rest_file, infodata, &
@@ -1842,6 +1953,8 @@ subroutine cesm_init()
            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
            fractions_rx, fractions_gx, fractions_wx)
    endif
+
+   call t_adj_detailf(-2)
    call t_stopf  ('CPL:init_readrestart')
 
    !----------------------------------------------------------
@@ -1853,16 +1966,16 @@ subroutine cesm_init()
          call prep_ocn_calc_r2x_ox(timer='CPL:init_rof2ocn')
       endif
       if (glc_c2_ocn) then
-         call prep_ocn_calc_g2x_ox(timer='CPL:init_glc2ocn') 
+         call prep_ocn_calc_g2x_ox(timer='CPL:init_glc2ocn')
       endif
       if (rof_c2_ice) then
-         call prep_ice_calc_r2x_ix(timer='CPL:init_rof2ice') 
+         call prep_ice_calc_r2x_ix(timer='CPL:init_rof2ice')
       endif
       if (glc_c2_ice) then
-         call prep_ice_calc_g2x_ix(timer='CPL:init_glc2ice') 
+         call prep_ice_calc_g2x_ix(timer='CPL:init_glc2ice')
       endif
       if (rof_c2_lnd) then
-         call prep_lnd_calc_r2x_lx(timer='CPL:init_rof2lnd') 
+         call prep_lnd_calc_r2x_lx(timer='CPL:init_rof2lnd')
       endif
       if (glc_c2_lnd) then
          call prep_lnd_calc_g2x_lx(timer='CPL:init_gllndnd')
@@ -1870,11 +1983,14 @@ subroutine cesm_init()
    endif
 
    !----------------------------------------------------------
-   !| Write histinit output file 
+   !| Write histinit output file
    !----------------------------------------------------------
 
    if (do_histinit) then
       if (iamin_CPLID) then
+         call t_startf('CPL:init_histinit')
+         call t_adj_detailf(+2)
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (iamroot_CPLID) then
             call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
@@ -1886,6 +2002,9 @@ subroutine cesm_init()
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
               fractions_rx, fractions_gx, fractions_wx)
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+         call t_adj_detailf(-2)
+         call t_stopf('CPL:init_histinit')
       endif
    endif
 
@@ -1896,7 +2015,8 @@ subroutine cesm_init()
       call shr_sys_flush(logunit)
    endif
 
-   call t_stopf  ('CPL:INIT')
+   call t_adj_detailf(-1)
+   call t_stopf('cesm_init')
 
 end subroutine cesm_init
 
@@ -1960,11 +2080,11 @@ end subroutine cesm_init
    do while ( .not. stop_alarm)
 
       call t_startf('CPL:RUN_LOOP', hashint(1))
-      call t_drvstartf ('CPL:CLOCK_ADVANCE',cplrun=.true.,hashint=hashint(2))
+      call t_startf('CPL:CLOCK_ADVANCE')
 
       !----------------------------------------------------------
       !| Advance Clock
-      !  (this is time that models should have before they return 
+      !  (this is time that models should have before they return
       !  to the driver).  Write timestamp and run alarm status
       !----------------------------------------------------------
 
@@ -2051,12 +2171,12 @@ end subroutine cesm_init
          endif
       endif
 
-      call t_drvstopf  ('CPL:CLOCK_ADVANCE',cplrun=.true.,hashint=hashint(2))
+      call t_stopf ('CPL:CLOCK_ADVANCE')
 
       !----------------------------------------------------------
       !| MAP ATM to OCN
       !  Set a2x_ox as a module variable in prep_ocn_mod
-      !  This will be used later in the ice prep and in the 
+      !  This will be used later in the ice prep and in the
       !  atm/ocn flux calculation
       !----------------------------------------------------------
 
@@ -2139,8 +2259,8 @@ end subroutine cesm_init
          xao_ox => prep_aoflux_get_xao_ox()
          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
-         ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn) 
-         call prep_ocn_accum(timer='CPL:atmocnp_accum') 
+         ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+         call prep_ocn_accum(timer='CPL:atmocnp_accum')
 
          !----------------------------------------------------------
          !| ocn albedos (rasm_option1)
@@ -2200,7 +2320,7 @@ end subroutine cesm_init
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
             ! finish accumulating ocean inputs
-            ! reset the value of x2o_ox with the value in x2oacc_ox 
+            ! reset the value of x2o_ox with the value in x2oacc_ox
             ! (module variable in prep_ocn_mod)
             call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
 
@@ -2272,7 +2392,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
       !| ICE SETUP-SEND
       !  Note that for atm->ice mapping below will leverage the assumption that the
-      !  ice and ocn are on the same grid and that mapping of atm to ocean is 
+      !  ice and ocn are on the same grid and that mapping of atm to ocean is
       !  done already for use by atmocn flux and ice model prep
       !----------------------------------------------------------
 
@@ -2296,9 +2416,9 @@ end subroutine cesm_init
             if (atm_c2_ice) then
                ! This is special to avoid remapping atm to ocn
                ! Note it is constrained that different prep modules cannot
-               ! use or call each other 
+               ! use or call each other
                a2x_ox => prep_ocn_get_a2x_ox() ! array
-               call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')  
+               call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
             endif
 
             call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
@@ -2427,7 +2547,7 @@ end subroutine cesm_init
       if (ice_present .and. icerun_alarm) then
          call component_run(Eclock_i, ice, ice_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2i_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_i2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_i2x_fluxes, &
               comp_prognostic=ice_prognostic, comp_num=comp_num_ice, &
               timer_barrier= 'CPL:ICE_RUN_BARRIER', timer_comp_run='CPL:ICE_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ice_layout)
@@ -2440,7 +2560,7 @@ end subroutine cesm_init
       if (lnd_present .and. lndrun_alarm) then
          call component_run(Eclock_l, lnd, lnd_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2l_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_l2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_l2x_fluxes, &
               comp_prognostic=lnd_prognostic, comp_num=comp_num_lnd, &
               timer_barrier= 'CPL:LND_RUN_BARRIER', timer_comp_run='CPL:LND_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=lnd_layout)
@@ -2453,7 +2573,7 @@ end subroutine cesm_init
       if (rof_present .and. rofrun_alarm) then
          call component_run(Eclock_r, rof, rof_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2r_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_r2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_r2x_fluxes, &
               comp_prognostic=rof_prognostic, comp_num=comp_num_rof, &
               timer_barrier= 'CPL:ROF_RUN_BARRIER', timer_comp_run='CPL:ROF_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=rof_layout)
@@ -2466,7 +2586,7 @@ end subroutine cesm_init
       if (wav_present .and. wavrun_alarm) then
          call component_run(Eclock_w, wav, wav_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2w_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_w2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_w2x_fluxes, &
               comp_prognostic=wav_prognostic, comp_num=comp_num_wav, &
               timer_barrier= 'CPL:WAV_RUN_BARRIER', timer_comp_run='CPL:WAV_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=wav_layout)
@@ -2481,7 +2601,7 @@ end subroutine cesm_init
           ocn_present .and. ocnrun_alarm) then
          call component_run(Eclock_o, ocn, ocn_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
               comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
               timer_barrier= 'CPL:OCNT_RUN_BARRIER', timer_comp_run='CPL:OCNT_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
@@ -2555,8 +2675,8 @@ end subroutine cesm_init
                xao_ox => prep_aoflux_get_xao_ox()
                call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
-               ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn) 
-               call prep_ocn_accum(timer='CPL:atmocnp_accum') 
+               ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+               call prep_ocn_accum(timer='CPL:atmocnp_accum')
             endif
          endif
 
@@ -2624,8 +2744,8 @@ end subroutine cesm_init
                xao_ox => prep_aoflux_get_xao_ox()
                call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
-               ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn) 
-               call prep_ocn_accum(timer='CPL:atmocnp_accum') 
+               ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+               call prep_ocn_accum(timer='CPL:atmocnp_accum')
             endif
          endif
 
@@ -2768,7 +2888,7 @@ end subroutine cesm_init
             if (do_hist_r2x) then
                call t_drvstartf ('CPL:rofpost_histaux', barrier=mpicom_CPLID)
                do eri = 1,num_inst_rof
-                  suffix =  component_get_suffix(rof(eri)) 
+                  suffix =  component_get_suffix(rof(eri))
                   call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
                        aname='r2x'//trim(suffix), dname='domrb', &
                        nx=rof_nx, ny=rof_ny, nt=1)
@@ -2777,15 +2897,15 @@ end subroutine cesm_init
             endif
 
             if (rof_c2_lnd) then
-               call prep_lnd_calc_r2x_lx(timer='CPL:rofpost_rof2lnd') 
+               call prep_lnd_calc_r2x_lx(timer='CPL:rofpost_rof2lnd')
             endif
 
             if (rof_c2_ice) then
-               call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice') 
+               call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice')
             endif
 
             if (rof_c2_ocn) then
-               call prep_ocn_calc_r2x_ox(timer='CPL:rofpost_rof2ocn') 
+               call prep_ocn_calc_r2x_ox(timer='CPL:rofpost_rof2ocn')
             endif
 
             call t_drvstopf  ('CPL:ROFPOST', cplrun=.true.)
@@ -2956,8 +3076,8 @@ end subroutine cesm_init
          xao_ox => prep_aoflux_get_xao_ox()
          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
-         ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn) 
-         call prep_ocn_accum(timer='CPL:atmocnp_accum') 
+         ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+         call prep_ocn_accum(timer='CPL:atmocnp_accum')
 
          !----------------------------------------------------------
          !| ocn albedos (rasm_option2)
@@ -3013,7 +3133,7 @@ end subroutine cesm_init
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
             ! finish accumulating ocean inputs
-            ! reset the value of x2o_ox with the value in x2oacc_ox 
+            ! reset the value of x2o_ox with the value in x2oacc_ox
             ! (module variable in prep_ocn_mod)
             call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
 
@@ -3057,7 +3177,7 @@ end subroutine cesm_init
                if (trim(aoflux_grid) == 'ocn') then
                   ! map xao_ox states and fluxes to xao_ax if fluxes were computed on ocn grid
                   call prep_aoflux_calc_xao_ax(fractions_ox, flds='states_and_fluxes', &
-                       timer='CPL:atmprep_xao2atm') 
+                       timer='CPL:atmprep_xao2atm')
                endif
 
                ! recompute o2x_ax now for the merge with fractions associated with merge
@@ -3075,8 +3195,8 @@ end subroutine cesm_init
                call prep_atm_calc_l2x_ax(fractions_lx, timer='CPL:atmprep_lnd2atm')
             endif
 
-            if (associated(xao_ax)) then  
-               call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a') 
+            if (associated(xao_ax)) then
+               call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
             endif
 
             call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
@@ -3094,7 +3214,7 @@ end subroutine cesm_init
             call component_exch(atm, flow='x2c', infodata=infodata, infodata_string='cpl2atm_run', &
                  mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
                  timer_barrier='CPL:C2A_BARRIER', timer_comp_exch='CPL:C2A', &
-                 timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch') 
+                 timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch')
          endif
 
       endif
@@ -3108,7 +3228,7 @@ end subroutine cesm_init
           ocn_present .and. ocnrun_alarm) then
          call component_run(Eclock_o, ocn, ocn_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
               comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
               timer_barrier= 'CPL:OCN_RUN_BARRIER', timer_comp_run='CPL:OCN_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
@@ -3121,7 +3241,7 @@ end subroutine cesm_init
       if (atm_present .and. atmrun_alarm) then
          call component_run(Eclock_a, atm, atm_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2a_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_a2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_a2x_fluxes, &
               comp_prognostic=atm_prognostic, comp_num=comp_num_atm, &
               timer_barrier= 'CPL:ATM_RUN_BARRIER', timer_comp_run='CPL:ATM_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod, comp_layout=atm_layout)
@@ -3134,7 +3254,7 @@ end subroutine cesm_init
       if (glc_present .and. glcrun_alarm) then
          call component_run(Eclock_g, glc, glc_run, infodata, &
               seq_flds_x2c_fluxes=seq_flds_x2g_fluxes, &
-              seq_flds_c2x_fluxes=seq_flds_g2x_fluxes, &       
+              seq_flds_c2x_fluxes=seq_flds_g2x_fluxes, &
               comp_prognostic=glc_prognostic, comp_num=comp_num_glc, &
               timer_barrier= 'CPL:GLC_RUN_BARRIER', timer_comp_run='CPL:GLC_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=glc_layout)
@@ -3444,7 +3564,7 @@ end subroutine cesm_init
          endif
 
          if (do_hist_l2x1yr .and. glcrun_alarm) then
-            ! Use yr_offset=-1 so the file with fields from year 1 has time stamp 
+            ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
             ! 0001-01-01 rather than 0002-01-01, etc.
             do eli = 1,num_inst_lnd
                suffix = component_get_suffix(lnd(eli))
@@ -3478,16 +3598,18 @@ end subroutine cesm_init
             cktime = time_estep-time_bstep
             cktime_acc(1) = cktime_acc(1) + cktime
             cktime_cnt(1) = cktime_cnt(1) + 1
+#ifndef CPL_BYPASS
             write(logunit,101) ' tStamp_write: model date = ',ymd,tod, &
                  ' wall clock = ',dstr(1:4),'-',dstr(5:6),'-',dstr(7:8),' ',&
                  tstr(1:2),':',tstr(3:4),':',tstr(5:6), &
-                 ' avg dt = ',cktime_acc(1)/cktime_cnt(1),' dt = ',cktime 
+                 ' avg dt = ',cktime_acc(1)/cktime_cnt(1),' dt = ',cktime
+#endif
             Time_bstep = mpi_wtime()
             call shr_sys_flush(logunit)
             if(cktime > max_cplstep_time .and. max_cplstep_time > 0.0) then
                call shr_sys_abort(subname//'Wall clock time exceeds max_cplstep_time')
             else if(max_cplstep_time < -0.05) then
-               ! if max_cplstep_time is < 0 we use abs(max_cplstep_time) 
+               ! if max_cplstep_time is < 0 we use abs(max_cplstep_time)
                ! times the initial cktime value as a threshhold
                max_cplstep_time = -(max_cplstep_time)*cktime
             endif
@@ -3523,6 +3645,7 @@ end subroutine cesm_init
                                ' :stop at ',force_stop_ymd
          endif
       endif
+#ifndef CPL_BYPASS
       if (tod == 0 .or. info_debug > 1) then
          !! Report on memory usage
          !! For now, just look at the first instance of each component
@@ -3534,11 +3657,13 @@ end subroutine cesm_init
               glc(ens1)%iamroot_compid .or. &
               wav(ens1)%iamroot_compid) then
             call shr_mem_getusage(msize,mrss)
+
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                  ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
          endif
       endif
+#endif
       if (info_debug > 1) then
          if (iamroot_CPLID) then
             call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday)
@@ -3549,22 +3674,32 @@ end subroutine cesm_init
       call t_drvstopf  ('CPL:TSTAMP_WRITE',cplrun=.true.)
 
       call t_stopf  ('CPL:RUN_LOOP', hashint(1))
-      ! --- Write out performance data 
-      call t_drvstartf  ('CPL:TPROF_WRITE',cplrun=.true.)
+
+      ! --- Write out performance data
+      call t_startf  ('CPL:TPROF_WRITE')
       if (tprof_alarm) then
+         call t_adj_detailf(+1)
+
          call t_startf("sync1_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
          call t_stopf("sync1_tprof")
 
-         write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/cesm_timing_",ymd,"_",tod
-         call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
-              num_outpe=1)
+         write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/model_timing_",ymd,"_",tod
+         if (output_perf) then
+            call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
+                       num_outpe=0, output_thispe=output_perf)
+         else
+            call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
+                       num_outpe=0)
+         endif
 
          call t_startf("sync2_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
          call t_stopf("sync2_tprof")
+
+         call t_adj_detailf(-1)
       endif
-      call t_drvstopf  ('CPL:TPROF_WRITE',cplrun=.true.)
+      call t_stopf  ('CPL:TPROF_WRITE')
 
       call t_drvstartf  ('CPL:BARRIERALARM',cplrun=.true.)
       if (barrier_alarm) then
@@ -3602,6 +3737,10 @@ end subroutine cesm_init
 
    call t_barrierf ('CPL:FINAL_BARRIER', mpicom_GLOID)
    call t_startf ('CPL:FINAL')
+   call t_adj_detailf(+1)
+
+   call t_startf('cesm_final')
+   call t_adj_detailf(+1)
 
    call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
    call shr_mem_getusage(msize,mrss)
@@ -3621,7 +3760,7 @@ end subroutine cesm_init
    call shr_wv_sat_final()
 
    call shr_pio_finalize( )
-   
+
    call shr_mpi_min(msize ,msize0,mpicom_GLOID,' driver msize0', all=.true.)
    call shr_mpi_max(msize ,msize1,mpicom_GLOID,' driver msize1', all=.true.)
    call shr_mpi_min(mrss  ,mrss0,mpicom_GLOID,'  driver mrss0',  all=.true.)
@@ -3647,8 +3786,25 @@ end subroutine cesm_init
       close(logunit)
    endif
 
+   call t_adj_detailf(-1)
+   call t_stopf('cesm_final')
+
+   call t_startf("final:sync1_tprof")
+   call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf("final:sync1_tprof")
+
+   call t_adj_detailf(-1)
    call t_stopf  ('CPL:FINAL')
-   call t_prf(trim(timing_dir)//'/cesm_timing', mpicom_GLOID)
+
+   call t_set_prefixf("final:")
+   if (output_perf) then
+      call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID, &
+                 output_thispe=output_perf)
+   else
+      call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID)
+   endif
+   call t_unset_prefixf()
+
    call t_finalizef()
 
 end subroutine cesm_final
@@ -3673,21 +3829,21 @@ subroutine seq_cesm_printlogheader()
   character(len=8) :: cdate          ! System date
   character(len=8) :: ctime          ! System time
   integer          :: values(8)
-  character        :: date*8, time*10, zone*5 
+  character        :: date*8, time*10, zone*5
 
 !-------------------------------------------------------------------------------
-   
-  call date_and_time (date, time, zone, values) 
-  cdate(1:2) = date(5:6) 
-  cdate(3:3) = '/' 
-  cdate(4:5) = date(7:8) 
-  cdate(6:6) = '/' 
-  cdate(7:8) = date(3:4) 
-  ctime(1:2) = time(1:2) 
-  ctime(3:3) = ':' 
-  ctime(4:5) = time(3:4) 
-  ctime(6:6) = ':' 
-  ctime(7:8) = time(5:6) 
+
+  call date_and_time (date, time, zone, values)
+  cdate(1:2) = date(5:6)
+  cdate(3:3) = '/'
+  cdate(4:5) = date(7:8)
+  cdate(6:6) = '/'
+  cdate(7:8) = date(3:4)
+  ctime(1:2) = time(1:2)
+  ctime(3:3) = ':'
+  ctime(4:5) = time(3:4)
+  ctime(6:6) = ':'
+  ctime(7:8) = time(5:6)
   write(logunit,F00) '------------------------------------------------------------'
   write(logunit,F00) '        NCAR CPL7 Community Earth System Model (CESM)  '
   write(logunit,F00) '------------------------------------------------------------'

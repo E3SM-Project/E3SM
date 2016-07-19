@@ -1,16 +1,15 @@
 module test_vertical_gradient_calculator_2nd_order
-  
+
   ! Tests of vertical_gradient_calculator_2nd_order
-  
+
   use pfunit_mod
   use vertical_gradient_calculator_base
   use vertical_gradient_calculator_2nd_order
   use shr_kind_mod, only : r8 => shr_kind_r8
-  
   implicit none
 
   real(r8), parameter :: tol = 1.e-13_r8
-  
+
   @TestCase
   type, extends(TestCase) :: TestVertGradCalc2ndOrder
    contains
@@ -19,14 +18,14 @@ module test_vertical_gradient_calculator_2nd_order
      procedure :: create_calculator
      procedure :: calculateAndVerifyGradient_1point_ECmid
   end type TestVertGradCalc2ndOrder
-  
+
 contains
-  
+
   subroutine setUp(this)
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
 
   end subroutine setUp
-  
+
   subroutine tearDown(this)
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
 
