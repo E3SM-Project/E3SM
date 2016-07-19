@@ -1765,13 +1765,12 @@ end subroutine interpolate_ce
   ! Note that it is possible the given element contains none of the
   ! interpolation points
   ! =======================================
-  subroutine interpolate_vector2d(interpdata,elem,fld_cube,npts,fld,input_coords, fillvalue)
+  subroutine interpolate_vector2d(interpdata,elem,fld_cube,fld,input_coords,fillvalue)
 
 ! OG It seems that this routine is not used in SW, so, the new version is not
-! verified
+! verified.
     implicit none
-    integer                  ::  npts
-    real (kind=real_kind)    ::  fld_cube(npts,npts,2) ! vector field
+    real (kind=real_kind)    ::  fld_cube(np,np,2) ! vector field
     real (kind=real_kind)    ::  fld(:,:)          ! field at new grid lat,lon coordinates
     type (interpdata_t)      ::  interpdata
     type (element_t), intent(in)         :: elem
@@ -1779,9 +1778,9 @@ end subroutine interpolate_ce
     integer                  ::  input_coords
 
     ! Local variables
-    real (kind=real_kind)    ::  fld_contra(npts,npts,2) ! vector field
-    real (kind=real_kind)    ::  fld_lonlat(npts,npts,2) ! vector field in lonlat   
-    real (kind=real_kind)    ::  fld_cart(npts,npts,3) ! vector field in cartesian    
+    real (kind=real_kind)    ::  fld_contra(np,np,2) ! vector field
+    real (kind=real_kind)    ::  fld_lonlat(np,np,2) ! vector field in lonlat   
+    real (kind=real_kind)    ::  fld_cart(np,np,3) ! vector field in cartesian    
     real (kind=real_kind), allocatable    ::  fld_cart_interp(:,:) ! vector field in cartesian   
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
@@ -1796,8 +1795,6 @@ end subroutine interpolate_ce
 
     type (cartesian2D_t) :: cart
 
-if(.FALSE.)then ! -------------------------------------- BEGIN OF OLD VERSION ---------------------------
-
     if(present(fillvalue)) then
        if (any(fld_cube==fillvalue)) then
           fld = fillvalue
@@ -1805,75 +1802,12 @@ if(.FALSE.)then ! -------------------------------------- BEGIN OF OLD VERSION --
        end if
     end if
 
-    if (input_coords==0 ) then
-       ! convert to contra
-       do j=1,npts
-          do i=1,npts
-             ! latlon->contra
-             fld_contra(i,j,1) = elem%Dinv(i,j,1,1)*fld_cube(i,j,1) + elem%Dinv(i,j,1,2)*fld_cube(i,j,2)
-             fld_contra(i,j,2) = elem%Dinv(i,j,2,1)*fld_cube(i,j,1) + elem%Dinv(i,j,2,2)*fld_cube(i,j,2)
-          enddo
-       enddo
-    else
-       fld_contra=fld_cube
-    endif
-
-
-    if (npts==np) then
-       interp => interp_p
-!OG -- that was supposed to be in this else?
-    else if (npts==np) then
-        call abortmp('Error in interpolate_vector(): input must be on velocity grid')
-    endif
-
-
-       ! Choice for Native (high-order) or Bilinear interpolations
-
-    if (itype == 0) then
-       do i=1,interpdata%n_interp
-          fld(i,1)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,1),interp,npts)
-          fld(i,2)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,2),interp,npts)
-       end do
-    elseif (itype == 1) then
-       do i=1,interpdata%n_interp
-          fld(i,1)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,1),interp,npts)
-          fld(i,2)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,2),interp,npts)
-       end do
-    else
-       write(iulog,*) itype
-       call abortmp("wrong interpolation type")
-    endif
-    do i=1,interpdata%n_interp
-       ! convert fld from contra->latlon
-       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
-            elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
-       ! convert fld from contra->latlon
-       v1 = fld(i,1)
-       v2 = fld(i,2)
-
-       fld(i,1)=D(1,1)*v1 + D(1,2)*v2
-       fld(i,2)=D(2,1)*v1 + D(2,2)*v2
-    end do
-endif !-------------------------------------- END OF OLD VERSION ---------------------
-
-    if(present(fillvalue)) then
-       if (any(fld_cube==fillvalue)) then
-          fld = fillvalue
-          return
-       end if
-    end if
-
-    if (npts==np) then
-       interp => interp_p
-    !OG -- that was supposed to be in this else? npts <> np?
-    else if (npts==np) then
-        call abortmp('Error in interpolate_vector2d(): input must be on velocity grid')
-    endif
+    interp => interp_p
         
     if (input_coords ==1 ) then
        ! convert to lonlat
-       do j=1,npts
-          do i=1,npts
+       do j=1,np
+          do i=1,np
              ! contra -> lonlat
              fld_lonlat(i,j,1) = elem%D(i,j,1,1)*fld_cube(i,j,1) + elem%D(i,j,1,2)*fld_cube(i,j,2)
              fld_lonlat(i,j,2) = elem%D(i,j,2,1)*fld_cube(i,j,1) + elem%D(i,j,2,2)*fld_cube(i,j,2)
@@ -1893,8 +1827,8 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
        fld_lonlat = fld_cube
        
        ! lonlat -> cart
-       do j=1,npts
-          do i=1,npts
+       do j=1,np
+          do i=1,np
              fld_cart(i,j,1) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1) + &
                                elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2)
              fld_cart(i,j,2) = elem%vec_sphere2cart(i,j,2,1)*fld_lonlat(i,j,1) + &
@@ -1916,13 +1850,13 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
     if (itype == 0) then
        do i=1,interpdata%n_interp
           do j=1,3
-              fld_cart_interp(i,j)=interpolate_2d(interpdata%interp_xy(i),fld_cart(:,:,j),interp,npts)
+              fld_cart_interp(i,j)=interpolate_2d(interpdata%interp_xy(i),fld_cart(:,:,j),interp,np)
           enddo
        end do
     elseif (itype == 1) then
        do i=1,interpdata%n_interp
           do j=1,3       
-             fld_cart_interp(i,j)=interpol_bilinear(interpdata%interp_xy(i),fld_cart(:,:,j),interp,npts)
+             fld_cart_interp(i,j)=interpol_bilinear(interpdata%interp_xy(i),fld_cart(:,:,j),interp,np)
           enddo
        end do
     else
@@ -1963,20 +1897,20 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
   ! Note that it is possible the given element contains none of the
   ! interpolation points
   ! =======================================
-  subroutine interpolate_vector3d(interpdata,elem,fld_cube,npts,nlev,fld,input_coords,fillvalue)
+  subroutine interpolate_vector3d(interpdata,elem,fld_cube,nlev,fld,input_coords,fillvalue)
     implicit none
     type (interpdata_t),intent(in)       ::  interpdata
-    type (element_t), intent(in)         :: elem
-    integer, intent(in)                  ::  npts, nlev
-    real (kind=real_kind), intent(in)    ::  fld_cube(npts,npts,2,nlev) ! vector field
+    type (element_t), intent(in)         ::  elem
+    integer, intent(in)                  ::  nlev
+    real (kind=real_kind), intent(in)    ::  fld_cube(np,np,2,nlev) ! vector field
     real (kind=real_kind), intent(out)   ::  fld(:,:,:)          ! field at new grid lat,lon coordinates
     real (kind=real_kind), intent(in),optional :: fillvalue
     integer, intent(in)                  ::  input_coords
 
     ! Local variables
-    real (kind=real_kind)    ::  fld_contra(npts,npts,2,nlev) ! vector field
-    real (kind=real_kind)    ::  fld_lonlat(npts,npts,2,nlev) ! vector field in lonlat
-    real (kind=real_kind)    ::  fld_cart(npts,npts,3,nlev) ! vector field in cartesian
+    real (kind=real_kind)    ::  fld_contra(np,np,2,nlev) ! vector field
+    real (kind=real_kind)    ::  fld_lonlat(np,np,2,nlev) ! vector field in lonlat
+    real (kind=real_kind)    ::  fld_cart(np,np,3,nlev) ! vector field in cartesian
     real (kind=real_kind), allocatable    ::  fld_cart_interp(:,:,:) ! vector field in cartesian
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
@@ -1990,72 +1924,6 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
     integer :: ilon, ilat
     type (cartesian2D_t) :: cart
     
-    if(.FALSE.)then  !-------------------------- BEGIN OF OLD VERSION ----------------------------------
-    
-    if(present(fillvalue)) then
-       if (any(fld_cube==fillvalue)) then
-          fld = fillvalue
-          return
-       end if
-    end if
-    if (input_coords==0 ) then
-       ! convert to contra
-       do k=1,nlev
-          do j=1,npts
-             do i=1,npts
-                ! latlon->contra
-                fld_contra(i,j,1,k) = elem%Dinv(i,j,1,1)*fld_cube(i,j,1,k) + &
-                                      elem%Dinv(i,j,1,2)*fld_cube(i,j,2,k)
-                fld_contra(i,j,2,k) = elem%Dinv(i,j,2,1)*fld_cube(i,j,1,k) + &
-                                      elem%Dinv(i,j,2,2)*fld_cube(i,j,2,k)
-             enddo
-          enddo
-       end do
-    else
-       fld_contra=fld_cube
-    endif
-
-    if (npts==np) then
-       interp => interp_p
-    else if (npts==np) then
-       call abortmp('Error in interpolate_vector(): input must be on velocity grid')
-    endif
-
-    ! Choice for Native (high-order) or Bilinear interpolations
-
-    if (itype == 0) then
-       do k=1,nlev
-          do i=1,interpdata%n_interp
-             fld(i,k,1)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,1,k),interp,npts)
-             fld(i,k,2)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,2,k),interp,npts)
-          end do
-       end do
-    elseif (itype == 1) then
-       do k=1,nlev
-          do i=1,interpdata%n_interp
-             fld(i,k,1)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,1,k),interp,npts)
-             fld(i,k,2)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,2,k),interp,npts)
-          end do
-       end do
-    else
-       call abortmp("wrong interpolation type")
-    endif
-
-
-    do i=1,interpdata%n_interp
-       ! compute D(:,:) at the point elem%interp_cube(i)
-       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
-            elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
-       do k=1,nlev
-          ! convert fld from contra->latlon
-          v1 = fld(i,k,1)
-          v2 = fld(i,k,2)
-
-          fld(i,k,1)=D(1,1)*v1 + D(1,2)*v2
-          fld(i,k,2)=D(2,1)*v1 + D(2,2)*v2
-       end do
-    end do
-    endif !------------------------ END OF OLD INVERSION -----------------------------------
     
     if(present(fillvalue)) then
        if (any(fld_cube==fillvalue)) then
@@ -2064,18 +1932,13 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
        end if
     end if
 
-    if (npts==np) then
-       interp => interp_p
-    !OG What is supposed to be in else here? npts<>np?   
-    else if (npts==np) then
-       call abortmp('Error in interpolate_vector3d(): input must be on velocity grid')
-    endif
+    interp => interp_p
 
     if (input_coords ==1 ) then
        ! convert to lonlat
        do k=1,nlev
-          do j=1,npts
-             do i=1,npts
+          do j=1,np
+             do i=1,np
                 ! contra -> lonlat
                 fld_lonlat(i,j,1,k) = elem%D(i,j,1,1)*fld_cube(i,j,1,k) + elem%D(i,j,1,2)*fld_cube(i,j,2,k)
                 fld_lonlat(i,j,2,k) = elem%D(i,j,2,1)*fld_cube(i,j,1,k) + elem%D(i,j,2,2)*fld_cube(i,j,2,k)
@@ -2096,8 +1959,8 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
     elseif(input_coords == 0) then 
        fld_lonlat = fld_cube
        do k=1,nlev
-          do j=1,npts
-             do i=1,npts               
+          do j=1,np
+             do i=1,np               
                 ! lonlat -> cart
                 fld_cart(i,j,1,k) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1,k) + &
                                     elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2,k)
@@ -2122,7 +1985,7 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
        do k=1,nlev
           do i=1,interpdata%n_interp
              do j=1,3
-                fld_cart_interp(i,j,k)=interpolate_2d(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,npts)
+                fld_cart_interp(i,j,k)=interpolate_2d(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,np)
              enddo
           end do
        end do
@@ -2130,7 +1993,7 @@ endif !-------------------------------------- END OF OLD VERSION ---------------
        do k=1,nlev
           do i=1,interpdata%n_interp
              do j=1,3
-                fld_cart_interp(i,j,k)=interpol_bilinear(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,npts)
+                fld_cart_interp(i,j,k)=interpol_bilinear(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,np)
              end do
            enddo  
        end do

@@ -22,6 +22,7 @@ module multicloud_mod
   use physical_constants, only : kappa
   use aquaplanet, only         : cool_max, presc_cooling_mc
 
+!OG interpolate_vector is not used below.
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector
 
