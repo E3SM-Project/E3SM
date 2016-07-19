@@ -444,7 +444,7 @@ contains
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         tend_layerThickness, normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, relativeSlopeTopOfEdge, &
         relativeSlopeTapering, relativeSlopeTaperingCell, fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
-        nonLocalSurfaceTracerFlux
+        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux
 
       !
       ! three dimensional pointers
@@ -592,6 +592,10 @@ contains
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
 
+               ! Get surface flux removed array to keep track of how much flux is ignored
+               modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRemoved"
+               call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRemoved)
+
                !
                ! initialize tracer surface flux and tendency to zero.
                !
@@ -603,11 +607,12 @@ contains
                !$omp end do
 
                if (trim(groupItr % memberName) == 'activeTracers') then
-               !$omp do schedule(runtime)
-               do iCell = 1, nCells
-                 tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
-               end do
-               !$omp end do
+                  !$omp do schedule(runtime)
+                  do iCell = 1, nCells
+                    tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
+                    tracerGroupSurfaceFluxRemoved(:, iCell) = 0.0_RKIND
+                  end do
+                  !$omp end do
                endif
 
                !
@@ -616,7 +621,8 @@ contains
                if (config_use_tracerGroup_surface_bulk_forcing) then
                   call mpas_timer_start("bulk_" // trim(groupItr % memberName))
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroup, &
-                                                        tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff, err)
+                                                        tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff, &
+                                                        tracerGroupSurfaceFluxRemoved, dt, layerThickness, err)
                   call mpas_timer_stop("bulk_" // trim(groupItr % memberName))
                end if
 
@@ -634,7 +640,7 @@ contains
 
                   call mpas_timer_start("ecosys surface flux", .false.)
                   call ocn_tracer_ecosys_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)!{{{
+                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                   call mpas_timer_stop("ecosys surface flux")
                endif
 
@@ -653,7 +659,7 @@ contains
 
                   call mpas_timer_start("DMS surface flux", .false.)
                   call ocn_tracer_DMS_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)!{{{
+                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                   call mpas_timer_stop("DMS surface flux")
                endif
 
