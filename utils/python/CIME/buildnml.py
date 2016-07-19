@@ -152,7 +152,7 @@ def _build_data_nml(case, caseroot, compclass):
         cmd = "%s -caseroot %s -cimeroot %s -inst_string %s -infile %s -user_xml_dir %s" \
             % (bldnamelist, caseroot, cimeroot, inst_string_label, namelist_infile, user_xml_dir)
 
-        rc, out, err = run_cmd(cmd, from_dir=confdir, ok_to_fail=True)
+        rc, out, err = run_cmd(cmd, from_dir=confdir)
         expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
 
         # copy namelist files and stream text files, to rundir
@@ -193,7 +193,7 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
     for line in lines_input:
         match1 = re.search(r"^[\&\/\!]", line)
         match2 = re.search(r"\$([\w\_])+", line)
-	if match1 is None and match2 is not None:
+        if match1 is None and match2 is not None:
             line = case.get_resolved_value(line)
         if match1 is None:
             lines_output.append(line)

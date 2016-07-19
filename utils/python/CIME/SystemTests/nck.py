@@ -7,7 +7,6 @@ Lay all of the components out sequentially
 """
 import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
 import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon

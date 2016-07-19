@@ -3,16 +3,15 @@ Implementation of the CIME SSP test.  This class inherits from SystemTestsCommon
 
 This is a CLM specific test:
 Verifies that spinup works correctly
-this test is only valid for CLM compsets with CLM45 
+this test is only valid for CLM compsets with CLM45
 (1) do an initial spin test
-    - set CLM_ACCELERATED_SPINUP to on 
+    - set CLM_ACCELERATED_SPINUP to on
     - write restarts at the end of the run, turn on short term archiving
-(2) do a hybrid non-spinup simulation run 
+(2) do a hybrid non-spinup simulation run
     - start from the restart files generated in (1)
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.utils import run_cmd
 import shutil, glob, os
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ class SSP(SystemTestsCommon):
     def run(self):
         caseroot = self._case.get_value("CASEROOT")
         orig_case = self._case
-        orig_casevar = self._case.get_value("CASE") 
+        orig_casevar = self._case.get_value("CASE")
 
         # clone the main case to create ref1
         clone_path = "%s.ref1" % caseroot
@@ -49,7 +48,7 @@ class SSP(SystemTestsCommon):
         self._set_active_case(clone)
 
         logger.info("startup: doing a %s %s 00000 seconds startup run" % (stop_n1, stop_nf))
-        logger.info("  writing restarts at end of run") 
+        logger.info("  writing restarts at end of run")
         logger.info("  short term archiving is on ")
 
         clone.set_value("CLM_ACCELERATED_SPINUP", "on")
@@ -69,7 +68,7 @@ class SSP(SystemTestsCommon):
         os.chdir(caseroot)
         self._set_active_case(orig_case)
 
-        refdate = run_cmd(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr)
+        refdate = run_cmd_no_fail(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr)
         refsec = "00000"
 
         # obtain rpointer files and necessary restart files from short term archiving directory
@@ -88,7 +87,7 @@ class SSP(SystemTestsCommon):
         self._case.set_value("GET_REFCASE", False)
         self._case.set_value("RUN_REFCASE", "%s.ref1" % orig_casevar)
 
-        self._case.set_value("RUN_REFDATE", refdate) 
+        self._case.set_value("RUN_REFDATE", refdate)
         self._case.set_value("STOP_N", stop_n2)
         self._case.set_value("DOUT_S", False)
         self._case.flush()

@@ -5,7 +5,7 @@ be used by other XML interface modules and not directly.
 from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
 from xml.dom import minidom
-from CIME.utils import expect, get_cime_root, convert_to_string
+from CIME.utils import expect, get_cime_root
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +18,13 @@ class GenericXML(object):
 
         logger.debug("Initializing %s" , infile)
         self.tree = None
+        self.version = None
 
         if infile == None:
             # if file is not defined just return
             self.filename = None
             return
+
         if os.path.isfile(infile) and os.access(infile, os.R_OK):
             # If file is defined and exists, read it
             self.filename = infile
@@ -72,7 +74,7 @@ class GenericXML(object):
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd("%s --format --output %s -"%(xmllint,outfile), input_str=xmlstr)
+            run_cmd_no_fail("%s --format --output %s -"%(xmllint,outfile), input_str=xmlstr)
         else:
             doc = minidom.parseString(xmlstr)
             with open(outfile,'w') as xmlout:
@@ -157,7 +159,7 @@ class GenericXML(object):
             root = self.root
         self.root.append(node)
 
-    def get_value(self, item, attribute=None, resolved=True, subgroup=None):
+    def get_value(self, item, attribute=None, resolved=True, subgroup=None): # pylint: disable=unused-argument
         """
         get_value is expected to be defined by the derived classes, if you get here
         the value was not found in the class.
@@ -165,7 +167,7 @@ class GenericXML(object):
         logger.debug("Get Value for " + item)
         return None
 
-    def set_value(self, vid, value, subgroup=None, ignore_type=True):
+    def set_value(self, vid, value, subgroup=None, ignore_type=True): # pylint: disable=unused-argument
         """
         ignore_type is not used in this flavor
         """

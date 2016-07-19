@@ -18,7 +18,6 @@ from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
 from CIME.XML.pio                   import PIO
-from CIME.XML.archive               import Archive
 
 from CIME.XML.env_test              import EnvTest
 from CIME.XML.env_mach_specific     import EnvMachSpecific
@@ -29,7 +28,6 @@ from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
-from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
 from CIME.macros import MacroMaker
@@ -71,6 +69,11 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
         self._force_read_only = read_only
+
+        self._env_entryid_files = []
+        self._env_generic_files = []
+        self._files = []
+
         self.read_xml(case_root)
 
         # Hold arbitary values. In create_newcase we may set values
@@ -98,7 +101,7 @@ class Case(object):
             self._read_only_mode = False
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *_):
         self.flush()
         self._read_only_mode = True
         return False
@@ -129,7 +132,7 @@ class Case(object):
         self._env_generic_files.append(EnvArchive(case_root))
         self._files = self._env_entryid_files + self._env_generic_files
 
-    def _get_env(self, short_name):
+    def get_env(self, short_name):
         full_name = "env_%s.xml" % (short_name)
         for env_file in self._files:
             if os.path.basename(env_file.filename) == full_name:
@@ -139,7 +142,7 @@ class Case(object):
 
     def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
         newcase = deepcopy(self)
-        for env_file in newcase._files:
+        for env_file in newcase._files: # pylint: disable=protected-access
             basename = os.path.basename(env_file.filename)
             env_file.filename = os.path.join(newcaseroot,basename)
 
@@ -215,7 +218,6 @@ class Case(object):
                 traceback.print_exc()
                 logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
 
-
             if result is not None and (len(result) >= 1):
 
                 if resolved :
@@ -235,9 +237,6 @@ class Case(object):
 
         logger.debug("(get_values) Return value:  %s" , results )
         return results
-
-
-
 
     def get_type_info(self, item):
         result = None
@@ -351,7 +350,7 @@ class Case(object):
         expect(compset is not None,
                "ERROR: compset is not set")
         # the first element is always the date operator - skip it
-        elements = compset.split('_')[1:]
+        elements = compset.split('_')[1:] # pylint: disable=maybe-no-member
         for element in elements:
             # ignore the possible BGC or TEST modifier
             if element.startswith("BGC%") or element.startswith("TEST"):
@@ -393,7 +392,7 @@ class Case(object):
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
-	    node_name = 'CONFIG_' + comp_class + '_FILE'
+            node_name = 'CONFIG_' + comp_class + '_FILE'
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
             expect(comp_config_file is not None,"No config file for component %s"%comp_name)
             compobj = Component(comp_config_file)
@@ -523,7 +522,7 @@ class Case(object):
 
         # the following go into the env_mach_specific file
         items = ("module_system", "environment_variables", "mpirun")
-        env_mach_specific_obj = self._get_env("mach_specific")
+        env_mach_specific_obj = self.get_env("mach_specific")
         for item in items:
             nodes = machobj.get_first_child_nodes(item)
             for node in nodes:
@@ -538,7 +537,7 @@ class Case(object):
         #FIXME - add pesize_opts as optional argument below
         pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount)
-        mach_pes_obj = self._get_env("mach_pes")
+        mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
         for key, value in pes_ntasks.items():
             totaltasks[key[-3:]] = int(value)
@@ -583,7 +582,7 @@ class Case(object):
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         batch = Batch(batch_system=batch_system_type, machine=machine_name)
         bjobs = batch.get_batch_jobs()
-        env_batch = self._get_env("batch")
+        env_batch = self.get_env("batch")
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
         env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime)
@@ -617,11 +616,11 @@ class Case(object):
                 self.set_value(name, value)
 
     def set_initial_test_values(self):
-        testobj = self._get_env("test")
+        testobj = self.get_env("test")
         testobj.set_initial_values(self)
 
     def get_batch_jobs(self):
-        batchobj = self._get_env("batch")
+        batchobj = self.get_env("batch")
         return batchobj.get_jobs()
 
     def _set_pio_xml(self):
@@ -852,5 +851,5 @@ class Case(object):
         return newcase
 
     def submit_jobs(self, no_batch=False, job=None):
-        env_batch = self._get_env('batch')
+        env_batch = self.get_env('batch')
         env_batch.submit_jobs(self, no_batch=no_batch, job=job)

@@ -1,4 +1,4 @@
-import os, re, logging
+import os, re
 
 from CIME.utils import expect
 

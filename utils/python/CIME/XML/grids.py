@@ -4,7 +4,6 @@ This is not an abstract class - but inherits from the abstact class GenericXML
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, convert_to_string, convert_to_type
 from CIME.XML.files import Files
 from CIME.XML.generic_xml import GenericXML
 
@@ -79,7 +78,7 @@ class Grids(GenericXML):
                 "grid '%s'  is not supported, use manage_case to determine supported grids " %name)
 
     # TODO - API needs to match inherited version
-    def get_value(self, item, attributes=None, root=None):
+    def get_value(self, item, attributes=None, root=None): # pylint: disable=arguments-differ
         if root is None:
             root = self.root
         node = self.get_optional_node(item,attributes=attributes, root=root)

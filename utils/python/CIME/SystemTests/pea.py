@@ -3,10 +3,11 @@ Implementation of the CIME PEA test.  This class inherits from SystemTestsCommon
 """
 import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
 import CIME.utils
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
+
+logger = logging.getLogger(__name__)
 
 class PEA(SystemTestsCommon):
 
@@ -60,7 +61,7 @@ class PEA(SystemTestsCommon):
 
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing an %d %s initial test with 1pe and mpi, no restarts written" 
+        logger.info("doing an %d %s initial test with 1pe and mpi, no restarts written"
                     % (stop_n, stop_option))
 
         return SystemTestsCommon._run(self)
@@ -69,7 +70,6 @@ class PEA(SystemTestsCommon):
 
         expect(os.path.isfile("env_mach_pes.xml.2"),
                "ERROR: env_mach_pes.xml.2 does not exist, run case.build" )
-      
 
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
@@ -87,10 +87,10 @@ class PEA(SystemTestsCommon):
 
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing an %d %s initial test with 1pe and serial mpi, no restarts written" 
+        logger.info("doing an %d %s initial test with 1pe and serial mpi, no restarts written"
                     % (stop_n, stop_option))
 
-        return SystemTestsCommon._run(self, "mpiserial")
+        success = SystemTestsCommon._run(self, "mpiserial")
 
         # Compare restart file
         if success:

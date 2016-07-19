@@ -17,7 +17,7 @@ class PIO(EntryID):
 
         EntryID.__init__(self, infile)
 
-    def get_defaults(self, grid=None, compset=None, mach=None, compiler=None, mpilib=None):
+    def get_defaults(self, grid=None, compset=None, mach=None, compiler=None, mpilib=None): # pylint: disable=unused-argument
         # should we have a env_pio file
         defaults = {}
 

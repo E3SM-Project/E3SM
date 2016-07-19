@@ -3,7 +3,7 @@ common utilities for buildlib
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, handle_standard_logging_options, setup_standard_logging_options
+from CIME.utils import handle_standard_logging_options, setup_standard_logging_options
 from CIME.case  import Case
 import sys, os, argparse, doctest
 
@@ -41,7 +41,7 @@ def parse_input(argv):
 def build_data_lib(argv, compclass):
 ###############################################################################
 
-    caseroot, libroot, bldroot = parse_input(argv)
+    caseroot, libroot, _ = parse_input(argv)
 
     with Case(caseroot) as case:
 
@@ -60,7 +60,7 @@ def build_data_lib(argv, compclass):
 def build_xcpl_lib(argv, compclass):
 ###############################################################################
 
-    caseroot, libroot, bldroot = parse_input(argv)
+    caseroot, libroot, _ = parse_input(argv)
 
     with Case(caseroot) as case:
 
@@ -80,7 +80,7 @@ def build_xcpl_lib(argv, compclass):
 def build_stub_lib(argv, compclass):
 ###############################################################################
 
-    caseroot, libroot, bldroot = parse_input(argv)
+    caseroot, libroot, _ = parse_input(argv)
 
     with Case(caseroot) as case:
 
@@ -122,7 +122,7 @@ def run_gmake(case, compclass, libroot, libname="", user_cppdefs=""):
         cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s " \
             % (gmake, gmake_j, compclass, complib, makefile, macfile )
 
-    rc, out, err = run_cmd(cmd, ok_to_fail=True)
+    rc, out, err = run_cmd(cmd)
     expect(rc == 0, "Command %s failed rc=%d\nout=%s\nerr=%s" % (cmd, rc, out, err))
 
     logger.info("Command %s completed with output %s\nerr %s" ,cmd, out, err)

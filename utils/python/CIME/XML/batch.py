@@ -6,7 +6,7 @@ can be defined by providing a batch_system MACH="mach" block.
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
-from CIME.utils import expect, get_cime_root, get_model, transform_vars
+from CIME.utils import expect, get_cime_root, get_model
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ class Batch(GenericXML):
 
         return batch_system
 
-    def get_value(self, name, resolved=True, subgroup=None):
+    def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_batch.xml file
         """
@@ -83,7 +83,7 @@ class Batch(GenericXML):
 
         if value is None:
             # if all else fails
-            value = GenericXML.get_value(self, name)
+            value = GenericXML.get_value(self, name, attribute, resolved, subgroup)
 
         if resolved:
             if value is not None:

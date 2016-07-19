@@ -5,7 +5,7 @@ CIME performance test  This class inherits from SystemTestsCommon
 """
 
 from CIME.XML.standard_module_setup import *
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 

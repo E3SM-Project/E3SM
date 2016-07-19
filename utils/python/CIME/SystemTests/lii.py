@@ -7,12 +7,9 @@ Verifies that namelist variable 'use_init_interp' works correctly
 (2) do a run with use_init_interp true (suffix init_interp_on)
 """
 
-import shutil
+import shutil, glob
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
-import CIME.utils
-from CIME.case_setup import case_setup
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 
@@ -35,16 +32,16 @@ class LII(SystemTestsCommon):
         # multi-instance versions
 
         if not os.path.exists("user_nl_nointerp"):
-            os.path.makedirs("user_nl_nointerp")
+            os.makedirs("user_nl_nointerp")
             for filename in glob.glob(r'user_nl_clm*'):
-                shutil.copy(filename, os.path.join("user_nl_nointerp",filename))  
+                shutil.copy(filename, os.path.join("user_nl_nointerp",filename))
                 with open(os.path.join("user_nl_nointerp",filename), "a") as newfile:
                     newfile.write("use_init_interp = .false.")
 
         if not os.path.exists("user_nl_interp"):
-            os.path.makedirs("user_nl_interp")
+            os.makedirs("user_nl_interp")
             for filename in glob.glob(r'user_nl_clm*'):
-                shutil.copy(filename, os.path.join("user_nl_interp",filename))  
+                shutil.copy(filename, os.path.join("user_nl_interp",filename))
                 with open(os.path.join("user_nl_interp",filename), "a") as newfile:
                     newfile.write("use_init_interp = .false.")
 
@@ -65,7 +62,7 @@ class LII(SystemTestsCommon):
 
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing a %d %s initial test with init_interp set to false, no restarts written" 
+        logger.info("doing a %d %s initial test with init_interp set to false, no restarts written"
                     % (stop_n, stop_option))
 
         return SystemTestsCommon._run(self)
@@ -78,7 +75,7 @@ class LII(SystemTestsCommon):
 
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing a %d %s initial test with init_interp set to true, no restarts written" 
+        logger.info("doing a %d %s initial test with init_interp set to true, no restarts written"
                     % (stop_n, stop_option))
 
         # FIXME - determine what should be compared here for success of test

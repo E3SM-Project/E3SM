@@ -12,7 +12,7 @@
 
 from standard_script_setup import *
 
-from CIME.utils import expect, run_cmd, convert_to_type, append_status
+from CIME.utils import expect, convert_to_type, append_status
 from CIME.case import Case
 
 import argparse, doctest, shutil, glob, time

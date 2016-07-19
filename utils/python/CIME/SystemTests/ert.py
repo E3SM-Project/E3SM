@@ -1,11 +1,10 @@
 """
 CIME production restart test  This class inherits from SystemTestsCommon
-Exact restart from startup, default 2 month + 1 month 
+Exact restart from startup, default 2 month + 1 month
 """
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.utils import run_cmd, append_status
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ class ERT(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
 
     def _ert_first_phase(self):
-        
+
         self._case.set_value("STOP_N", 2)
         self._case.set_value("STOP_OPTION", "nmonths")
         self._case.set_value("REST_N", 1)

@@ -1,9 +1,8 @@
 """
-CIME ERR test  This class inherits from SystemTestsCommon
+CIME ERR test  This class inherits from ERS
 ERR tests short term archiving and restart capabilities
 """
 from CIME.XML.standard_module_setup import *
-from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.SystemTests.ers import ERS
 
 import shutil, glob

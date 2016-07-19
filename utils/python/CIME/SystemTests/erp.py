@@ -8,13 +8,11 @@ count are modified on retart.
 (2) Do a restart test with half the number of tasks and threads (suffix rest)
 """
 
-import shutil, filecmp
+import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
-from CIME.preview_namelists import preview_namelists
 import CIME.utils
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 

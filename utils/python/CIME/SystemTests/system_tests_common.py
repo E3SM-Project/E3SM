@@ -4,7 +4,7 @@ Base class for CIME system tests
 import shutil, glob, gzip, time
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import run_cmd, append_status
+from CIME.utils import append_status
 from CIME.case_setup import case_setup
 from CIME.case_run import case_run
 from CIME.case_st_archive import case_st_archive
@@ -48,6 +48,19 @@ class SystemTestsCommon(object):
         self._case.set_value("TEST",True)
         self._case.flush()
 
+    def fail_test(self):
+        self._runstatus = "FAIL"
+
+    def has_failed(self):
+        return self._runstatus == "FAIL"
+
+    def pass_test(self):
+        if not self.has_failed():
+            self._runstatus = "PASS"
+
+    def has_passed(self):
+        return self._runstatus == "PASS"
+
     def build(self, sharedlib_only=False, model_only=False):
         build.case_build(self._caseroot, case=self._case,
                          sharedlib_only=sharedlib_only, model_only=model_only)
@@ -72,11 +85,10 @@ class SystemTestsCommon(object):
                 success = case_st_archive(self._case)
 
             if success and self._coupler_log_indicates_run_complete(coupler_log_path):
-                if self._runstatus != "FAIL":
-                    self._runstatus = "PASS"
+                self.pass_test()
             else:
                 success = False
-                self._runstatus = "FAIL"
+                self.fail_test()
 
             if success and suffix is not None:
                 self._component_compare_move(suffix)
@@ -84,7 +96,7 @@ class SystemTestsCommon(object):
             # An exception must not prevent the TestStatus file from
             # being marked FAIL
             success = False
-            self._runstatus = "FAIL"
+            self.fail_test()
             logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
 
         return success
@@ -120,8 +132,7 @@ class SystemTestsCommon(object):
         cmd = os.path.join(self._case.get_value("SCRIPTSROOT"), "Tools",
                            "component_compare_move.sh")
         rc, out, err = run_cmd("%s -rundir %s -testcase %s -suffix %s" %
-                               (cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'), suffix),
-                               ok_to_fail=True)
+                               (cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'), suffix))
         if rc == 0:
             append_status(out, sfile="TestStatus.log")
         else:
@@ -133,7 +144,7 @@ class SystemTestsCommon(object):
                            "component_compare_test.sh")
         rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 %s -suffix2 %s -msg 'Compare %s and %s'"
                                %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
-                                 self._case.get_value('CASEBASEID'), suffix1, suffix2, suffix1, suffix2), ok_to_fail=True)
+                                 self._case.get_value('CASEBASEID'), suffix1, suffix2, suffix1, suffix2))
         logger.debug("run %s results %d %s %s"%(cmd,rc,out,err))
         if rc == 0:
             append_status(out.replace("compare","compare functionality", 1) + "\n",
@@ -178,7 +189,7 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        if self._runstatus != "PASS":
+        if not self.has_passed():
             append_status("Cannot check memory, test did not pass.\n", sfile="TestStatus.log")
             return
 
@@ -233,7 +244,7 @@ class SystemTestsCommon(object):
         """
         compare the current test output to a baseline result
         """
-        if self._runstatus != "PASS":
+        if not self.has_passed():
             append_status("Cannot compare baselines, test did not pass.\n", sfile="TestStatus.log")
             return
 
@@ -252,7 +263,7 @@ class SystemTestsCommon(object):
         compgen += " -compare_tag "+self._case.get_value("BASELINE_NAME_CMP")
         compgen += " -testcase "+self._case.get_value("CASE")
         compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
-        rc, out, err = run_cmd(compgen, ok_to_fail=True)
+        rc, out, err = run_cmd(compgen)
 
         append_status(out.replace("compare","compare baseline", 1),sfile="TestStatus")
         if rc != 0:
@@ -296,7 +307,7 @@ class SystemTestsCommon(object):
         """
         generate a new baseline case based on the current test
         """
-        if self._runstatus != "PASS":
+        if not self.has_passed():
             append_status("Cannot generate baselines, test did not pass.\n", sfile="TestStatus.log")
             return
 
@@ -316,7 +327,7 @@ class SystemTestsCommon(object):
         compgen += " -generate_tag "+self._case.get_value("BASELINE_NAME_GEN")
         compgen += " -testcase "+self._case.get_value("CASE")
         compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
-        rc, out, err = run_cmd(compgen, ok_to_fail=True)
+        rc, out, err = run_cmd(compgen)
         # copy latest cpl log to baseline
         # drop the date so that the name is generic
         shutil.copyfile(newestcpllogfile,
@@ -328,7 +339,7 @@ class SystemTestsCommon(object):
 class FakeTest(SystemTestsCommon):
 
     def _set_script(self, script):
-        self._script = script
+        self._script = script # pylint: disable=attribute-defined-outside-init
 
     def build(self, sharedlib_only=False, model_only=False):
         if (not sharedlib_only):

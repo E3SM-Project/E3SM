@@ -8,10 +8,8 @@ This is an openmp test to determine that changing thread counts does not change 
 
 import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
-import CIME.utils
 from CIME.case_setup import case_setup
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +22,6 @@ class PET(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
 
     def build(self, sharedlib_only=False, model_only=False):
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = CIME.utils.get_model()
-
         # first make sure that all components have threaded settings
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
             if self._case.get_value("NTHRDS_%s"%comp) <= 1:
@@ -48,7 +43,7 @@ class PET(SystemTestsCommon):
 
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing a %d %s initial test with default threading, no restarts written" 
+        logger.info("doing a %d %s initial test with default threading, no restarts written"
                     % (stop_n, stop_option))
 
         return SystemTestsCommon._run(self)
@@ -56,16 +51,16 @@ class PET(SystemTestsCommon):
     def _pet_second_phase(self):
         #Do a run with all threads set to 1
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
-                self._case.set_value("NTHRDS_%s"%comp, 1)
+            self._case.set_value("NTHRDS_%s"%comp, 1)
         self._case.flush()
         shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.xml"))
 
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing a %d %s initial test with threads set to 1, no restarts written" 
+        logger.info("doing a %d %s initial test with threads set to 1, no restarts written"
                     % (stop_n, stop_option))
 
-        return SystemTestsCommon._run(self, "single_thread")
+        success = SystemTestsCommon._run(self, "single_thread")
 
         if success:
             return self._component_compare_test("base", "single_thread")
