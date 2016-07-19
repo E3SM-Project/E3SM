@@ -373,6 +373,13 @@ def case_st_archive(case):
         append_status("resubmitting from st_archive",
                       caseroot=caseroot, sfile="CaseStatus")
         logger.info("resubmitting from st_archive, resubmit=%d"%resubmit)
-        submit(case, resubmit=True)
+        if case.get_value("MACH") == "mira":
+            expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
+            with open(".original_host", "r") as fd:
+                sshhost = fd.read()
+            run_cmd("ssh %s `cd %s; CIMEROOT=%s ./case.submit --resubmit' "\
+                        %(sshhost, caseroot, case.get_value("CIMEROOT")))
+        else:
+            submit(case, resubmit=True)
 
     return True

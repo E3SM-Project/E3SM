@@ -432,12 +432,12 @@ class EnvBatch(EnvBase):
             if  string is not None:
                 submitcmd += string + " "
         
-        if case.get_value("MACH") == "mira":
-            if job in ("case.test", "case.run"):
-                if os.path.isfile(".original_host"):
-                    with open(".original_host", "r") as fd:
-                        sshhost = fd.read()
-                        submitcmd = "ssh %s `%s`"%(sshhost, submitcmd)
+#        if case.get_value("MACH") == "mira":
+#            if job in ("case.test", "case.run"):
+#                if os.path.isfile(".original_host"):
+#                    with open(".original_host", "r") as fd:
+#                        sshhost = fd.read()
+#                        submitcmd = "ssh %s `%s`"%(sshhost, submitcmd)
 
 
         logger.info("Submitting job script %s"%submitcmd)
