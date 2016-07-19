@@ -1,7 +1,7 @@
 #===============================================================================
 # $Id: Makefile 46158 2013-04-19 18:41:34Z mlevy@ucar.edu $
 # $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/check_maps/src/Makefile $
-# 
+#
 # This is the makefile for the RegridWeightGen application in ESMF
 # Altered for use with CESM's gen_atm_ocn_maps.sh tool
 #===============================================================================
@@ -35,8 +35,8 @@ ifneq ($(strip $(VERBOSE)),)
     # ESMF_F90COMPILECPPFLAGS += -WF,-DVERBOSE=1
     ESMF_F90COMPILECPPFLAGS += -DVERBOSE
   endif
-  $(shell rm -f $(TARGET).o) 
-endif  
+  $(shell rm -f $(TARGET).o)
+endif
 
 
 ################################################################################
@@ -44,7 +44,7 @@ endif
 
 ../ESMF_RegridWeightGenCheck: $(TARGET).o
 	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) \
-  $(ESMF_F90LINKRPATHS) -o $@ $(TARGET).o $(ESMF_F90ESMFLINKLIBS)        
+  $(ESMF_F90LINKRPATHS) -o $@ $(TARGET).o $(ESMF_F90ESMFLINKLIBS)
 
 .PHONY: verbose clean
 verbose:

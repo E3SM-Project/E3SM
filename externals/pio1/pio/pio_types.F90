@@ -1,10 +1,10 @@
 #define __PIO_FILE__ "pio_types.F90"
 !>
-!! @file 
+!! @file
 !! @brief Derived datatypes and constants for PIO
-!! 
-!! $Revision$
-!! $LastChangedDate$
+!!
+!! $Revision: 943 $
+!! $LastChangedDate: 2014-02-14 10:20:17 -0600 (Fri, 14 Feb 2014) $
 !<
 module pio_types
     use pio_kinds
@@ -19,7 +19,7 @@ module pio_types
     use pnetcdf
 #endif
     implicit none
-    private 
+    private
 #ifdef NO_MPIMOD
     include 'mpif.h'                             ! _EXTERNAL
 #endif
@@ -34,25 +34,99 @@ module pio_types
         integer(i4) :: length
     end type
 
+!>
+!! @defgroup PIO_rearr_method PIO_rearr_method
+!! @public
+!! @brief The three choices to control rearrangement are:
+!! @details
+!!  - PIO_rearr_none : Do not use any form of rearrangement
+!!  - PIO_rearr_box : Use a PIO internal box rearrangement
+!>
+    integer(i4), public, parameter :: PIO_rearr_none = 0
+    integer(i4), public, parameter :: PIO_rearr_box =  1
+
+!>
+!! @defgroup PIO_rearr_comm_t PIO_rearr_comm_t
+!! @public
+!! @brief The two choices for rearranger communication
+!! @details
+!!  - PIO_rearr_comm_p2p : Point to point
+!!  - PIO_rearr_comm_coll : Collective
+!>
+    enum, bind(c)
+      enumerator :: PIO_rearr_comm_p2p = 0
+      enumerator :: PIO_rearr_comm_coll
+    end enum
+
+!>
+!! @defgroup PIO_rearr_comm_dir PIO_rearr_comm_dir
+!! @public
+!! @brief The four choices for rearranger communication direction
+!! @details
+!!  - PIO_rearr_comm_fc_2d_enable : COMM procs to IO procs and vice versa
+!!  - PIO_rearr_comm_fc_1d_comp2io: COMM procs to IO procs only
+!!  - PIO_rearr_comm_fc_1d_io2comp: IO procs to COMM procs only
+!!  - PIO_rearr_comm_fc_2d_disable: Disable flow control
+!>
+    enum, bind(c)
+      enumerator :: PIO_rearr_comm_fc_2d_enable = 0
+      enumerator :: PIO_rearr_comm_fc_1d_comp2io
+      enumerator :: PIO_rearr_comm_fc_1d_io2comp
+      enumerator :: PIO_rearr_comm_fc_2d_disable
+    end enum
+
+!>
+!! @defgroup PIO_rearr_comm_fc_options PIO_rearr_comm_fc_options
+!! @brief Type that defines the PIO rearranger options
+!! @details
+!!  - fcd : @copydoc PIO_rearr_comm_dir
+!!  - enable_hs : Enable handshake (true/false)
+!!  - enable_isend : Enable Isends (true/false)
+!!  - max_pend_req : Maximum pending requests (To indicated unlimited
+!!                    number of requests use PIO_REARR_COMM_UNLIMITED_PEND_REQ)
+!>
+    type, public :: PIO_rearr_comm_fc_opt_t
+      integer :: fcd                  ! Flow control direction
+      logical :: enable_hs            ! Enable handshake?
+      logical :: enable_isend         ! Enable isends?
+      integer :: max_pend_req         ! Maximum pending requests
+    end type PIO_rearr_comm_fc_opt_t
+
+    integer, public, parameter :: PIO_REARR_COMM_UNLIMITED_PEND_REQ = -1
+!>
+!! @defgroup PIO_rearr_options PIO_rearr_options
+!! @brief Type that defines the PIO rearranger options
+!! @details
+!!  - comm_type : @copydoc PIO_rearr_comm_t
+!!  - comm_fc_opts : @copydoc PIO_rearr_comm_fc_options
+!>
+    type, public :: PIO_rearr_opt_t
+      integer                         :: comm_type
+      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts
+    end type PIO_rearr_opt_t
+
+    public :: PIO_rearr_comm_p2p, PIO_rearr_comm_coll,&
+              PIO_rearr_comm_fc_2d_enable, PIO_rearr_comm_fc_1d_comp2io,&
+              PIO_rearr_comm_fc_1d_io2comp, PIO_rearr_comm_fc_2d_disable
 
     !------------------------------------
     !  a file descriptor data structure
     !------------------------------------
 !>
 !! @public
-!! @defgroup iosystem_desc_t 
+!! @defgroup iosystem_desc_t
 !! @brief A defined PIO system descriptor created by @ref PIO_init (see pio_types)
 !<
     type, public :: IOSystem_desc_t
 #ifdef SEQUENCE
 	sequence
 #endif
-        
+
         integer(i4)              :: union_comm=MPI_COMM_NULL ! The intracomm union of comp and io communicators (for async only)
         integer(i4)              :: IO_comm=MPI_COMM_NULL            ! The IO communicator
         integer(i4)              :: comp_comm=MPI_COMM_NULL          ! The Compute communicator
         integer(i4)              :: intercomm=MPI_COMM_NULL          ! the intercomm (may be MPI_COMM_NULL)
-        
+
         integer(i4)              :: my_comm=MPI_COMM_NULL            ! either comp_comm or intercomm
         integer(i4)              :: num_tasks          !  number of tasks
         integer(i4)              :: num_iotasks        ! total number of IO tasks
@@ -65,7 +139,7 @@ module pio_types
 !
         integer(i4)              :: Info=MPI_INFO_NULL  ! MPI-IO info structure
         integer(i4)              :: numOST              ! The number of Object Storage Target (OST) to use.  This is a hardware raid device.
-        
+
 ! rank of the io and comp roots in the intercomm
         integer(i4)              :: IOMaster           ! The intercom of the io_rank 0
         integer(i4)              :: compMaster           ! The intercom of the comp_rank 0
@@ -79,6 +153,8 @@ module pio_types
         logical(log_kind)        :: async_interface=.false.    ! .true. if using the async interface model
         integer(i4)              :: rearr         ! type of rearranger
                                                   ! e.g. rearr_{none,box}
+        !integer(i4), dimension(IOSYS_REARR_OPT_MAX) :: rearr_opts ! Rearranger options - see PIO_rearr_opt_t for details
+        type(PIO_rearr_opt_t)   :: rearr_opts       ! Rearranger options
 	integer(i4)              :: error_handling ! how pio handles errors
         integer(i4),pointer      :: ioranks(:) => null()         ! the computational ranks for the IO tasks
 
@@ -93,7 +169,7 @@ module pio_types
     integer, parameter :: MAX_IO_SYSTEMS=6
     type(iosystem_list_t), save :: iosystems(MAX_IO_SYSTEMS)
 
-!> 
+!>
 !! @private
 !! @struct io_data_list
 !! @brief Linked list of buffers for pnetcdf non-blocking interface
@@ -106,11 +182,11 @@ module pio_types
        type(io_data_list), pointer :: next => null()
     end type io_data_list
 
-     
-!> 
+
+!>
 !! @defgroup file_desc_t
 !! File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
-!! 
+!!
 !>
     type, public :: File_desc_t
        type(iosystem_desc_t), pointer :: iosystem => null()
@@ -118,7 +194,7 @@ module pio_types
        integer :: buffsize=0
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
-       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
+       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below
        logical                  :: file_is_open = .false.
     end type File_desc_t
 
@@ -139,15 +215,15 @@ module pio_types
 !>
 !! @private
 !! @defgroup iodesc_generate io descriptors, generating
-!! @brief The io descriptor structure in defined in this subroutine 
+!! @brief The io descriptor structure in defined in this subroutine
 !! and subsequently used in @ref PIO_read_darray, @ref PIO_write_darray,
 !! @ref PIO_put_var, @ref PIO_get_var calls (see pio_types).
 !<
 
 !>
-!! @public 
+!! @public
 !! @struct io_desc_t
-!! @brief  An io descriptor handle that is generated in @ref PIO_initdecomp 
+!! @brief  An io descriptor handle that is generated in @ref PIO_initdecomp
 !! (see pio_types)
 !<
    type, public :: io_desc_t
@@ -173,7 +249,7 @@ module pio_types
         integer,pointer :: rfrom(:)=> NULL()   ! rfrom(nrecvs)= rank of ith sender
         integer,pointer :: rtype(:)=> NULL()   ! rtype(nrecvs)=mpi types for receives
 
-        
+
         ! needed on all procs
         integer,pointer :: scount(:)=> NULL()  ! scount(num_iotasks)= # sends to ith ioproc
         integer,pointer :: stype(:)=> NULL()   ! stype(num_iotasks)=mpi type for sends
@@ -194,20 +270,20 @@ module pio_types
 
 !>
 !! @public
-!! @defgroup var_desc_t 
-!! @brief A variable descriptor returned from @ref PIO_def_var (see pio_types) 
+!! @defgroup var_desc_t
+!! @brief A variable descriptor returned from @ref PIO_def_var (see pio_types)
 !<
     type, public :: Var_desc_t
 #ifdef SEQUENCE
 	sequence
-#endif	
+#endif
         integer(i4)     :: varID
-        integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
+        integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the
                                  ! netcdf file
 	integer(i4)     :: type
         integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
 	character(len=50) :: name ! vdc needed variable
-    end type 
+    end type
 
 !>
 !! @defgroup PIO_iotype PIO_iotype
@@ -220,7 +296,7 @@ module pio_types
 !!   - PIO_iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)
 !!   - PIO_iotype_netcdf : serial read/write of NetCDF files using 'base_node' (netcdf3)
 !!   - PIO_iotype_netcdf4c : parallel read/serial write of NetCDF4 (HDF5) files with data compression
-!!   - PIO_iotype_netcdf4p : parallel read/write of NETCDF4 (HDF5) files 
+!!   - PIO_iotype_netcdf4p : parallel read/write of NETCDF4 (HDF5) files
 !>
     integer(i4), public, parameter ::  &
         PIO_iotype_pbinary = 1, &! use MPI-IO with data types to read/write C like binary files
@@ -228,9 +304,9 @@ module pio_types
         PIO_iotype_binary  = 4, &   ! serial read/write of binary files using 'base_node'
         PIO_iotype_pnetcdf = 5, &   ! parallel read/write of pNetCDF files
         PIO_iotype_netcdf  = 6, &   ! serial read/write of NetCDF file using 'base_node'
-        PIO_iotype_netcdf4c = 7, &  ! netcdf4 (hdf5 format) file opened for compression (serial write access only)   
+        PIO_iotype_netcdf4c = 7, &  ! netcdf4 (hdf5 format) file opened for compression (serial write access only)
         PIO_iotype_netcdf4p = 8, &  ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
-        PIO_iotype_vdc2 = 10        ! VDC2 format file opened for compressed parallel write 
+        PIO_iotype_vdc2 = 10        ! VDC2 format file opened for compressed parallel write
 
 
 ! These are for backward compatability and should not be used or expanded upon
@@ -242,22 +318,12 @@ module pio_types
         iotype_netcdf  = PIO_iotype_netcdf
 
 
-!>
-!! @defgroup PIO_rearr_method PIO_rearr_method
-!! @public 
-!! @brief The three choices to control rearrangement are:
-!! @details
-!!  - PIO_rearr_none : Do not use any form of rearrangement
-!!  - PIO_rearr_box : Use a PIO internal box rearrangement
-!>
-    integer(i4), public, parameter :: PIO_rearr_none = 0
-    integer(i4), public, parameter :: PIO_rearr_box =  1
 
-!> 
+!>
 !! @public
-!! @defgroup PIO_error_method error_methods 
+!! @defgroup PIO_error_method error_methods
 !! @details
-!! The three types of error handling methods are: 
+!! The three types of error handling methods are:
 !!  - PIO_INTERNAL_ERROR  : abort on error from any task
 !!  - PIO_BCAST_ERROR     : broadcast an error from io_rank 0 to all tasks in comm
 !!  - PIO_RETURN_ERROR    : do nothing - allow the user to handle it
@@ -267,11 +333,11 @@ module pio_types
   integer(i4), public, parameter :: PIO_RETURN_ERROR = -53
 
 !>
-!! @public 
+!! @public
 !! @defgroup error_return error return codes
 !! @brief : The error return code; ierr != PIO_noerr indicates
-!! an error. (see @ref PIO_seterrorhandling ) 
-!> 
+!! an error. (see @ref PIO_seterrorhandling )
+!>
 
 !>
 !! @struct use_PIO_kinds
@@ -280,11 +346,11 @@ module pio_types
 !<
 
 !>
-!! @public 
+!! @public
 !! @defgroup PIO_kinds PIO_kinds
 !! @brief The base types supported by PIO are:
 !! @details
-!!  - PIO_double : 8-byte reals or double precision 
+!!  - PIO_double : 8-byte reals or double precision
 !!  - PIO_real : 4-byte reals
 !!  - PIO_int :  4-byte integers
 !!  - PIO_char : character
@@ -302,8 +368,8 @@ module pio_types
    integer, public, parameter :: PIO_noerr  = nf_noerr
    integer, public, parameter :: PIO_WRITE  = nf_write
    integer, public, parameter :: PIO_nowrite  = nf_nowrite
-   integer, public, parameter :: PIO_CLOBBER = nf_clobber	
-   integer, public, parameter :: PIO_NOCLOBBER = nf_NOclobber	
+   integer, public, parameter :: PIO_CLOBBER = nf_clobber
+   integer, public, parameter :: PIO_NOCLOBBER = nf_NOclobber
    integer, public, parameter :: PIO_NOFILL = nf_nofill
    integer, public, parameter :: PIO_MAX_NAME = nf_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf_max_var_dims
@@ -321,8 +387,8 @@ module pio_types
    integer, public, parameter :: PIO_noerr  = nf90_noerr
    integer, public, parameter :: PIO_WRITE  = nf90_write
    integer, public, parameter :: PIO_nowrite = nf90_nowrite
-   integer, public, parameter :: PIO_CLOBBER = nf90_clobber	
-   integer, public, parameter :: PIO_NOCLOBBER = nf90_NOclobber	
+   integer, public, parameter :: PIO_CLOBBER = nf90_clobber
+   integer, public, parameter :: PIO_NOCLOBBER = nf90_NOclobber
    integer, public, parameter :: PIO_NOFILL = nf90_nofill
    integer, public, parameter :: PIO_MAX_NAME = nf90_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf90_max_var_dims

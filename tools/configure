@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 #-----------------------------------------------------------------------------------------------
 #
 # configure
@@ -68,17 +68,17 @@ OPTIONS
      -compiler <name>     Specify a compiler for the target machine (optional)
                           default: default compiler for the target machine
      -mpilib <name>       Specify a mpi library for the target machine (optional)
-                          default:  mpi-serial 
+                          default:  mpi-serial
      -mach_dir <path>     Specify the locations of the Machines directory (optional).
 
      -output_dir <path>   default: current working directory
      -output_format <value> Output format can be make or cmake.
                           default: make
      -help [or -h]        Print usage to STDOUT (optional).
-     -loglevel <level>    Set the message level for perl 
+     -loglevel <level>    Set the message level for perl
                           valid: FATAL ERROR WARN INFO DEBUG
-			  default: INFO 
-     
+			  default: INFO
+
 EXAMPLES
 
   ./configure -mach bluefire -compiler ibm
@@ -101,9 +101,9 @@ my %opts = (
     );
 GetOptions(
     "cimeroot=s"                => \$opts{'cimeroot'},
-    "compiler=s"                => \$opts{'compiler'},  
+    "compiler=s"                => \$opts{'compiler'},
     "model=s"                   => \$opts{'model'},
-    "mpilib=s"                  => \$opts{'mpilib'},  
+    "mpilib=s"                  => \$opts{'mpilib'},
     "h|help"                    => \$opts{'help'},
     "list"                      => \$opts{'list'},
     "mach=s"                    => \$opts{'mach'},
@@ -160,7 +160,7 @@ if (!$opts{'list'}) {
     # Check for manditory machine input
     if ($opts{'mach'}) {
 	$mach = $opts{'mach'};
-    } else {	
+    } else {
 	$logger->fatal("ERROR: configure must include the input argument, -mach \n");
 	exit();
     }
@@ -169,7 +169,7 @@ if (!$opts{'list'}) {
     }
     if ($opts{'model'}) {
 	$model = $opts{'model'};
-    } 
+    }
     if ($opts{'mpilib'}) {
 	$mpilib = $opts{'mpilib'};
     }
@@ -184,7 +184,7 @@ if (!$opts{'list'}) {
     }
     if (! -d "$machdir") {
 	$logger->fatal(" Cannot find machines directory \"$machdir\"  ");
-    } 
+    }
 }
 
 
@@ -192,13 +192,13 @@ my $output_dir = ".";
 $output_dir = $opts{output_dir} if defined( $opts{output_dir} );
 #
 # Make sure the output_dir exists or can be created
-# 
-if(! -d "$output_dir") {    
+#
+if(! -d "$output_dir") {
   unless( mkpath $output_dir, "0755"){
       $logger->fatal("Could not find or create $output_dir");
   }
 }
- 
+
 #-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules and configuration files.
 # Look for them in the directory that contains the configure script.
@@ -230,7 +230,7 @@ if ($opts{'list'}) {
 
 #-----------------------------------------------------------------------------------------------
 # Create new config object if not just listing valid values
-my $config = ConfigCase->new(""); 
+my $config = ConfigCase->new("");
 my $files_spec_file = "$cimeroot/cime_config/${model}/config_files.xml";
 # srcroot is not used here
 my $srcroot = "";
@@ -264,11 +264,11 @@ if( -e "$machdir/Depends.$compiler" ) {
 
 my $dbug = $config->get("DEBUG");
 
-my $moduleloader = Module::ModuleLoader->new(machine  => $mach, 
-					     compiler => $compiler, 
-					     mpilib   => $mpilib, 
+my $moduleloader = Module::ModuleLoader->new(machine  => $mach,
+					     compiler => $compiler,
+					     mpilib   => $mpilib,
 					     caseroot => $output_dir,
-					     debug    => $dbug, 
+					     debug    => $dbug,
 					     cimeroot => $cimeroot,
 					     model    => $model);
 
@@ -281,7 +281,7 @@ $moduleloader->writeCshModuleFile();
 $moduleloader->writeShModuleFile();
 
 
-SetupTools::set_compiler($config->get('OS'),"$machdir/$compiler_file",$compiler, 
+SetupTools::set_compiler($config->get('OS'),"$machdir/$compiler_file",$compiler,
 			 $mach, $mpilib, "$output_dir/Macros.$output_format", $output_format);
 
 $logger->info("Successfully created auxilary build files for $mach $eol");

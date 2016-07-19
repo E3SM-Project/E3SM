@@ -15,7 +15,7 @@ derivative_mod.o \
 bndry_mod.o \
 prim_advance_mod.o \
 uwshcu.o \
-wetdep.o 
+wetdep.o
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -qnostrict  $<

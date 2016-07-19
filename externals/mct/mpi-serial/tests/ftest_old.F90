@@ -99,7 +99,7 @@
 
 	call mpi_waitall(5,rreq,status,ier)
 	print *,'recvs on MPI_COMM_WORLD done'
-	
+
 	do i=1,5
           print *, 'Status source=',status(MPI_SOURCE,i), &
                    '  tag=',status(MPI_TAG,i)
@@ -137,13 +137,13 @@
                            MPI_COMM_WORLD)
           print *,temp
         end do
-        
+
         do i=1,5
           if (rbuf(i) .ne. sbuf(i)) then
             errcount = errcount + 1
             print *,"Error for pack/send/unpack"
             print *,"found ",rbuf(i)," should be ",sbuf(i)
-          end if 
+          end if
         end do
 !
 
@@ -160,6 +160,6 @@
         else
           print *,"No errors"
         end if
-          
+
  	end
 

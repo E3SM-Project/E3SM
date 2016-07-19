@@ -2,9 +2,9 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<definitions_variables> 
+<definitions_variables>
 
-  <entry id="COMP_GLC"> 
+  <entry id="COMP_GLC">
     <type>char</type>
     <valid_values>xglc</valid_values>
     <default_value>xglc</default_value>
@@ -17,4 +17,4 @@
     <desc compset="_XGLC">Dead land-ice component</desc>
   </description>
 
-</definitions_variables> 
+</definitions_variables>

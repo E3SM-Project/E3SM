@@ -80,7 +80,7 @@ else { # more than two arguments
 # add the list of ALL *xml fields to a hash
 #-------------------------------------------------------------------------------
 my $parser = XML::LibXML->new( no_blanks => 1);
-my $caseroot = $ENV{CASEROOT};
+my $caseroot = getcwd;
 my @files = <${caseroot}/*xml>;
 
 my %xmlvars = ();
@@ -239,7 +239,7 @@ my $minthrds = $maxt[0];
 my $maxthrds = $maxt[0];
 my @sumt;
 $sumt[0] = 0;
-for ($c1=1; $c1 < $tottasks; $c1++){ 
+for ($c1=1; $c1 < $tottasks; $c1++){
    if ($maxt[$c1] < $minthrds) {$minthrds = $maxt[$c1] ;}
    if ($maxt[$c1] < 1) {$maxt[$c1] = 1;}
    if ($maxt[$c1] > $maxthrds) {$maxthrds = $maxt[$c1] ;}
@@ -255,7 +255,7 @@ my $sum = $maxt[0];  # sum of all tasks on one node
 my $taskgeom = "(0";
 my $thrdgeom = " $maxt[0]";
 my $taskcnt = 1;
-my $thrdcnt = $maxt[0];
+my $thrdcnt = $maxt[0] > 0 ? $maxt[0] : 1;
 my $aprun = "";
 my $pbsrs = "";
 
@@ -286,6 +286,7 @@ for ($c1=1; $c1 < $tottasks; $c1++){     # assign each task to a node
 }
 $fullsum = $fullsum + $sum;
 $taskgeom = $taskgeom.")";
+
 $taskpernode = $MAXTPN / $thrdcnt;
 $taskpernode = ($taskpernode > $taskcnt) ? $taskcnt : $taskpernode;
 if ($COMPILER eq "intel" && $taskpernode>1){

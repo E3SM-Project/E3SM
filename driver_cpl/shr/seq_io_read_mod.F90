@@ -17,7 +17,7 @@
 !  - the original use of seq_io will now ONLY work with the cpl because
 !    of hardwiring cpl_io_type and cpl_io_iosystem.  want the original
 !    io capabilities to be usable by any component
-!  - the init1 method depends on seq_comm for name consistency but seq_comm_init 
+!  - the init1 method depends on seq_comm for name consistency but seq_comm_init
 !    wants to be called after init1 so the global_comm can be modified for
 !    async IO.  this needs to be reconciled.
 !  - this routine stores information for all components but most methods are
@@ -146,7 +146,7 @@ contains
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
-    call seq_io_read_openfile(filename,pioid,addprefix) 
+    call seq_io_read_openfile(filename,pioid,addprefix)
 
     if (addprefix) then
        name1 = trim(prefix)//trim(dname)
@@ -268,7 +268,7 @@ contains
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
-    call seq_io_read_openfile(filename,pioid,addprefix) 
+    call seq_io_read_openfile(filename,pioid,addprefix)
 
     if (addprefix) then
        name1 = trim(prefix)//trim(dname)
@@ -313,7 +313,7 @@ contains
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
-    call seq_io_read_openfile(filename,pioid,addprefix) 
+    call seq_io_read_openfile(filename,pioid,addprefix)
 
     if (addprefix) then
        name1 = trim(prefix)//trim(dname)

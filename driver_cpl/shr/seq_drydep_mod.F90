@@ -22,8 +22,8 @@ module seq_drydep_mod
   use shr_const_mod, only : SHR_CONST_G, SHR_CONST_RDAIR, &
                             SHR_CONST_CPDAIR, SHR_CONST_MWWV
 
-  implicit none 
-  save 
+  implicit none
+  save
 
   private
 
@@ -134,7 +134,7 @@ module seq_drydep_mod
        /1.e36_r8,2000._r8,2000._r8,2000._r8,2000._r8,2000._r8,1.e36_r8,1.e36_r8,2500._r8,2000._r8,4000._r8/
   data rclo(1,1:NLUse) &
        /1.e36_r8,1000._r8,1000._r8,1000._r8,1000._r8,1000._r8,1.e36_r8,1.e36_r8,1000._r8,1000._r8,1000._r8/
-  
+
   data ri  (2,1:NLUse) &
        /1.e36_r8,1.e36_r8,1.e36_r8,1.e36_r8, 250._r8, 500._r8,1.e36_r8,1.e36_r8,1.e36_r8,1.e36_r8,1.e36_r8/
   data rlu (2,1:NLUse) &
@@ -269,9 +269,9 @@ module seq_drydep_mod
              ,.1_r8     &
              ,.1_r8     &
              ,1.e-36_r8 &
-             ,1.e-36_r8 &  
-             ,1.e-36_r8 &  
-             ,1.e-36_r8 &  
+             ,1.e-36_r8 &
+             ,1.e-36_r8 &
+             ,1.e-36_r8 &
              ,1.e-36_r8 &
              ,.1_r8     &
              ,.1_r8     &
@@ -302,9 +302,8 @@ module seq_drydep_mod
              ,0.1_r8    &
              ,0.1_r8    &
             /) 
-!EOP
 
-! PRIVATE DATA:
+  ! PRIVATE DATA:
 
   Interface seq_drydep_setHCoeff                      ! overload subroutine
      Module Procedure set_hcoeff_scalar
@@ -319,58 +318,58 @@ module seq_drydep_mod
 
   !--- Names of species that can work with ---
   character(len=20), public, parameter :: species_name_table(n_species_table) = &
-                         (/ 'OX      '                       & 
-                           ,'H2O2    '                       & 
-                           ,'OH      '                       & 
-                           ,'HO2     '                       & 
-                           ,'CO      '                       & 
-                           ,'CH4     '                       & 
-                           ,'CH3O2   '                       & 
-                           ,'CH3OOH  '                       & 
-                           ,'CH2O    '                       & 
-                           ,'CHOOH   '                       & 
-                           ,'NO      '                       & 
-                           ,'NO2     '                       & 
-                           ,'HNO3    '                       & 
-                           ,'CO2     '                       & 
-                           ,'NH3     '                       & 
-                           ,'N2O5    '                       & 
-                           ,'NO3     '                       & 
-                           ,'CH3OH   '                       & 
-                           ,'HO2NO2  '                       & 
-                           ,'O1D     '                       & 
-                           ,'C2H6    '                       & 
-                           ,'C2H5O2  '                       & 
-                           ,'PO2     '                       & 
-                           ,'MACRO2  '                       & 
-                           ,'ISOPO2  '                       & 
-                           ,'C4H10   '                       & 
-                           ,'CH3CHO  '                       & 
-                           ,'C2H5OOH '                       & 
-                           ,'C3H6    '                       & 
-                           ,'POOH    '                       & 
-                           ,'C2H4    '                       & 
-                           ,'PAN     '                       & 
-                           ,'CH3COOOH'                       & 
-                           ,'C10H16  '                       & 
-                           ,'CHOCHO  '                       & 
-                           ,'CH3COCHO'                       & 
-                           ,'GLYALD  '                       & 
-                           ,'CH3CO3  '                       & 
-                           ,'C3H8    '                       & 
-                           ,'C3H7O2  '                       & 
-                           ,'CH3COCH3'                       & 
-                           ,'C3H7OOH '                       & 
-                           ,'RO2     '                       & 
-                           ,'ROOH    '                       & 
-                           ,'Rn      '                       & 
+                         (/ 'OX      '                       &
+                           ,'H2O2    '                       &
+                           ,'OH      '                       &
+                           ,'HO2     '                       &
+                           ,'CO      '                       &
+                           ,'CH4     '                       &
+                           ,'CH3O2   '                       &
+                           ,'CH3OOH  '                       &
+                           ,'CH2O    '                       &
+                           ,'CHOOH   '                       &
+                           ,'NO      '                       &
+                           ,'NO2     '                       &
+                           ,'HNO3    '                       &
+                           ,'CO2     '                       &
+                           ,'NH3     '                       &
+                           ,'N2O5    '                       &
+                           ,'NO3     '                       &
+                           ,'CH3OH   '                       &
+                           ,'HO2NO2  '                       &
+                           ,'O1D     '                       &
+                           ,'C2H6    '                       &
+                           ,'C2H5O2  '                       &
+                           ,'PO2     '                       &
+                           ,'MACRO2  '                       &
+                           ,'ISOPO2  '                       &
+                           ,'C4H10   '                       &
+                           ,'CH3CHO  '                       &
+                           ,'C2H5OOH '                       &
+                           ,'C3H6    '                       &
+                           ,'POOH    '                       &
+                           ,'C2H4    '                       &
+                           ,'PAN     '                       &
+                           ,'CH3COOOH'                       &
+                           ,'C10H16  '                       &
+                           ,'CHOCHO  '                       &
+                           ,'CH3COCHO'                       &
+                           ,'GLYALD  '                       &
+                           ,'CH3CO3  '                       &
+                           ,'C3H8    '                       &
+                           ,'C3H7O2  '                       &
+                           ,'CH3COCH3'                       &
+                           ,'C3H7OOH '                       &
+                           ,'RO2     '                       &
+                           ,'ROOH    '                       &
+                           ,'Rn      '                       &
                            ,'ISOP    '                       &
                            ,'MVK     '                       &
                            ,'MACR    '                       &
                            ,'C2H5OH  '                       &
-                           ,'ONITR   '                       & 
-                           ,'ONIT    '                       & 
-                           ,'ISOPNO3 '                       & 
+                           ,'ONITR   '                       &
+                           ,'ONIT    '                       &
+                           ,'ISOPNO3 '                       &
                            ,'HYDRALD '                       &
                            ,'HCN     '                       &
                            ,'CH3CN   '                       &
@@ -425,7 +424,7 @@ module seq_drydep_mod
              ,7.47e+00_r8, 5241._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,7.47e+00_r8, 5241._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,7.47e+00_r8, 5241._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
-             ,1.70e-03_r8,    0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &  
+             ,1.70e-03_r8,    0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.14e+01_r8, 6267._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,3.36e+02_r8, 5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.70e-03_r8,    0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
@@ -441,7 +440,7 @@ module seq_drydep_mod
              ,1.45e-03_r8, 2700._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,3.00e+06_r8,    0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,2.70e+01_r8, 5300._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
-             ,3.36e+02_r8, 5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &  
+             ,3.36e+02_r8, 5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,7.47e+00_r8, 5241._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,3.36e+02_r8, 5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,0.00e+00_r8,    0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
@@ -496,7 +495,7 @@ module seq_drydep_mod
           250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
           250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
           250._r8,       170.3_r8,      170.3_r8,      170.3_r8,       170.3_r8,     &
-          170.3_r8,       170.3_r8  /)
+          170.3_r8,      170.3_r8  /)
  
 
 !===============================================================================
@@ -508,13 +507,13 @@ CONTAINS
   subroutine seq_drydep_readnl(NLFilename, ID, seq_drydep_fields)
 
     !========================================================================
-    ! reads drydep_inparm namelist and sets up CCSM driver list of fields for 
+    ! reads drydep_inparm namelist and sets up CCSM driver list of fields for
     ! land-atmosphere communications.
-    ! 
+    !
     ! !REVISION HISTORY:
     !  2009-Feb-20 - E. Kluzek - Separate out as subroutine from previous input_init
     !========================================================================
-    
+
     use shr_file_mod,only : shr_file_getUnit, shr_file_freeUnit
     use shr_log_mod, only : s_logunit => shr_log_Unit
     use seq_comm_mct,only : seq_comm_iamroot, seq_comm_setptrs
@@ -524,7 +523,7 @@ CONTAINS
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
     integer         , intent(in)  :: ID         ! seq_comm ID
-    character(len=*), intent(out) :: seq_drydep_fields	
+    character(len=*), intent(out) :: seq_drydep_fields
 
     !----- local -----
     integer :: i                ! Indices
@@ -535,9 +534,9 @@ CONTAINS
     integer :: mpicom           ! MPI communicator
 
     !----- formats -----
-    character(*),parameter :: subName = '(seq_drydep_read) ' 
-    character(*),parameter :: F00   = "('(seq_drydep_read) ',8a)" 
-    character(*),parameter :: FI1   = "('(seq_drydep_init) ',a,I2)" 
+    character(*),parameter :: subName = '(seq_drydep_read) '
+    character(*),parameter :: F00   = "('(seq_drydep_read) ',8a)"
+    character(*),parameter :: FI1   = "('(seq_drydep_init) ',a,I2)"
 
     namelist /drydep_inparm/ drydep_list, drydep_method
 
@@ -545,7 +544,7 @@ CONTAINS
     ! Read namelist and figure out the drydep field list to pass
     ! First check if file exists and if not, n_drydep will be zero
     !-----------------------------------------------------------------------------
- 
+
     !--- Open and read namelist ---
     if ( len_trim(NLFilename) == 0  )then
        call shr_sys_abort( subName//'ERROR: nlfilename not set' )
@@ -575,13 +574,13 @@ CONTAINS
     n_drydep = 0
 
     !--- Loop over species to fill list of fields to communicate for drydep ---
-    seq_drydep_fields = ' '	
+    seq_drydep_fields = ' '
     do i=1,maxspc
        if ( len_trim(drydep_list(i))==0 ) exit
        write(token,333) i
-       seq_drydep_fields = trim(seq_drydep_fields)//':'//trim(token)                 
+       seq_drydep_fields = trim(seq_drydep_fields)//':'//trim(token)
        if ( i == 1 ) then
-          seq_drydep_fields = trim(token)                 
+          seq_drydep_fields = trim(token)
           drydep_fields_token = trim(token)
        endif
        n_drydep = n_drydep+1
@@ -599,7 +598,7 @@ CONTAINS
                                 n_drydep
        end if
     end if
-    
+
     if ( trim(drydep_method)/=trim(DD_XATM) .and. &
          trim(drydep_method)/=trim(DD_XLND) .and. &
          trim(drydep_method)/=trim(DD_TABL) ) then
@@ -622,7 +621,7 @@ CONTAINS
 
     !========================================================================
     ! Initialization of dry deposition fields
-    ! reads drydep_inparm namelist and sets up CCSM driver list of fields for 
+    ! reads drydep_inparm namelist and sets up CCSM driver list of fields for
     ! land-atmosphere communications.
     ! !REVISION HISTORY:
     !  2008-Nov-12 - F. Vitt - first version
@@ -639,8 +638,8 @@ CONTAINS
     integer :: i, l                      ! Indices
     character(len=32) :: test_name       ! field test name
     !----- formats -----
-    character(*),parameter :: subName = '(seq_drydep_init) ' 
-    character(*),parameter :: F00   = "('(seq_drydep_init) ',8a)" 
+    character(*),parameter :: subName = '(seq_drydep_init) '
+    character(*),parameter :: F00   = "('(seq_drydep_init) ',8a)"
 
     !-----------------------------------------------------------------------------
     ! Allocate and fill foxd, drat and mapping as well as species indices
@@ -775,8 +774,8 @@ CONTAINS
        if ( trim(drydep_list(i)) == 'MPAN' ) mpan_ndx = i
        if ( trim(drydep_list(i)) == 'PAN' )  pan_ndx  = i
        if ( trim(drydep_list(i)) == 'SO2' )  so2_ndx  = i
-       if ( trim(drydep_list(i)) == 'OX' .or. trim(drydep_list(i)) == 'O3' ) o3_ndx  = i 
-       if ( trim(drydep_list(i)) == 'O3A' ) o3a_ndx  = i 
+       if ( trim(drydep_list(i)) == 'OX' .or. trim(drydep_list(i)) == 'O3' ) o3_ndx  = i
+       if ( trim(drydep_list(i)) == 'O3A' ) o3a_ndx  = i
        if ( trim(drydep_list(i)) == 'XPAN' ) xpan_ndx = i
 
        if( mapping(i) > 0) then
@@ -809,7 +808,7 @@ CONTAINS
     ! !REVISION HISTORY:
     !  2008-Nov-12 - F. Vitt - first version
     !========================================================================
-    
+
     implicit none
 
     real(r8), intent(in)     :: sfc_temp         ! Input surface temperature
@@ -833,7 +832,7 @@ CONTAINS
     ! !REVISION HISTORY:
     !  2008-Nov-12 - F. Vitt - first version
     !========================================================================
-    
+
     use shr_log_mod, only : s_logunit => shr_log_Unit
 
     implicit none
@@ -853,11 +852,11 @@ CONTAINS
     real(r8) :: wrk(ncol)      ! Work array
 
     !----- formats -----
-    character(*),parameter :: subName = '(seq_drydep_set_hcoeff) ' 
-    character(*),parameter :: F00   = "('(seq_drydep_set_hcoeff) ',8a)" 
+    character(*),parameter :: subName = '(seq_drydep_set_hcoeff) '
+    character(*),parameter :: F00   = "('(seq_drydep_set_hcoeff) ',8a)"
 
     !-------------------------------------------------------------------------------
-    ! notes: 
+    ! notes:
     !-------------------------------------------------------------------------------
 
     wrk(:) = (t0 - sfc_temp(:))/(t0*sfc_temp(:))

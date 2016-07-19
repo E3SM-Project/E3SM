@@ -616,7 +616,7 @@ AC_COMPILE_IFELSE([[
       end subroutine
       end module]],
   # For Lahey -M will also write module and object files to that directory
-  # make it read-only so that lahey fails over to -I   
+  # make it read-only so that lahey fails over to -I
   [chmod -w .
    cd ..
    ac_fc_module_flag_FCFLAGS_save=$FCFLAGS

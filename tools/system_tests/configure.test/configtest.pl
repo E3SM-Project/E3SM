@@ -33,7 +33,7 @@ OPTIONS
      -compare             compare against baselines in this directory (under baselineroot).
      -generate             write new baselines to this directory (under baselineroot).
      -help [or -h]        Print usage to STDOUT (optional).
-     
+
 EXAMPLES
 
   ./configtest.pl -cimeroot /path/to/cime -compare cime3.0.1 -baselineroot /path/to/baselines/
@@ -86,11 +86,11 @@ sub options{
 	$logger->error( "ERROR: unrecognized arguments: @ARGV");
 	usage();
     }
-    
+
     if (! defined $model){
 	$model = 'cesm';
     }
-        
+
     if(! defined $machdir){
 	$machdir  = "$cimeroot/cime_config/${model}/machines";
     }
@@ -116,7 +116,7 @@ sub options{
 	if(-d $output_dir){
 	    $logger->warn("Output directory $output_dir already exists");
 	}else{
-	    
+
 	}
     }
 }
@@ -127,9 +127,9 @@ options();
 
 # Machines definition file.
 my $machine_file = 'config_machines.xml';
-(-f "$machdir/$machine_file")  or  
+(-f "$machdir/$machine_file")  or
     $logger->logdie("Cannot find machine parameters file $machine_file in directory $machdir ");
-    
+
 
 my $xml = XML::LibXML->new( )->parse_file("$machdir/$machine_file");
 
@@ -139,10 +139,10 @@ foreach my $node ($xml->findnodes(".//machine")){
     next if ($mach eq "userdefined");
     my @child = $node->findnodes(".//COMPILERS");
     my @compilers = split(',',$child[0]->textContent());
-    
+
     foreach my $compiler (@compilers){
 	foreach my $format (qw(make cmake)){
-	    
+
 	    my $test_dir = "$output_dir/$mach/$compiler/$format";
 	    unless(-d $test_dir){
 		mkpath $test_dir or $logger->logdie("Could not create directory $test_dir");
@@ -165,7 +165,7 @@ if(defined $compare){
 
 
     $logger->info("\n\nComparing $output_dir to $baselineroot/$compare");
-    File::DirCompare->compare("$output_dir","$baselineroot/$compare", 
+    File::DirCompare->compare("$output_dir","$baselineroot/$compare",
 		     sub {
 			 my($a, $b) = @_;
 			 if( !$b){
@@ -189,6 +189,6 @@ if(defined $compare){
     }else{
 	print "CONFIGTEST RESULT: PASS\n";
     }
-    
+
 
 }

@@ -17,17 +17,17 @@
       public :: ImportExport
       public :: Identical
 
-    interface testall  
-       module procedure testaC_  
+    interface testall
+       module procedure testaC_
     end interface
     interface IndexAttr
        module procedure IndexTest_
     end interface
-    interface Copy  
-       module procedure CopyTest_  
+    interface Copy
+       module procedure CopyTest_
     end interface
-    interface ImportExport 
-       module procedure ImportExportTest_ 
+    interface ImportExport
+       module procedure ImportExportTest_
     end interface
     interface Identical
        module procedure Identical_
@@ -45,10 +45,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: aCtest_ - Test the functions in the Accumulator module 
+! !IROUTINE: aCtest_ - Test the functions in the Accumulator module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt Accumulator}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -74,12 +74,12 @@
       use m_AttrVect, only    : AttrVect_copy => Copy
       use m_List,     only    : List_allocated => allocated
       use m_List,     only    : ListExportToChar => exporttoChar
-      use m_stdio       
+      use m_stdio
       use m_die
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(Accumulator),          intent(in)  :: aC
       character(len=*),           intent(in)  :: identifier
@@ -142,7 +142,7 @@
 
   call Accumulator_init(aC=aCCopy1, bC=aC, lsize=100, &
                         num_steps=aC%num_steps, steps_done=0)
-  
+
   call Accumulator_init(aC=aCCopy2, bC=aC, lsize=100, &
                         num_steps=aC%num_steps, steps_done=0)
 
@@ -220,7 +220,7 @@
 
   call CopyTest_(aC,identifier,device)
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TESTING EXPORT AND IMPORT FUNCTIONS:::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
   call ImportExportTest_(aC,identifier,device)
@@ -245,7 +245,7 @@ end subroutine testaC_
   subroutine IndexTest_(aC,identifier,device)
 
     use m_Accumulator, only: nIAttr, nRAttr, getIList, getRList, indexIA, indexRA, Accumulator
-    use m_List,   only: List_allocated   => allocated    
+    use m_List,   only: List_allocated   => allocated
     use m_String, only: String
     use m_String, only: StringToChar     => toChar
     use m_String, only: String_clean     => clean
@@ -253,7 +253,7 @@ end subroutine testaC_
     use m_die
 
     implicit none
-    
+
     type(Accumulator),          intent(in)  :: aC
     character(len=*),           intent(in)  :: identifier
     integer,                    intent(in)  :: device
@@ -315,7 +315,7 @@ end subroutine testaC_
             "::aC Index = ", j,      &
             "::Attribute Name = ", StringToChar(ItemStr)
        call String_clean(ItemStr)
-       
+
     enddo
 
   end subroutine IndexTest_
@@ -329,7 +329,7 @@ end subroutine testaC_
   subroutine CopyTest_(aC,identifier,device)
 
     use m_AttrVect, only : copy
-    use m_AttrVect, only : exportIListToChar,exportRListToChar 
+    use m_AttrVect, only : exportIListToChar,exportRListToChar
     use m_AttrVect, only : AttrVect_init => init
     use m_Accumulator
     use m_List,     only   : List
@@ -372,7 +372,7 @@ end subroutine testaC_
             aCaCNumShared,aCaCIndices1,aCaCIndices2)
        call SharedAttrIndexList(aC%data,aCExactCopy,"REAL   ", &
             aVaCNumShared,aVaCIndices1,aVaCIndices2)
-       
+
        if(aCaCNumShared/=aVaCNumShared) then
           call die(myname_,"aCaCNumShared/=aVaCNumShared")
        endif
@@ -383,7 +383,7 @@ end subroutine testaC_
           endif
           if(aCaCIndices2(i)/=aVaCIndices2(i)) then
              call die(myname_,"aCaCIndices2(i)/=aVaCIndices2(i)")
-          endif          
+          endif
        enddo
 
        write(device,*) identifier, ":: Indices1 :: Indices2 :: &
@@ -402,7 +402,7 @@ end subroutine testaC_
           do j=1,lsize(aC)
              if(aC%data%rAttr(aCaCIndices1(i),j) /= &
                   aCExactCopy%data%rAttr(aCaCIndices2(i),j)) then
-                write(device,*) identifier,aCaCIndices1(i),aCaCIndices2(i), j 
+                write(device,*) identifier,aCaCIndices1(i),aCaCIndices2(i), j
                 call die(myname_,"Copy function is MALFUNCTIONING", ierr)
              endif
           enddo
@@ -410,7 +410,7 @@ end subroutine testaC_
 
        deallocate(aCaCIndices1,aCaCIndices2,aVaCIndices1,aVaCIndices2,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(aCaCIndices,aVaCIndices)",ierr)
-  
+
        call clean(aCExactCopy)
 
     else
@@ -419,10 +419,10 @@ end subroutine testaC_
             ":: NOT Testing Copy and SharedAttrIndexList ::", &
             ":: Consult m_ACTest.F90 to enable this function::"
     endif
-     
+
   end subroutine CopyTest_
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TEST FOR EXPORT AND IMPORT FUNCTIONS:::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
@@ -461,9 +461,9 @@ end subroutine testaC_
     write(device,*) identifier, ":: Testing import and export functions"
 
     if(nIAttr(aC)>0) then
-  
+
        call exportIList(aV=aC%data,outIList=outIList)
-       
+
        if(.NOT. List_identical(aC%data%iList,outIList)) then
           call die(myname_, "Function exportIList failed!")
        endif
@@ -488,10 +488,10 @@ end subroutine testaC_
 
        call init(aC=importAC,bC=aC,lsize=exportsize)
        call zero(importAC)
-       
+
        call importIAttr(aC=importAC,AttrTag=StringToChar(ItemStr), &
             inVect=outIVect,lsize=exportsize)
-       
+
        j=indexIA(importAC,StringToChar(ItemStr))
        if(j<=0) call die(myname_,"indexIA(importAC,StringToChar(ItemStr))")
        do i=1,exportsize
@@ -503,16 +503,16 @@ end subroutine testaC_
        call clean(importAC)
        call List_clean(outIList)
        call String_clean(ItemStr)
-       
+
        deallocate(outIVect,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(outIVect)")
 
     endif
 
     if(nRAttr(aC)>0) then
-  
+
        call exportRList(aV=aC%data,outRList=outRList)
-       
+
        if(.NOT. List_identical(aC%data%rList,outRList)) then
           call die(myname_, "Function exportRList failed!")
        endif
@@ -534,7 +534,7 @@ end subroutine testaC_
              call die(myname_,"Function exportRAttr failed!")
           endif
        enddo
-       
+
        call init(aC=importAC,bC=aC,lsize=exportsize)
        call zero(importAC)
 
@@ -552,7 +552,7 @@ end subroutine testaC_
        call clean(importAC)
        call List_clean(outRList)
        call String_clean(ItemStr)
-       
+
        deallocate(outRVect,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(outRVect)")
 
@@ -570,7 +570,7 @@ end subroutine testaC_
     use m_realkinds, only : FP
 
     implicit none
-      
+
     type(Accumulator), intent(in) :: ACC1
     type(Accumulator), intent(in) :: ACC2
     real, optional,    intent(in) :: Range
@@ -587,7 +587,7 @@ end subroutine testaC_
     else
        if(.NOT. AttrVect_identical(ACC1%data,ACC2%data)) then
           Identical_=.false.
-       endif   
+       endif
     endif
 
     if(ACC1%num_steps/=ACC2%num_steps) then
@@ -597,10 +597,10 @@ end subroutine testaC_
     if(ACC1%steps_done/=ACC2%steps_done) then
        Identical_=.false.
     endif
-    
+
     j=0
     k=0
-    
+
     if(associated(ACC1%iAction).or.associated(ACC2%iAction)) then
        if(size(ACC1%iAction) /= size(ACC2%iAction)) then
           Identical_=.FALSE.
@@ -614,7 +614,7 @@ end subroutine testaC_
        endif
        k=size(ACC2%rAction)
     endif
-    
+
     do i=1,j
        if(ACC1%iAction(i)/=ACC2%iAction(i)) then
           Identical_=.FALSE.

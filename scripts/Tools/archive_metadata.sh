@@ -1,10 +1,10 @@
 
-#!/bin/sh 
+#!/bin/sh
 # script to archive case directory to subversion repository
 #
 # aliceb - 11/1/11
 # commented out prompts for case metadata.
-# Case metadata is now being entered and stored in 
+# Case metadata is now being entered and stored in
 # mysql run db at http://csegweb.cgd.ucar.edu.
 #
 # aliceb - 2013/5/30
@@ -70,7 +70,7 @@ if [ "$no_svn" == "TRUE" ]; then
     exit 99
 fi
 
-#look for existence of this case's trunk in repository to see if case should be imported 
+#look for existence of this case's trunk in repository to see if case should be imported
 #or committed to an existing trunk
 svn list $svnstr/trunk > /dev/null
 if [ $? -ne 0 ]; then
@@ -162,7 +162,7 @@ if [ $? -ne 0 ]; then
 #    echo "setenv    CASE_CONTACT          \"$contact\""                      >> env_metadata
 #    echo "setenv    CASE_WORKING_GROUP    \"$wg\""                           >> env_metadata
 #    echo "setenv    CASE_1ST_SUBMIT_DT    \"$submit_dt\""                    >> env_metadata
-    
+
     #initial tag name, will increment from here on
     casetag=${casename}_0001
 
@@ -272,7 +272,7 @@ if [ $? -ne 0 ]; then
     else
 	#convert current sandbox to a subversion sandbox
 	for item in ${archive_list}; do
-	    rm -rf $item 
+	    rm -rf $item
 	done
 	svn co $svnstr/trunk . > /dev/null
 

@@ -1,0 +1,19 @@
+QSMPFLAGS:=
+ifeq ($(compile_threaded), true)
+  QSMPFLAGS += -qsmp=noauto:noomp
+endif
+shr_reprosum_mod.o: shr_reprosum_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
+
+mo_sethet.o: mo_sethet.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
+mo_drydep.o: mo_drydep.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
+time_management.o: time_management.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
+
+# disable inlining (some issues with pure functions therein)
+advance_xm_wpxp_module.o: advance_xm_wpxp_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
+advance_wp2_wp3_module.o: advance_wp2_wp3_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<

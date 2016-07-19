@@ -59,7 +59,7 @@ $CASE.$MACH.run script.
 </para>
 
 <para>
-The batch and run aspects of the $CASE.$MACH.run script is created by 
+The batch and run aspects of the $CASE.$MACH.run script is created by
 the setup script and uses a machine specific mkbatch.$MACH
 script in the $CIMEROOT/machines directory.  If the
 run script is not producing correct batch scripts or job launching
@@ -75,17 +75,17 @@ commands, the mkbatch.$MACH script probably needs to be updated.
 <para>
 To check that a run completed successfully, check the last several lines of the cpl.log file
 for the string " SUCCESSFUL TERMINATION ".  A successful job also
-usually copies the log files to the directory $CASEROOT/logs.  
+usually copies the log files to the directory $CASEROOT/logs.
 </para>
 
 <note><para>The first things to check if a job fails are whether the model
 timed out, whether a disk quota limit was hit, whether a machine went down,
-or whether a file system became full.  If any of those things happened, 
+or whether a file system became full.  If any of those things happened,
 take appropriate corrective action and resubmit the job.
 </para></note>
 
 <para>
-If it's not clear any of the above caused a case to fail, then there are 
+If it's not clear any of the above caused a case to fail, then there are
 several places to look for error messages in CESM1.
 </para>
 
@@ -125,7 +125,7 @@ and the directory to check is $DOUT_S_ROOT/$CASE.
 
 <para>
 A common error is for the job to time out which often produces minimal
-error messages.  By reviewing the daily model date stamps in the cpl.log file and 
+error messages.  By reviewing the daily model date stamps in the cpl.log file and
 the time stamps of files in the $RUNDIR directory, there should be enough
 information to deduce the start and stop time of a run.  If the model
 was running fine, but the batch wall limit was reached, either reduce
@@ -133,7 +133,7 @@ the run length or increase the batch time limit request.  If the model
 hangs and then times out, that's usually indicative of either a system
 problem (an MPI or file system problem) or possibly a model problem.
 If a system problem is suspected, try to resubmit the job to see if
-an intermittent problem occurred.  Also send help to local site consultants 
+an intermittent problem occurred.  Also send help to local site consultants
 to provide them with feedback about system problems and to get help.
 </para>
 
@@ -169,7 +169,7 @@ day. The next day, Jan 21, took 105.90 seconds. If a wide
 variation in the simulation time is observed for typical mid-month model
 days, then that is suggestive of a system problem.  However, be
 aware that there are variations in the cost of the CESM1 model over
-time.  For instance, on the last day of every simulated month, 
+time.  For instance, on the last day of every simulated month,
 CESM1 typically write netcdf files, and this can be a significant
 intermittent cost.  Also, some models read data mid month or run
 physics intermittently at a timestep longer than one day.  In those cases, some
@@ -201,8 +201,8 @@ consistently in the same place before filing a bug report with CESM1.
 <title>Additional Troubleshooting Information </title>
 
 <para>
-The <ulink url="http://www.cesm.ucar.edu/models/cesm1.2/clm/models/lnd/clm/doc/UsersGuide/c12493.html">Community Land Model (CLM) documentation, Chapter 6.</ulink>, provides some additional trouble shooting tips 
-that may be useful beyond those listed here. 
+The <ulink url="http://www.cesm.ucar.edu/models/cesm1.2/clm/models/lnd/clm/doc/UsersGuide/c12493.html">Community Land Model (CLM) documentation, Chapter 6.</ulink>, provides some additional trouble shooting tips
+that may be useful beyond those listed here.
 </para>
 
 </sect1>

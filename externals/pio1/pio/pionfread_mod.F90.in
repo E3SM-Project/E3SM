@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "pionfread_mod.F90.in"
 !>
-!! @file 
+!! @file
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Decomposed Read interface to NetCDF
@@ -10,7 +10,7 @@ module pionfread_mod
   implicit none
 
   private
-!> 
+!>
 !! @private
 !<
   public :: read_nf
@@ -32,7 +32,7 @@ contains
 	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
 	pio_max_var_dims
     use pio_kinds, only : pio_offset, i4, r4, r8
-    use pio_utils, only : check_netcdf, bad_iotype 
+    use pio_utils, only : check_netcdf, bad_iotype
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
     use alloc_mod, only: alloc_check
 #ifdef _NETCDF
@@ -73,14 +73,14 @@ contains
     integer :: i, mpierr, ndims
 
 #ifdef TIMING
-    call t_startf("pio_read_nfdarray_{TYPE}")
+    call t_startf("PIO:pio_read_nfdarray_{TYPE}")
 #endif
     iotype = File%iotype
     ierr=PIO_noerr
 
     ndims = size(start)
     if (File%iosystem%IOproc) then
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
           if(DebugIO) print *,__PIO_FILE__,__LINE__, &
@@ -102,7 +102,7 @@ contains
        case(pio_iotype_netcdf4p)
 ! all reads can be parallel in netcdf4 format
           ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
-       case(pio_iotype_netcdf, pio_iotype_netcdf4c)	
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &
                1,MPI_INTEGER,MPI_MAX,0,File%iosystem%IO_comm,mpierr )
@@ -120,7 +120,7 @@ contains
           endif
 
           ! create temporaries of size int (netcdf limitation)
-	 
+
 	  temp_start=1
 	  temp_count=1
           if (File%iosystem%io_rank>0) then
@@ -203,7 +203,7 @@ contains
     endif ! File%iosystem%IOproc
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__);
 #ifdef TIMING
-    call t_stopf("pio_read_nfdarray_{TYPE}")
+    call t_stopf("PIO:pio_read_nfdarray_{TYPE}")
 #endif
 
   end function read_nfdarray_{TYPE}

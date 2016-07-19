@@ -20,7 +20,7 @@
 !  - the original use of seq_io will now ONLY work with the cpl because
 !    of hardwiring cpl_io_type and cpl_io_iosystem.  want the original
 !    io capabilities to be usable by any component
-!  - the init1 method depends on seq_comm for name consistency but seq_comm_init 
+!  - the init1 method depends on seq_comm for name consistency but seq_comm_init
 !    wants to be called after init1 so the global_comm can be modified for
 !    async IO.  this needs to be reconciled.
 !  - this routine stores information for all components but most methods are
@@ -158,7 +158,7 @@ subroutine seq_io_wopen(filename,clobber,cdf64)
     integer :: nmode
     character(CL)  :: lversion
     character(*),parameter :: subName = '(seq_io_wopen) '
-    
+
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
@@ -441,12 +441,12 @@ end function seq_io_sec2hms
     luse_float = .false.
     if (present(use_float)) luse_float = use_float
 
-    call seq_comm_setptrs(CPLID,iam=iam)	
+    call seq_comm_setptrs(CPLID,iam=iam)
 
     ng = mct_gsmap_gsize(gsmap)
     lnx = ng
     lny = 1
-	
+
     nf = mct_aVect_nRattr(AV)
     if (nf < 1) then
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
@@ -487,7 +487,7 @@ end function seq_io_sec2hms
         if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
-	  if (luse_float) then 
+	  if (luse_float) then
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
              rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
           else
@@ -626,7 +626,7 @@ end function seq_io_sec2hms
     luse_float = .false.
     if (present(use_float)) luse_float = use_float
 
-    call seq_comm_setptrs(CPLID,iam=iam)	
+    call seq_comm_setptrs(CPLID,iam=iam)
 
     ni = size(AVS)
 
@@ -634,7 +634,7 @@ end function seq_io_sec2hms
     ng = mct_gsmap_gsize(gsmap)
     lnx = ng
     lny = 1
-	
+
     nf = mct_aVect_nRattr(AVS(1))
     if (nf < 1) then
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
@@ -689,7 +689,7 @@ end function seq_io_sec2hms
         if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
-	  if (luse_float) then 
+	  if (luse_float) then
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
              rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
           else
@@ -853,17 +853,17 @@ end function seq_io_sec2hms
     luse_float = .false.
     if (present(use_float)) luse_float = use_float
 
-    call seq_comm_setptrs(CPLID,iam=iam)	
+    call seq_comm_setptrs(CPLID,iam=iam)
 
     ni = size(comp)
-    if (trim(flow) == 'x2c') avcomp1 => component_get_x2c_cx(comp(1))  
-    if (trim(flow) == 'c2x') avcomp1 => component_get_c2x_cx(comp(1))  
-    gsmap => component_get_gsmap_cx(comp(1))  
+    if (trim(flow) == 'x2c') avcomp1 => component_get_x2c_cx(comp(1))
+    if (trim(flow) == 'c2x') avcomp1 => component_get_c2x_cx(comp(1))
+    gsmap => component_get_gsmap_cx(comp(1))
     ns = mct_aVect_lsize(avcomp1)
     ng = mct_gsmap_gsize(gsmap)
     lnx = ng
     lny = 1
-	
+
     nf = mct_aVect_nRattr(avcomp1)
     if (nf < 1) then
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
@@ -917,7 +917,7 @@ end function seq_io_sec2hms
         if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
-	  if (luse_float) then 
+	  if (luse_float) then
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
              rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
           else
@@ -970,8 +970,8 @@ end function seq_io_sec2hms
           call pio_setframe(cpl_io_file,varid,frame)
           n = 0
           do k1 = 1,ni
-             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(k1))  
-             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(k1))  
+             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(k1))
+             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(k1))
              do k2 = 1,ns
                 n = n + 1
                 data(n) = avcomp%rAttr(k,k2)
@@ -1565,7 +1565,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
           av%rattr(k,:) = 0.0_r8
        end if
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-          
+
     enddo
 
     !--- zero out fill value, this is somewhat arbitrary
@@ -1774,8 +1774,8 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
     !EOP
 
     type(mct_gsMap), pointer :: gsmap
-    type(mct_aVect), pointer :: avcomp  
-    type(mct_aVect), pointer :: avcomp1 
+    type(mct_aVect), pointer :: avcomp
+    type(mct_aVect), pointer :: avcomp1
     integer(in)              :: rcode
     integer(in)              :: iam,mpicom
     integer(in)              :: nf,ns,ng,ni
@@ -1807,8 +1807,8 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
     endif
 
     gsmap => component_get_gsmap_cx(comp(1))
-    if (trim(flow) == 'x2c') avcomp1 => component_get_x2c_cx(comp(1))  
-    if (trim(flow) == 'c2x') avcomp1 => component_get_c2x_cx(comp(1))  
+    if (trim(flow) == 'x2c') avcomp1 => component_get_x2c_cx(comp(1))
+    if (trim(flow) == 'c2x') avcomp1 => component_get_c2x_cx(comp(1))
 
     call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
     call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
@@ -1888,8 +1888,8 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
           call pio_read_darray(pioid,varid,iodesc, data, rcode)
           n = 0
           do n1 = 1,ni
-             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))  
-             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))  
+             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))
+             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))
              do n2 = 1,ns
                 n = n + 1
                 avcomp%rAttr(k,n2) = data(n)
@@ -1899,8 +1899,8 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
           write(logunit,*)'seq_io_readav warning: field ',trim(itemc),' is not on restart file'
           write(logunit,*)'for backwards compatibility will set it to 0'
           do n1 = 1,ni
-             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))  
-             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))  
+             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))
+             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))
              avcomp%rattr(k,:) = 0.0_r8
           enddo
        end if
@@ -1911,8 +1911,8 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
 
     !--- zero out fill value, this is somewhat arbitrary
     do n1 = 1,ni
-       if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))  
-       if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))  
+       if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))
+       if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))
        do n2 = 1,ns
           do k = 1,nf
              if (avcomp%rAttr(k,n2) == fillvalue) then
@@ -1987,7 +1987,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
 
     integer(in) :: rcode
     integer(in) :: iam,mpicom
-    type(file_desc_t) :: pioid 
+    type(file_desc_t) :: pioid
     type(var_desc_t) :: varid
     logical :: exists
     character(CL)  :: lversion
@@ -2088,7 +2088,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
 
     integer(in) :: rcode
     integer(in) :: iam,mpicom
-    type(file_desc_T) :: pioid 
+    type(file_desc_T) :: pioid
     type(var_desc_t) :: varid
     logical :: exists
     character(CL)  :: lversion
@@ -2155,7 +2155,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
 
     integer(in) :: rcode
     integer(in) :: iam,mpicom
-    type(file_desc_T) :: pioid 
+    type(file_desc_T) :: pioid
     type(var_desc_t) :: varid
     logical :: exists
     character(CL)  :: lversion

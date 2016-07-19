@@ -1,94 +1,86 @@
-#! /usr/bin/env perl
-use strict;
-use Cwd;
+#!/usr/bin/env python
 
-if ($#ARGV == -1) {
-    die " ERROR cpl buildnml: must specify a caseroot input argument";
-}
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+"""
+build data model namelist input
+"""
+import sys, os, time, shutil, glob
 
-my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
-my $GRID		= `./xmlquery  GRID		-value`;
-my $ATM_GRID		= `./xmlquery  ATM_GRID		-value`;
-my $LND_GRID		= `./xmlquery  LND_GRID		-value`;
-my $OCN_GRID		= `./xmlquery  OCN_GRID		-value`;
-my $ROF_GRID		= `./xmlquery  ROF_GRID		-value`;
-my $WAV_GRID		= `./xmlquery  WAV_GRID		-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
-my $COMP_ATM		= `./xmlquery  COMP_ATM		-value `;
-my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-my $CAM_CONFIG_OPTS;
-if ($COMP_ATM eq 'cam') {
-    $CAM_CONFIG_OPTS = `./xmlquery  CAM_CONFIG_OPTS -value`;
-}
+from standard_script_setup import *
+from CIME.case             import Case
+from CIME.buildnml         import create_namelist_infile, parse_input
+from CIME.utils            import expect, run_cmd
 
-my @dirs = ( "${CIMEROOT}/utils/perl5lib" );
-unshift @INC, @dirs;
-require Config::SetupTools;
-my $sysmod; 
+logger = logging.getLogger(__name__)
 
-if (! -d "$CASEBUILD/cplconf" ) {
-    $sysmod = "mkdir $CASEBUILD/cplconf";
-    system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";
-}
-chdir "$CASEBUILD/cplconf";
+###############################################################################
+def _main_func():
+###############################################################################
 
-# -----------------------------------------------------
-# create cplconf/namelist *** this is confusing!!!***
-# cam is actually changing the driver namelist settings
-# -----------------------------------------------------
+    caseroot = parse_input(sys.argv)
 
-my $infile_text = "";
-if ($COMP_ATM eq 'cam') {
-    if ( "$CAM_CONFIG_OPTS" =~ /.*adiabatic.*/ ) {
-	$infile_text .= "atm_adiabatic = .true.";
-    }
-    if ( "$CAM_CONFIG_OPTS" =~ /.*ideal.*/ ) {
-	$infile_text .=  "atm_ideal_phys = .true.";
-    }
-    if ( "$CAM_CONFIG_OPTS" =~ /.*aquaplanet.*/ ) {
-	$infile_text .= "aqua_planet     = .true.";
-	$infile_text .= "aqua_planet_sst = 1";
-    }
-}
+    with Case(caseroot) as case:
+        cimeroot = case.get_value("CIMEROOT")
+        caseroot = case.get_value("CASEROOT")
+        casebuild = case.get_value("CASEBUILD")
+        rundir = case.get_value("RUNDIR")
+        grid = case.get_value("GRID")
+        atm_grid = case.get_value("ATM_GRID")
+        lnd_grid = case.get_value("LND_GRID")
+        ocn_grid = case.get_value("OCN_GRID")
+        rof_grid = case.get_value("ROF_GRID")
+        wav_grid = case.get_value("WAV_GRID")
+        comp_atm = case.get_value("COMP_ATM")
+        pio_version = case.get_value("PIO_VERSION")
 
-SetupTools::create_namelist_infile("$CASEROOT", 
-				   "$CASEROOT/user_nl_cpl", 
-				   "$CASEBUILD/cplconf/namelist", 
-				   "$infile_text");
+        confdir = os.path.join(casebuild, "cplconf")
+        if not os.path.isdir(confdir):
+            os.makedirs(confdir)
 
-# -----------------------------------------------------
-# call build-namelist
-# -----------------------------------------------------
+        # create cplconf/namelist
+        infile_text = ""
+        if comp_atm == 'cam':
+            # *** FIXME - this is confusing!!!***
+            # cam is actually changing the driver namelist settings
+            cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
+            if "adiabatic" in cam_config_opts:
+                infile_text = "atm_adiabatic = .true."
+            if "ideal" in cam_config_opts:
+                infile_text = "atm_ideal_phys = .true."
+            if "aquaplanet" in cam_config_opts:
+                infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
 
-$sysmod = "$CIMEROOT/driver_cpl/bld/build-namelist";
-$sysmod = "$sysmod -infile $CASEBUILD/cplconf/namelist";
-$sysmod = "$sysmod -caseroot $CASEROOT";
-$sysmod = "$sysmod -cimeroot $CIMEROOT";
-$sysmod = "$sysmod -grid $GRID -rof_grid $ROF_GRID -atm_grid $ATM_GRID ";
-$sysmod = "$sysmod -lnd_grid $LND_GRID -ocn_grid $OCN_GRID -wav_grid $WAV_GRID";
-system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";
+        user_nl_file = os.path.join(caseroot, "user_nl_cpl")
+        namelist_infile = os.path.join(confdir, "namelist")
+        create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
 
-# -----------------------------------------------------
-# move drv_in, seq_maps.rc and all *modio* files to $RUNDIR
-# -----------------------------------------------------
+    # call build-namelist
 
-if (-d ${RUNDIR}) {
-    $sysmod = "cp $CASEBUILD/cplconf/drv_in       ${RUNDIR}/.";
-    system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";
+    bldnamelist = os.path.join(cimeroot, "driver_cpl", "bld", "build-namelist")
 
-    $sysmod = "cp $CASEBUILD/cplconf/seq_maps.rc  ${RUNDIR}/.";
-    system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";
+    cmd = "%s -caseroot %s -cimeroot %s  -infile %s -pio_version %s" \
+        % (bldnamelist, caseroot, cimeroot, namelist_infile, pio_version)
 
-    $sysmod = "cp $CASEBUILD/cplconf/*modelio*    ${RUNDIR}/.";
-    system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";
-}
+    cmd = cmd + " -grid %s -atm_grid %s -lnd_grid %s -rof_grid %s -ocn_grid %s -wav_grid %s" \
+        % (grid, atm_grid, lnd_grid, rof_grid, ocn_grid, wav_grid)
 
-exit (0);
+    rc, out, err = run_cmd(cmd, from_dir=confdir)
+    expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
 
+    # copy drv_in, seq_maps.rc and all *modio* files to rundir
 
+    shutil.copy(os.path.join(confdir,"drv_in"), rundir)
 
+    shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
 
+    for filename in glob.glob(os.path.join(confdir, "*modelio*")):
+        shutil.copy(filename, rundir)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()

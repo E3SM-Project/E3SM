@@ -1,0 +1,61 @@
+# These routines have problems with stacksize when omp is invoked add -qsmallstack to resolve
+SSOBJS = mo_sethet.o mo_drydep.o time_management.o
+
+$(SSOBJS): %.o: %.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmallstack $<
+
+QSMPFLAGS:=
+ifeq ($(compile_threaded), true)
+  QSMPFLAGS += -qsmp=noauto:noomp
+endif
+shr_reprosum_mod.o: shr_reprosum_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
+
+# These routines benefit from -qnostrict without violating the bfb test
+PERFOBJS=\
+prim_advection_mod_base.o \
+vertremap_mod_base.o \
+edge_mod_base.o \
+derivative_mod_base.o \
+bndry_mod_base.o \
+prim_advance_mod.o \
+uwshcu.o \
+wetdep.o
+
+
+ifeq ($(DEBUG),FALSE)
+  $(PERFOBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnostrict  $<
+endif
+
+### These files take long time to compile with default optimization flags.
+### Reducing optimization gives <1min build-times and little impact on model run time.
+### begin
+## atm files taking more than a minute to compile
+# this takes 9 mins to compile at default -O3 level
+buffer.o: buffer.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 $<
+
+## lnd files taking more than a minute to compile
+# this takes 4 mins to compile with -O3 -qsmp=omp
+BiogeophysRestMod.o: BiogeophysRestMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
+
+# this takes 17 mins to compile with -O3 -qsmp=omp
+CNrestMod.o: CNrestMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
+
+# this takes 4 mins to compile with -qsmp=omp
+clmtypeInitMod.o: clmtypeInitMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
+
+# this takes 2 mins to compile with -qsmp=omp
+clmtype.o: clmtype.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
+ 
+# disable inlining (some issues with pure functions therein)
+advance_xm_wpxp_module.o: advance_xm_wpxp_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
+advance_wp2_wp3_module.o: advance_wp2_wp3_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
+### end

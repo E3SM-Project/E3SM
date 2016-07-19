@@ -6,7 +6,7 @@ program fmain
 !
 ! NOTES:
 ! o all output data is base on the "_a" grid, the "_b" grid is ignored
-! o to compile on an NCAR's SGI, tempest (Dec 2004): 
+! o to compile on an NCAR's SGI, tempest (Dec 2004):
 !   unix> f90 -64 -mips4 -r8 -i4 -lfpe -I/usr/local/include Make_domain.F90 \
 !         -L/usr/local/lib64/r4i4 -lnetcdf
 !-------------------------------------------------------------------------------
@@ -23,19 +23,19 @@ program fmain
   integer,parameter :: CS = 80                     ! short char
   integer,parameter :: CL = 256                    ! long char
   integer,parameter :: CX = 512                    ! extra-long char
-  integer :: n                      ! index 
+  integer :: n                      ! index
   integer :: set_fv_pole_yc         ! fix pole ycs on this grid [0,1,2]
-  integer :: nargs                  ! number of arguments  
+  integer :: nargs                  ! number of arguments
   integer, external  :: iargc       ! number of arguments function
   character(LEN=512) :: arg         ! input argument
   character(LEN=512) :: cmdline     ! input command line
   character(LEN=512) :: fmap        ! file name ( input nc file)
-  character(LEN=512) :: fn1_out     ! temporary 
+  character(LEN=512) :: fn1_out     ! temporary
   character(LEN=512) :: fn2_out     ! temporary
-  character(LEN=512) :: fn1_out_ocn ! file name (output nc file) for grid _a 
+  character(LEN=512) :: fn1_out_ocn ! file name (output nc file) for grid _a
   character(LEN=512) :: fn2_out_lnd ! file name (output nc file) for grid _b (lnd fraction)
   character(LEN=512) :: fn2_out_ocn ! file name (output nc file) for grid _b (ocn fraction)
-  character(LEN=512) :: usercomment ! user comment 
+  character(LEN=512) :: usercomment ! user comment
   character(LEN= 8)  :: cdate       ! wall clock date
   character(LEN=10)  :: ctime       ! wall clock time
   !----------------------------------------------------
@@ -89,14 +89,14 @@ program fmain
        call getarg (n, arg)
        n = n + 1
        usercomment = trim(arg)
-    case ('-h') 
+    case ('-h')
        call usage_exit (' ')
     case default
        write (6,*) 'Argument ', arg,' is not known'
        call usage_exit (' ')
     end select
   end do
-  
+
   if (fmap == 'null' .or. fn1_out == 'null' .or. fn2_out== 'null') then
     call usage_exit ('Must specify all the following arguments')
   end if
@@ -130,14 +130,14 @@ contains
    integer         ::   ni        ! size of i-axis of 2d domain
    integer         ::   nj        ! size of j-axis of 2d domain
    integer         ::   nv = 4    ! assume retalinear grid
-   real(r8) ,pointer :: xc(  :)   ! x-coords of center    
-   real(r8) ,pointer :: yc(  :)   ! y-coords of center   
-   real(r8) ,pointer :: xv(:,:)   ! x-coords of verticies 
-   real(r8) ,pointer :: yv(:,:)   ! y-coords of verticies 
+   real(r8) ,pointer :: xc(  :)   ! x-coords of center
+   real(r8) ,pointer :: yc(  :)   ! y-coords of center
+   real(r8) ,pointer :: xv(:,:)   ! x-coords of verticies
+   real(r8) ,pointer :: yv(:,:)   ! y-coords of verticies
    real(r8) ,pointer :: area(:)   ! cell area
-   integer  ,pointer :: lmask(:)  ! domain mask           
+   integer  ,pointer :: lmask(:)  ! domain mask
    real(r8) ,pointer :: lfrac(:)  ! cell fraction
-   integer  ,pointer :: omask(:)  ! domain mask           
+   integer  ,pointer :: omask(:)  ! domain mask
    real(r8) ,pointer :: ofrac(:)  ! cell fraction
    integer  ,pointer :: src_grid_dims(:)
    integer  ,pointer :: dst_grid_dims(:)
@@ -165,7 +165,7 @@ contains
    character(LEN=CL)     :: str_grida   ! global attribute str - grid_file_atm
    integer               :: fid         ! nc file     ID
    integer               :: i,j,k       ! generic indicies
-   integer               :: attnum      ! attribute number  
+   integer               :: attnum      ! attribute number
    character(LEN=CL)     :: fn_out      ! current output file name
    character(LEN=CL)     :: fn_out_lnd  ! current output file name
    character(LEN=CL)     :: fn_out_ocn  ! current output file name
@@ -228,7 +228,7 @@ contains
       pole_fix = .false.
       if (nf == set_fv_pole_yc) pole_fix = .true.
       write(6,*)'pole_fix = ',pole_fix
-      
+
       write(6,*) ' '
       write(6,*) 'input file  = ',fmap(1:len_trim(fmap))
       call check_ret(nf_open(fmap(1:len_trim(fmap)),NF_NOWRITE,fid))
@@ -238,15 +238,15 @@ contains
       str_db = 'unknown'
       str_grido = 'unknown'
       str_grida = 'unknown'
-      
+
       call check_ret(nf_get_att_text(fid, NF_GLOBAL, 'domain_a', str_da))
       call check_ret(nf_get_att_text(fid, NF_GLOBAL, 'domain_b', str_db))
-      
+
       rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_ocn', str_grido)
       if ( rcode == nf_enotatt ) then
          rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_src', str_grido)
       end if
-      
+
       rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_atm', str_grida)
       if ( rcode == nf_enotatt ) then
          rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_dst', str_grida)
@@ -256,12 +256,12 @@ contains
       write(6,*) 'domain_b     = ',trim(str_db)
       write(6,*) 'grid_file_ocn= ',trim(str_grido)
       write(6,*) 'grid_file_atm= ',trim(str_grida)
-      
+
       !----------------------------------------------
-      ! get domain info 
+      ! get domain info
       !----------------------------------------------
       if (trim(suffix) == '_b') then
-         call check_ret(nf_inq_varid(fid,'dst_grid_dims', vid)) 
+         call check_ret(nf_inq_varid(fid,'dst_grid_dims', vid))
          call check_ret(nf_get_var_int(fid,vid,dst_grid_dims ))
       end if
 
@@ -285,7 +285,7 @@ contains
          ni = n
          nj = 1
       end if
-      
+
       call check_ret(nf_inq_dimid (fid, 'n_s', did))
       call check_ret(nf_inq_dimlen(fid, did   , ns))
       call check_ret(nf_inq_dimid (fid, 'n_a', did))
@@ -293,22 +293,22 @@ contains
       call check_ret(nf_inq_dimid (fid, 'dst_grid_rank', did))
       call check_ret(nf_inq_dimlen(fid, did, dst_grid_rank))
       call check_ret(nf_inq_dimid (fid, 'src_grid_rank', did))
-      call check_ret(nf_inq_dimlen(fid, did, src_grid_rank)) 
+      call check_ret(nf_inq_dimlen(fid, did, src_grid_rank))
 
       allocate(src_grid_dims(src_grid_rank), dst_grid_dims(dst_grid_rank))
       call check_ret(nf_inq_varid(fid,'src_grid_dims', vid))
-      call check_ret(nf_get_var_int(fid,vid,src_grid_dims)) 
+      call check_ret(nf_get_var_int(fid,vid,src_grid_dims))
       call check_ret(nf_inq_varid(fid,'dst_grid_dims', vid))
-      call check_ret(nf_get_var_int(fid,vid,dst_grid_dims)) 
+      call check_ret(nf_get_var_int(fid,vid,dst_grid_dims))
 
       rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_atm', str_grida)
       if ( rcode == nf_enotatt ) then
          call check_ret(nf_get_att_text(fid, NF_GLOBAL, 'grid_file_dst', str_grida))
       end if
 
-      
+
       write(6,*)'n,nv,ni,nj,na,ns= ',n,nv,ni,nj,na,ns
-      
+
       allocate(xc(n))     ! x-coordinates of center for either _a or _b grid
       allocate(yc(n))     ! y-coordinates of center for either _a or _b grid
       allocate(xv(nv,n))  ! x-coordinates of verticies for either _a or _b grid
@@ -327,7 +327,7 @@ contains
       call check_ret(nf_get_var_double(fid,vid,  yv ))
       call check_ret(nf_inq_varid(fid,'area'//trim(suffix), vid ))
       call check_ret(nf_get_var_double(fid,vid,area ))
-      
+
       !--- set default ocean frac ---
 
       allocate(omask(n))  ! domain mask ocean
@@ -354,14 +354,14 @@ contains
          allocate(lmask(n))  ! domain mask land
          allocate(lfrac(n))  ! area frac of mask "_a" on grid "_b" or float(mask)
 
-         call check_ret(nf_inq_varid(fid,'col', vid ))   
-         call check_ret(nf_get_var_int(fid,vid, col ))   
-         call check_ret(nf_inq_varid(fid,'row', vid ))   
-         call check_ret(nf_get_var_int(fid,vid, row ))   
-         call check_ret(nf_inq_varid(fid,'S', vid ))     
-         call check_ret(nf_get_var_double(fid,vid,S))    
+         call check_ret(nf_inq_varid(fid,'col', vid ))
+         call check_ret(nf_get_var_int(fid,vid, col ))
+         call check_ret(nf_inq_varid(fid,'row', vid ))
+         call check_ret(nf_get_var_int(fid,vid, row ))
+         call check_ret(nf_inq_varid(fid,'S', vid ))
+         call check_ret(nf_get_var_double(fid,vid,S))
          call check_ret(nf_inq_varid(fid,'mask_a', vid ))
-         call check_ret(nf_get_var_int(fid,vid,mask_a ))  
+         call check_ret(nf_get_var_int(fid,vid,mask_a ))
          frac_a = c0
          where (mask_a /= 0) frac_a = c1
          !--- compute ocean fraction on atm grid ---
@@ -397,17 +397,17 @@ contains
          write(6,*) 'final min, max llfrac   : ',minval(lfrac),maxval(lfrac)
          write(6,*) '----------------------------------------------------------------------'
       endif
-      
+
       call check_ret(nf_close(fid))
 
       !-----------------------------------------------------------------
       ! adjust j = 1 and j = nj lats to -+ 90 degrees
       !-----------------------------------------------------------------
-      
+
       if (pole_fix) then
          write(6,*)'ni,nj= ',ni,nj
          if (ni > 1 .and. nj == 1) then
-            if (dst_grid_rank /= 2) then 
+            if (dst_grid_rank /= 2) then
                write(6,*)'pole_fix not appropriate for unstructured grid'
                stop
             end if
@@ -417,11 +417,11 @@ contains
             yc(n-dst_grid_dims(1)+i) =  c90
          enddo
       endif
-      
+
       !-----------------------------------------------------------------
       ! create a new nc files
       !-----------------------------------------------------------------
-      
+
       write(6,*) ' '
       write(6,*) 'output domain data...'
 
@@ -463,7 +463,7 @@ contains
          call check_ret(nf_close(fid))
          write(6,*) 'successfully created domain file ', trim(fn_out_ocn)
       end if
-      
+
    enddo
 
   end subroutine gen_domain
@@ -474,12 +474,12 @@ contains
     ! Check return status from netcdf call
     implicit none
     integer, intent(in) :: ret
-    
+
     if (ret /= NF_NOERR) then
        write(6,*)'netcdf error with rcode = ', ret,' error = ', nf_strerror(ret)
        call abort()
     end if
-    
+
   end subroutine check_ret
 
   subroutine usage_exit (arg)
@@ -523,7 +523,7 @@ contains
     write(6,*) '    domain.ocn.gridocn.nc'
     write(6,*) '      ocean domain on the ocean grid '
     write(6,*) ' '
-    stop 
+    stop
   end subroutine usage_exit
 
 !===========================================================================
@@ -531,12 +531,12 @@ contains
   subroutine write_file(fid, fmap, units_xc, units_yc, n, ni, nj, nv, &
        xc, yc, xv, yv, area, mask, frac, suffix, eps, pole_fix, &
        fmaxval, fminval, str_da, str_db, str_grido, str_grida)
-       
+
     implicit none
-    
+
     !--- includes ---
     include 'netcdf.inc'       ! netCDF defs
-    
+
     integer         , intent(in) :: fid          ! nc file  ID
     character(LEN=*), intent(in) :: fmap         ! file name ( input nc file)
     character(LEN=*), intent(in) :: units_xc, units_yc  ! netCDF attribute name string
@@ -544,12 +544,12 @@ contains
     integer         , intent(in) :: ni           ! size of i-axis of 2d domain
     integer         , intent(in) :: nj           ! size of j-axis of 2d domain
     integer         , intent(in) :: nv           ! number of vertices
-    real(r8)        , pointer    :: xc(:)        ! x-coords of center    
-    real(r8)        , pointer    :: yc(:)        ! y-coords of center   
-    real(r8)        , pointer    :: xv(:,:)      ! x-coords of verticies 
-    real(r8)        , pointer    :: yv(:,:)      ! y-coords of verticies 
+    real(r8)        , pointer    :: xc(:)        ! x-coords of center
+    real(r8)        , pointer    :: yc(:)        ! y-coords of center
+    real(r8)        , pointer    :: xv(:,:)      ! x-coords of verticies
+    real(r8)        , pointer    :: yv(:,:)      ! y-coords of verticies
     real(r8)        , pointer    :: area(:)      ! cell area
-    integer         , pointer    :: mask(:)      ! domain mask           
+    integer         , pointer    :: mask(:)      ! domain mask
     real(r8)        , pointer    :: frac(:)      ! cell fraction
     character(LEN=*), intent(in) :: suffix       ! suffix _a or _b sets input grid
     real(r8)        , intent(in) :: eps          ! allowable frac error
@@ -560,7 +560,7 @@ contains
     character(LEN=*), intent(in) :: str_db       ! global attribute str - domain_b
     character(LEN=*), intent(in) :: str_grido    ! global attribute str - grid_file_ocn
     character(LEN=*), intent(in) :: str_grida    ! global attribute str - grid_file_atm
-    
+
     !--- local ---
     character(LEN=CL)     :: host        ! hostname of machine running on
     character(LEN=CL)     :: str         ! fixed    length char string
@@ -572,31 +572,31 @@ contains
     integer               :: did         ! nc dimension ID
     integer               :: vdid(3)     ! vector of nc dimension ID
     integer               :: rcode       ! routine return error code
-    
+
     real(r8),parameter    :: pi  = 3.14159265358979323846
     character(*),parameter:: version = 'SVN $Id: gen_domain.F90 65202 2014-11-06 21:07:45Z mlevy@ucar.edu $'
 
     ! global attributes
     str   = 'CESM domain data: '
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'title'      ,len_trim(str),str))
-    
+
     str   = 'CF-1.0'
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'Conventions',len_trim(str),str))
-    
+
     str = trim(version)
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'source_code',len_trim(str),str))
-    
+
     str = ' $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/gen_domain/trunk/src/gen_domain.F90 $'
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'SVN_url',len_trim(str),str))
-    
+
 #ifdef OPT
     str = 'TRUE'
 #else
     str = 'FALSE'
 #endif
-    
+
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'Compiler_Optimized',len_trim(str),str))
-   
+
     call sys_getenv('HOST',host,rcode)
     if (rcode == 0) then
        call check_ret(nf_put_att_text(fid,NF_GLOBAL,'hostname' ,len_trim(host),host))
@@ -617,7 +617,7 @@ contains
     str = 'created by '//trim(user)//', '//cdate(1:4)//'-'//cdate(5:6)//'-'//cdate(7:8) &
          &                //' '//ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'history' ,len_trim(str),str))
-    
+
     str = trim(fmap)
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'source' ,len_trim(str),str))
     str = trim(str_da)
@@ -729,26 +729,26 @@ contains
        yv = yv * 180._r8 / pi
     end if
 
-    call check_ret(nf_inq_varid(fid, 'xc', vid)) 
+    call check_ret(nf_inq_varid(fid, 'xc', vid))
     call check_ret(nf_put_var_double(fid,  vid , xc))
 
-    call check_ret(nf_inq_varid(fid,  'yc',vid)) 
-    call check_ret(nf_put_var_double(fid,  vid , yc)) 
+    call check_ret(nf_inq_varid(fid,  'yc',vid))
+    call check_ret(nf_put_var_double(fid,  vid , yc))
 
-    call check_ret(nf_inq_varid(fid,  'xv',vid)) 
-    call check_ret(nf_put_var_double(fid,  vid , xv)) 
+    call check_ret(nf_inq_varid(fid,  'xv',vid))
+    call check_ret(nf_put_var_double(fid,  vid , xv))
 
-    call check_ret(nf_inq_varid(fid,  'yv',vid)) 
-    call check_ret(nf_put_var_double(fid,  vid , yv)) 
+    call check_ret(nf_inq_varid(fid,  'yv',vid))
+    call check_ret(nf_put_var_double(fid,  vid , yv))
 
-    call check_ret(nf_inq_varid(fid,'mask',vid)) 
-    call check_ret(nf_put_var_int   (fid,  vid ,mask)) 
+    call check_ret(nf_inq_varid(fid,'mask',vid))
+    call check_ret(nf_put_var_int   (fid,  vid ,mask))
 
-    call check_ret(nf_inq_varid(fid,'area',vid)) 
-    call check_ret(nf_put_var_double(fid,  vid ,area)) 
+    call check_ret(nf_inq_varid(fid,'area',vid))
+    call check_ret(nf_put_var_double(fid,  vid ,area))
 
-    call check_ret(nf_inq_varid(fid,'frac',vid)) 
-    call check_ret(nf_put_var_double(fid,  vid ,frac)) 
+    call check_ret(nf_inq_varid(fid,'frac',vid))
+    call check_ret(nf_put_var_double(fid,  vid ,frac))
 
   end subroutine write_file
 SUBROUTINE sys_getenv(name, val, rcode)

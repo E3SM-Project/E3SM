@@ -12,9 +12,9 @@ program cesm_driver
 !               data -------- Send data back interpolated from input files.
 !               active ------ Prognostically simulate the given component.
 !
-! Method: Call appropriate initialization, run (time-stepping), and 
+! Method: Call appropriate initialization, run (time-stepping), and
 !         finalization routines.
-! 
+!
 !-------------------------------------------------------------------------------
 
    !----------------------------------------------------------------------------
@@ -31,7 +31,7 @@ program cesm_driver
    implicit none
 
    !--------------------------------------------------------------------------
-   ! Setup and initialize the communications and logging.  
+   ! Setup and initialize the communications and logging.
    !--------------------------------------------------------------------------
    call cesm_pre_init1()
 
@@ -45,12 +45,25 @@ program cesm_driver
    !--------------------------------------------------------------------------
    ! Read in the configuration information and initialize the time manager.
    !--------------------------------------------------------------------------
+   ! Timer initialization has to be after determination of the maximum number
+   ! of threads used across all components, so called inside of
+   ! ccsm_pre_init2, as are t_startf and t_stopf for CPL:INIT and
+   ! cesm_pre_init2.
+   !--------------------------------------------------------------------------
    call cesm_pre_init2()
 
    !--------------------------------------------------------------------------
    ! Call the initialize, run and finalize routines.
    !--------------------------------------------------------------------------
+
+   call t_startf('CPL:INIT')
+   call t_adj_detailf(+1)
+
    call cesm_init()
+
+   call t_adj_detailf(-1)
+   call t_stopf('CPL:INIT')
+
    call cesm_run()
    call cesm_final()
 

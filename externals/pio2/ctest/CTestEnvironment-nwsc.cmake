@@ -1,7 +1,7 @@
 #==============================================================================
 #
 #  This file sets the environment variables needed to configure and build
-#  on the NCAR Wyoming Supercomputing Center systems 
+#  on the NCAR Wyoming Supercomputing Center systems
 #  (yellowstone/caldera/geyser).
 #
 #==============================================================================

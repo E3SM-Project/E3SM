@@ -79,7 +79,7 @@
 
   <!ENTITY % ISOamsa.module "INCLUDE">
   <![ %ISOamsa.module; [
-  <!ENTITY % ISOamsa PUBLIC "ISO 8879:1986//ENTITIES Added Math Symbols: Arrow Relations//EN"> 
+  <!ENTITY % ISOamsa PUBLIC "ISO 8879:1986//ENTITIES Added Math Symbols: Arrow Relations//EN">
    %ISOamsa;
   <!--end of ISOamsa.module-->]]>
 

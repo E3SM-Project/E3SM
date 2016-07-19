@@ -19,12 +19,11 @@ module vertical_gradient_calculator_2nd_order
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  
   implicit none
   private
 
   public :: vertical_gradient_calculator_2nd_order_type
-  
+
   type, extends(vertical_gradient_calculator_base_type) :: &
        vertical_gradient_calculator_2nd_order_type
      private
@@ -59,7 +58,7 @@ module vertical_gradient_calculator_2nd_order
   interface vertical_gradient_calculator_2nd_order_type
      module procedure constructor
   end interface vertical_gradient_calculator_2nd_order_type
-  
+
 contains
 
   !-----------------------------------------------------------------------
@@ -406,7 +405,6 @@ contains
     end do
 
   end subroutine limit_gradient
-
 
 end module vertical_gradient_calculator_2nd_order
 

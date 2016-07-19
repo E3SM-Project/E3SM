@@ -23,7 +23,7 @@
  * fix this issue later...
  */
 
-extern int Pcopy_data2(void *source, int src_count, Datatype src_type, 
+extern int Pcopy_data2(void *source, int src_count, Datatype src_type,
 		       void *dest, int dest_count, Datatype dest_type);
 
 
@@ -39,7 +39,7 @@ int copy_data2(void *source, int src_count, MPI_Datatype src_type,
 
 
 
-int Pcopy_data2(void *source, int src_count, Datatype src_type, 
+int Pcopy_data2(void *source, int src_count, Datatype src_type,
                 void *dest, int dest_count, Datatype dest_type)
 {
   int i;
@@ -55,7 +55,7 @@ int Pcopy_data2(void *source, int src_count, Datatype src_type,
     exit(-1);
   }
 
-  // A receive of less elements than sent 
+  // A receive of less elements than sent
   // is valid, but the reverse is a violation
 
   if (src_type->count * src_count < dest_type->count * dest_count)
@@ -71,7 +71,7 @@ int Pcopy_data2(void *source, int src_count, Datatype src_type,
   {
 
 #ifdef TYPE_CHECKING
-    if ( src_type->pairs[i % src_type->count].type != 
+    if ( src_type->pairs[i % src_type->count].type !=
          dest_type->pairs[i % dest_type->count].type)
     {
       printf("copy_data: Types don't match.\n");
@@ -80,7 +80,7 @@ int Pcopy_data2(void *source, int src_count, Datatype src_type,
 #endif
 
     soffset = src_type->pairs[i % src_type->count].disp + ((i / src_type->count) * src_extent);
-    doffset = dest_type->pairs[i % dest_type->count].disp + ((i / dest_type->count) * dest_extent); 
+    doffset = dest_type->pairs[i % dest_type->count].disp + ((i / dest_type->count) * dest_extent);
 
     memcpy(dest+doffset, source+soffset, Simpletype_length(dest_type->pairs[i % dest_type->count].type));
   }

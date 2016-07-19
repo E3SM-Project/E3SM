@@ -513,19 +513,19 @@ END SUBROUTINE shr_mpi_bcasti0
 SUBROUTINE shr_mpi_bcasti80(vec,comm,string,pebcast)
 
   IMPLICIT none
-  
+
   !----- arguments ---
   integer(SHR_KIND_I8), intent(inout):: vec      ! vector of 1
   integer(SHR_KIND_IN), intent(in)   :: comm     ! mpi communicator
   character(*),optional,intent(in)   :: string   ! message
   integer(SHR_KIND_IN), optional, intent(in)   :: pebcast  ! bcast pe (otherwise zero)
-  
+
   !----- local ---
   character(*),parameter             :: subName = '(shr_mpi_bcasti0) '
   integer(SHR_KIND_IN)               :: ierr
   integer(SHR_KIND_IN)               :: lsize
   integer(SHR_KIND_IN)               :: lpebcast
-  
+
   !-------------------------------------------------------------------------------
   ! PURPOSE: Broadcast an integer
   !-------------------------------------------------------------------------------
@@ -533,14 +533,14 @@ SUBROUTINE shr_mpi_bcasti80(vec,comm,string,pebcast)
   lsize = 1
   lpebcast = 0
   if (present(pebcast)) lpebcast = pebcast
-  
+
   call MPI_BCAST(vec,lsize,MPI_INTEGER8,lpebcast,comm,ierr)
   if (present(string)) then
      call shr_mpi_chkerr(ierr,subName//trim(string))
   else
      call shr_mpi_chkerr(ierr,subName)
   endif
-  
+
 END SUBROUTINE shr_mpi_bcasti80
 
 !===============================================================================
@@ -695,7 +695,7 @@ SUBROUTINE shr_mpi_bcasti1(vec,comm,string,pebcast)
    IMPLICIT none
 
    !----- arguments ---
-   integer(SHR_KIND_IN), intent(inout):: vec(:)   ! vector 
+   integer(SHR_KIND_IN), intent(inout):: vec(:)   ! vector
    integer(SHR_KIND_IN), intent(in)   :: comm     ! mpi communicator
    character(*),optional,intent(in)   :: string   ! message
    integer(SHR_KIND_IN), optional, intent(in)   :: pebcast  ! bcast pe (otherwise zero)
@@ -724,15 +724,15 @@ SUBROUTINE shr_mpi_bcasti1(vec,comm,string,pebcast)
 END SUBROUTINE shr_mpi_bcasti1
 
 SUBROUTINE shr_mpi_bcasti81(vec,comm,string,pebcast)
-  
+
   IMPLICIT none
-  
+
   !----- arguments ---
-  integer(SHR_KIND_I8), intent(inout):: vec(:)   ! vector 
+  integer(SHR_KIND_I8), intent(inout):: vec(:)   ! vector
   integer(SHR_KIND_IN), intent(in)   :: comm     ! mpi communicator
   character(*),optional,intent(in)   :: string   ! message
   integer(SHR_KIND_IN), optional, intent(in)   :: pebcast  ! bcast pe (otherwise zero)
-  
+
   !----- local ---
   character(*),parameter             :: subName = '(shr_mpi_bcasti1) '
   integer(SHR_KIND_IN)               :: ierr
@@ -742,18 +742,18 @@ SUBROUTINE shr_mpi_bcasti81(vec,comm,string,pebcast)
   !-------------------------------------------------------------------------------
   ! PURPOSE: Broadcast a vector of integers
   !-------------------------------------------------------------------------------
-  
+
   lsize = size(vec)
   lpebcast = 0
   if (present(pebcast)) lpebcast = pebcast
-  
+
   call MPI_BCAST(vec,lsize,MPI_INTEGER8,lpebcast,comm,ierr)
   if (present(string)) then
      call shr_mpi_chkerr(ierr,subName//trim(string))
   else
      call shr_mpi_chkerr(ierr,subName)
   endif
-  
+
 END SUBROUTINE shr_mpi_bcasti81
 
 !===============================================================================
@@ -800,7 +800,7 @@ SUBROUTINE shr_mpi_bcastr1(vec,comm,string,pebcast)
    IMPLICIT none
 
    !----- arguments ---
-   real(SHR_KIND_R8),    intent(inout):: vec(:)   ! vector 
+   real(SHR_KIND_R8),    intent(inout):: vec(:)   ! vector
    integer(SHR_KIND_IN), intent(in)   :: comm     ! mpi communicator
    character(*),optional,intent(in)   :: string   ! message
    integer(SHR_KIND_IN), optional, intent(in)   :: pebcast  ! bcast pe (otherwise zero)
@@ -836,7 +836,7 @@ SUBROUTINE shr_mpi_bcastr2(arr,comm,string,pebcast)
    IMPLICIT none
 
    !----- arguments -----
-   real(SHR_KIND_R8),    intent(inout):: arr(:,:) ! array, 2d 
+   real(SHR_KIND_R8),    intent(inout):: arr(:,:) ! array, 2d
    integer(SHR_KIND_IN), intent(in)   :: comm     ! mpi communicator
    character(*),optional,intent(in)   :: string   ! message
    integer(SHR_KIND_IN), optional, intent(in)   :: pebcast  ! bcast pe (otherwise zero)
@@ -874,7 +874,7 @@ SUBROUTINE shr_mpi_bcasti2(arr,comm,string,pebcast)
    IMPLICIT none
 
    !----- arguments -----
-   integer,              intent(inout):: arr(:,:) ! array, 2d 
+   integer,              intent(inout):: arr(:,:) ! array, 2d
    integer(SHR_KIND_IN), intent(in)   :: comm     ! mpi communicator
    character(*),optional,intent(in)   :: string   ! message
    integer(SHR_KIND_IN), optional, intent(in)   :: pebcast  ! bcast pe (otherwise zero)
@@ -912,7 +912,7 @@ SUBROUTINE shr_mpi_bcastr3(arr,comm,string,pebcast)
    IMPLICIT none
 
    !----- arguments -----
-   real(SHR_KIND_R8),    intent(inout):: arr(:,:,:) ! array, 3d 
+   real(SHR_KIND_R8),    intent(inout):: arr(:,:,:) ! array, 3d
    integer(SHR_KIND_IN), intent(in)   :: comm       ! mpi communicator
    character(*),optional,intent(in)   :: string     ! message
    integer(SHR_KIND_IN), optional, intent(in)   :: pebcast  ! bcast pe (otherwise zero)

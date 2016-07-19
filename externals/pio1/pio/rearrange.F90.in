@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "rearrange.F90"
 !>
-!! @file 
+!! @file
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Generic interface to the rearrange layer
@@ -22,7 +22,7 @@ module rearrange
   private
   save
 
-!> 
+!>
 !! @private
 !<
   public :: rearrange_init, &
@@ -73,14 +73,14 @@ contains
 
 #ifdef TIMING
     call t_barrierf("pio_rearrange_comp2io_{TYPE}",IoSystem%comp_comm)
-    call t_startf("pio_rearrange_comp2io_{TYPE}")
+    call t_startf("PIO:pio_rearrange_comp2io_{TYPE}")
 #endif
 
 
     call box_rearrange_comp2io(Iosystem,iodesc,size(compbuf), compbuf,size(iobuf), iobuf)
 
 #ifdef TIMING
-    call t_stopf("pio_rearrange_comp2io_{TYPE}")
+    call t_stopf("PIO:pio_rearrange_comp2io_{TYPE}")
 #endif
 
   end subroutine rearrange_comp2io_{TYPE}
@@ -102,13 +102,13 @@ contains
     {VTYPE} ::  compbuf(:)
 
 #ifdef TIMING
-    call t_startf("pio_rearrange_io2comp_{TYPE}")
+    call t_startf("PIO:pio_rearrange_io2comp_{TYPE}")
 #endif
 
     call box_rearrange_io2comp(Iosystem,iodesc,size(iobuf),iobuf,size(compbuf),compbuf)
 
 #ifdef TIMING
-    call t_stopf("pio_rearrange_io2comp_{TYPE}")
+    call t_stopf("PIO:pio_rearrange_io2comp_{TYPE}")
 #endif
 
   end subroutine rearrange_io2comp_{TYPE}
@@ -117,7 +117,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! rearrange_init
-! 
+!
 ! called from initFile_
 !
 
@@ -150,9 +150,9 @@ contains
     integer, intent(in) :: dims(:)
     integer, intent(in) :: ndims
     type (IO_desc_t) :: ioDesc
-    
+
 #ifdef TIMING
-     call t_startf("pio_rearrange_create_box")
+     call t_startf("PIO:pio_rearrange_create_box")
 #endif
 
     if (Iosystem%rearr /= PIO_rearr_box) then
@@ -166,7 +166,7 @@ contains
 
 
 #ifdef TIMING
-     call t_stopf("pio_rearrange_create_box")
+     call t_stopf("PIO:pio_rearrange_create_box")
 #endif
 
   end subroutine rearrange_create_box_
@@ -192,7 +192,7 @@ contains
     case (PIO_rearr_box)
        call box_rearrange_free(Iosystem,ioDesc)
     case (PIO_rearr_none)
-        ! do nothing 
+        ! do nothing
 
     case default
        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)

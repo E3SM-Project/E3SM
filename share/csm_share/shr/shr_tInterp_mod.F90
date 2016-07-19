@@ -16,7 +16,7 @@
 ! !INTERFACE: ------------------------------------------------------------------
 
 module shr_tInterp_mod
- 
+
 ! !USES:
 
    use shr_sys_mod   ! shared system calls
@@ -40,7 +40,7 @@ module shr_tInterp_mod
 
    public :: shr_tInterp_getFactors  ! get time-interp factors
    public :: shr_tInterp_getAvgCosz  ! get cosz, time avg of
-   public :: shr_tInterp_getCosz     ! get cosz 
+   public :: shr_tInterp_getCosz     ! get cosz
    public :: shr_tInterp_setAbort    ! set abort on error
    public :: shr_tInterp_setDebug    ! set debug level
    public :: shr_tInterp_getDebug    ! get debug level
@@ -98,7 +98,7 @@ subroutine shr_tInterp_getFactors(D1,S1,D2,S2,Din,Sin,f1,f2,calendar,algo,rc)
    integer(SHR_KIND_IN),intent(in)           :: Din,Sin ! desired/model date & sec
    real(SHR_KIND_R8)   ,intent(out)          :: f1      ! wgt for 1
    real(SHR_KIND_R8)   ,intent(out)          :: f2      ! wgt for 2
-   character(*)        ,intent(in)           :: calendar!calendar type 
+   character(*)        ,intent(in)           :: calendar!calendar type
    character(*)        ,intent(in) ,optional :: algo    ! algorithm
    integer(SHR_KIND_IN),intent(out),optional :: rc      ! return code
 
@@ -116,10 +116,10 @@ subroutine shr_tInterp_getFactors(D1,S1,D2,S2,Din,Sin,f1,f2,calendar,algo,rc)
 
    !----- formats -----
    character(*),parameter :: subName = "(shr_tInterp_getFactors) "
-   character(*),parameter :: F00   = "('(shr_tInterp_getFactors) ',8a)" 
-   character(*),parameter :: F01   = "('(shr_tInterp_getFactors) ',a,2f17.8)" 
-   character(*),parameter :: F02   = "('(shr_tInterp_getFactors) ',a,3i9)" 
-   character(*),parameter :: F03   = "('(shr_tInterp_getFactors) ',2a,3(i9.8,i6))" 
+   character(*),parameter :: F00   = "('(shr_tInterp_getFactors) ',8a)"
+   character(*),parameter :: F01   = "('(shr_tInterp_getFactors) ',a,2f17.8)"
+   character(*),parameter :: F02   = "('(shr_tInterp_getFactors) ',a,3i9)"
+   character(*),parameter :: F03   = "('(shr_tInterp_getFactors) ',2a,3(i9.8,i6))"
 
 !-------------------------------------------------------------------------------
 ! Computes time interpolation factors
@@ -225,8 +225,8 @@ end subroutine shr_tInterp_getFactors
 !
 ! !DESCRIPTION:
 !
-!   Returns a time-average of cos(z) over the time interval [LB,UB].  
-!   The time-avg is calculated via a right-sum Riemann sum where the partitian 
+!   Returns a time-average of cos(z) over the time interval [LB,UB].
+!   The time-avg is calculated via a right-sum Riemann sum where the partitian
 !   width is the model dt, and the left-most partitian starts at the LB.
 !
 ! NOTE: For cosine of solar zenith angle forcing the time-stamps MUST be for
@@ -271,12 +271,12 @@ subroutine shr_tInterp_getAvgCosz(tavCosz,lonr,latr,ymd1,tod1,ymd2,tod2,eccen,mv
    integer(SHR_KIND_IN) :: ymd,tod,ymd0,tod0  ! used to compute time of time-sample
    integer(SHR_KIND_IN) :: ldt                ! local dt as needed
    integer(SHR_KIND_I8) :: ldt8               ! local dt as needed in i8
-   integer(SHR_KIND_I8) :: dtsec              ! delta time from timeint 
+   integer(SHR_KIND_I8) :: dtsec              ! delta time from timeint
    real(SHR_KIND_R8),pointer :: cosz(:)       ! cos(zenith angle)
 
    !----- formats -----
    character(*),parameter :: subName = "(shr_tInterp_getAvgCosz) "
-   character(*),parameter :: F00   = "('(shr_tInterp_getAvgCosz) ',8a)" 
+   character(*),parameter :: F00   = "('(shr_tInterp_getAvgCosz) ',8a)"
 
 !-------------------------------------------------------------------------------
 ! Computes time avg cosz over interval [LB,UB]
@@ -306,7 +306,7 @@ subroutine shr_tInterp_getAvgCosz(tavCosz,lonr,latr,ymd1,tod1,ymd2,tod2,eccen,mv
    !--- compute time average ---
    tavCosz = 0.0_SHR_KIND_R8 ! initialize partial sum
    n       = 0               ! dt weighted average in t-avg
-   reday   = reday1          ! mid [LB,UB] interval t-step starts at LB 
+   reday   = reday1          ! mid [LB,UB] interval t-step starts at LB
    ymd     = ymd1
    tod     = tod1
    do while( reday < reday2) ! mid-interval t-steps thru interval [LB,UB]
@@ -383,7 +383,7 @@ subroutine shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr
 
    !----- formats -----
    character(*),parameter :: subName = "(shr_tInterp_getCosz) "
-   character(*),parameter :: F00   = "('(shr_tInterp_getCosz) ',8a)" 
+   character(*),parameter :: F00   = "('(shr_tInterp_getCosz) ',8a)"
 
 !-------------------------------------------------------------------------------
 ! Returns cos(zenith angle)

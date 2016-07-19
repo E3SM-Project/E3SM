@@ -20,7 +20,7 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_enddef = 313
    integer, parameter, public :: pio_msg_redef = 314
    integer, parameter, public :: pio_msg_initdecomp_dof = 315
-   
+
    integer, parameter, public :: pio_msg_writedarray = 320
    integer, parameter, public :: pio_msg_readdarray = 325
    integer, parameter, public :: pio_msg_inquire = 330
@@ -74,9 +74,9 @@ module pio_msg_mod
    integer, parameter, public :: PIO_MSG_SYNC_FILE = 500
    integer, parameter, public :: PIO_MSG_FREEDECOMP = 502
 
-   integer, parameter, public :: pio_msg_exit = 999   
+   integer, parameter, public :: pio_msg_exit = 999
 
-   
+
    type :: file_desc_list
       type(file_desc_t), pointer :: file => null()
       type(file_desc_list), pointer :: next => null()
@@ -107,7 +107,7 @@ contains
 
 
   subroutine pio_msg_handler(numcomps, iosystem)
-!    use pio_types, only : 
+!    use pio_types, only :
 #ifdef TIMING
     use perf_mod        ! _EXTERNAL
 #endif
@@ -126,7 +126,7 @@ contains
     integer :: req(numcomps)
     integer :: index
 
-#ifdef TIMING    
+#ifdef TIMING
     call t_startf('pio_msg_mod')
 #endif
     if(iorank==0) then
@@ -134,7 +134,7 @@ contains
        do index=1,numcomps
           ios=>iosystem(index)
           if(ios%io_comm .ne. mpi_comm_null) then
-             call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)       
+             call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)
           end if
        enddo
     end if
@@ -152,7 +152,7 @@ contains
        call mpi_bcast(msg, 1, mpi_integer, 0, io_comm, ierr)
 
        if(debugasync) print *,__PIO_FILE__,__LINE__, msg ,' recieved on ', index
-       select case(msg) 
+       select case(msg)
        case (PIO_MSG_CREATE_FILE)
           call create_file_handler(ios)
        case (PIO_MSG_OPEN_FILE)
@@ -222,7 +222,7 @@ contains
        case (PIO_MSG_PUTATT)
           call att_handler(ios, msg)
        case (PIO_MSG_PUTATT_1D)
-          call att_1d_handler(ios, msg)          
+          call att_1d_handler(ios, msg)
        case (PIO_MSG_FREEDECOMP)
           call freedecomp_handler(ios)
        case (PIO_MSG_EXIT)
@@ -232,7 +232,7 @@ contains
           exit
        case default
           call pio_callback_handler(ios,msg)
-       end select   
+       end select
        if(iorank==0) then
           call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)
        end if
@@ -299,14 +299,14 @@ contains
 
 
 
-       if(debugasync) print *,__FILE__,__LINE__,index
+       if(debugasync) print *,__PIO_FILE__,__LINE__,index
     end if
     iodesc%async_id=index
     list_item%index=index
     list_item%iodesc => iodesc
 
 
-    if(debugasync) print *,__FILE__,__LINE__,index,list_item%iodesc%async_id
+    if(debugasync) print *,__PIO_FILE__,__LINE__,index,list_item%iodesc%async_id
 
   end subroutine add_to_iodesc_list
 
@@ -331,7 +331,7 @@ contains
                 nullify(previtem%next)
              end if
              deallocate(list_item)
-          else if(associated(list_item%next)) then  
+          else if(associated(list_item%next)) then
              nextitem => list_item%next
              list_item%iodesc=>nextitem%iodesc
              list_item%index = nextitem%index
@@ -341,7 +341,7 @@ contains
                 nullify(list_item%next)
              end if
              deallocate(nextitem)
-             
+
           end if
 
           exit
@@ -353,7 +353,7 @@ contains
           if(debugasync) then
              list_item=> top_iodesc
              do while(associated(list_item))
-                print *,__FILE__,__LINE__,id,list_item%index,list_item%iodesc%async_id
+                print *,__PIO_FILE__,__LINE__,id,list_item%index,list_item%iodesc%async_id
                 list_item=>list_item%next
              enddo
           endif
@@ -404,11 +404,11 @@ contains
     type(file_desc_list), pointer :: list_item
 
     integer :: fh1
-    
+
     fh1 = abs(fh)
 
     list_item=> top_file
-    
+
     do while(associated(list_item%file) )
        if(abs(list_item%file%fh) == fh1) then
           file => list_item%file
@@ -430,10 +430,10 @@ contains
     nullify(iodesc)
     do while(associated(list_item%iodesc) )
 
-       if(debugasync) print *,__FILE__,__LINE__,list_item%index,async_id,list_item%iodesc%async_id
+       if(debugasync) print *,__PIO_FILE__,__LINE__,list_item%index,async_id,list_item%iodesc%async_id
        if(abs(list_item%iodesc%async_id) == async_id) then
           iodesc => list_item%iodesc
-          if(debugasync) print *,__FILE__,__LINE__,async_id,list_item%index,iodesc%write%n_elemtype
+          if(debugasync) print *,__PIO_FILE__,__LINE__,async_id,list_item%index,iodesc%write%n_elemtype
           exit
        end if
        list_item=>list_item%next
@@ -441,7 +441,7 @@ contains
     if(.not.associated(iodesc)) then
        call piodie(__PIO_FILE__,__LINE__)
     end if
-    
+
   end function lookupiodesc
 
 end module pio_msg_mod

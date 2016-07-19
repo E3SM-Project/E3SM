@@ -15,13 +15,13 @@ module vertical_gradient_calculator_base
 
   use seq_comm_mct, only : logunit
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use shr_sys_mod, only : shr_sys_abort
+  use shr_sys_mod , only : shr_sys_abort
   
   implicit none
   private
-  
+
   public :: vertical_gradient_calculator_base_type
-  
+
   type, abstract :: vertical_gradient_calculator_base_type
    contains
      ! Calculate the vertical gradients for all points and all elevation classes
@@ -39,7 +39,7 @@ module vertical_gradient_calculator_base
 
 
   end type vertical_gradient_calculator_base_type
-  
+
   abstract interface
      subroutine calc_gradients_interface(this)
        import :: vertical_gradient_calculator_base_type

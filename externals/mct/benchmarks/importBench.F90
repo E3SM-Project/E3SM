@@ -1,5 +1,5 @@
 ! Av import/export benchmark
-! 
+!
  program importBench
 
   use m_MCTWorld,only : MCTWorld_init => init
@@ -25,7 +25,7 @@
   character(len=*), parameter :: myname='MCT_importBench'
 
   integer, parameter :: nTrials=1000 ! Number of timing measurements
-                                     ! per test.  Keep high WRT 
+                                     ! per test.  Keep high WRT
                                      ! value of MaxNumAtts to ensure
                                      ! timings are representative
 
@@ -33,7 +33,7 @@
                                   ! Don't increase--segv on login.mcs
                                   ! for larger values!
 
-  integer, parameter :: MaxNumAtts = 26 ! maximum number of 
+  integer, parameter :: MaxNumAtts = 26 ! maximum number of
                                         ! attributes used in
                                         ! timing tests.  Leave
                                         ! fixed for now!
@@ -48,7 +48,7 @@
   real*8, dimension(:), pointer :: outputData(:)
 
   integer :: currLength, k, l, n
-  integer :: colInd, lettInd, attInd, charInd 
+  integer :: colInd, lettInd, attInd, charInd
 
   real*8 :: startTime, finishTime
   real*8, dimension(:), pointer :: impTimings
@@ -98,8 +98,8 @@
   expSDD = luavail()
   open(expSDD, file='benchAV_exportStdDevTime.d',status='new')
 
-! Initialize MCTWorld 
-  call MCTWorld_init(1,MPI_COMM_WORLD,comm1,1)	
+! Initialize MCTWorld
+  call MCTWorld_init(1,MPI_COMM_WORLD,comm1,1)
 
   dummyAList = ''
   do k=1,MaxNumAtts
@@ -113,18 +113,18 @@
       lettInd = 2*k - 1
       dummyAList(colInd:colInd) = achar(58) ! a colon ':'
       dummyAList(lettInd:lettInd) = achar(64+k)
-    endif 
+    endif
 
     do l=1,lmax
-! 
+!
 ! Set current AV length currLength, create inputData(:) and outputData(:),
 ! and initialize entries of inputData(:)...
-!  
+!
       currLength = 2 ** (l-1)
       ! write(0,'(a,2(a,i8))') myname,":: l = ",l," currLength = ",currLength
 
       allocate(inputData(currLength), outputData(currLength),stat=ier)
-      do i=1,currLength		
+      do i=1,currLength
        	inputData(i)=real(i)
       end do
 
@@ -136,7 +136,7 @@
       expMeanTime = 0.
       do n=1,nTrials
         ! circulate through the k attributes so that we get more-or-less
-        ! equal representation of the attributes among the import/export 
+        ! equal representation of the attributes among the import/export
 	! calls.  Setting nTrials to a large number ensures the disparities
 	! among how frequently the attributes are called will be minimal.
 	attInd = mod(n,k)
@@ -168,7 +168,7 @@
 
      write(*,'(a,2(a,i8),4(a,g12.6))') myname, &
                 ":: Import timings for k=",k,"attributes.  AV length=", &
-                currLength," elements: Mean = ",impMeanTime," Min= ", & 
+                currLength," elements: Mean = ",impMeanTime," Min= ", &
                 minval (impTimings)," Max = ",maxval(impTimings), &
 		" Std. Dev. = ",impStdDevTime
 

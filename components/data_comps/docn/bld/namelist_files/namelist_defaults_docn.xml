@@ -12,9 +12,9 @@ attributes to express the dependency.  The recognized attributes
 are: grid, docn_presaero and all configuration
 attributes from the config_cache.xml file (with keys converted to upper-case).
 
-strm_year_first is the first year of the stream data that will be used 
-strm_year_last  is the last  year of the stream data that will be used 
-strm_year_align is the model year that will be aligned with stream data for year_first 
+strm_year_first is the first year of the stream data that will be used
+strm_year_last  is the last  year of the stream data that will be used
+strm_year_align is the model year that will be aligned with stream data for year_first
 
 Replace any instance of the following substring indicators with the appropriate values:
     %y    = year from the range yearfirst to yearlast
@@ -31,8 +31,8 @@ Each mode below, except for presaero, has a set of streams associated with it
 The presaero stream, is associated with all modes
 
 Currently the following docn modes are supported
-    docn_mode      datamode         
-   (env_run.xml)  (build-namelist)       
+    docn_mode      datamode
+   (env_run.xml)  (build-namelist)
     ------------  ----------------
     prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
     som           SOM         (Slab ocean model)
@@ -62,9 +62,9 @@ Currently the following docn modes are supported
 
 <!-- ===================================================  -->
 <!--- stream: prescribed                                  -->
-<!--- note that strm_domdir and strm_domfil               -->  
+<!--- note that strm_domdir and strm_domfil               -->
 <!--- are obtained from strm_grid_file in build-namelist  -->
-<!--- note that strm_datdir and strm_datfil               -->  
+<!--- note that strm_datdir and strm_datfil               -->
 <!--- are obtained from strm_data_file  in build-namelist -->
 <!-- ===================================================  -->
 
@@ -136,9 +136,9 @@ Currently the following docn modes are supported
 
 <!-- ===================================================  -->
 <!--- stream: copyall                                 -->
-<!--- note that strm_domdir and strm_domfil               -->  
+<!--- note that strm_domdir and strm_domfil               -->
 <!--- are obtained from strm_grid_file in build-namelist  -->
-<!--- note that strm_datdir and strm_datfil               -->  
+<!--- note that strm_datdir and strm_datfil               -->
 <!--- are obtained from strm_data_file  in build-namelist -->
 <!-- ===================================================  -->
 
@@ -153,7 +153,7 @@ Currently the following docn modes are supported
   gridLon lon
   gridLat lat
 </strm_domvar>
-<strm_datvar     stream="copyall" sstice_stream="WW3"> 
+<strm_datvar     stream="copyall" sstice_stream="WW3">
   iceCon  s
 </strm_datvar>
 
@@ -175,7 +175,7 @@ Currently the following docn modes are supported
   area    area
   mask    mask
 </strm_domvar>
-<strm_datvar     stream="som"> 
+<strm_datvar     stream="som">
   T     t
   S     s
   U     u
@@ -202,7 +202,7 @@ Currently the following docn modes are supported
   lon      lon
   lat      lat
 </strm_domvar>
-<strm_datvar     stream="interannual"> 
+<strm_datvar     stream="interannual">
   SST_cpl  t
 </strm_datvar>
 

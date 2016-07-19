@@ -3,10 +3,10 @@
 
 <para>The following summarizes details of building the model exectuable.</para>
 
-<sect1> 
+<sect1>
 <title> How do I build my model?</title>
 
-<para> After calling <command>cesm_setup</command>, you can build the  model executable 
+<para> After calling <command>cesm_setup</command>, you can build the  model executable
 by running <command>./$CASE.build</command>. Running this will:
 </para>
 
@@ -22,20 +22,20 @@ and download missing data automatically on local disk, and if
 successful proceed to the following steps.
 </para></listitem>
 
-<listitem><para> create the necessary utility libraries by calling 
-<filename>Buildconf/mct.buildlib</filename>, 
-<filename>Buildconf/pio.buildlib</filename> and 
-<filename>Buildconf/gptl.buildlib</filename> and 
-<filename>Buildconf/csm_share.buildlib</filename>. 
+<listitem><para> create the necessary utility libraries by calling
+<filename>Buildconf/mct.buildlib</filename>,
+<filename>Buildconf/pio.buildlib</filename> and
+<filename>Buildconf/gptl.buildlib</filename> and
+<filename>Buildconf/csm_share.buildlib</filename>.
 </para></listitem>
 
 <listitem><para> create the necessary component libraries by calling
 <filename> Buildconf/$component.buildexe.csh</filename>, where
 $component is the name of atm, lnd, rof, ocn, cice, glc and cpl components
-(which depends on the compset being used). 
+(which depends on the compset being used).
 </para></listitem>
 
-<listitem><para> create the model executable by calling 
+<listitem><para> create the model executable by calling
 <filename>Buildconf/cesm.buildexe.csh</filename>.
 </para></listitem>
 </orderedlist>
@@ -159,7 +159,7 @@ area as specified by $<envar>DIN_LOC_ROOT</envar> (see below).</para>
 <listitem><para> The buildnml scripts in <filename>Buildconf/i</filename> create listings of
 required component input datasets in the
 <filename>Buildconf/$component.input_data_list</filename> files.
-</para></listitem> 
+</para></listitem>
 
 <listitem><para> <filename>$CASE.build</filename> checks for
 the presence of the required input data files in the root directory
@@ -195,7 +195,7 @@ for usage.
 </para>
 
 <screen>
-> cd $CIMEROOT/scripts 
+> cd $CIMEROOT/scripts
 > ./link_dirtree -h
 </screen>
 
@@ -213,7 +213,7 @@ in /user/home/newdata with the following command:
 
 <para>
 then incorporate the new dataset(s) directly into the appropriate
-directory in /user/home/newdata. 
+directory in /user/home/newdata.
 </para>
 
 </sect2>
@@ -281,7 +281,7 @@ build and rebuild from scratch as follows,
 </screen>
 
 <para> If you have ONLY modified the PE layout in &env_mach_pes.xml;
-(see <link linkend="case_conf_setting_pes">setting the PE layout</link>) 
+(see <link linkend="case_conf_setting_pes">setting the PE layout</link>)
 then it's possible that a clean is not required.</para>
 <screen>
 > cd $CASEROOT
@@ -302,7 +302,7 @@ the following error</para>
     Then rerun the build script interactively
     ---- OR ----
     You can override this error message at your own risk by executing
-      ./xmlchange SMP_BUILD=0 
+      ./xmlchange SMP_BUILD=0
     Then rerun the build script interactively
 </screen>
 <para>

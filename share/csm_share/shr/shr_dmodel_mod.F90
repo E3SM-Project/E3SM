@@ -232,12 +232,12 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid
   real(R8)        ,optional,intent(in)    :: scmlat   ! single column lat
 
   !----- local -----
-  integer(IN)   :: n,k,j,i    ! indices  
+  integer(IN)   :: n,k,j,i    ! indices
   integer(IN)   :: lsize      ! lsize
   integer(IN)   :: gsize      ! gsize
   integer(IN)   :: my_task, master_task
   integer(IN)   :: ierr       ! error code
-  logical       :: fileexists ! 
+  logical       :: fileexists !
   integer(IN)   :: rCode      ! return code
   character(CL) :: remoteFn   ! input file name (possibly at an archival location)
   character(CL) :: localFn    ! file name to be opened (possibly a local copy)
@@ -459,7 +459,7 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid
               mind = dist
               ni = i
            endif
-        enddo        
+        enddo
 
         nj = -1
         mind = 1.0e20
@@ -485,7 +485,7 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid
         do k=1,abs(nzg)
         do j=1,nyg
         do i=1,nxg
-           n=n+1                                                                               
+           n=n+1
            gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
            gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
            gGridRoot%data%rAttr(narea,n) = area(i,j)
@@ -539,7 +539,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
   character(len=*),optional  ,intent(in)    :: istr
 
   !----- local -----
-  integer(IN)   :: n,k,j,i    ! indices  
+  integer(IN)   :: n,k,j,i    ! indices
   integer(IN)   :: lsize      ! lsize
   integer(IN)   :: gsize      ! gsize
   integer(IN)   :: my_task, master_task
@@ -660,7 +660,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
      inquire(file=trim(fn_next),exist=fileExists)
      if ( trim(fn_next) == "unknown" .or. fileExists) then
         ! do nothing
-     else 
+     else
         call shr_file_get(rCode,fn_next,trim(path)//fn_next,async=.true.)
         write(logunit,F00) "get next file: ",trim(fn_next)
         call shr_sys_flush(logunit)
@@ -668,7 +668,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
 
      !---  remove the old file? (only if acquiring local copies) ---
      if ( rmOldFile .and. &
-          fn_prev/=fn_lb .and. fn_prev/=fn_ub .and. fn_prev/=fn_next ) then 
+          fn_prev/=fn_lb .and. fn_prev/=fn_ub .and. fn_prev/=fn_next ) then
         !--- previous file is not in use and is not next in list ---
         inquire(file=trim(fn_prev),exist=fileExists)
         if ( fileExists ) then
@@ -699,7 +699,7 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   integer(IN)     ,intent(in)    :: pio_iotype
   type(io_desc_t)      ,intent(inout)  :: pio_iodesc
   type(mct_gsMap) ,intent(in)    :: gsMap
-  type(mct_aVect) ,intent(inout) :: av  
+  type(mct_aVect) ,intent(inout) :: av
   integer(IN)     ,intent(in)    :: mpicom
   character(len=*),intent(in)    :: path
   character(len=*),intent(in)    :: fn
@@ -922,10 +922,10 @@ logical function shr_dmodel_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpic
    type(mct_aVect) :: avG2     ! global av
    integer(IN) :: lmethod      ! local method
    logical     :: maskmethod, maskpoint ! masking on method
- 
+
    !--- formats ---
    character(*),parameter :: subName = '(shr_dmodel_gGridCompare) '
-   character(*),parameter :: F01     = "('(shr_dmodel_gGridCompare) ',4a)" 
+   character(*),parameter :: F01     = "('(shr_dmodel_gGridCompare) ',4a)"
 
 !-------------------------------------------------------------------------------
 !
@@ -949,7 +949,7 @@ logical function shr_dmodel_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpic
 
    if (my_task == master_task) then
 
-      compare = .true. 
+      compare = .true.
       gsize = mct_aVect_lsize(avG1)
       if (gsize /= mct_aVect_lsize(avG2)) then
          compare = .false.
@@ -957,7 +957,7 @@ logical function shr_dmodel_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpic
 
       if (.not. compare ) then
          !--- already failed the comparison test, check no futher ---
-      else 
+      else
          nlon1 = mct_aVect_indexRA(avG1,'lon')
          nlat1 = mct_aVect_indexRA(avG1,'lat')
          nlon2 = mct_aVect_indexRA(avG2,'lon')
@@ -1465,7 +1465,7 @@ subroutine shr_dmodel_rearrGGrid( ggridi, ggrido, gsmap, rearr, mpicom )
 
   !----- arguments -----
   type(mct_ggrid), intent(in)    :: ggridi
-  type(mct_ggrid), intent(inout) :: ggrido  
+  type(mct_ggrid), intent(inout) :: ggrido
   type(mct_gsmap), intent(in)    :: gsmap
   type(mct_rearr), intent(in)    :: rearr
   integer(IN)    , intent(in)    :: mpicom
@@ -1500,14 +1500,14 @@ subroutine shr_dmodel_rearrGGrid( ggridi, ggrido, gsmap, rearr, mpicom )
 
   allocate(data(lsize))
 
-  data(:) = -9999.0_R8 
-  call mct_gGrid_importRAttr(ggrido,"lat"  ,data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"lon"  ,data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"area" ,data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"aream",data,lsize) 
-  data(:) = 0.0_R8     
-  call mct_gGrid_importRAttr(ggrido,"mask",data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"frac",data,lsize) 
+  data(:) = -9999.0_R8
+  call mct_gGrid_importRAttr(ggrido,"lat"  ,data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"lon"  ,data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"area" ,data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"aream",data,lsize)
+  data(:) = 0.0_R8
+  call mct_gGrid_importRAttr(ggrido,"mask",data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"frac",data,lsize)
 
   deallocate(data)
 
@@ -1529,7 +1529,7 @@ subroutine shr_dmodel_translateAV( avi, avo, avifld, avofld, rearr )
   type(mct_rearr), intent(in),optional :: rearr     ! rearranger for diff decomp
 
   !----- local -----
-  integer(IN)      :: n,k,ka,kb,kc,cnt  ! indices  
+  integer(IN)      :: n,k,ka,kb,kc,cnt  ! indices
   integer(IN)      :: lsize      ! lsize
   integer(IN)      :: gsize      ! gsize
   integer(IN)      :: nflds      ! number of fields in avi
@@ -1605,7 +1605,7 @@ end subroutine shr_dmodel_translateAV
 
 !===============================================================================
 
-subroutine shr_dmodel_translate_list( avi, avo, avifld, avofld, ilist, olist, cnt) 
+subroutine shr_dmodel_translate_list( avi, avo, avifld, avofld, ilist, olist, cnt)
 
   implicit none
 
@@ -1616,11 +1616,11 @@ subroutine shr_dmodel_translate_list( avi, avo, avifld, avofld, ilist, olist, cn
   character(len=*),intent(in)    :: avofld(:) ! output field names for translation
   character(CL)   ,intent(out)   :: ilist     ! input list for translation
   character(CL)   ,intent(out)   :: olist     ! output list for translation
-  integer(IN)     ,intent(out)   :: cnt       ! indices  
+  integer(IN)     ,intent(out)   :: cnt       ! indices
 
 
   !----- local -----
-  integer(IN)      :: n,k,ka,kb,kc ! indices  
+  integer(IN)      :: n,k,ka,kb,kc ! indices
   integer(IN)      :: lsize        ! lsize
   integer(IN)      :: nflds        ! number of fields in avi
   character(CL)    :: cfld         ! character field name
@@ -1695,7 +1695,7 @@ subroutine shr_dmodel_translateAV_list( avi, avo, ilist, olist, rearr )
   lsize = mct_avect_lsize(avi)
   call mct_avect_init(avtri,rlist=olist,lsize=lsize)
   call mct_avect_Copy(avi,avtri,rList=ilist,TrList=olist)
-  
+
   if (present(rearr)) then
      lsize = mct_avect_lsize(avo)
      call mct_avect_init(avtro,rlist=olist,lsize=lsize)
@@ -1706,9 +1706,9 @@ subroutine shr_dmodel_translateAV_list( avi, avo, ilist, olist, rearr )
   else
      call mct_avect_Copy(avtri,avo)
   endif
-  
+
   call mct_aVect_clean(avtri)
-  
+
 end subroutine shr_dmodel_translateAV_list
 
 !===============================================================================

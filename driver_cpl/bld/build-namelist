@@ -3,16 +3,16 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the Driver-cpl 
+# This script builds the namelists for the Driver-cpl
 #
 # build-namelist uses a config_cache.xml file that current contains the ocean grid information.
 # build-namelist reads this file to obtain information it needs to provide
-# default values that are consistent with the driver/coupler library.  
+# default values that are consistent with the driver/coupler library.
 #
 # The simplest use of build-namelist is to execute it from the build directory where configure
 # was run.  By default it will use the config_cache.xml file that was written by configure to
-# determine the build time properties of the executable, and will write the files that contain 
-# the output namelists in that same directory.  
+# determine the build time properties of the executable, and will write the files that contain
+# the output namelists in that same directory.
 #
 #
 # Date        Contributor      Modification
@@ -32,9 +32,6 @@ SYNOPSIS
      build-namelist [options]
 OPTIONS
      -infile "filepath"    Specify a file containing namelists to read values from.
-     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying 
-                           a string containing FORTRAN namelist syntax, e.g.,
-                              -namelist "&drv_nml dt=1800 /"
      -help [or -h]         Print usage to STDOUT.
      -silent               Turn on silent mode
      -verbose              Turn on verbose echoing of informational messages.
@@ -44,15 +41,13 @@ OPTIONS
      -rof_grid             ROF_GRID variable
      -wav_grid             WAV_GRID variable
      -atm_grid             ATM_GRID variable
-     -lnd_grid             LND_GRID variable 
+     -lnd_grid             LND_GRID variable
      -ocn_grid             OCN_GRID variable
-     
+     -pio_version          PIO_VERSION (1 or 2)
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
-      1. namelist values set by specific command-line options, i.e. (none right now)
-      2. values set on the command-line using the -namelist option,
-      3. values read from the file specified by -infile,
-      4. values from the namelist defaults file - or values specifically set in build-namelist 
+      1. values read from the file specified by -infile,
+      2. values from the namelist defaults file 
 EOF
 }
 
@@ -67,7 +62,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -86,22 +81,23 @@ my %opts = ( help        => 0,
 	     wav_grid    => 0,
 	     atm_grid    => 0,
 	     lnd_grid    => 0,
-	     ocn_grid    => 0);
+	     ocn_grid    => 0,
+             pio_version => 1);
 
 GetOptions(
     "h|help"        => \$opts{'help'},
     "infile=s"      => \$opts{'infile'},
-    "namelist=s"    => \$opts{'namelist'},
     "s|silent"      => \$opts{'silent'},
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
     "cimeroot=s"    => \$opts{'cimeroot'},
-    "grid=s"        => \$opts{'grid'},	   
+    "grid=s"        => \$opts{'grid'},
     "rof_grid=s"    => \$opts{'rof_grid'},
     "wav_grid=s"    => \$opts{'wav_grid'},
     "atm_grid=s"    => \$opts{'atm_grid'},
     "lnd_grid=s"    => \$opts{'lnd_grid'},
     "ocn_grid=s"    => \$opts{'ocn_grid'},
+    "pio_version=i" => \$opts{pio_version},
 )  or usage();
 
 # Give usage message.
@@ -122,14 +118,14 @@ if ($opts{'silent'})  { $print = 0; }
 if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
 
-my $CASEROOT    = $opts{'caseroot'}; 
-my $CIMEROOT    = $opts{'cimeroot'};       
-my $GRID        = $opts{'grid'}; 
-my $ROF_GRID    = $opts{'rof_grid'}; 
-my $WAV_GRID    = $opts{'wav_grid'}; 
-my $ATM_GRID    = $opts{'atm_grid'}; 
-my $LND_GRID    = $opts{'lnd_grid'}; 
-my $OCN_GRID    = $opts{'ocn_grid'}; 
+my $CASEROOT    = $opts{'caseroot'};
+my $CIMEROOT    = $opts{'cimeroot'};
+my $GRID        = $opts{'grid'};
+my $ROF_GRID    = $opts{'rof_grid'};
+my $WAV_GRID    = $opts{'wav_grid'};
+my $ATM_GRID    = $opts{'atm_grid'};
+my $LND_GRID    = $opts{'lnd_grid'};
+my $OCN_GRID    = $opts{'ocn_grid'};
 
 if ($print>=2) { print "Setting DRV configuration script directory to $cfgdir$eol"; }
 
@@ -160,12 +156,12 @@ if ($print>=2) { print "Wrote file $config_cache $eol"; }
 (-f "$CASEROOT/Buildconf/cplconf/config_cache.xml")  or  die <<"EOF";
 ** $ProgName - Cannot find configuration cache file: config_cache.xml\" **
 EOF
-    
+
 #-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules, definition, and defaults files.
 # Look for them under the directory that contains the configure script.
-    
-# The root directory for the perl5 required utilities 
+
+# The root directory for the perl5 required utilities
 my $perl5lib_dir = "${CIMEROOT}/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
@@ -232,7 +228,7 @@ require Build::NamelistDefaults;
 require Build::Namelist;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the DRV config_cache.xml file-  created by 
+# Create a configuration object from the DRV config_cache.xml file-  created by
 # pop2.cpl7.template in $CASEROOT/Buildconf/cplconf
 my $cfg = Build::Config->new("$CASEROOT/Buildconf/cplconf/config_cache.xml");
 
@@ -256,25 +252,6 @@ my $nl = Build::Namelist->new();
 # Process the user input in order of precedence.  At each point we'll only add new
 # values to the namelist and not overwrite previously specified specified values which
 # have higher precedence.
-
-# Process the commandline args that provide specific namelist values.
-
-# Process the -namelist arg.
-if (defined $opts{'namelist'}) {
-    # Parse commandline namelist
-    my $nl_arg = Build::Namelist->new($opts{'namelist'});
-
-    # Validate input namelist -- trap exceptions
-    my $nl_arg_valid;
-    eval { $nl_arg_valid = $definition->validate($nl_arg); };
-    if ($@) {
-	die "$ProgName - ERROR: Invalid namelist variable in commandline arg '-namelist'.\n $@";
-    }
-
-    # Merge input values into namelist.  Previously specified values have higher precedence
-    # and are not overwritten.
-    $nl->merge_nl($nl_arg_valid);
-}
 
 # Process the -infile arg.
 if (defined $opts{'infile'}) {
@@ -348,7 +325,6 @@ foreach my $fldsin ( @fldsinfiles ) {
    }
 }
 
-
 #-----------------------------------------------------------------------------------------------
 # Determine drv namelist 
 #-----------------------------------------------------------------------------------------------
@@ -362,6 +338,7 @@ my $flds_co2a     = ".false.";
 my $flds_co2b     = ".false.";
 my $flds_co2c     = ".false.";
 my $flds_co2_dmsa = ".false.";
+my $flds_bgc      = ".false.";
 if ($CCSM_BGC eq 'CO2A') {
     $flds_co2a = ".true.";
 } elsif ($CCSM_BGC eq 'CO2B') {
@@ -384,10 +361,11 @@ add_default($nl, 'flds_co2a',    'val'=>"$flds_co2a");
 add_default($nl, 'flds_co2b',    'val'=>"$flds_co2b");
 add_default($nl, 'flds_co2c',    'val'=>"$flds_co2c");
 add_default($nl, 'flds_co2_dmsa','val'=>"$flds_co2_dmsa");
+add_default($nl, 'flds_bgc',     'val'=>"$flds_bgc");
 add_default($nl, 'glc_nec',      'val'=>"$glc_nec");
 add_default($nl, 'ice_ncat',     'val'=>"$ice_ncat", 'xml'=>'ICE_NCAT');
 add_default($nl, 'seq_flds_i2o_per_cat', 'val'=>"$seq_flds_i2o_per_cat", 'xml'=>'CPL_I2O_PER_CAT');
-    
+
 #############################################
 # namelist group: seq_cplflds_userspec      #
 #############################################
@@ -398,7 +376,7 @@ add_default($nl, 'cplflds_custom', 'val'=>'');
 # namelist group: seq_infodata_inparm       #
 #############################################
 
-my $PTS_MODE = "$xmlvars{'PTS_MODE'}"; 
+my $PTS_MODE = "$xmlvars{'PTS_MODE'}";
 
 my $start_type;
 my $RUN_TYPE     = "$xmlvars{'RUN_TYPE'}";
@@ -544,7 +522,7 @@ if ($NCPL_BASE_PERIOD eq 'hour') {
     }
 } elsif ($NCPL_BASE_PERIOD eq 'decade') {
     if ($CALENDAR eq 'NO_LEAP') {
-	$basedt = 3600 * 24 * 365 * 10; 
+	$basedt = 3600 * 24 * 365 * 10;
     } else {
 	die "$ProgName: ERROR invalid CALENDAR for NCPL_BASE_PERIOD $NCPL_BASE_PERIOD \n";
     }
@@ -553,15 +531,15 @@ if ($NCPL_BASE_PERIOD eq 'hour') {
 }
 if ($basedt < 0) {
    die "$ProgName: ERROR basedt invalid overflow for NCPL_BASE_PERIOD $NCPL_BASE_PERIOD \n";
-} 
+}
 
 my $ATM_NCPL = "$xmlvars{'ATM_NCPL'}";
 my $LND_NCPL = "$xmlvars{'LND_NCPL'}";
 my $OCN_NCPL = "$xmlvars{'OCN_NCPL'}";
 my $ICE_NCPL = "$xmlvars{'ICE_NCPL'}";
 my $GLC_NCPL = "$xmlvars{'GLC_NCPL'}";
-my $ROF_NCPL = "$xmlvars{'ROF_NCPL'}"; 
-my $WAV_NCPL = "$xmlvars{'WAV_NCPL'}"; 
+my $ROF_NCPL = "$xmlvars{'ROF_NCPL'}";
+my $WAV_NCPL = "$xmlvars{'WAV_NCPL'}";
 
 my $atm_cpl_dt = $basedt / $ATM_NCPL;
 my $lnd_cpl_dt = $basedt / $LND_NCPL;
@@ -620,7 +598,42 @@ add_default($nl, 'barrier_n');
 add_default($nl, 'barrier_ymd');
 
 add_default($nl, 'tprof_option');
-add_default($nl, 'tprof_n');  
+add_default($nl, 'tprof_n');
+
+# This would be better handled inside the alarm logic in the driver routines.
+# Here supporting only nday(s), nmonth(s), and nyear(s).
+my $tprofmult = 1;
+my $tprofoption = 'never';
+my $STOP_OPTION = "$xmlvars{'STOP_OPTION'}";
+if ($STOP_OPTION =~ m/nyear/) {
+    $tprofoption = 'ndays';
+    $tprofmult = 365;
+}
+elsif ($STOP_OPTION =~ m/nmonth/){
+    $tprofoption = 'ndays';
+    $tprofmult = 30;
+}
+elsif ($STOP_OPTION =~ m/nday/) {
+    $tprofoption = 'ndays';
+}
+
+my $tprofn;
+my $STOP_DATE = "$xmlvars{'STOP_DATE'}";
+my $TPROF_TOTAL = "$xmlvars{'TPROF_TOTAL'}";
+if (($TPROF_TOTAL > 0) && ($STOP_DATE < 0) && ($tprofoption =~ m/ndays/)) {
+    my $STOP_N = "$xmlvars{'STOP_N'}";
+    my $stopn = $tprofmult * $STOP_N;
+    $tprofn = int($stopn / $TPROF_TOTAL);
+    if ($tprofn < 1){
+        $tprofn = 1;
+    }
+    add_default($nl, 'tprof_option', 'val'=>"$tprofoption");
+    add_default($nl, 'tprof_n',      'val'=>"$tprofn");
+} else {
+    add_default($nl, 'tprof_option');
+    add_default($nl, 'tprof_n');
+}
+
 add_default($nl, 'tprof_ymd');
 add_default($nl, 'max_cplstep_time');
 
@@ -685,7 +698,7 @@ add_default($nl, 'cpl_pestride', 'val'=>"$xmlvars{'PSTRID_CPL'}", 'xml'=>'PSTRID
 
 #############################################
 # namelist group: prof_inparm               #
-#   in utils/timing/perf_mod.F90   
+#   in utils/timing/perf_mod.F90
 #############################################
 
 my $timer_level = $xmlvars{'TIMER_LEVEL'};
@@ -697,6 +710,13 @@ if ( $timer_level <= 0) {
     add_default($nl, 'profile_depth_limit', 'TIMER_LEVEL'=>"pos");
 }
 
+my $timer_detail = $xmlvars{'TIMER_DETAIL'};
+if ( $timer_detail <= 0) {
+    add_default($nl, 'profile_detail_limit', 'TIMER_DETAIL'=>"neg");
+} elsif ($timer_level >= 1 ) {
+    add_default($nl, 'profile_detail_limit', 'TIMER_DETAIL'=>"pos");
+}
+
 add_default($nl, 'profile_papi_enable', 'PROFILE_PAPI_ENABLE'=>"$xmlvars{'PROFILE_PAPI_ENABLE'}");
 
 add_default($nl, 'profile_timer', 'MPILIB'=>"$xmlvars{'MPILIB'}", 'OS'=>"$xmlvars{'OS'}",'MACH'=>"$xmlvars{'MACH'}");
@@ -704,7 +724,18 @@ add_default($nl, 'profile_global_stats');
 add_default($nl, 'profile_single_file');
 add_default($nl, 'profile_detail_limit');
 add_default($nl, 'profile_barrier');
+add_default($nl, 'profile_outpe_num');
+add_default($nl, 'profile_ovhd_measurement');
 
+#############################################
+# namelist group: papi_inparm               #
+#   in utils/timing/perf_mod.F90            #
+#############################################
+
+add_default($nl, 'papi_ctr1_str');
+add_default($nl, 'papi_ctr2_str');
+add_default($nl, 'papi_ctr3_str');
+add_default($nl, 'papi_ctr4_str');
 
 #############################################
 # namelist group: pio_default_inparm        #
@@ -719,14 +750,57 @@ add_default($nl, 'pio_typename');
 add_default($nl, 'pio_debug_level');
 add_default($nl, 'pio_blocksize');
 add_default($nl, 'pio_buffer_size_limit');
-
+if($opts{pio_version} == 1){
+    add_default($nl, 'pio_rearr_comm_type', 'PIO_REARR_COMM_TYPE'=>"$xmlvars{'PIO_REARR_COMM_TYPE'}");
+    add_default($nl, 'pio_rearr_comm_fcd', 'PIO_REARR_COMM_FCD'=>"$xmlvars{'PIO_REARR_COMM_FCD'}");
+    add_default($nl, 'pio_rearr_comm_max_pend_req', 'PIO_REARR_COMM_MAX_PEND_REQ'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ'}");
+    add_default($nl, 'pio_rearr_comm_enable_hs', 'PIO_REARR_COMM_ENABLE_HS'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS'}");
+    add_default($nl, 'pio_rearr_comm_enable_isend', 'PIO_REARR_COMM_ENABLE_ISEND'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND'}");
+}
 # Note: pio_async_interface=.true. is not yet supported
 # If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99
 # the component variable will be set using the pio_* value.
 
+#-----------------------------------------------------------------------------------------------
+# (1) Write output namelist file (drv_in) and input dataset list (drv.input_data_list)
+#-----------------------------------------------------------------------------------------------
+
+# Write out drv_in namelist groups
+my @groups = qw(seq_cplflds_inparm
+		seq_cplflds_userspec
+		seq_infodata_inparm
+		seq_timemgr_inparm
+ 		ccsm_pes
+		prof_inparm
+		papi_inparm
+                pio_default_inparm);
+
+my $outfile = "./drv_in";
+$nl->write($outfile, 'groups'=>\@groups);
+if ($print>=2) { print "Writing driver namelist to $outfile $eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# (2) Write out seq_map.rc file
+#-----------------------------------------------------------------------------------------------
+
+my $fh = new IO::File;
+$fh->open(">seq_maps.rc") or die "** can't open file: seq_maps.rc\n";
+print $fh <<"EOF";
+##################################################################
+# This file is read during the map_model2model_init calls.
 #
+# For maptype:  X = Rearrange the input so that the output
+#                   is on the correct processor.
+#               Y = Rearrange the output and sum partial outputs
+#                   if necessary
 #
-#
+# NOTE:  For bfb on different processor counts, set all maptypes to "X".
+##################################################################
+EOF
+$fh->close();
+
+my @mapgroup = qw(seq_maps);
+
 add_default($nl, 'atm2ocn_fmapname');
 add_default($nl, 'atm2ocn_smapname');
 add_default($nl, 'atm2ocn_vmapname');
@@ -854,7 +928,7 @@ $fh->close();
 
 my @mapgroup = qw(seq_maps);
 $nl->write_rc('./seq_maps.rc', 'groups'=>\@mapgroup, 'append'=>"1");
-if ($print>=2) { print "Writing map namelist to seq_maps.rc $eol"; }	
+if ($print>=2) { print "Writing map namelist to seq_maps.rc $eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # (3) Write input dataset list.
@@ -872,7 +946,7 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
     my $moddiri = "$xmlvars{'EXEROOT'}/${model}";
     my $moddiro = "$xmlvars{'RUNDIR'}";
     my $logfile;
-    
+
     my $inst_count;
     if ($model eq 'cpl') {$inst_count = 1;}
     if ($model eq 'atm') {$inst_count = "$xmlvars{'NINST_ATM'}";}
@@ -969,7 +1043,7 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'GLC_PIO_REARRANGER'}");
 	}
 	$nlio->write($modeliofile, 'groups'=>\@iogroup);
-	if ($print>=2) { print "Writing io namelist to $modeliofile $eol"; }	
+	if ($print>=2) { print "Writing io namelist to $modeliofile $eol"; }
 	$inst_index = $inst_index + 1;
     }
 }
@@ -1036,7 +1110,7 @@ sub add_default {
 	    } elsif (defined $opts{'der'}) {
 		die "$ProgName - ERROR: $var is derived - cannot be changed in user_nl_cpl \n";
 	    }
-	}  	    
+	}
 	return;
     }
 
@@ -1155,7 +1229,7 @@ sub check_input_files {
 
                 if ($pathname =~ /idmap$/) {
                     # do nothing
-                }  
+                }
 		elsif ($input_pathname_type eq 'abs') {
                     if ($inputdata_rootdir) {
                         print OUTFILE "$var = $pathname\n";

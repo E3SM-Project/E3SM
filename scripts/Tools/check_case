@@ -1,65 +1,71 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use File::Basename;
-use IO::File;
-use IO::Handle;
-use XML::LibXML;
-sub usage {
-    die <<'EOF';
+"""
+check_case verifies that the case is set up correctly
+"""
 
-SYNOPSIS 
+from standard_script_setup import *
 
-  check_case [options]
+from CIME.utils import expect
+from CIME.case  import Case
+from CIME.check_lockedfiles import check_lockedfiles
+from CIME.preview_namelists import preview_namelists
 
-  checks that case is set up correctly
+import argparse, doctest
 
-OPTIONS
+logger = logging.getLogger(__name__)
 
-  -help [or -h]  Print usage to STDOUT (optional).
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
 
-EOF
-} 
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
 
-my %opts = (loglevel=>"INFO" );
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
 
-GetOptions(
-    "loglevel=s" => \$opts{loglevel},
-    "h|help"  => \$opts{'help'},
-    )  or usage();
+description=description,
 
-# Give usage message.
-usage() if $opts{'help'};
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
-my $cimeroot = $nodes[0]->getAttribute('value');
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-unshift @INC, "$cimeroot/utils/perl5lib";
-require Log::Log4perl;
+    CIME.utils.setup_standard_logging_options(parser)
 
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
-my $logger = Log::Log4perl::get_logger();
+    args = parser.parse_args(args[1:])
 
+    CIME.utils.handle_standard_logging_options(args)
 
-my $sysmod = "./Tools/check_lockedfiles";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
+###############################################################################
+def _main_func(description):
+###############################################################################
 
-my $CASE           = `./xmlquery CASE           -value`;
-my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-my $sysmod = "./preview_namelists -loglevel $opts{loglevel}";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
+    parse_command_line(sys.argv, description)
 
-if ($BUILD_COMPLETE ne "TRUE") {
-    $logger->logdie("BUILD_COMPLETE is not TRUE \n
-    Please rebuild the model interactively via calling 
-      ./${CASE}.build" );
-}
+    check_lockedfiles()
 
-$logger->info( "check_case OK ");
+    with Case(read_only=False) as case:
+        preview_namelists(case)
+        build_complete = case.get_value("BUILD_COMPLETE")
+
+    if not build_complete:
+        expect(False,
+               "Please rebuild the model interactively by calling case.build")
+
+    logger.info( "check_case OK ")
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func(__doc__)
 

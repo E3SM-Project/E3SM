@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 
@@ -77,7 +77,7 @@ in the CASEROOT directory. A summary follows:
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -102,10 +102,10 @@ in the CASEROOT directory. A summary follows:
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -138,15 +138,15 @@ while ( my $e = shift @e ) {
 	my $text = $child->get_text() ;
 	if ($name =~ m/COMPILERS/) {
 	    $compilers = $text;
-	} 
+	}
 	if ($name =~ m/MPILIBS/) {
 	    $mpilibs = $text;
-	} 
+	}
 	if ($name =~ m/OS/) {
 	    $os = $text;
-	} 
+	}
 	$doc = $doc . " $name: $text \n";
-    }	
+    }
     print_row($var, $doc, $os, $compilers, $mpilibs);
 }
 print_end_table();

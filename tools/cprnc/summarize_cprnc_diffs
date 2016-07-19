@@ -65,7 +65,7 @@ if ($opts{'narrow'}) {
 else {
    $widths_hash = max_widths($summary_hash);
 }
-   
+
 
 print_results_by_test("${outbase}.by_test", $summary_hash, $widths_hash);
 print_results_by_varname("${outbase}.by_varname", $summary_hash, $widths_hash);
@@ -139,7 +139,7 @@ sub process_cprnc_output {
          $num_files++;
 
          open IN, "<", $cprnc_file or die "ERROR opening ${cprnc_file}";
-         
+
          while (my $line = <IN>) {
             chomp $line;
 
@@ -173,7 +173,7 @@ sub process_line {
    my $rms;
    my $ignore;
    my $rms_normalized;
-   
+
    if ($line =~ /^ *RMS /) {
       ($diff_type, $varname, $rms, $ignore, $rms_normalized) = split " ", $line;
    } elsif ($line =~ /^ *FILLDIFF /) {
@@ -269,11 +269,11 @@ sub print_results_by_test {
    my $last_filename;
 
    my $separator_width = sum(values %$widths) + 30;
-   
+
    for my $key (@sorted_keys) {
 
       # Print a separator line between different files
-      if ($summary_hash->{$key}{'Dir'}      ne $last_dir || 
+      if ($summary_hash->{$key}{'Dir'}      ne $last_dir ||
           $summary_hash->{$key}{'Filename'} ne $last_filename) {
          if ($last_dir && $last_filename) {
             print OUT "=" x $separator_width . "\n";
@@ -307,7 +307,7 @@ sub print_results_by_varname {
       keys %$summary_hash;
 
    my $last_variable;
-   
+
    my $separator_width = sum(values %$widths) + 30;
 
    for my $key (@sorted_keys) {
@@ -350,7 +350,7 @@ sub print_results_by_rms {
       my $line = format_line($summary_hash->{$key}, $widths);
 
       print OUT "$line\n";
-   } 
+   }
 
    close OUT;
 }
@@ -492,20 +492,20 @@ sub format_line {
 
 # This should give:
 
-# $ cat testout.by_rms 
-# test_dir2                                : file_d                                   : var100                                   : RMS 200             
-# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42              
-# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14            
+# $ cat testout.by_rms
+# test_dir2                                : file_d                                   : var100                                   : RMS 200
+# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42
+# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14
 # test_dir2                                : file_c                                   : var42                                    : FILLDIFF
 # test_dir2                                : file_c                                   : var43                                    : DIMSIZEDIFF
 # $ cat testout.by_test
-# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42              
-# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14            
+# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42
+# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14
 # ======================================================================================================================================================
 # test_dir2                                : file_c                                   : var42                                    : FILLDIFF
 # test_dir2                                : file_c                                   : var43                                    : DIMSIZEDIFF
 # ======================================================================================================================================================
-# test_dir2                                : file_d                                   : var100                                   : RMS 200             
+# test_dir2                                : file_d                                   : var100                                   : RMS 200
 
 
 

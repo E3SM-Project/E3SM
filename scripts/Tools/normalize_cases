@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+
+"""
+Remove uninteresting diffs between cases by changing the
+first to be more like the second.
+
+This is for debugging purposes and meant to assist the user
+when they want to run case_diff.
+"""
+
+from standard_script_setup import *
+from CIME.utils import expect, run_cmd_no_fail
+
+import argparse, sys, os, doctest, glob
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s case1 case2
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    > %s case1 case2
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("case1", help="First case. This one will be changed")
+
+    parser.add_argument("case2", help="Second case. This one will not be changed")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.case1, args.case2
+
+###############################################################################
+def normalize_cases(case1, case2):
+###############################################################################
+    # gunzip all logs
+    for case_dir in [case1, case2]:
+        for log_dir in ["bld", "run"]:
+            gzips = glob.glob(os.path.join(case_dir, log_dir, "*.gz"))
+            if (gzips):
+                run_cmd_no_fail("gunzip -f %s" % " ".join(gzips))
+
+    # Change case1 to be as if it had same test-id as case2
+    test_id1 = run_cmd_no_fail("./xmlquery -value TEST_TESTID", from_dir=case1)
+    test_id2 = run_cmd_no_fail("./xmlquery -value TEST_TESTID", from_dir=case2)
+    run_cmd_no_fail("for item in $(find -type f); do  sed -i 's/%s/%s/g' $item; done" % (test_id1, test_id2),
+            from_dir=case1)
+
+    # Change case1 to look as if it is was built/run at exact same time as case2
+    for log_dir in ["bld", "run"]:
+        case1_lids = set()
+        for logfile in glob.glob("%s/%s/*.bldlog.*" % (case1, log_dir)):
+            case1_lids.add(logfile.split(".")[-1])
+
+        case2_lids = set()
+        for logfile in glob.glob("%s/%s/*.bldlog.*" % (case2, log_dir)):
+            case2_lids.add(logfile.split(".")[-1])
+
+        case1_lids = list(sorted(case1_lids))
+        case2_lids = list(sorted(case2_lids))
+
+        for case1_lid, case2_lid in zip(case1_lids, case2_lids):
+            run_cmd_no_fail("for item in $(find -type f); do  sed -i 's/%s/%s/g' $item; done" % (case1_lid, case2_lid),
+                    from_dir=case1)
+
+        for case1_lid, case2_lid in zip(case1_lids, case2_lids):
+            files_needing_rename = run_cmd_no_fail('find -depth -name "*.%s"' % case1_lid, from_dir=case1).splitlines()
+            for file_needing_rename in files_needing_rename:
+                expect(file_needing_rename.endswith(case1_lid), "broken")
+                new_name = file_needing_rename.rstrip(case1_lid) + case2_lid
+                os.rename(os.path.join(case1, file_needing_rename), os.path.join(case1, new_name))
+
+    # Normalize CIMEROOT
+    case1_root = run_cmd_no_fail("./xmlquery -value CIMEROOT", from_dir=case1)
+    case2_root = run_cmd_no_fail("./xmlquery -value CIMEROOT", from_dir=case2)
+    if (case1_root != case2_root):
+        run_cmd_no_fail("for item in $(find -type f); do  sed -i 's:%s:%s:g' $item; done" % (case1_root, case2_root),
+                from_dir=case1)
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    case1, case2 = parse_command_line(sys.argv, description)
+
+    normalize_cases(case1, case2)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

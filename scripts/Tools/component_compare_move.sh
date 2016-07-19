@@ -45,7 +45,7 @@ testcase=''
 rundir=''
 suffix=''
 add_iop=''
- 
+
 #----------------------------------------------------------------------
 # Process command-line arguments
 #----------------------------------------------------------------------
@@ -81,7 +81,7 @@ while [ $# -gt 0 ]; do
 done
 
 #----------------------------------------------------------------------
-# Exit if required command-line arguments weren't provided 
+# Exit if required command-line arguments weren't provided
 #----------------------------------------------------------------------
 error=0  # no errors yet
 if [ -z "$rundir" ]; then
@@ -114,7 +114,7 @@ fi
 cd $rundir
 models=(cam cice clm2 pop cism cpl rtm mosart)
 for model in ${models[*]}; do
-    
+
     if [ "$model" = "cism" ]; then
 	extensions=(h)
     elif [ "$model" = "clm2" ]; then
@@ -138,7 +138,7 @@ for model in ${models[*]}; do
     #------------------------------------------------------------------
 
     for extension in ${extensions[*]}; do
-    
+
         #--------------------------------------------------------------
         # Find last component hist file in this run directory, and
         # determine corresponding name of the baseline file (used for
@@ -154,14 +154,14 @@ for model in ${models[*]}; do
 	else
 	    instances=(none _0001 _0002)
 	fi
-	for inst in ${instances[*]}; do 
+	for inst in ${instances[*]}; do
 	    if [ "$inst" = "none" ]; then
 		test_hist=`ls -1 ${testcase}.${model}.${extension}.*.nc 2>/dev/null | tail -1`
 	    else
 		test_hist=`ls -1 ${testcase}.${model}${inst}.${extension}.*.nc 2>/dev/null | tail -1`
 	    fi
 
-	    if [[ -f ${test_hist} ]]; then 
+	    if [[ -f ${test_hist} ]]; then
 		test_hist_suffix=${test_hist}.${suffix}
 		cd "$rundir";
 

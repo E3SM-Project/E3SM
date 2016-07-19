@@ -17,7 +17,7 @@
 # differs slightly. For example: In testcase_end, it is a FAIL for
 # baselineroot to not exist; here we allow that, and happily generate
 # that directory for you if it doesn't already exist.
-# 
+#
 # Exit status will generally be 0 (even for test failure), but will be
 # non-zero for incorrect usage.
 #
@@ -36,7 +36,7 @@
 # - test_hist=''
 #   - return status should be "GFAIL"
 #   - example: tst=`component_generate.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist cism.h.nc -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist ''`
-# 
+#
 # - success
 #   - return status should be "PASS"
 #   - example: tst=`component_generate.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist cism.h.nc -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029.cism.h.2046-01-01-00000.nc`
@@ -162,7 +162,7 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
-	    
+
 
 #----------------------------------------------------------------------
 # Exit if required command-line arguments weren't provided
@@ -201,7 +201,7 @@ if [ -z "$test_hist" ]; then
     status="GFAIL_NA"
     info="no history file in test case"
     print_result $status "$info"
-    exit 0
+    exit 1
 fi
 
 #----------------------------------------------------------------------
@@ -212,7 +212,7 @@ if [ $? -ne 0 ]; then
     status="GFAIL"
     info="error creating baseline directory"
     print_result $status "$info"
-    exit 0
+    exit 1
 fi
 chmod ug+w,a+rx $baseline_dir
 chmod ug+w,a+rx $baseline_dir/..
@@ -220,12 +220,12 @@ chmod ug+w,a+rx $baseline_dir/..
 #----------------------------------------------------------------------
 # Copy history file to baseline directory
 #----------------------------------------------------------------------
-cp $test_dir/$test_hist $baseline_dir/$baseline_hist
+cp -f $test_dir/$test_hist $baseline_dir/$baseline_hist
 if [ $? -ne 0 ]; then
     status="GFAIL"
     info="error copying history file to baseline directory"
     print_result $status "$info"
-    exit 0
+    exit 1
 fi
 chmod ug+w,a+r $baseline_dir/$baseline_hist
 

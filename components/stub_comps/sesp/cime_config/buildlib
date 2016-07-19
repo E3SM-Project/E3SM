@@ -1,34 +1,17 @@
-#! /usr/bin/env perl
-use strict;
+#!/usr/bin/env python
 
-if ($#ARGV == -1) {
-    die " ERROR sesp.buildexe: must specify a caseroot input argument";
-}
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+"""
+build stub model library
+"""
 
-my $model = "esp";
-my $comp  = "sesp";
+import sys, os
 
-my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
-my $MACH      = `./xmlquery MACH      -value`;
-my $OBJROOT   = `./xmlquery OBJROOT   -value`;
-my $LIBROOT   = `./xmlquery LIBROOT   -value`;
-my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
-my $GMAKE     = `./xmlquery GMAKE     -value`;
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-chdir "${OBJROOT}/${model}/obj";
+from standard_script_setup import *
+from CIME.buildlib import build_stub_lib
 
-open(file,">Filepath") or die "Could not open file Filepath to write";
-print file "${CASEROOT}/SourceMods/src.${comp}\n";
-print file "${CIMEROOT}/components/stub_comps/${comp}\n";
-print file "${CIMEROOT}/components/stub_comps/${comp}/cpl\n";
-close(file);
-
-my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=${model} COMPLIB=${LIBROOT}/lib${model}.a -f ${CASETOOLS}/Makefile MACFILE=${CASEROOT}/Macros.${MACH}";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-exit(0);
-
-
+build_stub_lib(sys.argv, 'esp')

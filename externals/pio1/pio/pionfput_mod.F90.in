@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "pionfput_mod.F90"
 !>
-!! @file 
+!! @file
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Write Routines for non-decomposed NetCDF data.
@@ -17,7 +17,7 @@ module pionfput_mod
 
   use pio_utils, only : check_netcdf
   use pio_msg_mod
-  use pio_support, only : Debug, DebugIO, piodie   
+  use pio_support, only : Debug, DebugIO, piodie
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
 #endif
@@ -45,10 +45,10 @@ module pionfput_mod
 !! @defgroup PIO_put_var PIO_put_var
 !! @brief Writes netcdf metadata to a file
 !! @details The put_var interface is provided as a simplified interface to
-!!  write variables to a netcdf format file.   
-!! @warning Although this is a collective call the variable is written from the 
+!!  write variables to a netcdf format file.
+!! @warning Although this is a collective call the variable is written from the
 !!  root IO task, no consistancy check is made with data passed on other tasks.
-!! 
+!!
 !<
   public :: put_var
   interface put_var
@@ -67,7 +67,7 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
-!! @param index : 
+!! @param index :
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
@@ -81,10 +81,10 @@ contains
     integer :: xlen, msg, mpierr, isize, itype
 
 #ifdef TIMING
-    call t_startf("pio_put_var1_text")
-#endif 
+    call t_startf("PIO:pio_put_var1_text")
+#endif
     ierr=PIO_NOERR
-    iotype = File%iotype 
+    iotype = File%iotype
     if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
 
     ios=>File%iosystem
@@ -118,14 +118,14 @@ contains
 !          count(:) = 0
 !       end if
 
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
 !#ifdef USE_INDEP_WRITE
           ierr = nfmpi_begin_indep_data(File%fh)
-          
+
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             print *,__FILE__,__LINE__,index,count,trim(ival)
+             print *,__PIO_FILE__,__LINE__,index,count,trim(ival)
              ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), &
                   int(count,kind=PIO_OFFSET), ival, int(count,kind=PIO_OFFSET), &
                   MPI_CHARACTER)
@@ -134,7 +134,7 @@ contains
              ierr = nfmpi_end_indep_data(File%fh)
           end if
 !#else
-!          print *,__FILE__,__LINE__,index,count,trim(ival)
+!          print *,__PIO_FILE__,__LINE__,index,count,trim(ival)
 !            ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
 !                  int(count,kind=PIO_OFFSET), ival)
 !#endif
@@ -151,7 +151,7 @@ contains
           if (Ios%io_rank == 0) then
              ierr = nf90_put_var(File%fh, varid, ival, start=index)
           end if
-#endif 
+#endif
        case default
           print *,__PIO_FILE__,__LINE__,iotype
           call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
@@ -161,8 +161,8 @@ contains
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_var1_text")
-#endif 
+    call t_stopf("PIO:pio_put_var1_text")
+#endif
   end function put_var1_text
 ! TYPE int,real,double
 !>
@@ -172,7 +172,7 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
-!! @param index : 
+!! @param index :
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
@@ -186,10 +186,10 @@ contains
     integer :: xlen, msg, mpierr, itype
 
 #ifdef TIMING
-    call t_startf("pio_put_var1_{TYPE}")
-#endif 
+    call t_startf("PIO:pio_put_var1_{TYPE}")
+#endif
     ierr=PIO_NOERR
-    iotype = File%iotype 
+    iotype = File%iotype
     if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
 
     ios=>File%iosystem
@@ -213,7 +213,7 @@ contains
 
     if(Ios%IOProc) then
 
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
           allocate(count(size(index)))
@@ -239,7 +239,7 @@ contains
 #endif
 #ifdef _NETCDF
 #ifdef _NETCDF4
-       case (pio_iotype_netcdf4p) 
+       case (pio_iotype_netcdf4p)
           ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
           ierr = nf90_put_var(File%fh, varid, ival, start=index)
 #endif
@@ -257,8 +257,8 @@ contains
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_var1_{TYPE}")
-#endif 
+    call t_stopf("PIO:pio_put_var1_{TYPE}")
+#endif
   end function put_var1_{TYPE}
 
 !>
@@ -268,7 +268,7 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
-!! @param start : 
+!! @param start :
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
@@ -304,14 +304,14 @@ contains
     integer :: dims({DIMS})
     integer :: start({DIMS}+1), count({DIMS}+1)
 #ifdef TIMING
-    call t_startf("pio_put_var_{DIMS}d_text")
-#endif 
+    call t_startf("PIO:pio_put_var_{DIMS}d_text")
+#endif
     ierr=PIO_NOERR
 
-    iotype = File%iotype 
+    iotype = File%iotype
     start = 1
     count = 0
-    is=0       
+    is=0
 
 
     ios=>File%iosystem
@@ -334,7 +334,7 @@ contains
     endif
 
     if(ios%async_interface ) then
-#if({DIMS}==0)       
+#if({DIMS}==0)
        call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
        call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
@@ -351,7 +351,7 @@ contains
           end do
 #endif
        end if
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
           if(ios%io_rank>0) count = 0
@@ -365,7 +365,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
+! function nf90_put_var_text before it calls nf_put_vars_text.
 !          if (Ios%io_rank == 0) then
 !             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 !          else
@@ -382,7 +382,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
+! function nf90_put_var_text before it calls nf_put_vars_text.
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
              ierr = nf90_put_var(File%fh, varid, ival)
@@ -398,8 +398,8 @@ contains
 
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
-    call t_stopf("pio_put_var_{DIMS}d_text")
-#endif 
+    call t_stopf("PIO:pio_put_var_{DIMS}d_text")
+#endif
   end function put_var_{DIMS}d_text
 
 ! DIMS 1,2,3,4,5
@@ -429,10 +429,10 @@ contains
 
     ierr=PIO_NOERR
 
-    iotype = File%iotype 
+    iotype = File%iotype
     start = 1
     count = 0
-    is=0       
+    is=0
 
 #ifdef _PNETCDF
     if(iotype == pio_iotype_pnetcdf) then
@@ -444,8 +444,8 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_startf("pio_put_var_{DIMS}d_{TYPE}")
-#endif 
+    call t_startf("PIO:pio_put_var_{DIMS}d_{TYPE}")
+#endif
 
     ios=>File%iosystem
     if(ios%async_interface .and. .not. ios%ioproc ) then
@@ -471,7 +471,7 @@ contains
              count(i+is) = size(ival,i)
           end do
        end if
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
           if(Ios%io_rank>0) count=0
@@ -496,8 +496,8 @@ contains
 
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
-    call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
-#endif 
+    call t_stopf("PIO:pio_put_var_{DIMS}d_{TYPE}")
+#endif
   end function put_var_{DIMS}d_{TYPE}
 
 ! TYPE int,real,double
@@ -523,14 +523,14 @@ contains
 
     ierr=PIO_NOERR
 
-    iotype = File%iotype 
+    iotype = File%iotype
     start = 1
     count = 1
-    is=0       
+    is=0
 
 #ifdef TIMING
-    call t_startf("pio_put_var_0d_{TYPE}")
-#endif 
+    call t_startf("PIO:pio_put_var_0d_{TYPE}")
+#endif
 
     ios=>File%iosystem
     if(ios%async_interface .and. .not. ios%ioproc ) then
@@ -547,7 +547,7 @@ contains
     end if
 
     if(Ios%IOProc) then
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
           if(Ios%io_rank>0) count=0
@@ -572,8 +572,8 @@ contains
 
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
-    call t_stopf("pio_put_var_0d_{TYPE}")
-#endif 
+    call t_stopf("PIO:pio_put_var_0d_{TYPE}")
+#endif
   end function put_var_0d_{TYPE}
 
 ! DIMS 0,1,2,3,4,5
@@ -623,11 +623,11 @@ contains
     type(iosystem_desc_t), pointer :: ios
     integer :: dims({DIMS}), xlen, itype, slen
 #ifdef TIMING
-    call t_startf("pio_put_vara_{DIMS}d_text")
-#endif 
+    call t_startf("PIO:pio_put_vara_{DIMS}d_text")
+#endif
     ndims=0
     ierr=0
-    iotype = File%iotype 
+    iotype = File%iotype
     ios=>File%iosystem
     xlen = len(ival)
     if(.not. ios%async_interface .or. .not. ios%ioproc ) then
@@ -657,24 +657,24 @@ contains
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
-    if(ios%async_interface ) then    
+    if(ios%async_interface ) then
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
 
 
 
-    
+
     if(Ios%IOProc) then
        allocate(pstart(ndims),pcount(ndims))
        if(Ios%io_rank==0) then
           pstart = start(1:ndims)
           pcount = count(1:ndims)
        else
-          pstart=1 ! avoids an unessasary pnetcdf error 
+          pstart=1 ! avoids an unessasary pnetcdf error
           pcount=0
        endif
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
           clen=count(1)
@@ -714,8 +714,8 @@ contains
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
-#endif 
+    call t_stopf("PIO:pio_put_vara_{DIMS}d_{TYPE}")
+#endif
   end function put_vara_{DIMS}d_text
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -744,10 +744,10 @@ contains
     type(iosystem_desc_t), pointer :: ios
     integer :: dims({DIMS}), xlen, itype, slen
 #ifdef TIMING
-    call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
-#endif 
+    call t_startf("PIO:pio_put_vara_{DIMS}d_{TYPE}")
+#endif
     ierr=0
-    iotype = File%iotype 
+    iotype = File%iotype
     ios=>File%iosystem
     xlen=1
     if(debug) print *,__PIO_FILE__,__LINE__,varid, iotype, start, count
@@ -774,15 +774,15 @@ contains
 #endif
     endif
 
-    if(ios%async_interface ) then    
+    if(ios%async_interface ) then
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,xlen*size(ival),{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
     end if
 
 
-    
+
     if(Ios%IOProc) then
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
           allocate(pstart(ndims),pcount(ndims))
@@ -790,7 +790,7 @@ contains
              pstart = start(1:ndims)
              pcount = count(1:ndims)
           else
-             pstart=1 ! avoids an unessasary pnetcdf error 
+             pstart=1 ! avoids an unessasary pnetcdf error
              pcount=0
           endif
 
@@ -834,8 +834,8 @@ contains
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
-#endif 
+    call t_stopf("PIO:pio_put_vara_{DIMS}d_{TYPE}")
+#endif
   end function put_vara_{DIMS}d_{TYPE}
 
 ! DIMS 1,2,3,4,5
@@ -846,8 +846,8 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
-!! @param start : 
-!! @param count : 
+!! @param start :
+!! @param count :
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<

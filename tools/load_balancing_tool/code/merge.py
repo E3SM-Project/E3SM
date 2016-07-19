@@ -4,7 +4,7 @@
 import sys
 
 fmod = open(sys.argv[1],"r")
-fdat = open(sys.argv[2],"r") 
+fdat = open(sys.argv[2],"r")
 frun = open(sys.argv[3],"r")
 
 print '<document>\n\

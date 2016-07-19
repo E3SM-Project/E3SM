@@ -33,9 +33,9 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_KARMAN  = 0.4_R8          ! Von Karman constant
    real(R8),parameter :: SHR_CONST_PSTD    = 101325.0_R8     ! standard pressure ~ pascals
    real(R8),parameter :: SHR_CONST_PDB     = 0.0112372_R8    ! ratio of 13C/12C in Pee Dee Belemnite (C isotope standard)
- 
+
    real(R8),parameter :: SHR_CONST_TKTRIP  = 273.16_R8       ! triple point of fresh water        ~ K
-   real(R8),parameter :: SHR_CONST_TKFRZ   = 273.15_R8       ! freezing T of fresh water          ~ K 
+   real(R8),parameter :: SHR_CONST_TKFRZ   = 273.15_R8       ! freezing T of fresh water          ~ K
    real(R8),parameter :: SHR_CONST_TKFRZSW = SHR_CONST_TKFRZ - 1.8_R8 ! freezing T of salt water  ~ K
    real(R8),parameter :: SHR_CONST_ZSRFLYR = 3.0_R8          ! ocn surf layer depth for diurnal SST cal ~ m
 

@@ -2,27 +2,27 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_ExchangeMaps - Exchange of Global Mapping Objects.
 !
 ! !DESCRIPTION:
-! This module contains routines that support the exchange of domain 
-! decomposition descriptors (DDDs) between two MCT components.  There is 
-! support for {\em handshaking} between the two components to determine 
-! the types of domain decomposition descriptors they employ, {\em loading} 
-! of data contained within domain decomposition descriptors, and {\em 
+! This module contains routines that support the exchange of domain
+! decomposition descriptors (DDDs) between two MCT components.  There is
+! support for {\em handshaking} between the two components to determine
+! the types of domain decomposition descriptors they employ, {\em loading}
+! of data contained within domain decomposition descriptors, and {\em
 ! map exchange}, resulting in the creation of a remote component's domain
-! decomposition descriptor for use by a local component.  These routines 
-! are largely used by MCT's {\tt Router} to create intercomponent 
-! communications scheduler, and normally should not be used by an MCT 
+! decomposition descriptor for use by a local component.  These routines
+! are largely used by MCT's {\tt Router} to create intercomponent
+! communications scheduler, and normally should not be used by an MCT
 ! user.
 !
-! Currently, the types of map exchange supported by the public routine 
+! Currently, the types of map exchange supported by the public routine
 ! {\tt ExchangeMap()} are summarized in the table below.  The first column
-! lists the type of DDD used locally on the component invoking 
-! {\tt ExchangeMap()} (i.e., the input DDD).  The second comlumn lists 
+! lists the type of DDD used locally on the component invoking
+! {\tt ExchangeMap()} (i.e., the input DDD).  The second comlumn lists
 ! the DDD type used on the remote component (i.e., the output DDD).
 !\begin{table}[htbp]
 !\begin{center}
@@ -38,7 +38,7 @@
 !\end{center}
 !\end{table}
 !
-! Currently, we do not support intercomponent map exchange where a 
+! Currently, we do not support intercomponent map exchange where a
 ! {\tt GlobalMap} is output.  The rationale for this is that any {\tt GlobalMap}
 ! may always be expressed as a {\tt GlobalSegMap}.
 !
@@ -63,9 +63,9 @@
       end interface
 
 ! !SEE ALSO:
-! The MCT module m_ConvertMaps for more information regarding the 
+! The MCT module m_ConvertMaps for more information regarding the
 ! relationship between the GlobalMap and GlobalSegMap types.
-! The MCT module m_Router to see where these services are used to 
+! The MCT module m_Router to see where these services are used to
 ! create intercomponent communications schedulers.
 !
 ! !REVISION HISTORY:
@@ -80,19 +80,19 @@
 !
   character(len=*),parameter :: myname='MCT::m_ExchangeMaps'
 
-! Map Handshaking Parameters:  Map handshaking occurs via 
-! exchange of an array of INTEGER flags. 
+! Map Handshaking Parameters:  Map handshaking occurs via
+! exchange of an array of INTEGER flags.
 
   ! Number of Handshaking Parameters; i.e.size of exhcanged parameters array
 
   integer, parameter :: NumHandshakePars = 4
 
-  ! ComponentIDIndex defines the storage location of the  flag 
+  ! ComponentIDIndex defines the storage location of the  flag
   ! signifying the component number in MCTWorld
 
   integer, parameter :: ComponentIDIndex = 1
 
-  ! MapTypeIndex defines the storage location in the handshake array 
+  ! MapTypeIndex defines the storage location in the handshake array
   ! of the type of map offered for exchange
 
   integer, parameter :: MapTypeIndex = 2
@@ -107,7 +107,7 @@
   integer, parameter :: GlobalSegMapFlag = 2
 
   ! GsizeIndex defines the location of the grid size (number of points)
-  ! for the map.  This size is 
+  ! for the map.  This size is
 
   integer, parameter :: GsizeIndex = 3
 
@@ -126,9 +126,9 @@
 ! !IROUTINE: MapHandshake_ - Exchange Map descriptors.
 !
 ! !DESCRIPTION:
-! This routine takes input Map descriptors stored in the {\tt INTEGER} 
+! This routine takes input Map descriptors stored in the {\tt INTEGER}
 ! array {\tt LocalMapPars}, the local communicator on which this map is
-! defined ({\tt LocalComm}), and the remote component ID 
+! defined ({\tt LocalComm}), and the remote component ID
 ! {\tt RemoteCompID}, and effects an exchange of map descriptors with
 ! the remote component, which are returned in the {\tt INTEGER} array
 ! {\tt RemoteMapPars}.
@@ -153,7 +153,7 @@
 
       implicit none
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer, intent(in)  :: LocalMapPars(NumHandshakePars)
       integer, intent(in)  :: LocalComm
@@ -231,11 +231,11 @@
 
       implicit none
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GlobalMap), intent(in)  :: GMap
 !
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer,         intent(out) :: MapPars(NumHandshakePars)
 
@@ -282,11 +282,11 @@
 
       implicit none
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GlobalSegMap), intent(in)  :: GSMap
 !
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer,            intent(out) :: MapPars(NumHandshakePars)
 
@@ -310,17 +310,17 @@
 ! !IROUTINE: ExGSMapGSMap_ - Trade of GlobalSegMap structures.
 !
 ! !DESCRIPTION:
-! This routine effects the exchange between two components of their 
+! This routine effects the exchange between two components of their
 ! data decomposition descriptors, each of which is a {\tt GlobalSegMap}.
-! The component invoking this routine provides its domain decomposition 
+! The component invoking this routine provides its domain decomposition
 ! in the form of the input {\tt GlobalSegMap} argument {\tt LocalGSMap}.
-! The component with which map exchange takes place is specified by the 
-! MCT integer component identification number defined by the input 
-! {\tt INTEGER} argument {\tt RemoteCompID}.  The 
+! The component with which map exchange takes place is specified by the
+! MCT integer component identification number defined by the input
+! {\tt INTEGER} argument {\tt RemoteCompID}.  The
 ! !INTERFACE:
 
  subroutine ExGSMapGSMap_(LocalGSMap, LocalComm, RemoteGSMap, &
-                          RemoteCompID, ierr) 
+                          RemoteCompID, ierr)
 
 !
 ! !USES:
@@ -336,13 +336,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GlobalSegMap), intent(in)  :: LocalGSMap   ! Local GlobalSegMap
       integer,            intent(in)  :: LocalComm    ! Local Communicator
       integer        ,    intent(in)  :: RemoteCompID ! Remote component id
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       type(GlobalSegMap), intent(out) :: RemoteGSMap ! Remote GlobalSegMap
       integer,            intent(out) :: ierr        ! Error Flag
@@ -384,7 +384,7 @@
   if(ierr /= 0) call MP_perr_die(myname_,'call MP_COMM_RANK()',ierr)
 
       ! If the root, exchange map handshake descriptors,
-      ! and information needed to initialize the remote map 
+      ! and information needed to initialize the remote map
       ! on the local communicator.
 
   if(myID == root) then
@@ -481,21 +481,21 @@
 
   endif ! if(myID == root)
 
-        ! Non-root processes call GlobalSegMap_init with start, 
-        ! length, and pe_loc, although these arguments are 
-        ! not used in the subroutine. Since these correspond to dummy 
-        ! shaped array arguments in GlobalSegMap_init, the Fortran 90 
-        ! standard dictates that the actual arguments must contain 
-        ! complete shape information. Therefore, these array arguments 
+        ! Non-root processes call GlobalSegMap_init with start,
+        ! length, and pe_loc, although these arguments are
+        ! not used in the subroutine. Since these correspond to dummy
+        ! shaped array arguments in GlobalSegMap_init, the Fortran 90
+        ! standard dictates that the actual arguments must contain
+        ! complete shape information. Therefore, these array arguments
         ! must be allocated on all processes.
 
   if(myID /= root) then
-     
+
       allocate(start(1), length(1), pe_loc(1), stat=ierr)
       if(ierr /= 0) call die(myname_,'non-root allocate(start...',ierr)
 
   endif
-  
+
 
       ! Initialize the Remote GlobalSegMap RemoteGSMap
 
@@ -514,7 +514,7 @@
       ! Deallocate allocated arrays on the root:
 
   if(myID == root) then
-     
+
      deallocate(SendBuf, RecvBuf, stat=ierr)
      if(ierr /= 0) then
 	call die(myname_,'deallocate(SendBuf...',ierr)
@@ -531,24 +531,24 @@
 ! !IROUTINE: ExGMapGSMap_ - Trade of GlobalMap for GlobalSegMap.
 !
 ! !DESCRIPTION:
-! This routine allows a component to report its domain decomposition 
-! using a {\tt GlobalMap} (the input argument {\tt LocalGMap}), and 
-! receive the domain decomposition of a remote component in the form 
-! of a {\tt GlobalSegMap} (the output argument {\tt RemoteGSMap}.  The 
-! component with which map exchange occurs is defined by its component 
-! ID number (the input {\tt INTEGER} argument {\tt RemoteCompID}). 
+! This routine allows a component to report its domain decomposition
+! using a {\tt GlobalMap} (the input argument {\tt LocalGMap}), and
+! receive the domain decomposition of a remote component in the form
+! of a {\tt GlobalSegMap} (the output argument {\tt RemoteGSMap}.  The
+! component with which map exchange occurs is defined by its component
+! ID number (the input {\tt INTEGER} argument {\tt RemoteCompID}).
 ! Currently, this operation is implemented as an exchange of maps between
-! the root nodes of each component's communicator, and then propagated 
+! the root nodes of each component's communicator, and then propagated
 ! across the local component's communicator.  This requires the user to
-! provide the local communicator (the input {\tt INTEGER} argument 
+! provide the local communicator (the input {\tt INTEGER} argument
 ! {\tt LocalComm}).  The success (failure) of this operation is reported
-! in the zero (nonzero) value of the output {\tt INTEGER} argument 
+! in the zero (nonzero) value of the output {\tt INTEGER} argument
 ! {\tt ierr}.
 !
 ! !INTERFACE:
 
  subroutine ExGMapGSMap_(LocalGMap, LocalComm, RemoteGSMap, &
-                         RemoteCompID, ierr) 
+                         RemoteCompID, ierr)
 
 !
 ! !USES:
@@ -567,14 +567,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GlobalMap),    intent(in)  :: LocalGMap    ! Local GlobalMap
       integer,            intent(in)  :: LocalComm    ! Local Communicator
       integer,            intent(in)  :: RemoteCompID ! Remote component id
 
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       type(GlobalSegMap), intent(out) :: RemoteGSMap ! Remote GlobalSegMap
       integer,            intent(out) :: ierr        ! Error Flag
@@ -595,7 +595,7 @@
        ! the remote component:
 
   call ExGSMapGSMap_(LocalGSMap, LocalComm, RemoteGSMap, &
-                     RemoteCompID, ierr) 
+                     RemoteCompID, ierr)
 
        ! Destroy LocalGSMap
 

@@ -62,7 +62,7 @@ real(R8) function datm_shr_getNextRadCDay( ymd, tod, stepno, dtime, iradsw, cale
    integer(IN), intent(IN)    :: stepno
    integer(IN), intent(IN)    :: dtime
    integer(IN), intent(IN)    :: iradsw
-   character(*),intent(in)    :: calendar  
+   character(*),intent(in)    :: calendar
 
 !EOP
 
@@ -77,7 +77,7 @@ real(R8) function datm_shr_getNextRadCDay( ymd, tod, stepno, dtime, iradsw, cale
 !
 !-------------------------------------------------------------------------------
 
-   liradsw = iradsw  
+   liradsw = iradsw
    if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
 
    call shr_cal_date2julian(ymd,tod,julday,calendar)
@@ -88,7 +88,7 @@ real(R8) function datm_shr_getNextRadCDay( ymd, tod, stepno, dtime, iradsw, cale
       else
          nextsw_cday = -1._r8
       end if
-   else 
+   else
       nextsw_cday = julday + dtime/SHR_CONST_CDAY
    end if
    datm_shr_getNextRadCDay = nextsw_cday
@@ -386,7 +386,7 @@ subroutine datm_shr_getFactors(fileName,windF,winddF,qsatF,mpicom,compid, &
       endif
 
       deallocate(tempR4D)
-      deallocate(tempR1D)  
+      deallocate(tempR1D)
 
       domap = .false.
       if (ni0 /= nxgo .or. nj0 /= nygo) then
@@ -422,15 +422,15 @@ subroutine datm_shr_getFactors(fileName,windF,winddF,qsatF,mpicom,compid, &
    allocate(tempR1D(lsizeo))
    if (size(windF ) >= lsizeo) then
       call mct_aVect_exportRattr(avo,'wind' ,tempR1D,lsizeo)
-      windF = tempR1D 
+      windF = tempR1D
    endif
    if (size(winddF) >= lsizeo) then
       call mct_aVect_exportRattr(avo,'windd',tempR1D,lsizeo)
-      winddF = tempR1D 
+      winddF = tempR1D
    endif
    if (size(qsatF ) >= lsizeo) then
       call mct_aVect_exportRattr(avo,'qsat' ,tempR1D,lsizeo)
-      qsatF = tempR1D 
+      qsatF = tempR1D
    endif
    deallocate(tempR1D)
 

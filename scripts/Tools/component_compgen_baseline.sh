@@ -82,16 +82,34 @@ function print_status {
     local status="$1"
     local info="$2"
     local testcase="$3"
+    local action="$4"
 
     # Enclose info in parentheses
     if [ -n "$info" ]; then
 	info_str="($info)"
     else
 	info_str=""
-    fi    
+    fi
 
     # Print formatted test result
-    printf '%-3s %s %s\n' "$status" "${testcase}" "$info_str"
+    printf '%-3s %s %s\n' "$status" "${testcase}" "${action}"
+
+    echo "COMMENT $info"
+}
+
+function print_comment {
+    local status="$1"
+    local info="$2"
+    local testcase="$3"
+
+    # Enclose info in parentheses
+    if [ -n "$info" ]; then
+	info_str="($info)"
+    else
+	info_str=""
+    fi
+
+    echo "COMMENT for $testcase $info"
 }
 
 #======================================================================
@@ -109,8 +127,8 @@ baseline_dir=''
 test_dir=''
 generate=''
 compare_tag=''
-msg='' 
- 
+msg=''
+
 #----------------------------------------------------------------------
 # Process command-line arguments
 #----------------------------------------------------------------------
@@ -163,7 +181,7 @@ while [ $# -gt 0 ]; do
 done
 
 #----------------------------------------------------------------------
-# Exit if required command-line arguments weren't provided 
+# Exit if required command-line arguments weren't provided
 #----------------------------------------------------------------------
 error=0  # no errors yet
 if [ -z "$baseline_dir" ]; then
@@ -241,8 +259,8 @@ for model in ${models[*]}; do
     # Loop over history file extensions
     #------------------------------------------------------------------
     for extension in ${extensions[*]}; do
-    
-        # Set baseline history name 
+
+        # Set baseline history name
 	# Note that this name drops (1) the timestamp, and (2) the
         # instance number for multi-instance runs
 	baseline_hist=${model}.${extension}.nc
@@ -269,10 +287,10 @@ for model in ${models[*]}; do
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
 		if [ "$compare_status" != "BFAIL_NA" ]; then
-		    if [ -z "$msg" ]; then 
-			print_status "$compare_status" "$compare_info" "${testcase_base}.$model.${extension}.nc : baseline compare ${model}.${extension} base with ${compare_tag}"
+		    if [ -z "$msg" ]; then
+			print_comment "$compare_status" "$compare_info : $model.${extension}.nc : baseline compare ${model}.${extension} base with ${compare_tag}" "${testcase_base}"
 		    else
-			print_status "$compare_status" "$compare_info" "${testcase_base}.$model.${extension}.nc : baseline compare ${model}.${extension} ($msg)"
+			print_comment "$compare_status" "$compare_info : $model.${extension}.nc : baseline compare ${model}.${extension} ($msg)" "${testcase_base}"
 		    fi
 		    # if ANY teststatus is FAIL then overall status is FAIL
 		    if [ "$compare_status" = "FAIL" ]; then
@@ -295,11 +313,11 @@ for model in ${models[*]}; do
 		generate_status=`get_status "$generate_result"`
 		generate_info=`get_info "$generate_result"`
 		if [ "$generate_status" != "GFAIL_NA" ]; then
-		    print_status "$generate_status" "$generate_info" "${testcase_base}.$model.${extension}.nc : baseline generate ${model}.${extension} in baseline dir ${generate_tag}"
+		    print_comment "$generate_status" "$generate_info : $model.${extension}.nc : baseline generate ${model}.${extension} in baseline dir ${generate_tag}" "${testcase_base}"
 		fi
 		# if ANY teststatus is GFAIL then overall status is GFAIL
 		if [ "$generate_status" = "GFAIL" ]; then
-		    overall_compare_status="GFAIL"
+		    overall_generate_status="GFAIL"
 		fi
 	    fi
 	fi
@@ -309,14 +327,26 @@ for model in ${models[*]}; do
 done  # loop over models
 
 if [ -n "$compare_tag" ]; then
-    if [ -z "$msg" ]; then 
-	print_status "$overall_compare_status" "$compare_info" "${testcase_base} : baseline compare summary"
+    if [ -z "$msg" ]; then
+	print_status "$overall_compare_status" "$compare_info : baseline compare summary" "${testcase_base}" compare
     else
-	print_status "$overall_compare_status" "$compare_info" "${testcase_base} : baseline compare summary ($msg)"
+	print_status "$overall_compare_status" "$compare_info : baseline compare summary ($msg)" "${testcase_base}" compare
+    fi
+
+    if [[ $overall_compare_status == PASS ]]; then
+        exit 0
+    else
+        exit 2
     fi
 fi
 if [ -n "$generate_tag" ]; then
-    print_status "$overall_generate_status" "$generate_info" "${testcase_base} : baseline generate summary"
+    print_status "$overall_generate_status" "$generate_info : baseline generate summary" "${testcase_base}" generate
+
+    if [[ $overall_generate_status == PASS ]]; then
+        exit 0
+    else
+        exit 2
+    fi
 fi
 
 

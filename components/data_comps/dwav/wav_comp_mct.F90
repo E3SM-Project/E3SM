@@ -106,7 +106,7 @@ end subroutine wav_run_mct
 !     finalize method for data wav model
 !
 ! !REVISION HISTORY:
-! 
+!
 ! !INTERFACE: ------------------------------------------------------------------
 !
 subroutine wav_final_mct(EClock, cdata, x2w, w2x)

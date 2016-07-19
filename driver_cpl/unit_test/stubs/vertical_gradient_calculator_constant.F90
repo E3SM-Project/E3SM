@@ -193,7 +193,6 @@ contains
     real(r8), intent(out) :: gradients(:)
     !
     ! !LOCAL VARIABLES:
-    
     character(len=*), parameter :: subname = 'get_gradients_one_class'
     !-----------------------------------------------------------------------
 

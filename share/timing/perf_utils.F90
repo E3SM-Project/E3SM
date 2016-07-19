@@ -1,15 +1,15 @@
 module perf_utils
 
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: This module supplies the csm_share and CAM utilities
 !          needed by perf_mod.F90 (when the csm_share and CAM utilities
 !          are not available).
-! 
+!
 ! Author:  P. Worley, October 2007
 !
 ! $Id$
-! 
+!
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -17,7 +17,7 @@ module perf_utils
 !-----------------------------------------------------------------------
    implicit none
    private                   ! Make the default access private
-#include <mpif.h>  
+#include <mpif.h>
    save
 
 !-----------------------------------------------------------------------
@@ -59,6 +59,8 @@ module perf_utils
    integer,parameter,public :: SHR_KIND_R8 = selected_real_kind(12) ! 8 byte real
    integer,parameter,public :: SHR_KIND_I8 = selected_int_kind (13) ! 8 byte integer
    integer,parameter,public :: SHR_KIND_IN = kind(1)                ! native integer
+   integer,parameter,public :: SHR_KIND_CS = 80                     ! short char
+   integer,parameter,public :: SHR_KIND_CM = 160                    ! mid-sized char
    integer,parameter,public :: SHR_KIND_CL = 256                    ! long char
    integer,parameter,public :: SHR_KIND_CX = 512                    ! extra-long char
 
@@ -78,9 +80,9 @@ contains
 !========================================================================
 !
    subroutine perfutils_setunit(LogUnit)
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 ! Purpose:  Set log unit number.
-! Author:   P. Worley 
+! Author:   P. Worley
 !-----------------------------------------------------------------------
 !---------------------------Input arguments-----------------------------
 !
@@ -332,7 +334,7 @@ END SUBROUTINE shr_mpi_bcastl0
 !     2005-Dec-14 - E. Kluzek - creation
 !     2007-Oct-21 - P. Worley - dumbed down for use in perf_mod
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 INTEGER FUNCTION shr_file_getUnit ()
 
@@ -382,7 +384,7 @@ END FUNCTION shr_file_getUnit
 !     2005-Dec-14 - E. Kluzek - creation
 !     2007-Oct-21 - P. Worley - dumbed down for use in perf_mod
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_freeUnit ( unit)
 
@@ -423,12 +425,12 @@ END SUBROUTINE shr_file_freeUnit
 subroutine find_group_name(unit, group, status)
 
 !---------------------------------------------------------------------------------------
-! Purpose: 
+! Purpose:
 ! Search a file that contains namelist input for the specified namelist group name.
 ! Leave the file positioned so that the current record is the first record of the
 ! input for the specified group.
-! 
-! Method: 
+!
+! Method:
 ! Read the file line by line.  Each line is searched for an '&' which may only
 ! be preceded by blanks, immediately followed by the group name which is case
 ! insensitive.  If found then backspace the file so the current record is the
@@ -494,17 +496,17 @@ end subroutine find_group_name
 
 function to_lower(str)
 
-!----------------------------------------------------------------------- 
-! Purpose: 
+!-----------------------------------------------------------------------
+! Purpose:
 ! Convert character string to lower case.
-! 
-! Method: 
+!
+! Method:
 ! Use achar and iachar intrinsics to ensure use of ascii collating sequence.
 !
 ! Author:  B. Eaton, July 2001
-!     
+!
 ! $Id$
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
    implicit none
 
    character(len=*), intent(in) :: str      ! String to convert to lower case
@@ -523,7 +525,7 @@ function to_lower(str)
       ctmp = str(i:i)
       aseq = iachar(ctmp)
       if ( aseq >= iachar("A") .and. aseq <= iachar("Z") ) &
-           ctmp = achar(aseq + upper_to_lower)	
+           ctmp = achar(aseq + upper_to_lower)
       to_lower(i:i) = ctmp
    end do
 
