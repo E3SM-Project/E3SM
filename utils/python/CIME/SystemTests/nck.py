@@ -23,12 +23,20 @@ class NCK(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
 
     def build(self, sharedlib_only=False, model_only=False):
+        '''
+        build can be called once (sharedlib_only and model_only both False)
+        or twice (once with each true)
+        This test requires a sharedlib build for both phases
+        we must handle both cases correctly
+        '''
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
-
-        machpes1 = os.path.join("LockedFiles","env_mach_pes.NCK1.xml")
-        if ( os.path.isfile(machpes1) ):
-            shutil.copy(machpes1,"env_mach_pes.xml")
+        if not model_only:
+            machpes1 = os.path.join("LockedFiles","env_mach_pes.orig.xml")
+            if os.path.isfile(machpes1):
+                shutil.copy(machpes1,"env_mach_pes.xml")
+            else:
+                shutil.copy("env_mach_pes.xml", machpes1)
 
         # Build two exectuables for this test, the first is a default build, the
         # second halves the number of tasks and runs two instances for each component
@@ -36,31 +44,37 @@ class NCK(SystemTestsCommon):
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
             machpes = os.path.join("LockedFiles","env_mach_pes.NCK%s.xml"%bld)
-            for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
-                self._case.set_value("NINST_%s"%comp, bld)
-                if(bld == 2):
+            if model_only:
+                # This file should have been created in the sharedlib_only phase
+                shutil.copy(machpes,"env_mach_pes.xml")
+                self._case.read_xml(self._caseroot)
+            else:
+                for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
+                    self._case.set_value("NINST_%s"%comp, bld)
                     ntasks      = self._case.get_value("NTASKS_%s"%comp)
-                    rootpe      = self._case.get_value("ROOTPE_%s"%comp)
-                    if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
-                        self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
-            self._case.flush()
+                    if(bld == 1):
+                        if ( ntasks > 1 ):
+                            self._case.set_value("NTASKS_%s"%comp, int(ntasks/2))
+                    else:
+                        self._case.set_value("NTASKS_%s"%comp, ntasks*2)
+                    self._case.flush()
 
             case_setup(self._case, test_mode=True, reset=True)
-            self.clean_build()
+            if not sharedlib_only:
+                self.clean_build()
 
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
-            if (not sharedlib_only):
-                shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                            "%s/%s.exe.NCK%s"%(exeroot,cime_model,bld))
-            shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCK%s.xml"%bld))
-            shutil.copy("env_mach_pes.xml", machpes)
+            if not model_only:
+                shutil.copy("env_mach_pes.xml", machpes)
+            if not sharedlib_only:
+                shutil.move("%s/%s.exe"%(exeroot,cime_model),"%s/%s.exe.NCK%s"%(exeroot,cime_model,bld))
+                shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCK%s.xml"%bld))
 
         # Because mira/cetus interprets its run script differently than
         # other systems we need to copy the original env_mach_pes.xml back
-        shutil.copy(machpes1,"env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml",
-                    os.path.join("LockedFiles","env_mach_pes.xml"))
+#        shutil.copy(machpes1,"env_mach_pes.xml")
+#        shutil.copy("env_mach_pes.xml",
+#                    os.path.join("LockedFiles","env_mach_pes.xml"))
 
     def run(self):
         os.chdir(self._caseroot)
@@ -106,6 +120,8 @@ class NCK(SystemTestsCommon):
                         "%s/%s.exe" % (exeroot, cime_model))
             shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")
             shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+            shutil.copy("LockedFiles/env_mach_pes.NCK2.xml", "env_mach_pes.xml")
+            shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
 
             logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
             success = SystemTestsCommon._run(self, "multiinst")

@@ -2,12 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging
-import logging.config
-import sys
-import os
-import time
-import re
+import logging, gzip, sys, os, time, re, shutil
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -454,7 +449,6 @@ def safe_copy(src_dir, tgt_dir, file_map):
     read-only file. Files can be relative paths and the relative path will be
     matched on the tgt side.
     """
-    import shutil
     for src_file, tgt_file in file_map:
         full_tgt = os.path.join(tgt_dir, tgt_file)
         full_src = src_file if os.path.isabs(src_file) else os.path.join(src_dir, src_file)
