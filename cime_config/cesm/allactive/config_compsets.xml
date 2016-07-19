@@ -260,6 +260,11 @@
   <!-- SOM compsets -->
 
   <compset>
+    <alias>ETEST</alias>
+    <lname>2000_CAM55_CLM50_CICE_DOCN%SOM_MOSART_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset>
     <alias>E1850C5L45TEST</alias>
     <lname>1850_CAM50_CLM45%SP_CICE_DOCN%SOM_MOSART_SGLC_SWAV_TEST</lname>
   </compset>

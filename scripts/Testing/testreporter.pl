@@ -62,6 +62,7 @@ my %suiteinfo;
 my $teststatus;
 my $nlfailreport;
 ($teststatus, $nlfailreport) = getTestStatus(\@testdirs, $tagname, $testid);
+#print %teststatus;
 &Debug( eval { Dumper $teststatus} );
 &Debug( eval { Dumper \%suiteinfo } );
 my $testxml = &makeResultsXml($teststatus, \%suiteinfo, $nlfailreport);
@@ -206,43 +207,24 @@ sub getTestSuiteInfo
     #my $testspecfile = "$testroot/testspec.$testid.$caseinfo{'mach'}.xml";
     my $testspecfile = "$testroot/testspec.$testid.xml";
     Debug( "testspecfile: $testspecfile\n");
-    open my $SPEC, '<', $testspecfile or die "could not open $testspecfile, $!";
-    my @testspeclines =  <$SPEC>;
-    my @cimerootlines = grep { /<cimeroot>/ } @testspeclines;
-    #my @cimerootlines = grep { /^<cimeroot>/ } <$SPEC>;
-    close $SPEC;
-    chomp @cimerootlines;
-    my $cimeroot = $cimerootlines[0];
-    if(! defined $cimeroot)
-    {
-	die "cimeroot not defined, aborting..";
-    }
-
-    $cimeroot =~ s/<cimeroot>|<\/cimeroot>|^\s+|\s+$//g;
-    Debug("cimeroot is now: |$cimeroot|");
-    my @dirs = ( $testpath, "$cimeroot/utils/perl5lib");
-    unshift @INC, @dirs;
 
     # SetupTools needs a case to work, so why not just cd to the
     # first test directory, and run SetupTools there?? :)
     my $firsttestdir = $testroot . "/" . $$testlist[0];
     Debug("first test dir: $firsttestdir");
-    require Config::SetupTools;
     chdir $firsttestdir;
+    my $cimeroot = `./xmlquery CIMEROOT --value`;
+    my @dirs = ( $testpath, "$cimeroot/utils/perl5lib");
+    unshift @INC, @dirs;
+    require Config::SetupTools;
 
     my %config = SetupTools::getAllResolved();
     $caseinfo{'mach'}     = $config{'MACH'};
     $caseinfo{'compiler'} = $config{'COMPILER'};
     $caseinfo{'mpilib'}   = $config{'MPILIB'};
+    $caseinfo{'baselinetag'}   = $config{'BASELINE_NAME_CMP'};
 
     chdir $testroot;
-
-    my $parser = XML::LibXML->new;
-    my $spec = $parser->parse_file($testspecfile);
-    my $root = $spec->getDocumentElement();
-    my @bltagnodes = $root->findnodes('/testlist/baselinetag');
-    $caseinfo{'baselinetag'} = $bltagnodes[0]->textContent();
-    &Debug( "baselinetag: $caseinfo{'baselinetag'}\n") ;
 
     &Debug("caseinfo: " . eval { Dumper \%caseinfo} );
     return %caseinfo;
@@ -271,6 +253,10 @@ sub getTestStatus
 	$testbaseid =~ s/\.C\.//g;
 	$testbaseid =~ s/\.GC\.//g;
 	&Debug("testbaseid $testbaseid");
+	if( ! -e $testroot . "/" . $testcase . "/" . "env_case.xml")
+        {
+            next;
+        }
 
 	my $statusfile = $testroot  . "/"  . $testcase .  "/" . $teststatusfilename;
 	if( ! -e $statusfile)
@@ -292,63 +278,151 @@ sub getTestStatus
 
         my $testsummary = $teststatus;
 
-	# Now go through the TestStats getting the memleak, compare, baseline tag, throughput, and comments if any.
-	my @statuslines = <$teststatusfile>;
+  	# Now go through the TestStats getting the memleak, compare, baseline tag, throughput, and comments if any.
+        my @statuslines = <$teststatusfile>;
 	chomp @statuslines;
 
-        if($testsummary ~~ /DONE/)
-        {
 
-	# If the 'test functionality summary' is not PASS, then report the
-	# test functionality summary as the teststatus field.
-	my @testsummarylines = grep { /test functionality summary/ } @statuslines;
-	  $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-	if(defined $testsummary && $testsummary !~ /PASS/)
-	{
-	    ##$teststatus = $testsummary;
-	    $teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
-	}
-	##$teststatushash{$testcase}{'status'} = $teststatus;
-	if(length($testsummary) == 0)
-	{
-	    $testsummary = 'FAIL';
-	}
+        # If the 'test functionality summary' is not PASS, then report the
+        # test functionality summary as the teststatus field.
+        # Namelist compare
+        my @testsummarylines = grep { /nlcomp/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        $teststatushash{$testcase}{'nlcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
+
+        # Memory leak
+        my @testsummarylines = grep { /memleak/ } grep { !/^COMMENT/} @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        $teststatushash{$testcase}{'memleak'} = (length($testsummary) > 0) ? $testsummary : "----";
+
+        # Compare memory usage to baseline
+        my @testsummarylines = grep { /Memory/} grep { /baseline/} @statuslines;
+        my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        $teststatushash{$testcase}{'memcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
+        if (length($testsummary) == 0){
+          my @testsummarylines = grep { /memcomp/}  @statuslines;
+          my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+          $teststatushash{$testcase}{'memcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
         }
-	$teststatushash{$testcase}{'status'} = $testsummary;
 
-	# Get the baseline compare summary
-	my @comparelines = grep { / compare/} @statuslines;
-	my ($comparestatus,$comparetest)  = split(/\s+/, $comparelines[0]);
-	$teststatushash{$testcase}{'compare'} = (length($comparestatus) > 0) ? $comparestatus : "----";
-	my $comparetag = (split(/\./, $comparetest))[-1];
-	$baselinetag = $comparetag unless defined $baselinetag;
+        # Compare through put to baseline
+        my @testsummarylines = grep { /Throughput/} grep { /baseline/} @statuslines;
+        my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        $teststatushash{$testcase}{'tputcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
+        if (length($testsummary) == 0){
+          my @testsummarylines = grep { /tputcomp/}  @statuslines;
+          my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+          $teststatushash{$testcase}{'tputcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
+        }
 
-	# If this a normal test, ie NOT a set of SBN tests, then
-	# send the following fields. If this is a namelist test, then skip these fields, they
-	# will never be filled in for SBN tests.
-	if($testtype ne 'namelist')
-	{
-	    my @memleaklines = grep { /memleak/ } @statuslines;
-	    my $memleakstatus = (split(/\s+/, $memleaklines[0]))[0];
-	    $teststatushash{$testcase}{'memleak'} = (length($memleakstatus) > 0) ? $memleakstatus : "----";
+        #Compare to baseline
+        my ( $index ) = grep { $statuslines[$_] =~ /baseline compare summary/ } 0..$#statuslines;
+        my @testsummarylines = $statuslines[$index-1];
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        $teststatushash{$testcase}{'compare'} = (length($index) > 0) ? $testsummary : "----";
 
-	    my @memcomplines = grep { /memcomp/} @statuslines;
-	    my $memcompstatus = (split(/\s+/, $memcomplines[0]))[0];
-	    $teststatushash{$testcase}{'memcomp'} = (length($memcompstatus) > 0) ? $memcompstatus : "----";
+        # Check for INIT failure
+        my @testsummarylines = grep { /INIT/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "SFAIL";
+            $teststatushash{$testcase}{'comment'} = "Failed during INIT!";
+            next;
+        }
 
-	    my @tputcomplines = grep { /tputcomp/ } @statuslines;
-	    my $tputcompstatus = (split(/\s+/, $tputcomplines[0]))[0];
-	    $teststatushash{$testcase}{'tputcomp'} = (length($tputcompstatus) > 0) ? $tputcompstatus : "----";
-	}
+        # Check for CREATE_NEWCASE failure
+        my @testsummarylines = grep { /CREATE_NEWCASE/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "SFAIL";
+            $teststatushash{$testcase}{'comment'} = "Failed in CREATE_NEWCASE!";
+            next;
+        }
 
-	my @nlcomplines = grep { /nlcomp/i } @statuslines;
-	my $nlcompstatus = (split(/\s+/, $nlcomplines[0]))[0];
-	$teststatushash{$testcase}{'nlcomp'} = (length($nlcompstatus) > 0) ? $nlcompstatus : "----";
+        # Check for XML failure
+        my @testsummarylines = grep { /XML/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "SFAIL";
+            $teststatushash{$testcase}{'comment'} = "Failed in XML!";
+            next;
+        }
 
-	my @commentlines = grep { /COMMENT/ } @statuslines;
-	my $comment = (split(/\s+/, $commentlines[0], 2) )[1];
-	chomp $comment;
-	$teststatushash{$testcase}{'comment'} = $comment;
+        # Check for SETUP failure
+        my @testsummarylines = grep { /SETUP/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "SFAIL";
+            $teststatushash{$testcase}{'comment'} = "Failed during SETUP!";
+            next;
+        }
+
+        # Check for SHARELIB_BUILD failure
+        my @testsummarylines = grep { /SHAREDLIB_BUILD/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "CFAIL";
+            $teststatushash{$testcase}{'comment'} = "Failed during SHAREDLIB_BUILD!";
+            next;
+        }
+
+        # Check for MODEL_BUILD failure
+        my @testsummarylines = grep { /MODEL_BUILD/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "CFAIL";
+            $teststatushash{$testcase}{'comment'} = "Failed during MODEL_BUILD!";
+            next;
+        }
+
+        # Check for RUN failure
+        my @testsummarylines = grep { /RUN/ } @statuslines;
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = $testsummary;
+            next;
+        }
+
+        #Compare for functionality
+        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary \(restart/ } 0..$#statuslines;
+        my @testsummarylines = $statuslines[$index-1];
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(length($index) > 0 &&defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "FAIL";
+            $teststatushash{$testcase}{'comment'} = "Functionality failed with restart!";
+            next;
+        }
+
+        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary \(hybrid/ } 0..$#statuslines;
+        my @testsummarylines = $statuslines[$index-1];
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(length($index) > 0 && defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "FAIL";
+            $teststatushash{$testcase}{'comment'} = "Functionality failed with hybrid!";
+            next;
+        }
+
+        my ( $index ) = grep { $statuslines[$_] =~ /functionality/ } 0..$#statuslines;
+        my @testsummarylines = $statuslines[$index-1];
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if(length($index) > 0 && defined $testsummary && $testsummary !~ /PASS/)
+        {
+	    $teststatushash{$testcase}{'status'} = "FAIL";
+            $teststatushash{$testcase}{'comment'} = "Functionality failed!";
+            next;
+        }
+
+	$teststatushash{$testcase}{'status'} = 'PASS';
+
 
 	close $teststatusfile;
 
@@ -459,6 +533,7 @@ sub getTestStatus
 	delete $nlreporthash{$blank} if(length $nlreporthash{$blank} == 0);
     }
 
+#    print Dumper (\%teststatushash);
     return \%teststatushash, \%nlreporthash;
 }
 
