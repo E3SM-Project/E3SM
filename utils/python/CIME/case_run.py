@@ -156,10 +156,10 @@ def save_timing_setup_acme(case, lid):
         return
 
     timing_dir = case.get_value("SAVE_TIMING_DIR")
-    if timing_dir is None:
+    if timing_dir is None or timing_dir == 'UNSET':
         logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
         return
-
+    logger.warn("timing dir is %s"%timing_dir)
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
     cimeroot = case.get_value("CIMEROOT")
