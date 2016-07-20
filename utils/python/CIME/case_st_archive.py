@@ -377,8 +377,8 @@ def case_st_archive(case):
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
             with open(".original_host", "r") as fd:
                 sshhost = fd.read()
-            run_cmd("ssh %s `cd %s; CIMEROOT=%s ./case.submit --resubmit' "\
-                        %(sshhost, caseroot, case.get_value("CIMEROOT")))
+            run_cmd("ssh cooleylogin1 ssh %s '%s/case.submit %s --resubmit' "\
+                        %(sshhost, caseroot, caseroot), verbose=True)
         else:
             submit(case, resubmit=True)
 
