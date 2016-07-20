@@ -12,7 +12,7 @@ h0   = 500.0;            % m     center thickness
 v0   = 100.0 / p.spera;  % m/s   sliding velocity at margin
 R0   = 25.0e3;           % m     ideal ice cap radius
 R1   = 5.0e3;            % m     onset of sliding
-R1   = 0.0e3;            % m     onset of sliding
+%R1   = 0.0e3;            % m     onset of sliding
 Phi0 = 0.2 / p.spera;    % m/s   water input rate is 20 cm/a
 
 vphi0 = Phi0 / (2 * p.c0);

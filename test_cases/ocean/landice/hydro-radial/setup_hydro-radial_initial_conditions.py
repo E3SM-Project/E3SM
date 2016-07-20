@@ -60,8 +60,8 @@ if putOriginOnACell:
 h0   = 500.0;            # m     center thickness
 v0   = 100.0 / (3600.0*24.0*365.0);  # m/s   sliding velocity at margin
 R0   = 25.0e3;           # m     ideal ice cap radius
-#R1   = 5.0e3;            # m     onset of sliding
-R1   = 0.0e3;            # m     onset of sliding
+R1   = 5.0e3;            # m     onset of sliding
+#R1   = 0.0e3;            # m     onset of sliding
 L = 0.9 * R0;            # m     actual margin location
 #L = 0.92 * R0;            # m     actual margin location
 
