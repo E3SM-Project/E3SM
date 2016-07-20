@@ -1,6 +1,8 @@
 function P = psteady(p,Po,vb,W)
 % PSTEADY  Computes P(W) in steady state.  Vectorized in all arguments
 % except p, the parameters structure.
+% CODE WRITTEN BY ED BUELER: https://github.com/bueler/hydrolakes/tree/master/codes
+
 
 if any(any(Po < 0))
   error('psteady() requires nonnegative overburden pressure Po'), end

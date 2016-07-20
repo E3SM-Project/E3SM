@@ -2,11 +2,15 @@ function p = params(E0,Y0);
 % PARAMS  Return parameters in a structure for subglacial hydrology model.
 % Example:  View default values
 %   >> params()
+% CODE WRITTEN BY ED BUELER: https://github.com/bueler/hydrolakes/tree/master/codes
 
-p.spera = 31556926.0;
+%p.spera = 31556926.0;
+p.spera = 3600.0*24.0*365.0;
 p.rhoi  = 910.0;         % kg m-3
 p.rhow  = 1000.0;        % kg m-3
-p.g     = 9.81;          % m s-2
+%p.g     = 9.81;          % m s-2
+p.g     = 9.80616; 
+
 
 % major model parameters:
 p.A  = 3.1689e-24;       % ice softness (Pa-3 s-1)
