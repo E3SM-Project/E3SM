@@ -55,13 +55,12 @@ module prim_advection_mod_base
 !
 !
   use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nep
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use derivative_mod, only     : gradient, vorticity, gradient_wk, derivative_t, divergence, &
                                  gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
-  use spelt_mod, only          : spelt_struct
   use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
@@ -89,9 +88,6 @@ module prim_advection_mod_base
   public :: Prim_Advec_Init1, Prim_Advec_Init2, prim_advec_init_deriv
   public :: Prim_Advec_Tracers_remap, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_remap_ALE
   public :: prim_advec_tracers_fvm
-#if defined(_SPELT)
-  public :: prim_advec_tracers_spelt
-#endif
   public :: vertical_remap
 
   type (EdgeBuffer_t)      :: edgeAdv, edgeAdvp1, edgeAdvQminmax, edgeAdv1,  edgeveloc
@@ -159,20 +155,20 @@ contains
 
   end subroutine Prim_Advec_Init1
 
-  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points, spelt_refnep)
+  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points)
+
     use kinds,          only : longdouble_kind
-    use dimensions_mod, only : nc, nep
+    use dimensions_mod, only : nc
     use derivative_mod, only : derivinit
     implicit none
     type (hybrid_t), intent(in) :: hybrid
     real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
     real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
-    real(kind=longdouble_kind), intent(in) :: spelt_refnep(1:nep)
 
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points)
   end subroutine Prim_Advec_Init_deriv
 
   subroutine Prim_Advec_Init2(elem,hvcoord,hybrid)
@@ -184,120 +180,6 @@ contains
     type (hybrid_t)   , intent(in) :: hybrid
     !Nothing to do
   end subroutine Prim_Advec_Init2
-
-#if defined(_SPELT)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! SPELT driver
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
-        dt,tl,nets,nete)
-    use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use spelt_mod, only : spelt_run, spelt_runpos, spelt_runair, spelt_runlimit, edgeveloc, spelt_mcgregordss, spelt_rkdss
-    use derivative_mod, only : interpolate_gll2spelt_points
-    use vertremap_mod, only: remap1_nofilter ! _EXTERNAL (actually INTERNAL)
-
-    implicit none
-    type (element_t), intent(inout)   :: elem(:)
-    type (spelt_struct), intent(inout)  :: spelt(:)
-    type (derivative_t), intent(in)   :: deriv
-    type (hvcoord_t)                  :: hvcoord
-    type (hybrid_t),     intent(in):: hybrid
-    type (TimeLevel_t)                :: tl
-
-    real(kind=real_kind) , intent(in) :: dt
-    integer,intent(in)                :: nets,nete
-
-    real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
-    real (kind=real_kind), dimension(np,np,nlev)    :: dp
-
-    integer :: np1,ie,k, i, j
-
-
-    call t_barrierf('sync_prim_advec_tracers_spelt', hybrid%par%comm)
-    call t_startf('prim_advec_tracers_spelt')
-    np1 = tl%np1
-    ! departure algorithm requires two velocities:
-    !
-    ! spelt%v0:      velocity at beginning of tracer timestep (time n0_qdp)
-    !                this was saved before the (possibly many) dynamics steps
-    ! elem%derived%vstar:    
-    !                velocity at end of tracer timestep (time np1 = np1_qdp)
-    !                for lagrangian dynamics, this is on lagrangian levels
-    !                for eulerian dynamcis, this is on reference levels
-    !                and it should be interpolated.
-    !
-    do ie=nets,nete
-       elem(ie)%derived%vstar(:,:,:,:)=elem(ie)%state%v(:,:,:,:,np1)
-    enddo
-
-    if (rsplit==0) then
-       ! interpolate t+1 velocity from reference levels to lagrangian levels
-       ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
-       ! which requires we first DSS mean vertical velocity from dynamics
-       do ie=nets,nete
-          do k=1,nlev
-             elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k)
-          enddo
-          call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
-       enddo
-
-       call t_startf('pat_spelt_bexchV')
-       call bndry_exchangeV(hybrid,edgeAdv1)
-       call t_stopf('pat_spelt_bexchV')
-
-       do ie=nets,nete
-          call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
-          do k=1,nlev
-             elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
-          enddo
-          ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
-          elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
-
-          ! elem%state%u(np1)  = velocity at time t+1 on reference levels
-          ! elem%derived%vstar = velocity at t+1 on floating levels (computed below) using eta_dot_dpdn
-!           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
-          do k=1,nlev
-             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-             dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
-                  elem(ie)%derived%eta_dot_dpdn(:,:,k))
-          enddo
-          !elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1) ; done above
-          call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
-          !take the average on level, should be improved later, because we know the SE velocity at t+1/2
-          spelt(ie)%vn12=(spelt(ie)%vn0+elem(ie)%derived%vstar)/2.0D0
-       end do
-    else
-       ! for rsplit>0:  do nothing.
-       ! dynamics is also vertically lagrangian, so we do not need to
-       ! remap the velocities and we dont need eta_dot_dpdn
-    endif
-
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! 2D advection step
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!------------------------------------------------------------------------------------
-
-!     call t_startf('spelt_depalg')
-!     call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
-    call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
-!     call t_stopf('spelt_depalg')
-
-    ! ! end mcgregordss
-    ! spelt departure calcluation should use vstar.
-    ! from c(n0) compute c(np1):
-!     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
-
-    call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
-!     call spelt_runpos(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
-!       call spelt_runlimit(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
-    call t_stopf('prim_advec_tracers_spelt')
-  end subroutine Prim_Advec_Tracers_spelt
-#endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2032,6 +1914,7 @@ end subroutine ALE_parametric_coords
 
 
   subroutine vertical_remap(hybrid,elem,fvm,hvcoord,dt,np1,np1_qdp,np1_fvm,nets,nete)
+
   ! This routine is called at the end of the vertically Lagrangian
   ! dynamics step to compute the vertical flux needed to get back
   ! to reference eta levels
@@ -2044,38 +1927,27 @@ end subroutine ALE_parametric_coords
   !     derived%eta_dot_dpdn()   vertical flux from final Lagrangian
   !                              levels to reference eta levels
   !
-  use kinds, only : real_kind
-  use hybvcoord_mod, only : hvcoord_t
-  use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
-  use control_mod, only : rsplit, tracer_transport_type 
-  use parallel_mod, only : abortmp
-  use hybrid_mod     , only : hybrid_t
-  use derivative_mod, only : interpolate_gll2fvm_points
-#if defined(_SPELT)
-  use spelt_mod, only: spelt_struct
-#else
+  use kinds,          only: real_kind
+  use hybvcoord_mod,  only: hvcoord_t
+  use vertremap_mod,  only: remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
+  use control_mod,    only: rsplit, tracer_transport_type
+  use parallel_mod,   only: abortmp
+  use hybrid_mod,     only: hybrid_t
+  use derivative_mod, only: interpolate_gll2fvm_points
+  use control_mod,    only: se_prescribed_wind_2d
   use fvm_control_volume_mod, only : fvm_struct
-#endif
-  use control_mod, only : se_prescribed_wind_2d
 
-  type (hybrid_t), intent(in) :: hybrid  ! distributed parallel structure (shared)
-#if defined(_SPELT)
-  type(spelt_struct), intent(inout) :: fvm(:)
-  real (kind=real_kind) :: cdp(1:nep,1:nep,nlev,ntrac-1)
-  real (kind=real_kind)  :: psc(nep,nep), dpc(nep,nep,nlev),dpc_star(nep,nep,nlev)
-#else
+  type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type(fvm_struct), intent(inout) :: fvm(:)
-  real (kind=real_kind) :: cdp(1:nc,1:nc,nlev,ntrac)
-  real (kind=real_kind)  :: psc(nc,nc), dpc(nc,nc,nlev),dpc_star(nc,nc,nlev)
-#endif
-
-  !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
-  type (element_t), intent(inout)   :: elem(:)
-  type (hvcoord_t)                  :: hvcoord
-  real (kind=real_kind)             :: dt
+  real (kind=real_kind)           :: cdp(1:nc,1:nc,nlev,ntrac)
+  real (kind=real_kind)           :: psc(nc,nc), dpc(nc,nc,nlev),dpc_star(nc,nc,nlev)
+  type (element_t), intent(inout) :: elem(:)
+  type (hvcoord_t)                :: hvcoord
+  real (kind=real_kind)           :: dt
 
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp,np1_fvm
   integer :: q
+
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
 
@@ -2190,38 +2062,8 @@ end subroutine ALE_parametric_coords
         endif
      endif
 
-
      if (ntrac>0) then
-#if defined(_SPELT)
-        do i=1,nep
-          do j=1,nep
-            ! 1. compute surface pressure, 'ps_c', from SPELT air density
-            psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0
-            ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
-            ! get the dp now on the eta coordinates (reference level)
-            do k=1,nlev
-              dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                              (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,2:ntrac,np1)*fvm(ie)%c(i,j,k,1,np1)
-              dpc_star(i,j,k)=fvm(ie)%c(i,j,k,1,np1)
-            end do
-          end do
-        end do
 
-        call t_startf('vertical_remap1_4')
-        call remap1(cdp,nep,ntrac-1,dpc_star,dpc)
-        call t_stopf('vertical_remap1_4')
-
-        do i=1,nep
-          do j=1,nep
-            do k=1,nlev
-              fvm(ie)%c(i,j,k,1,np1)=dpc(i,j,k)
-              fvm(ie)%c(i,j,k,2:ntrac,np1)=cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
-            end do
-          end do
-        end do
-!         call remap_velocityCspelt(np1,dt,elem,fvm,hvcoord,ie)
-#else
         ! create local variable  cdp(1:nc,1:nc,nlev,ntrac)
         ! cdp(:,:,:,n) = fvm%c(:,:,:,n,np1_fvm)*fvm%dp_fvm(:,:,:,np1_fvm)
         ! dp(:,:,:) = reference level thicknesses
@@ -2273,7 +2115,6 @@ end subroutine ALE_parametric_coords
            end do
         end if
         !         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
-#endif
      endif
 
   enddo

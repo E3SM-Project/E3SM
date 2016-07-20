@@ -970,20 +970,18 @@ module asp_tests
 !  This module contains the initial condititions for the baroclinic
 !  instability probelms in Jablonowski and Williamson, QJR (2006) 132 
 !
-use element_mod, only : element_t, timelevels
-use fvm_control_volume_mod, only : fvm_struct
-use spelt_mod, only : spelt_struct
-use hybrid_mod, only : hybrid_t
-use hybvcoord_mod, only : hvcoord_t 
-use kinds, only : real_kind
-
-use physical_constants, only : p0, g
-use dimensions_mod, only : nlev,np, qsize,nc,ntrac, nep
-use control_mod, only : test_case, u_perturb
-use cube_mod, only : rotate_grid
-use jw, only : u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2,&
-     tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
-use parallel_mod, only : abortmp
+use element_mod,    only: element_t, timelevels
+use hybrid_mod,     only: hybrid_t
+use hybvcoord_mod,  only: hvcoord_t
+use kinds,          only: real_kind
+use dimensions_mod, only: nlev,np, qsize,nc,ntrac
+use control_mod,    only: test_case, u_perturb
+use cube_mod,       only: rotate_grid
+use jw,             only: u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2,&
+                          tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
+use parallel_mod,   only: abortmp
+use physical_constants, only: p0, g
+use fvm_control_volume_mod, only: fvm_struct
 
 implicit none
 
@@ -1232,11 +1230,7 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete, fvm)
     use prim_si_mod, only : preq_hydrostatic
 
     type(element_t), intent(inout) :: elem(:)
-#if defined(_SPELT)
-      type(spelt_struct), optional, intent(inout) :: fvm(:)
-#else
-      type(fvm_struct), optional, intent(inout) :: fvm(:)
-#endif
+    type(fvm_struct), optional, intent(inout) :: fvm(:)
     type (hvcoord_t)                  :: hvcoord
     type (hybrid_t), intent(in) :: hybrid
     integer :: nets,nete
@@ -1247,7 +1241,6 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete, fvm)
     logical :: perturbation 
     real(kind=real_kind) :: eta_c
 
-
 !og, added slotted ellipse from asp advection test as tracer 5
     real (kind=real_kind)  :: height, q6, d2, cos_tmp, sin_tmp, perturb_lat, perturb_lon, r
     real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev)
@@ -1257,9 +1250,6 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete, fvm)
                              ZZ      = 1000.0d0,                        & ! vertical half width
                              z0      = 4500.0d0,                        & ! center point in z
                              slot    = 1.0d0/8.0d0                        ! half width of the slot in radians
-
-
-
 
     perturbation = (u_perturb/=0)
 
@@ -1370,79 +1360,6 @@ endif
 ! fvm tracers
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if (present(fvm)) then
-#if defined(_SPELT)
-  if (ntrac>=1) then
-     idex=1
-     ! First tracer will be airdensity
-     do ie=nets,nete
-        do j=1,nep
-          do i=1,nep
-            fvm(ie)%c(i,j,:,idex,:) = 1.0D0
-          enddo
-        enddo
-     enddo
-  endif
-  if (ntrac>=2) then
-     idex=2
-     eta_c = 1
-     do ie=nets,nete
-        do j=1,nep
-        do i=1,nep
-           lon = fvm(ie)%asphere(i,j)%lon
-           lat = fvm(ie)%asphere(i,j)%lat
-           do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
-           enddo
-        enddo
-        enddo
-     enddo
-  endif
-  if (ntrac>=3) then
-     idex=3
-     do ie=nets,nete
-        do j=1,nep
-        do i=1,nep
-           lon = fvm(ie)%asphere(i,j)%lon
-           lat = fvm(ie)%asphere(i,j)%lat
-           do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = tracer_q3(lon,lat,hvcoord%etam(k),rotate_grid)
-           enddo
-        enddo
-        enddo
-     enddo
-  endif
-  if (ntrac>=4) then
-     idex=4
-     eta_c = 0.6
-     do ie=nets,nete
-        do j=1,nep
-        do i=1,nep
-           lon = fvm(ie)%asphere(i,j)%lon
-           lat = fvm(ie)%asphere(i,j)%lat
-           do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
-           enddo
-        enddo
-        enddo
-     enddo
-  endif
-
-  if (ntrac>=5) then
-     do idex=5,ntrac
-     do ie=nets,nete
-        do k=1,nlev
-        do t=1,timelevels
-          do j=1,nep
-            do i=1,nep
-              fvm(ie)%c(i,j,k,idex,t) = 1.0D0
-            enddo
-          enddo
-        enddo
-        enddo
-     enddo
-     enddo
-  endif
-#else
   !
   ! CSLAM tracers
   !
@@ -1523,12 +1440,7 @@ if (present(fvm)) then
      enddo
      enddo
   endif
-#endif
-
 endif
-
-
-
 
 if (qsize>=5) then
    idex=5

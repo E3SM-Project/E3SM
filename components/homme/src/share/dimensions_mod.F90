@@ -60,14 +60,6 @@ module dimensions_mod
   !nhc determines width of halo exchanged with neighboring elements
   integer, parameter, public :: nhc = nhr+(nhe-1)+(ns-MOD(ns,2))/2
 
-  !  
-  ! constants for SPELT
-  !
-  integer, parameter, public :: nip=3     !number of interpolation values, works only for this
-  integer, parameter, public :: nipm=nip-1
-  integer, parameter, public :: nep=nipm*nc+1      ! number of points in an element  
-  
-  
   integer, public :: npdg = 0  ! dg degree for hybrid cg/dg element  0=disabled 
 
   integer, parameter, public :: npsq = np*np
