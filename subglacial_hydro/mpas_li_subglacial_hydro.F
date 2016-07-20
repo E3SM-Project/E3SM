@@ -107,6 +107,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), pointer :: tillMax
       real (kind=RKIND), pointer :: rhoi
+      integer, pointer :: config_num_halos
       integer :: err_tmp
 
       err = 0
@@ -120,6 +121,14 @@ module li_subglacial_hydro
 
       write(stdoutUnit,*) 'Beginning subglacial hydro init.'
 
+      ! Check number of halos
+      call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
+      if (config_num_halos < 1) then
+         write (stdErrUnit,*) "ERROR: Subglacial hydrology requires config_num_halos >= 1"
+         err = ior(err, 1)
+      endif
+
+      ! Check for valid time steppers
       call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       if (config_adaptive_timestep .and. config_SGH_adaptive_timestep) then
@@ -335,6 +344,10 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+      ! Update halos on divergence
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'divergence')
+      call mpas_timer_stop("halo updates")
 
 
       ! =============
