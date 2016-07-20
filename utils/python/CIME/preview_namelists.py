@@ -77,7 +77,7 @@ def preview_namelists(case, dryrun=False):
             expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
 
     # refresh case xml object from file
-    case.read_xml(caseroot)
+    case.read_xml()
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
         os.makedirs(docdir)
