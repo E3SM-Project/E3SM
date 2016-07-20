@@ -233,7 +233,7 @@ class EnvBatch(EnvBase):
         self.tasks_per_numa = task_maker.tasks_per_numa
         self.num_tasks = task_maker.totaltasks
 
-        task_count = self.get_value("task_count", subgroup=job)
+        task_count = self.get_value("task_count")
         if task_count == "default":
             self.sumpes = task_maker.fullsum
             self.totaltasks = task_maker.totaltasks
