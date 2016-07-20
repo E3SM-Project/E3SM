@@ -81,7 +81,13 @@ _TEST_SUITES = {
                          "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
-                         "SMS_D_Ln1.ne30_ne30.FC5AV1C",
+                         "SMS_D_Ln5.ne16_ne16.FC5AV1F",
+                         "SMS_D_Ln5.ne16_ne16.FC5AV1C",
+                         "SMS_D_Ln5.ne16_ne16.FC5AV1C-01",
+                         "SMS_D_Ln5.ne16_ne16.FC5AV1C-02",
+                         "SMS_D_Ln5.ne16_ne16.FC5AV1C-03",
+                         "SMS_D_Ln1.ne30_ne30.FC5AV1C-03",
+                         "SMS_D_Ln1.ne30_oEC.F1850C5AV1C-02",
                          "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
                         ),
 
@@ -112,10 +118,12 @@ _TEST_SUITES = {
                            "SMS_D_Ld3.ne16_ne16.FC5",
                            "SMS.f09_g16_a.MPASLIALB_ONLY",
                            "ERS.ne16_ne16.FC5ATMMOD",
-                           "SMS_Ld1.ne30_ne30.FC5AV1F",
-                           "SMS_Ld1.ne30_ne30.FC5AV1C",
-                           "SMS_Ld1.ne30_oEC.F1850C5AV1C-02",
-                           "SMS_Ld1.ne30_ne30.FC5AV1C-02",
+                           "ERS_Ld5.ne16_ne16.FC5AV1F"
+                           "ERS_Ld5.ne16_ne16.FC5AV1C"
+                           "ERS_Ld5.ne16_ne16.FC5AV1C-01"
+                           "ERS_Ld5.ne16_ne16.FC5AV1C-02"
+                           "ERS_Ld5.ne16_ne16.FC5AV1C-03"
+                           "ERS_Ld5.ne30_oEC.F1850C5AV1C-02",
                            "SMS_D_Ld1.ne16_ne16.FC5ATMMODCOSP")
                           ),
 }

@@ -153,7 +153,7 @@ module restart_physics
           write(num,'(i4.4)') i
           ierr = pio_def_var(File, 'CFLX'//num,  pio_double, hdimids, cflx_desc(i))
        end do
-       ! Add LHF and SHF to restart file to fix non-BFB restart due to qneg4
+       ! Add LHF and SHF to restart file to fix non-BFB restart issue due to qneg4 correction at the restart time step
        ierr = pio_def_var(File, 'LHF',  pio_double, hdimids, lhf_desc)
        ierr = pio_def_var(File, 'SHF',  pio_double, hdimids, shf_desc)
 
@@ -401,7 +401,7 @@ module restart_physics
             end do
             call pio_write_darray(File, cflx_desc(m), iodesc, tmpfield, ierr)
          end do
-         ! Add LHF and SHF to restart file to fix non-BFB restart due to qneg4
+
          do i = begchunk, endchunk
             ncol = cam_in(i)%ncol
             tmpfield(:ncol, i) = cam_in(i)%lhf(:ncol)
@@ -730,10 +730,9 @@ module restart_physics
 
         end do
 
-        ! Add LHF and SHF to restart file to fix non-BFB restart due to qneg4
-        ! May want to check if LHF and SHF present, as with CFLX to be
-        ! back-compatible with restart files from older runs before this change.
-        ! In that case, if any qneg4 correction occur at the restart tiem,
+        ! Add LHF and SHF to restart file to fix non-BFB restart issue due to qneg4 update at the restart time step
+        ! May want to check if LHF and SHF are present (to be back-compatible with restart files from older runs).
+        ! In that case, if any qneg4 correction occurs at the restart time,
         ! non-BFB for the step needs to be tolerated (because the corrected
         ! LHF/SHF  not carried over thru restart file)
         ierr = pio_inq_varid(File, 'LHF', vardesc)
