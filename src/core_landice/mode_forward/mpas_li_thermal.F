@@ -179,6 +179,9 @@ module li_thermal
       integer :: i, iRow
       real(kind=RKIND), parameter :: surfaceAirTemperatureCelsius = -15.0_RKIND
 
+
+      call mpas_timer_start("thermal init")
+
       if (circular_shelf_test) then
          nCellsPerRow = 40
          nRows = 46
@@ -486,6 +489,8 @@ module li_thermal
           write (stderrUnit,*) "An error has occurred in li_thermal_init."
       endif
 
+      call mpas_timer_stop("thermal init")
+
    !--------------------------------------------------------------------
     end subroutine li_thermal_init
 
@@ -726,6 +731,24 @@ module li_thermal
 
       err = 0
 
+      call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      if (trim(config_thermal_solver) == 'none') then
+         return ! nothing to do
+      endif
+
+      ! get rest of config variables
+      call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
+
+
+      if (config_print_thermal_info) then
+         write(stdoutUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
+      endif
+
+
       ! check that deltat is valid
       ! Note: With an adaptive time step, deltat is set to 0 at the start of the time step.
       !       Here we make sure the thermal solver is not called while deltat = 0.
@@ -739,6 +762,8 @@ module li_thermal
          write(stderrUnit,*) 'ERROR: li_thermal_solver was called with invalid deltat =', deltat
          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
       endif
+
+
 
       ! block loop
       block => domain % blocklist
@@ -789,18 +814,6 @@ module li_thermal
          call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
          thermalCellMask => thermalCellMaskField % array
 
-         ! get config variables
-         call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
-         call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
-         call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
-         call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
-         call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
-
-         if (config_print_thermal_info) then
-            write(stdoutUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
-         endif
-
          ! calculate masks - so we know where the ice is floating
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
@@ -819,10 +832,6 @@ module li_thermal
 !!         heatDissipation(:,:) = 0.0d0
 
          select case(config_thermal_solver)
-
-         case ('none')
-
-            ! Do nothing
 
          case ('temperature', 'enthalpy')
 
@@ -2666,12 +2675,7 @@ module li_thermal
 
       ! Compute melt rate for floating ice
 
-      if (trim(config_basal_mass_bal_float) == 'none') then
-
-         ! Set floating BMB to 0 to have 'none'
-         floatingBasalMassBal(:) = 0.0_RKIND
-
-      elseif (trim(config_basal_mass_bal_float) == 'file') then
+      if (trim(config_basal_mass_bal_float) == 'file') then
 
          ! Do nothing in this routine - use whatever value was input as data
 
