@@ -61,7 +61,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/gridgraph_mod.F90
                ${SRC_SHARE_DIR}/hybrid_mod.F90
                ${SRC_SHARE_DIR}/interpolate_mod.F90
-               ${SRC_SHARE_DIR}/spelt_mod.F90
                ${SRC_SHARE_DIR}/linear_algebra_mod.F90
                ${SRC_SHARE_DIR}/ll_mod.F90
                ${SRC_SHARE_DIR}/mass_matrix_mod.F90

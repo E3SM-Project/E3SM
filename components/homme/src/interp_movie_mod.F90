@@ -8,9 +8,6 @@ module interp_movie_mod
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
        set_interp_parameter, interpol_phys_latlon
-#if defined(_SPELT)
-  use interpolate_mod, only : interpol_spelt_latlon
-#endif
   use pio_io_mod, only : & 
        nf_output_init_begin,&
        nf_output_init_complete,  &
@@ -45,7 +42,6 @@ module interp_movie_mod
        num_io_procs,        &
        PIOFS
   use fvm_control_volume_mod, only : fvm_struct
-  use spelt_mod, only : spelt_struct
 
   implicit none
 #undef V_IS_LATLON
@@ -462,13 +458,7 @@ contains
     ! ---------------------    
     type (element_t),target    :: elem(:)
     type (parallel_t)     :: par
-    
-#if defined(_SPELT)
-    type (spelt_struct), optional   :: fvm(:)
-#else
-    type (fvm_struct), optional   :: fvm(:)    
-#endif
-    
+    type (fvm_struct), optional   :: fvm(:)
     type (TimeLevel_t)  :: tl
 
 #if defined(_PRIM)
@@ -703,54 +693,6 @@ contains
                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='div_fvm')
                deallocate(datall)
             end if
-            
-#if defined(_SPELT) 
-           if(nf_selectedvar('psC', output_varnames)) then
-              if (par%masterproc) print *,'writing for SPELT: psC...'
-              st=1
-              allocate(datall(ncnt,1))
-              do ie=1,nelemd
-                 en=st+interpdata(ie)%n_interp-1
-                 call interpol_spelt_latlon(interpdata(ie),fvm(ie)%psc, &
-                                    fvm(ie),elem(ie)%corners,datall(st:en,1))
-                 st=st+interpdata(ie)%n_interp
-              enddo
-        
-#ifdef _PRIM
-              if (p0 < 2000)  then  ! convert to Pa, if using mb
-                 datall(:,1) = 100*(datall(:,1)) 
-              endif
-#endif
-              call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='psC')
-              deallocate(datall)
-           endif
-
-
-            do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
-               write(vname,'(a1,i1)') 'C for SPELT: ',cindex
-               if (cindex==1) vname='C'
-
-               if(nf_selectedvar(vname, output_varnames)) then
-                  if (par%masterproc) print *,'writing for SPELT: ',vname
-                  allocate(datall(ncnt,nlev))
-                  st=1
-
-
-                  do ie=1,nelemd
-                     en=st+interpdata(ie)%n_interp-1
-                     do k=1,nlev                       
-                       call interpol_spelt_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
-                                          fvm(ie),elem(ie)%corners,datall(st:en,k))                                          
-                     end do
-                     st=st+interpdata(ie)%n_interp
-                  enddo                  
-                  call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)                  
-                  deallocate(datall)                  
-               end if
-            enddo
-#endif
-
-
 
              if(nf_selectedvar('geop', output_varnames)) then
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))

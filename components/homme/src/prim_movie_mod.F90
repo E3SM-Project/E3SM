@@ -4,32 +4,22 @@
 
 module prim_movie_mod
 #ifndef PIO_INTERP
-  ! ---------------------
   use kinds, only : real_kind, longdouble_kind
-  ! ---------------------
   use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize, ntrac, nc
-  ! ---------------------
   use hybvcoord_mod, only :  hvcoord_t 
-  ! ---------------------
 #ifdef _MPI
   use parallel_mod, only : syncmp, iam, mpireal_t, mpi_max, mpi_sum, mpiinteger_t, parallel_t, haltmp, abortmp
 #else
   use parallel_mod, only : syncmp, iam, mpireal_t, parallel_t
 #endif
-  ! ---------------------
   use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
-  ! ---------------------
   use element_mod, only : element_t
   use fvm_control_volume_mod, only : fvm_struct
-  use spelt_mod, only : spelt_struct
 
-  ! ---------------------
   use cube_mod, only : cube_assemble
-  ! ---------------------
   use control_mod, only : test_case, runtype, &
        restartfreq, &
        integration, columnpackage, hypervis_power
-  ! ---------------------
   use common_io_mod, only : &
        output_start_time,   &
        output_end_time,     &
@@ -56,15 +46,10 @@ module prim_movie_mod
        nf_variable_attributes, &
        nf_get_frame
 
-  ! ---------------------
   use coordinate_systems_mod, only : cartesian2D_t, spherical_polar_t, cartesian3D_t, spherical_to_cart
-  ! ---------------------
   use physical_constants, only : g, kappa, p0, dd_pi
-  ! ---------------------
   use physics_io_mod, only : physics_movie_init, physics_movie_output, physics_set_varnames
-  ! ---------------------
   use dof_mod, only : UniquePoints, UniqueCoords, UniqueNcolsP, createmetadata
-  ! ---------------------
   use pio, only  : io_desc_t, pio_iotask_rank !_EXTERNAL
 
 
@@ -542,11 +527,7 @@ contains
     use netcdf_io_mod, only : iodesc3d_nc
 
     type (element_t)    :: elem(:)
-#if defined(_SPELT)
-    type (spelt_struct), optional  :: fvm(:)
-#else
-     type (fvm_struct), optional   :: fvm(:)    
-#endif
+    type (fvm_struct), optional   :: fvm(:)
 
     type (TimeLevel_t)  :: tl
     type (hvcoord_t)    :: hvcoord

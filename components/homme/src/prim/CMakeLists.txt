@@ -47,7 +47,6 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
   ${SRC_SHARE_DIR}/dof_mod.F90
   ${SRC_DIR}/common_io_mod.F90
-  ${SRC_SHARE_DIR}/spelt_mod.F90
   ${SRC_SHARE_DIR}/fvm_mod.F90
   ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
   ${SRC_SHARE_DIR}/fvm_line_integrals_mod.F90 

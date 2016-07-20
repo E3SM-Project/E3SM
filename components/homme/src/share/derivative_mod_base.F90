@@ -4,14 +4,14 @@
 
 
 module derivative_mod_base
-  use kinds, only : real_kind, longdouble_kind
-  use dimensions_mod, only : np, nc, nep, nelemd, nlev
+
+  use kinds,          only : real_kind, longdouble_kind
+  use dimensions_mod, only : np, nc, nelemd, nlev
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
-  use parallel_mod, only : abortmp
-  ! needed for spherical differential operators:
-  use physical_constants, only : rrearth 
-  use element_mod, only : element_t
-  use control_mod, only : hypervis_scaling, hypervis_power
+  use parallel_mod,   only : abortmp
+  use element_mod,    only : element_t
+  use control_mod,    only : hypervis_scaling, hypervis_power
+  use physical_constants, only : rrearth
 
 implicit none
 private
@@ -23,7 +23,6 @@ private
      real (kind=real_kind) :: Mvv_twt(np,np)  ! diagonal matrix of GLL weights
      real (kind=real_kind) :: Mfvm(np,nc+1)
      real (kind=real_kind) :: Cfvm(np,nc)
-     real (kind=real_kind) :: Sfvm(np,nep)
      real (kind=real_kind) :: legdg(np,np)
   end type derivative_t
 
@@ -59,7 +58,6 @@ private
 
   public :: interpolate_gll2fvm_corners
   public :: interpolate_gll2fvm_points
-  public :: interpolate_gll2spelt_points
   public :: remap_phys2gll
 
 
@@ -117,12 +115,11 @@ contains
 ! derivatives and interpolating
 ! ==========================================
 
-  subroutine derivinit(deriv,fvm_corners, fvm_points, spelt_refnep)
+  subroutine derivinit(deriv,fvm_corners, fvm_points)
     type (derivative_t)      :: deriv
 !    real (kind=longdouble_kind),optional :: phys_points(:)
     real (kind=longdouble_kind),optional :: fvm_corners(nc+1)
     real (kind=longdouble_kind),optional :: fvm_points(nc)
-    real (kind=longdouble_kind),optional :: spelt_refnep(nep)
 
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
@@ -177,10 +174,7 @@ contains
 
     if (present(fvm_points)) &
          call v2pinit(deriv%Cfvm,gp%points,fvm_points,np,nc)
-         
-    if (present(spelt_refnep)) &     
-      call v2pinit(deriv%Sfvm,gp%points,spelt_refnep,np,nep)
-         
+
     ! notice we deallocate this memory here even though it was allocated 
     ! by the call to gausslobatto.
     deallocate(gp%points)
@@ -907,45 +901,6 @@ end do
        enddo
     enddo
   end function interpolate_gll2fvm_points
-  !  ================================================
-  !  interpolate_gll2spelt_points:
-  !
-  !  shape function interpolation from data on GLL grid the spelt grid
-  !  Author: Christoph Erath
-  !  ================================================
-  function interpolate_gll2spelt_points(v,deriv) result(p)
-    real(kind=real_kind), intent(in) :: v(np,np)
-    type (derivative_t), intent(in) :: deriv
-    real(kind=real_kind) :: p(nep,nep)
-
-    ! Local
-    integer i,j,l
-
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  vtemp(np,nep)
-
-    do j=1,np
-       do l=1,nep
-          sumx00=0.0d0
-!DIR$ UNROLL(NP)
-          do i=1,np
-             sumx00 = sumx00 + deriv%Sfvm(i,l  )*v(i,j  )
-          enddo
-          vtemp(j  ,l) = sumx00
-        enddo
-    enddo
-    do j=1,nep
-       do i=1,nep
-          sumx00=0.0d0
-!DIR$ UNROLL(NP)
-          do l=1,np
-             sumx00 = sumx00 + deriv%Sfvm(l,j  )*vtemp(l,i)
-          enddo
-          p(i  ,j  ) = sumx00
-       enddo
-    enddo
-  end function interpolate_gll2spelt_points
 
 !  ================================================
 !  interpolate_gll2fvm_corners:
