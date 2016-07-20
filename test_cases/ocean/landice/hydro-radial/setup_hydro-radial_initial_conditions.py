@@ -57,9 +57,16 @@ if putOriginOnACell:
    r = ((xCell[:] - x0)**2 + (yCell[:] - y0)**2)**0.5
 
 
-r0=25000.0
-thickness[0, r<r0] = 500.0 * (1.0 - (r[r<r0] / r0)**2)
-thickness[0, r>22500.0] = 0.0
+h0   = 500.0;            # m     center thickness
+v0   = 100.0 / (3600.0*24.0*365.0);  # m/s   sliding velocity at margin
+R0   = 25.0e3;           # m     ideal ice cap radius
+#R1   = 5.0e3;            # m     onset of sliding
+R1   = 0.0e3;            # m     onset of sliding
+L = 0.9 * R0;            # m     actual margin location
+#L = 0.92 * R0;            # m     actual margin location
+
+thickness[0, r<R0] = h0 * (1.0 - (r[r<R0] / R0)**2)
+thickness[0, r>L] = 0.0
 
 
 # flat bed
@@ -77,15 +84,16 @@ gridfile.variables['basalMeltInput'][:] = 0.2 / (365.0*24.0*3600.0) * 1000.0  # 
 # velocity
 gridfile.variables['uReconstructX'][:] = 0.0
 velo = r*0.0
-velo = 100.0/(3600.0*24.0*365.0) * (r-5000.0)**5 / (22500.0 - 5000.0)**5
-velo[r<5000.0]=0.0
+velo = v0 * (r-R1)**5 / (L - R1)**5
+velo[r<R1]=0.0
 gridfile.variables['uReconstructX'][0,:,-1] = velo
 gridfile.variables['uReconstructX'][0,thickness[0,:]==0.0,:] = 0.0
 
 # IC on thickness
-gridfile.variables['waterThickness'][0,:] = (r-5000.0)/r0 * 0.5 
-gridfile.variables['waterThickness'][0,gridfile.variables['waterThickness'][0,:]<0.0] = 0.0
-#gridfile.variables['waterThickness'][0,:] = 0.05
+gridfile.variables['waterThickness'][0,:] = 0.0
+gridfile.variables['waterThickness'][0,:] = (r-R1)/R0 * 0.5  # set some arbitrary linear profile
+#gridfile.variables['waterThickness'][0,gridfile.v0;            % m     actual margin location# zero negative values
+#gridfile.variables['waterThickness'][0,:] = 0.
 
 gridfile.close()
 

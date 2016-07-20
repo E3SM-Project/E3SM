@@ -6,6 +6,7 @@
                 <option name="config_velocity_solver">'none'</option>
                 <option name="config_thickness_advection">'none'</option>
                 <option name="config_ice_density">910.0</option>
+                <option name="config_default_flowParamA">3.1689e-24</option>
 
                 <option name="config_SGH">.true.</option>
                 <option name="config_SGH_adaptive_timestep">.true.</option>
@@ -13,7 +14,7 @@
                 <option name="config_SGH_max_adaptive_timestep">31536000</option>
                 <option name="config_SGH_alpha">1.0</option>
                 <option name="config_SGH_beta">2.0</option>
-                <option name="config_SGH_conduc_coeff">0.01</option>
+                <option name="config_SGH_conduc_coeff">0.00000101976</option>
                 <option name="config_SGH_till_drainage">0.0</option>
                 <option name="config_SGH_till_max">0.0</option>
                 <option name="config_SGH_bed_roughness_max">1.0</option>
