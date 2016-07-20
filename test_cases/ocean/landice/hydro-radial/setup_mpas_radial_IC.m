@@ -3,7 +3,7 @@
 [r,W,P,h,vb] = radialsteady(true)
 
 
-fname = '/Users/mhoffman/documents/mpas-git/TESTS/landice/hydro-radial/1000m/smoketest/run_model/landice_grid.nc';
+fname = '/Users/mhoffman/documents/mpas-git/TESTS/landice/hydro-radial/1000m/steady_state_drift_test/run_model/landice_grid.nc';
 xCell = ncread(fname, 'xCell');
 yCell = ncread(fname, 'yCell');
 

@@ -1,6 +1,6 @@
 <template>
         <namelist>
-                <option name="config_dt">'0000-06-00_00:00:00'</option>
+                <option name="config_dt">'0001-00-00_00:00:00'</option>
                 <option name="config_stop_time">'0000-02-01_00:00:00'</option>
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
                 <option name="config_velocity_solver">'none'</option>
@@ -47,7 +47,7 @@
                         <attribute name="type">input;output</attribute>
                         <attribute name="filename_template">restart.$Y.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
-                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <attribute name="precision">double</attribute>
                         <attribute name="input_interal">initial_only</attribute>

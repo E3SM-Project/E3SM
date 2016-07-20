@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<config case="run_model">
+        <!-- add needed files/executables -->
+        <add_link source="../setup_mesh/landice_grid.nc" dest="landice_grid.nc"/>
+        <add_link source="../setup_mesh/graph.info" dest="graph.info"/>
+        <add_executable source="model" dest="landice_model"/>
+        <add_executable source="metis" dest="metis"/>
+        <!-- link in scripts that a user might want -->
+        <add_link source_path="script_configuration_dir" source="setup_hydro-radial_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="plot_hydro-radial_profile.py" dest="."/>
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="radial_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_stop_time">'0500-01-01_00:00:00'</option>
+                <option name="config_SGH_englacial_porosity">0.1</option>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="radial_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0005-00-00_00:00:00</attribute>
+                </stream>
+        </streams>
+
+        <run_script name="run_model.py">
+
+                <!-- Set up needed graph file -->
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">4</argument>
+                </step>
+
+                <!-- Run the model -->
+                <model_run procs="4" threads="1" namelist="namelist.landice" streams="streams.landice"/>
+
+        </run_script>
+</config>
+

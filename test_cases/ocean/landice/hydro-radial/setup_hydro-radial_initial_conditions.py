@@ -91,9 +91,13 @@ gridfile.variables['uReconstructX'][0,thickness[0,:]==0.0,:] = 0.0
 
 # IC on thickness
 gridfile.variables['waterThickness'][0,:] = 0.0
-gridfile.variables['waterThickness'][0,:] = (r-R1)/R0 * 0.5  # set some arbitrary linear profile
+gridfile.variables['waterThickness'][0,:] = 0.01  # set some small initial value to keep adaptive time stepper from taking a huge time step initially
+#gridfile.variables['waterThickness'][0,:] = (r-R1)/R0 * 0.05  # set some arbitrary but small linear profile
 #gridfile.variables['waterThickness'][0,gridfile.v0;            % m     actual margin location# zero negative values
 #gridfile.variables['waterThickness'][0,:] = 0.
+
+
+gridfile.variables['waterPressure'][0,:] = 0.0
 
 gridfile.close()
 
