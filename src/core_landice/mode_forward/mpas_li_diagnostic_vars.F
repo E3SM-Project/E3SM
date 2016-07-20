@@ -126,10 +126,10 @@ contains
       ! === Diagnostic solve of variables prior to velocity
       ! ===
 
-      call mpas_timer_start("calc. diagnostic vars except vel")
+      call mpas_timer_start("calc. diagnostic vars before vel")
       call diagnostic_solve_before_velocity(domain, err_tmp)
       err = ior(err, err_tmp)
-      call mpas_timer_stop("calc. diagnostic vars except vel")
+      call mpas_timer_stop("calc. diagnostic vars before vel")
 
 
       ! ===
@@ -143,7 +143,7 @@ contains
       ! === Diagnostic solve of variables after velocity
       ! ===
 
-      call mpas_timer_start("calc. diagnostic vars except vel")
+      call mpas_timer_start("calc. diagnostic vars after vel")
 
       block => domain % blocklist
       do while (associated(block))
@@ -185,7 +185,7 @@ contains
       call mpas_dmpar_field_halo_exch(domain, 'layerThicknessEdge')
       call mpas_timer_stop("halo updates")
 
-      call mpas_timer_stop("calc. diagnostic vars except vel")
+      call mpas_timer_stop("calc. diagnostic vars after vel")
 
       ! === error check and exit
       if (err == 1) then
@@ -637,7 +637,9 @@ contains
           err = ior(err, err_tmp)
 
           ! This information is only needed by external dycores.
-          if (config_velocity_solver /= 'sia') then
+          if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
              ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
              call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
              floatingEdges = li_mask_is_floating_ice_int(edgeMask)
@@ -649,7 +651,9 @@ contains
       end do
 
       ! This halo update is only needed by external dycores.
-      if (config_velocity_solver /= 'sia') then
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
          ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'floatingEdges')
@@ -657,7 +661,9 @@ contains
       endif
 
       ! This information is only needed for some external dycores.
-      if (trim(config_velocity_solver) /= 'sia') then
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
          procDynamicVertexMaskChanged = 0
          procDirichletMaskChanged = 0
 
@@ -714,7 +720,7 @@ contains
          call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
          !print *,'dirichletMaskChanged', dirichletMaskChanged
-      end if   ! sia
+      end if   ! higher-order
 
       ! === error check
       if (err > 0) then

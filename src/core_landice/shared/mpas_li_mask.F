@@ -24,6 +24,7 @@ module li_mask
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_timer
    use li_setup
 
    implicit none
@@ -278,6 +279,8 @@ contains
       integer :: numCellsOnVertex
       integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
       logical :: validVertex
+
+      call mpas_timer_start('calculate mask')
 
       err = 0
 
@@ -540,6 +543,8 @@ contains
       if (err > 0) then
           write (stderrUnit,*) "An error has occurred in li_calculate_mask."
       endif
+
+      call mpas_timer_stop('calculate mask')
 
    !--------------------------------------------------------------------
    end subroutine li_calculate_mask
