@@ -76,7 +76,7 @@ def _main_func():
     else:
         cmd = "%s complib -j %d MODEL=clm COMPLIB=%s -f %s MACFILE=%s " \
             % (gmake, gmake_j, complib, makefile, macfile )
-    rc, out, err = run_cmd(cmd, ok_to_fail=True)
+    rc, out, err = run_cmd(cmd)
     logger.info("%s: \n\n output:\n %s \n\n err:\n\n%s\n"%(cmd,out,err))
     expect(rc == 0, "Command %s failed with rc=%s" % (cmd, rc))
     
