@@ -74,7 +74,7 @@ print "start plotting."
 
 fig = plt.figure(1, facecolor='w')
 # water thickness
-ax = fig.add_subplot(211)
+ax1 = fig.add_subplot(121)
 #plt.plot(x, H[ind]*917.0*9.81/1.0e5, '.-')
 plt.plot(x, h[ind], '.-')
 plt.xlabel('X-position (km)')
@@ -82,11 +82,11 @@ plt.ylabel('water depth (m)')
 plt.grid(True)
 
 # water pressure
-ax = fig.add_subplot(212)
-plt.plot(x, H[ind]*917.0*9.81, '.-')
-plt.plot(x, P[ind], '.--')
+ax = fig.add_subplot(122, sharex=ax1)
+plt.plot(x, H[ind]*910.0*9.80616 / 1.0e5, '.-')
+plt.plot(x, P[ind] / 1.0e5, '.--')
 plt.xlabel('X-position (km)')
-plt.ylabel('water pressure (Pa)')
+plt.ylabel('water pressure (bar)')
 plt.grid(True)
 
 
