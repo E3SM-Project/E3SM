@@ -150,7 +150,7 @@
     </batch_system>
 
     <!-- edison is SLURM as of Jan-4-2016 -->
-    <batch_system MACH="edison" version="x.y">
+    <batch_system MACH="edison" type="slurm">
       <directives>
         <directive> -A {{ account }} </directive>
       </directives>

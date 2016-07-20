@@ -466,6 +466,7 @@
   <machine MACH="edison">
     <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
     <COMPILERS>intel,gnu,cray</COMPILERS>
+    <NODENAME_REGEX>edison</NODENAME_REGEX>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
     <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
