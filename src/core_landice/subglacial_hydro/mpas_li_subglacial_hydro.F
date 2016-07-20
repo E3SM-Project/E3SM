@@ -98,8 +98,15 @@ module li_subglacial_hydro
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: geometryPool
       real (kind=RKIND), pointer :: deltat
       real (kind=RKIND), pointer :: deltatSGH
+      real (kind=RKIND), dimension(:), pointer :: waterThickness
+      real (kind=RKIND), dimension(:), pointer :: tillWaterThickness
+      real (kind=RKIND), dimension(:), pointer :: waterPressure
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), pointer :: tillMax
+      real (kind=RKIND), pointer :: rhoi
       integer :: err_tmp
 
       err = 0
@@ -120,11 +127,15 @@ module li_subglacial_hydro
          err = ior(err, 1)
       endif
 
+      call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
 
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
 
@@ -134,6 +145,19 @@ module li_subglacial_hydro
             ! Fr now, force hydro dt to be master dt
             deltatSGH = deltat
          endif
+
+         ! remove invalid values
+         call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
+         waterThickness = max(0.0_RKIND, waterThickness)
+
+         call mpas_pool_get_array(hydroPool, 'tillWaterThickness', tillWaterThickness)
+         tillWaterThickness = max(0.0_RKIND, tillWaterThickness)
+         tillWaterThickness = min(tillMax, tillWaterThickness)
+
+         call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         waterPressure = max(0.0_RKIND, waterPressure)
+         waterPressure = min(waterPressure, rhoi * gravity * thickness)
 
          ! Initialize diagnostic pressure variables
          call calc_pressure_diag_vars(block, err_tmp)
