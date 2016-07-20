@@ -570,7 +570,7 @@ class E_TestSystemTest(TestCreateTestCommon):
         try:
             ct.system_test()
         finally:
-            log_lvl = logging.getLogger().setLevel(log_lvl)
+            logging.getLogger().setLevel(log_lvl)
 
         if (self._hasbatch):
             run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
