@@ -29,11 +29,10 @@ if (-e /opt/modules/default/init/csh) then
   module add DefApps site-aprun
   module add aprun-usage altd
   ##################################################################3#########
-
-  # Clear out the PGI and cray-libsci libraries
   
   #Add based on COMPILER specification
   if ($COMPILER == "pgi_acc") then
+      setenv MODULEPATH ${MODULEPATH}:/ccs/home/norton/.modules
       module switch pgi pgi/15.9.lustre
       module switch cray-mpich cray-mpich/7.2.5
       module switch cray-libsci cray-libsci/13.2.0
