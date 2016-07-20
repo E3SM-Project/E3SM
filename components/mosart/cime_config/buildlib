@@ -1,0 +1,41 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR mosart.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASEBUILD = `./xmlquery CASEBUILD -value`;
+my $SRCROOT  = `./xmlquery SRCROOT  -value`;
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+
+chdir "${OBJROOT}/rof/obj";
+
+open(file,">tmp_filepath") or die "ERROT: mosart.buildexe could not open file Filepath to write";
+print file "$CASEROOT/SourceMods/src.mosart \n";
+print file "$SRCROOT/components/mosart/src/riverroute \n";
+print file "$SRCROOT/components/mosart/src/cpl \n";
+print file "$SRCROOT/components/mosart/src/cpl_share \n";
+close(file);
+
+if (-f "Filepath") {
+    my $sysmod = "cmp -s tmp_filepath Filepath || mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: mosart.buidexe $sysmod failed: $?\n";
+} else {
+    my $sysmod = "mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: mosart.buidexe $sysmod failed: $?\n";
+}
+
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a -f $CASETOOLS/Makefile";
+system($sysmod) == 0 or die "ERROR: mosart.buildexe $sysmod failed: $?\n";
+
+exit(0);
+
+
+
