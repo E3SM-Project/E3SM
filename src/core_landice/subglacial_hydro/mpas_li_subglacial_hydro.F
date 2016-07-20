@@ -110,6 +110,7 @@ module li_subglacial_hydro
       integer, pointer :: config_num_halos
       integer :: err_tmp
 
+
       err = 0
       err_tmp = 0
 
@@ -118,6 +119,8 @@ module li_subglacial_hydro
          ! If SGH is not active, skip everything
          return
       endif
+
+      call mpas_timer_start("hydro init")
 
       write(stdoutUnit,*) 'Beginning subglacial hydro init.'
 
@@ -179,6 +182,8 @@ module li_subglacial_hydro
       if (err > 0) then
           write (stderrUnit,*) "An error has occurred in li_SGH_init."
       endif
+
+      call mpas_timer_stop("hydro init")
 
    !--------------------------------------------------------------------
    end subroutine li_SGH_init
