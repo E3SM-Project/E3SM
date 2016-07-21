@@ -152,7 +152,7 @@
   </grid>
   <grid name="a%ne16.+l%ne16.+oi%gx3.+r%r05.+g%null_w%null" >
     <mach name="yellowstone">
-      <pes pesize="any" compset="2000_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV">
+      <pes pesize="any" compset="2000_CAM.*_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV">
 	<comment>js 16 sep 2014 ne16_g37 bc5 yellowstone-specific pe layout used for low res ensemble</comment>
 	<ntasks>
 	  <ntasks_atm>96</ntasks_atm>
@@ -965,24 +965,24 @@
       <pes pesize="any" compset="CAM.+WISO.+CLM.+CICE.+POP">
 	<comment>none</comment>
 	<ntasks>
-	  <ntasks_atm>640</ntasks_atm> 
-	  <ntasks_lnd>96</ntasks_lnd> 
-	  <ntasks_rof>96</ntasks_rof> 
-	  <ntasks_ice>544</ntasks_ice> 
-	  <ntasks_ocn>96</ntasks_ocn> 
-	  <ntasks_glc>180</ntasks_glc> 
-	  <ntasks_wav>180</ntasks_wav> 
-	  <ntasks_cpl>640</ntasks_cpl> 
+	  <ntasks_atm>640</ntasks_atm>
+	  <ntasks_lnd>96</ntasks_lnd>
+	  <ntasks_rof>96</ntasks_rof>
+	  <ntasks_ice>544</ntasks_ice>
+	  <ntasks_ocn>96</ntasks_ocn>
+	  <ntasks_glc>180</ntasks_glc>
+	  <ntasks_wav>180</ntasks_wav>
+	  <ntasks_cpl>640</ntasks_cpl>
 	</ntasks>
 	<nthrds>
-	  <nthrds_atm>2</nthrds_atm> 
-	  <nthrds_lnd>1</nthrds_lnd> 
-	  <nthrds_rof>1</nthrds_rof> 
-	  <nthrds_ice>2</nthrds_ice> 
-	  <nthrds_ocn>1</nthrds_ocn> 
-	  <nthrds_glc>2</nthrds_glc> 
-	  <nthrds_wav>2</nthrds_wav> 
-	  <nthrds_cpl>2</nthrds_cpl> 
+	  <nthrds_atm>2</nthrds_atm>
+	  <nthrds_lnd>1</nthrds_lnd>
+	  <nthrds_rof>1</nthrds_rof>
+	  <nthrds_ice>2</nthrds_ice>
+	  <nthrds_ocn>1</nthrds_ocn>
+	  <nthrds_glc>2</nthrds_glc>
+	  <nthrds_wav>2</nthrds_wav>
+	  <nthrds_cpl>2</nthrds_cpl>
 	</nthrds>
 	<rootpe>
 	  <rootpe_atm>0</rootpe_atm>
@@ -1296,7 +1296,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="any" compset="CAM5.+CLM.+CICE.+POP.+SWAV">
+      <pes pesize="any" compset="CAM.+CLM.+CICE.+POP.+SWAV">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>-40</ntasks_atm>
@@ -1333,7 +1333,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="any" compset="CAM5.+CLM.+CICE.+POP.+WW3.+">
+      <pes pesize="any" compset="CAM.+CLM.+CICE.+POP.+WW3.+">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>-40</ntasks_atm>
@@ -1370,7 +1370,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="any" compset="CAM5.+CLM.+CICE.+POP.+DWAV">
+      <pes pesize="any" compset="CAM.+CLM.+CICE.+POP.+DWAV">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>-40</ntasks_atm>
@@ -1407,7 +1407,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="X" compset="CAM5.+CLM.+CICE.+POP.+">
+      <pes pesize="X" compset="CAM.+CLM.+CICE.+POP.+">
 	<PES_PER_NODE>16</PES_PER_NODE>
 	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	<comment>none</comment>
@@ -1446,7 +1446,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="L" compset="CAM5">
+      <pes pesize="L" compset="CAM.*">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>900</ntasks_atm>
