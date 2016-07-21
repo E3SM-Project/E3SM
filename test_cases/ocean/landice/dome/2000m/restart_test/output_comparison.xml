@@ -3,7 +3,7 @@
                 <compare_fields>
                         <field name="thickness" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
                         <field name="normalVelocity" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
-<!--                        <field name="daysSinceStart" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/> -->
+                        <field name="daysSinceStart" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
                 </compare_fields>
         </validation>
 </template>
