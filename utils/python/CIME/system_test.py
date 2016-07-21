@@ -243,8 +243,15 @@ class SystemTest(object):
     ###########################################################################
     def _get_case_id(self, test):
     ###########################################################################
-        baseline_action_code = ".C" if self._compare else (".G" if self._generate else "")
-        return "%s%s.%s" % (test, baseline_action_code, self._test_id)
+        baseline_action_code = ""
+        if self._generate:
+            baseline_action_code += "G"
+        if self._compare:
+            baseline_action_code += "C"
+        if len(baseline_action_code) > 0:
+            return "%s.%s.%s" % (test, baseline_action_code, self._test_id)
+        else:
+            return "%s.%s" % (test, self._test_id)
 
     ###########################################################################
     def _get_test_dir(self, test):
@@ -835,7 +842,11 @@ class SystemTest(object):
                     fd.write(template)
                 os.chmod(cs_submit_file,
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
-
+            if CIME.utils.get_model == "cesm":
+                testreporter =  os.path.join(self._test_root,"testreporter.pl")
+                shutil.copy(os.path.join(self._cime_root,"scripts","Testing","testreporter.pl"),
+                            testreporter)
+                os.chmod(testreporter, os.stat(testreporter).st_mode | stat.S_IXUSR | stat.S_IXGRP)
         except Exception as e:
             logger.warning("FAILED to set up cs files: %s" % str(e))
 

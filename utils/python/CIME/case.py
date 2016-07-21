@@ -277,6 +277,8 @@ class Case(object):
         then that value will be set in the file object and the file
         name is returned
         """
+        if item == "CASEROOT":
+            self._caseroot = value
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
@@ -289,6 +291,7 @@ class Case(object):
                 logger.warn("Item %s already in lookups with value %s"%(item,self.lookups[item]))
             else:
                 self.lookups[item] = value
+
 
     def _set_compset_and_pesfile(self, compset_name, user_compset=False, pesfile=None):
         """

@@ -55,6 +55,11 @@
     <lname>1850_CAM60%WTSM_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>B1850Cw</alias>
+    <lname>1850_CAM60%WTSM_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_WW3</lname>
+  </compset>
+
 
 
 
@@ -119,7 +124,7 @@
 
 
   <compset>
-    <alias>B1850C5WCCML45CNR</alias>
+    <alias>B1850C5WCCML45CNRWs</alias>
     <lname>1850_CAM50%WCCM_CLM45%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>
 
