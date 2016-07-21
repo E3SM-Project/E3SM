@@ -77,6 +77,14 @@
 		<dim name="nTransects" definition="1" units="unitless"
 			 description="The number of transects for AM transectTransport"
 		/>
+		<dim name="nTransectGroups" units="unitless"
+			description="Number of groups of regions."
+			definition="1"
+		/>
+		<dim name="maxTransectsInGroup" units="unitless"
+			description="Maximum number of regions in a group."
+			definition="1"
+		/>
 		<dim name="maxEdgesInTransect" definition="1" units="unitless"
 			 description="Max number of edges in a transect for AM transectTransport"
 		/>
@@ -1627,7 +1635,7 @@
 			<var name="pointCellGlobalID"/>
 		</stream>
 
-		<stream name="transect_masks"
+		<stream name="transects"
 				type="input"
 				filename_template="transect_masks.nc"
 				immutable="true"
@@ -1636,6 +1644,10 @@
 
 			<var name="transectEdgeMasks"/>
 			<var name="transectEdgeMaskSigns"/>
+			<var name="transectsInGroup"/>
+			<var name="nTransectsInGroup"/>
+			<var name="transectNames"/>
+			<var name="transectGroupNames"/>
 		</stream>
 	</streams>
 
@@ -3179,6 +3191,45 @@
 			dimensions="nRegionGroups"
 			units="unitless"
 			description="The name for each region group."
+			/>
+	</var_struct>
+	<!-- ADDED THIS STRUCT, SO THAT ALL AMS CAN ACCESS THE MASKS IN A UNIFIED WAY -->
+	<var_struct name="transects" time_levs="1">
+		<var name="transectEdgeMasks" 
+		     type="integer" 
+		     dimensions="nTransects nEdges" 
+		     units="NA"
+			 description="Mask of edges for measuring transport across transects"
+		/>
+		<var name="transectEdgeMaskSigns" 
+		     type="integer" 
+		     dimensions="nTransects nEdges" 
+		     units="NA"
+			 description="Sign of normalVelocity on edge for this transect"
+		/>
+		<var name="transectsInGroup"
+			type="integer"
+			dimensions="maxTransectsInGroup nTransectGroups"
+			units="unitless"
+			description="The list of transect indices in each group."
+			/>
+		<var name="nTransectsInGroup"
+			type="integer"
+			dimensions="nTransectGroups"
+			units="unitless"
+			description="The number of transects in each group."
+			/>
+		<var name="transectNames"
+			type="text"
+			dimensions="nTransects"
+			units="unitless"
+			description="The name for each transect."
+			/>
+		<var name="transectGroupNames"
+			type="text"
+			dimensions="nTransectGroups"
+			units="unitless"
+			description="The name for each transect group."
 			/>
 	</var_struct>
 

@@ -105,6 +105,8 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: transectTransportAMPool
       type (mpas_pool_type), pointer :: meshPool
+      !!!! INSERTED BY NILS
+      type (mpas_pool_type), pointer :: transectPool
       type (mpas_pool_type), pointer :: transectTransportAM
 
       integer, pointer :: nTransects
@@ -117,6 +119,8 @@ contains
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransects',nTransects)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'transectTransportAM', transectTransportAMPool)
+      !!!! INSERTED BY NILS
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)
       call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasksMax',transectEdgeMasksMax)
 
       transectEdgeMasksMax(:) = 0
@@ -126,8 +130,9 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'transectTransportAM', transectTransportAMPool)
 
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasks',transectEdgeMasks)
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
+         !!!! EDITED BY NILS. NOW GET THE VALUES OUT OF CENTRALISED DATA POOL
+         call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
+         call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
 
          do iTransect = 1,nTransects
             transectEdgeMasksMax(iTransect) = max(transectEdgeMasksMax(iTransect),maxval(transectEdgeMasks(iTransect,:)))
@@ -193,6 +198,8 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: transectTransportAM
+      !!!! INSERTED BY NILS
+      type (mpas_pool_type), pointer :: transectPool
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nEdgesSolve, num_tracers, nTransects
@@ -231,6 +238,8 @@ contains
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'transectTransportAM', transectTransportAMPool)
+         !!!! INSERTED BY NILS
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'transectMasks', transectPool)
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
@@ -248,8 +257,9 @@ contains
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
          !call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasks',transectEdgeMasks)
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
+         !!!! EDITED BY NILS. NOW GET THE VALUES OUT OF CENTRALISED DATA POOL
+         call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
+         call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
          call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasksMax',transectEdgeMasksMax)
 
          sumTransport = 0.0_RKIND

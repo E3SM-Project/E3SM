@@ -17,3 +17,4 @@
 #include "Registry_debug_diagnostics.xml"
 #include "Registry_rpn_calculator.xml"
 #include "Registry_transect_transport.xml"
+#include "Registry_moc_streamfunction.xml"
