@@ -215,7 +215,7 @@ contains
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
 
-      ! initial total energy      
+      ! initial total energy
       call MPAS_pool_get_array(conservationCheckAMPool, "initialEnergy", initialEnergy)
 
       call compute_total_energy(domain, initialEnergy)
@@ -288,7 +288,7 @@ contains
 
       if (config_AM_conservationCheck_write_to_logfile) then
          write(stdoutUnit,fmt='(a)') '=========================================================='
-         write(stdoutUnit,fmt='(a)') ' Conservation checks'      
+         write(stdoutUnit,fmt='(a)') ' Conservation checks'
       endif
 
       ! energy conservation check
@@ -342,7 +342,8 @@ contains
            finalEnergy, &
            energyChange, &
            netEnergyFlux, &
-           energyError
+           absoluteEnergyError, &
+           relativeEnergyError
 
       real(kind=RKIND) :: &
            surfaceHeatFluxTotal, &
@@ -380,7 +381,7 @@ contains
            oceanHeatFluxArea, &
            freezingMeltingPotentialInitial, &
            snowfallRate
-      
+
       real(kind=RKIND), pointer :: &
            dt
 
@@ -395,7 +396,7 @@ contains
            iCell
 
       integer, parameter :: &
-           nSums = 5 
+           nSums = 5
 
       character(len=17) :: &
            formatString
@@ -426,7 +427,7 @@ contains
 
       allocate(sumArray(nSums))
       allocate(sumArrayOut(nSums))
-      
+
       sumArray = 0.0_RKIND
 
       block => domain % blocklist
@@ -445,7 +446,7 @@ contains
          call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
          call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
 
-         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)         
+         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
          call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
          call MPAS_pool_get_array(shortwavePool, "absorbedShortwaveFlux", absorbedShortwaveFlux)
@@ -471,7 +472,7 @@ contains
                     longwaveDown(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell)
 
             enddo ! iCell
-         
+
          else
 
             do iCell = 1, nCellsSolve
@@ -484,19 +485,19 @@ contains
          endif
 
          do iCell = 1, nCellsSolve
-         
+
             ! ocean heat flux
             sumArray(2) = sumArray(2) + oceanHeatFluxArea(iCell) * areaCell(iCell)
-         
+
             ! freezing potential
             sumArray(3) = sumArray(3) + max(0.0_RKIND, freezingMeltingPotentialInitial(iCell)) * areaCell(iCell)
-            
+
             ! snowfall heat input
             sumArray(4) = sumArray(4) - snowfallRate(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell) * Lfresh
-            
+
             ! latent heat
             sumArray(5) = sumArray(5) + evaporativeWaterFlux(iCell) * iceAreaCell(iCell) * areaCell(iCell) * Lvap
-         
+
          enddo ! iCell
 
          block => block % next
@@ -514,16 +515,18 @@ contains
       ! calculate the final net energy flux to the ice
       call MPAS_pool_get_array(conservationCheckAMPool, "netEnergyFlux", netEnergyFlux)
 
-      netEnergyFlux = (surfaceHeatFluxTotal + snowfallHeatTotal + latentHeatTotal - oceanHeatFluxTotal - freezingPotentialTotal) * dt
+      netEnergyFlux = surfaceHeatFluxTotal + snowfallHeatTotal + latentHeatTotal - oceanHeatFluxTotal - freezingPotentialTotal
 
       !-------------------------------------------------------------
       ! Energy conservation error
       !-------------------------------------------------------------
 
       ! compute the final energy error
-      call MPAS_pool_get_array(conservationCheckAMPool, "energyError", energyError)
+      call MPAS_pool_get_array(conservationCheckAMPool, "absoluteEnergyError", absoluteEnergyError)
+      call MPAS_pool_get_array(conservationCheckAMPool, "relativeEnergyError", relativeEnergyError)
 
-      energyError = (netEnergyFlux - energyChange) / (finalEnergy - 1.0_RKIND) ! why the minus 1????
+      absoluteEnergyError = netEnergyFlux * dt - energyChange
+      relativeEnergyError = absoluteEnergyError / (finalEnergy - 1.0_RKIND) ! why the minus 1????
 
       ! cleanup
       deallocate(sumArray)
@@ -550,8 +553,11 @@ contains
          write(stdoutUnit,fmt=formatString) ' Snowfall heat flux       (W) = ', snowfallHeatTotal
          write(stdoutUnit,fmt=formatString) ' Latent heat flux         (W) = ', latentHeatTotal
          write(stdoutUnit,fmt=formatString) ' Net energy flux          (W) = ', netEnergyFlux
+         write(stdoutUnit,fmt=formatString) ' Net energy flux          (J) = ', netEnergyFlux * dt
          write(stdoutUnit,*)
-         write(stdoutUnit,fmt=formatString) ' Energy error                 = ', energyError
+         write(stdoutUnit,fmt=formatString) ' Absolute energy error    (J) = ', absoluteEnergyError
+         write(stdoutUnit,fmt=formatString) ' Absolute energy error    (W) = ', absoluteEnergyError / dt
+         write(stdoutUnit,fmt=formatString) ' Relative energy error        = ', relativeEnergyError
 
       endif
 
@@ -592,7 +598,8 @@ contains
            finalMass, &
            massChange, &
            netMassFlux, &
-           massError
+           absoluteMassError, &
+           relativeMassError
 
       real(kind=RKIND) :: &
            rainfallRateTotal, &
@@ -623,13 +630,16 @@ contains
            evaporativeWaterFlux, &
            oceanFreshWaterFluxArea, &
            frazilFormation
-      
+
       real(kind=RKIND), pointer :: &
            dt
 
       logical, pointer :: &
            config_update_ocean_fluxes, &
            config_AM_conservationCheck_write_to_logfile
+
+      character(len=strKIND), pointer :: &
+           config_thermodynamics_type
 
       integer, pointer :: &
            nCellsSolve
@@ -647,7 +657,7 @@ contains
       call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
-      ! Total change in mass 
+      ! Total change in mass
       !-------------------------------------------------------------
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
@@ -669,13 +679,14 @@ contains
 
       allocate(sumArray(nSums))
       allocate(sumArrayOut(nSums))
-      
+
       sumArray = 0.0_RKIND
 
       block => domain % blocklist
       do while (associated(block))
 
          call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
+         call MPAS_pool_get_config(block % configs, "config_thermodynamics_type", config_thermodynamics_type)
 
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
 
@@ -707,7 +718,7 @@ contains
                  snowfallRate(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell)
 
             ! evaporation
-            sumArray(3) = sumArray(3) + &            
+            sumArray(3) = sumArray(3) + &
                  evaporativeWaterFlux(iCell) * iceAreaCell(iCell) * areaCell(iCell)
 
             ! fresh water flux to ocean
@@ -716,16 +727,16 @@ contains
 
          enddo ! iCell
 
-         if (.not. config_update_ocean_fluxes) then
+         if (config_update_ocean_fluxes .and. trim(config_thermodynamics_type) == "mushy") then
 
             do iCell = 1, nCellsSolve
-               
+
                ! frazil ice
                sumArray(5) = sumArray(5) + &
                     (frazilFormation(iCell) * areaCell(iCell) * rhoi) / dt
-               
+
             enddo ! iCell
-            
+
          endif
 
          block => block % next
@@ -743,16 +754,18 @@ contains
       ! calculate the final net energy flux to the ice
       call MPAS_pool_get_array(conservationCheckAMPool, "netMassFlux", netMassFlux)
 
-      netMassFlux = (rainfallRateTotal + snowfallRateTotal + evaporationTotal - freshWaterTotal + frazilWaterTotal) * dt
+      netMassFlux = rainfallRateTotal + snowfallRateTotal + evaporationTotal - freshWaterTotal + frazilWaterTotal
 
       !-------------------------------------------------------------
       ! Mass conservation error
       !-------------------------------------------------------------
 
       ! compute the final energy error
-      call MPAS_pool_get_array(conservationCheckAMPool, "massError", massError)
+      call MPAS_pool_get_array(conservationCheckAMPool, "absoluteMassError", absoluteMassError)
+      call MPAS_pool_get_array(conservationCheckAMPool, "relativeMassError", relativeMassError)
 
-      massError = (netMassFlux - massChange) / (finalmass + 1.0_RKIND) ! why the plus 1????
+      absoluteMassError = netMassFlux * dt - massChange
+      relativeMassError = absoluteMassError / (finalmass + 1.0_RKIND) ! why the plus 1????
 
       !-------------------------------------------------------------
       ! Output to log file
@@ -775,8 +788,11 @@ contains
          write(stdoutUnit,fmt=formatString) ' Fresh water mass flux (kg/s) = ', freshWaterTotal
          write(stdoutUnit,fmt=formatString) ' Frazil water flux     (kg/s) = ', frazilWaterTotal
          write(stdoutUnit,fmt=formatString) ' Net mass flux         (kg/s) = ', netMassFlux
+         write(stdoutUnit,fmt=formatString) ' Net mass flux           (kg) = ', netMassFlux * dt
          write(stdoutUnit,*)
-         write(stdoutUnit,fmt=formatString) ' Mass error                   = ', massError
+         write(stdoutUnit,fmt=formatString) ' Absolute mass error     (kg) = ', absoluteMassError
+         write(stdoutUnit,fmt=formatString) ' Absolute mass error   (kg/s) = ', absoluteMassError / dt
+         write(stdoutUnit,fmt=formatString) ' Relative mass error          = ', relativeMassError
 
       endif
 
@@ -798,7 +814,8 @@ contains
    subroutine salt_conservation(domain, err)
 
       use ice_constants_colpkg, only: &
-           rhoi
+           rhoi, &
+           ice_ref_salinity
 
       type (domain_type), intent(inout) :: &
            domain
@@ -817,7 +834,8 @@ contains
            finalSalt, &
            saltChange, &
            netSaltFlux, &
-           saltError
+           absoluteSaltError, &
+           relativeSaltError
 
       real(kind=RKIND) :: &
            oceanSaltFluxTotal, &
@@ -843,7 +861,10 @@ contains
       logical, pointer :: &
            config_update_ocean_fluxes, &
            config_AM_conservationCheck_write_to_logfile
-      
+
+      character(len=strKIND), pointer :: &
+           config_thermodynamics_type
+
       integer, pointer :: &
            nCellsSolve
 
@@ -860,64 +881,65 @@ contains
       call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
-      ! Total change in internal energy
+      ! Total change in salt
       !-------------------------------------------------------------
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
 
-      ! get initial energy
+      ! get initial salt content
       call MPAS_pool_get_array(conservationCheckAMPool, "initialSalt", initialSalt)
 
-      ! get final energy
+      ! get final salt content
       call MPAS_pool_get_array(conservationCheckAMPool, "finalSalt", finalSalt)
-      call compute_total_mass(domain, finalSalt)
+      call compute_total_salt(domain, finalSalt)
 
-      ! compute the energy change
+      ! compute the salt content change
       call MPAS_pool_get_array(conservationCheckAMPool, "saltChange", saltChange)
       saltChange = finalSalt - initialSalt
 
       !-------------------------------------------------------------
-      ! Net heat flux to ice
+      ! Net salt flux to ice
       !-------------------------------------------------------------
 
       allocate(sumArray(nSums))
       allocate(sumArrayOut(nSums))
-      
+
       sumArray = 0.0_RKIND
 
       block => domain % blocklist
       do while (associated(block))
 
          call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
+         call MPAS_pool_get_config(block % configs, "config_thermodynamics_type", config_thermodynamics_type)
 
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
 
          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
          call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxesPool)
          call MPAS_pool_get_subpool(block % structs, "melt_growth_rates", meltGrowthRatesPool)
- 
+
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(oceanFluxesPool, "oceanSaltFluxArea", oceanSaltFluxArea)
          call MPAS_pool_get_array(meltGrowthRatesPool, "frazilFormation", frazilFormation)
 
          do iCell = 1, nCellsSolve
-         
+
             ! salt flux to ocean
             sumArray(1) = sumArray(1) + &
                  oceanSaltFluxArea(iCell) * areaCell(iCell)
-         
+
          enddo ! iCell
 
-         if (.not. config_update_ocean_fluxes) then
+         if (config_update_ocean_fluxes .and. trim(config_thermodynamics_type) == "mushy") then
 
             do iCell = 1, nCellsSolve
-               
+
                ! frazil ice
                sumArray(2) = sumArray(2) + &
-                    (frazilFormation(iCell) * areaCell(iCell) * rhoi) / dt
-               
+                    (frazilFormation(iCell) * areaCell(iCell) * rhoi * ice_ref_salinity * 0.001_RKIND) / dt
+
             enddo ! iCell
-            
+
          endif
 
          block => block % next
@@ -932,16 +954,18 @@ contains
       ! calculate the final net salt flux to the ice
       call MPAS_pool_get_array(conservationCheckAMPool, "netSaltFlux", netSaltFlux)
 
-      netSaltFlux = (oceanSaltFluxTotal + frazilSaltFlux) * dt
+      netSaltFlux = -oceanSaltFluxTotal + frazilSaltFlux
 
       !-------------------------------------------------------------
       ! Salt conservation error
       !-------------------------------------------------------------
 
-      ! compute the final energy error
-      call MPAS_pool_get_array(conservationCheckAMPool, "saltError", saltError)
+      ! compute the final salt error
+      call MPAS_pool_get_array(conservationCheckAMPool, "absoluteSaltError", absoluteSaltError)
+      call MPAS_pool_get_array(conservationCheckAMPool, "relativeSaltError", relativeSaltError)
 
-      saltError = (netSaltFlux - saltChange) / (finalSalt - 1.0_RKIND) ! why the minus 1????
+      absoluteSaltError = netSaltFlux * dt - saltChange
+      relativeSaltError = absoluteSaltError / (finalSalt - 1.0_RKIND) ! why the minus 1????
 
       ! cleanup
       deallocate(sumArray)
@@ -954,7 +978,7 @@ contains
       if (config_AM_conservationCheck_write_to_logfile) then
 
          formatString = "(a32,2x,1pe24.17)"
-         
+
          write(stdoutUnit,fmt='(a)') '----------------------------------------------------------'
          write(stdoutUnit,fmt='(a)') ' Salt conservation check'
          write(stdoutUnit,*)
@@ -965,8 +989,11 @@ contains
          write(stdoutUnit,fmt=formatString) ' Ocean salt flux       (kg/s) = ', oceanSaltFluxTotal
          write(stdoutUnit,fmt=formatString) ' Frazil salt flux      (kg/s) = ', frazilSaltFlux
          write(stdoutUnit,fmt=formatString) ' Net salt flux         (kg/s) = ', netSaltFlux
+         write(stdoutUnit,fmt=formatString) ' Net salt flux           (kg) = ', netSaltFlux * dt
          write(stdoutUnit,*)
-         write(stdoutUnit,fmt=formatString) ' Salt error                   = ', saltError
+         write(stdoutUnit,fmt=formatString) ' Absolute mass error     (kg) = ', absoluteSaltError
+         write(stdoutUnit,fmt=formatString) ' Absolute mass error   (kg/s) = ', absoluteSaltError / dt
+         write(stdoutUnit,fmt=formatString) ' Relative salt error          = ', relativeSaltError
 
       endif
 
@@ -994,7 +1021,7 @@ contains
 
       type(block_type), pointer :: &
            block
-      
+
       type(MPAS_pool_type), pointer :: &
            meshPool, &
            tracersPool
@@ -1032,7 +1059,7 @@ contains
       block => domain % blocklist
       do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)         
+         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
          call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
 
          call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
@@ -1040,7 +1067,7 @@ contains
          call MPAS_pool_get_dimension(block % dimensions, 'nIceLayers', nIceLayers)
          call MPAS_pool_get_dimension(block % dimensions, 'nSnowLayers', nSnowLayers)
 
-         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)         
+         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersPool, "iceEnthalpy", iceEnthalpy, 1)
          call MPAS_pool_get_array(tracersPool, "snowEnthalpy", snowEnthalpy, 1)
          call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -1119,7 +1146,7 @@ contains
            nCellsSolve, &
            nCategories
 
-      real(kind=RKIND), dimension(:), pointer :: &      
+      real(kind=RKIND), dimension(:), pointer :: &
            areaCell, &
            iceVolumeCell, &
            snowVolumeCell
@@ -1171,7 +1198,7 @@ contains
 
          enddo ! iCell
 
-         if (config_use_topo_meltponds) then 
+         if (config_use_topo_meltponds) then
 
             do iCell = 1, nCellsSolve
 
@@ -1231,7 +1258,7 @@ contains
       integer, pointer :: &
            nCellsSolve
 
-      real(kind=RKIND), dimension(:), pointer :: &      
+      real(kind=RKIND), dimension(:), pointer :: &
            areaCell, &
            iceVolumeCell
 

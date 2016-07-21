@@ -41,8 +41,11 @@
 		<var name="netEnergyFlux" type="real" dimensions="Time" units="W"
 			description="Net energy flux to ice"
 		/>
-		<var name="energyError" type="real" dimensions="Time" units="None"
-			description="Energy conservation error"
+		<var name="absoluteEnergyError" type="real" dimensions="Time" units="J"
+			description="Absolute energy conservation error"
+		/>
+		<var name="relativeEnergyError" type="real" dimensions="Time" units="None"
+			description="Relative energy conservation error"
 		/>
 		<var name="initialMass" type="real" dimensions="Time" units="kg"
 			description="Total initial mass of ice and snow"
@@ -56,8 +59,11 @@
 		<var name="netMassFlux" type="real" dimensions="Time" units="kg/s"
 			description="Net mass flux to ice"
 		/>
-		<var name="massError" type="real" dimensions="Time" units="None"
-			description="Mass conservation error"
+		<var name="absoluteMassError" type="real" dimensions="Time" units="kg"
+			description="Absolute mass conservation error"
+		/>
+		<var name="relativeMassError" type="real" dimensions="Time" units="None"
+			description="Relative mass conservation error"
 		/>
 		<var name="initialSalt" type="real" dimensions="Time" units="kg"
 			description="Total initial salt of ice and snow"
@@ -71,8 +77,11 @@
 		<var name="netSaltFlux" type="real" dimensions="Time" units="kg/s"
 			description="Net salt flux to ice"
 		/>
-		<var name="saltError" type="real" dimensions="Time" units="None"
-			description="Salt conservation error"
+		<var name="absoluteSaltError" type="real" dimensions="Time" units="kg"
+			description="Absolute salt conservation error"
+		/>
+		<var name="relativeSaltError" type="real" dimensions="Time" units="None"
+			description="Relative salt conservation error"
 		/>
 	</var_struct>
 	<streams>
@@ -89,16 +98,19 @@
 			<var name="finalEnergy"/> 
 			<var name="energyChange"/> 
 			<var name="netEnergyFlux"/> 
-			<var name="energyError"/> 
+			<var name="absoluteEnergyError"/>
+			<var name="relativeEnergyError"/>
 			<var name="initialMass"/> 
 			<var name="finalMass"/> 
 			<var name="massChange"/> 
 			<var name="netMassFlux"/> 
-			<var name="massError"/> 
+			<var name="absoluteMassError"/>
+			<var name="relativeMassError"/>
 			<var name="initialSalt"/> 
 			<var name="finalSalt"/> 
 			<var name="saltChange"/> 
 			<var name="netSaltFlux"/> 
-			<var name="saltError"/> 
+			<var name="absoluteSaltError"/>
+			<var name="relativeSaltError"/>
 		</stream>
 	</streams>
