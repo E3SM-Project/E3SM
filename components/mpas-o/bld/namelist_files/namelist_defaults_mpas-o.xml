@@ -9,7 +9,7 @@
 <!-- time_management -->
 <config_do_restart>.false.</config_do_restart>
 <config_restart_timestamp_name>'rpointer.ocn'</config_restart_timestamp_name>
-<config_start_time>'0000-01-01_00:00:00'</config_start_time>
+<config_start_time>'0001-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
 <config_run_duration>'0010_00:00:00'</config_run_duration>
 <config_calendar_type CALENDAR="NO_LEAP">'gregorian_noleap'</config_calendar_type>
@@ -197,6 +197,7 @@
 <config_cvmix_kpp_surface_layer_averaging>5.0</config_cvmix_kpp_surface_layer_averaging>
 <configure_cvmix_kpp_minimum_OBL_under_sea_ice>10.0</configure_cvmix_kpp_minimum_OBL_under_sea_ice>
 <config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
+<config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 
 <!-- forcing -->
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
@@ -318,12 +319,14 @@
 
 <!-- constrain_Haney_number -->
 <config_use_rx1_constraint>.false.</config_use_rx1_constraint>
-<config_rx1_smooth_count>20</config_rx1_smooth_count>
-<config_rx1_inner_iteration_count>10</config_rx1_inner_iteration_count>
-<config_rx1_inner_iteration_weight>0.1</config_rx1_inner_iteration_weight>
-<config_rx1_max>10.0</config_rx1_max>
-<config_rx1_horiz_smooth_weight>0.5</config_rx1_horiz_smooth_weight>
-<config_rx1_vert_smooth_weight>0.5</config_rx1_vert_smooth_weight>
+<config_rx1_outer_iter_count>20</config_rx1_outer_iter_count>
+<config_rx1_inner_iter_count>10</config_rx1_inner_iter_count>
+<config_rx1_init_inner_weight>0.1</config_rx1_init_inner_weight>
+<config_rx1_max>5.0</config_rx1_max>
+<config_rx1_horiz_smooth_weight>1.0</config_rx1_horiz_smooth_weight>
+<config_rx1_vert_smooth_weight>1.0</config_rx1_vert_smooth_weight>
+<config_rx1_slope_weight>1e-1</config_rx1_slope_weight>
+<config_rx1_zstar_weight>1.0</config_rx1_zstar_weight>
 <config_rx1_horiz_smooth_open_ocean_cells>20</config_rx1_horiz_smooth_open_ocean_cells>
 <config_rx1_min_levels>3</config_rx1_min_levels>
 <config_rx1_min_layer_thickness>1.0</config_rx1_min_layer_thickness>
@@ -420,6 +423,7 @@
 <config_global_ocean_topography_ocean_frac_varname>'none'</config_global_ocean_topography_ocean_frac_varname>
 <config_global_ocean_topography_method>'bilinear_interpolation'</config_global_ocean_topography_method>
 <config_global_ocean_smooth_topography>.true.</config_global_ocean_smooth_topography>
+<config_global_ocean_deepen_critical_passages>.true.</config_global_ocean_deepen_critical_passages>
 <config_global_ocean_depress_by_land_ice>.false.</config_global_ocean_depress_by_land_ice>
 <config_global_ocean_land_ice_topo_file>'none'</config_global_ocean_land_ice_topo_file>
 <config_global_ocean_land_ice_topo_nlat_dimname>'none'</config_global_ocean_land_ice_topo_nlat_dimname>
@@ -882,7 +886,6 @@
 <config_AM_timeSeriesStats_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStats_compute_interval>
 <config_AM_timeSeriesStats_output_stream>'timeSeriesStatsOutput'</config_AM_timeSeriesStats_output_stream>
 <config_AM_timeSeriesStats_restart_stream>'timeSeriesStatsRestart'</config_AM_timeSeriesStats_restart_stream>
-<config_AM_timeSeriesStats_add_mesh>.true.</config_AM_timeSeriesStats_add_mesh>
 <config_AM_timeSeriesStats_operation>'avg'</config_AM_timeSeriesStats_operation>
 <config_AM_timeSeriesStats_reference_times>'initial_time'</config_AM_timeSeriesStats_reference_times>
 <config_AM_timeSeriesStats_duration_intervals>'repeat_interval'</config_AM_timeSeriesStats_duration_intervals>

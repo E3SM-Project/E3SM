@@ -1129,6 +1129,14 @@ Valid values: Any positive value
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_enhanced_diff" type="logical"
+	category="cvmix" group="cvmix">
+Flag for use of enhanced diffusion at boundary layer base as in Large et al (1994)
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- forcing -->
 
@@ -1915,25 +1923,25 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_rx1_smooth_count" type="integer"
+<entry id="config_rx1_outer_iter_count" type="integer"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-The number of smoothing passes used in modifying the vertical grid such that the Haney number rx1 is less than rx1Max
+The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid.
 
 Valid values: any positive integer
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_rx1_inner_iteration_count" type="integer"
+<entry id="config_rx1_inner_iter_count" type="integer"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-The number of inner iterations used in constraining the Haney number rx1 is less than rx1Max, allowing changes to propagate horizontally within a layer
+The number of iterations used to constrain rx1 in each layer.
 
 Valid values: any positive integer
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_rx1_inner_iteration_weight" type="real"
+<entry id="config_rx1_init_inner_weight" type="real"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
+The weight by which layer thicknesses are altered at the beginning of inner iteration. This weight linearly increases to 1.0 by the final iteration.
 
 Valid values: a positive value less than or equal to 1
 Default: Defined in namelist_defaults.xml
@@ -1949,17 +1957,33 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_rx1_horiz_smooth_weight" type="real"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-The averaging weight of neighbors used for horizontal smoothing of layer interface depth
+Relative weight of horizontal neighbors compared to this cell when smoothing vertical stretching
 
-Valid values: Between 0 and 1, with a larger number indicating more smoothing per iteration
+Valid values: A non-negative number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rx1_vert_smooth_weight" type="real"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-The averaging weight of neighbors used for vertical smoothing of layerThickness
+Relative weight of vertical neighbors compared to this cell when smoothing vertical stretching
 
-Valid values: Between 0 and 1, with a larger number indicating more smoothing per iteration
+Valid values: A non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_slope_weight" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+Weight used to nudge level interfaces toward being flat (thus decreasing the Haney number)
+
+Valid values: A non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_zstar_weight" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+Weight used to nudge vertical stretching toward z-star during each outer iteration
+
+Valid values: A non-negative number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2661,6 +2685,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_global_ocean_smooth_topography" type="logical"
 	category="global_ocean" group="global_ocean">
 Logical flag that controls if topograhy should be smoothed after being interpolated.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_deepen_critical_passages" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if critical passages are deepened to a minimum depth.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -5982,14 +6014,6 @@ Default: Defined in namelist_defaults.xml
 Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
 
 Valid values: A restart stream with state of the time series stats.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_timeSeriesStats_add_mesh" type="logical"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-Add the mesh to the output stream.
-
-Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

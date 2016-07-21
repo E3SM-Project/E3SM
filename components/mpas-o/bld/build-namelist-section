@@ -249,6 +249,7 @@ add_default($nl, 'config_cvmix_kpp_surface_layer_extent');
 add_default($nl, 'config_cvmix_kpp_surface_layer_averaging');
 add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
+add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
 
 ###########################
 # Namelist group: forcing #
@@ -412,12 +413,14 @@ add_default($nl, 'config_read_nearest_restart');
 ##########################################
 
 add_default($nl, 'config_use_rx1_constraint');
-add_default($nl, 'config_rx1_smooth_count');
-add_default($nl, 'config_rx1_inner_iteration_count');
-add_default($nl, 'config_rx1_inner_iteration_weight');
+add_default($nl, 'config_rx1_outer_iter_count');
+add_default($nl, 'config_rx1_inner_iter_count');
+add_default($nl, 'config_rx1_init_inner_weight');
 add_default($nl, 'config_rx1_max');
 add_default($nl, 'config_rx1_horiz_smooth_weight');
 add_default($nl, 'config_rx1_vert_smooth_weight');
+add_default($nl, 'config_rx1_slope_weight');
+add_default($nl, 'config_rx1_zstar_weight');
 add_default($nl, 'config_rx1_horiz_smooth_open_ocean_cells');
 add_default($nl, 'config_rx1_min_levels');
 add_default($nl, 'config_rx1_min_layer_thickness');
@@ -529,6 +532,7 @@ add_default($nl, 'config_global_ocean_topography_has_ocean_frac');
 add_default($nl, 'config_global_ocean_topography_ocean_frac_varname');
 add_default($nl, 'config_global_ocean_topography_method');
 add_default($nl, 'config_global_ocean_smooth_topography');
+add_default($nl, 'config_global_ocean_deepen_critical_passages');
 add_default($nl, 'config_global_ocean_depress_by_land_ice');
 add_default($nl, 'config_global_ocean_land_ice_topo_file');
 add_default($nl, 'config_global_ocean_land_ice_topo_nlat_dimname');
@@ -1078,7 +1082,6 @@ add_default($nl, 'config_AM_timeSeriesStats_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStats_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStats_output_stream');
 add_default($nl, 'config_AM_timeSeriesStats_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStats_add_mesh');
 add_default($nl, 'config_AM_timeSeriesStats_operation');
 add_default($nl, 'config_AM_timeSeriesStats_reference_times');
 add_default($nl, 'config_AM_timeSeriesStats_duration_intervals');
