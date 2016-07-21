@@ -682,9 +682,10 @@
          <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
+         <PES_PER_NODE>8</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>HiRes_EarthSys</PROJECT>
+	 <PROJECT>HiRes_EarthSys_2</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
            <executable>runjob</executable>
@@ -694,7 +695,7 @@
                <arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
                <!-- Total MPI Tasks -->
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
-               <arg name="locargs">  $LOCARGS</arg>
+               <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
@@ -804,9 +805,10 @@
 	 <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
+         <PES_PER_NODE>8</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>HiRes_EarthSys</PROJECT>
+	 <PROJECT>HiRes_EarthSys_2</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
            <executable>/usr/bin/runjob</executable>
@@ -816,7 +818,7 @@
                <arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
                <!-- Total MPI Tasks -->
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
-               <arg name="locargs">  $LOCARGS</arg>
+               <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
