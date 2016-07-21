@@ -210,7 +210,7 @@ sub getTestSuiteInfo
 
     # SetupTools needs a case to work, so why not just cd to the
     # first test directory, and run SetupTools there?? :)
-    my $firsttestdir = $testroot . "/" . $$testlist[0];
+    my $firsttestdir = $testroot . "/" . $$testlist[1];
     Debug("first test dir: $firsttestdir");
     chdir $firsttestdir;
     my $cimeroot = `./xmlquery CIMEROOT --value`;
@@ -263,7 +263,7 @@ sub getTestStatus
 	{
 	    warn("$statusfile does not exist, skipping to next test.");
 	    $teststatushash{$testcase}{'status'} = "TFAIL";
-	    $tetstatushash{$testcase}{'comment'} = "TestStatus file could not be found!";
+	    $teststatushash{$testcase}{'comment'} = "TestStatus file could not be found!";
 	    next;
 	}
 	&Debug( "Status file: $statusfile\n");
@@ -285,9 +285,11 @@ sub getTestStatus
 
         # If the 'test functionality summary' is not PASS, then report the
         # test functionality summary as the teststatus field.
+
         # Namelist compare
         my @testsummarylines = grep { /nlcomp/ } @statuslines;
         $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        if ($testsummary =~ "NLFAIL") {$testsummary = "FAIL";} 
         $teststatushash{$testcase}{'nlcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
 
         # Memory leak
@@ -305,6 +307,12 @@ sub getTestStatus
           $teststatushash{$testcase}{'memcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
         }
 
+        #Compare to baseline
+        my ( $index ) = grep { $statuslines[$_] =~ /baseline compare summary/ } 0..$#statuslines;
+        my @testsummarylines = $statuslines[$index-1];
+        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+        $teststatushash{$testcase}{'compare'} = (length($index) > 0) ? $testsummary : "----";
+
         # Compare through put to baseline
         my @testsummarylines = grep { /Throughput/} grep { /baseline/} @statuslines;
         my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
@@ -313,13 +321,13 @@ sub getTestStatus
           my @testsummarylines = grep { /tputcomp/}  @statuslines;
           my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
           $teststatushash{$testcase}{'tputcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
+           if ($testcase =~ "PFS" && $testsummary =~ "FAIL")
+          {
+	    $teststatushash{$testcase}{'status'} = "FAIL";
+	    $teststatushash{$testcase}{'comment'} = "Performance failure!";
+            next;
+          }
         }
-
-        #Compare to baseline
-        my ( $index ) = grep { $statuslines[$_] =~ /baseline compare summary/ } 0..$#statuslines;
-        my @testsummarylines = $statuslines[$index-1];
-        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        $teststatushash{$testcase}{'compare'} = (length($index) > 0) ? $testsummary : "----";
 
         # Check for INIT failure
         my @testsummarylines = grep { /INIT/ } @statuslines;
@@ -391,7 +399,7 @@ sub getTestStatus
         }
 
         #Compare for functionality
-        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary \(restart/ } 0..$#statuslines;
+        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary \(Compare base and rest/ } 0..$#statuslines;
         my @testsummarylines = $statuslines[$index-1];
         $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
         if(length($index) > 0 &&defined $testsummary && $testsummary !~ /PASS/)
@@ -401,7 +409,7 @@ sub getTestStatus
             next;
         }
 
-        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary \(hybrid/ } 0..$#statuslines;
+        my ( $index ) = grep { $statuslines[$_] =~ /unctionality summary \(Compare base and hybrid/ } 0..$#statuslines;
         my @testsummarylines = $statuslines[$index-1];
         $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
         if(length($index) > 0 && defined $testsummary && $testsummary !~ /PASS/)
@@ -411,7 +419,7 @@ sub getTestStatus
             next;
         }
 
-        my ( $index ) = grep { $statuslines[$_] =~ /functionality/ } 0..$#statuslines;
+        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary/ } 0..$#statuslines;
         my @testsummarylines = $statuslines[$index-1];
         $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
         if(length($index) > 0 && defined $testsummary && $testsummary !~ /PASS/)
