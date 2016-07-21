@@ -33,6 +33,20 @@
                 <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
                 <stream name="output">
                         <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
+                </stream>
+                <stream name="restart">
+                        <attribute name="filename_template">rst.$Y.nc</attribute>
+                        <attribute name="filename_interval">output_interval</attribute>
+                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                </stream>
+        </streams>
+
+        <streams name="streams.landice.rst" keep="immutable" mode="forward">
+                <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">overwrite</attribute>
                         <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                 </stream>
@@ -42,6 +56,7 @@
                         <attribute name="output_interval">0001-00-00_00:00:00</attribute>
                 </stream>
         </streams>
+
 
         <run_script name="restart_run.py">
 
@@ -54,7 +69,7 @@
                 <model_run procs="4" threads="1" namelist="namelist.landice" streams="streams.landice"/>
 
                 <!-- Run the restart part of the run -->
-                <model_run procs="4" threads="1" namelist="namelist.landice.rst" streams="streams.landice"/>
+                <model_run procs="4" threads="1" namelist="namelist.landice.rst" streams="streams.landice.rst"/>
         </run_script>
 </config>
 
