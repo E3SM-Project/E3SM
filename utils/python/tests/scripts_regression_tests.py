@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import io, glob, os, re, shutil, signal, sys, tempfile, \
-    threading, time, unittest
+    threading, time, logging, unittest
 
 from xml.etree.ElementTree import ParseError
 
@@ -565,14 +565,15 @@ class E_TestSystemTest(TestCreateTestCommon):
         mem_fail_test   = [item for item in tests if "TESTMEMLEAKFAIL" in item][0]
         mem_pass_test   = [item for item in tests if "TESTMEMLEAKPASS" in item][0]
 
+        log_lvl = logging.getLogger().getEffectiveLevel()
+        logging.disable(logging.CRITICAL)
         try:
-            sys.stdout = open("/dev/null", "w")
             ct.system_test()
         finally:
-            sys.stdout = sys.__stdout__
+            logging.getLogger().setLevel(log_lvl)
 
         if (self._hasbatch):
-            run_cmd_no_fail("%s/wait_for_tests *%s*/TestStatus*" % (TOOLS_DIR, test_id), from_dir=self._testroot)
+            run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
 
         test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))

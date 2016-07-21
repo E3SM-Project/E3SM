@@ -150,7 +150,7 @@
     </batch_system>
 
     <!-- edison is SLURM as of Jan-4-2016 -->
-    <batch_system MACH="edison" version="x.y">
+    <batch_system MACH="edison" type="slurm" version="x.y">
       <directives>
         <directive> -A {{ account }} </directive>
       </directives>
@@ -166,7 +166,7 @@
     </batch_system>
 
     <!-- eos is PBS -->
-    <batch_system MACH="eos" version="x.y">
+    <batch_system MACH="eos" type="pbs" version="x.y">
     <jobid_pattern>^(\d+)</jobid_pattern>
     <directives>
       <directive>-A {{ project }}</directive>
@@ -216,7 +216,7 @@
       </walltimes>
     </batch_system>
 
-   <batch_system MACH="constance" version="x.y">
+   <batch_system MACH="constance" type="slurm" version="x.y">
     <directives>
        <directive>-A  climate</directive>
        <directive>--mail-type=END</directive>
@@ -254,7 +254,7 @@
   </batch_system>
 
 
-   <batch_system MACH="mustang" version="x.y">
+   <batch_system MACH="mustang" type="moab" version="x.y">
    <batch_directive>#MSUB</batch_directive>
    <directives>
      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -266,7 +266,7 @@
    </walltimes>
    </batch_system>
 
-   <batch_system MACH="wolf" version="x.y">
+   <batch_system MACH="wolf" type="moab" version="x.y">
      <batch_directive>#MSUB</batch_directive>
 	<directives>
 		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -292,7 +292,7 @@
       </walltimes>
     </batch_system>
 
-   <batch_system MACH="oic2" version="x.y">
+   <batch_system MACH="oic2" type="pbs" version="x.y">
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
          </directives>
@@ -304,7 +304,7 @@
             </walltimes>
    </batch_system>
 
-   <batch_system MACH="oic5" version="x.y">
+   <batch_system MACH="oic5" type="pbs" version="x.y">
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
          </directives>
@@ -328,7 +328,7 @@
      </walltimes>
    </batch_system>
 
-   <batch_system MACH="titan" version="x.y">
+   <batch_system MACH="titan" type="pbs" version="x.y">
      <jobid_pattern>(\d+)</jobid_pattern>
      <directives>
        <directive>-A {{ project }}</directive>
@@ -344,7 +344,7 @@
      </walltimes>
    </batch_system>
 
-   <batch_system MACH="lawrencium-lr2" version="x.y">
+   <batch_system MACH="lawrencium-lr2" type="slurm" version="x.y">
      <directives>
        <directive>--partition=lr2</directive>
        <directive>--account={{ project }}</directive>
@@ -358,7 +358,7 @@
     </walltimes>
    </batch_system>
 
-   <batch_system MACH="lawrencium-lr3" version="x.y">
+   <batch_system MACH="lawrencium-lr3" type="slurm" version="x.y">
      <directives>
        <directive>--partition=lr3</directive>
        <directive>--account={{ project }}</directive>

@@ -51,7 +51,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def run_pylint(on_file):
 ###############################################################################
     pylint = find_executable("pylint")
-    expect(pylint is not None,"pylint not found")
 
     cmd = "%s --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % (pylint, on_file)
     stat, out, err = run_cmd(cmd)
@@ -89,6 +88,9 @@ def _main_func(description):
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
+
+    pylint = find_executable("pylint")
+    expect(pylint is not None,"pylint not found")
 
     dir_to_check, num_procs = parse_command_line(sys.argv, description)
 

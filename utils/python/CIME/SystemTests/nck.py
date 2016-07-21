@@ -46,7 +46,7 @@ class NCK(SystemTestsCommon):
             if model_only:
                 # This file should have been created in the sharedlib_only phase
                 shutil.copy(machpes,"env_mach_pes.xml")
-                self._case.read_xml(self._caseroot)
+                self._case.read_xml()
             else:
                 for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                     self._case.set_value("NINST_%s"%comp, bld)

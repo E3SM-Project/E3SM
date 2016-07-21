@@ -106,7 +106,7 @@ class ERP(SystemTestsCommon):
             shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
 
             # update the case to use the new values
-            self._case.read_xml(self._caseroot)
+            self._case.read_xml()
 
             # Use the second executable that was created
             exeroot = self._case.get_value("EXEROOT")

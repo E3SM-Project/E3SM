@@ -64,7 +64,7 @@ class Case(object):
 
         if case_root is None:
             case_root = os.getcwd()
-
+        self._caseroot = case_root
         logger.debug("Initializing Case.")
         self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
@@ -74,7 +74,7 @@ class Case(object):
         self._env_generic_files = []
         self._files = []
 
-        self.read_xml(case_root)
+        self.read_xml()
 
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
@@ -112,7 +112,7 @@ class Case(object):
             "read-only mode"
         self._env_files_that_need_rewrite.add(env_file)
 
-    def read_xml(self, case_root):
+    def read_xml(self):
         if(len(self._env_files_that_need_rewrite)>0):
             files = ""
             for env_file in self._env_files_that_need_rewrite:
@@ -120,16 +120,16 @@ class Case(object):
             expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
 
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvRun(case_root))
-        self._env_entryid_files.append(EnvBuild(case_root))
-        self._env_entryid_files.append(EnvMachPes(case_root))
-        self._env_entryid_files.append(EnvCase(case_root))
-        self._env_entryid_files.append(EnvBatch(case_root))
-        if os.path.isfile(os.path.join(case_root,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(case_root))
+        self._env_entryid_files.append(EnvRun(self._caseroot))
+        self._env_entryid_files.append(EnvBuild(self._caseroot))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot))
+        self._env_entryid_files.append(EnvCase(self._caseroot))
+        self._env_entryid_files.append(EnvBatch(self._caseroot))
+        if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
+            self._env_entryid_files.append(EnvTest(self._caseroot))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvMachSpecific(case_root))
-        self._env_generic_files.append(EnvArchive(case_root))
+        self._env_generic_files.append(EnvMachSpecific(self._caseroot))
+        self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
 
     def get_env(self, short_name):
@@ -159,6 +159,9 @@ class Case(object):
         return newcase
 
     def flush(self, flushall=False):
+        if not os.path.isdir(self._caseroot):
+            # do not flush if caseroot wasnt created
+            return
         if flushall:
             for env_file in self._files:
                 self.schedule_rewrite(env_file)
@@ -637,7 +640,6 @@ class Case(object):
     def _create_caseroot_tools(self):
         machines_dir = os.path.abspath(self.get_value("MACHDIR"))
         toolsdir = os.path.join(self.get_value("CIMEROOT"),"scripts","Tools")
-        caseroot = self.get_value("CASEROOT")
         # setup executable files in caseroot/
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
@@ -650,7 +652,7 @@ class Case(object):
                     os.path.join(toolsdir, "xmlquery"))
         try:
             for exefile in exefiles:
-                destfile = os.path.join(caseroot,os.path.basename(exefile))
+                destfile = os.path.join(self._caseroot,os.path.basename(exefile))
                 os.symlink(exefile, destfile)
         except Exception as e:
             logger.warning("FAILED to set up exefiles: %s" % str(e))
@@ -665,7 +667,7 @@ class Case(object):
                      os.path.join(machines_dir,"mkDepends"))
 
         for toolfile in toolfiles:
-            destfile = os.path.join(caseroot,"Tools",os.path.basename(toolfile))
+            destfile = os.path.join(self._caseroot,"Tools",os.path.basename(toolfile))
             expect(os.path.isfile(toolfile)," File %s does not exist"%toolfile)
             try:
                 os.symlink(toolfile, destfile)
@@ -676,12 +678,11 @@ class Case(object):
         machine = self.get_value("MACH")
         if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE":
             os_ = self.get_value("OS")
-            caseroot = self.get_value("CASEROOT")
             files = Files()
             build_file = files.get_value("BUILD_SPEC_FILE")
             machobj = Machines(machine=machine, files=files)
             macro_maker = MacroMaker(os_, machobj)
-            with open(os.path.join(caseroot, "Macros"), "w") as macros_file:
+            with open(os.path.join(self._caseroot, "Macros"), "w") as macros_file:
                 macro_maker.write_macros('Makefile', build_file, macros_file)
 
         # Copy any system or compiler Depends files to the case.
@@ -689,10 +690,10 @@ class Case(object):
         for dep in (machine, compiler):
             dfile = "Depends.%s"%dep
             if os.path.isfile(os.path.join(machines_dir,dfile)):
-                shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
+                shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(self._caseroot,dfile))
         dfile = "Depends.%s.%s"%(machine,compiler)
         if os.path.isfile(os.path.join(machines_dir,dfile)):
-            shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
+            shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(self._caseroot, dfile))
             # set up infon files
             # infofiles = os.path.join(os.path.join(toolsdir, README.post_process")
             #FIXME - the following does not work
@@ -708,24 +709,23 @@ class Case(object):
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
-        caseroot = self.get_value("CASEROOT")
         for component in components:
-            directory = os.path.join(caseroot,"SourceMods","src.%s"%component)
+            directory = os.path.join(self._caseroot,"SourceMods","src.%s"%component)
             if not os.path.exists(directory):
                 os.makedirs(directory)
 
-        directory = os.path.join(caseroot, "SourceMods", "src.share")
+        directory = os.path.join(self._caseroot, "SourceMods", "src.share")
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        directory = os.path.join(caseroot,"SourceMods","src.drv")
+        directory = os.path.join(self._caseroot,"SourceMods","src.drv")
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         if get_model() is "cesm":
         # Note: this is CESM specific, given that we are referencing cism explitly
             if "cism" in components:
-                directory = os.path.join(caseroot, "SourceMods", "src.cism", "glimmer-cism")
+                directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "glimmer-cism")
                 if not os.path.exists(directory):
                     os.makedirs(directory)
                 readme_file = os.path.join(directory, "README")
@@ -739,22 +739,21 @@ class Case(object):
                     fd.write(str_to_write)
 
     def create_caseroot(self, clone=False):
-        caseroot = self.get_value("CASEROOT")
-        if not os.path.exists(caseroot):
+        if not os.path.exists(self._caseroot):
             # Make the case directory
-            logger.info(" Creating Case directory %s" %caseroot)
-            os.makedirs(caseroot)
-        os.chdir(caseroot)
+            logger.info(" Creating Case directory %s" %self._caseroot)
+            os.makedirs(self._caseroot)
+        os.chdir(self._caseroot)
 
-        # Create relevant directories in $caseroot
+        # Create relevant directories in $self._caseroot
         if clone:
             newdirs = ("LockedFiles", "Tools")
         else:
             newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
         for newdir in newdirs:
             os.makedirs(newdir)
-        # Open a new README.case file in $caseroot
-        with open(os.path.join(caseroot,"README.case"), "w") as fd:
+        # Open a new README.case file in $self._caseroot
+        with open(os.path.join(self._caseroot,"README.case"), "w") as fd:
             for arg in sys.argv:
                 fd.write(" %s"%arg)
         if not clone:
@@ -777,7 +776,7 @@ class Case(object):
                 ninst_comp = self.get_value("NINST_%s"%comp_class)
                 if ninst_comp > 1:
                     ninst_vals[comp_name] = ninst_comp
-            apply_user_mods(self.get_value("CASEROOT"), user_mods_path, ninst_vals)
+            apply_user_mods(self._caseroot, user_mods_path, ninst_vals)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
 
@@ -825,7 +824,7 @@ class Case(object):
         newcase.flush(flushall=True)
 
         # copy user_nl_files
-        cloneroot = self.get_value("CASEROOT")
+        cloneroot = self._caseroot
         files = glob.glob(cloneroot + '/user_nl_*')
         for item in files:
             shutil.copy(item, newcaseroot)
