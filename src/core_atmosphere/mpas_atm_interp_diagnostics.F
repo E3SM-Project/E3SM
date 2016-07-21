@@ -35,7 +35,7 @@
  integer :: iCell,iVert,iVertD,k,kk
  integer, pointer :: nCells, nCellsSolve, nVertLevels, nVertices, vertexDegree, nIsoLevelsT, nIsoLevelsZ
  integer :: nVertLevelsP1
- integer, pointer :: index_qv
+ integer, pointer :: index_qv, num_scalars
  integer, dimension(:,:), pointer :: cellsOnVertex
 
  type (field2DReal), pointer:: pressure_p_field
@@ -45,7 +45,7 @@
  
  real (kind=RKIND), dimension(:,:), pointer :: exner, height
  real (kind=RKIND), dimension(:,:), pointer :: pressure_b, pressure_p 
- real (kind=RKIND), dimension(:,:), pointer :: qvapor, relhum, theta_m, vorticity
+ real (kind=RKIND), dimension(:,:), pointer :: relhum, theta_m, vorticity
  real (kind=RKIND), dimension(:,:), pointer :: umeridional, uzonal, vvel
  real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
@@ -166,6 +166,7 @@
  call mpas_pool_get_dimension(mesh, 'nIsoLevelsT', nIsoLevelsT)
  call mpas_pool_get_dimension(mesh, 'nIsoLevelsZ', nIsoLevelsZ)
  call mpas_pool_get_dimension(state, 'index_qv', index_qv)
+ call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
  nVertLevelsP1 = nVertLevels + 1
 
@@ -178,8 +179,6 @@
  call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
  call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
 
- qvapor  => scalars(index_qv,:,:)    !MGD does this actually work?
- 
  call mpas_pool_get_field(diag, 'pressure_p', pressure_p_field)
  call mpas_dmpar_exch_halo_field(pressure_p_field)
 
@@ -339,7 +338,7 @@
 !calculation of temperature at cell centers:
  do iCell = 1,nCells
  do k = 1,nVertLevels
-     temperature(k,iCell) = (theta_m(k,iCell)/(1._RKIND+rvord*qvapor(k,iCell)))*exner(k,iCell) 
+     temperature(k,iCell) = (theta_m(k,iCell)/(1._RKIND+rvord*scalars(index_qv,k,iCell)))*exner(k,iCell) 
      tempC = temperature(k,iCell) - 273.15
      relhum(k,iCell) = max(1.e-08,min(1.,relhum(k,iCell)))
      logrelhum = log(relhum(k,iCell))
@@ -542,7 +541,7 @@
 ! write(0,*) '--- end interpolate relative vorticity:'
 
 !... compute SLP (requires temp, height, pressure, qvapor)
- call compute_slp(nCells, nVertLevels, temperature, height, pressure, qvapor, mslp)
+ call compute_slp(nCells, nVertLevels, num_scalars, temperature, height, pressure, index_qv, scalars, mslp)
  mslp(:) = mslp(:) * 100.0   ! Convert from hPa to Pa
 !... alternative way
 !do iCell = 1, nCells
@@ -861,19 +860,21 @@
 
  end subroutine interp_tofixed_pressure
 
- subroutine compute_slp(ncol,nlev_in,t,height,p,qv,slp)
+ subroutine compute_slp(ncol,nlev_in,nscalars,t,height,p,index_qv,scalars,slp)
 
     implicit none
 
    !input arguments:
-    integer, intent(in) :: ncol, nlev_in
+    integer, intent(in) :: ncol, nlev_in, nscalars
    
    !p: in mb
    !t: in K
-   !qv: in kg/kg
+   !scalars: in kg/kg
    !height: in m
-    real(kind=RKIND), intent(in), dimension(nlev_in,ncol) :: p,t,qv
+    real(kind=RKIND), intent(in), dimension(nlev_in,ncol) :: p,t
     real(kind=RKIND), intent(in), dimension(nlev_in+1,ncol) :: height
+    integer, intent(in) :: index_qv
+    real(kind=RKIND), intent(in), dimension(nscalars,nlev_in,ncol) :: scalars
    
    !output arguments:
     real(kind=RKIND), intent(out), dimension(ncol) :: slp
@@ -946,8 +947,8 @@
    
        plo = p(klo,icol)
        phi = p(khi,icol)
-       tlo = t(klo,icol) * (1. + 0.608 * qv(klo,icol))
-       thi = t(khi,icol) * (1. + 0.608 * qv(khi,icol))
+       tlo = t(klo,icol) * (1. + 0.608 * scalars(index_qv,klo,icol))
+       thi = t(khi,icol) * (1. + 0.608 * scalars(index_qv,khi,icol))
        zlo = 0.5*(height(klo,icol)+height(klo+1,icol))
        zhi = 0.5*(height(khi,icol)+height(khi+1,icol))
    
