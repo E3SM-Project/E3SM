@@ -433,6 +433,12 @@ module atm_core
 
       ! For high-frequency diagnostics output
       character (len=StrKIND) :: tempfilename
+
+      ! For timing information
+      real (kind=R8KIND) :: integ_start_time, integ_stop_time
+      real (kind=R8KIND) :: diag_start_time, diag_stop_time
+      real (kind=R8KIND) :: input_start_time, input_stop_time
+      real (kind=R8KIND) :: output_start_time, output_stop_time
       
       ierr = 0
       
@@ -451,6 +457,7 @@ module atm_core
       end if
 
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         call mpas_dmpar_get_time(diag_start_time)
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
@@ -462,8 +469,11 @@ module atm_core
 
             block_ptr => block_ptr % next
          end do
+         call mpas_dmpar_get_time(diag_stop_time)
       end if
+      call mpas_dmpar_get_time(output_start_time)
       call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+      call mpas_dmpar_get_time(output_stop_time)
       if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
@@ -471,6 +481,10 @@ module atm_core
          write(0,*) '********************************************************************************'
          write(0,*) 'Error writing one or more output streams'
          call mpas_dmpar_global_abort('********************************************************************************')
+      end if
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         write(0,'(a,f9.4,a)') ' Timing for diagnostic computation: ', (diag_stop_time - diag_start_time), ' s'
+         write(0,'(a,f9.4,a)') ' Timing for stream output: ', (output_stop_time - output_start_time), ' s'
       end if
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
@@ -502,8 +516,10 @@ module atm_core
             if (stream_dir == MPAS_STREAM_INPUT .or. stream_dir == MPAS_STREAM_INPUT_OUTPUT) then
                if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID=input_stream, &
                                                   direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+                  call mpas_dmpar_get_time(input_start_time)
                   call MPAS_stream_mgr_read(domain % streamManager, streamID=input_stream, whence=MPAS_STREAM_LATEST_BEFORE, &
                                             actualWhen=read_time, ierr=ierr)
+                  call mpas_dmpar_get_time(input_stop_time)
                   if (ierr /= MPAS_STREAM_MGR_NOERR) then
                      write(0,*) ' '
                      write(0,*) '********************************************************************************'
@@ -513,6 +529,7 @@ module atm_core
 
                   write(0,*) '----------------------------------------------------------------------'
                   write(0,*) '  Read '''//trim(input_stream)//''' input stream valid at '//trim(read_time)
+                  write(0,'(a,f9.4,a)') '   Timing for stream input: ', (input_stop_time - input_start_time), ' s'
                   write(0,*) '----------------------------------------------------------------------'
 
                   call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID=input_stream, direction=MPAS_STREAM_INPUT, ierr=ierr)
@@ -521,8 +538,11 @@ module atm_core
          end do
 
          call mpas_timer_start("time integration")
+         call mpas_dmpar_get_time(integ_start_time)
          call atm_do_timestep(domain, dt, itimestep)
+         call mpas_dmpar_get_time(integ_stop_time)
          call mpas_timer_stop("time integration")   
+         write(0,'(a,f9.4,a)') ' Timing for integration step: ', (integ_stop_time - integ_start_time), ' s'
 
          ! Move time level 2 fields back into time level 1 for next time step
          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
@@ -538,6 +558,7 @@ module atm_core
          !
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+           call mpas_dmpar_get_time(diag_start_time)
            block_ptr => domain % blocklist
            do while (associated(block_ptr))
               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
@@ -552,6 +573,7 @@ module atm_core
 
               block_ptr => block_ptr % next
            end do
+           call mpas_dmpar_get_time(diag_stop_time)
          end if
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
@@ -567,7 +589,9 @@ module atm_core
             end do
          end if
 
+         call mpas_dmpar_get_time(output_start_time)
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+         call mpas_dmpar_get_time(output_stop_time)
          if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
@@ -575,6 +599,10 @@ module atm_core
             write(0,*) '********************************************************************************'
             write(0,*) 'Error writing one or more output streams'
             call mpas_dmpar_global_abort('********************************************************************************')
+         end if
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+            write(0,'(a,f9.4,a)') ' Timing for diagnostic computation: ', (diag_stop_time - diag_start_time), ' s'
+            write(0,'(a,f9.4,a)') ' Timing for stream output: ', (output_stop_time - output_start_time), ' s'
          end if
 
          ! reset any diagnostics here
