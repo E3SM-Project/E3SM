@@ -102,7 +102,7 @@ def cime_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
     compare_args = "-c -b %s" % baseline_name if baseline_name is not None else ""
     project_args = "-p %s" % project if project else ""
     bisect_cmd = "%s %s --test-root %s --compiler %s %s %s" % \
-        (testroot, create_test, testname, testroot, compiler, project_args, compare_args)
+        (create_test, testname, testroot, compiler, project_args, compare_args)
 
     is_batch = _MACHINE.has_batch_system()
     if (is_batch):
