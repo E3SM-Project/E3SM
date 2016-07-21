@@ -1,3 +1,17 @@
+!---------------------------------------------------------------------------------------
+! Interpolate_mod:
+!
+! 07/2016: O. Guba Changing interpolate_vector routine: 
+!    (1) Instead of interpolating velocity in contravariant bases which are not
+!    continuous across elements' edges, use interpolation in Cartesian basis.
+!    (2) Affected routine is interpolate_vector3d. Its other version for 
+!    velocities on 1 level only, interpolate_vector2d, is removed since it is 
+!    not used.   
+!    (3) Removing npts parameter from input params of interpolate_vector3d
+!    because npts is always equal to np.
+!
+!
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
