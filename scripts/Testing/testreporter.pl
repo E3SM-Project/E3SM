@@ -210,7 +210,7 @@ sub getTestSuiteInfo
 
     # SetupTools needs a case to work, so why not just cd to the
     # first test directory, and run SetupTools there?? :)
-    my $firsttestdir = $testroot . "/" . $$testlist[0];
+    my $firsttestdir = $testroot . "/" . $$testlist[1];
     Debug("first test dir: $firsttestdir");
     chdir $firsttestdir;
     my $cimeroot = `./xmlquery CIMEROOT --value`;
