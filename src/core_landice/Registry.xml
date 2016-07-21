@@ -456,6 +456,9 @@
 				precision="double"
 				clobber_mode="replace_files">
 
+                        <!-- Note: Restart fields are currently configured to include
+                             *all* fields necessary to restart a run, i.e., the input stream
+                             is *not* read on a restart! -->
 			<stream name="basicmesh"/>
                         <var name="xtime"/>
                         <var name="simulationStartTime"/>
@@ -472,7 +475,15 @@
                         <!-- beta is only used for HO solvers -->
 			<var name="beta" packages="higherOrderVelocity"/>
                         <!-- dirichletVelocityMask is only used for HO solvers -->
-			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
+                        <var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
+                        <!-- fields only needed by SGH -->
+                        <!-- SGH forcing: -->
+			<var name="basalMeltInput" packages="hydro"/>
+                        <var name="externalWaterInput" packages="hydro"/>
+                        <!-- SGH state variables: -->
+			<var name="waterThickness" packages="hydro"/>
+			<var name="tillWaterThickness" packages="hydro"/>
+			<var name="waterPressure" packages="hydro"/>
 		</stream>
 
 

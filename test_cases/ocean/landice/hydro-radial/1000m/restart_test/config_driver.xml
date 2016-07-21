@@ -1,0 +1,17 @@
+<driver_script name="setup_and_run_testcase.py">
+        <case name="setup_mesh">
+                <step executable="./setup_mesh.py" quiet="false" pre_message=" * Running setup_mesh step" post_message="     Complete"/>
+        </case>
+        <case name="full_run">
+                <step executable="./full_run.py" quiet="false" pre_message=" * Running full_run step" post_message="     Complete"/>
+        </case>
+        <case name="restart_run">
+                <step executable="./restart_run.py" quiet="false" pre_message=" * Running restart_run step" post_message="     Complete"/>
+        </case>
+        <validation>
+                <compare_fields file1="full_run/output.nc" file2="restart_run/output.nc">
+                        <template file="output_comparison.xml" path_base="script_test_dir"/>
+                </compare_fields>
+        </validation>
+</driver_script>
+

@@ -158,7 +158,7 @@ module li_subglacial_hydro
             deltatSGH = deltat
          endif
 
-         ! remove invalid values
+         ! remove invalid values - not necessary on restart, but shouldn't hurt
          call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
          waterThickness = max(0.0_RKIND, waterThickness)
 
