@@ -3,7 +3,6 @@ CIME restart test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.utils import run_cmd, append_status
 
 logger = logging.getLogger(__name__)
 

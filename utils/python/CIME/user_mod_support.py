@@ -3,8 +3,8 @@ user_mod_support.py
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd
-import shutil, glob, tempfile
+from CIME.utils import expect, run_cmd_no_fail
+import shutil, glob
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                         old_contents = fd.read()
                         contents = contents + old_contents
                 with open(case_user_nl, "w") as fd:
-                     fd.write(contents)
+                    fd.write(contents)
 
         # update SourceMods in caseroot
         for root, _, files in os.walk(include_dir,followlinks=True,topdown=False):
@@ -75,7 +75,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
     for shell_command_file in shell_command_files:
         if os.path.isfile(shell_command_file):
             os.chmod(shell_command_file, 0777)
-            run_cmd(shell_command_file)
+            run_cmd_no_fail(shell_command_file)
 
 def build_include_dirs_list(user_mods_path, include_dirs=None):
     '''

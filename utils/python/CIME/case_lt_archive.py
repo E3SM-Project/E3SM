@@ -1,6 +1,5 @@
 from CIME.XML.standard_module_setup import *
-from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd, does_file_have_string, append_status
+from CIME.utils                     import expect, does_file_have_string, append_status
 from CIME.XML.lt_archive            import LTArchive
 
 import time
@@ -35,7 +34,7 @@ def case_lt_archive(case):
         lt_archive_args = lt_archive.get_lt_archive_args()
         cmd = os.path.join(caseroot, "Tools/lt_archive.sh") \
             + lt_archive_args + "ltArchiveStatus." + lid + " 2>&1"
-        run_cmd(cmd, from_dir=caseroot)
+        run_cmd_no_fail(cmd, from_dir=caseroot)
     else:
         expect(False,
                "lt_archive: run or st_archive is not yet complete or was not successful."

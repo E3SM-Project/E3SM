@@ -6,7 +6,7 @@ script is intended to be run by git bisect.
 """
 
 from standard_script_setup import *
-from CIME.utils import expect, run_cmd
+from CIME.utils import expect, run_cmd_no_fail
 from CIME.XML.machines import Machines
 
 import argparse, sys, os, doctest, traceback
@@ -80,18 +80,18 @@ def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
     wait_for_tests = os.path.join(CIME.utils.get_scripts_root(), "Tools", "wait_for_tests")
 
     # Important: we only want to test merges
-    commits_we_want_to_test = run_cmd("git rev-list %s..%s --merges --first-parent" % (good, bad)).splitlines()
-    all_commits             = run_cmd("git rev-list %s..%s" % (good, bad)).splitlines()
+    commits_we_want_to_test = run_cmd_no_fail("git rev-list %s..%s --merges --first-parent" % (good, bad)).splitlines()
+    all_commits             = run_cmd_no_fail("git rev-list %s..%s" % (good, bad)).splitlines()
     commits_to_skip         = set(all_commits) - set(commits_we_want_to_test)
     print "Skipping these non-merge commits"
     for item in commits_to_skip:
         print item
 
     # Basic setup
-    run_cmd("git bisect start")
-    run_cmd("git bisect good %s" % good)
-    run_cmd("git bisect bad %s" % bad)
-    run_cmd("git bisect skip %s" % " ".join(commits_to_skip))
+    run_cmd_no_fail("git bisect start")
+    run_cmd_no_fail("git bisect good %s" % good)
+    run_cmd_no_fail("git bisect bad %s" % bad)
+    run_cmd_no_fail("git bisect skip %s" % " ".join(commits_to_skip))
 
     # Formulate the create_test command
 
@@ -114,9 +114,9 @@ def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
 
         bisect_cmd += " && %s" % wait_for_tests_cmd
 
-    run_cmd("git bisect run sh -c '%s'" % bisect_cmd, ok_to_fail=True, verbose=True)
+    run_cmd("git bisect run sh -c '%s'" % bisect_cmd, verbose=True)
 
-    run_cmd("git bisect reset")
+    run_cmd_no_fail("git bisect reset")
 
 ###############################################################################
 def _main_func(description):

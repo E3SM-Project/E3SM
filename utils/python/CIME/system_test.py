@@ -5,7 +5,7 @@ import shutil, traceback, stat, glob, threading, time, thread
 from CIME.XML.standard_module_setup import *
 import compare_namelists
 import CIME.utils
-from CIME.utils import expect, run_cmd, append_status
+from CIME.utils import append_status
 import wait_for_tests, update_acme_tests
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, \
     TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
@@ -13,7 +13,6 @@ from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
-from CIME.XML.testlist import Testlist
 from CIME.XML.tests import Tests
 from CIME.case import Case
 import CIME.test_utils
@@ -157,13 +156,13 @@ class SystemTest(object):
                 if compare:
                     self._compare = True
                     self._baseline_cmp_name = baseline_name
-                    if not self._baseline_cmp_name.startswith("%s/" % self._compiler):
+                    if not self._baseline_cmp_name.startswith("%s/" % self._compiler): # pylint: disable=maybe-no-member
                         self._baseline_cmp_name = os.path.join(self._compiler,
                                                                self._baseline_cmp_name)
                 if generate:
                     self._generate = True
                     self._baseline_gen_name  = baseline_name
-                    if not self._baseline_gen_name.startswith("%s/" % self._compiler):
+                    if not self._baseline_gen_name.startswith("%s/" % self._compiler): # pylint: disable=maybe-no-member
                         self._baseline_gen_name = os.path.join(self._compiler,
                                                                self._baseline_gen_name)
 
@@ -324,7 +323,7 @@ class SystemTest(object):
     def _shell_cmd_for_phase(self, test, cmd, phase, from_dir=None):
     ###########################################################################
         while True:
-            rc, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=from_dir)
+            rc, output, errput = run_cmd(cmd, from_dir=from_dir)
             if rc != 0:
                 self._log_output(test,
                                  "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
@@ -369,7 +368,7 @@ class SystemTest(object):
             create_newcase_cmd += " --user-mods-dir %s" % test_mod_file
 
         if case_opts is not None:
-            for case_opt in case_opts:
+            for case_opt in case_opts: # pylint: disable=not-an-iterable
                 if case_opt.startswith('M'):
                     mpilib = case_opt[1:]
                     create_newcase_cmd += " --mpilib %s" % mpilib
@@ -429,9 +428,7 @@ class SystemTest(object):
         envtest.set_value("COMPARE_BASELINE", self._compare)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
 
-        """
-        Add the test instructions from config_test to env_test in the case
-        """
+        # Add the test instructions from config_test to env_test in the case
         config_test = Tests()
         testnode = config_test.get_test_node(test_case)
         envtest.add_test(testnode)
@@ -524,9 +521,7 @@ class SystemTest(object):
 
         envtest.write()
         lockedfiles = os.path.join(test_dir, "LockedFiles")
-        try:
-            os.stat(lockedfiles)
-        except:
+        if not os.path.exists(lockedfiles):
             os.mkdir(lockedfiles)
         shutil.copy(os.path.join(test_dir,"env_run.xml"),
                     os.path.join(lockedfiles, "env_run.orig.xml"))
@@ -579,12 +574,10 @@ class SystemTest(object):
                 else:
                     if compare_namelists.is_namelist_file(item):
                         rc, output, _  = run_cmd("%s %s %s -c %s 2>&1" %
-                                                 (compare_nl, baseline_counterpart, item, test),
-                                                 ok_to_fail=True)
+                                                 (compare_nl, baseline_counterpart, item, test))
                     else:
                         rc, output, _  = run_cmd("%s %s %s -c %s 2>&1" %
-                                                 (simple_compare, baseline_counterpart, item, test),
-                                                 ok_to_fail=True)
+                                                 (simple_compare, baseline_counterpart, item, test))
 
                     if rc != 0:
                         has_fails = True
@@ -680,7 +673,7 @@ class SystemTest(object):
     ###########################################################################
         if phase == RUN_PHASE and self._no_batch:
             test_dir = self._get_test_dir(test)
-            out = run_cmd("./xmlquery TOTALPES -value", from_dir=test_dir)
+            out = run_cmd_no_fail("./xmlquery TOTALPES -value", from_dir=test_dir)
             return int(out)
         elif (phase == SHAREDLIB_BUILD_PHASE):
             # Will force serialization of sharedlib builds
@@ -831,11 +824,10 @@ class SystemTest(object):
             template_file = os.path.join(python_libs_root, "cs.submit.template")
             template = open(template_file, "r").read()
             build_cmd = "./*.build" if self._no_build else ":"
-            run_cmd = "./*.test" if self._no_batch else "./*.submit"
-            template = template.replace("<BUILD_CMD>",
-                                        build_cmd).replace("<RUN_CMD>",
-                                                           run_cmd).replace("<TESTID>",
-                                                                            self._test_id)
+            cmd = "./*.test" if self._no_batch else "./*.submit"
+            template = template.replace("<BUILD_CMD>", build_cmd).\
+                       replace("<RUN_CMD>", cmd).\
+                       replace("<TESTID>", self._test_id)
 
             if self._no_build or self._no_run:
                 cs_submit_file = os.path.join(self._test_root, "cs.submit.%s" % self._test_id)

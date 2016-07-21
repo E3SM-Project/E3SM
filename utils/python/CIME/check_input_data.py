@@ -3,8 +3,7 @@ API for checking input for testcase
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, get_model
-from CIME.case import Case
+from CIME.utils import get_model
 
 import fnmatch
 
@@ -39,13 +38,13 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
     if(not os.path.exists(os.path.dirname(full_path))):
         os.makedirs(os.path.dirname(full_path))
 
-    stat, out, err = run_cmd("svn --non-interactive --trust-server-cert ls %s" % full_url, ok_to_fail=True)
+    stat, out, err = run_cmd("svn --non-interactive --trust-server-cert ls %s" % full_url)
     if (stat != 0):
         logging.warning("FAIL: SVN repo '%s' does not have file '%s'\nReason:%s\n%s\n" % (svn_loc, full_url, out, err))
         return False
     else:
         stat, output, errput = \
-            run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path), ok_to_fail=True)
+            run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path))
         if (stat != 0):
             logging.warning("svn export failed with output: %s and errput %s\n" % (output, errput))
             return False

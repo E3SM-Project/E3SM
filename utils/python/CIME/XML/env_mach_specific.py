@@ -3,7 +3,6 @@ Interface to the env_mach_specific.xml file.  This class inherits from EnvBase
 """
 from CIME.XML.standard_module_setup import *
 
-from CIME.XML.generic_xml import GenericXML
 from CIME.XML.env_base import EnvBase
 
 import string
@@ -61,18 +60,14 @@ class EnvMachSpecific(EnvBase):
         return results
 
     def load_env_for_case(self, compiler, debug, mpilib):
-        self._compiler = compiler
-        self._debug = debug
-        self._mpilib = mpilib
-
         module_nodes = self.get_nodes("modules")
         env_nodes    = self.get_nodes("environment_variables")
 
         if (module_nodes is not None):
-            modules_to_load = self._compute_module_actions(module_nodes)
+            modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
             self.load_modules(modules_to_load)
         if (env_nodes is not None):
-            envs_to_set = self._compute_env_actions(env_nodes)
+            envs_to_set = self._compute_env_actions(env_nodes, compiler, debug, mpilib)
             self.load_envs(envs_to_set)
         with open(".env_mach_specific.csh",'w') as f:
             f.write("\n".join(self._cshscript))
@@ -97,39 +92,39 @@ class EnvMachSpecific(EnvBase):
     def load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
             # Let bash do the work on evaluating and resolving env_value
-            os.environ[env_name] = run_cmd("echo %s" % env_value)
+            os.environ[env_name] = run_cmd_no_fail("echo %s" % env_value)
             self._cshscript.append("setenv %s %s"%(env_name,env_value))
             self._shscript.append("export %s=%s"%(env_name,env_value))
 
     # Private API
 
-    def _compute_module_actions(self, module_nodes):
-        return self._compute_actions(module_nodes, "command")
+    def _compute_module_actions(self, module_nodes, compiler, debug, mpilib):
+        return self._compute_actions(module_nodes, "command", compiler, debug, mpilib)
 
-    def _compute_env_actions(self, env_nodes):
-        return self._compute_actions(env_nodes, "env")
+    def _compute_env_actions(self, env_nodes, compiler, debug, mpilib):
+        return self._compute_actions(env_nodes, "env", compiler, debug, mpilib)
 
-    def _compute_actions(self, nodes, child_tag):
+    def _compute_actions(self, nodes, child_tag, compiler, debug, mpilib):
         result = [] # list of tuples ("name", "argument")
 
         for node in nodes:
-            if (self._match_attribs(node.attrib)):
+            if (self._match_attribs(node.attrib, compiler, debug, mpilib)):
                 for child in node:
                     expect(child.tag == child_tag, "Expected %s element" % child_tag)
-                    if (self._match_attribs(child.attrib)):
+                    if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
                         result.append( (child.get("name"), child.text) )
 
         return result
 
-    def _match_attribs(self, attribs):
+    def _match_attribs(self, attribs, compiler, debug, mpilib):
         if ("compiler" in attribs and
-            not self._match(self._compiler, attribs["compiler"])):
+            not self._match(compiler, attribs["compiler"])):
             return False
         elif ("mpilib" in attribs and
-            not self._match(self._mpilib, attribs["mpilib"])):
+            not self._match(mpilib, attribs["mpilib"])):
             return False
         elif ("debug" in attribs and
-            not self._match("TRUE" if self._debug else "FALSE", attribs["debug"].upper())):
+            not self._match("TRUE" if debug else "FALSE", attribs["debug"].upper())):
             return False
 
         return True
@@ -151,7 +146,7 @@ class EnvMachSpecific(EnvBase):
 
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_module_commands(modules_to_load, "python"):
-            py_module_code = run_cmd(cmd)
+            py_module_code = run_cmd_no_fail(cmd)
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
@@ -178,7 +173,7 @@ class EnvMachSpecific(EnvBase):
             cmd += " && %s %s %s" % (sh_mod_cmd, action, argument)
 
         cmd += " && env"
-        output=run_cmd(cmd)
+        output = run_cmd_no_fail(cmd)
 
         ###################################################
         # Parse the output to set the os.environ dictionary
@@ -214,10 +209,10 @@ class EnvMachSpecific(EnvBase):
             else:
                 os.environ[key] = newenv[key]
 
-    def _load_dotkit_modules(self, modules_to_load):
+    def _load_dotkit_modules(self, _):
         expect(False, "Not yet implemented")
 
-    def _load_none_modules(self, modules_to_load):
+    def _load_none_modules(self, _):
         """
         No Action required
         """

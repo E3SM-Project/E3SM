@@ -3,22 +3,21 @@ Run a testcase.
 """
 
 from CIME.utils import expect
-from CIME.case import Case
 
-from CIME.SystemTests.eri import ERI
-from CIME.SystemTests.err import ERR
-from CIME.SystemTests.erp import ERP
-from CIME.SystemTests.ers import ERS
-from CIME.SystemTests.ert import ERT
-from CIME.SystemTests.lii import LII
-from CIME.SystemTests.nck import NCK
-from CIME.SystemTests.pea import PEA
-from CIME.SystemTests.pem import PEM
-from CIME.SystemTests.pet import PET
-from CIME.SystemTests.pfs import PFS
-from CIME.SystemTests.sms import SMS
-from CIME.SystemTests.seq import SEQ
-from CIME.SystemTests.ssp import SSP
+from CIME.SystemTests.eri import ERI # pylint: disable=unused-import
+from CIME.SystemTests.err import ERR # pylint: disable=unused-import
+from CIME.SystemTests.erp import ERP # pylint: disable=unused-import
+from CIME.SystemTests.ers import ERS # pylint: disable=unused-import
+from CIME.SystemTests.ert import ERT # pylint: disable=unused-import
+from CIME.SystemTests.lii import LII # pylint: disable=unused-import
+from CIME.SystemTests.nck import NCK # pylint: disable=unused-import
+from CIME.SystemTests.pea import PEA # pylint: disable=unused-import
+from CIME.SystemTests.pem import PEM # pylint: disable=unused-import
+from CIME.SystemTests.pet import PET # pylint: disable=unused-import
+from CIME.SystemTests.pfs import PFS # pylint: disable=unused-import
+from CIME.SystemTests.sms import SMS # pylint: disable=unused-import
+from CIME.SystemTests.seq import SEQ # pylint: disable=unused-import
+from CIME.SystemTests.ssp import SSP # pylint: disable=unused-import
 
 from CIME.SystemTests.system_tests_common import *
 
@@ -43,7 +42,7 @@ def case_test(case, testname=None):
             test.compare_baseline()
     except:
         # An uncaught except MUST cause the test to report FAIL
-        test._runstatus = "FAIL"
+        test.fail_test()
         raise
 
     return success

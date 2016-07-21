@@ -5,7 +5,6 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
-from CIME.utils import expect, get_cime_root, get_model
 
 logger = logging.getLogger(__name__)
 

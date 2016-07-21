@@ -7,7 +7,6 @@ Lay all of the components out sequentially
 """
 import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
 import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
@@ -47,7 +46,7 @@ class NCK(SystemTestsCommon):
             if model_only:
                 # This file should have been created in the sharedlib_only phase
                 shutil.copy(machpes,"env_mach_pes.xml")
-                self._case.read_xml(self._caseroot)
+                self._case.read_xml()
             else:
                 for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                     self._case.set_value("NINST_%s"%comp, bld)

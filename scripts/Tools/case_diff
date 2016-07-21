@@ -103,14 +103,14 @@ def recursive_diff(dir1, dir2, show_binary=False, skip_list=[]):
             # if (os.path.getsize(path1) != os.path.getsize(path2)):
             #     print path1 + " DIFFERS (contents)"
 
-            stat, out, err = run_cmd("file %s" % path1, ok_to_fail=True)
+            stat, out, err = run_cmd("file %s" % path1)
             if (stat != 0):
                 logging.warn("Failed to probe file '%s', out: '%s', err: '%s'" % (path1, out, err))
                 continue
 
             is_text_file = "text" in out
             if (not (not show_binary and not is_text_file)):
-                stat, out, _ = run_cmd("diff -w %s %s" % (path1, path2), ok_to_fail=True)
+                stat, out, _ = run_cmd("diff -w %s %s" % (path1, path2))
                 if (stat != 0):
                     print "==============================================================================="
                     print path1 + " DIFFERS (contents)"

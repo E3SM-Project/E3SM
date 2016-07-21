@@ -12,7 +12,7 @@ from Tools.standard_script_setup import *
 
 import update_acme_tests
 from CIME.system_test import SystemTest, RUN_PHASE
-from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd
+from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd_no_fail
 from CIME.XML.machines import Machines
 from CIME.case import Case
 
@@ -259,7 +259,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     expect(testcase_dirs, "No test case dirs found!?")
     first_case = os.path.abspath(os.path.dirname(testcase_dirs[0]))
     with Case(first_case, read_only=False) as case:
-        env_batch = case._get_env("batch")
+        env_batch = case.get_env("batch")
 
         directives = env_batch.get_batch_directives(case, "case.run", raw=True)
         submit_cmd  = env_batch.get_value("batch_submit", subgroup=None)
@@ -309,7 +309,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     submit_cmd = "%s %s" % (submit_cmd, submit_args)
     logger.info("Script:\n%s" % script)
 
-    run_cmd(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None, verbose=True)
+    run_cmd_no_fail(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None, verbose=True)
 
 ###############################################################################
 def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
@@ -356,7 +356,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
         for test in impl._tests:
             test_dir = impl._get_test_dir(test)
             procs_needed = impl._get_procs_needed(test, RUN_PHASE)
-            time_needed = convert_to_seconds(run_cmd("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
+            time_needed = convert_to_seconds(run_cmd_no_fail("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
             job_cost_map[test] = (procs_needed, time_needed)
             if procs_needed > largest_case:
                 largest_case = procs_needed
@@ -375,8 +375,8 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
 def _main_func(description):
 ###############################################################################
     if "--test" in sys.argv:
-        CIME.utils.run_cmd("python -m doctest %s/CIME/system_test.py -v" %
-                           CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        CIME.utils.run_cmd_no_fail("python -m doctest %s/CIME/system_test.py -v" %
+                                   CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
     testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \

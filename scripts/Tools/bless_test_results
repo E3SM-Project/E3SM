@@ -14,7 +14,7 @@ from standard_script_setup import *
 
 import wait_for_tests, compare_namelists, simple_compare
 from CIME.system_test import NAMELIST_PHASE
-from CIME.utils import run_cmd, expect
+from CIME.utils import run_cmd, run_cmd_no_fail, expect
 from CIME.XML.machines import Machines
 
 import argparse, sys, os, glob, doctest, time
@@ -135,7 +135,7 @@ def bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, rep
 def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force):
 ###############################################################################
     # Get user that test was run as (affects loc of hist files)
-    acme_root = run_cmd("./xmlquery CESMSCRATCHROOT -value", from_dir=testcase_dir_for_test)
+    acme_root = run_cmd_no_fail("./xmlquery CESMSCRATCHROOT -value", from_dir=testcase_dir_for_test)
 
     case = os.path.basename(testcase_dir_for_test)
     cime_root = CIME.utils.get_cime_root()
@@ -147,7 +147,7 @@ def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_f
                   (machine_env, compgen, baseline_dir_for_test, case, test_name, run_dir, cprnc_loc, baseline_tag)
 
     check_compare = os.path.join(cime_root, "scripts", "Tools", "component_write_comparefail.pl")
-    stat, out, _ = run_cmd("%s %s 2>&1" % (check_compare, run_dir), ok_to_fail=True)
+    stat, out, _ = run_cmd("%s %s 2>&1" % (check_compare, run_dir))
 
     if (stat != 0):
         # found diff, offer rebless
@@ -155,7 +155,7 @@ def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_f
 
         if (not report_only and
             (force or raw_input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
-            stat = run_cmd(compgen_cmd, ok_to_fail=True, verbose=True)[0]
+            stat = run_cmd(compgen_cmd, verbose=True)[0]
             if (stat != 0):
                 logging.warning("Hist file bless FAILED for test %s" % test_name)
                 return False, "Bless command failed"
@@ -179,8 +179,9 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
     baseline_area = os.path.join(baseline_root, baseline_tag)
 
     # The env_mach_specific script may need these to be defined
-    os.environ["COMPILER"] = _MACHINE.get_default_compiler() # this MUST match compiler that cprnc was built with
-    os.environ["MPILIB"] = _MACHINE.get_default_MPIlib()
+    compiler = _MACHINE.get_default_compiler() # this MUST match compiler that cprnc was built with
+    os.environ["COMPILER"]  = compiler
+    os.environ["MPILIB"] = _MACHINE.get_default_MPIlib(attributes={"compiler":compiler})
 
     broken_blesses = []
     for test_status_file in test_status_files:

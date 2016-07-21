@@ -41,7 +41,7 @@ def set_up_signal_handlers():
 def get_test_time(test_path):
 ###############################################################################
     cmd = "grep TIME %s" % os.path.join(test_path, TEST_STATUS_FILENAME)
-    stat, output, _ = CIME.utils.run_cmd(cmd, ok_to_fail=True)
+    stat, output, _ = CIME.utils.run_cmd(cmd)
     if (stat == 0):
         return int(output.split()[-1])
     else:
@@ -114,7 +114,7 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
         full_name_elem = xmlet.SubElement(full_test_elem, "FullName")
         full_name_elem.text = test_name
 
-        full_command_line_elem = xmlet.SubElement(full_test_elem, "FullCommandLine")
+        xmlet.SubElement(full_test_elem, "FullCommandLine")
         # text ?
 
         results_elem = xmlet.SubElement(full_test_elem, "Results")
@@ -169,7 +169,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                          ("RUN" in full_results and full_results["RUN"] != TEST_PASS_STATUS) ):
 
                         param = "EXEROOT" if full_results["BUILD"] != TEST_PASS_STATUS else "RUNDIR"
-                        src_dir = CIME.utils.run_cmd("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
+                        src_dir = CIME.utils.run_cmd_no_fail("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
                         log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
                         os.makedirs(log_dst_dir)
                         for log_file in glob.glob(os.path.join(src_dir, "*log*")):
@@ -183,8 +183,8 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (os.path.exists(tarball)):
                 os.remove(tarball)
 
-            CIME.utils.run_cmd("tar -cf - %s | gzip -c > %s" % (log_dir, tarball))
-            base64 = CIME.utils.run_cmd("base64 %s" % tarball)
+            CIME.utils.run_cmd_no_fail("tar -cf - %s | gzip -c > %s" % (log_dir, tarball))
+            base64 = CIME.utils.run_cmd_no_fail("base64 %s" % tarball)
 
             xml_text = \
 r"""<?xml version="1.0" encoding="UTF-8"?>
@@ -268,7 +268,7 @@ NightlyStartTime: %s UTC
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname)
 
-    CIME.utils.run_cmd("ctest -VV -D NightlySubmit", verbose=True)
+    CIME.utils.run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
 def reduce_stati(stati, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):

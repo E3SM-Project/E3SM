@@ -4,7 +4,6 @@ Interface to the testspec.xml file.  This class inherits from generic_xml.py
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.generic_xml import GenericXML
-from CIME.utils import expect, get_cime_root, get_model
 
 _VERSION = "1.0"
 
@@ -18,6 +17,7 @@ class TestSpec(GenericXML):
         """
         GenericXML.__init__(self, infile)
         self._testnodes = {}
+        self._testlist_node = None
         if os.path.isfile(infile):
             testnodes = self.get_nodes('test')
             for node in testnodes:

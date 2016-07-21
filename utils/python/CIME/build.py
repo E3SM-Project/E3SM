@@ -2,13 +2,10 @@
 functions for building CIME models
 """
 from CIME.XML.standard_module_setup  import *
-from CIME.case                  import Case
-from CIME.utils                 import expect, run_cmd, get_model, append_status
-from CIME.XML.env_mach_specific import EnvMachSpecific
+from CIME.utils                 import get_model, append_status
 from CIME.preview_namelists     import preview_namelists
 from CIME.check_input_data      import check_input_data
-
-import glob, shutil, time, threading, gzip
+import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +14,15 @@ def stringify_bool(val):
     return "TRUE" if val else "FALSE"
 
 ###############################################################################
-def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complist,
-                lid, caseroot, cimeroot, use_esmf_lib, comp_interface):
+def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
+                lid, caseroot, cimeroot):
 ###############################################################################
 
     logs = []
     overall_smp = os.environ["SMP"]
 
     thread_bad_results = []
-    for model, comp, nthrds, ninst, config_dir in complist:
+    for model, comp, nthrds, _, config_dir in complist:
 
         # aquap has a dependency on atm so we will build it after the threaded loop
         if comp == "aquap":
@@ -76,7 +73,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
 
     # aquap has a dependancy on atm so we build it after the threaded loop
 
-    for model, comp, nthrds, ninst, config_dir in complist:
+    for model, comp, nthrds, _, config_dir in complist:
         if comp == "aquap":
             logger.debug("Now build aquap ocn component")
             _build_model_thread(config_dir, comp, caseroot, bldroot, libroot, incroot, file_build,
@@ -94,9 +91,12 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
     file_build = os.path.join(exeroot, "%s.bldlog.%s" % (cime_model, lid))
 
     config_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
-    stat = run_cmd("%s/buildexe %s %s %s >> %s 2>&1" %
-                   (config_dir, caseroot, bldroot, libroot, file_build),
-                   from_dir=bldroot, ok_to_fail=True, verbose=True)[0]
+    f = open(file_build, "w")
+    stat = run_cmd("%s/buildexe %s %s %s" %
+                   (config_dir, caseroot, bldroot, libroot),
+                   from_dir=bldroot, verbose=True, arg_stdout=f,
+                   arg_stderr=subprocess.STDOUT)[0]
+    f.close()
 
     expect(stat == 0, "ERROR: buildexe failed, cat %s" % file_build)
 
@@ -163,7 +163,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     if not sharedlib_only:
         check_all_input_data(case)
 
-    run_cmd("./Tools/check_lockedfiles --caseroot %s" % caseroot)
+    run_cmd_no_fail("./Tools/check_lockedfiles --caseroot %s" % caseroot)
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
@@ -239,11 +239,11 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
     # experiment there may be many builds of the same case.
-    lid               = run_cmd("date +%y%m%d-%H%M%S")
+    lid               = run_cmd_no_fail("date +%y%m%d-%H%M%S")
     os.environ["LID"] = lid
 
     # Set the overall USE_PETSC variable to TRUE if any of the
-    # XXX_USE_PETSC variables are TRUE.
+    # *_USE_PETSC variables are TRUE.
     # For now, there is just the one CLM_USE_PETSC variable, but in
     # the future there may be others -- so USE_PETSC will be true if
     # ANY of those are true.
@@ -253,7 +253,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     os.environ["USE_PETSC"] = stringify_bool(use_petsc)
 
     # Set the overall USE_TRILINOS variable to TRUE if any of the
-    # XXX_USE_TRILINOS variables are TRUE.
+    # *_USE_TRILINOS variables are TRUE.
     # For now, there is just the one CISM_USE_TRILINOS variable, but in
     # the future there may be others -- so USE_TRILINOS will be true if
     # ANY of those are true.
@@ -263,7 +263,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     os.environ["USE_TRILINOS"] = stringify_bool(use_trilinos)
 
     # Set the overall USE_ALBANY variable to TRUE if any of the
-    # XXX_USE_ALBANY variables are TRUE.
+    # *_USE_ALBANY variables are TRUE.
     # For now, there is just the one MPASLI_USE_ALBANY variable, but in
     # the future there may be others -- so USE_ALBANY will be true if
     # ANY of those are true.
@@ -273,7 +273,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     os.environ["USE_ALBANY"] = stringify_bool(use_albany)
 
     # Load modules
-    env_module = case._get_env("mach_specific")
+    env_module = case.get_env("mach_specific")
     env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
                                  debug=case.get_value("DEBUG"),
                                  mpilib=case.get_value("MPILIB"))
@@ -296,8 +296,8 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
                                machines_file)
 
     if not sharedlib_only:
-        logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complist,
-                                lid, caseroot, cimeroot, use_esmf_lib, comp_interface))
+        logs.extend(build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
+                                lid, caseroot, cimeroot))
 
     if not sharedlib_only:
         post_build(case, logs)
@@ -381,7 +381,7 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
 
     smpstr = ""
     inststr = ""
-    for model, comp, nthrds, ninst, comp_dir in complist:
+    for model, _, nthrds, ninst, _ in complist:
         if nthrds > 1:
             build_threaded = True
         if build_threaded:
@@ -492,14 +492,14 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
             os.makedirs(full_lib_path)
 
         file_build = os.path.join(sharedpath, "%s.bldlog.%s" % (lib, lid))
+        my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
         with open(file_build, "w") as fd:
             fd.write("Current env:\n%s" % "\n".join(["  %s = %s" % (env, os.environ[env]) for env in sorted(os.environ)]))
-
-        my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
-        stat = run_cmd("%s %s %s >> %s 2>&1" %
-                       (my_file, sharedpath, caseroot, file_build),
-                       from_dir=exeroot,
-                       ok_to_fail=True, verbose=True)[0]
+            stat = run_cmd("%s %s %s" %
+                           (my_file, sharedpath, caseroot),
+                           from_dir=exeroot,
+                           verbose=True, arg_stdout=fd,
+                           arg_stderr=subprocess.STDOUT)[0]
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
 
@@ -527,10 +527,11 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
 def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build,
                         thread_bad_results):
 ###############################################################################
-
-    stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
-                   (config_dir, caseroot, bldroot, libroot, file_build),
-                   from_dir=bldroot, ok_to_fail=True,verbose=True)[0]
+    with open(file_build, "w") as fd:
+        stat = run_cmd("%s/buildlib %s %s %s " %
+                       (config_dir, caseroot, bldroot, libroot),
+                       from_dir=bldroot, verbose=True, arg_stdout=fd,
+                       arg_stderr=subprocess.STDOUT)[0]
     if (stat != 0):
         thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (compclass, file_build))
 
@@ -574,7 +575,7 @@ def clean(case, cleanlist=None):
     for item in cleanlist:
         cmd = cmd + " clean" + item
     logger.info("calling %s "%(cmd))
-    run_cmd(cmd)
+    run_cmd_no_fail(cmd)
 
     # unlink Locked files directory
     locked_env_build = os.path.join(caseroot,"LockedFiles/env_build.xml")

@@ -466,6 +466,7 @@
   <machine MACH="edison">
     <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
     <COMPILERS>intel,gnu,cray</COMPILERS>
+    <NODENAME_REGEX>edison</NODENAME_REGEX>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
     <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
@@ -789,18 +790,17 @@
     <PES_PER_NODE>8</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>/usr/bin/runjob</executable>
+       <executable>/usr/bin/runjob</executable>
       <arguments>
 	<arg name="label"> --label short</arg>
 	<!-- Ranks per node!! -->
-	<arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
+	<arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
 	<!-- Total MPI Tasks -->
-	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
-	<arg name="locargs">  $LOCARGS</arg>
+	<arg name="num_tasks"> --np $TOTALPES</arg>
+	<arg name="locargs">--block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
 	<arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	<arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
 	<arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
-	<arg name="colon">:</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
