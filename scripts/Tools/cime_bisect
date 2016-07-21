@@ -6,10 +6,10 @@ script is intended to be run by git bisect.
 """
 
 from standard_script_setup import *
-from CIME.utils import expect, run_cmd_no_fail
+from CIME.utils import expect, run_cmd_no_fail, run_cmd
 from CIME.XML.machines import Machines
 
-import argparse, sys, os, doctest, traceback
+import argparse, sys, os, doctest, traceback, re
 
 _MACHINE = Machines()
 
@@ -17,13 +17,14 @@ _MACHINE = Machines()
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s <testname> <good> [<bad>] [--compare=<baseline-id>] [--no-batch]  [--verbose]
+        usage="""\n%s <testname> <last-known-good-commit> [<bad>] [--compare=<baseline-id>] [--no-batch]  [--verbose]
 OR
 %s --help
 OR
 %s --test
 
 \033[1mEXAMPLES:\033[0m
+    > cd <root-of-broken-cime-repo>
     > %s ERS.f45_g37.B1850C5 HEAD~4 HEAD
 """ % ((os.path.basename(args[0]), ) * 4),
 
@@ -47,7 +48,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Path to testroot to use for testcases for bisect. WARNING. This will be cleared by this script.")
 
     parser.add_argument("-c", "--compiler", default=default_compiler,
-                        help="What compiler to use to build ACME")
+                        help="What compiler to use to build CIME")
 
     parser.add_argument("-p", "--project", default=default_project,
                         help="Project to be given to create_test.")
@@ -69,15 +70,18 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     CIME.utils.handle_standard_logging_options(args)
 
     if (args.test_root is None):
-        args.test_root = os.path.join(_MACHINE.get_value("CESMSCRATCHROOT"), "acme_bisect")
+        args.test_root = os.path.join(_MACHINE.get_value("CESMSCRATCHROOT"), "cime_bisect")
+
+    expect(os.path.isdir(".git"), "Please run the root of a CIME repo")
 
     return args.testname, args.good, args.bad, args.test_root, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory
 
 ###############################################################################
-def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory):
+def cime_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory):
 ###############################################################################
-    create_test = os.path.join(CIME.utils.get_scripts_root(), "create_test")
-    wait_for_tests = os.path.join(CIME.utils.get_scripts_root(), "Tools", "wait_for_tests")
+    create_test = os.path.join(CIME.utils.get_scripts_location_within_cime(), "create_test")
+    expect(os.path.exists(create_test), "Please run the root of a CIME repo")
+    wait_for_tests = os.path.join(CIME.utils.get_scripts_location_within_cime(), "Tools", "wait_for_tests")
 
     # Important: we only want to test merges
     commits_we_want_to_test = run_cmd_no_fail("git rev-list %s..%s --merges --first-parent" % (good, bad)).splitlines()
@@ -93,18 +97,18 @@ def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
     run_cmd_no_fail("git bisect bad %s" % bad)
     run_cmd_no_fail("git bisect skip %s" % " ".join(commits_to_skip))
 
-    # Formulate the create_test command
-
+    # Formulate the create_test command, let create_test make the test-id, it will use
+    # a timestamp that will allow us to avoid collisions
     compare_args = "-c -b %s" % baseline_name if baseline_name is not None else ""
     project_args = "-p %s" % project if project else ""
-    bisect_cmd = "/bin/rm -rf %s/*acme_bisect && %s %s --test-root %s -t acme_bisect --compiler %s %s %s" % \
+    bisect_cmd = "%s %s --test-root %s --compiler %s %s %s" % \
         (testroot, create_test, testname, testroot, compiler, project_args, compare_args)
 
     is_batch = _MACHINE.has_batch_system()
     if (is_batch):
         # Forumulate the wait_for_tests command.
 
-        wait_for_tests_cmd = "%s %s/*acme_bisect/TestStatus" % (wait_for_tests, testroot)
+        wait_for_tests_cmd = "%s %s/*cime_bisect/TestStatus" % (wait_for_tests, testroot)
         if (check_throughput):
             wait_for_tests_cmd += " -t"
         if (check_memory):
@@ -114,9 +118,24 @@ def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
 
         bisect_cmd += " && %s" % wait_for_tests_cmd
 
-    run_cmd("git bisect run sh -c '%s'" % bisect_cmd, verbose=True)
+    try:
+        cmd = "git bisect run sh -c '%s'" % bisect_cmd
+        output = run_cmd(cmd)[1]
+        print output
 
-    run_cmd_no_fail("git bisect reset")
+        # Get list of potentially bad commits from output
+        lines = output.splitlines()
+        regex = re.compile(r'^[a-f0-9]{40}$')
+        bad_commits = set([line for line in lines if regex.match(line)])
+
+        bad_commits_filtered = bad_commits - commits_to_skip
+
+        expect(len(bad_commits_filtered) == 1, bad_commits_filtered)
+        print "Bad merge is:"
+        print run_cmd_no_fail("git show %s" % bad_commits_filtered.pop())
+
+    finally:
+        run_cmd_no_fail("git bisect reset")
 
 ###############################################################################
 def _main_func(description):
@@ -128,7 +147,7 @@ def _main_func(description):
     testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory = \
         parse_command_line(sys.argv, description)
 
-    acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory)
+    cime_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory)
 
 ###############################################################################
 
