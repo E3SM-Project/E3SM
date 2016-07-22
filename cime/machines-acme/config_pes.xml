@@ -451,6 +451,15 @@
     <PES_LEVEL>1r</PES_LEVEL>
 </pes>
 
+<pes OS="BGP">
+    <PIO_TYPENAME>pnetcdf</PIO_TYPENAME>
+    <PIO_NUMTASKS>-8</PIO_NUMTASKS>
+</pes>
+
+<pes OS="BGQ">
+    <PIO_NUMTASKS>-1</PIO_NUMTASKS><PIO_STRIDE>-1</PIO_STRIDE> <PIO_TYPENAME>pnetcdf</PIO_TYPENAME> <PIO_ROOT>1</PIO_ROOT>
+</pes>
+
 <!-------------------------------------------------------------------------------
   tasks/thread setup - GRID independent, compset independent
  ------------------------------------------------------------------------------->
@@ -466,6 +475,7 @@
 <NTASKS_GLC>2048</NTASKS_GLC> <NTHRDS_GLC>16</NTHRDS_GLC> <ROOTPE_GLC>0</ROOTPE_GLC> <NINST_GLC>1</NINST_GLC>
 <NTASKS_WAV>2048</NTASKS_WAV> <NTHRDS_WAV>16</NTHRDS_WAV> <ROOTPE_WAV>0</ROOTPE_WAV> <NINST_WAV>1</NINST_WAV>
 <NTASKS_CPL>2048</NTASKS_CPL> <NTHRDS_CPL>16</NTHRDS_CPL> <ROOTPE_CPL>0</ROOTPE_CPL>
+<PIO_NUMTASKS>-1</PIO_NUMTASKS><PIO_STRIDE>64</PIO_STRIDE> <PIO_TYPENAME>pnetcdf</PIO_TYPENAME> <PIO_ROOT>1</PIO_ROOT>
 <PES_LEVEL>1m</PES_LEVEL>
 </pes>
 
@@ -1077,15 +1087,6 @@
     <NTASKS_GLC>14400</NTASKS_GLC> <NTHRDS_GLC>1</NTHRDS_GLC> <ROOTPE_GLC> 0</ROOTPE_GLC>
     <NTASKS_OCN>512</NTASKS_OCN> <NTHRDS_OCN>1</NTHRDS_OCN> <ROOTPE_OCN> 0</ROOTPE_OCN>
     <PES_LEVEL>3rcm</PES_LEVEL>
-</pes>
-
-<pes OS="BGP">
-    <PIO_TYPENAME>pnetcdf</PIO_TYPENAME>
-    <PIO_NUMTASKS>-8</PIO_NUMTASKS>
-</pes>
-
-<pes OS="BGQ">
-    <PIO_NUMTASKS>-1</PIO_NUMTASKS><PIO_STRIDE>-1</PIO_STRIDE> <PIO_TYPENAME>pnetcdf</PIO_TYPENAME> <PIO_ROOT>1</PIO_ROOT>
 </pes>
 
 <pes>
