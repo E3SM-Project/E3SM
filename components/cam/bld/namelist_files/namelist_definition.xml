@@ -2968,7 +2968,7 @@ Default: 0.32
 </entry>
 
 <entry id="clubb_gamma_coefb" type="real" category="pblrad"
-       group="initvars" valid_values="" >
+       group="clubb_param_nl" valid_values="" >
 High Skw. gamma coef. Skw. Fnct.
 Default: 0.32 or clubb_gamma_coef if it is specified
 </entry>
