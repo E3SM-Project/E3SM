@@ -18,6 +18,7 @@
 !-----------------------------------------------------------------------
 module ocn_tracer_advection_mono
 
+   use mpas_timer
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -95,6 +96,7 @@ module ocn_tracer_advection_mono
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
+      call mpas_timer_start('startup')
       ! Get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
@@ -125,16 +127,16 @@ module ocn_tracer_advection_mono
       call mpas_pool_get_field(scratchPool, 'fluxOutgoing', fluxOutgoingField)
       call mpas_pool_get_field(scratchPool, 'highOrderVertFlux', highOrderVertFluxField)
 
-      call mpas_allocate_scratch_field(highOrderHorizFluxField, .true.)
-      call mpas_allocate_scratch_field(tracerNewField, .true.)
-      call mpas_allocate_scratch_field(tracerCurField, .true.)
-      call mpas_allocate_scratch_field(upwindTendencyField, .true.)
-      call mpas_allocate_scratch_field(inverseLayerThicknessField, .true.)
-      call mpas_allocate_scratch_field(tracerMinField, .true.)
-      call mpas_allocate_scratch_field(tracerMaxField, .true.)
-      call mpas_allocate_scratch_field(fluxIncomingField, .true.)
-      call mpas_allocate_scratch_field(fluxOutgoingField, .true.)
-      call mpas_allocate_scratch_field(highOrderVertFluxField, .true.)
+      call mpas_allocate_scratch_field(highOrderHorizFluxField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerNewField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerCurField, .true., .false.)
+      call mpas_allocate_scratch_field(upwindTendencyField, .true., .false.)
+      call mpas_allocate_scratch_field(inverseLayerThicknessField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMinField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMaxField, .true., .false.)
+      call mpas_allocate_scratch_field(fluxIncomingField, .true., .false.)
+      call mpas_allocate_scratch_field(fluxOutgoingField, .true., .false.)
+      call mpas_allocate_scratch_field(highOrderVertFluxField, .true., .false.)
       call mpas_threading_barrier()
 
       ! Setup high order horizontal flux field
@@ -160,9 +162,11 @@ module ocn_tracer_advection_mono
         end do
       end do
       !$omp end do
+      call mpas_timer_stop('startup')
 
       ! Loop over tracers. One tracer is advected at a time. It is copied into a temporary array in order to improve locality
       do iTracer = 1, num_tracers
+        call mpas_timer_start('cell init')
         ! Initialize variables for use in this iTracer iteration
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCells
@@ -178,13 +182,17 @@ module ocn_tracer_advection_mono
           end do ! k loop
         end do ! iCell loop
         !$omp end do
+        call mpas_timer_stop('cell init')
 
+        call mpas_timer_start('edge init')
         !$omp do schedule(runtime)
         do iEdge = 1, nEdges
            high_order_horiz_flux(:, iEdge) = 0.0_RKIND
         end do
         !$omp end do
+        call mpas_timer_stop('edge init')
 
+        call mpas_timer_start('high order vertical')
         !  Compute the high order vertical flux. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1, i)
         do iCell = 1, nCells
@@ -232,7 +240,9 @@ module ocn_tracer_advection_mono
           end do ! i loop over nEdgesOnCell
         end do ! iCell Loop
         !$omp end do
+        call mpas_timer_stop('high order vertical')
 
+        call mpas_timer_start('high order horiz')
         !  Compute the high order horizontal flux
         !$omp do schedule(runtime) private(cell1, cell2, k, tracer_weight, i, iCell)
         do iEdge = 1, nEdges
@@ -261,7 +271,9 @@ module ocn_tracer_advection_mono
           end do ! i loop over nAdvCellsForEdge
         end do ! iEdge loop
         !$omp end do
+        call mpas_timer_stop('high order horiz')
 
+        call mpas_timer_start('low order vertical')
         !  low order upwind vertical flux (monotonic and diffused)
         !  Remove low order flux from the high order flux.
         !  Store left over high order flux in high_order_vert_flux array.
@@ -287,7 +299,9 @@ module ocn_tracer_advection_mono
           end do ! k Loop
         end do ! iCell Loop
         !$omp end do
+        call mpas_timer_stop('low order vertical')
 
+        call mpas_timer_start('low order horiz')
         !  low order upwind horizontal flux (monotinc and diffused)
         !  Remove low order flux from the high order flux
         !  Store left over high order flux in high_order_horiz_flux array
@@ -330,7 +344,9 @@ module ocn_tracer_advection_mono
           end do
         end do
         !$omp end do
+        call mpas_timer_stop('low order horiz')
 
+        call mpas_timer_start('scale factor build')
         ! Build the factors for the FCT
         ! Computed using the bounds that were computed previously, and the bounds on the newly updated value
         ! Factors are placed in the flux_incoming and flux_outgoing arrays
@@ -351,7 +367,9 @@ module ocn_tracer_advection_mono
           end do ! k loop
         end do ! iCell loop
         !$omp end do
+        call mpas_timer_stop('scale factor build')
 
+        call mpas_timer_start('rescale horiz fluxes')
         !  rescale the high order horizontal fluxes
         !$omp do schedule(runtime) private(cell1, cell2, k, flux)
         do iEdge = 1, nEdges
@@ -365,7 +383,9 @@ module ocn_tracer_advection_mono
           end do ! k loop
         end do ! iEdge loop
         !$omp end do
+        call mpas_timer_stop('rescale horiz fluxes')
 
+        call mpas_timer_start('rescale vert fluxes')
         ! rescale the high order vertical flux
         !$omp do schedule(runtime) private(k, flux)
         do iCell = 1, nCellsSolve
@@ -377,7 +397,9 @@ module ocn_tracer_advection_mono
           end do ! k loop
         end do ! iCell loop
         !$omp end do
+        call mpas_timer_stop('rescale vert fluxes')
 
+        call mpas_timer_start('horiz flux accumulate')
         ! Accumulate the scaled high order horizontal tendencies
         !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
         do iCell = 1, nCells
@@ -396,7 +418,9 @@ module ocn_tracer_advection_mono
           end do
         end do
         !$omp end do
+        call mpas_timer_stop('horiz flux accumulate')
 
+        call mpas_timer_start('vert flux accumulate')
         ! Accumulate the scaled high order vertical tendencies, and the upwind tendencies
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCellsSolve
@@ -416,7 +440,9 @@ module ocn_tracer_advection_mono
           end do ! k loop
         end do ! iCell loop
         !$omp end do
+        call mpas_timer_stop('vert flux accumulate')
 
+        call mpas_timer_start('monotonic check')
         if (monotonicityCheck) then
           !build min and max bounds on old and new tracer for check on monotonicity.
           !$omp do schedule(runtime) private(k)
@@ -433,8 +459,10 @@ module ocn_tracer_advection_mono
           end do
           !$omp end do
         end if
+        call mpas_timer_stop('monotonic check')
       end do ! iTracer loop
 
+      call mpas_timer_start('deallocates')
       call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_deallocate_scratch_field(tracerNewField, .true.)
@@ -448,6 +476,7 @@ module ocn_tracer_advection_mono
       call mpas_deallocate_scratch_field(highOrderVertFluxField, .true.)
 
       deallocate(verticalDivergenceFactor)
+      call mpas_timer_stop('deallocates')
 
    end subroutine ocn_tracer_advection_mono_tend!}}}
 
