@@ -1574,30 +1574,6 @@ module ocn_time_integration_split
       ! END large iteration loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      ! Perform Sea Ice Formation Adjustment
-      call mpas_timer_start('se sea ice formation', .false.)
-      block => domain % blocklist
-      do while(associated(block))
-        call mpas_pool_get_subpool(block % structs, 'state', statePool)
-        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-
-        call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-        call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-
-        call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
-        call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
-
-        call mpas_timer_start('se sea ice diag solve', .false.)
-        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
-        call mpas_timer_stop('se sea ice diag solve')
-        block => block % next
-      end do
-      call mpas_timer_stop('se sea ice formation')
-
       call mpas_timer_start("se implicit vert mix")
 
       block => domain % blocklist
