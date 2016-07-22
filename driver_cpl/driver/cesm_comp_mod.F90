@@ -70,8 +70,8 @@ module cesm_comp_mod
     use seq_comm_mct, only: num_inst_total, num_inst_max
     use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
     use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
-    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs 
-    use seq_comm_mct, only: seq_comm_petlist 
+    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
+    use seq_comm_mct, only: seq_comm_petlist
 
    ! clock & alarm routines and variables
    use seq_timemgr_mod, only: seq_timemgr_type
