@@ -149,7 +149,7 @@ contains
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
       integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge
-      integer, pointer :: nVertLevels, nCells
+      integer, pointer :: nVertLevels, nVertLevelsP1, nCells
       real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth, invAreaCell, deltaVelocitySquared
       real (kind=RKIND) :: normalVelocityAv, factor, delU2
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
@@ -202,6 +202,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice', &
                                 configure_cvmix_kpp_minimum_OBL_under_sea_ice)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
@@ -282,8 +283,10 @@ contains
       if (cvmixBackgroundOn) then
          !$omp do schedule(runtime)
          do iCell = 1, nCells
-            vertViscTopOfCell(:, iCell) = vertViscTopOfCell(:, iCell) + config_cvmix_background_viscosity
-            vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + config_cvmix_background_diffusion
+            do k = 1, nVertLevelsP1
+               vertViscTopOfCell(k, iCell) = vertViscTopOfCell(k, iCell) + config_cvmix_background_viscosity
+               vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_background_diffusion
+            end do
          end do
          !$omp end do
       endif
@@ -307,8 +310,10 @@ contains
       allocate(RiSmoothed(nVertLevels+1))
       allocate(BVFSmoothed(nVertLevels+1))
 
-      Nsqr_iface(:) = 0.0_RKIND
-      turbulentScalarVelocityScale(:) = 0.0_RKIND
+      do k = 1, nVertLevelsP1
+         Nsqr_iface(k) = 0.0_RKIND
+         turbulentScalarVelocityScale(k) = 0.0_RKIND
+      end do
 
       call mpas_timer_start('cvmix cell loop', .false.)
       !$omp do schedule(runtime) private(k, bulkRichardsonNumberStop, kIndexOBL, bulkRichardsonFlag)
@@ -368,8 +373,10 @@ contains
 
          if (config_use_cvmix_shear) then
 
-            cvmix_variables % Mdiff_iface(:)=0.0_RKIND
-            cvmix_variables % Tdiff_iface(:)=0.0_RKIND
+            do k = 1, nVertLevelsP1
+               cvmix_variables % Mdiff_iface(k) = 0.0_RKIND
+               cvmix_variables % Tdiff_iface(k) = 0.0_RKIND
+            end do
             call cvmix_coeffs_shear( &
                  cvmix_variables, &
                  cvmix_shear_params)
@@ -378,8 +385,10 @@ contains
             ! accounted for seperately. so remove bac    kground from shear mixing values
 
             if(config_cvmix_shear_mixing_scheme=='PP') then
-               cvmix_variables % Mdiff_iface(:) = cvmix_variables % Mdiff_iface(:) - config_cvmix_background_viscosity
-               cvmix_variables % Tdiff_iface(:) = cvmix_variables % Tdiff_iface(:) - config_cvmix_background_diffusion
+               do k = 1, nVertLevelsP1
+                  cvmix_variables % Mdiff_iface(k) = cvmix_variables % Mdiff_iface(k) - config_cvmix_background_viscosity
+                  cvmix_variables % Tdiff_iface(k) = cvmix_variables % Tdiff_iface(k) - config_cvmix_background_diffusion
+               end do
             endif
 
             do k = 1, maxLevelCell(iCell)
@@ -392,8 +401,10 @@ contains
          if (cvmixKPPOn) then
 
             ! copy data into cvmix_variables
-            cvmix_variables % Mdiff_iface(:)=vertViscTopOfCell(:,iCell)
-            cvmix_variables % Tdiff_iface(:)=vertDiffTopOfCell(:,iCell)
+            do k = 1, nVertLevelsP1
+              cvmix_variables % Mdiff_iface(k) = vertViscTopOfCell(k, iCell)
+              cvmix_variables % Tdiff_iface(k) = vertDiffTopOfCell(k, iCell)
+            end do
 
             if (config_use_cvmix_fixed_boundary_layer) then
                cvmix_variables % BoundaryLayerDepth = config_cvmix_kpp_boundary_layer_depth
@@ -547,8 +558,10 @@ contains
                    vertDiffTopOfCell(k,iCell) = cvmix_variables % Tdiff_iface(k)
                 enddo
             else
-                vertViscTopOfCell(:,iCell) = cvmix_variables % Mdiff_iface(:)
-                vertDiffTopOfCell(:,iCell) = cvmix_variables % Tdiff_iface(:)
+                do k = 1, nVertLevelsP1
+                   vertViscTopOfCell(k, iCell) = cvmix_variables % Mdiff_iface(k)
+                   vertDiffTopOfCell(k, iCell) = cvmix_variables % Tdiff_iface(k)
+                end do
             endif
 
             ! store non-local flux terms
@@ -561,8 +574,10 @@ contains
 
          ! call convective mixing scheme
          if (config_use_cvmix_convection) then
-            cvmix_variables % Mdiff_iface(:)=0.0_RKIND
-            cvmix_variables % Tdiff_iface(:)=0.0_RKIND
+            do k = 1, nVertLevelsP1
+               cvmix_variables % Mdiff_iface(k) = 0.0_RKIND
+               cvmix_variables % Tdiff_iface(k) = 0.0_RKIND
+            end do
             call cvmix_coeffs_conv( CVmix_vars = cvmix_variables )
 
             ! add convective mixing to vertical viscosity/diffusivity
@@ -573,8 +588,10 @@ contains
                   vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
                enddo
             else
-               vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
-               vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
+               do k = 1, nVertLevelsP1
+                  vertViscTopOfCell(k, iCell) = vertViscTopOfCell(k, iCell) + cvmix_variables % Mdiff_iface(k)
+                  vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + cvmix_variables % Tdiff_iface(k)
+               end do
             endif
          endif  ! if (config_use_cvmix_convection)
 
@@ -589,10 +606,12 @@ contains
 
          ! computation of viscosity/diffusivity complete
          ! impose no-flux boundary conditions at top and bottom by zero viscosity/diffusivity
-         vertViscTopOfCell(1,iCell) = 0.0_RKIND
-         vertDiffTopOfCell(1,iCell) = 0.0_RKIND
-         vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0_RKIND
-         vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0_RKIND
+         vertViscTopOfCell(1, iCell) = 0.0_RKIND
+         vertDiffTopOfCell(1, iCell) = 0.0_RKIND
+         do k = maxLevelCell(iCell)+1, nVertLevelsP1
+            vertViscTopOfCell(k, iCell)=0.0_RKIND
+            vertDiffTopOfCell(k, iCell)=0.0_RKIND
+         end do
 
       end do  ! do iCell=1,mesh%nCells
       !$omp end do
