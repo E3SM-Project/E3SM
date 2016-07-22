@@ -11,7 +11,7 @@ module pftvarcon
   use abortutils  , only : endrun
   use clm_varpar  , only : mxpft, numrad, ivis, inir
   use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
-  use clm_varpar  , only : nlevdecomp, nsoilorder
+  use clm_varpar  , only : nlevdecomp_full, nsoilorder
   use clm_varctl  , only : nu_com
   !
   ! !PUBLIC TYPES:
@@ -422,13 +422,13 @@ contains
     allocate( VMAX_PLANT_NH4(0:mxpft) )
     allocate( VMAX_PLANT_NO3(0:mxpft) )
     allocate( VMAX_PLANT_P(0:mxpft) )
-    allocate( VMAX_MINSURF_P_vr(1:nlevdecomp,0:nsoilorder))
+    allocate( VMAX_MINSURF_P_vr(1:nlevdecomp_full,0:nsoilorder))
     allocate( KM_PLANT_NH4(0:mxpft) ) 
     allocate( KM_PLANT_NO3(0:mxpft) )
     allocate( KM_PLANT_P(0:mxpft) )
-    allocate( KM_MINSURF_P_vr(1:nlevdecomp,0:nsoilorder))
-    allocate( decompmicc_patch_vr (1:nlevdecomp,0:mxpft))
-    allocate( VMAX_PTASE_vr(1:nlevdecomp))
+    allocate( KM_MINSURF_P_vr(1:nlevdecomp_full,0:nsoilorder))
+    allocate( decompmicc_patch_vr (1:nlevdecomp_full,0:mxpft))
+    allocate( VMAX_PTASE_vr(1:nlevdecomp_full))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
     ! new stoichiometry

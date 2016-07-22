@@ -146,7 +146,6 @@ contains
     ! only do if ed is off
     if( .not. use_ed) then
        if(.not.(use_pflotran.and.pf_cmode)) then
-          if ( nu_com .eq. 'RD') then
              call t_startf('PWeathering')
              call PWeathering(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
@@ -176,10 +175,9 @@ contains
                 ! nu_com_phosphatase is true
                 call t_startf('PBiochemMin')
                 call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
-                     cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+                     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
                 call t_stopf('PBiochemMin')
              end if
-          end if
        end if
        
      !-----------------------------------------------------------------------
@@ -382,7 +380,8 @@ contains
           ! nu_com_nfix is true
           call t_startf('CNFixation')
           call CNNFixation_QZ( num_soilc, filter_soilc, &
-               cnstate_vars, carbonflux_vars, nitrogenflux_vars, temperature_vars, carbonstate_vars, phosphorusstate_vars)
+               cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
+               temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
           call t_stopf('CNFixation')
        end if
 
@@ -401,25 +400,12 @@ contains
        call t_stopf('CNMResp')
 
        if ( nu_com .ne. 'RD') then
+          ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
+          ! then competitors take up solution P
           call t_startf('PWeathering')
           call PWeathering(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
           call t_stopf('PWeathering')
-
-          call t_startf('PAdsorption')
-          call PAdsorption(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('PAdsorption')
-
-          call t_startf('PDesorption')
-          call PDesorption(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('PDesorption')
-
-          call t_startf('POcclusion')
-          call POcclusion(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('POcclusion')
 
           if (.not. nu_com_phosphatase) then
              call t_startf('PBiochemMin')
@@ -430,7 +416,7 @@ contains
              ! nu_com_phosphatase is true
              call t_startf('PBiochemMin')
              call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
-                  cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+                  cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
              call t_stopf('PBiochemMin')
           end if
        end if
