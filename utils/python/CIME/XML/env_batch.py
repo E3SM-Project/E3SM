@@ -479,7 +479,7 @@ class EnvBatch(EnvBase):
     def get_default_walltime(self):
         walltime = self.get_value("walltime", attribute={"default" : "true"}, subgroup=None)
         expect(walltime is not None,"Could not find walltime setting in config_batch.xml")
-        return 
+        return walltime
 
     def get_default_queue(self):
         return self.get_optional_node("queue", attributes={"default" : "true"})
