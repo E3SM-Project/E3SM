@@ -31,7 +31,7 @@ program cesm_driver
    implicit none
 
    !--------------------------------------------------------------------------
-   ! Setup and initialize the communications and logging.  
+   ! Setup and initialize the communications and logging.
    !--------------------------------------------------------------------------
    call cesm_pre_init1()
 
