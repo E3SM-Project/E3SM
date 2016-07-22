@@ -14,7 +14,7 @@
 		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message=" - Complete"/>
 	</case>
 	<validation>
-		<compare_fields file1="forward/output/output.0000-01-01_00.00.00.nc">
+		<compare_fields file1="forward/output/output.0001-01-01_00.00.00.nc">
 			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
 		</compare_fields>
 		<compare_fields file1="forward/land_ice_fluxes.nc">
