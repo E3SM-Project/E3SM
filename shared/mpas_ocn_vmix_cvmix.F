@@ -150,10 +150,14 @@ contains
 
       integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge
       integer, pointer :: nVertLevels, nVertLevelsP1, nCells
-      real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth, invAreaCell, deltaVelocitySquared
+      integer, dimension(:), allocatable :: surfaceAverageIndex
+
+
+      real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth, invAreaCell
       real (kind=RKIND) :: normalVelocityAv, factor, delU2
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
-      real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale
+      real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
+                                                      deltaVelocitySquared
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed
       logical :: bulkRichardsonFlag
 
@@ -310,6 +314,9 @@ contains
       allocate(RiSmoothed(nVertLevels+1))
       allocate(BVFSmoothed(nVertLevels+1))
 
+      allocate(surfaceAverageIndex(nVertLevels))
+      allocate(deltaVelocitySquared(nVertLevels))
+
       do k = 1, nVertLevelsP1
          Nsqr_iface(k) = 0.0_RKIND
          turbulentScalarVelocityScale(k) = 0.0_RKIND
@@ -318,6 +325,7 @@ contains
       call mpas_timer_start('cvmix cell loop', .false.)
       !$omp do schedule(runtime) private(k, bulkRichardsonNumberStop, kIndexOBL, bulkRichardsonFlag)
       do iCell = 1, nCells
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
 
          ! specify geometry/location
          cvmix_variables % SeaSurfaceHeight = ssh(iCell)
@@ -425,10 +433,13 @@ contains
               ! compute bulk Richardson number
               ! assume boundary layer depth is at bottom of every kIndexOBL cell
               bulkRichardsonNumberStop = config_cvmix_kpp_stop_OBL_search * config_cvmix_kpp_criticalBulkRichardsonNumber
-              bulkRichardsonNumber(:,iCell) = bulkRichardsonNumberStop - 1.0_RKIND
               bulkRichardsonFlag = .false.
-!             call mpas_timer_start('Bulk Richardson kIndexOBL loop')
+!             call mpas_timer_start('Bulk Richardson kIndexOBL loops')
               do kIndexOBL = 1, maxLevelCell(iCell)
+
+                 ! Reset deltaVelocitySquared and bulkRichardsonNumber at this layer for the later computation
+                 deltaVelocitySquared(kIndexOBL) = 0.0_RKIND
+                 bulkRichardsonNumber(kIndexOBL, iCell) = bulkRichardsonNumberStop - 1.0_RKIND
 
                  ! set OBL at bottom of kIndexOBL cell for computation of bulk Richardson number
                  cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables % zw_iface(kIndexOBL+1))
@@ -442,34 +453,39 @@ contains
                       surf_fric_vel = cvmix_variables % SurfaceFriction, &
                       w_s = turbulentScalarVelocityScale(kIndexOBL))
 
-                 ! averaging over a surface layer assuming that BLdepth is cell bottom
-
                  ! move progressively downward to find the bottom most layer within the surface layer
                  sfc_layer_depth = cvmix_variables % BoundaryLayerDepth * config_cvmix_kpp_surface_layer_extent
                  do kav=1,kIndexOBL
-                    if(cvmix_variables%zw_iface(kav+1) < -sfc_layer_depth) exit
+                    if(cvmix_variables%zw_iface(kav+1) < -sfc_layer_depth) then
+                       surfaceAverageIndex(kIndexOBL) = kav
+                       exit
+                    end if
                  enddo
+              end do
 
-                !compute shear contribution assuming BLdepth is cell bottom
+              ! averaging over a surface layer assuming that BLdepth is cell bottom
+              ! Build deltaVelocitySquared
+              do i = 1, nEdgesOnCell(iCell)
+                 iEdge = edgesOnCell(i, iCell)
+                 factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
 
-                invAreaCell = 1.0_RKIND / areaCell(iCell)
-                deltaVelocitySquared = 0.0_RKIND
-                do i=1,nEdgesOnCell(iCell)
-                   iEdge = edgesOnCell(i,iCell)
+                 do kIndexOBL = 1, maxLevelCell(iCell)
+                    normalVelocityAv = sum( normalVelocity(1:surfaceAverageIndex(kIndexOBL), iEdge) ) &
+                                     / real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
+                    delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
+                    deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + factor * delU2
+                 end do
+              end do
 
-                   normalVelocityAv = sum(normalVelocity(1:kav,iEdge))/real(kav, kind=RKIND)
-                   factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-                   delU2 = (normalVelocityAv - normalVelocity(kIndexOBL,iEdge))**2
-                   deltaVelocitySquared = deltaVelocitySquared + factor * delU2
-               enddo
+              do kIndexOBL = 1, maxLevelCell(iCell)
+                ! !compute shear contribution assuming BLdepth is cell bottom
+                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
 
-               bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared, 1.0e-15_RKIND)
-
-               bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL,iCell) - &
-                                 sum(potentialDensity(1:kav,iCell))/real(kav, kind=RKIND)) / rho_sw
-
-              enddo ! do kIndexOBL
-!             call mpas_timer_stop('Bulk Richardson kIndexOBL loop')
+                bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL, iCell) &
+                                  - sum(potentialDensity(1:surfaceAverageIndex(kIndexOBL), iCell)) &
+                                  / real(surfaceAverageIndex(kIndexOBL), kind=RKIND)) / rho_sw
+              end do ! do kIndexOBL
+!             call mpas_timer_stop('Bulk Richardson kIndexOBL loops')
 
               cvmix_variables % bulkRichardson_cntr(:) = cvmix_kpp_compute_bulk_Richardson( &
                    zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), &
@@ -632,6 +648,8 @@ contains
       deallocate(turbulentScalarVelocityScale)
       deallocate(RiSmoothed)
       deallocate(BVFSmoothed)
+      deallocate(surfaceAverageIndex)
+      deallocate(deltaVelocitySquared)
 
    !--------------------------------------------------------------------
 
