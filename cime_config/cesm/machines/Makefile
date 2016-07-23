@@ -541,6 +541,14 @@ ifdef PNETCDF_PATH
 else
         CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
+
+# NAG doesn't get along too nicely with PnetCDF Fortran interfaces.
+ifeq ($(COMPILER),nag)
+  ifeq ($(PIO_VERSION),1)
+        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+  endif
+endif
+
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
 endif
