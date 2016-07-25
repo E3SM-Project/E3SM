@@ -1008,7 +1008,6 @@ contains
     use control_mod, only : test_cfldep
     
     use derivative_mod, only : derivative_t
-    use fvm_bsp_mod, only: boomerang, solidbody
     
     implicit none
     type (derivative_t)  , intent(in) :: deriv
@@ -1023,27 +1022,9 @@ contains
     
     
 !phl    ! for the benchmark test, use more accurate departure point creation
-    if (fvm_ideal_test == IDEAL_TEST_OFF) then
   ! for given velocities in the element structure
       call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt*fvm_supercycling,tl,klev)    
-    else
-!phl    !CE: define new mesh for fvm fvm on an equal angular grid
-!phl    ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
-      do j = 1, nc+1
-        do i = 1, nc+1               
-          if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
-             !
-             ! broken
-             ! 
-            call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
-          else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
-            call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
-          else
-            call haltmp("Unknown FVM ideal test type")
-          end if
-        end do
-      end do
-    end if
+
     
     if (test_cfldep) then
        call check_departurecell(fvm,klev) 

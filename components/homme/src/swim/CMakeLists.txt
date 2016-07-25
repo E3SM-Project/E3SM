@@ -36,7 +36,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_DIR}/state_mod.F90
                ${SRC_DIR}/sweq_mod.F90
                ${SRC_DIR}/types_mod.F90
-               ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
                ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
                ${SRC_SHARE_DIR}/bndry_mod.F90
                ${SRC_SHARE_DIR}/cg_mod.F90

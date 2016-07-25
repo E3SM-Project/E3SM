@@ -194,7 +194,6 @@ contains
     use fvm_mod, only: fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
     use fvm_mod, only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
     use fvm_mod, only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
-    use fvm_bsp_mod, only: get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use fvm_control_volume_mod, only : n0_fvm,np1_fvm,fvm_supercycling
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
@@ -270,26 +269,6 @@ contains
              eta_dot_dpdn(:,:,k) = eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
           enddo
 
-
-          ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
-          !        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
-          ! elem%state%u(np1)  = velocity at time t+1 on reference levels
-          ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-!           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
-          do k=1,nlev
-             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-             dp_star(:,:,k) = dp(:,:,k) + dt*(eta_dot_dpdn(:,:,k+1) -   eta_dot_dpdn(:,:,k))
-             if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
-               if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
-                 elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(np1))
-               else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
-                 elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(np1))
-               else
-                 call abortmp('Bad fvm_test_type in prim_step')
-               end if
-             end if
-          enddo
           call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
        end do
     else

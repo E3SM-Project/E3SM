@@ -291,7 +291,6 @@ program prim_main
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
 !   write(numproc_char,*) par%nprocs
-!   write(numtrac_char,*) ntrac
 !   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
 !   call t_prf('time/HommeFVMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
   call t_prf('HommeTime', par%comm)

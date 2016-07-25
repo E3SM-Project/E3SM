@@ -78,7 +78,6 @@ contains
     use fvm_control_volume_mod, only : fvm_struct
     
     use fvm_mod, only : fvm_init2,fvm_init3    
-    use fvm_bsp_mod, only: fvm_init_tracer
 
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile

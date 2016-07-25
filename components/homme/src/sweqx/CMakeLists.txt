@@ -43,7 +43,6 @@ SET(SWEQX_SRCS
                ${SRC_BASE}/state_mod.F90
                ${SRC_BASE}/sweq_mod.F90
                ${SRC_BASE}/types_mod.F90
-               ${SRC_SHARE}/fvm_bsp_mod.F90
                ${SRC_SHARE}/fvm_transformation_mod.F90
                ${SRC_SHARE}/cg_mod.F90
                ${SRC_SHARE}/control_mod.F90
