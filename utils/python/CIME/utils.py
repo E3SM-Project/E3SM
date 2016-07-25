@@ -322,7 +322,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
             expect(arg_val is not None,
                    "Could not fill-out test name, partial string '%s' had no %s information and you did not provide any" % (partial_test, name))
             result = "%s%s%s" % (result, "_" if name == "compiler" else ".", arg_val)
-        elif (arg_val is not None):
+        elif (arg_val is not None and partial_val != partial_compiler):
             expect(arg_val == partial_val,
                    "Mismatch in field %s, partial string '%s' indicated it should be '%s' but you provided '%s'" % (name, partial_test, partial_val, arg_val))
 
