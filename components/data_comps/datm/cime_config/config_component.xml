@@ -92,6 +92,15 @@
     <desc>DATM CO2 time series</desc>
   </entry>
 
+  <entry id="DATM_CPLHIST_DIR"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>directory for coupler history data mode (only used for CPLHIST3HrWx mode)</desc>
+  </entry> 
+
   <entry id="DATM_CPLHIST_CASE">
     <type>char</type>
     <valid_values></valid_values>
