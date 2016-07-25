@@ -255,7 +255,8 @@ module atm_time_integration
       if (.not. config_scalar_advection )  write(0,*) ' scalar advection turned off '
 
       number_of_sub_steps = config_number_of_sub_steps
-      rk_timestep(1) = dt_dynamics/3.
+!      rk_timestep(1) = dt_dynamics/3.
+      rk_timestep(1) = dt_dynamics/2.
       rk_timestep(2) = dt_dynamics/2.
       rk_timestep(3) = dt_dynamics
 
