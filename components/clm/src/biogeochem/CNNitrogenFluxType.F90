@@ -367,6 +367,10 @@ module CNNitrogenFluxType
      real(r8), pointer :: smin_no3_to_plant_patch                   (:)     ! pft level plant uptake of soil NO3 (gN/m2/s) BGC mode
      real(r8), pointer :: smin_nh4_to_plant_patch                   (:)     ! pft level plant uptake of soil Nh4 (gN/m2/s) BGC mode
      real(r8), pointer :: sminn_to_plant_patch                      (:)     ! pft level plant uptake of soil N (gN/m2/s) CN mode
+     real(r8), pointer :: pnup_pfrootc_patch                        (:)     ! partial nitrogen uptake / partial fine root carbon (used by symbiotic n2 fixation)
+     real(r8), pointer :: pgpp_pleafc_patch                         (:)     ! partial gpp / partial leaf carbon (used by symbiotic n2 fixation)
+     real(r8), pointer :: pgpp_pleafn_patch                         (:)     ! partial gpp / partial leaf nitrogen (used by phosphatase activity)
+     real(r8), pointer :: pgpp_pleafp_patch                         (:)     ! partial gpp / partial leaf phosphorus (used by phosphatase activity)
      real(r8), pointer :: col_plant_ndemand_vr                      (:,:)   ! column-level plant N demand
      real(r8), pointer :: col_plant_nh4demand_vr                    (:,:)   ! column-level plant NH4 demand
      real(r8), pointer :: col_plant_no3demand_vr                    (:,:)   ! column-level plant NO3 demand
@@ -760,6 +764,10 @@ contains
     allocate(this%smin_no3_to_plant_patch     (begp:endp)) ;             this%smin_no3_to_plant_patch     (:) = nan
     allocate(this%smin_nh4_to_plant_patch     (begp:endp)) ;             this%smin_nh4_to_plant_patch     (:) = nan
     allocate(this%sminn_to_plant_patch        (begp:endp)) ;             this%sminn_to_plant_patch        (:) = nan
+    allocate(this%pnup_pfrootc_patch          (begp:endp)) ;             this%pnup_pfrootc_patch          (:) = nan
+    allocate(this%pgpp_pleafc_patch           (begp:endp)) ;             this%pgpp_pleafc_patch           (:) = nan
+    allocate(this%pgpp_pleafn_patch           (begp:endp)) ;             this%pgpp_pleafn_patch           (:) = nan
+    allocate(this%pgpp_pleafp_patch           (begp:endp)) ;             this%pgpp_pleafp_patch           (:) = nan
     allocate(this%col_plant_ndemand_vr        (begc:endc,1:nlevdecomp)); this%col_plant_ndemand_vr        (:,:) = nan
     allocate(this%col_plant_nh4demand_vr      (begc:endc,1:nlevdecomp)); this%col_plant_nh4demand_vr      (:,:) = nan
     allocate(this%col_plant_no3demand_vr      (begc:endc,1:nlevdecomp)); this%col_plant_no3demand_vr      (:,:) = nan

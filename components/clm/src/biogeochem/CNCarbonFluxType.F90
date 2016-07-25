@@ -15,7 +15,6 @@ module CNCarbonFluxType
   use PatchType              , only : pft                
   use ColumnType             , only : col                
   use LandunitType           , only : lun
-  use clm_varctl             , only : nu_com
   ! bgc interface & pflotran
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, use_vertsoilc
   ! 
@@ -388,10 +387,7 @@ module CNCarbonFluxType
      
      ! debug
      real(r8), pointer :: plant_to_litter_cflux		  (:) ! for the purpose of mass balance check
-     real(r8), pointer :: plant_to_cwd_cflux		  (:) ! for the purpose of mass balance check
-     real(r8), pointer :: allocation_leaf 		  (:) ! check allocation to leaf for dynamic allocation scheme
-     real(r8), pointer :: allocation_stem 		  (:) ! check allocation to stem for dynamic allocation scheme
-     real(r8), pointer :: allocation_froot 		  (:) ! check allocation to fine root for dynamic allocation scheme
+	 real(r8), pointer :: plant_to_cwd_cflux		  (:) ! for the purpose of mass balance check
 
      ! new variables for clm_bgc_interface & pflotran
      !------------------------------------------------------------------------
@@ -777,9 +773,6 @@ contains
      ! debug
      allocate(this%plant_to_litter_cflux (begc:endc)) ;	this%plant_to_litter_cflux (:) = nan
      allocate(this%plant_to_cwd_cflux    (begc:endc)) ;	this%plant_to_cwd_cflux	   (:) = nan
-     allocate(this%allocation_leaf       (begp:endp)) ; this%allocation_leaf       (:) = nan
-     allocate(this%allocation_stem       (begp:endp)) ; this%allocation_stem       (:) = nan
-     allocate(this%allocation_froot      (begp:endp)) ; this%allocation_froot      (:) = nan
 
      ! clm_bgc_interface & pflotran
      !------------------------------------------------------------------------
@@ -1576,21 +1569,6 @@ contains
         call hist_addfld1d (fname='XSMRPOOL_RECOVER', units='gC/m^2/s', &
              avgflag='A', long_name='C flux assigned to recovery of negative xsmrpool', &
              ptr_patch=this%xsmrpool_recover_patch, default='inactive')
-
-        if (nu_com .ne. 'RD' ) then
-            this%allocation_leaf(begp:endp) = spval
-            call hist_addfld1d (fname='allocation_leaf', units='', &
-               avgflag='A', long_name='fraction of availc allocated to leaf', &
-               ptr_patch=this%allocation_leaf)
-            this%allocation_stem(begp:endp) = spval
-            call hist_addfld1d (fname='allocation_stem', units='', &
-               avgflag='A', long_name='fraction of availc allocated to stem', &
-               ptr_patch=this%allocation_stem)
-            this%allocation_froot(begp:endp) = spval
-            call hist_addfld1d (fname='allocation_froot', units='', &
-               avgflag='A', long_name='fraction of availc allocated to fine root', &
-               ptr_patch=this%allocation_froot)
-        end if
 
      end if  ! end of if-c12
 
@@ -3116,7 +3094,6 @@ contains
          ptr_col=data2dptr, default='inactive')
          
      enddo
-
      !-------------------------------
      ! C13 flux variables - native to column 
      !-------------------------------

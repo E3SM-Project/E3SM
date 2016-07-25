@@ -109,6 +109,8 @@ module PhosphorusStateType
      real(r8), pointer :: actual_livewdcp              (:)     ! dynamic live wood cp ratio
      real(r8), pointer :: actual_deadwdcp              (:)     ! dynamic dead wood cp ratio
      real(r8), pointer :: actual_graincp               (:)     ! dynamic grain cp ratio
+     real(r8), pointer :: pGPP_pleafn_patch            (:)     ! carbon benefit of nitrogen uptake
+     real(r8), pointer :: pGPP_pleafp_patch            (:)     ! carbon benefit of phosphorus uptake
      
      ! debug
      real(r8), pointer :: totpftp_beg_col              (:)
@@ -260,6 +262,8 @@ contains
     allocate(this%actual_livewdcp     (begp:endp)); this%actual_livewdcp     (:) = nan
     allocate(this%actual_deadwdcp     (begp:endp)); this%actual_deadwdcp     (:) = nan
     allocate(this%actual_graincp      (begp:endp)); this%actual_graincp      (:) = nan
+    allocate(this%pGPP_pleafn_patch   (begp:endp)); this%pGPP_pleafn_patch   (:) = nan
+    allocate(this%pGPP_pleafp_patch   (begp:endp)); this%pGPP_pleafp_patch   (:) = nan
     
     ! debug
     allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
@@ -736,12 +740,15 @@ contains
           end if
           
           if (nu_com .ne. 'RD') then
-              ! ECA competition calculate root NP uptake as a function of fine root biomass
-              ! better to initialize root CNP pools with a non-zero value
-              if (pft%itype(p) .ne. noveg) then
-                 this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
-                 this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
-              end if
+             if (pft%itype(p) == noveg) then
+                this%frootp_patch(p) = 0._r8
+                this%frootp_storage_patch(p) = 0._r8
+             else
+                this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
+                this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
+             end if
+             this%pGPP_pleafn_patch(p) = 1.0_r8
+             this%pGPP_pleafp_patch(p) = 1.0_r8
           end if
            
           this%deadstemp_storage_patch(p)  = 0._r8
