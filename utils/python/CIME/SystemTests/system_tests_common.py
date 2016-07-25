@@ -280,7 +280,7 @@ class SystemTestsCommon(object):
         if not os.path.isfile(baselog):
             # for backward compatibility
             baselog = os.path.join(basecmp_dir, "cpl.log")
-        if len(memlist) > 3:
+        if baselog is not None and len(memlist) > 3:
             blmem = self._get_mem_usage(baselog)[-1][1]
             curmem = memlist[-1][1]
             diff = (curmem-blmem)/blmem
