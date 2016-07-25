@@ -18,7 +18,7 @@ module fvm_mod
        ghostVpack, ghostVunpack,  initEdgebuffer
   use edgetype_mod, only : ghostbuffertr_t, edgebuffer_t
   use bndry_mod, only: ghost_exchangeV                     
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns, nhr, nhc
+  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, np,ns, nhr, nhc
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
   use fvm_control_volume_mod, only: fvm_struct
@@ -129,20 +129,20 @@ contains
     !
     do ie=nets,nete
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+       !call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
        ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
        ! the reconstruction and following evaluation of reconstruction function on lat-lon points
        !
     end do
     call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+   ! call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
     call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
        call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+    !   call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     
@@ -216,44 +216,7 @@ contains
                       flux_area(i  ,j+1,2)-flux_area(i,j,2))
              end do
           end do
-          !
-          !loop through all tracers
-          !
-          do itr=1,ntrac
-!             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
-             tracer0=fvm(ie)%c(:,:,k,itr,n0_fvm)
-             call reconstruction(tracer0, fvm(ie),recons)
-             call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-!             recons=0.0
-             !
-             ! do remapping for x-y fluxes
-             !
-             call ff_cslam_remap_q(tracer0,flux_tracer,weights_all_flux, &
-                  recons, &
-                  fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
-                  weights_lgr_index_all_flux, jall, flux_area)  
-             !
-             ! forecast equation for tracer (kg/kg)
-             !
-             do j=1,nc
-                do i=1,nc
-                   q0   = fvm(ie)%c(i,j,k,itr,n0_fvm)
-                   rho0 = fvm(ie)%dp_fvm(i,j,k,n0_fvm)
-                   rho1 = fvm(ie)%dp_fvm(i,j,k,np1_fvm)
-                   area = fvm(ie)%area_sphere(i,j)
-                   !
-                   q1=q0*rho0-(&  
-                        !
-                        flux_air(i+1,j  ,1)*flux_tracer(i+1,j  ,1)-&
-                        flux_air(i  ,j  ,1)*flux_tracer(i  ,j  ,1)+&
-                        flux_air(i  ,j+1,2)*flux_tracer(i  ,j+1,2)-&
-                        flux_air(i  ,j  ,2)*flux_tracer(i  ,j  ,2)&
-                        )/area
-!                   fvm(ie)%c(i,j,k,itr,tl%np1)=q1/rho1
-                   fvm(ie)%c(i,j,k,itr,np1_fvm)=q1/rho1
-                end do
-             end do
-          enddo  !End Tracer
+
        end do  !End Level
        !
        ! Compute surface pressure implied by fvm
@@ -513,19 +476,19 @@ contains
     !
     do ie=nets,nete
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+   !    call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
        ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
        ! the reconstruction and following evaluation of reconstruction function on lat-lon points
     end do
     call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+    !call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
     call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
        call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+  !     call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
 
@@ -549,25 +512,7 @@ contains
                 fvm(ie)%dp_fvm(i,j,k,np1_fvm)=tracer_air1(i,j)
              end do
           end do
-          !loop through all tracers
-          do itr=1,ntrac
-             tracer0=fvm(ie)%c(:,:,k,itr,n0_fvm)
-             call reconstruction(tracer0, fvm(ie),recons)
-             call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-             tracer1=0.0D0   
-             
-             call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
-                  fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)  
 
-             ! finish scheme
-             do j=1,nc
-                do i=1,nc
-                   fvm(ie)%c(i,j,k,itr,np1_fvm)= &
-                        (tracer1(i,j)/fvm(ie)%area_sphere(i,j))/tracer_air1(i,j)
-                   !             fvm(ie)%c(i,j,k,itr,np1_fvm)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
-                end do
-             end do
-          enddo  !End Tracer
        end do  !End Level
 
        !
@@ -911,10 +856,7 @@ contains
        endif
        call haltmp("stopping")
     end if
-    if (ntrac>ntrac_d) then
-       if (par%masterproc) print *,'ntrac,ntrac_d=',ntrac,ntrac_d
-       call haltmp("PARAMETER ERROR for fvm: ntrac > ntrac_d")
-    endif
+
 
     if (qsize>0) then
        if (par%masterproc) then
@@ -938,7 +880,7 @@ contains
        print *, "                                            "
     end if
     
-    call initghostbufferTR(cellghostbuf,nlev,ntrac+1,nhc,nc) !+1 for the air_density, which comes from SE
+!    call initghostbufferTR(cellghostbuf,nlev,ntrac+1,nhc,nc) !+1 for the air_density, which comes from SE
 
 !    call initghostbufferTR(cellghostbuf,nlev,1,nc,nc) !+1 for the air_density, which comes from SE
     
@@ -1033,14 +975,14 @@ contains
  ! do it only for FVM tracers, and air density (dp_fvm)
     do ie=nets,nete
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0),nhc,nc,nlev,1,    0,elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0)   ,nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+    !   call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0)   ,nhc,nc,nlev,ntrac,1,elem(ie)%desc)
     end do
     !exchange values for the initial data                                                                         
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+   ! call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
     !-----------------------------------------------------------------------------------!                         
     do ie=nets,nete
        call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0), nhc, nc,nlev,1    ,0,elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+    !   call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
     enddo
 
 

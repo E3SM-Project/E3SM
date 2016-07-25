@@ -1620,28 +1620,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
      enddo
-     ! Repeat for the fvm tracers
-     do q = 1, ntrac
-        do k = 1, nlev
-           do j = 1, nc
-              do i = 1, nc
-                 v1 = fvm(ie)%fc(i,j,k,q)
-                 if (fvm(ie)%c(i,j,k,q,n0_fvm) + v1 < 0 .and. v1<0) then
-                    if (fvm(ie)%c(i,j,k,q,n0_fvm) < 0 ) then
-                       v1 = 0  ! C already negative, dont make it more so
-                    else
-                       v1 = -fvm(ie)%c(i,j,k,q,n0_fvm)
-                    end if
-                 end if
-                 fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,n0_fvm) + v1
-                 !                    if (q == 1) then
-                 !!XXgoldyXX: Should update the pressure forcing here??!!??
-                 !                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                 !                  end if
-              end do
-           end do
-        end do
-     end do
 
      if (wet .and. qsize>0) then
         ! to conserve dry mass in the precese of Q1 forcing:

@@ -352,77 +352,6 @@ contains
     !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
 
-    !
-    ! fvm diagnostics
-    !
-    if (ntrac>0) then
-       do q=1,ntrac
-          do ie=nets,nete
-             tmp1(ie) = MINVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0_fvm)) 
-          enddo
-          cmin(q) = ParallelMin(tmp1,hybrid)
-          do ie=nets,nete
-             tmp1(ie) = MAXVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0_fvm))
-          enddo
-          cmax(q) = ParallelMax(tmp1,hybrid)
-          !
-          ! compute total tracer mass
-          !
-          global_shared_buf(:,1) = 0.0D0
-          do k=1,nlev
-             do ie=nets,nete
-                global_shared_buf(ie,1) = global_shared_buf(ie,1)+&
-                     SUM(fvm(ie)%c(1:nc,1:nc,k,q,n0_fvm)*&
-                         fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)*&
-                         fvm(ie)%area_sphere(1:nc,1:nc))
-             end do
-          enddo
-          call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-          csum(q) = global_shared_sum(1)/(dble(nlev)*4.0D0*DD_PI)
-       enddo
-       !
-       ! psC diagnostics
-       !
-       do ie=nets,nete
-          tmp1(ie) = MINVAL(fvm(ie)%psc(1:nc,1:nc))
-       enddo
-       psc_min = ParallelMin(tmp1,hybrid)
-       do ie=nets,nete
-          tmp1(ie) = MAXVAL(fvm(ie)%psc(1:nc,1:nc))
-       enddo
-       !
-       ! surface pressure mass implied by fvm
-       !
-       psc_max = ParallelMax(tmp1,hybrid)
-       do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(fvm(ie)%psc(1:nc,1:nc)*fvm(ie)%area_sphere(1:nc,1:nc))
-       enddo
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       psc_mass = global_shared_sum(1)/(4.0D0*DD_PI)
-       !
-       ! dp_fvm
-       !
-       do ie=nets,nete
-          tmp1(ie) = MINVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0_fvm))
-       enddo
-       dp_fvm_min = ParallelMin(tmp1,hybrid)
-       do ie=nets,nete
-          tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0_fvm))
-       enddo
-       dp_fvm_max = ParallelMax(tmp1,hybrid)
-       
-       global_shared_buf(:,1) = 0.0D0
-       do k=1,nlev
-          do ie=nets,nete
-             global_shared_buf(ie,1) = global_shared_buf(ie,1)+&
-                  SUM(fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)*fvm(ie)%area_sphere(1:nc,1:nc))
-          end do
-       enddo
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       dp_fvm_mass = global_shared_sum(1)/(4.0D0*DD_PI)
-    end if
-
-
     if(hybrid%masterthread) then
        write(iulog,100) "u     = ",umin_p,umax_p,usum_p
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
@@ -438,11 +367,6 @@ contains
        endif
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,' mb     '
-
-
-
-
-
 
        if(fumin_p.ne.fumax_p) write(iulog,100) "fu = ",fumin_p,fumax_p,fusum_p
        if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p

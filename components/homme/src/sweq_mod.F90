@@ -18,7 +18,7 @@ contains
     !-----------------
     use derivative_mod, only : derivative_t, derivinit, deriv_print, allocate_subcell_integration_matrix
     !-----------------
-    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc, ntrac
+    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
@@ -245,10 +245,7 @@ contains
        fvm_points(i)= ( fvm_corners(i)+fvm_corners(i+1) ) /2
     end do
     call derivinit(deriv,fvm_corners,fvm_points)
-    if (ntrac>0) then
-       call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
-       call test_bilin_phys2gll(elem,fvm,hybrid,nets,nete)
-    endif
+
 
 !   if (hybrid%masterthread) then
 !       call deriv_print(deriv)
@@ -468,16 +465,7 @@ contains
              call tc5_init_state(elem,nets,nete,pmean,deriv)
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
-             
-             if (ntrac>0) then
-             do ie=nets,nete
-               call fvm_init_tracer(fvm(ie),tl)
-             end do
-             call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
-             if (hybrid%masterthread) print *,"initializing fvm tracers for swtc5..."
-             endif
-
-             
+                          
           else if (test_case(1:5) == "swtc6") then
              if (hybrid%masterthread)  print *,"initializing swtc6..."
              call tc6_init_state(elem,nets,nete,pmean)

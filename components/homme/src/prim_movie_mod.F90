@@ -723,30 +723,6 @@ contains
                 end if
              enddo
 
-             if (present(fvm)) then
-             do qindex=1,min(ntrac,4)
-                write(vname,'(a1,i1)') 'C',qindex
-                if (qindex==1) vname='C'
-                if(nf_selectedvar(vname, output_varnames)) then
-
-                   
-                   if (par%masterproc) print *,'writing ',vname
-                   do k=1,nlev
-                      jj=0
-                      do ie=1,nelemd
-                         do j=1,nc
-                            do i=1,nc
-                               jj=jj+1
-                               varphys(jj,k)= fvm(ie)%c(i,j,k,qindex,tl%n0)
-                            end do
-                         end do
-                      end do
-                   end do
-                   call nf_put_var(ncdf(ios),varphys,start, count, name=vname,iodescin=iodesc3d_nc)
-                endif
-             enddo
-             endif
-
              if(nf_selectedvar('geo', output_varnames)) then
                 st=1
                 do ie=1,nelemd

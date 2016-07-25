@@ -9,7 +9,7 @@
 module fvm_analytic_mod
 
   use kinds, only : real_kind, int_kind
-  use dimensions_mod, only: nc, nhe, ntrac
+  use dimensions_mod, only: nc, nhe
   
   implicit none
   private

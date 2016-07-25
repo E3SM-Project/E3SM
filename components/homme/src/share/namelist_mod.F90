@@ -106,7 +106,7 @@ module namelist_mod
   !-----------------
   use thread_mod, only : nthreads, nthreads_accel, omp_set_num_threads, omp_get_max_threads, vert_num_threads, vthreads
   !-----------------
-  use dimensions_mod, only : ne, np, nnodes, nmpi_per_node, npart, ntrac, ntrac_d, qsize, qsize_d, set_mesh_dimensions
+  use dimensions_mod, only : ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
   !-----------------
 #ifdef CAM
   use time_mod, only : nsplit, smooth, phys_tscale
@@ -219,7 +219,6 @@ module namelist_mod
                      vthreads,      &       ! Number of vertical/column threads per horizontal thread
 #else
                      qsize,         &       ! number of SE tracers
-                     ntrac,         &       ! number of fvm tracers
                      nthreads,      &       ! Number of threads per process
                      vert_num_threads,      &       ! Number of threads per process
                      nthreads_accel,      &       ! Number of threads per an accelerator process
@@ -688,7 +687,6 @@ module namelist_mod
 
     call MPI_bcast( ne        ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(qsize     ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(ntrac     ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(test_cfldep,1,MPIlogical_t,par%root,par%comm,ierr)
 
 
@@ -822,9 +820,7 @@ module namelist_mod
     if (trim(tracer_transport_method) == 'se_gll') then
       tracer_transport_type = TRACERTRANSPORT_SE_GLL
       tracer_grid_type = TRACER_GRIDTYPE_GLL
-!phl      if (ntrac>0) then
-!phl         call abortmp('user specified ntrac should only be > 0 when tracer_transport_type is fvm')
-!phl      end if
+
     else if (trim(tracer_transport_method) == 'cslam_fvm') then
       tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN_FVM
       tracer_grid_type = TRACER_GRIDTYPE_FVM
@@ -1050,10 +1046,6 @@ module namelist_mod
        write(iulog,*)"readnl: qsize,qsize_d = ",qsize,qsize_d
        if (qsize>qsize_d) then
           call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
-       endif
-       write(iulog,*)"readnl: ntrac,ntrac_d = ",ntrac,ntrac_d
-       if (ntrac>ntrac_d) then
-          call abortmp('user specified ntrac > ntrac_d parameter in dimensions_mod.F90')
        endif
        write(iulog,*)"readnl: NThreads      = ",NTHREADS
        write(iulog,*)"readnl: vert_num_threads = ",vert_num_threads

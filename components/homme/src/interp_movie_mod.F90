@@ -4,7 +4,7 @@
 
 module interp_movie_mod
   use kinds, only : real_kind
-  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize, ntrac, nc
+  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize, nc
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
        set_interp_parameter, interpol_phys_latlon
@@ -641,26 +641,7 @@ contains
               call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='psC')
               deallocate(datall)
            endif          
-           
-            do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
-               write(vname,'(a1,i1)') 'C',cindex
-
-               if(nf_selectedvar(vname, output_varnames)) then
-                  if (par%masterproc) print *,'writing FVM tracer ',vname
-                  allocate(datall(ncnt,nlev))
-                  st=1
-                  do ie=1,nelemd
-                     en=st+interpdata(ie)%n_interp-1
-                     do k=1,nlev                       
-                       call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0_fvm), &
-                                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
-                     end do
-                     st=st+interpdata(ie)%n_interp
-                  enddo                  
-                  call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)                  
-                  deallocate(datall)                  
-               end if
-            enddo
+       
 
             if(nf_selectedvar('dp_fvm', output_varnames)) then
                if (par%masterproc) print *,'writing dp_fvm ...'

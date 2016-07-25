@@ -8,7 +8,7 @@
 module fvm_bsp_mod
   ! ---------------------------------------------------------------------------------
   use kinds, only                  : real_kind
-  use dimensions_mod, only: np, nc, ntrac,nlev
+  use dimensions_mod, only: np, nc,nlev
   
   implicit none
   private
@@ -237,16 +237,7 @@ subroutine fvm_bsp(fvm, tl)
   integer :: n0_fvm, np1_fvm  
 
   call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
-  do k=1, nlev
-    fvm%dp_fvm(:,:,k,n0_fvm)=1.0D0    !density of the air
-    do itr=1,ntrac
-      do j=1,nc
-        do i=1,nc               
-          call analytical_function(fvm%c(i,j,k,itr,n0_fvm),fvm%centersphere(i,j),k,itr)      
-        end do
-      end do
-    end do 
-  end do
+
 end subroutine fvm_bsp
 !END SUBROUTINE FVM_BSP---------------------------------------------------CE-for FVM!
 
@@ -550,17 +541,7 @@ subroutine fvm_init_tracer(fvm, tl)
   
   integer                              :: i,j,k,itr
   
-  do k=1, nlev
-    fvm%dp_fvm(:,:,k,tl%n0)=1.0D0    !density of the air
-
-    do itr=1,ntrac
-      do j=1,nc
-        do i=1,nc               
-          call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      
-        end do
-      end do
-    end do 
-  end do
+  
 end subroutine fvm_init_tracer
 !END SUBROUTINE FVM_BSP---------------------------------------------------CE-for FVM!
 

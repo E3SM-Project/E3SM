@@ -82,7 +82,7 @@ contains
     ! --------------------------------
     use fvm_mod, only : fvm_init1
     use fvm_control_volume_mod, only : fvm_struct
-    use dimensions_mod, only : nc, ntrac
+    use dimensions_mod, only : nc
 
     implicit none
 #ifdef _MPI
@@ -255,11 +255,7 @@ contains
     allocate(elem(nelemd))
     call allocate_element_desc(elem)
     if (present(fvm)) then
-    if (ntrac>0) then
-       allocate(fvm(nelemd))
-    else
        allocate(fvm(0))  ! create mesh, even if no cslam tracers
-    endif
     endif
 
     ! ====================================================
@@ -369,8 +365,7 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    if (ntrac>0) call fvm_init1(par,elem)
-    
+
     call t_stopf('init')
   end subroutine init
 
