@@ -168,6 +168,7 @@ module atm_time_integration
       real (kind=RKIND) :: global_scalar_min, global_scalar_max
 
       integer, pointer :: config_number_of_sub_steps
+      integer, pointer :: config_time_integration_order
       logical, pointer :: config_scalar_advection
       logical, pointer :: config_positive_definite
       logical, pointer :: config_monotonic
@@ -211,6 +212,7 @@ module atm_time_integration
       ! Retrieve configuration options
       !
       call mpas_pool_get_config(domain % blocklist % configs, 'config_number_of_sub_steps', config_number_of_sub_steps)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_time_integration_order', config_time_integration_order)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_scalar_advection', config_scalar_advection)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_positive_definite', config_positive_definite)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_monotonic', config_monotonic)
@@ -238,7 +240,6 @@ module atm_time_integration
       call mpas_pool_get_field(diag, 'pressure_p', pressure_p_field)
       call mpas_pool_get_field(diag, 'rtheta_p', rtheta_p_field)
 
-
       !
       ! Initialize RK weights
       !
@@ -255,21 +256,37 @@ module atm_time_integration
       if (.not. config_scalar_advection )  write(0,*) ' scalar advection turned off '
 
       number_of_sub_steps = config_number_of_sub_steps
-!      rk_timestep(1) = dt_dynamics/3.
-      rk_timestep(1) = dt_dynamics/2.
-      rk_timestep(2) = dt_dynamics/2.
-      rk_timestep(3) = dt_dynamics
 
-!      rk_sub_timestep(1) = dt_dynamics/3.
-      rk_sub_timestep(1) = dt_dynamics/2.  !  this is to test the second-order variant of RK3 for dynamics
-      rk_sub_timestep(2) = dt_dynamics/real(number_of_sub_steps)
-      rk_sub_timestep(3) = dt_dynamics/real(number_of_sub_steps)
+      if(config_time_integration_order == 3) then
 
-      number_sub_steps(1) = 1
-      number_sub_steps(2) = max(1,number_of_sub_steps/2)
-      number_sub_steps(3) = number_of_sub_steps
+        rk_timestep(1) = dt_dynamics/3.
+        rk_timestep(2) = dt_dynamics/2.
+        rk_timestep(3) = dt_dynamics
 
+        rk_sub_timestep(1) = dt_dynamics/3.
+        rk_sub_timestep(2) = dt_dynamics/real(number_of_sub_steps)
+        rk_sub_timestep(3) = dt_dynamics/real(number_of_sub_steps)
 
+        number_sub_steps(1) = 1
+        number_sub_steps(2) = max(1,number_of_sub_steps/2)
+        number_sub_steps(3) = number_of_sub_steps
+
+      else if (config_time_integration_order == 2) then
+
+        rk_timestep(1) = dt_dynamics/2.
+        rk_timestep(2) = dt_dynamics/2.
+        rk_timestep(3) = dt_dynamics
+
+        rk_sub_timestep(1) = dt_dynamics/real(number_of_sub_steps)
+        rk_sub_timestep(2) = dt_dynamics/real(number_of_sub_steps)
+        rk_sub_timestep(3) = dt_dynamics/real(number_of_sub_steps)
+
+        number_sub_steps(1) = max(1,number_of_sub_steps/2)
+        number_sub_steps(2) = max(1,number_of_sub_steps/2)
+        number_sub_steps(3) = number_of_sub_steps
+
+      end if
+        
 ! theta_m
       call mpas_dmpar_exch_halo_field(theta_m_field)
  
@@ -341,6 +358,8 @@ module atm_time_integration
 
       DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
+            !  Compute the coefficients for the vertically implicit solve in the acoustic step.
+            !  These coefficients will work for the first acoustic step in all cases.
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -369,6 +388,33 @@ module atm_time_integration
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
          RK3_DYNAMICS : do rk_step = 1, 3  ! Runge-Kutta loop
+
+            ! recompute vertically implicit coefficients if necessary
+            if( (config_time_integration_order == 3) .and. (rk_step == 2)) then
+
+              !  Compute the coefficients for the vertically implicit solve in the acoustic step.
+              !  These coefficients will work for the 2nd and 3rd acoustic steps (dt is the same for both).
+              block => domain % blocklist
+              do while (associated(block))
+                 call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+                 call mpas_pool_get_subpool(block % structs, 'state', state)
+                 call mpas_pool_get_subpool(block % structs, 'diag', diag)
+                 call mpas_pool_get_subpool(block % structs, 'tend', tend)
+   
+                 call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+!$OMP PARALLEL DO
+                 do thread=1,block % nThreads
+                    call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
+                                                     block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                                     block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
+                                                     block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
+                                                     block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                 end do
+!$OMP END PARALLEL DO
+                 block => block % next
+              end do
+            end if  
 
             call mpas_timer_start('atm_compute_dyn_tend')
             block => domain % blocklist
@@ -777,6 +823,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          rk_timestep(1) = dt/3.
          rk_timestep(2) = dt/2.
          rk_timestep(3) = dt
+          !  switch for 2nd order time integration for scalar transport
+         if(config_time_integration_order == 2) rk_timestep(1) = dt/2.
 
          RK3_SPLIT_TRANSPORT : do rk_step = 1, 3  ! Runge-Kutta loop
 

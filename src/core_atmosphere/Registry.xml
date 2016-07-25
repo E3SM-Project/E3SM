@@ -37,6 +37,7 @@
 
         <nml_record name="nhyd_model" in_defaults="true">
                 <nml_option name="config_time_integration"           type="character"     default_value="SRK3"        in_defaults="false"/>
+                <nml_option name="config_time_integration_order"        type="integer"       default_value="2"/>
                 <nml_option name="config_dt"                         type="real"          default_value="720.0"/>
                 <nml_option name="config_calendar_type"              type="character"     default_value="gregorian"   in_defaults="false"/>
                 <nml_option name="config_start_time"                 type="character"     default_value="2010-10-23_00:00:00"/>
