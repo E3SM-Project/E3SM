@@ -13,7 +13,7 @@ module viscosity_mod_base
 !
 use thread_mod, only : omp_get_num_threads
 use kinds, only : real_kind, iulog
-use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
+use dimensions_mod, only : np, nc, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t, hybrid_create
 use parallel_mod, only : parallel_t
 use element_mod, only : element_t
@@ -231,7 +231,6 @@ real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
 logical var_coef1
 
-   if (ntrac>0) dpflux = 0
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
    var_coef1 = .true.
@@ -292,14 +291,6 @@ logical var_coef1
       call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
       kptr=3*nlev
       call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, ie)
-      
-
-      if (ntrac>0) then
-      do k=1,nlev
-         tmp(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
-         dpflux(:,:,:,k,ie) = subcell_Laplace_fluxes(tmp, deriv, elem(ie), np, nc) 
-      enddo
-      endif
 
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
