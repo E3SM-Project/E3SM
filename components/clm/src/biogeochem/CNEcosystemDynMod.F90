@@ -808,7 +808,8 @@ contains
 
        call CNCropHarvestPools(num_soilc, filter_soilc, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
-            carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars)
+            phosphorusstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
+            nitrogenflux_vars, phosphorusflux_vars)
 
        call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
