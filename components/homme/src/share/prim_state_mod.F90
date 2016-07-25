@@ -5,7 +5,7 @@
 module prim_state_mod
 
   use kinds,            only: real_kind, iulog
-  use dimensions_mod,   only: nlev, np, nc, qsize_d, qsize, nelemd, ntrac, ntrac_d
+  use dimensions_mod,   only: nlev, np, nc, qsize_d, qsize, nelemd
   use parallel_mod,     only:  iam, ordered, parallel_t, syncmp
   use parallel_mod,     only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
@@ -108,15 +108,9 @@ contains
          dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
 
 
-    real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d), cmin(ntrac_d),&
-         psmin_p, dpmin_p
-
-
-    real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d), cmax(ntrac_d),&
-         psmax_p, dpmax_p
-
-    real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d), csum(ntrac_d),&
-         pssum_p, dpsum_p
+    real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d), psmin_p, dpmin_p
+    real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d), psmax_p, dpmax_p
+    real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d), pssum_p, dpsum_p
 
     !
     ! for fvm diagnostics
@@ -144,9 +138,6 @@ contains
     if (hybrid%masterthread) then 
        write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
     end if
-    if (.not. present(fvm) .and. ntrac>0) then
-       print *,'ERROR: prim_state_mod.F90: optional fvm argument required if ntrac>0'
-    endif
 
     TOTE     = 0
     KEner    = 0
@@ -372,24 +363,7 @@ contains
        if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
-       !
-       ! fvm diagnostics
-       !
-       if (ntrac>0) then
-          write(iulog,'(A36)') "-----------------------------------"
-          write(iulog,'(A36)') "fvm diagnostics                    "
-          write(iulog,'(A36)') "-----------------------------------"
-          do q=1,ntrac
-             write(iulog,'(A36,I1,3(E23.15))')&
-                  "#c,min(c  ), max(c  ), mass(c  ) = ",q,cmin(q), cmax(q), csum(q)
-          enddo
-          write(iulog,'(A37,3(E23.15))')&
-                  "   min(dp_), max(dp_), mass(dp_) =  ",dp_fvm_min, dp_fvm_max, dp_fvm_mass
-          write(iulog,'(A37,3(E23.15))')&
-                  "   min(psC), max(psC), mass(psC) =  ",psc_min, psc_max, psC_mass          
-          write(iulog,'(A36)') "                                   "
 
-       end if
     end if
  
 

@@ -1563,7 +1563,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
-  use dimensions_mod, only : np, nc, nlev, qsize, ntrac
+  use dimensions_mod, only : np, nc, nlev, qsize
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
   use control_mod, only : moisture, tracer_grid_type
@@ -2013,7 +2013,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use dimensions_mod, only : np, np, nlev, nc, ntrac, max_corner_elem
+  use dimensions_mod, only : np, np, nlev, nc, max_corner_elem
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
   use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
@@ -2204,15 +2204,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                     vtens(i,j,2,k,ie)=vtens_tmp
                  enddo
               enddo
-              if (0<ntrac) then 
-                elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
-                                              eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
-                if (nu_top>0 .and. k<=3) then
-                  laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
-                  elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
-                endif
-              endif
 
               ! NOTE: we will DSS all tendicies, EXCEPT for dp3d, where we DSS the new state
               elem(ie)%state%dp3d(:,:,k,nt) = elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%spheremp(:,:)&
@@ -2240,41 +2231,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            kptr=nlev
            call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
            kptr=3*nlev
-           if (0<ntrac) then
-             do k=1,nlev
-               temp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt) / elem(ie)%spheremp  ! STATE before DSS 
-             enddo
-             corners = 0.0d0
-             corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,nt) ! fill in interior data of STATE*mass
-           endif
            call edgeVunpack(edge3, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
-
-
-
-           if (0<ntrac) then
-             kptr=3*nlev
-             desc = elem(ie)%desc
-             
-             call edgeDGVunpack(edge3, corners, nlev, kptr, ie) 
-             corners = corners/dt
-             
-             do k=1,nlev
-               temp(:,:,k) =  elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,nt) - temp(:,:,k)
-               temp(:,:,k) =  temp(:,:,k)/dt
-
-               call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
- 
-               cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
-               cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
-               cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
-               cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
-
-               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                 eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
-             end do
-           endif
-
-
 
            ! apply inverse mass matrix, accumulate tendencies
 #if (defined COLUMN_OPENMP)
@@ -2645,7 +2602,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   ! ===================================
   use kinds, only : real_kind
-  use dimensions_mod, only : np, nc, nlev, ntrac, max_corner_elem
+  use dimensions_mod, only : np, nc, nlev, max_corner_elem
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
@@ -3221,12 +3178,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            if (rsplit>0) &
               elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
               (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
-           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
-              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
-           end if
+
         enddo
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
@@ -3241,14 +3193,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                 elem(ie)%state%dp3d(:,:,k,np1) = &
                   elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
                   dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
-
-
-           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
-              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
-           end if
         enddo
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%ps_v(:,:,nm1) - dt2*sdot_sum )
 
@@ -3298,38 +3242,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
 
      if (rsplit>0) then
-        if (0<ntrac.and.eta_ave_w.ne.0.) then
-          do k=1,nlev
-             stashdp3d(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)/elem(ie)%spheremp(:,:)
-          end do
-        endif
 
         corners = 0.0d0
         corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,np1)
         kptr=kptr+2*nlev
         call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
 
-        if  (0<ntrac.and.eta_ave_w.ne.0.) then
-          desc = elem(ie)%desc
-          call edgeDGVunpack(edge3p1, corners, nlev, kptr, ie)
-          corners = corners/dt2
-
-          do k=1,nlev
-            tempdp3d = elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-            tempdp3d = tempdp3d - stashdp3d(:,:,k)
-            tempdp3d = tempdp3d/dt2
-
-            call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
- 
-            cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
-            cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
-            cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
-            cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
-
-            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet, cflux)
-            elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
-          end do
-        end if   
      endif
 
      ! ====================================================

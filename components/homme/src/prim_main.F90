@@ -15,7 +15,7 @@ program prim_main
                               omp_set_num_threads, omp_get_nested, &
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init
-  use dimensions_mod,   only: nelemd, qsize, ntrac
+  use dimensions_mod,   only: nelemd, qsize
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
   use domain_mod,       only: domain1d_t, decompose
   use element_mod,      only: element_t
@@ -260,7 +260,6 @@ program prim_main
 
 
 #ifdef PIO_INTERP
-     if (ntrac>0) call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
      call interp_movie_output(elem, tl, par, 0d0,fvm=fvm, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par, fvm)

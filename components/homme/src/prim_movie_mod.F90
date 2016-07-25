@@ -5,7 +5,7 @@
 module prim_movie_mod
 #ifndef PIO_INTERP
   use kinds, only : real_kind, longdouble_kind
-  use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize, ntrac, nc
+  use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize, nc
   use hybvcoord_mod, only :  hvcoord_t 
 #ifdef _MPI
   use parallel_mod, only : syncmp, iam, mpireal_t, mpi_max, mpi_sum, mpiinteger_t, parallel_t, haltmp, abortmp

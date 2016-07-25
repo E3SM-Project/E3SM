@@ -974,7 +974,7 @@ use element_mod,    only: element_t, timelevels
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
 use kinds,          only: real_kind
-use dimensions_mod, only: nlev,np, qsize,nc,ntrac
+use dimensions_mod, only: nlev,np, qsize,nc
 use control_mod,    only: test_case, u_perturb
 use cube_mod,       only: rotate_grid
 use jw,             only: u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2,&

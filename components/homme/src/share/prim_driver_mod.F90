@@ -7,7 +7,7 @@
 module prim_driver_mod
 
   use kinds,            only: real_kind, iulog, longdouble_kind
-  use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc
+  use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize, nc,nhc
   use cg_mod,           only: cg_t
   use hybrid_mod,       only: hybrid_t
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
@@ -316,13 +316,7 @@ contains
 #endif
     endif
 
-    if (ntrac>0) then
-       allocate(fvm(nelemd))
-    else
-       ! Even if fvm not needed, still desirable to allocate it as empty
-       ! so it can be passed as a (size zero) array rather than pointer.
-       allocate(fvm(0))
-    end if
+    allocate(fvm(0))
 
     ! ====================================================
     !  Generate the communication schedule
@@ -545,9 +539,6 @@ contains
 #endif
     call Prim_Advec_Init1(par, elem,n_domains)
     call diffusion_init(par,elem)
-    if (ntrac>0) then
-      call fvm_init1(par,elem)
-    endif
 
     ! =======================================================
     ! Allocate memory for subcell flux calculations.
@@ -742,12 +733,6 @@ contains
     ! ==================================
     call Prim_Advec_Init_deriv(hybrid, fvm_corners, fvm_points)
 
-    ! ================================================
-    ! fvm initialization
-    ! ================================================
-    if (ntrac>0) then
-      call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
-    endif
     ! ====================================
     ! In the semi-implicit case:
     ! initialize vertical structure and
@@ -961,36 +946,6 @@ contains
        enddo
     endif
 
-    if (ntrac>0) then
-
-      ! do it only for FVM tracers, dp_fvm field will be the AIR DENSITY
-      ! should be optimize and combined with the above caculation
-      do ie=nets,nete
-        do k=1,nlev
-	    do i=1,np
-	      do j=1,np
-		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-	      enddo
-	    enddo
-          !write air density in dp_fvm field of FVM
-          fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
-        enddo
-      enddo
-      call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm) !boundary exchange
-      do ie=nets,nete
-	    do i=1-nhc,nc+nhc
-	      do j=1-nhc,nc+nhc
-          !phl is it necessary to compute psc here?
-	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
-	      enddo
-	    enddo
-      enddo
-      if (hybrid%masterthread) then
-         write(iulog,*) 'FVM tracers initialized.'
-      end if
-    endif
-
     ! for restart runs, we read in Qdp for exact restart, and rederive Q
     if (runtype==1) then
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
@@ -1023,9 +978,6 @@ contains
        ! so only now does HOMME learn the timstep.  print them out:
        write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
 
-       if (ntrac>0) then
-          write(iulog,'(a,2f9.2)') "dt_tracer (fvm)          ",tstep*qsplit*fvm_supercycling
-       end if
        if (qsize>0) then
           write(iulog,'(a,2f9.2)') "dt_tracer (SE), per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
        end if
@@ -1583,16 +1535,7 @@ contains
 
     call t_startf("prim_step_init")
     dt_q = dt*qsplit
-    if (ntrac>0.and.rstep==1) then
-       !
-       ! save velocity at time t for fvm trajectory algorithm
-       !       
-       do ie=nets,nete
-          fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
-          elem(ie)%sub_elem_mass_flux=0
-       end do
-    end if
- 
+
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
     ! for use by advection
@@ -1717,58 +1660,7 @@ contains
            dt_q,tl,nets,nete)
       call t_stopf("PAT_remap")
     end if
-    !
-    ! only run fvm transport every fvm_supercycling rstep
-    !
-    if ((ntrac > 0) .and. (mod(rstep,fvm_supercycling) == 0)) then
-       !
-       ! FVM transport
-       !
 
-      if ( n_Q /= tl%n0 ) then
-        ! make sure tl%n0 contains tracers at start of timestep
-        do ie=nets,nete
-       !   fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
-          fvm(ie)%dp_fvm(:,:,:,        tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
-        end do
-      end if
-       call t_startf("PAT_fvm")
-       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
-            dt_q,tl,nets,nete)
-       call t_stopf("PAT_fvm")
-       if (rstep.ne.rsplit) then
-          !
-          ! save velocity for fvm trajecotry algorithm for next fvm time-level update
-          !
-          do ie=nets,nete
-             fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%np1)
-          end do
-       end if
-
-
-
-
-
-       if(test_cfldep) then
-         maxcflx=0.0D0
-         maxcfly=0.0D0
-         do k=1, nlev
-
-!            maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
-!            maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid)
-           maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
-           maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
-          end do
-
-           if(hybrid%masterthread) then
-             write(*,*) "nstep",tl%nstep,"dt_fvm=", dt_q*fvm_supercycling, "maximum over all Level"
-             write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly
-             print *
-           endif
-       endif
-       !overwrite SE density by fvm(ie)%psc
-!        call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1)
-    endif
     call t_stopf("prim_step_advec")
 
   end subroutine prim_step

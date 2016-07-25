@@ -10,7 +10,7 @@ module prim_advection_mod
   !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, prim_advec_init_deriv, deriv, Prim_Advec_Tracers_remap_rk2
   use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
   use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nelemd
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, nc, nelemd
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct

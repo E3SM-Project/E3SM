@@ -72,7 +72,7 @@ module dimensions_mod
   integer, public  :: max_corner_elem               = 1 !max_elements_attached_to_node-3
   integer, public  :: max_neigh_edges               = 8 !4 + 4*max_corner_elem
 
-  public :: qsize,qsize_d,ntrac_d,ntrac
+  public :: qsize,qsize_d!,ntrac_d,ntrac
 
   integer, public :: ne
   integer, public :: nelem       ! total number of elements
