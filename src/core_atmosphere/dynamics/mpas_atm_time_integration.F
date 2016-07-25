@@ -4051,7 +4051,7 @@ MPAS_GPTL_STOP('mono_exch_2')
                delsq_u(k,iEdge) = delsq_u(k,iEdge) + u_diffusion
 
                kdiffu = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))
-               kdiffu = max(kdiffu, 0.005*config_len_disp**2/dt)
+!               kdiffu = max(kdiffu, 0.005*config_len_disp**2/dt)    ! Lower bound on diffusion
 
                ! include 2nd-orer diffusion here 
                tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) &
