@@ -39,8 +39,8 @@ class A_RunUnitTests(unittest.TestCase):
         stat, output, _ = run_cmd("./%s --test 2>&1" % script, from_dir=from_dir)
         self.assertEqual(stat, 0, msg=output)
 
-    def test_acme_bisect_unit_test(self):
-        self.do_unit_tests("acme_bisect",from_dir=TOOLS_DIR)
+    def test_cime_bisect_unit_test(self):
+        self.do_unit_tests("cime_bisect",from_dir=TOOLS_DIR)
 
     def test_compare_namelists_unit_test(self):
         self.do_unit_tests("compare_namelists",from_dir=TOOLS_DIR)
