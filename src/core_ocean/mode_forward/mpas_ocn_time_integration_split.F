@@ -573,6 +573,7 @@ module ocn_time_integration_split
 
             call mpas_timer_start("se halo normalBaroclinicVelocity")
             call mpas_dmpar_field_halo_exch(domain, 'normalBaroclinicVelocity', timeLevel=2)
+            call mpas_dmpar_field_halo_exch(domain, 'barotropicForcing')
             call mpas_timer_stop("se halo normalBaroclinicVelocity")
 
             call mpas_threading_barrier()
@@ -764,15 +765,6 @@ module ocn_time_integration_split
 
                      block => block % next
                   end do  ! block
-
-                call mpas_threading_barrier()
-
-                !   boundary update on normalBarotropicVelocityNew
-                call mpas_timer_start("se halo normalBarotropicVelocity")
-
-                call mpas_dmpar_field_halo_exch(domain, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
-
-                call mpas_timer_stop("se halo normalBarotropicVelocity")
               endif ! config_btr_gam1_velWt1>1.0e-12
 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -900,13 +892,6 @@ module ocn_time_integration_split
                 block => block % next
               end do  ! block
 
-              call mpas_threading_barrier()
-
-              !   boundary update on SSHnew
-              call mpas_timer_start("se halo ssh")
-              call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle', timeLevel=newBtrSubcycleTime)
-              call mpas_timer_stop("se halo ssh")
-
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               ! Barotropic subcycle: VELOCITY CORRECTOR STEP
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -984,15 +969,6 @@ module ocn_time_integration_split
 
                    block => block % next
                 end do  ! block
-
-                call mpas_threading_barrier()
-
-                !   boundary update on normalBarotropicVelocityNew
-                call mpas_timer_start("se halo normalBarotropicVelocity")
-
-                call mpas_dmpar_field_halo_exch(domain, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
-
-                call mpas_timer_stop("se halo normalBarotropicVelocity")
               end do !do BtrCorIter=1,config_n_btr_cor_iter
 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1117,16 +1093,13 @@ module ocn_time_integration_split
 
                    block => block % next
                 end do  ! block
-
-                call mpas_threading_barrier()
-
-                !   boundary update on SSHnew
-                call mpas_timer_start("se halo ssh")
-
-                call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle')
-
-                call mpas_timer_stop("se halo ssh")
                endif ! config_btr_solve_SSH2
+
+               !   boundary update on SSHnew
+               call mpas_timer_start("se halo subcycle")
+               call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle', timeLevel=newBtrSubcycleTime)
+               call mpas_dmpar_field_halo_exch(domain, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
+               call mpas_timer_stop("se halo subcycle")
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ! Barotropic subcycle: Accumulate running sums, advance timestep pointers
