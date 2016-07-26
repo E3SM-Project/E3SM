@@ -161,7 +161,7 @@ OR
                         help="Use this category key in the lookup in testlist.xml")
     parser.add_argument("--xml-testlist",
                         help="Use this testlist to lookup tests")
-    parser.add_argument("--testfile", nargs=1, default=None,
+    parser.add_argument("--testfile",
                         help="A file containing an ascii list of tests to run")
 
     args = parser.parse_args(args[1:])

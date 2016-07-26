@@ -60,8 +60,8 @@ class LII(SystemTestsCommon):
         self._case.set_value("HIST_OPTION","$STOP_OPTION")
         self._case.set_value("HIST_N","$STOP_N")
         self._case.flush()
-        for user_nl_dir in ("user_nl_nointerp", "user_nl_interp"):
-            for filename in glob.glob(r'%s/*'%user_nl_dir):
+        for user_nl_dir in ("nointerp", "interp"):
+            for filename in glob.glob(r'user_nl_%s/*'%user_nl_dir):
                 shutil.copy(filename,
                             os.path.join(caseroot,os.path.basename(filename)))
 
@@ -70,11 +70,11 @@ class LII(SystemTestsCommon):
             logger.info("doing a %d %s initial test with init_interp set to %s, no restarts written"
                         % (stop_n, stop_option, os.path.basename(filename) == "user_nl_interp"))
 
-            success = SystemTestsCommon._run(self)
+            success = SystemTestsCommon._run(self, suffix=user_nl_dir)
             if not success:
                 break
         if success:
-            return self._component_compare_test("base", "init_interp_on")
+            return self._component_compare_test("nointerp", "interp")
         else:
             return False
 
