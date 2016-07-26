@@ -3515,7 +3515,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
 
     use fvm_reconstruction_mod, only: reconstruction
-    use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
     use hybrid_mod, only : hybrid_t
     use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
@@ -3549,7 +3548,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #if defined(_FVM)
     do ie=nets,nete
       call reconstruction(fvm(ie)%psc, fvm(ie),recons)
-      call monotonic_gradient_cart(fvm(ie)%psc, fvm(ie),recons, elem(ie)%desc)
+      !call monotonic_gradient_cart(fvm(ie)%psc, fvm(ie),recons, elem(ie)%desc)
       do j=1,np
         do i=1,np
           xp=tan(elem(ie)%cartp(i,j)%x)
@@ -3584,7 +3583,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !           enddo
 !           jy = starti
 
-          call recons_val_cart(fvm(ie)%psc, xp,yp,fvm(ie)%spherecentroid,recons,ix,jy,tmpval)
+          !call recons_val_cart(fvm(ie)%psc, xp,yp,fvm(ie)%spherecentroid,recons,ix,jy,tmpval)
           elem(ie)%state%ps_v(i,j,np1)= elem(ie)%state%ps_v(i,j,np1) +&
                dt_q*(tmpval - elem(ie)%state%ps_v(i,j,np1) )/(7*24*60*60)
         end do

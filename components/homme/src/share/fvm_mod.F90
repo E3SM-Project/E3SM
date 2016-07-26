@@ -63,10 +63,9 @@ contains
   !  
   subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
-    use fvm_line_integrals_flux_mod, only: compute_weights_fluxform
+    !use fvm_line_integrals_flux_mod, only: compute_weights_fluxform
     use fvm_control_volume_mod     , only: n0_fvm, np1_fvm
     ! ---------------------------------------------------------------------------------  
-    use fvm_filter_mod, only: monotonic_gradient_cart
     ! ---------------------------------------------------------------------------------
     use fvm_reconstruction_mod, only: reconstruction
     ! ---------------------------------------------------------------------------------
@@ -162,8 +161,8 @@ contains
           !             end do
           !          end if
           
-          call compute_weights_fluxform(fvm(ie),6,weights_all_flux,weights_eul_index_all_flux, &
-               weights_lgr_index_all_flux,k,jall)
+          !call compute_weights_fluxform(fvm(ie),6,weights_all_flux,weights_eul_index_all_flux, &
+           !    weights_lgr_index_all_flux,k,jall)
           
           if (jall(1)>num_weights_flux) then
              write(*,*) "jall(1)>num_weights_flux"
@@ -400,10 +399,9 @@ contains
   ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
   subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
-    use fvm_line_integrals_mod, only: compute_weights
+    !use fvm_line_integrals_mod, only: compute_weights
     use fvm_control_volume_mod, only: n0_fvm, np1_fvm
     ! ---------------------------------------------------------------------------------  
-    use fvm_filter_mod, only: monotonic_gradient_cart
     ! ---------------------------------------------------------------------------------
     use fvm_reconstruction_mod, only: reconstruction
     ! ---------------------------------------------------------------------------------
@@ -497,8 +495,8 @@ contains
     do ie=nets, nete
        do k=1,nlev
           !-Departure fvm Meshes, initialization done                                                               
-          call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
-               weights_lgr_index_all,k,jall)     
+          !call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
+           !    weights_lgr_index_all,k,jall)
           tracer_air0=fvm(ie)%dp_fvm(:,:,k,n0_fvm)     
           call reconstruction(tracer_air0, fvm(ie),recons_air)
 !          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
@@ -604,7 +602,7 @@ contains
 
   
   subroutine cslam_get_area(fvm,area,k)
-    use fvm_line_integrals_mod, only: compute_weights !dbg
+    !use fvm_line_integrals_mod, only: compute_weights !dbg
     use fvm_control_volume_mod, only:  fvm_struct
     type (fvm_struct), intent(inout)                               :: fvm  
     real (kind=real_kind), intent(out)        :: area(1:nc,1:nc)
@@ -615,8 +613,8 @@ contains
     integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2):: weights_lgr_index_all
     integer (kind=int_kind)                                        :: jall
     
-    call compute_weights(fvm,6,weights_all,weights_eul_index_all, &
-         weights_lgr_index_all,k,jall)
+   ! call compute_weights(fvm,6,weights_all,weights_eul_index_all, &
+    !     weights_lgr_index_all,k,jall)
     
     area = 0.0D0
     do h=1,jall
@@ -892,7 +890,7 @@ contains
   ! initialization that can be done in threaded regions
   subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
     use fvm_control_volume_mod, only: fvm_mesh_ari
-    use fvm_analytic_mod, only: computexytosphere_moments
+!    use fvm_analytic_mod, only: computexytosphere_moments
     use bndry_mod, only: compute_ghost_corner_orientation
     use bndry_mod, only : ghost_exchangevfull
     
@@ -911,7 +909,7 @@ contains
     
     do ie=nets,nete
        call fvm_mesh_ari(elem(ie),fvm(ie),tl)
-       call computexytosphere_moments(fvm(ie),elem(ie)%desc)
+   !    call computexytosphere_moments(fvm(ie),elem(ie)%desc)
     enddo
     
     
