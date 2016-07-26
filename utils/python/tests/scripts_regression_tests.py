@@ -1619,7 +1619,7 @@ def _main_func():
         NO_BATCH = True
 
     args = lambda: None # just something to set attrs on
-    for log_param in ["debug", "silent"]:
+    for log_param in ["debug", "silent", "verbose"]:
         flag = "--%s" % log_param
         if flag in sys.argv:
             sys.argv.remove(flag)
