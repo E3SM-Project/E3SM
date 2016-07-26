@@ -511,7 +511,7 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
         sharedpath = os.environ["SHAREDPATH"]
         bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "clm","obj" )
         libroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lib")
-        incroot = os.path.join(sharedpath,"include")
+        incroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "include")
         file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
         config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
 

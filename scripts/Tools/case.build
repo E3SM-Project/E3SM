@@ -9,6 +9,7 @@ from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.erp import ERP
 from CIME.SystemTests.err import ERR
 from CIME.SystemTests.ers import ERS
+from CIME.SystemTests.lii import LII
 from CIME.SystemTests.nck import NCK
 from CIME.SystemTests.ncr import NCR
 from CIME.SystemTests.noc import NOC

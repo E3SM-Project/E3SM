@@ -538,11 +538,36 @@ class Case(object):
         #--------------------------------------------
         # pe payout
         #--------------------------------------------
-        pesobj = Pes(self._pesfile)
+        match1 = False
+        match2 = False
+        pes_ntasks = {}
+        pes_nthrds = {}
+        pes_rootpe = {}
+        if pecount is not None:
+            match1 =  re.match('([0-9]+)x([0-9]+)', pecount)
+            match2 =  re.match('([0-9]+)', pecount)
+            if match1:
+                opti_tasks = match1.group(1)
+                opti_thrds = match1.group(2)
+            elif match2:
+                opti_tasks = match2.group(1)
+                opti_thrds = 1
+        if match1 or match2:
+            for component_class in self._component_classes:
+                if component_class == "DRV":
+                    component_class = "CPL"
+                string = "NTASKS_" + component_class
+                pes_ntasks[string] = opti_tasks
+                string = "NTHRDS_" + component_class
+                pes_nthrds[string] = opti_thrds
+                string = "ROOTPE_" + component_class
+                pes_rootpe[string] = 0
+        else:
+            pesobj = Pes(self._pesfile)
 
-        #FIXME - add pesize_opts as optional argument below
-        pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
+            pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount)
+
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
         for key, value in pes_ntasks.items():

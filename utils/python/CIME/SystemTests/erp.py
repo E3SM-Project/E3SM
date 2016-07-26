@@ -95,7 +95,7 @@ class ERP(SystemTestsCommon):
     def run(self):
         # run will have values 1,2
         for run in range(1,3):
-            
+
             expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP%d.xml"%run)),
                    "ERROR: LockedFiles/env_mach_pes.ERP%d.xml does not exist, run case.build"%run )
 
@@ -128,7 +128,7 @@ class ERP(SystemTestsCommon):
                 self._case.set_value("REST_OPTION", stop_option)
                 self._case.set_value("HIST_N", stop_n)
                 self._case.set_value("HIST_OPTION", stop_option)
-                self._case.set_value("CONTINUE_RUN", False) 
+                self._case.set_value("CONTINUE_RUN", False)
                 suffix = "base"
             else:
                 rest_n = stop_n/2 + 1
@@ -142,7 +142,11 @@ class ERP(SystemTestsCommon):
             if not success:
                 break
 
-        return success
+        if success:
+            return self._component_compare_test("base", "rest")
+        else:
+            return False
+
 
 
     def report(self):

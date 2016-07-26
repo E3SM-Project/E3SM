@@ -384,10 +384,10 @@ class SystemTest(object):
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst %s" %ninst
                     logger.debug (" NINST set to %s" % ninst)
-                pesize = re.match('P([SMLX][12]?)', case_opt)
-                if pesize:
-                    create_newcase_cmd += " --pecount %s"%pesize.group(1)
-
+                if case_opt.startswith('P'):
+                    pesize = case_opt[1:]
+                    create_newcase_cmd += " --pecount %s"%pesize
+                
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
         elif test in self._test_xml and "wallclock" in self._test_xml[test]:
@@ -479,44 +479,8 @@ class SystemTest(object):
                     continue
 
                 elif opt.startswith('P'):
-                    match1 =  re.match('P([0-9]+)', opt)
-                    match2 =  re.match('P([0-9]+)x([0-9]+)', opt)
-                    match3 =  re.match('P[SMLX][12]?', opt)
-
-                    opti_tasks = None
-                    if match1:
-                        opti_tasks = match1.group(1)
-                        for component_class in component_classes:
-                            if component_class == "DRV":
-                                component_class = "CPL"
-                            string = "NTASKS_" + component_class
-                            envtest.set_test_parameter(string, opti_tasks)
-                            string = "NTHRDS_" + component_class
-                            envtest.set_test_parameter(string, str(1))
-                            string = "ROOTPE_" + component_class
-                            envtest.set_test_parameter(string, str(0))
-                        opti_thrds = 1
-                    elif match2:
-                        opti_tasks = match2.group(1)
-                        opti_thrds = match2.group(2)
-                        for component_class in component_classes:
-                            if component_class == "DRV":
-                                component_class = "CPL"
-                            string = "NTASKS_" + component_class
-                            envtest.set_test_parameter(string, opti_tasks)
-                            string = "NTHRDS_" + component_class
-                            envtest.set_test_parameter(string, opti_thrds)
-                            string = "ROOTPE_" + component_class
-                            envtest.set_test_parameter(string, str(0))
-                    elif match3:
-
-                        # handled by create_newcase
-                        continue
-                    if not match3:
-                        expect(opti_tasks is not None, "No match found for PE option %s"%opt)
-                        logger.debug (" NTASKS_xxx set to %s" %opti_tasks)
-                        logger.debug (" NTHRDS_xxx set to %s" %opti_thrds)
-                        logger.debug (" ROOTPE_xxx set to %s 0")
+                    # P option handled by create newcase
+                    continue
 
                 elif opt.startswith('N'):
                     # handled in create_newcase

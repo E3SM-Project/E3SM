@@ -322,7 +322,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
             expect(arg_val is not None,
                    "Could not fill-out test name, partial string '%s' had no %s information and you did not provide any" % (partial_test, name))
             result = "%s%s%s" % (result, "_" if name == "compiler" else ".", arg_val)
-        elif (arg_val is not None):
+        elif (arg_val is not None and partial_val != partial_compiler):
             expect(arg_val == partial_val,
                    "Mismatch in field %s, partial string '%s' indicated it should be '%s' but you provided '%s'" % (name, partial_test, partial_val, arg_val))
 
@@ -543,7 +543,7 @@ def get_project(machobj=None):
 
 def setup_standard_logging_options(parser):
     parser.add_argument("-d", "--debug", action="store_true",
-                        help="Print debug information (very verbose)")
+                        help="Print debug information (very verbose) to file %s.log" % sys.argv[0])
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Add additional context (time and file) to log messages")
     parser.add_argument("-s", "--silent", action="store_true",

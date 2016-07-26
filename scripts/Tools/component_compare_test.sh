@@ -27,7 +27,7 @@ function Usage {
     echo ""
     echo "     -suffix1 <name>       Suffix to attach to first file to compare"
     echo ""
-    echo "     -suffix1 <name>       Suffix to attach to second file to compare"
+    echo "     -suffix2 <name>       Suffix to attach to second file to compare"
     echo ""
     echo "     -help                 Print this help message and exit"
     echo ""
@@ -365,6 +365,7 @@ for model in ${models[*]}; do
 	    # No _IOP_ or _N2_ attributes or multi-instance NCK_ or NCR_ tests
 	    hist1=`cd $rundir; ls -1 ${testcase}.${model}.${extension}.*.nc.${suffix1} 2>/dev/null | tail -1`
 	    hist2=`cd $rundir; ls -1 ${testcase}.${model}.${extension}.*.nc.${suffix2} 2>/dev/null | tail -1`
+
 	    if  [[ -f ${hist1} ]] && [[ -f ${hist2} ]] ; then
 		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
@@ -373,6 +374,9 @@ for model in ${models[*]}; do
 		if [ "$compare_status" != "PASS" ]; then
 		    overall_status="FAIL"
 		fi
+	    else
+              overall_status = "FAIL"
+	      print_comment "File ${hist1} or ${hist2} not found"
 	    fi
 
 	fi

@@ -52,8 +52,9 @@ def parse_command_line(args, cimeroot):
     parser.add_argument("--project", "-project",
                         help="Specify a project id")
 
-    parser.add_argument("--pecount", "-pecount", choices=('S','M','L','X1','X2'), default="M",
-                        help="Specify a target size description for the number of cores")
+    parser.add_argument("--pecount", "-pecount",  default="M",
+                        help="Specify a target size description for the number of cores"
+                         "Allowed options are   ('S','M','L','X1','X2','[0-9]x[0-9]','[0-9]')")
 
     parser.add_argument("--mach-dir", "-mach_dir",
                         help="Specify the locations of the Machines directory, other than the default"
