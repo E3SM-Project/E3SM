@@ -214,6 +214,8 @@ def get_full_test_names(testargs, machine, compiler):
     negations = set()
 
     for testarg in testargs:
+        # remove any whitespace in name
+        testarg = testarg.strip()
         if (testarg.startswith("^")):
             negations.add(testarg[1:])
         elif (testarg in acme_test_suites):
