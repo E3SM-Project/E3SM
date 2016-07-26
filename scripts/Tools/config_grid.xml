@@ -1680,15 +1680,6 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap rof_grid="r05" ocn_grid="gx1v6" >
   <ROF2OCN_FMAPNAME>cpl/cpl6/map_r05_TO_g16_aave.120920.nc</ROF2OCN_FMAPNAME>
 </gridmap>
-<gridmap rof_grid="r05" ocn_grid="oEC60to30" >
-  <ROF2OCN_FMAPNAME>cpl/cpl6/map_r05_to_oEC60to30_nn.160527.nc</ROF2OCN_FMAPNAME>
-</gridmap>
-<gridmap rof_grid="r05" ocn_grid="oRRS15to5" >
-  <ROF2OCN_FMAPNAME>cpl/cpl6/map_r05_to_oRRS15to5_nn.160203.nc</ROF2OCN_FMAPNAME>
-</gridmap>
-<gridmap rof_grid="r0125" ocn_grid="oRRS15to5" >
-  <ROF2OCN_FMAPNAME>cpl/cpl6/map_r0125_to_oRRS15to5_nn.160614.nc</ROF2OCN_FMAPNAME>
-</gridmap>
 <XROF_FLOOD_MODE lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v6" >ACTIVE</XROF_FLOOD_MODE>
 
 <gridmap rof_grid="rx1" ocn_grid="gx3v7" >
@@ -1736,22 +1727,22 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 
 <gridmap rof_grid="r05" ocn_grid="oQU240" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU240_nn.160527.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU240_nn.160714.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oQU120" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU120_nn.160527.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU120_nn.160718.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oEC60to30" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30_nn.160527.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30_nn.160718.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oRRS30to10" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oRRS30to10_nn.160527.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oRRS30to10_nn.160718.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oRRS15to5" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oRRS15to5_nn.160203.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r0125" ocn_grid="oRRS15to5" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS15to5_nn.160614.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS15to5_nn.160720.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 
 <gridmap rof_grid="r01" ocn_grid="gx1v6" >
