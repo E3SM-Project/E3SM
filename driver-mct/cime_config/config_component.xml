@@ -2417,31 +2417,58 @@
     <desc>pio rearranger communication flow control direction</desc>
   </entry>
 
-  <entry id="PIO_REARR_COMM_MAX_PEND_REQ">
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>64</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communication max pending requests</desc>
+    <desc>pio rearranger communication max pending requests (comp2io) </desc>
   </entry>
 
-  <entry id="PIO_REARR_COMM_ENABLE_HS">
+  <entry id="PIO_REARR_COMM_ENABLE_HS_COMP2IO">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>TRUE</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communiation options: TRUE implies enable handshake</desc>
+    <desc>pio rearranger communiation options (comp2io) : TRUE implies enable handshake </desc>
   </entry>
 
-  <entry id="PIO_REARR_COMM_ENABLE_ISEND">
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_COMP2IO">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communiation options: TRUE implies enable isend</desc>
+    <desc>pio rearranger communiation options (comp2io) : TRUE implies enable isend</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>64</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communication max pending requests (io2comp)</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_ENABLE_HS_IO2COMP">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options (io2comp) : TRUE implies enable handshake</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_IO2COMP">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options (io2comp) : TRUE implies enable isend</desc>
   </entry>
 
   <entry id="PIO_TYPENAME">
