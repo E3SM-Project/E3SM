@@ -41,11 +41,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-j", "--num-procs", type=int, default=8,
                         help="The number of files to check in parallel")
 
+    parser.add_argument("files", nargs="*",
+                        help="Restrict checking to specific files. Relative name is fine.")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.dir, args.num_procs
+    return args.dir, args.num_procs, args.files
 
 ###############################################################################
 def run_pylint(on_file):
@@ -62,7 +65,16 @@ def run_pylint(on_file):
         return True
 
 ###############################################################################
-def check_code(dir_to_check, num_procs):
+def matches(file_path, file_ends):
+###############################################################################
+    for file_end in file_ends:
+        if file_path.endswith(file_end):
+            return True
+
+    return False
+
+###############################################################################
+def check_code(dir_to_check, num_procs, files):
 ###############################################################################
     """
     Check all python files in the given directory
@@ -77,6 +89,9 @@ def check_code(dir_to_check, num_procs):
 
     # Get list of files to check
     files_to_check = run_cmd_no_fail('find %s -name "*.py"' % dir_to_check).splitlines()
+    if files:
+        files_to_check = [item for item in files_to_check if matches(item, files)]
+
     pool = ThreadPool(num_procs)
     results = pool.map(run_pylint, files_to_check)
 
@@ -92,9 +107,9 @@ def _main_func(description):
     pylint = find_executable("pylint")
     expect(pylint is not None,"pylint not found")
 
-    dir_to_check, num_procs = parse_command_line(sys.argv, description)
+    dir_to_check, num_procs, files = parse_command_line(sys.argv, description)
 
-    sys.exit(0 if check_code(dir_to_check, num_procs) else 1)
+    sys.exit(0 if check_code(dir_to_check, num_procs, files) else 1)
 
 ###############################################################################
 

@@ -544,6 +544,8 @@ def get_project(machobj=None):
 def setup_standard_logging_options(parser):
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose)")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Add additional context (time and file) to log messages")
     parser.add_argument("-s", "--silent", action="store_true",
                         help="Print only warnings and error messages")
 
@@ -567,15 +569,24 @@ def handle_standard_logging_options(args):
     """
     root_logger = logging.getLogger()
 
+    verbose_formatter   = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                                            datefmt='%m-%d %H:%M')
+
     # Change info to go to stdout. This handle applies to INFO exclusively
     stdout_stream_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_stream_handler.setLevel(logging.INFO)
     stdout_stream_handler.addFilter(_LessThanFilter(logging.WARNING))
-    root_logger.addHandler(stdout_stream_handler)
 
     # Change warnings and above to go to stderr
     stderr_stream_handler = logging.StreamHandler(stream=sys.stderr)
     stderr_stream_handler.setLevel(logging.WARNING)
+
+    # --verbose adds to the message format but does not impact the log level
+    if args.verbose:
+        stdout_stream_handler.setFormatter(verbose_formatter)
+        stderr_stream_handler.setFormatter(verbose_formatter)
+
+    root_logger.addHandler(stdout_stream_handler)
     root_logger.addHandler(stderr_stream_handler)
 
     if args.debug:
@@ -583,9 +594,7 @@ def handle_standard_logging_options(args):
         log_file = "%s.log" % os.path.basename(sys.argv[0])
 
         debug_log_handler = logging.FileHandler(log_file, mode='w')
-        debug_formatter   = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                                              datefmt='%m-%d %H:%M')
-        debug_log_handler.setFormatter(debug_formatter)
+        debug_log_handler.setFormatter(verbose_formatter)
         debug_log_handler.setLevel(logging.DEBUG)
         root_logger.addHandler(debug_log_handler)
 
