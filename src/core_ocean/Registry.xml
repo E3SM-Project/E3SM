@@ -883,9 +883,9 @@
 					description="number of iterations of stage 1 (baroclinic solve) on the last split-explicit iteration"
 					possible_values="any positive integer, but typically 1, 2, or 3"
 		/>
-		<nml_option name="config_n_btr_subcycles" type="integer" default_value="20" units="unitless"
-					description="number of barotropic subcycles in stage 2"
-					possible_values="any positive integer, typically between 10 and 100"
+		<nml_option name="config_btr_dt" type="character" default_value="0000_00:00:15" units="unitless"
+					description="Timestep to use for the barotropic mode in the split explicit time integrator"
+					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
 		<nml_option name="config_n_btr_cor_iter" type="integer" default_value="2" units="unitless"
 					description="number of iterations of the velocity corrector step in stage 2"
