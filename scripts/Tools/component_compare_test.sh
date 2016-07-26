@@ -374,9 +374,12 @@ for model in ${models[*]}; do
 		if [ "$compare_status" != "PASS" ]; then
 		    overall_status="FAIL"
 		fi
-	    else
+            elif [[ -f ${hist1} ]]; then
               overall_status = "FAIL"
-	      print_comment "File ${hist1} or ${hist2} not found"
+	      print_comment "file status" "File ${hist2} not found" "${testcase_base}"
+            elif [[ -f ${hist2} ]]; then
+              overall_status = "FAIL"
+	      print_comment "file status" "File ${hist1} not found" "${testcase_base}"
 	    fi
 
 	fi
