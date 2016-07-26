@@ -295,14 +295,9 @@ module ocn_time_integration_split
          end do
          !$omp end do
 
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            sshNew(iCell) = sshCur(iCell)
-         end do
-         !$omp end do
-
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
+            sshNew(iCell) = sshCur(iCell)
             do k = 1, maxLevelCell(iCell)
                layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
                ! set vertAleTransportTop to zero for stage 1 velocity tendency, first time through.
@@ -627,16 +622,11 @@ module ocn_time_integration_split
                ! For Split_Explicit unsplit, simply set normalBarotropicVelocityNew=0, normalBarotropicVelocitySubcycle=0, and
                ! uNew=normalBaroclinicVelocityNew
 
-               !$omp do schedule(runtime)
-               do iEdge = 1, nEdges
-                  normalBarotropicVelocityNew(iEdge) = 0.0_RKIND
-                  normalVelocityNew(:, iEdge)  = normalBaroclinicVelocityNew(:, iEdge)
-               end do
-               !$omp end do
-
                !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
+                  normalBarotropicVelocityNew(iEdge) = 0.0_RKIND
                   do k = 1, nVertLevels
+                     normalVelocityNew(k, iEdge)  = normalBaroclinicVelocityNew(k, iEdge)
 
                      ! normalTransportVelocity = normalBaroclinicVelocity + normalGMBolusVelocity
                      ! This is u used in advective terms for layerThickness and tracers
@@ -817,12 +807,6 @@ module ocn_time_integration_split
 
                 call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
 
-                !$omp do schedule(runtime)
-                do iCell = 1, nCells
-                   sshTend(iCell) = 0.0_RKIND
-                end do
-                !$omp end do
-
                 if (config_btr_solve_SSH2) then
                    ! If config_btr_solve_SSH2=.true., then do NOT accumulate barotropicThicknessFlux in this SSH predictor
                    ! section, because it will be accumulated in the SSH corrector section.
@@ -839,6 +823,7 @@ module ocn_time_integration_split
 
                 !$omp do schedule(runtime) private(i, iEdge, cell1, cell2, sshEdge, thicknessSum, flux)
                 do iCell = 1, nCells
+                  sshTend(iCell) = 0.0_RKIND
                   do i = 1, nEdgesOnCell(iCell)
                     iEdge = edgesOnCell(i, iCell)
 
@@ -866,6 +851,9 @@ module ocn_time_integration_split
                            * dvEdge(iEdge)
 
                   end do
+
+                  ! SSHnew = SSHold + dt/J*(-div(Flux))
+                  sshSubcycleNew(iCell) = sshSubcycleCur(iCell) + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
                 end do
                 !$omp end do
 
@@ -893,13 +881,6 @@ module ocn_time_integration_split
                           * thicknessSum
 
                    barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) + barotropicThicknessFlux_coeff * flux
-                end do
-                !$omp end do
-
-                ! SSHnew = SSHold + dt/J*(-div(Flux))
-                !$omp do schedule(runtime)
-                do iCell = 1, nCells
-                   sshSubcycleNew(iCell) = sshSubcycleCur(iCell) + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
                 end do
                 !$omp end do
 
@@ -1027,11 +1008,6 @@ module ocn_time_integration_split
                                             newBtrSubcycleTime)
 
                    call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
-                   !$omp do schedule(runtime)
-                   do iCell = 1, nCells
-                      sshTend(iCell) = 0.0_RKIND
-                   end do
-                   !$omp end do
 
                    ! config_btr_gam3_velWt2 sets the forward weighting of velocity in the SSH computation
                    ! config_btr_gam3_velWt2=  1     flux = normalBarotropicVelocityNew*H
@@ -1040,6 +1016,7 @@ module ocn_time_integration_split
 
                    !$omp do schedule(runtime) private(i, iEdge, cell1, cell2, sshCell1, sshCell2, sshEdge, thicknessSum, flux)
                    do iCell = 1, nCells
+                     sshTend(iCell) = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                        iEdge = edgesOnCell(i, iCell)
 
@@ -1072,6 +1049,10 @@ module ocn_time_integration_split
                               * dvEdge(iEdge)
 
                      end do
+
+                     ! SSHnew = SSHold + dt/J*(-div(Flux))
+                     sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
+                          + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
                    end do
                    !$omp end do
 
@@ -1100,14 +1081,6 @@ module ocn_time_integration_split
                              * thicknessSum
 
                       barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) + flux
-                   end do
-                   !$omp end do
-
-                   ! SSHnew = SSHold + dt/J*(-div(Flux))
-                   !$omp do schedule(runtime)
-                   do iCell = 1, nCells
-                      sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
-                           + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
                    end do
                    !$omp end do
 
