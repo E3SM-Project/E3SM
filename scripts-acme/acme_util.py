@@ -35,8 +35,8 @@ _MACHINE_PROJECTS = {
     "corip1"    : "acme",
     "blues"     : "ACME",
     "titan"     : "cli115",
-    "mira"      : "HiRes_EarthSys",
-    "cetus"     : "HiRes_EarthSys",
+    "mira"      : "HiRes_EarthSys_2",
+    "cetus"     : "HiRes_EarthSys_2",
 }
 
 # Return this error code if the scripts worked but tests failed
