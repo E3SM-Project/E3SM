@@ -9,6 +9,7 @@
 
 	<namelist name="namelist.ocean" mode="forward">
 		<option name="config_dt">'0000_00:03:00'</option>
+		<option name="config_btr_dt">'0000_00:00:09'</option>
 		<option name="config_run_duration">'0000_00:12:00'</option>
 		<option name="config_use_const_visc">.true.</option>
 		<option name="config_bottom_drag_coeff">1.0e-2</option>

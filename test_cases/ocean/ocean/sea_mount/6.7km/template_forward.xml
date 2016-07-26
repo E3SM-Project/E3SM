@@ -2,6 +2,7 @@
 	<namelist>
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_dt">'00:03:00'</option>
+		<option name="config_btr_dt">'00:00:09'</option>
 		<option name="config_run_duration">'0000_00:09:00'</option>
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
