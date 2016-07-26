@@ -29,6 +29,7 @@ module ocn_time_integration_split
    use mpas_spline_interpolation
    use mpas_timer
    use mpas_threading
+   use mpas_timekeeping
 
    use ocn_tendency
    use ocn_diagnostics
@@ -57,6 +58,8 @@ module ocn_time_integration_split
    !--------------------------------------------------------------------
 
    public :: ocn_time_integrator_split, ocn_time_integration_split_init
+
+   integer :: nBtrSubcycles
 
    contains
 
@@ -122,7 +125,7 @@ module ocn_time_integration_split
       ! Config options
       character (len=StrKIND), pointer :: config_time_integrator
       integer, pointer :: config_n_bcl_iter_mid, config_n_bcl_iter_beg, config_n_bcl_iter_end
-      integer, pointer :: config_n_ts_iter, config_btr_subcycle_loop_factor, config_n_btr_subcycles
+      integer, pointer :: config_n_ts_iter, config_btr_subcycle_loop_factor
       integer, pointer :: config_n_btr_cor_iter
       logical, pointer :: config_use_standardGM
 
@@ -203,7 +206,6 @@ module ocn_time_integration_split
       call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_mid', config_n_bcl_iter_mid)
       call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_end', config_n_bcl_iter_end)
       call mpas_pool_get_config(domain % configs, 'config_n_ts_iter', config_n_ts_iter)
-      call mpas_pool_get_config(domain % configs, 'config_n_btr_subcycles', config_n_btr_subcycles)
       call mpas_pool_get_config(domain % configs, 'config_btr_subcycle_loop_factor', config_btr_subcycle_loop_factor)
       call mpas_pool_get_config(domain % configs, 'config_btr_gam1_velWt1', config_btr_gam1_velWt1)
       call mpas_pool_get_config(domain % configs, 'config_btr_gam3_velWt2', config_btr_gam3_velWt2)
@@ -705,7 +707,7 @@ module ocn_time_integration_split
             ! BEGIN Barotropic subcycle loop
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             call mpas_timer_start('btr se subcycle loop', .false.)
-            do j = 1, config_n_btr_subcycles * config_btr_subcycle_loop_factor
+            do j = 1, nBtrSubcycles * config_btr_subcycle_loop_factor
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ! Barotropic subcycle: VELOCITY PREDICTOR STEP
@@ -756,7 +758,7 @@ module ocn_time_integration_split
                         !                             - g*grad(SSH) + G)
                         normalBarotropicVelocitySubcycleNew(iEdge) &
                           = (normalBarotropicVelocitySubcycleCur(iEdge) &
-                          + dt / config_n_btr_subcycles * (CoriolisTerm - gravity &
+                          + dt / nBtrSubcycles * (CoriolisTerm - gravity &
                           * (sshSubcycleCur(cell2) - sshSubcycleCur(cell1) ) &
                           / dcEdge(iEdge) + barotropicForcing(iEdge))) * edgeMask(1, iEdge)
                      end do
@@ -893,7 +895,7 @@ module ocn_time_integration_split
                 ! SSHnew = SSHold + dt/J*(-div(Flux))
                 !$omp do schedule(runtime)
                 do iCell = 1, nCells
-                   sshSubcycleNew(iCell) = sshSubcycleCur(iCell) + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
+                   sshSubcycleNew(iCell) = sshSubcycleCur(iCell) + dt / nBtrSubcycles * sshTend(iCell) / areaCell(iCell)
                 end do
                 !$omp end do
 
@@ -973,7 +975,7 @@ module ocn_time_integration_split
                      ! normalBarotropicVelocityNew = normalBarotropicVelocityOld + dt/J*(-f*normalBarotropicVelocityoldPerp
                      !                             - g*grad(SSH) + G)
                      normalBarotropicVelocitySubcycleNew(iEdge) = (normalBarotropicVelocitySubcycleCur(iEdge) &
-                         + dt / config_n_btr_subcycles *(CoriolisTerm - gravity *(sshCell2 - sshCell1) / dcEdge(iEdge) &
+                         + dt / nBtrSubcycles *(CoriolisTerm - gravity *(sshCell2 - sshCell1) / dcEdge(iEdge) &
                          + barotropicForcing(iEdge))) * edgeMask(1,iEdge)
                    end do
                    !$omp end do
@@ -1111,7 +1113,7 @@ module ocn_time_integration_split
                    !$omp do schedule(runtime)
                    do iCell = 1, nCells
                       sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
-                           + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
+                           + dt / nBtrSubcycles * sshTend(iCell) / areaCell(iCell)
                    end do
                    !$omp end do
 
@@ -1162,7 +1164,7 @@ module ocn_time_integration_split
                oldBtrSubcycleTime = mod(oldBtrSubcycleTime,2)+1
                newBtrSubcycleTime = mod(newBtrSubcycleTime,2)+1
 
-            end do ! j=1,config_n_btr_subcycles
+            end do ! j=1,nBtrSubcycles
             call mpas_timer_stop('btr se subcycle loop')
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! END Barotropic subcycle loop
@@ -1185,10 +1187,10 @@ module ocn_time_integration_split
                !$omp do schedule(runtime)
                do iEdge = 1, nEdges
                   barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) &
-                      / (config_n_btr_subcycles * config_btr_subcycle_loop_factor)
+                      / (nBtrSubcycles * config_btr_subcycle_loop_factor)
 
                   normalBarotropicVelocityNew(iEdge) = normalBarotropicVelocityNew(iEdge) &
-                     / (config_n_btr_subcycles * config_btr_subcycle_loop_factor + 1)
+                     / (nBtrSubcycles * config_btr_subcycle_loop_factor + 1)
                end do
                !$omp end do
 
@@ -1836,100 +1838,140 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: normalBaroclinicVelocity, normalVelocity
       integer, pointer :: nVertLevels, nCells, nEdges
-      character (len=StrKIND), pointer :: config_time_integrator
-      logical, pointer :: config_filter_btr_mode
+      character (len=StrKIND), pointer :: config_time_integrator, config_btr_dt, config_dt
+      logical, pointer :: config_filter_btr_mode, config_do_restart
 
-      ! Initialize z-level mesh variables from h, read in from input file.
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_config(block % configs, 'config_time_integrator', config_time_integrator)
-         call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      type (mpas_time_type) :: nowTime
+      type (mpas_timeInterval_type) :: fullTimeStep, barotropicTimeStep, remainder, zeroInterval
 
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
-         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+      integer :: iErr
 
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
-         call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity, 1)
-         call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, 1)
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
-         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      ! Determine the number of barotropic subcycles based on the ratio of time steps
+      call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
+      call mpas_pool_get_config(domain % configs, 'config_btr_dt', config_btr_dt)
+      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
-         ! Compute barotropic velocity at first timestep
-         ! This is only done upon start-up.
-         if (trim(config_time_integrator) == 'unsplit_explicit') then
-            call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity)
+      nowTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+      call mpas_set_timeInterval( zeroInterval, S=0 )
 
-            do iEdge = 1, nEdges
-               normalBarotropicVelocity(iEdge) = 0.0_RKIND
-               normalBaroclinicVelocity(:, iEdge) = normalVelocity(:, iEdge)
-            end do
+      call mpas_set_timeInterval( fullTimeStep , timeString=config_dt )
+      call mpas_set_timeInterval( barotropicTimeStep, timeString=config_btr_dt )
 
-         elseif (trim(config_time_integrator) == 'split_explicit') then
+      call mpas_interval_division( nowTime, fullTimeStep, barotropicTimeStep, nBtrSubcycles, remainder )
 
-            if (config_filter_btr_mode) then
-               do iCell = 1, nCells
-                  layerThickness(1,iCell) = refBottomDepth(1)
-               enddo
-            endif
+      if ( remainder > zeroInterval ) then
+         nBtrSubcycles = nBtrSubcycles + 1
+      end if
 
-            do iEdge = 1, nEdges
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
+      if (trim(config_time_integrator) == 'split_explicit') then
+         write(stderrUnit, *) ''
+         write(stderrUnit, *) '*********************************************************************************************************'
+         write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, ' barotropic subcycles'
+         write(stderrUnit, *) '*********************************************************************************************************'
+         write(stderrUnit, *) ''
+      end if
 
-               ! normalBarotropicVelocity = sum(h*u)/sum(h) on each edge
-               ! ocn_diagnostic_solve has not yet been called, so compute hEdge
-               ! just for this edge.
+      if ( .not. config_do_restart ) then
+         ! Initialize z-level mesh variables from h, read in from input file.
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_config(block % configs, 'config_time_integrator', config_time_integrator)
+            call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
+            call mpas_pool_get_subpool(block % structs, 'state', statePool)
+            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-               ! thicknessSum is initialized outside the loop because on land boundaries
-               ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
-               ! nonzero value to avoid a NaN.
-               layerThicknessEdge1 = 0.5_RKIND*( layerThickness(1,cell1) + layerThickness(1,cell2) )
-               normalThicknessFluxSum = layerThicknessEdge1 * normalVelocity(1,iEdge)
-               layerThicknessSum = layerThicknessEdge1
+            call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+            call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+            call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
-               do k=2, maxLevelEdgeTop(iEdge)
+            call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+            call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+            call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity, 1)
+            call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, 1)
+
+            call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+            call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+            call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+            ! Compute barotropic velocity at first timestep
+            ! This is only done upon start-up.
+            if (trim(config_time_integrator) == 'unsplit_explicit') then
+               call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity)
+
+               do iEdge = 1, nEdges
+                  normalBarotropicVelocity(iEdge) = 0.0_RKIND
+                  normalBaroclinicVelocity(:, iEdge) = normalVelocity(:, iEdge)
+               end do
+
+            elseif (trim(config_time_integrator) == 'split_explicit') then
+
+               write(stderrUnit, *) ''
+               write(stderrUnit, *) '*********************************************************************************************************'
+               write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, ' barotropic subcycles'
+               write(stderrUnit, *) '*********************************************************************************************************'
+               write(stderrUnit, *) ''
+
+               if (config_filter_btr_mode) then
+                  do iCell = 1, nCells
+                     layerThickness(1,iCell) = refBottomDepth(1)
+                  enddo
+               endif
+
+               do iEdge = 1, nEdges
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+
+                  ! normalBarotropicVelocity = sum(h*u)/sum(h) on each edge
                   ! ocn_diagnostic_solve has not yet been called, so compute hEdge
                   ! just for this edge.
-                  layerThicknessEdge1 = 0.5_RKIND*( layerThickness(k,cell1) + layerThickness(k,cell2) )
 
-                  normalThicknessFluxSum = normalThicknessFluxSum &
-                     + layerThicknessEdge1 * normalVelocity(k,iEdge)
-                  layerThicknessSum = layerThicknessSum + layerThicknessEdge1
+                  ! thicknessSum is initialized outside the loop because on land boundaries
+                  ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
+                  ! nonzero value to avoid a NaN.
+                  layerThicknessEdge1 = 0.5_RKIND*( layerThickness(1,cell1) + layerThickness(1,cell2) )
+                  normalThicknessFluxSum = layerThicknessEdge1 * normalVelocity(1,iEdge)
+                  layerThicknessSum = layerThicknessEdge1
 
+                  do k=2, maxLevelEdgeTop(iEdge)
+                     ! ocn_diagnostic_solve has not yet been called, so compute hEdge
+                     ! just for this edge.
+                     layerThicknessEdge1 = 0.5_RKIND*( layerThickness(k,cell1) + layerThickness(k,cell2) )
+
+                     normalThicknessFluxSum = normalThicknessFluxSum &
+                        + layerThicknessEdge1 * normalVelocity(k,iEdge)
+                     layerThicknessSum = layerThicknessSum + layerThicknessEdge1
+
+                  enddo
+                  normalBarotropicVelocity(iEdge) = normalThicknessFluxSum / layerThicknessSum
+
+                  ! normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
+                  do k = 1, maxLevelEdgeTop(iEdge)
+                     normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
+                  enddo
+
+                  ! normalBaroclinicVelocity=0, normalVelocity=0 on land cells
+                  do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
+                     normalBaroclinicVelocity(k,iEdge) = 0.0_RKIND
+                     normalVelocity(k,iEdge) = 0.0_RKIND
+                  enddo
                enddo
-               normalBarotropicVelocity(iEdge) = normalThicknessFluxSum / layerThicknessSum
 
-               ! normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
-               do k = 1, maxLevelEdgeTop(iEdge)
-                  normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
-               enddo
+               if (config_filter_btr_mode) then
+                  ! filter normalBarotropicVelocity out of initial condition
 
-               ! normalBaroclinicVelocity=0, normalVelocity=0 on land cells
-               do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-                  normalBaroclinicVelocity(k,iEdge) = 0.0_RKIND
-                  normalVelocity(k,iEdge) = 0.0_RKIND
-               enddo
-            enddo
+                   normalVelocity(:,:) = normalBaroclinicVelocity(:,:)
+                   normalBarotropicVelocity(:) = 0.0_RKIND
 
-            if (config_filter_btr_mode) then
-               ! filter normalBarotropicVelocity out of initial condition
-
-                normalVelocity(:,:) = normalBaroclinicVelocity(:,:)
-                normalBarotropicVelocity(:) = 0.0_RKIND
+               endif
 
             endif
 
-         endif
-
-      block => block % next
-      end do
+         block => block % next
+         end do
+      end if
 
    end subroutine ocn_time_integration_split_init!}}}
 
