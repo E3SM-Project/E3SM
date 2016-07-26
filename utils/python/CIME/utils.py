@@ -543,7 +543,7 @@ def get_project(machobj=None):
 
 def setup_standard_logging_options(parser):
     parser.add_argument("-d", "--debug", action="store_true",
-                        help="Print debug information (very verbose)")
+                        help="Print verbose debug information to file %s.log"%sys.argv[0])
     parser.add_argument("-s", "--silent", action="store_true",
                         help="Print only warnings and error messages")
 
