@@ -43,49 +43,38 @@ class LII(SystemTestsCommon):
             for filename in glob.glob(r'user_nl_clm*'):
                 shutil.copy(filename, os.path.join("user_nl_interp",filename))
                 with open(os.path.join("user_nl_interp",filename), "a") as newfile:
-                    newfile.write("use_init_interp = .false.")
+                    newfile.write("use_init_interp = .true.")
 
         self.clean_build()
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
-    def _lii_first_phase(self):
-        #Do a run with init_interp false
+    def run(self):
+        '''
+        Do a run with init_interp false, a run with init_interp true and
+        compare
+        '''
         caseroot = self._case.get_value("CASEROOT")
-        for filename in glob.glob(r'user_nl_nointerp/*'):
-            shutil.copy(filename, os.path.join(caseroot,filename))
 
         self._case.set_value("CONTINUE_RUN",False)
         self._case.set_value("REST_OPTION","none")
         self._case.set_value("HIST_OPTION","$STOP_OPTION")
         self._case.set_value("HIST_N","$STOP_N")
         self._case.flush()
+        for user_nl_dir in ("user_nl_nointerp", "user_nl_interp"):
+            for filename in glob.glob(r'%s/*'%user_nl_dir):
+                shutil.copy(filename,
+                            os.path.join(caseroot,os.path.basename(filename)))
 
-        stop_n = self._case.get_value("STOP_N")
-        stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing a %d %s initial test with init_interp set to false, no restarts written"
-                    % (stop_n, stop_option))
+            stop_n = self._case.get_value("STOP_N")
+            stop_option = self._case.get_value("STOP_OPTION")
+            logger.info("doing a %d %s initial test with init_interp set to %s, no restarts written"
+                        % (stop_n, stop_option, os.path.basename(filename) == "user_nl_interp"))
 
-        return SystemTestsCommon._run(self)
-
-    def _lii_second_phase(self):
-        #Do a run with init_interp true
-        caseroot = self._case.get_value("CASEROOT")
-        for filename in glob.glob(r'user_nl_interp/*'):
-            shutil.copy(filename, os.path.join(caseroot,filename))
-
-        stop_n = self._case.get_value("STOP_N")
-        stop_option = self._case.get_value("STOP_OPTION")
-        logger.info("doing a %d %s initial test with init_interp set to true, no restarts written"
-                    % (stop_n, stop_option))
-
-        # FIXME - determine what should be compared here for success of test
-        return SystemTestsCommon._run(self, "init_interp_on")
-
-    def run(self):
-        success = self._lii_first_phase()
-
+            success = SystemTestsCommon._run(self)
+            if not success:
+                break
         if success:
-            return self._lii_second_phase()
+            return self._component_compare_test("base", "init_interp_on")
         else:
             return False
 
