@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<config case="experiment_A">
+        <!-- add needed files/executables -->
+        <add_link source="../setup_mesh/graph.info" dest="."/>
+        <add_link source="../setup_mesh/graph.info.part.4" dest="."/>
+        <add_executable source="model" dest="landice_model"/>
+        <!-- link in scripts that the user will need -->
+        <add_link source_path="script_configuration_dir" source="setup_hydro-shmip_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="visualize_output_shmip.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="tuning_A3.txt" dest="."/>
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+        </streams>
+
+</config>
+
