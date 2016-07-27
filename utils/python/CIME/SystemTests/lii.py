@@ -68,7 +68,7 @@ class LII(SystemTestsCommon):
             stop_n = self._case.get_value("STOP_N")
             stop_option = self._case.get_value("STOP_OPTION")
             logger.info("doing a %d %s initial test with init_interp set to %s, no restarts written"
-                        % (stop_n, stop_option, os.path.basename(filename) == "user_nl_interp"))
+                        % (stop_n, stop_option, user_nl_dir == "interp"))
 
             success = SystemTestsCommon._run(self, suffix=user_nl_dir)
             if not success:

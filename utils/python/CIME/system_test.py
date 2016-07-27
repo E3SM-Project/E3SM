@@ -387,7 +387,7 @@ class SystemTest(object):
                 if case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount %s"%pesize
-                
+
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
         elif test in self._test_xml and "wallclock" in self._test_xml[test]:
@@ -410,7 +410,6 @@ class SystemTest(object):
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
-        component_classes = drv_comp.get_valid_model_components()
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
         envtest.set_value("TESTCASE", test_case)
         envtest.set_value("TEST_TESTID", self._test_id)

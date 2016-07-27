@@ -538,8 +538,8 @@ class Case(object):
         #--------------------------------------------
         # pe payout
         #--------------------------------------------
-        match1 = False
-        match2 = False
+        match1 = None
+        match2 = None
         pes_ntasks = {}
         pes_nthrds = {}
         pes_rootpe = {}
