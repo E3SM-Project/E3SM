@@ -1,6 +1,51 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: July 26, 2016
+Tag: cime5.0.3
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary: fixes as a result of cesm2_alpha01b testing
+                           print output from buildnml
+	                   improve mismatch argument to NAG compiler
+	                  fix memleak error if baseline not found
+	                  add support to create_test for ascii testfile
+	                  move pecount support from create_test to create_newcase
+	                  fix LII test, fix ERP test
+	                 reintroduce --verbose option
+
+User interface changes: none
+
+Modified files: git diff --name-status
+M       ChangeLog
+M       cime_config/acme/config_files.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_compilers.xml
+A       cime_config/cesm/machines/nag_mpi_argument.txt
+M       driver_cpl/cime_config/buildexe
+M       scripts/Tools/case.build
+M       scripts/Tools/code_checker
+M       scripts/Tools/component_compare_test.sh
+M       scripts/Tools/preview_namelists
+M       scripts/create_newcase
+M       scripts/create_test
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/SystemTests/lii.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/system_test.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+======================================================================
+
+Originator: Jim Edwards
 Date: July 22, 2016
 Tag: cime5.0.2
 Answer Changes: None
