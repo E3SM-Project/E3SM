@@ -53,6 +53,8 @@ surfmelt = f.variables['externalWaterInput'][time_slice,:]
 xtime= f.variables['xtime']
 areaCell = f.variables['areaCell'][:]
 
+q = u*h
+
 
 #print "attempting to get input data from landice_grid.nc!"
 #fin = netCDF4.Dataset('landice_grid.nc','r')
@@ -67,6 +69,22 @@ print "number of ys, center y index, center Y value", len(unique_ys), len(unique
 ind = np.nonzero(yCell[:] == centerY)
 x = xCell[ind]/1000.0
 
+# calculate mean,min,max for all x values for needed variables
+allx=np.unique(xCell[:])
+N_mean = np.zeros(allx.shape)
+N_min = np.zeros(allx.shape)
+N_max = np.zeros(allx.shape)
+q_mean = np.zeros(allx.shape)
+q_min = np.zeros(allx.shape)
+q_max = np.zeros(allx.shape)
+for i in range(len(allx)):
+    N_mean[i] = N[ xCell == allx[i] ].mean()
+    N_min[i] = N[ xCell == allx[i] ].min()
+    N_max[i] = N[ xCell == allx[i] ].max()
+    q_mean[i] = q[ xCell == allx[i] ].mean()
+    q_min[i] = q[ xCell == allx[i] ].min()
+    q_max[i] = q[ xCell == allx[i] ].max()
+
 print "start plotting."
 
 fig = plt.figure(1, facecolor='w')
@@ -76,28 +94,50 @@ ax3 = fig.add_subplot(313, sharex=ax1)
 
 if options.A3:
    # plot GLADS data
+   lw = 3  # lineweight to use
    G_x, G_Nmean, G_Nmin, G_Nmax, G_qmean, G_qmin, G_qmax, G_Qmax = np.loadtxt('tuning_A3.txt', skiprows=1, unpack=True, delimiter=",")
-   ax1.plot(G_x/1000.0, G_Nmin/1.0e6, 'r')
-   ax1.plot(G_x/1000.0, G_Nmean/1.0e6, 'b')
-   ax1.plot(G_x/1000.0, G_Nmax/1.0e6, 'y')
+   ax1.plot(G_x/1000.0, G_Nmin/1.0e6, 'g--', linewidth=lw)
+   ax1.plot(G_x/1000.0, G_Nmean/1.0e6, 'g-', linewidth=lw, label='GLADS mean/range')
+   ax1.plot(G_x/1000.0, G_Nmax/1.0e6, 'g--', linewidth=lw)
 
-   ax2.plot(G_x/1000.0, G_qmin, 'r')
-   ax2.plot(G_x/1000.0, G_qmean, 'b')
-   ax2.plot(G_x/1000.0, G_qmax, 'y')
+   ax2.plot(G_x/1000.0, G_qmin, 'g--', linewidth=lw)
+   ax2.plot(G_x/1000.0, G_qmean, 'g-', linewidth=lw, label='GLADS mean/range')
+   ax2.plot(G_x/1000.0, G_qmax, 'g--', linewidth=lw)
 
+   ax3.plot(G_x/1000.0, G_Qmax, 'g--', linewidth=lw, label='GLADS max')
+
+# panel 1: effective pressure
 plt.sca(ax1)
-plt.plot(x, N[ind] / 1.0e6, '.-g')
+#plt.plot(x, N[ind] / 1.0e6, '.-g')  # this just plots the centerline profile
+plt.plot(allx/1000.0, N_mean / 1.0e6, '-b', label='MPAS mean/range')
+plt.plot(allx/1000.0, N_min / 1.0e6, '--b')
+plt.plot(allx/1000.0, N_max / 1.0e6, '--b')
 plt.xlabel('X-position (km)')
 plt.ylabel('effecive pressure (MPa)')
 plt.xlim( (0, 100.0) )
 plt.grid(True)
+plt.legend(loc='best')
 
+# panel 2: sheet flux
 plt.sca(ax2)
-plt.plot(x, np.absolute(h[ind] * u[ind]), '.-g')
+#plt.plot(x, np.absolute(h[ind] * u[ind]), '.-g') # this plots centerline profile
+plt.plot(allx/1000.0, np.absolute(q_mean), '-b', label='MPAS mean/range')
+plt.plot(allx/1000.0, np.absolute(q_min), '--b')
+plt.plot(allx/1000.0, np.absolute(q_max), '--b')
 plt.xlabel('X-position (km)')
-plt.ylabel('water flux (m^2/s)')
+plt.ylabel('sheet water flux (m^2/s)')
 plt.grid(True)
+plt.legend(loc='best')
 
+# panel 3: channel flux
+plt.sca(ax3)
+#plt.plot(allx/1000.0, np.absolute(q_mean), '.-b')
+#plt.plot(allx/1000.0, np.absolute(q_min), '.--b')
+#plt.plot(allx/1000.0, np.absolute(q_max), '.--b')
+plt.xlabel('X-position (km)')
+plt.ylabel('channel water flux (m^3/s)')
+plt.grid(True)
+plt.legend(loc='best')
 
 
 
