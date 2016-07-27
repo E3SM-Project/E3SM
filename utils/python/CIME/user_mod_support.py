@@ -12,7 +12,15 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
     '''
     Recursivlely apply user_mods to caseroot - this includes updating user_nl_xxx,
     updating SourceMods and creating case_shel_commands and xmlchange_cmds files
+
+    First remove case shell_commands files if any already exist
     '''
+    case_shell_command_files = [os.path.join(caseroot,"shell_commands"),
+                           os.path.join(caseroot,"xmlchange_cmnds")]
+    for shell_command_file in case_shell_command_files:
+        if os.path.isfile(shell_command_file):
+            os.remove(shell_command_file)
+
     include_dirs = build_include_dirs_list(user_mods_path)
     for include_dir in include_dirs:
 
@@ -70,9 +78,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
             with open(case_shell_commands, "a") as fd:
                 fd.write(new_shell_commands)
 
-    shell_command_files = [os.path.join(caseroot,"shell_commands"),
-                           os.path.join(caseroot,"xmlchange_cmnds")]
-    for shell_command_file in shell_command_files:
+    for shell_command_file in case_shell_command_files:
         if os.path.isfile(shell_command_file):
             os.chmod(shell_command_file, 0777)
             run_cmd_no_fail(shell_command_file)
