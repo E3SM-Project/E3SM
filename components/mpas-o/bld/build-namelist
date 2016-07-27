@@ -763,7 +763,7 @@ add_default($nl, 'config_n_ts_iter');
 add_default($nl, 'config_n_bcl_iter_beg');
 add_default($nl, 'config_n_bcl_iter_mid');
 add_default($nl, 'config_n_bcl_iter_end');
-add_default($nl, 'config_n_btr_subcycles');
+add_default($nl, 'config_btr_dt');
 add_default($nl, 'config_n_btr_cor_iter');
 add_default($nl, 'config_vel_correction');
 add_default($nl, 'config_btr_subcycle_loop_factor');
@@ -1551,7 +1551,6 @@ add_default($nl, 'config_AM_transectTransport_compute_interval');
 add_default($nl, 'config_AM_transectTransport_output_stream');
 add_default($nl, 'config_AM_transectTransport_compute_on_startup');
 add_default($nl, 'config_AM_transectTransport_write_on_startup');
-
 
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpas-o_in) and input dataset list (mpas-o.input_data_list) ***

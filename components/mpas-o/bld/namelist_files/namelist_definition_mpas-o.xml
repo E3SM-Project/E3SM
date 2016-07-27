@@ -1586,11 +1586,11 @@ Valid values: any positive integer, but typically 1, 2, or 3
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_n_btr_subcycles" type="integer"
+<entry id="config_btr_dt" type="char*1024"
 	category="split_explicit_ts" group="split_explicit_ts">
-number of barotropic subcycles in stage 2
+Timestep to use for the barotropic mode in the split explicit time integrator
 
-Valid values: any positive integer, typically between 10 and 100
+Valid values: Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused.
 Default: Defined in namelist_defaults.xml
 </entry>
 

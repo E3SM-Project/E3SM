@@ -49,7 +49,6 @@
 <!-- time_integration -->
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
-<config_dt ocn_grid="mpas120">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30">'00:15:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
@@ -78,7 +77,6 @@
 <!-- hmix -->
 <config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
-<config_hmix_scaleWithMesh ocn_grid="mpas120">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
@@ -96,7 +94,6 @@
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
-<config_mom_del4 ocn_grid="mpas120">5.0e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
@@ -112,7 +109,6 @@
 <!-- mesoscale_eddy_parameterization -->
 <config_use_standardGM ocn_grid="oQU240">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
-<config_use_standardGM ocn_grid="mpas120">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
@@ -272,7 +268,12 @@
 <config_n_bcl_iter_beg>1</config_n_bcl_iter_beg>
 <config_n_bcl_iter_mid>2</config_n_bcl_iter_mid>
 <config_n_bcl_iter_end>2</config_n_bcl_iter_end>
-<config_n_btr_subcycles>20</config_n_btr_subcycles>
+<config_btr_dt>'0000_00:00:15'</config_btr_dt>
+<config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
+<config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30">'0000_00:00:45'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>

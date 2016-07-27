@@ -357,7 +357,7 @@ add_default($nl, 'config_n_ts_iter');
 add_default($nl, 'config_n_bcl_iter_beg');
 add_default($nl, 'config_n_bcl_iter_mid');
 add_default($nl, 'config_n_bcl_iter_end');
-add_default($nl, 'config_n_btr_subcycles');
+add_default($nl, 'config_btr_dt');
 add_default($nl, 'config_n_btr_cor_iter');
 add_default($nl, 'config_vel_correction');
 add_default($nl, 'config_btr_subcycle_loop_factor');
