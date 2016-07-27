@@ -538,20 +538,18 @@ class Case(object):
         #--------------------------------------------
         # pe payout
         #--------------------------------------------
-        match1 = None
-        match2 = None
+        match1 = re.match('([0-9]+)x([0-9]+)', "" if pecount is None else pecount)
+        match2 = re.match('([0-9]+)', "" if pecount is None else pecount)
         pes_ntasks = {}
         pes_nthrds = {}
         pes_rootpe = {}
-        if pecount is not None:
-            match1 =  re.match('([0-9]+)x([0-9]+)', pecount)
-            match2 =  re.match('([0-9]+)', pecount)
-            if match1:
-                opti_tasks = match1.group(1)
-                opti_thrds = match1.group(2)
-            elif match2:
-                opti_tasks = match2.group(1)
-                opti_thrds = 1
+        if match1:
+            opti_tasks = match1.group(1)
+            opti_thrds = match1.group(2)
+        elif match2:
+            opti_tasks = match2.group(1)
+            opti_thrds = 1
+
         if match1 or match2:
             for component_class in self._component_classes:
                 if component_class == "DRV":

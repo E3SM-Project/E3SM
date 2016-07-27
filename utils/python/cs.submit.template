@@ -2,6 +2,6 @@
 
 for item in $(\ls -1 *.<TESTID>/TestStatus); do
     cd $(dirname $item)
-    <BUILD_CMD> && <RUN_CMD>
+    <SETUP_CMD> && <BUILD_CMD> && <RUN_CMD>
     cd -
 done
