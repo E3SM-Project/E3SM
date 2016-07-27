@@ -9,7 +9,7 @@
 <!-- time_management -->
 <config_do_restart>.false.</config_do_restart>
 <config_restart_timestamp_name>'rpointer.ocn'</config_restart_timestamp_name>
-<config_start_time>'0000-01-01_00:00:00'</config_start_time>
+<config_start_time>'0001-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
 <config_run_duration>'0010_00:00:00'</config_run_duration>
 <config_calendar_type CALENDAR="NO_LEAP">'gregorian_noleap'</config_calendar_type>
@@ -49,7 +49,6 @@
 <!-- time_integration -->
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
-<config_dt ocn_grid="mpas120">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30">'00:15:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
@@ -78,7 +77,6 @@
 <!-- hmix -->
 <config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
-<config_hmix_scaleWithMesh ocn_grid="mpas120">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
@@ -96,7 +94,6 @@
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
-<config_mom_del4 ocn_grid="mpas120">5.0e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
@@ -112,7 +109,6 @@
 <!-- mesoscale_eddy_parameterization -->
 <config_use_standardGM ocn_grid="oQU240">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
-<config_use_standardGM ocn_grid="mpas120">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
@@ -197,6 +193,7 @@
 <config_cvmix_kpp_surface_layer_averaging>5.0</config_cvmix_kpp_surface_layer_averaging>
 <configure_cvmix_kpp_minimum_OBL_under_sea_ice>10.0</configure_cvmix_kpp_minimum_OBL_under_sea_ice>
 <config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
+<config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 
 <!-- forcing -->
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
@@ -271,7 +268,12 @@
 <config_n_bcl_iter_beg>1</config_n_bcl_iter_beg>
 <config_n_bcl_iter_mid>2</config_n_bcl_iter_mid>
 <config_n_bcl_iter_end>2</config_n_bcl_iter_end>
-<config_n_btr_subcycles>20</config_n_btr_subcycles>
+<config_btr_dt>'0000_00:00:15'</config_btr_dt>
+<config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
+<config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30">'0000_00:00:45'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
@@ -318,12 +320,14 @@
 
 <!-- constrain_Haney_number -->
 <config_use_rx1_constraint>.false.</config_use_rx1_constraint>
-<config_rx1_smooth_count>20</config_rx1_smooth_count>
-<config_rx1_inner_iteration_count>10</config_rx1_inner_iteration_count>
-<config_rx1_inner_iteration_weight>0.1</config_rx1_inner_iteration_weight>
-<config_rx1_max>10.0</config_rx1_max>
-<config_rx1_horiz_smooth_weight>0.5</config_rx1_horiz_smooth_weight>
-<config_rx1_vert_smooth_weight>0.5</config_rx1_vert_smooth_weight>
+<config_rx1_outer_iter_count>20</config_rx1_outer_iter_count>
+<config_rx1_inner_iter_count>10</config_rx1_inner_iter_count>
+<config_rx1_init_inner_weight>0.1</config_rx1_init_inner_weight>
+<config_rx1_max>5.0</config_rx1_max>
+<config_rx1_horiz_smooth_weight>1.0</config_rx1_horiz_smooth_weight>
+<config_rx1_vert_smooth_weight>1.0</config_rx1_vert_smooth_weight>
+<config_rx1_slope_weight>1e-1</config_rx1_slope_weight>
+<config_rx1_zstar_weight>1.0</config_rx1_zstar_weight>
 <config_rx1_horiz_smooth_open_ocean_cells>20</config_rx1_horiz_smooth_open_ocean_cells>
 <config_rx1_min_levels>3</config_rx1_min_levels>
 <config_rx1_min_layer_thickness>1.0</config_rx1_min_layer_thickness>
@@ -420,6 +424,7 @@
 <config_global_ocean_topography_ocean_frac_varname>'none'</config_global_ocean_topography_ocean_frac_varname>
 <config_global_ocean_topography_method>'bilinear_interpolation'</config_global_ocean_topography_method>
 <config_global_ocean_smooth_topography>.true.</config_global_ocean_smooth_topography>
+<config_global_ocean_deepen_critical_passages>.true.</config_global_ocean_deepen_critical_passages>
 <config_global_ocean_depress_by_land_ice>.false.</config_global_ocean_depress_by_land_ice>
 <config_global_ocean_land_ice_topo_file>'none'</config_global_ocean_land_ice_topo_file>
 <config_global_ocean_land_ice_topo_nlat_dimname>'none'</config_global_ocean_land_ice_topo_nlat_dimname>
@@ -882,7 +887,6 @@
 <config_AM_timeSeriesStats_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStats_compute_interval>
 <config_AM_timeSeriesStats_output_stream>'timeSeriesStatsOutput'</config_AM_timeSeriesStats_output_stream>
 <config_AM_timeSeriesStats_restart_stream>'timeSeriesStatsRestart'</config_AM_timeSeriesStats_restart_stream>
-<config_AM_timeSeriesStats_add_mesh>.true.</config_AM_timeSeriesStats_add_mesh>
 <config_AM_timeSeriesStats_operation>'avg'</config_AM_timeSeriesStats_operation>
 <config_AM_timeSeriesStats_reference_times>'initial_time'</config_AM_timeSeriesStats_reference_times>
 <config_AM_timeSeriesStats_duration_intervals>'repeat_interval'</config_AM_timeSeriesStats_duration_intervals>
