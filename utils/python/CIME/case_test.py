@@ -15,6 +15,7 @@ from CIME.SystemTests.pea import PEA # pylint: disable=unused-import
 from CIME.SystemTests.pem import PEM # pylint: disable=unused-import
 from CIME.SystemTests.pet import PET # pylint: disable=unused-import
 from CIME.SystemTests.pfs import PFS # pylint: disable=unused-import
+from CIME.SystemTests.rep import REP # pylint: disable=unused-import
 from CIME.SystemTests.sms import SMS # pylint: disable=unused-import
 from CIME.SystemTests.seq import SEQ # pylint: disable=unused-import
 from CIME.SystemTests.ssp import SSP # pylint: disable=unused-import

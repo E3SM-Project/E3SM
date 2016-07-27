@@ -30,6 +30,12 @@ SMS    smoke startup test (default length)
 SBN    smoke build-namelist test (just run preview_namelist and check_input_data)
 
 ======================================================================
+    Reproducibility Tests
+======================================================================
+
+REP    reproducibility: do two identical runs give the same results?
+
+======================================================================
     Restart Tests
 ======================================================================
 
@@ -374,6 +380,14 @@ LAR    long term archive test
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
     <TIMER_LEVEL>12</TIMER_LEVEL>
     <CCSM_TCOST>4</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="REP">
+    <DESC>reproducibility test: do two runs give the same answers?</DESC>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <INFO_DBUG>1</INFO_DBUG>
+    <REST_OPTION>never</REST_OPTION>
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
