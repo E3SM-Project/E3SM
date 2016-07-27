@@ -29,6 +29,7 @@ etc. - these don't affect the functionality of the test:
 
 """
 
+from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
