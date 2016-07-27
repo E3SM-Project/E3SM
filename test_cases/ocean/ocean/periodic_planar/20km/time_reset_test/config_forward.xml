@@ -23,6 +23,7 @@
 		<template file="lagrangian_particle_tracking.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_dt">'002:46:40'</option>
+		<option name="config_btr_dt">'000:08:20'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
 		<option name="config_run_duration">'0011_13:46:39'</option>
 		<option name="config_prescribe_velocity">.true.</option>

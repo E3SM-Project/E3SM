@@ -261,7 +261,7 @@ module ocn_forward_mode
 
       call ocn_init_routines_compute_max_level(domain)
 
-      if (.not.config_do_restart) call ocn_time_integration_split_init(domain)
+      call ocn_time_integration_split_init(domain)
 
       write (stdoutUnit,'(a,a)') ' Vertical coordinate movement is: ',trim(config_vert_coord_movement)
 
