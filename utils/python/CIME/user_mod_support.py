@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def apply_user_mods(caseroot, user_mods_path, ninst=None):
     '''
     Recursivlely apply user_mods to caseroot - this includes updating user_nl_xxx,
-    updating SourceMods and creating case_shel_commands and xmlchange_cmds files
+    updating SourceMods and creating case shell_commands and xmlchange_cmds files
 
     First remove case shell_commands files if any already exist
     '''
@@ -27,28 +27,28 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
         # write user_nl_xxx file in caseroot
         for user_nl in glob.iglob(os.path.join(include_dir,"user_nl_*")):
             with open(os.path.join(include_dir, user_nl), "r") as fd:
-                contents = fd.read()
+                newcontents = fd.read()
             case_user_nl = user_nl.replace(include_dir, caseroot)
             comp = case_user_nl.split('_')[-1]
             if ninst is not None and comp in ninst.keys():
                 for comp_inst in xrange(1, ninst[comp]+1):
+                    contents = newcontents
                     case_user_nl_inst = case_user_nl + "_%4.4d"%comp_inst
                     logger.info("Pre-pending file %s"%case_user_nl_inst)
                     if os.path.isfile(case_user_nl_inst):
                         with open(case_user_nl_inst, "r") as fd:
                             old_contents = fd.read()
-                            contents = contents + old_contents
-                        with open(case_user_nl_inst, "w") as fd:
-                            fd.write(contents)
-
-                    with open(case_user_nl_inst, "a") as fd:
+                            if old_contents.find(contents) == -1:
+                                contents = contents + old_contents
+                    with open(case_user_nl_inst, "w") as fd:
                         fd.write(contents)
             else:
                 logger.info("Pre-pending file %s"%case_user_nl)
                 if os.path.isfile(case_user_nl):
                     with open(case_user_nl, "r") as fd:
                         old_contents = fd.read()
-                        contents = contents + old_contents
+                        if old_contents.find(contents) == -1:
+                            contents = contents + old_contents
                 with open(case_user_nl, "w") as fd:
                     fd.write(contents)
 
