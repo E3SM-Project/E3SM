@@ -43,6 +43,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                     with open(case_user_nl_inst, "w") as fd:
                         fd.write(contents)
             else:
+                contents = newcontents
                 logger.info("Pre-pending file %s"%case_user_nl)
                 if os.path.isfile(case_user_nl):
                     with open(case_user_nl, "r") as fd:
