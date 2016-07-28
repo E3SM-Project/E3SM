@@ -45,7 +45,6 @@ if (-e /opt/modules/default/init/csh) then
   endif  
   
   if ( $COMPILER == "pgi" ) then
-      module load PrgEnv-pgi
       module switch pgi pgi/15.3.0 
       module switch cray-mpich cray-mpich/7.2.5
       module switch cray-libsci cray-libsci/13.2.0
@@ -56,6 +55,7 @@ if (-e /opt/modules/default/init/csh) then
   endif
 
   if ( $COMPILER == "intel" ) then
+      module rm PrgEnv-pgi
       module load PrgEnv-intel 
       module switch intel intel/15.0.2.164
       module switch cray-libsci cray-libsci/13.2.0
@@ -64,6 +64,7 @@ if (-e /opt/modules/default/init/csh) then
   endif
   
   if ( $COMPILER == "cray" ) then
+      module rm PrgEnv-pgi
       module load PrgEnv-cray
       module switch cce cce/8.4.0
       module swap cray-mpich cray-mpich/7.2.5
