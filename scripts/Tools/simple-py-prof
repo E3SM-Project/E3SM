@@ -1,0 +1,5 @@
+#! /bin/bash
+
+# Usage: simple-py-prof <python exec and arguments>
+
+python -m cProfile -s time "$@"
