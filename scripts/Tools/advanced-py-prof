@@ -1,0 +1,10 @@
+#! /bin/bash -e
+
+# Usage: advanced-py-prof <python exec and arguments>
+# Requires graphviz and gprof2dot
+
+DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
+FILE_BASENAME=$(basename $1).${DATE_STAMP}
+python -m cProfile -o ${FILE_BASENAME}.prof "$@"
+gprof2dot -f pstats ${FILE_BASENAME}.prof -o ${FILE_BASENAME}.dot
+dot -Teps ${FILE_BASENAME}.dot -o ${FILE_BASENAME}.eps
