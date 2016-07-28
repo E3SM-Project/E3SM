@@ -847,8 +847,6 @@ module atm_core
       ierr = 0
       call mpas_atm_soundings_finalize()
 
-      call mpas_atm_soundings_finalize()
-
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
