@@ -715,7 +715,7 @@ module ocn_time_integration_split
             ! Allocate subcycled scratch fields before starting subcycle loop
             call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
             call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
-            call mpas_allocate_scratch_field(btrvel_tempField, .false., .false.)
+            call mpas_allocate_scratch_field(btrvel_tempField, .false.)
 
             call mpas_threading_barrier()
 
