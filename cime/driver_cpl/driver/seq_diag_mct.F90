@@ -75,11 +75,6 @@ module seq_diag_mct
    ! Local data
    !----------------------------------------------------------------------------
 
-   !----- local constants -----
-   real(r8),parameter :: HFLXtoWFLX = & ! water flux implied by latent heat of fusion
-   &  - (shr_const_ocn_ref_sal-shr_const_ice_ref_sal) / &
-   &    (shr_const_ocn_ref_sal*shr_const_latice)
-
    !--- C for component ---
    !--- "r" is recieve in the coupler, "s" is send from the coupler
 
