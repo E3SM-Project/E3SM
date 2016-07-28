@@ -131,7 +131,6 @@
        <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
        <arg flag="-p" name="$JOB_QUEUE"/>
        <arg flag="--account" name="$PROJECT"/>
-       <arg flag="-n" name="$TOTALPES"/>
      </submit_args>
      <directives>
        <directive> --job-name={{ job_id }}</directive>
