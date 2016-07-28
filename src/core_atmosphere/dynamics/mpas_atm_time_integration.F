@@ -1567,35 +1567,11 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
       real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
 
-
       !
       ! Local variables
       !
       integer :: iCell, iEdge, i, k
       real (kind=RKIND) :: flux
-
-
-      ! set the acoustic step perturbation variables by subtracting the RK timestep variables
-      ! from their at the previous RK substep.
-
-
-! redefine rho_pp to be perturbation from time t, change 2
-!      rho_pp(:,cellStart:cellEnd) = rho_p_save(:,cellStart:cellEnd) - rho_p(:,cellStart:cellEnd)
-      rho_pp(:,cellStart:cellEnd) = 0.
-
-! redefine ru_p to be perturbation from time t, change 1
-!      ru_p(:,edgeStart:edgeEnd) = ru_save(:,edgeStart:edgeEnd) - ru(:,edgeStart:edgeEnd)
-      ru_p(:,edgeStart:edgeEnd) = 0.
-
-! redefine rtheta_pp to be perturbation from time t, change 1
-!      rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
-!      zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
-      rtheta_pp(:,cellStart:cellEnd) = 0.
-      zz_rtheta_pp_old(:,cellStart:cellEnd) = 0.
-
-! redefine rw_p to be perturbation from time t, change 1
-!      rw_p(:,cellStart:cellEnd) = rw_save(:,cellStart:cellEnd) - rw(:,cellStart:cellEnd)
-      rw_p(:,cellStart:cellEnd) = 0.
 
       ! we solve for omega instead of w (see Klemp et al MWR 2007),
       ! so here we change the w_p tendency to an omega_p tendency
@@ -1603,15 +1579,13 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       ! here we need to compute the omega tendency in a manner consistent with our diagnosis of omega.
       ! this requires us to use the same flux divergence as is used in the theta eqn - see Klemp et al MWR 2003.
 
-      do iCell=cellStart,cellEnd
+!!      do iCell=cellStart,cellEnd
+      do iCell=cellSolveStart,cellSolveEnd
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
 !DIR$ IVDEP
             do k = 2, nVertLevels
                flux = edgesOnCell_sign(i,iCell) * (fzm(k) * u_tend(k,iEdge) + fzp(k) * u_tend(k-1,iEdge))
-!               w_tend(k,iCell) = w_tend(k,iCell)   &
-!                        - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux   &
-!                        * (fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)) 
                w_tend(k,iCell) = w_tend(k,iCell)   &
                         - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux
             end do
@@ -1621,11 +1595,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
          end do
       end do
-
-      !  ruAvg and wwAvg will store the mass fluxes averaged over the acoustic steps for the subsequent scalar transport.
-
-      ruAvg(:,edgeStart:edgeEnd) = 0.0
-      wwAvg(:,cellStart:cellEnd) = 0.0
 
    end subroutine atm_set_smlstep_pert_variables_work
 
@@ -1858,23 +1827,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       if(small_step /= 1) then  !  not needed on first small step 
 
-
-!! why is k=1 broken out???         
-!!         do iCell = cellStart,cellEnd
-!!           ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
-!!           k = 1
-!!           zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
-!!DIR$ IVDEP
-!!           do k = 2,nVertLevels
-!!              zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
-!!           end do
-!!        end do
-
-        do iCell = cellStart,cellEnd
+         do iCell = cellStart,cellEnd
            ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
            do k = 1,nVertLevels
-!              zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
-!              zz_rtheta_pp_old(k,iCell) = ((1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell))*zz(k,iCell)
               rtheta_pp_tmp = rtheta_pp(k,iCell)
               rtheta_pp(k,iCell) = (rtheta_pp(k,iCell) + smdiv_p_forward * (rtheta_pp(k,iCell)-zz_rtheta_pp_old(k,iCell)))*zz(k,iCell)
               zz_rtheta_pp_old(k,iCell) = rtheta_pp_tmp
@@ -1936,7 +1891,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
               end do
 !DIR$ IVDEP
               do k=1,nVertLevels
-                 ruAvg(k,iEdge) = ruAvg(k,iEdge) + ru_p(k,iEdge)
+!!                 ruAvg(k,iEdge) = ruAvg(k,iEdge) + ru_p(k,iEdge)
+                 ruAvg(k,iEdge) = ru_p(k,iEdge)                 
               end do
 
            end if ! end test for block-owned cells
@@ -1946,47 +1902,44 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !$OMP BARRIER
 
-!!!      do iCell=cellStart,cellEnd  !  why is this over all cells - should be OK to be only over cellSolve*
-      do iCell=cellSolveStart,cellSolveEnd  !  why is this over all cells - should be OK to be only over cellSolve*         
+      do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
+
          ts(:,iCell) = 0.0
          rs(:,iCell) = 0.0
+
+         if(small_step == 1) then  ! initialize here on first small timestep.
+            wwAvg(1:nVertLevels+1,iCell) = 0.0            
+            rho_pp(1:nVertLevels,iCell) = 0.0            
+            rtheta_pp(1:nVertLevels,iCell) = 0.0            
+            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+            rw_p(:,iCell) = 0.0
+         else  ! reset rtheta_pp to input value;
+               !  rtheta_pp_old stores input value for use in div damping on next acoustic step
+            rtheta_pp(1:nVertLevels,iCell) = zz_rtheta_pp_old(1:nVertLevels,iCell)  
+         end if
+            
          do i=1,nEdgesOnCell(iCell) 
             iEdge = edgesOnCell(i,iCell)
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
+!DIR$ IVDEP
             do k=1,nVertLevels
                flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge) * invAreaCell(iCell)
                rs(k,iCell) = rs(k,iCell)-flux
                ts(k,iCell) = ts(k,iCell)-flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
             end do
          end do
-      end do
-
-      ! saving rtheta_pp before update for use in divergence damping in next acoustic step
-
-!DIR$ IVDEP
-      do iCell=cellSolveStart,cellSolveEnd
-!DIR$ IVDEP
-         do k=1,nVertLevels
-!            zz_rtheta_pp_old(k,iCell) = rtheta_pp(k,iCell) * zz(k,iCell)
-!            zz_rtheta_pp_old(k,iCell) = rtheta_pp(k,iCell) !  removed zz mult
-             rtheta_pp(k,iCell) = zz_rtheta_pp_old(k,iCell)            
-         end do
-      end do
-!$OMP BARRIER  ! Why is there a barrier here?????
-!  we should be able to remove this barrier because we now have changed the previous look to be over cellSolve* and not all cells.      
 
       ! vertically implicit acoustic and gravity wave integration.
       ! this follows Klemp et al MWR 2007, with the addition of an implicit Rayleigh damping of w
       ! serves as a gravity-wave absorbing layer, from Klemp et al 2008.
 
-      do iCell=cellSolveStart,cellSolveEnd
-
+!DIR$ IVDEP
          do k=1, nVertLevels
             rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
                             - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell)) 
             ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
-                               - resm*rdzw(k)*( coftz(k+1,iCell)*rw_p(k+1,iCell)      &
+                               - resm*rdzw(k)*( coftz(k+1,iCell)*rw_p(k+1,iCell)     &
                                                -coftz(k,iCell)*rw_p(k,iCell))
          end do
 
@@ -3976,6 +3929,7 @@ MPAS_GPTL_STOP('mono_exch_2')
                                *rho_edge(k,iEdge) * inv_r_earth
 #endif
          end do
+
       end do
 
 
