@@ -71,6 +71,12 @@ class SystemTestsCommon(object):
     def run(self):
         return self._run()
 
+    def _get_caseroot(self):
+        """
+        Returns the current CASEROOT value
+        """
+        return self._caseroot
+
     def _set_active_case(self, case):
         """
         Use for tests that have multiple cases

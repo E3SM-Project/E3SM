@@ -24,6 +24,12 @@ Classes that inherit from this are REQUIRED to implement the following methods:
     This method will be called to set up the run for the second phase of the
     two-phase test
 
+Classes that inherit from this MAY implement the following methods, if they have
+any work to be done in these phases:
+
+(1) _pre_build
+    This method will be called immediately before the build. This can contain
+    work like copying user_nl files to some saved location
 
 In addition, the __init__ method in subclasses MAY set various attributes AFTER
 calling SystemTestsCompareTwo.__init__, via calls to the following. However,
@@ -131,7 +137,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._description_second_phase = description
 
     # ========================================================================
-    # Methods that must be implemented by specific tests that inherit from this
+    # Methods that MUST be implemented by specific tests that inherit from this
     # base class
     # ========================================================================
 
@@ -163,10 +169,26 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         """
         raise NotImplementedError
 
+    # ========================================================================
+    # Methods that MAY be implemented by specific tests that inherit from this
+    # base class, if they have any work that needs to be done during these
+    # phases
+    # ========================================================================
+
+    def _pre_build(self):
+        """
+        This method will be called immediately before the build. This can
+        contain work like copying user_nl files to some saved location.
+        """
+        pass
 
     # ========================================================================
     # Main public methods
     # ========================================================================
+
+    def build(self, sharedlib_only=False, model_only=False):
+        self._pre_build()
+        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):
         """
