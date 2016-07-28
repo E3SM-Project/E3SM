@@ -237,6 +237,7 @@ module mpas_atm_soundings
             deallocate(stationLons)
             deallocate(stationCells)
             deallocate(stationNames)
+            nSoundings = 0
         end if
 
     end subroutine mpas_atm_soundings_finalize 
