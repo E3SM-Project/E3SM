@@ -8,13 +8,22 @@ inherit from SystemTestsCompareTwoDiffferentBuilds.
 
 Classes that inherit from this are REQUIRED to implement the following methods:
 
-(1) _setup_first_phase
+(1) _common_setup
+    This method will be called before both the first and second phase of the
+    two-phase test, before either _setup_first_phase or
+    _setup_second_phase. This should contain settings needed for both phases of
+    the run, such as setting CONTINUE_RUN to False. In principle, these settings
+    could just be made once, but for robustness and communication purposes, this
+    is executed before both run phases.
+
+(2) _setup_first_phase
     This method will be called to set up the run for the first phase of the
     two-phase test
 
-(2) _setup_second_phase
+(3) _setup_second_phase
     This method will be called to set up the run for the second phase of the
     two-phase test
+
 
 In addition, the __init__ method in subclasses MAY set various attributes AFTER
 calling SystemTestsCompareTwo.__init__, via calls to the following. However,
@@ -126,6 +135,18 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     # base class
     # ========================================================================
 
+    def _common_setup(self):
+        """
+        This method will be called before both the first and second phase of the
+        two-phase test, before either _setup_first_phase or
+        _setup_second_phase. This should contain settings needed for both phases of
+        the run, such as setting CONTINUE_RUN to False. In principle, these settings
+        could just be made once, but for robustness and communication purposes, this
+        is executed before both run phases.
+        """
+        raise NotImplementedError
+
+
     def _setup_first_phase(self):
         """
         Sets up the run for the first phase of the two-phase test.
@@ -152,6 +173,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         Runs both phases of the two-phase test and compares their results
         """
 
+        self._common_setup()
         self._setup_first_phase()
         self._case.flush()
         logger.info('Doing first run: ' + self._description_first_phase)
@@ -162,6 +184,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._status_run1 = "FAIL"
             return False
 
+        self._common_setup()
         self._setup_second_phase()
         self._case.flush()
         logger.info('Doing second run: ' + self._description_second_phase)
