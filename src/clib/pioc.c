@@ -7,10 +7,9 @@
  * @see http://code.google.com/p/parallelio/
  */
 
-
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
-
 
 static int counter=0;
 
@@ -176,8 +175,6 @@ int PIOc_get_local_array_size(int ioid)
  ** @param iostart An optional array of start values for block cyclic decompositions  (optional input)
  ** @param iocount An optional array of count values for block cyclic decompositions  (optional input)
  */
-
-
 int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
 		    const int maplen, const PIO_Offset *compmap, int *ioidp,const int *rearranger,  
 		    const PIO_Offset *iostart,const PIO_Offset *iocount)
@@ -188,8 +185,6 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   int ierr;
   int iosize;
   int ndisp;
-
-
 
   for(int i=0;i<ndims;i++){
     if(dims[i]<=0){
@@ -210,7 +205,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     }else{
       sprintf(filename, "piodecomp%6.6dtasks%2.2ddims%2.2d.dat",ios->num_comptasks,ndims,counter);
     }
-    PIOc_writemap(filename,ndims,dims,maplen,compmap,ios->comp_comm);
+    PIOc_writemap(filename,ndims,dims,maplen, (PIO_Offset *)compmap,ios->comp_comm);
     counter++;
   }
 
@@ -281,8 +276,6 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
  ** expressed in terms of start and count on the file.
  ** in this case we compute the compdof and use the subset rearranger
  */
-
-
 int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, const int dims[], 
 		       const long int start[], const long int count[], int *ioidp)
 		    
@@ -340,21 +333,35 @@ int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, co
   return PIO_NOERR;
 }
 
-
-/** 
- ** @ingroup PIO_init
- ** @brief library initialization used when IO tasks are a subset of compute tasks
- ** @param comp_comm the MPI_Comm of the compute tasks
- ** @param num_iotasks the number of io tasks to use
- ** @param stride the offset between io tasks in the comp_comm
- ** @param base the comp_comm index of the first io task
- ** @param rearr the rearranger to use by default, this may be overriden in the @ref PIO_initdecomp
- ** @param iosysidp index of the defined system descriptor
+/* @ingroup PIO_init
+ *
+ * Library initialization used when IO tasks are a subset of compute
+ * tasks.
+ * 
+ * This function creates an MPI intracommunicator between a set of IO
+ * tasks and one or more sets of computational tasks.
+ *
+ * The caller must create all comp_comm and the io_comm MPI
+ * communicators before calling this function.
+ *
+ * @param comp_comm the MPI_Comm of the compute tasks
+ *
+ * @param num_iotasks the number of io tasks to use
+ *
+ * @param stride the offset between io tasks in the comp_comm
+ *
+ * @param base the comp_comm index of the first io task
+ *
+ * @param rearr the rearranger to use by default, this may be
+ * overriden in the @ref PIO_initdecomp
+ *
+ * @param iosysidp index of the defined system descriptor
+ *
+ * @return 0 on success, otherwise a PIO error code.
  */
-
-int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
-			const int num_iotasks, const int stride, 
-			const int base,const int rearr, int *iosysidp)
+int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
+			const int stride, const int base, const int rearr,
+			int *iosysidp)
 {
   iosystem_desc_t *iosys;
   int ierr = PIO_NOERR;
@@ -438,10 +445,11 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 				    &(iosys->iogroup)),__FILE__,__LINE__);
 
       /* Create an MPI communicator for the IO tasks. */
-      CheckMPIReturn(MPI_Comm_create(iosys->comp_comm, iosys->iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
+      CheckMPIReturn(MPI_Comm_create(iosys->comp_comm, iosys->iogroup, &(iosys->io_comm))
+		     ,__FILE__,__LINE__);
 
       /* For the tasks that are doing IO, get their rank. */
-      if(iosys->ioproc)
+      if (iosys->ioproc)
 	  CheckMPIReturn(MPI_Comm_rank(iosys->io_comm, &(iosys->io_rank)),__FILE__,__LINE__);
       else
 	  iosys->io_rank = -1;

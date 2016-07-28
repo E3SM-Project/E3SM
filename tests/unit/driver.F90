@@ -26,6 +26,7 @@ Program pio_unit_test_driver
 #if defined( _NETCDF4) && defined(LOGGING)
   integer, external :: nc_set_log_level2
 #endif
+  integer ret_val
   ! Set up MPI
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
@@ -62,7 +63,7 @@ Program pio_unit_test_driver
 
      ! Ignore namelist values if PIO not built with correct options
      ! (i.e. don't test pnetcdf if not built with pnetcdf)
-
+     ret_val = PIO_set_log_level(2)
 #ifndef _NETCDF
      if (ltest_netcdf) then
         write(*,"(A,1x,A)") "WARNING: can not test netcdf files because PIO", &
