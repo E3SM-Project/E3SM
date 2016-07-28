@@ -24,6 +24,15 @@ class LII(SystemTestsCompareTwo):
         self.set_description_second_phase('use_init_interp set to true')
 
     def _pre_build(self):
+        # TODO(wjs, 2016-07-28) Rather than requiring individual tests to call
+        # save_user_nl_files, should this be done always in the base class (with
+        # the behavior changed so that it saves user_nl files for ALL
+        # components)?
+        #
+        # Pro: Requires less of tests that need it
+        #
+        # Con: Does unnecessary work, the main downside being that it's harder
+        #      to tell what's really needed for a given test
         user_nl_utils.save_user_nl_files(caseroot = self._get_caseroot(),
                                          component = "clm")
 
