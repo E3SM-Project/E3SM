@@ -118,6 +118,12 @@
     <values>
       <value component="any">$CIMEROOT/utils/python/CIME/SystemTests</value>
       <value component="clm">$SRCROOT/components/clm/cime_config/SystemTests</value>
+      <value component="cam">$SRCROOT/components/cam/cime_config/SystemTests</value>
+      <value component="pop">$SRCROOT/components/pop/cime_config/SystemTests</value>
+      <value component="cice">$SRCROOT/components/cice/cime_config/SystemTests</value>
+      <value component="cism">$SRCROOT/components/cism/cime_config/SystemTests</value>
+      <value component="rtm">$SRCROOT/components/rtm/cime_config/SystemTests</value>
+      <value component="mosart">$SRCROOT/components/mosart/cime_config/SystemTests</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
