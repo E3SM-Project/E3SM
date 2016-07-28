@@ -1848,7 +1848,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       ! Local variables
       !
       integer :: cell1, cell2, iEdge, iCell, i, k
-      real (kind=RKIND) :: c2, rcv
+      real (kind=RKIND) :: c2, rcv, rtheta_pp_tmp
       real (kind=RKIND) :: pgrad, flux, resm
 
 
@@ -1858,16 +1858,29 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       if(small_step /= 1) then  !  not needed on first small step 
 
+
+!! why is k=1 broken out???         
+!!         do iCell = cellStart,cellEnd
+!!           ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
+!!           k = 1
+!!           zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
+!!DIR$ IVDEP
+!!           do k = 2,nVertLevels
+!!              zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
+!!           end do
+!!        end do
+
         do iCell = cellStart,cellEnd
            ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
-           k = 1
-           zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
-!DIR$ IVDEP
-           do k = 2,nVertLevels
-              zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
+           do k = 1,nVertLevels
+!              zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell)
+!              zz_rtheta_pp_old(k,iCell) = ((1.0_RKIND + smdiv_p_forward) * rtheta_pp(k,iCell) - smdiv_p_forward * zz_rtheta_pp_old(k,iCell))*zz(k,iCell)
+              rtheta_pp_tmp = rtheta_pp(k,iCell)
+              rtheta_pp(k,iCell) = (rtheta_pp(k,iCell) + smdiv_p_forward * (rtheta_pp(k,iCell)-zz_rtheta_pp_old(k,iCell)))*zz(k,iCell)
+              zz_rtheta_pp_old(k,iCell) = rtheta_pp_tmp
            end do
         end do
-
+        
 !$OMP BARRIER
 
         ! forward-backward acoustic step integration.
@@ -1890,7 +1903,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !DIR$ IVDEP
               do k=1,nVertLevels
-                 pgrad = ((zz_rtheta_pp_old(k,cell2)-zz_rtheta_pp_old(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
+!!                 pgrad = ((zz_rtheta_pp(k,cell2)-zz_rtheta_pp_old(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
+                 pgrad = ((rtheta_pp(k,cell2)-rtheta_pp(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = cqu(k,iEdge)*0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
                  pgrad = pgrad + 0.5*zxu(k,iEdge)*gravity*(rho_pp(k,cell1)+rho_pp(k,cell2))
                  ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) 
@@ -1932,7 +1946,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !$OMP BARRIER
 
-      do iCell=cellStart,cellEnd
+!!!      do iCell=cellStart,cellEnd  !  why is this over all cells - should be OK to be only over cellSolve*
+      do iCell=cellSolveStart,cellSolveEnd  !  why is this over all cells - should be OK to be only over cellSolve*         
          ts(:,iCell) = 0.0
          rs(:,iCell) = 0.0
          do i=1,nEdgesOnCell(iCell) 
@@ -1950,14 +1965,16 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       ! saving rtheta_pp before update for use in divergence damping in next acoustic step
 
 !DIR$ IVDEP
-      do iCell=cellStart,cellEnd
+      do iCell=cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
          do k=1,nVertLevels
-            zz_rtheta_pp_old(k,iCell) = rtheta_pp(k,iCell) * zz(k,iCell)
+!            zz_rtheta_pp_old(k,iCell) = rtheta_pp(k,iCell) * zz(k,iCell)
+!            zz_rtheta_pp_old(k,iCell) = rtheta_pp(k,iCell) !  removed zz mult
+             rtheta_pp(k,iCell) = zz_rtheta_pp_old(k,iCell)            
          end do
       end do
-
 !$OMP BARRIER  ! Why is there a barrier here?????
+!  we should be able to remove this barrier because we now have changed the previous look to be over cellSolve* and not all cells.      
 
       ! vertically implicit acoustic and gravity wave integration.
       ! this follows Klemp et al MWR 2007, with the addition of an implicit Rayleigh damping of w
@@ -4315,8 +4332,8 @@ MPAS_GPTL_STOP('mono_exch_2')
 
                end do
             end do
-         end do
-
+          end do
+            
 !$OMP BARRIER
 
          do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
