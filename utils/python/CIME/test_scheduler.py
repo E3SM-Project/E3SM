@@ -416,6 +416,7 @@ class TestScheduler(object):
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
+        envtest.add_elements_by_group(files, {}, "env_test.xml")
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
         envtest.set_value("TESTCASE", test_case)
         envtest.set_value("TEST_TESTID", self._test_id)

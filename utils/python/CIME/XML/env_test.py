@@ -91,3 +91,15 @@ class EnvTest(EnvBase):
             return node.attrib["clone"]
         return None
 
+    def cleanupnode(self, node):
+        '''
+        keep the values component set
+        '''
+        fnode = node.find(".//file")
+        node.remove(fnode)
+        gnode = node.find(".//group")
+        node.remove(gnode)
+        dnode = node.find(".//default_value")
+        if dnode is not None:
+            node.remove(dnode)
+        return node
