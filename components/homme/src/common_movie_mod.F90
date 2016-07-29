@@ -146,32 +146,6 @@ module common_movie_mod
                                                  'nphys       ',&
                                                  'nsubelements'/)  
 #else
-#ifdef _PRIMDG  
-  integer, parameter :: varcnt =11
-  integer, parameter :: maxdims=4
-  character*(*),parameter::dimnames(maxdims)=(/'ncolp','nlev ','nelem','time '/)  
-  integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,4,0,0,  &
-                                                               1,2,4,0,  &
-                                                               1,2,4,0,  &
-                                                               1,2,4,0,  &
-                                                               1,0,0,0,  &
-                                                               1,0,0,0,  &
-                                                               4,0,0,0,	 &
-							       1,2,4,0,	 &
-							       1,2,4,0,	 &
-							       1,2,4,0,	 &
-							       1,2,4,0/),&
-                                                               shape=(/maxdims,varcnt/))
-  character*(*),parameter::varnames(varcnt)=(/'ps   ','geop ','u    ','v    ',&
-                                              'lonp ','latp ','time ',	      &
-					      'T    ','p    ','zeta ','dgs  '/)
-  integer, parameter :: vartype(varcnt)=(/nf_double,nf_double,nf_double,nf_double,&
-                                          nf_double,nf_double,nf_double,&
-					  nf_double,nf_double,nf_double,nf_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,&
-                                              .true.,.true.,.true.,&
-					      .false.,.false.,.false.,.false./)
-#else
   integer, parameter :: varcnt = 17
   integer, parameter :: maxdims=5
   character*(*),parameter::dimnames(maxdims)=(/'ncol ','nlev ','nelem','time ','nphys'/)  
@@ -206,15 +180,9 @@ module common_movie_mod
                                               .true.,.true.,.true.,&
                                               .false.,.false.,.false.,&
                                               .false.,.false.,.false.,.true./)
-
 #endif
-#endif
-
-
-
 
   ! end of analysis_nl namelist variables
-
 
 contains
 

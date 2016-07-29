@@ -3617,6 +3617,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine smooth_phis
 
   subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
+
     use fvm_reconstruction_mod, only: reconstruction
     use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
@@ -3627,21 +3628,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use time_mod, only : TimeLevel_t
     use fvm_control_volume_mod, only : fvm_struct
-    use spelt_mod, only : spelt_struct
 
-
-    type (element_t) , intent(inout)        :: elem(:)
-
-#if defined(_SPELT)
-      type(spelt_struct), intent(inout) :: fvm(:)
-#else
-      type(fvm_struct), intent(inout) :: fvm(:)
-#endif
-    type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
-
-    integer, intent(in)                     :: nets  ! starting thread element number (private)
-    integer, intent(in)                     :: nete  ! ending thread element number   (private)
-    integer, intent(in)                     :: np1
+    type(element_t) , intent(inout) :: elem(:)
+    type(fvm_struct), intent(inout) :: fvm(:)
+    type(hybrid_t),   intent(in)    :: hybrid ! distributed parallel structure (shared)
+    integer,          intent(in)    :: nets   ! starting thread element number (private)
+    integer,          intent(in)    :: nete   ! ending thread element number   (private)
+    integer,          intent(in)    :: np1
     integer :: ie, k
 
     real (kind=real_kind)             :: xp,yp, tmpval, dt_q

@@ -21,7 +21,6 @@ module state_mod
 implicit none
 private
 
-  public :: printstate_dg
   public :: printstate
   public :: printstate_init
 
@@ -31,141 +30,6 @@ private
 
   end subroutine printstate_init
 
-  
-!======================================================================================================!  
-  subroutine printstate_dg(elem,pmean,g,n0,hybrid,nets,nete)
-    type(element_t), intent(in)  :: elem(:)
-    real (kind=real_kind)        :: pmean,g
-    integer                      :: n0
-    type (hybrid_t),intent(in)   :: hybrid
-    integer, intent(in)          :: nets,nete
-    real (kind=real_kind)  :: umin_local(nets:nete),umax_local(nets:nete),usum_local(nets:nete), & 
-			      vmin_local(nets:nete),vmax_local(nets:nete),vsum_local(nets:nete), &
-			      pmin_local(nets:nete),pmax_local(nets:nete),psum_local(nets:nete)
-    integer :: ie
-    real (kind=real_kind) :: umin, vmin, pmin
-    real (kind=real_kind) :: umax, vmax, pmax
-    real (kind=real_kind) :: usum, vsum, psum
-#ifdef _PRIMDG
-    real (kind=real_kind) :: tmin_local(nets:nete),tmax_local(nets:nete),tsum_local(nets:nete)
-    real (kind=real_kind) :: tsum, tmin, tmax
-    integer, parameter :: nglen=4
-#else
-    real (kind=real_kind), dimension(np,np)  :: v1, v2
-    real (kind=real_kind), dimension(np,np,2,nlev) ::ulatlon
-    integer :: lev
-    integer, parameter :: nglen=3
-#endif
-!=======================================================================================================!
-    do ie=nets,nete
-#ifdef _SWDG
-!=== For DG 2D Version (Nair) ==================================
-     ! Convert covariant wind to latlon 
-     !  do lev=1,nlev
-     !      v1 = elem(ie)%state%couv(:,:,1,lev)
-     !      v2 = elem(ie)%state%couv(:,:,2,lev)
-     !      ulatlon(:,:,1,lev)=elem(ie)%Dinv(:,:,1,1)*v1 + elem(ie)%Dinv(:,:,2,1)*v2   ! co->latlon
-     !      ulatlon(:,:,2,lev)=elem(ie)%Dinv(:,:,1,2)*v1 + elem(ie)%Dinv(:,:,2,2)*v2   ! co->latlon
-     !  end do
-     ! Convert cotravariant wind to latlon 
-        do lev=1,nlev
-            v1 = elem(ie)%state%v(:,:,1,lev,n0)
-            v2 = elem(ie)%state%v(:,:,2,lev,n0)
-            ulatlon(:,:,1,lev)=elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2 
-            ulatlon(:,:,2,lev)=elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2  
-        end do
-     !     ulatlon(:,:,1,:)=elem(ie)%state%v(:,:,1,:,n0)   !if output is in spherical (u,v) 
-     !     ulatlon(:,:,2,:)=elem(ie)%state%v(:,:,2,:,n0)
-     !     ulatlon(:,:,1,:)=elem(ie)%state%couv(:,:,1,:)   !if output is in spherical (u,v) 
-     !     ulatlon(:,:,2,:)=elem(ie)%state%couv(:,:,2,:)
-       umax_local(ie) = MAXVAL(ulatlon(:,:,1,:)) 
-       vmax_local(ie) = MAXVAL(ulatlon(:,:,2,:))
-       pmax_local(ie) = MAXVAL(elem(ie)%state%ht(:,:,:)) 
-!======================================================
-       umin_local(ie) = MINVAL(ulatlon(:,:,1,:)) 
-       vmin_local(ie) = MINVAL(ulatlon(:,:,2,:))
-       pmin_local(ie) = MINVAL(elem(ie)%state%ht(:,:,:))
-!======================================================
-       usum_local(ie) = SUM(ulatlon(:,:,1,:)) 
-       vsum_local(ie) = SUM(ulatlon(:,:,2,:))
-       psum_local(ie) = SUM(elem(ie)%state%ht(:,:,:)) 
-!======================================================       
-#else
-#ifdef _PRIMDG
-!=== For DG 3D version (nair) =============================
-       umax_local(ie) = MAXVAL(elem(ie)%state%uv(:,:,1,:))
-       vmax_local(ie) = MAXVAL(elem(ie)%state%uv(:,:,2,:))
-       pmax_local(ie) = MAXVAL(elem(ie)%state%pr3d(:,:,nlev+1))       
-       tmax_local(ie) = MAXVAL(elem(ie)%state%pt3d(:,:,:))
-!======================================================
-       umin_local(ie) = MINVAL(elem(ie)%state%uv(:,:,1,:))
-       vmin_local(ie) = MINVAL(elem(ie)%state%uv(:,:,2,:))
-       pmin_local(ie) = MINVAL(elem(ie)%state%pr3d(:,:,nlev+1))
-       tmin_local(ie) = MINVAL(elem(ie)%state%pt3d(:,:,:))
-!======================================================
-       usum_local(ie) = SUM(elem(ie)%state%uv(:,:,1,:))
-       vsum_local(ie) = SUM(elem(ie)%state%uv(:,:,2,:))
-       psum_local(ie) = SUM(elem(ie)%state%pr3d(:,:,nlev+1))
-       tsum_local(ie) = SUM(elem(ie)%state%pt3d(:,:,:))
-!======================================================
-!======================================================
-#else
-      umax_local(ie) = MAXVAL(elem(ie)%state%v(:,:,1,:,2))
-      vmax_local(ie) = MAXVAL(elem(ie)%state%v(:,:,2,:,2))
-      umin_local(ie) = MINVAL(elem(ie)%state%v(:,:,1,:,2))
-      vmin_local(ie) = MINVAL(elem(ie)%state%v(:,:,2,:,2))
-      usum_local(ie) = SUM(elem(ie)%state%v(:,:,1,:,2))
-      vsum_local(ie) = SUM(elem(ie)%state%v(:,:,2,:,2))
-#endif   
-#endif
-      global_shared_buf(ie,1) = usum_local(ie)
-      global_shared_buf(ie,2) = vsum_local(ie)
-      global_shared_buf(ie,3) = psum_local(ie)
-# ifdef _PRIMDG
-      global_shared_buf(ie,4) = tsum_local(ie)
-# endif
-!======================================================   
-    end do
-
-    umin = ParallelMin(umin_local,hybrid)
-    umax = ParallelMax(umax_local,hybrid)
-
-    vmin = ParallelMin(vmin_local,hybrid)
-    vmax = ParallelMax(vmax_local,hybrid)
-
-    pmin = ParallelMin(pmin_local,hybrid)
-    pmax = ParallelMax(pmax_local,hybrid)
-
-    call wrap_repro_sum(nvars=nglen, comm=hybrid%par%comm)
-    usum = global_shared_sum(1)
-    vsum = global_shared_sum(2)
-    psum = global_shared_sum(3)
-
-#ifdef _PRIMDG
-    tmin = ParallelMin(tmin_local,hybrid)
-    tmax = ParallelMax(tmax_local,hybrid)
-    tsum = global_shared_sum(4)
-#endif
-    
-    if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
-      write (*,100) "u= ",umin,umax,usum
-      write (*,100) "v= ",vmin,vmax,vsum
-!======================================================
-#ifdef _SWDG
-      write (*,100) "ht= ",pmin,pmax,psum
-#endif
-#ifdef _PRIMDG
-      write (*,100) "ps= ",pmin,pmax,psum      
-      write (*,100) "temp= ",tmin,tmax,tsum
-#endif   
-!====================================================== 
-      print *
-    endif
-    100 format (A5,3(E24.15))
-     
-  end subroutine printstate_dg
-!======================================================================================================! 
-!======================================================================================================!     
   subroutine printstate(elem,pmean,g,n0,hybrid,nets,nete, kmass)
     type(element_t), intent(in)  :: elem(:)
     real (kind=real_kind)        :: pmean,g
@@ -208,17 +72,13 @@ private
 !======================================================
        umax_local(ie) = MAXVAL(ulatlon(:,:,1))
        vmax_local(ie) = MAXVAL(ulatlon(:,:,2))
-#ifndef _PRIMDG
        pmax_local(ie) = MAXVAL((elem(ie)%state%p(:,:,k,n0)/elem(ie)%state%p(:,:,kmass,n0)+pmean)/g) &
 		      + MAXVAL(elem(ie)%state%ps(:,:))
-#endif
 !======================================================
        umin_local(ie) = MINVAL(ulatlon(:,:,1))
        vmin_local(ie) = MINVAL(ulatlon(:,:,2))
-#ifndef _PRIMDG
        pmin_local(ie) = MINVAL((elem(ie)%state%p(:,:,k,n0)/elem(ie)%state%p(:,:,kmass,n0)+pmean)/g) &
 		      + MINVAL(elem(ie)%state%ps(:,:))
-#endif
 !======================================================
        usum_local(ie) = SUM(ulatlon(:,:,1))
        vsum_local(ie) = SUM(ulatlon(:,:,2))
@@ -230,31 +90,18 @@ private
 !======================================================
        umax_local(ie) = MAXVAL(ulatlon(:,:,1))
        vmax_local(ie) = MAXVAL(ulatlon(:,:,2))
-#ifndef _PRIMDG
        pmax_local(ie) = MAXVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
                       + MAXVAL(elem(ie)%state%ps(:,:))
-#endif
 !======================================================
        umin_local(ie) = MINVAL(ulatlon(:,:,1))
        vmin_local(ie) = MINVAL(ulatlon(:,:,2))
-#ifndef _PRIMDG
        pmin_local(ie) = MINVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
                       + MINVAL(elem(ie)%state%ps(:,:))
-#endif
 !======================================================
        usum_local(ie) = SUM(ulatlon(:,:,1))
        vsum_local(ie) = SUM(ulatlon(:,:,2))
-#ifdef _PRIMDG
-       pmax_local(ie) = MAXVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
-                      + MAXVAL(elem(ie)%state%phis(:,:))
-       pmin_local(ie) = MINVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
-                      + MINVAL(elem(ie)%state%phis(:,:))
-       psum_local(ie) = SUM((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
-                      + SUM(elem(ie)%state%phis(:,:))
-#else
        psum_local(ie) = SUM((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
                       + SUM(elem(ie)%state%ps(:,:))
-#endif
 !======================================================
      endif
 

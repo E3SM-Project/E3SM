@@ -65,7 +65,6 @@ SET(SWEQX_SRCS
                ${SRC_SHARE}/gridgraph_mod.F90
                ${SRC_SHARE}/hybrid_mod.F90
                ${SRC_SHARE}/interpolate_mod.F90
-               ${SRC_SHARE}/spelt_mod.F90
                ${SRC_SHARE}/kinds.F90
                ${SRC_SHARE}/linear_algebra_mod.F90
                ${SRC_SHARE}/ll_mod.F90

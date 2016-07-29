@@ -10,11 +10,10 @@ module prim_advection_mod
   !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, prim_advec_init_deriv, deriv, Prim_Advec_Tracers_remap_rk2
   use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
   use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nep, nelemd
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nelemd
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
-  use spelt_mod, only          : spelt_struct
   use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
@@ -287,21 +286,20 @@ contains
     allocate(data_pack2(np,np,nlev,nelemd))
   end subroutine prim_advec_init1
 
-  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points, spelt_refnep)
+  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points)
     use kinds         , only : longdouble_kind
-    use dimensions_mod, only : nc, nep
+    use dimensions_mod, only : nc
     use derivative_mod, only : derivinit
     use hybrid_mod    , only : hybrid_t
     implicit none
     type (hybrid_t), intent(in) :: hybrid
     real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
     real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
-    real(kind=longdouble_kind), intent(in) :: spelt_refnep(1:nep)
 
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points)
   end subroutine Prim_Advec_Init_deriv
 
   subroutine prim_advec_init2(elem,hvcoord,hybrid)
@@ -504,7 +502,7 @@ contains
   !
   ! ===================================
   use kinds                 , only: real_kind
-  use dimensions_mod        , only: np, npdg, nlev
+  use dimensions_mod        , only: np, nlev
   use hybrid_mod            , only: hybrid_t
   use element_mod           , only: element_t
   use derivative_mod        , only: derivative_t
