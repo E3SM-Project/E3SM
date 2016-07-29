@@ -27,6 +27,7 @@ class SystemTestsCommon(object):
         self._caseroot = caseroot
         self._orig_caseroot = caseroot
         self._runstatus = None
+        self._casebaseid = self._case.get_value("CASEBASEID")
         # Needed for sh scripts
         os.environ["CASEROOT"] = caseroot
 
@@ -48,22 +49,25 @@ class SystemTestsCommon(object):
         self._case.set_value("TEST",True)
         self._case.flush()
 
-    def fail_test(self):
-        self._runstatus = "FAIL"
 
     def has_failed(self):
         return self._runstatus == "FAIL"
 
-    def pass_test(self):
-        if not self.has_failed():
-            self._runstatus = "PASS"
 
     def has_passed(self):
         return self._runstatus == "PASS"
 
     def build(self, sharedlib_only=False, model_only=False):
-        build.case_build(self._caseroot, case=self._case,
-                         sharedlib_only=sharedlib_only, model_only=model_only)
+        status = "PASS"
+        try:
+            build.case_build(self._caseroot, case=self._case,
+                             sharedlib_only=sharedlib_only, model_only=model_only)
+        except:
+            status = "FAIL"
+        if not model_only:
+            self.update_test_status(status, "SHAREDLIB_BUILD")
+        if not sharedlib_only:
+            self.update_test_status(status, "MODEL_BUILD")
 
     def clean_build(self, comps=None):
         build.clean(self._case, cleanlist=comps)
@@ -79,16 +83,34 @@ class SystemTestsCommon(object):
         self._caseroot = case.get_value("CASEROOT")
 
     def _run(self, suffix="base", coupler_log_path=None, st_archive=False):
+        if self._case.get_value("IS_FIRST_RUN"):
+            self._runstatus = "PEND"
+        self.update_test_status(self._runstatus,"RUN with suffix %s"%suffix)
+
+        stop_n = self._case.get_value("STOP_N")
+        stop_option = self._case.get_value("STOP_OPTION")
+        run_type = self._case.get_value("RUN_TYPE")
+        rest_option = self._case.get_value("REST_OPTION")
+        rest_n = self._case.get_value("REST_N")
+        infostr = "doing an %d %s %s test" % (stop_n, stop_option,run_type)
+        if rest_option == "none":
+            infostr += ", no restarts written"
+        else:
+            infostr += ", with restarts every %d %s"%(rest_n, rest_option)
+        logger.info(infostr)
+
         try:
             success = case_run(self._case)
             if success and st_archive:
                 success = case_st_archive(self._case)
 
             if success and self._coupler_log_indicates_run_complete(coupler_log_path):
-                self.pass_test()
+                self._runstatus = "PASS"
+                self.update_test_status("PASS","RUN with suffix %s"%suffix)
             else:
                 success = False
-                self.fail_test()
+                self._runstatus = "FAIL"
+                self.update_test_status("FAIL","RUN with suffix %s"%suffix)
 
             if success and suffix is not None:
                 self._component_compare_move(suffix)
@@ -96,22 +118,33 @@ class SystemTestsCommon(object):
             # An exception must not prevent the TestStatus file from
             # being marked FAIL
             success = False
-            self.fail_test()
+            self._runstatus = "FAIL"
+            self.update_test_status("FAIL","RUN with suffix %s"%suffix)
             logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
 
         return success
 
     def __del__(self):
         if self._runstatus is not None:
-            test_status = os.path.join(self._orig_caseroot, "TestStatus")
-            with open(test_status, 'r') as f:
-                teststatusfile = f.read()
-            li = teststatusfile.rsplit('PEND', 1)
-            teststatusfile = self._runstatus.join(li)
-            total_time = int(time.time() - self._start_time)
-            with open(test_status, 'w') as f:
-                f.write(teststatusfile)
-                f.write("COMMENT TIME %d\n" % total_time)
+            self.update_test_status(self._runstatus, "RUN")
+
+    def update_test_status(self, status, phase):
+        test_status = os.path.join(self._orig_caseroot, "TestStatus")
+        with open(test_status, 'r') as f:
+            teststatusfile = f.read()
+        string = "%s %s"%(self._casebaseid, phase)
+        total_time = int(time.time() - self._start_time)
+        self._start_time = time.time()
+        found = False
+        with open(test_status, 'w') as f:
+            for line in teststatusfile.splitlines():
+                if string in line:
+                    f.write("%s %s %d\n"%(status, string, total_time))
+                    found = True
+                else:
+                    f.write(line+"\n")
+            if not found:
+                    f.write("%s %s %d\n"%(status, string, total_time))
 
     def _coupler_log_indicates_run_complete(self, coupler_log_path):
         newestcpllogfile = self._get_latest_cpl_log(coupler_log_path)
@@ -208,13 +241,11 @@ class SystemTestsCommon(object):
             if memdiff < 0:
                 append_status("COMMENT: insuffiencient data for memleak test",sfile="TestStatus")
             elif memdiff < 0.1:
-                append_status("PASS %s memleak"%(self._case.get_value("CASEBASEID")),
-                             sfile="TestStatus")
+                self.update_test_status("PASS","memleak")
             else:
                 append_status("memleak detected, memory went from %f to %f in %d days"
                              %(originalmem, finalmem, finaldate-originaldate),sfile="TestStatus.log")
-                append_status("FAIL %s memleak"%(self._case.get_value("CASEBASEID")),
-                             sfile="TestStatus")
+                self.update_test_status("FAIL","memleak")
 
     def compare_env_run(self, expected=None):
         f1obj = EnvRun(self._caseroot, "env_run.xml")
@@ -343,7 +374,7 @@ class SystemTestsCommon(object):
 class FakeTest(SystemTestsCommon):
     '''
     Inheriters of the FakeTest Class are intended to test the code.
-    
+
     All members of the FakeTest Class must
     have names beginnig with "TEST" this is so that the find_system_test
     in utils.py will work with these classes.
