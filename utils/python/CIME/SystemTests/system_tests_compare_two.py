@@ -46,7 +46,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                  run_one_suffix = 'base',
                  run_two_suffix = 'test',
                  run_one_description = '',
-                 run_two_description = '')
+                 run_two_description = ''):
         """
         Initialize a SystemTestsCompareTwo object. Individual test cases that
         inherit from SystemTestsCompareTwo MUST call this __init__ method.
@@ -196,7 +196,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         elif model_only:
             two_builds_needed = self._two_builds_for_model
         else:
-            throw ValueError('Invalid for both sharedlib_only and model_only to be set')
+            raise ValueError('Invalid for both sharedlib_only and model_only to be set')
 
         return two_builds_needed
 
