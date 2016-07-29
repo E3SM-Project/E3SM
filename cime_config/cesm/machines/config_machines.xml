@@ -369,7 +369,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.0</command>
+	<command name="switch">cce cce/8.5.1</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -468,7 +468,7 @@
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <NODENAME_REGEX>edison</NODENAME_REGEX>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
+    <CESMSCRATCHROOT>$ENV{CSCRATCH}</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
@@ -534,7 +534,7 @@
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.3</command>
+	<command name="switch">cce cce/8.5.1</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>

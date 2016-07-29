@@ -2,23 +2,7 @@
 Run a testcase.
 """
 
-from CIME.utils import expect
-
-from CIME.SystemTests.eri import ERI # pylint: disable=unused-import
-from CIME.SystemTests.err import ERR # pylint: disable=unused-import
-from CIME.SystemTests.erp import ERP # pylint: disable=unused-import
-from CIME.SystemTests.ers import ERS # pylint: disable=unused-import
-from CIME.SystemTests.ert import ERT # pylint: disable=unused-import
-from CIME.SystemTests.lii import LII # pylint: disable=unused-import
-from CIME.SystemTests.nck import NCK # pylint: disable=unused-import
-from CIME.SystemTests.pea import PEA # pylint: disable=unused-import
-from CIME.SystemTests.pem import PEM # pylint: disable=unused-import
-from CIME.SystemTests.pet import PET # pylint: disable=unused-import
-from CIME.SystemTests.pfs import PFS # pylint: disable=unused-import
-from CIME.SystemTests.sms import SMS # pylint: disable=unused-import
-from CIME.SystemTests.seq import SEQ # pylint: disable=unused-import
-from CIME.SystemTests.ssp import SSP # pylint: disable=unused-import
-
+from CIME.utils import expect, find_system_test
 from CIME.SystemTests.system_tests_common import *
 
 def case_test(case, testname=None):
@@ -29,8 +13,7 @@ def case_test(case, testname=None):
     logging.warn("Running test for %s" % testname)
 
     try:
-        test = globals()[testname](case)
-
+        test = find_system_test(testname, case)(case)
         success = test.run()
 
         test.report()
