@@ -134,8 +134,6 @@
 
       integer (kind=int_kind), dimension(2) ::  &
          bnd_start,bnd_length          ! dimension quantities for netCDF
-
-
       !-------------------------
       !  Test memory usage
       !-------------------------
@@ -460,15 +458,16 @@
       status =  &
            pio_put_att(File,pio_global,'conventions',title)
 
+call sleep( mod(my_task, 5) )
       call date_and_time(date=current_date, time=current_time)
       write(start_time,1000) current_date(1:4), current_date(5:6), &
            current_date(7:8), current_time(1:2), &
-           current_time(3:4)
+           current_time(3:4), current_time(5:6)
 1000  format('This dataset was created on ', &
-           a,'-',a,'-',a,' at ',a,':',a)
-
+           a,'-',a,'-',a,' at ',a,':',a,':',a)
+print *, "timestr", start_time
       status = pio_put_att(File,pio_global,'history',start_time)
-
+print *, "status ", status
       !-----------------------------------------------------------------
       ! end define mode
       !-----------------------------------------------------------------
