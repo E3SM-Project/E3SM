@@ -149,6 +149,7 @@ contains
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
       integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge
+      integer :: topIndex
       integer, pointer :: nVertLevels, nVertLevelsP1, nCells
       integer, dimension(:), allocatable :: surfaceAverageIndex
 
@@ -157,7 +158,8 @@ contains
       real (kind=RKIND) :: normalVelocityAv, factor, delU2
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
-                                                      deltaVelocitySquared
+                                                      deltaVelocitySquared, normalVelocitySum, &
+                                                      potentialDensitySum
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed
       logical :: bulkRichardsonFlag
 
@@ -314,6 +316,8 @@ contains
       allocate(RiSmoothed(nVertLevels+1))
       allocate(BVFSmoothed(nVertLevels+1))
 
+      allocate(normalVelocitySum(nVertLevels))
+      allocate(potentialDensitySum(nVertLevels))
       allocate(surfaceAverageIndex(nVertLevels))
       allocate(deltaVelocitySquared(nVertLevels))
 
@@ -434,6 +438,7 @@ contains
               ! assume boundary layer depth is at bottom of every kIndexOBL cell
               bulkRichardsonNumberStop = config_cvmix_kpp_stop_OBL_search * config_cvmix_kpp_criticalBulkRichardsonNumber
               bulkRichardsonFlag = .false.
+              topIndex = 1
 !             call mpas_timer_start('Bulk Richardson kIndexOBL loops')
               do kIndexOBL = 1, maxLevelCell(iCell)
 
@@ -455,12 +460,13 @@ contains
 
                  ! move progressively downward to find the bottom most layer within the surface layer
                  sfc_layer_depth = cvmix_variables % BoundaryLayerDepth * config_cvmix_kpp_surface_layer_extent
-                 do kav=1,kIndexOBL
+                 do kav=topIndex,kIndexOBL
                     if(cvmix_variables%zw_iface(kav+1) < -sfc_layer_depth) then
                        surfaceAverageIndex(kIndexOBL) = kav
                        exit
                     end if
                  enddo
+                 topIndex = surfaceAverageIndex(kIndexOBL) - 1
               end do
 
               ! averaging over a surface layer assuming that BLdepth is cell bottom
@@ -469,12 +475,24 @@ contains
                  iEdge = edgesOnCell(i, iCell)
                  factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
 
+                 deltaVelocitySquared(1) = 0.0_RKIND
+
+                 normalVelocitySum(1) = normalVelocity(1, iEdge)
+
+                 do kIndexOBL = 2, maxLevelCell(iCell)
+                    normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + normalVelocity(kIndexOBL, iEdge)
+                 end do
+
                  do kIndexOBL = 1, maxLevelCell(iCell)
-                    normalVelocityAv = sum( normalVelocity(1:surfaceAverageIndex(kIndexOBL), iEdge) ) &
-                                     / real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
+                    normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
                     deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + factor * delU2
                  end do
+              end do
+
+              potentialDensitySum(1) = potentialDensity(1, iCell)
+              do kIndexOBL = 2, maxLevelCell(iCell)
+                potentialDensitySum(kIndexOBL) = potentialDensitySum(kIndexOBL-1) + potentialDensity(kIndexOBL, iCell)
               end do
 
               do kIndexOBL = 1, maxLevelCell(iCell)
@@ -482,7 +500,7 @@ contains
                 bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
 
                 bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL, iCell) &
-                                  - sum(potentialDensity(1:surfaceAverageIndex(kIndexOBL), iCell)) &
+                                  - potentialDensitySum(surfaceAverageIndex(kIndexOBL)) &
                                   / real(surfaceAverageIndex(kIndexOBL), kind=RKIND)) / rho_sw
               end do ! do kIndexOBL
 !             call mpas_timer_stop('Bulk Richardson kIndexOBL loops')
@@ -648,6 +666,8 @@ contains
       deallocate(turbulentScalarVelocityScale)
       deallocate(RiSmoothed)
       deallocate(BVFSmoothed)
+      deallocate(normalVelocitySum)
+      deallocate(potentialDensitySum)
       deallocate(surfaceAverageIndex)
       deallocate(deltaVelocitySquared)
 
