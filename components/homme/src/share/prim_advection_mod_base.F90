@@ -2146,10 +2146,10 @@ OMP_SIMD
         call remap1(ttmp,np,2,dp_star,dp)
         call t_stopf('vertical_remap1_2')
 
-        if ( .not. se_prescribed_wind_2d ) then
+        if ( .not. se_prescribed_wind_2d ) &
              elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
+        if ( .not. se_prescribed_wind_2d ) &
              elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
-        endif
 #ifdef REMAP_TE
         ! back out T from TE
         elem(ie)%state%t(:,:,:,np1) = &
