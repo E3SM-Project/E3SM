@@ -341,7 +341,13 @@ class SystemTestsCommon(object):
             append_status("Error in Baseline Generate: %s"%err,sfile="TestStatus.log")
 
 class FakeTest(SystemTestsCommon):
-
+    '''
+    Inheriters of the FakeTest Class are intended to test the code.
+    
+    All members of the FakeTest Class must
+    have names beginnig with "TEST" this is so that the find_system_test
+    in utils.py will work with these classes.
+    '''
     def _set_script(self, script):
         self._script = script # pylint: disable=attribute-defined-outside-init
 

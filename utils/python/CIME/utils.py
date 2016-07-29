@@ -883,8 +883,7 @@ def find_system_test(testname, case):
     Fail if the test is not found in any of the paths.
     '''
     system_test_path = None
-    if testname in ("TESTRUNPASS", "TESTRUNDIFF", "TESTRUNFAIL", "TESTBUILDFAIL",
-                    "TESTRUNSLOWPASS", "TESTMEMLEAKFAIL", "TESTMEMLEAKPASS"):
+    if "TEST" in testname:
         system_test_path =  "CIME.SystemTests.system_tests_common.%s"%(testname)
     else:
         components = ["any"]
