@@ -3514,7 +3514,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
 
-    use fvm_reconstruction_mod, only: reconstruction
+    !use fvm_reconstruction_mod, only: reconstruction
     use dimensions_mod, only : np, nlev, nc,nhe
     use hybrid_mod, only : hybrid_t
     use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
@@ -3547,7 +3547,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     endif
 #if defined(_FVM)
     do ie=nets,nete
-      call reconstruction(fvm(ie)%psc, fvm(ie),recons)
+      !call reconstruction(fvm(ie)%psc, fvm(ie),recons)
       !call monotonic_gradient_cart(fvm(ie)%psc, fvm(ie),recons, elem(ie)%desc)
       do j=1,np
         do i=1,np

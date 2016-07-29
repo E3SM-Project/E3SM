@@ -151,11 +151,6 @@ module namelist_mod
 #endif
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
 
-#ifndef CAM
-  use fvm_mod, only: fvm_ideal_test, ideal_test_off, ideal_test_analytical_departure, ideal_test_analytical_winds
-  use fvm_mod, only: fvm_test_type, ideal_test_boomerang, ideal_test_solidbody
-#endif
-
 !=======================================================================================================!
   implicit none
   private
@@ -838,25 +833,7 @@ module namelist_mod
     end if
     call MPI_bcast(tracer_transport_type,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(tracer_grid_type,1,MPIinteger_t,par%root,par%comm,ierr)
-! Set and broadcast CSLAM test options
-    if (trim(cslam_ideal_test) == 'off') then
-      fvm_ideal_test = IDEAL_TEST_OFF
-    else if (trim(cslam_ideal_test) == 'analytical_departure') then
-      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_DEPARTURE
-    else if (trim(cslam_ideal_test) == 'analytical_winds') then
-      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_WINDS
-    else
-      call abortmp('Unknown ideal_cslam_test: '//trim(cslam_ideal_test))
-    end if
-    if (trim(cslam_test_type) == 'boomerang') then
-      fvm_test_type = IDEAL_TEST_BOOMERANG
-    else if (trim(cslam_test_type) == 'solidbody') then
-      fvm_test_type = IDEAL_TEST_SOLIDBODY
-    else
-      call abortmp('Unknown cslam test type: '//trim(cslam_test_type))
-    end if
-    call MPI_bcast(fvm_ideal_test,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(fvm_test_type,1,MPIinteger_t,par%root,par%comm,ierr)
+
 #endif
 
 #ifdef IS_ACCELERATOR
@@ -1192,21 +1169,6 @@ module namelist_mod
        case (TRACERTRANSPORT_FLUXFORM_FVM)
          write(iulog, *) 'Flux-form CSLAM tracer advection on FVM grid'
        end select
-
-       if (fvm_ideal_test /= IDEAL_TEST_OFF) then
-         select case (fvm_test_type)
-         case (IDEAL_TEST_BOOMERANG)
-           write(iulog, *) 'Running boomerang CSLAM test'
-         case (IDEAL_TEST_SOLIDBODY)
-           write(iulog, *) 'Running solid body CSLAM test'
-         end select
-         select case (fvm_ideal_test)
-         case (IDEAL_TEST_ANALYTICAL_DEPARTURE)
-           write(iulog, *) 'Using analytical departure points for CSLAM test'
-         case (IDEAL_TEST_ANALYTICAL_WINDS)
-           write(iulog, *) 'Using analytical winds for CSLAM test'
-         end select
-       end if
 
        write(iulog,*)" analysis interpolation = ", interpolate_analysis
 

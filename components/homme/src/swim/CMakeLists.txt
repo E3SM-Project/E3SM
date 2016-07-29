@@ -49,8 +49,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/element_mod.F90
                ${SRC_SHARE_DIR}/filter_mod.F90
                ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
-               ${SRC_SHARE_DIR}/fvm_mod.F90
-               ${SRC_SHARE_DIR}/fvm_reconstruction_mod.F90
                ${SRC_SHARE_DIR}/global_norms_mod.F90
                ${SRC_SHARE_DIR}/gridgraph_mod.F90
                ${SRC_SHARE_DIR}/hybrid_mod.F90

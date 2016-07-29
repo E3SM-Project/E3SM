@@ -47,11 +47,8 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
   ${SRC_SHARE_DIR}/dof_mod.F90
   ${SRC_DIR}/common_io_mod.F90
-  ${SRC_SHARE_DIR}/fvm_mod.F90
   ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
-  ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
-  ${SRC_SHARE_DIR}/fvm_reconstruction_mod.F90 
-  ${SRC_DIR}/pio_io_mod.F90 
+  ${SRC_DIR}/pio_io_mod.F90
   ${SRC_DIR}/repro_sum_mod.F90 
   ${SRC_SHARE_DIR}/time_mod.F90 
   ${SRC_SHARE_DIR}/physics_mod.F90 

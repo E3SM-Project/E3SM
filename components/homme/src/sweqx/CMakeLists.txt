@@ -53,8 +53,6 @@ SET(SWEQX_SRCS
                ${SRC_SHARE}/element_mod.F90
                ${SRC_SHARE}/filter_mod.F90
                ${SRC_SHARE}/fvm_control_volume_mod.F90
-               ${SRC_SHARE}/fvm_mod.F90
-               ${SRC_SHARE}/fvm_reconstruction_mod.F90
                ${SRC_SHARE}/global_norms_mod.F90
                ${SRC_SHARE}/gridgraph_mod.F90
                ${SRC_SHARE}/hybrid_mod.F90

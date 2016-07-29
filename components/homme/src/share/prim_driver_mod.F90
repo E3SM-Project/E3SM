@@ -20,7 +20,6 @@ module prim_driver_mod
   use element_mod,      only: element_t, timelevels,  allocate_element_desc
   use thread_mod,       only: nThreadsHoriz, omp_get_num_threads
   use perf_mod,         only: t_startf, t_stopf
-  use fvm_mod,          only: fvm_init1,fvm_init2, fvm_init3
   use fvm_control_volume_mod, only: fvm_struct
 
 #ifndef CAM
@@ -1389,7 +1388,6 @@ contains
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !compute timelevels for tracers (no longer the same as dynamics)
-    ! note: time level update for fvm tracers takes place in fvm_mod
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
 
@@ -1456,7 +1454,6 @@ contains
     ! update dynamics time level pointers
     ! =================================
     call TimeLevel_update(tl,"leapfrog")
-    ! note: time level update for fvm tracers takes place in fvm_mod
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_remap - dt       (Robert-filtered)
@@ -1500,8 +1497,6 @@ contains
     use control_mod,        only: tracer_grid_type, TRACER_GRIDTYPE_GLL
     use derivative_mod,     only: subcell_integration
     use fvm_control_volume_mod, only : fvm_supercycling
-    use fvm_mod,            only: fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
-    use fvm_mod,            only: fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp, overwrite_SEdensity

@@ -190,10 +190,6 @@ contains
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap1_nofilter  ! _EXTERNAL (actually INTERNAL)
-    use fvm_mod, only : cslam_runairdensity, cslam_runflux, edgeveloc
-    use fvm_mod, only: fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
-    use fvm_mod, only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
-    use fvm_mod, only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use fvm_control_volume_mod, only : n0_fvm,np1_fvm,fvm_supercycling
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
@@ -277,30 +273,6 @@ contains
        ! to interpolate v(np1). 
     endif
 
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! 2D advection step
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!------------------------------------------------------------------------------------
-!     call t_startf('fvm_depalg')
-
-!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt*fvm_supercycling, 3)
-    call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt*fvm_supercycling, 3)
-    write(*,*) "fvm_rkdss dt ",dt*fvm_supercycling
-!     call t_stopf('fvm_depalg')
-
-!------------------------------------------------------------------------------------
-    
-    ! fvm departure calcluation should use vstar.
-    ! from c(n0) compute c(np1):
-    if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
-      call cslam_runflux(elem,fvm,hybrid,deriv,dt,tl,nets,nete,hvcoord%hyai(1)*hvcoord%ps0)
-    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete,hvcoord%hyai(1)*hvcoord%ps0)
-    else
-      call abortmp('Bad tracer_transport_type in Prim_Advec_Tracers_fvm')
-    end if
 
     call t_stopf('prim_advec_tracers_fvm')
   end subroutine Prim_Advec_Tracers_fvm

@@ -76,8 +76,6 @@ contains
     use checksum_mod, only : test_ghost, test_bilin_phys2gll
 
     use fvm_control_volume_mod, only : fvm_struct
-    
-    use fvm_mod, only : fvm_init2,fvm_init3    
 
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile
@@ -1533,14 +1531,13 @@ contains
       use element_mod, only : element_t
       use fvm_control_volume_mod, only : fvm_struct
       use derivative_mod, only : derivative_t
-      use kinds, only : real_kind
+      use kinds,      only : real_kind
       use hybrid_mod, only : hybrid_t
-      use time_mod, only : timelevel_t
-      use perf_mod, only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
+      use time_mod,   only : timelevel_t
+      use perf_mod,   only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
       use derivative_mod, only : divergence_sphere, ugradv_sphere
-      use fvm_mod, only :  cslam_runairdensity, edgeveloc, fvm_mcgregor,fvm_mcgregordss
-      use bndry_mod, only : bndry_exchangev
-      use edge_mod, only  : edgevpack, edgevunpack
+      use bndry_mod,  only : bndry_exchangev
+      use edge_mod,   only  : edgevpack, edgevunpack
       use dimensions_mod, only : np, nlev
       
       implicit none
@@ -1616,14 +1613,7 @@ contains
         
       enddo  
     end do  
-      call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
 !-------END new McGregor scheme--------
-
-      ! fvm departure calcluation should use vstar.
-      ! from c(n0) compute c(np1): 
-      ! call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
-      
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete,0.0_real_kind)
 
       call t_stopf('shal_advec_tracers_fvm')
     end subroutine shal_advec_tracers_fvm  

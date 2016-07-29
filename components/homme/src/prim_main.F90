@@ -19,7 +19,6 @@ program prim_main
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
   use domain_mod,       only: domain1d_t, decompose
   use element_mod,      only: element_t
-  use fvm_mod,          only: fvm_init3
   use common_io_mod,    only: output_dir
   use common_movie_mod, only: nextoutputstep
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL

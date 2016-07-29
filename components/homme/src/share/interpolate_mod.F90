@@ -657,7 +657,7 @@ contains
 !-----------------------------------------------------------------------------------!
 subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   use fvm_control_volume_mod, only : fvm_struct
-  use fvm_reconstruction_mod, only: reconstruction
+  !use fvm_reconstruction_mod, only: reconstruction
   use edgetype_mod, only : edgedescriptor_t
   
   type (interpdata_t), intent(in)     :: interpdata                        
@@ -674,7 +674,7 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   integer                           :: i, ix, jy, starti,endi,tmpi
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
   
-  call reconstruction(f, fvm,recons)
+  !call reconstruction(f, fvm,recons)
   !call monotonic_gradient_cart(f, fvm,recons, desc)
 !phl PCoM  recons=0.0
 
