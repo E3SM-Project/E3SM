@@ -11,32 +11,32 @@ Some tests not yet implemented in python.  They can be found in
 cime/scripts/Testing/Testcases
 
 
-NOTES: 
+NOTES:
 - IOP is currently not functional
 
 ======================================================================
     Smoke Tests
 ======================================================================
 
-SMS    smoke startup test (default length) 
+SMS    smoke startup test (default length)
        do a 5 day initial test (suffix: base)
        if $IOP_ON is set then suffix is base_iop
-       success for non-iop is just a successful coupler 
+       success for non-iop is just a successful coupler
 
 ======================================================================
     Restart Tests
 ======================================================================
 
-ERS    exact restart from startup (default 6 days + 5 days) 
+ERS    exact restart from startup (default 6 days + 5 days)
        do an 11 day initial test - write a restart at day 6     (suffix: base)
        if $IOP_ON is set then suffix is base_iop
        do a  5  day restart test starting from restart at day 6 (suffix: rest)
        if $IOP_ON is set then suffix is rest_iop
-       compare component history files ".base" and ".rest" at day 11 
+       compare component history files ".base" and ".rest" at day 11
 
 ERP    pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days (previousy PER)
        initial pes set up out of the box
-       do an 11 day initial test - write a restart at day 6     (suffix base) 
+       do an 11 day initial test - write a restart at day 6     (suffix base)
        half the number of tasks and threads for each component
        do a  5  day restart test starting from restart at day 6 (suffix rest)
        this is just like an ERS test but the pe-counts/threading count are modified on retart
@@ -48,12 +48,12 @@ ERI    hybrid/branch/exact restart test, default (by default STOP_N is 22 days)
            short term archiving is on
        (2) ref2case
            do a hybrid for ${STOP_N}-${STOP_N}/6 running with ref1 restarts from ${STOP_N}/6
-           and writing restarts at ( ${STOP_N} - ${STOP_N}/6 )/2 +1 
+           and writing restarts at ( ${STOP_N} - ${STOP_N}/6 )/2 +1
 	   (by default will run for 18 days and write a restart after 10 days)
-           ref2 case is a clone of the main case 
+           ref2 case is a clone of the main case
            short term archiving is on
-       (3) case 
-           do a branch run starting from restart written in ref2 case 	   
+       (3) case
+           do a branch run starting from restart written in ref2 case
            and run for ???  days
        (4) case do a restart run from the branch case
 
@@ -63,7 +63,13 @@ ERT  Similar to ERS but longer.  2 months + 1 month
 ======================================================================
     Restart and Archive Tests
 ======================================================================
-ERR
+ERR does an ERS test except that after the initial run the short term archive tool is run
+        which moves model output out of the run directory into the short-term archive directory
+        then the restart run is staged from the short term archive directory.  In batch mode there are
+	four submitted jobs for this test (mira excepted) these are run1, sta1, run2 and sta2
+	run1 and sta1 are submitted together with RESUBMIT=1.  sta1 has a batch system dependancy
+ 	on successful completion of run1, when sta1 is completed it uses the cime resubmit capabilty
+	to submit run2.
 
 
 ======================================================================
@@ -80,7 +86,7 @@ PEM    modified pe counts mpi bfb test (seq tests)
        do another initial run with modified pes (NTASKS_XXX => NTASKS_XXX/2)  (suffix: modpes)
        compare base and single_thread
 
-PEA    single pe bfb test 
+PEA    single pe bfb test
        do an initial run on 1 pe with mpi     (suffix: base)
        do the same run on 1 pe with mpiserial (suffix: mpiserial)
 
@@ -88,7 +94,7 @@ PEA    single pe bfb test
     Sequencing (layout) Tests (smoke)
 ======================================================================
 
-SEQ    different sequencing bfb test  
+SEQ    different sequencing bfb test
        do an initial run test with out-of-box PE-layout (suffix: base)
        do a second run where all root pes are at pe-0   (suffix: seq)
        compare base and seq
@@ -111,8 +117,8 @@ NCR    multi-instance validation vs single instance - concurrent PE for instance
 NOC    multi-instance validation for single instance ocean (default length)
        do an initial run test with NINST 2 (other than ocn), with mod to instance 1 (suffix: inst1_base, inst2_mod)
        do an initial run test with NINST 2 (other than ocn), with mod to instance 2 (suffix: inst1_base, inst2_mod)
-       compare inst1_base with inst2_base 
-       compare inst1_mod  with inst2_mod  
+       compare inst1_base with inst2_base
+       compare inst1_mod  with inst2_mod
 
 
 ======================================================================
@@ -120,7 +126,7 @@ NOC    multi-instance validation for single instance ocean (default length)
 ======================================================================
 
 PFS    system performance test.  Do 20 day run, no restarts
-ICP    cice performance test 
+ICP    cice performance test
 
 ======================================================================
     SPINUP tests
