@@ -143,6 +143,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
     def build(self, sharedlib_only=False, model_only=False):
         self._pre_build()
+
         if self._needs_two_builds(sharedlib_only = sharedlib_only,
                                   model_only = model_only):
             raise NotImplementedError('Two builds not yet implemented')
@@ -154,6 +155,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         Runs both phases of the two-phase test and compares their results
         """
 
+        # First run
         self._run_common_setup()
         self._run_one_setup()
         logger.info('Doing first run: ' + self._run_one_description)
@@ -164,6 +166,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._status_run1 = "FAIL"
             return False
 
+        # Second run
         self._run_common_setup()
         self._run_two_setup()
         logger.info('Doing second run: ' + self._run_two_description)
@@ -174,6 +177,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._status_run2 = "FAIL"
             return False
 
+        # Compare results
         success = self._component_compare_test(self._run_one_suffix, self._run_two_suffix)
         if success:
             self._status_compare = "PASS"
@@ -182,6 +186,25 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             return False
 
         return success
+
+    def get_run_one_status(self):
+        """
+        Returns a string specifying the status of run 1
+        """
+        return self._status_run1
+
+    def get_run_two_status(self):
+        """
+        Returns a string specifying the status of run 2
+        """
+        return self._status_run2
+
+    def get_compare_status(self):
+        """
+        Returns a string specifying the status of the comparison between run 1
+        and run 2
+        """
+        return self._status_compare
 
     # ========================================================================
     # Private methods

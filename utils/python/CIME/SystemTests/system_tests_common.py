@@ -27,9 +27,24 @@ class SystemTestsCommon(object):
         self._caseroot = caseroot
         self._orig_caseroot = caseroot
         self._runstatus = None
+
+        self._init_environment(caseroot)
+        self._init_locked_files(caseroot, expected)
+        self._init_case_setup()
+
+    def _init_environment(self, caseroot):
+        """
+        Do initializations of environment variables that are needed in __init__
+        """
         # Needed for sh scripts
         os.environ["CASEROOT"] = caseroot
 
+    def _init_locked_files(self, caseroot, expected):
+        """
+        If the file LockedFiles/env_run.orig.xml does not exist, copy the current
+        env_run.xml file. If it does exist, restore values changed in a previous
+        run of the test.
+        """
         if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
             self.compare_env_run(expected=expected)
         elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
@@ -41,6 +56,10 @@ class SystemTestsCommon(object):
             shutil.copy(os.path.join(caseroot,"env_run.xml"),
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
+    def _init_case_setup(self):
+        """
+        Do initial case setup needed in __init__
+        """
         if self._case.get_value("IS_FIRST_RUN"):
             self._case.set_initial_test_values()
 
