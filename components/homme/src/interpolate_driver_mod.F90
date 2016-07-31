@@ -641,7 +641,7 @@ contains
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
                       call interpolate_vector(interpdata(ie), elem(ie), &
-                           elem(ie)%state%V(:,:,:,1:lev,1),np, lev, varray(st:en,:,:), 0)
+                           elem(ie)%state%V(:,:,:,1:lev,1), lev, varray(st:en,:,:), 0)
                       st=st+interpdata(ie)%n_interp
                    end do
                    nd=2

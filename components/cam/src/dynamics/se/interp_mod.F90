@@ -549,10 +549,10 @@ CONTAINS
        if(decomp_type==phys_decomp) then
           if(usefillvalues) then
              call interpolate_vector(cam_interpolate(ie),elem(ie), &
-                  dest(:,:,:,:,ie), np, numlev, fldout(st:en,:,:), 0, fillvalue) 
+                  dest(:,:,:,:,ie), numlev, fldout(st:en,:,:), 0, fillvalue) 
           else
              call interpolate_vector(cam_interpolate(ie),elem(ie),&
-                  dest(:,:,:,:,ie), np, numlev, fldout(st:en,:,:), 0) 
+                  dest(:,:,:,:,ie), numlev, fldout(st:en,:,:), 0) 
           endif
        else
           do k=1,numlev
@@ -565,10 +565,10 @@ CONTAINS
           end do
           if(usefillvalues) then
              call interpolate_vector(cam_interpolate(ie),elem(ie),&
-                  dest(:,:,:,:,1), np, numlev, fldout(st:en,:,:), 0, fillvalue) 
+                  dest(:,:,:,:,1), numlev, fldout(st:en,:,:), 0, fillvalue) 
           else
              call interpolate_vector(cam_interpolate(ie),elem(ie),&
-                  dest(:,:,:,:,1), np, numlev, fldout(st:en,:,:), 0) 
+                  dest(:,:,:,:,1), numlev, fldout(st:en,:,:), 0) 
           end if
        end if
 
