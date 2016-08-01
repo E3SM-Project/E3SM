@@ -112,7 +112,6 @@ _TEST_SUITES = {
                            "SEQ_IOP_PFC.f19_g16.X",
                            "SMS.ne30_oEC.A_WCYCL2000",
                            "SMS.ne16_ne16.FC5AQUAP",
-                           "SMS_D.f19_g16.B20TRC5",
                            "SMS_D_Ld3.ne16_ne16.FC5",
                            "SMS.f09_g16_a.MPASLIALB_ONLY",
                            "ERS.ne16_ne16.FC5ATMMOD",
