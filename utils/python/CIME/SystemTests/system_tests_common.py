@@ -145,6 +145,10 @@ class SystemTestsCommon(object):
                     f.write(line+"\n")
             if not found:
                     f.write("%s %s %d\n"%(status, string, total_time))
+        # This prevents the __del__ method from overwritting an up to date status
+        if phase.startswith("RUN"):
+           self._runstatus = None
+
 
     def _coupler_log_indicates_run_complete(self, coupler_log_path):
         newestcpllogfile = self._get_latest_cpl_log(coupler_log_path)

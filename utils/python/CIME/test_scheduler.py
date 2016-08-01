@@ -617,11 +617,15 @@ class TestScheduler(object):
         # the phases we have taken care of and then let the run scrips go from there
         # Eventually, it would be nice to have TestStatus management encapsulated
         # into a single place.
+
         str_to_write = ""
         made_it_to_phase = self._get_test_phase(test)
+
         made_it_to_phase_idx = self._phases.index(made_it_to_phase)
         for phase in self._phases[0:made_it_to_phase_idx+1]:
-            str_to_write += "%s %s %s\n" % (self._get_test_status(test, phase), test, phase)
+            if "BUILD" not in phase:
+                # the build phase status is always write by the test itself
+                str_to_write += "%s %s %s\n" % (self._get_test_status(test, phase), test, phase)
 
         if not self._no_run and not self._is_broken(test) and made_it_to_phase == MODEL_BUILD_PHASE:
             # Ensure PEND state always gets added to TestStatus file if we are
@@ -629,6 +633,7 @@ class TestScheduler(object):
             str_to_write += "%s %s %s\n" % (TEST_PENDING_STATUS, test, RUN_PHASE)
 
         test_status_file = os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME)
+
         with open(test_status_file, "w") as fd:
             fd.write(str_to_write)
 
@@ -674,7 +679,7 @@ class TestScheduler(object):
         # This complexity is due to sharing of TestStatus responsibilities
         #
         try:
-            if test_phase != RUN_PHASE and (not success or test_phase == MODEL_BUILD_PHASE
+            if test_phase != RUN_PHASE and (not success or test_phase == SETUP_PHASE
                                             or test_phase == self._phases[-1]):
                 self._update_test_status_file(test)
 
