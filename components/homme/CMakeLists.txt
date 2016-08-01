@@ -62,15 +62,6 @@ OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 # Cristoph's "standalone" executables
 OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
 
-# prim executable requires C++ compiler
-IF(${BUILD_HOMME_PRIM})
-  SET (HOMME_USE_CXX TRUE)
-  SET (HOMME_USE_TRILINOS TRUE)
-ELSE ()
-  SET(HOMME_USE_CXX FALSE)
-  SET(HOMME_USE_TRILINOS FALSE)
-ENDIF ()
-
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)

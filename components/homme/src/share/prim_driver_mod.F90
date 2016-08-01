@@ -92,9 +92,7 @@ contains
     ! --------------------------------
     use prim_advance_mod, only: prim_advance_init
     ! --------------------------------
-#ifdef TRILINOS
-    use prim_implicit_mod, only : prim_implicit_init
-#endif
+
     ! --------------------------------
     use diffusion_mod, only      : diffusion_init
     ! --------------------------------
@@ -533,9 +531,7 @@ contains
 #endif
     allocate(cg(0:n_domains-1))
     call prim_advance_init(par,elem,integration)
-#ifdef TRILINOS
-    call prim_implicit_init(par, elem)
-#endif
+
     call Prim_Advec_Init1(par, elem,n_domains)
     call diffusion_init(par,elem)
 
@@ -573,10 +569,6 @@ contains
     use control_mod, only : pertlim                     !used for homme temperature perturbations
 #endif
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
-#ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
-    use, intrinsic :: iso_c_binding
-#endif
     use thread_mod, only : nthreads
     use derivative_mod, only : derivinit, interpolate_gll2fvm_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
@@ -627,43 +619,6 @@ contains
     integer :: nfrc
     integer :: n0_qdp
 
-#ifdef TRILINOS
-     integer :: lenx
-    real (c_double) ,allocatable, dimension(:) :: xstate(:)
-! state_object is a derived data type passed thru noxinit as a pointer
-    type(derived_type) ,target         :: state_object
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-
-    type(derived_type) ,target         :: pre_object
-    type(derived_type) ,pointer         :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-
-    type(derived_type) ,target         :: jac_object
-    type(derived_type) ,pointer         :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
-
-!    type(element_t)                    :: pc_elem(size(elem))
-!    type(element_t)                    :: jac_elem(size(elem))
-
-    logical :: compute_diagnostics
-    integer :: qn0
-    real (kind=real_kind) :: eta_ave_w
-
-  interface
-    subroutine noxinit(vectorSize,vector,comm,v_container,p_container,j_container) &
-        bind(C,name='noxinit')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize,comm
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-      type(c_ptr)                   :: j_container  !analytic jacobian ptr
-    end subroutine noxinit
-
-  end interface
-#endif
-
     ! ==========================
     ! begin executable code
     ! ==========================
@@ -694,38 +649,6 @@ contains
        dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
        dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
     endif
-
-#ifdef TRILINOS
-
-      lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
-      allocate(xstate(lenx))
-      xstate(:) = 0d0
-      compute_diagnostics = .false.
-      qn0 = -1 ! dry case for testing right now
-      eta_ave_w = 1d0 ! divide by qsplit for mean flux interpolation
-
-      call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
-
-      call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
-
-      call initialize(jac_object, lenx, elem, hvcoord, .false., &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
-
-!      pc_elem = elem
-!      jac_elem = elem
-
-      fptr => state_object
-      c_ptr_to_object =  c_loc(fptr)
-      pptr => state_object
-      c_ptr_to_pre =  c_loc(pptr)
-      jptr => state_object
-      c_ptr_to_jac =  c_loc(jptr)
-
-      call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac)
-
-#endif
 
     ! ==================================
     ! Initialize derivative structure
@@ -1154,8 +1077,6 @@ contains
        call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
             refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
        tot_iter=tot_iter+cg(hybrid%ithr)%iter
-    else if (integration == "full_imp") then
-       call abortmp('full_imp integration requires tstep_type > 0')
     else
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             hybrid, dt, tl, nets, nete, compute_diagnostics)
@@ -1649,20 +1570,6 @@ contains
 
   subroutine prim_finalize()
 
-#ifdef TRILINOS
-  interface
-    subroutine noxfinish() bind(C,name='noxfinish')
-    use ,intrinsic :: iso_c_binding
-    end subroutine noxfinish
-  end interface
-
-  call noxfinish()
-
-#endif
-
-    ! ==========================
-    ! end of the hybrid program
-    ! ==========================
   end subroutine prim_finalize
 
 

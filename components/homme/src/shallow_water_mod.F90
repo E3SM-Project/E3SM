@@ -516,7 +516,6 @@ contains
     ! with monotone limiter of order -1e-11 for some reason
     if (integration == "explicit" .and. limiter_option /= 0) pmean = 0
     if (integration == "runge_kutta" .and. limiter_option /= 0) pmean = 0
-    if (integration == "full_imp" .and. limiter_option /= 0) pmean = 0
   end function tc1_init_pmean
   ! ===========================================
   ! tc2_init_pmean

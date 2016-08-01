@@ -19,10 +19,6 @@ module prim_advance_mod
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
        applyCAMforcing_dynamics, applyCAMforcing, smooth_phis, overwrite_SEdensity
 
-#ifdef TRILINOS
-  public :: distribute_flux_at_corners
-#endif
-  
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
   type (EdgeBuffer_t) :: edge3p1
@@ -96,10 +92,6 @@ contains
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use time_mod, only : TimeLevel_t,  timelevel_qdp, tevolve
     use diffusion_mod, only :  prim_diffusion
-#ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
-    use, intrinsic :: iso_c_binding
-#endif
 
 #ifndef CAM
     use asp_tests, only : asp_advection_vertical
@@ -133,43 +125,6 @@ contains
     real (kind=real_kind) ::  deta
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx
-
-#ifdef TRILINOS
-    real (c_double) ,allocatable, dimension(:) :: xstate(:)
-
-!    type (element_t) :: pc_elem(size(elem))
-!    type (element_t) :: jac_elem(size(elem))
-
-! state_object is a derived data type passed thru noxinit as a pointer
-    type(derived_type) ,target         :: state_object
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-    type(derived_type) ,target         :: pre_object
-    type(derived_type) ,pointer         :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-    type(derived_type) ,target         :: jac_object
-    type(derived_type) ,pointer         :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
-
-    integer(c_int) :: ierr = 0
-
-  interface
-
-   subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container,ierr) &
-!   subroutine noxsolve(vectorSize,vector,v_container) &
-     bind(C,name='noxsolve')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-      type(c_ptr)                   :: j_container  !analytic jacobian ptr
-      integer(c_int)                :: ierr         !error flag
-    end subroutine noxsolve
-
-  end interface
-
-#endif
 
 !JMD    call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
 !pw call t_adj_detailf(+1)
@@ -209,11 +164,6 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!
-! integration = "full_imp"
-!
-!   tstep_type=1  Backward Euler or BDF2 implicit dynamics
-!
 
 ! default weights for computing mean dynamics fluxes
     eta_ave_w = 1d0/qsplit
@@ -465,144 +415,7 @@ contains
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
        call t_stopf("U3-5stage_timestep")
 #endif
-
-    else if ((method==11).or.(method==12)) then
-       ! Fully implicit JFNK method (vertically langragian not active yet)
-       if (rsplit > 0) then
-       call abortmp('ERROR: full_imp integration not yet coded for vert lagrangian adv option')
-       end if
-!      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
-
-#ifdef TRILINOS
-      call t_startf("JFNK_imp_timestep")
-      lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
-      allocate(xstate(lenx))
-      xstate(:) = 0d0
-
-      call initialize(state_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
-
-      call initialize(pre_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
-
-      call initialize(jac_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
-
-!      pc_elem = elem
-!      jac_elem = elem
-
-        fptr => state_object
-        c_ptr_to_object =  c_loc(fptr)
-        pptr => state_object
-        c_ptr_to_pre =  c_loc(pptr)
-        jptr => state_object
-        c_ptr_to_jac =  c_loc(jptr)
-
-! create flat state vector to pass through NOX
-! use previous time step as the first guess for the new one (because with LF time level update n0=np1)
-
-       np1 = n0
-
-       lx = 1
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%T(i,j,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do j=1,np
-			   do i=1,np
-				   xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
-				   lx = lx+1
-			   end do
-		   end do
-	   end do
-       
-! activate these lines to test infrastructure and still solve with explicit code
-!       ! RK2
-!       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
-!       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
-!            deriv,nets,nete,compute_diagnostics,0d0)
-!       ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
-!       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-!            deriv,nets,nete,.false.,eta_ave_w)
-
-! interface to use nox and loca solver libraries using JFNK, and returns xstate(n+1)
-    call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac, ierr)
-
-    if (ierr /= 0) call abortmp('Error in noxsolve: Newton failed to converge')
-
-      call c_f_pointer(c_ptr_to_object, fptr) ! convert C ptr to F ptr
-      elem = fptr%base
-
-	  lx = 1
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx) 
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%T(i,j,k,np1) = xstate(lx)
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do j=1,np
-			  do i=1,np
-				  elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
-				  lx = lx+1
-			  end do
-		  end do
-	  end do
-      call t_stopf("JFNK_imp_timestep")
-#endif
-
-    else
+      else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
@@ -3286,73 +3099,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !pw  call t_adj_detailf(-1)
 
   end subroutine compute_and_apply_rhs
-
-
-  subroutine distribute_flux_at_corners(cflux, corners, getmapP)
-    use kinds,          only : int_kind, real_kind
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod,    only : swest
-    implicit none
-
-    real   (kind=real_kind), intent(out)  :: cflux(2,2,2)
-    real   (kind=real_kind), intent(in)   :: corners(0:np+1,0:np+1)
-    integer(kind=int_kind),  intent(in)   :: getmapP(:)
-
-    cflux = 0.0d0
-    if (getmapP(swest+0*max_corner_elem) /= -1) then
-      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
-      cflux(1,1,1) = cflux(1,1,1) + (corners(0,0) - corners(1,1)) / 2.0d0
-      cflux(1,1,1) = cflux(1,1,1) + (corners(0,1) - corners(1,0)) / 2.0d0
- 
-      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
-      cflux(1,1,2) = cflux(1,1,2) + (corners(0,0) - corners(1,1)) / 2.0d0
-      cflux(1,1,2) = cflux(1,1,2) + (corners(1,0) - corners(0,1)) / 2.0d0
-    else
-      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
-      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
-    endif
- 
-    if (getmapP(swest+1*max_corner_elem) /= -1) then
-      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
-      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,0) - corners(np,1)) / 2.0d0
-      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,1) - corners(np,0)) / 2.0d0
- 
-      cflux(2,1,2) =                (corners(np  ,0) - corners(np,  1))     
-      cflux(2,1,2) = cflux(2,1,2) + (corners(np+1,0) - corners(np,  1)) / 2.0d0
-      cflux(2,1,2) = cflux(2,1,2) + (corners(np  ,0) - corners(np+1,1)) / 2.0d0
-    else
-      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
-      cflux(2,1,2) =                (corners(np  ,0) - corners(np,1))     
-    endif
- 
-    if (getmapP(swest+2*max_corner_elem) /= -1) then
-      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
-      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
-      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np  ) - corners(1,np+1)) / 2.0d0
- 
-      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
-      cflux(1,2,2) = cflux(1,2,2) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
-      cflux(1,2,2) = cflux(1,2,2) + (corners(1,np+1) - corners(0,np  )) / 2.0d0
-    else
-      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
-      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
-    endif
- 
-    if (getmapP(swest+3*max_corner_elem) /= -1) then
-      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
-      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
-      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np  ) - corners(np,np+1)) / 2.0d0
- 
-      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
-      cflux(2,2,2) = cflux(2,2,2) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
-      cflux(2,2,2) = cflux(2,2,2) + (corners(np  ,np+1) - corners(np+1,np)) / 2.0d0
-    else
-      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
-      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
-    endif
-  end subroutine
-
-
 
   subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
   use dimensions_mod, only : np, np, nlev

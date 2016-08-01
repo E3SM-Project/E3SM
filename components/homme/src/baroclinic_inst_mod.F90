@@ -495,7 +495,7 @@ endif
                 v2 = 0.0D0
 
 #if 0
-                if (( integration == "explicit" ).or.( integration == "full_imp" )) then
+                if ( integration == "explicit" ) then
                    ! explicit covariant
                    elem(ie)%state%v(i,j,1,k,n0)= v1*elem(ie)%D(i,j,1,1) + v2*elem(ie)%D(i,j,2,1)
                    elem(ie)%state%v(i,j,2,k,n0)= v1*elem(ie)%D(i,j,1,2) + v2*elem(ie)%D(i,j,2,2)

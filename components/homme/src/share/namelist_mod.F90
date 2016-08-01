@@ -500,18 +500,9 @@ module namelist_mod
 #else
           read(*,nml=solver_nl)
 #endif
-       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
-                    (integration .ne. "full_imp")) then
-          call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
+       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
+          call abortmp('integration must be explicit, semi_imp, or runge_kutta')
        end if
-
-       if (integration == "full_imp") then
-          if (tstep_type<10) then
-             ! namelist did not set a valid tstep_type. pick one:
-             tstep_type=11   ! backward euler
-             !tstep_type=12  ! BDF2 with BE bootstrap
-          endif
-       endif
 
        write(iulog,*)"reading filter namelist..."
        ! Set default mu/freq for advection filtering
@@ -767,7 +758,7 @@ module namelist_mod
 
     call MPI_bcast(uselapi,1,MPIlogical_t,par%root,par%comm,ierr)
 
-    if ((integration == "semi_imp").or.(integration == "full_imp")) then
+    if (integration == "semi_imp") then
        call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
        call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
        call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)

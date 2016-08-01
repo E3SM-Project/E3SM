@@ -10,7 +10,6 @@ SET(HOMME_TESTS
   baroCamMoist.cmake
   baroCamMoist-SL.cmake
   baroCamMoist-acc.cmake
-  baro2d-imp.cmake
   templates.cmake
 )
 

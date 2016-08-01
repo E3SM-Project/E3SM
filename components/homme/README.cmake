@@ -40,10 +40,6 @@ The CMAKE code could use some cleanup.
 - the test cases are created after all the test executables are created. In keeping
   with cmake's tree-like directory approach, the tests should be associated with their
 
-
-
-
-
 ************************************************************************************************
 
 ***OBSOLETE***
