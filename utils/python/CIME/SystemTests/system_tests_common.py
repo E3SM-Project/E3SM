@@ -88,8 +88,7 @@ class SystemTestsCommon(object):
         self._caseroot = case.get_value("CASEROOT")
 
     def _run(self, suffix="base", coupler_log_path=None, st_archive=False):
-        if self._case.get_value("IS_FIRST_RUN"):
-            self._runstatus = "PEND"
+        self._runstatus = "PEND"
         self.update_test_status(self._runstatus,"RUN")
 
         stop_n = self._case.get_value("STOP_N")
@@ -292,7 +291,7 @@ class SystemTestsCommon(object):
         basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
         for bdir in (baselineroot, basecmp_dir):
             if not os.path.isdir(bdir):
-                append_status("FAIL %s compare\n"%self._case.get_value("CASEBASEID"),
+                append_status("BFAIL %s compare\n"%self._case.get_value("CASEBASEID"),
                               sfile="TestStatus")
                 append_status("ERROR %s does not exist"%bdir, sfile="TestStatus.log")
                 return -1
