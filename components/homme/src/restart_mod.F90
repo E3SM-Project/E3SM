@@ -94,39 +94,12 @@ contains
     len = SIZE(state%v)
     call AddStateField(RestDesc,len,type)
 
-#ifdef _PRIMDG
-    len = SIZE(state%phis)
-    call AddStateField(RestDesc,len,type)
-#else
     len = SIZE(state%ps)
     call AddStateField(RestDesc,len,type)
-#endif
 
     len = SIZE(state%gradps)
     call AddStateField(RestDesc,len,type)
-#ifdef _SWDG 
-    len = SIZE(state%psi)
-    call AddStateField(RestDesc,len,type)
 
-!    len = SIZE(state%phi)
-!    call AddStateField(RestDesc,len,type)
-
-!    len = SIZE(state%cori)
-!    call AddStateField(RestDesc,len,type)
-
-!    len = SIZE(state%enrgy)
-!    call AddStateField(RestDesc,len,type)
-
-    len = SIZE(state%couv)
-    call AddStateField(RestDesc,len,type)
-
-    len = SIZE(state%ht)
-    call AddStateField(RestDesc,len,type)
-
-    len = SIZE(state%hs)
-    call AddStateField(RestDesc,len,type)
-
-#endif
 #if defined(_MPI) && defined(_PRESTART)
     call PrintStateDescriptor(RestDesc)
     call ConstructElementFile(RestDesc,File,ierr)

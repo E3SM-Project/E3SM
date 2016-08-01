@@ -8,9 +8,6 @@ module interp_movie_mod
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
        set_interp_parameter, interpol_phys_latlon
-#if defined(_SPELT)
-  use interpolate_mod, only : interpol_spelt_latlon
-#endif
   use pio_io_mod, only : & 
        nf_output_init_begin,&
        nf_output_init_complete,  &
@@ -45,11 +42,10 @@ module interp_movie_mod
        num_io_procs,        &
        PIOFS
   use fvm_control_volume_mod, only : fvm_struct
-  use spelt_mod, only : spelt_struct
 
   implicit none
 #undef V_IS_LATLON
-#if defined(_PRIM) || defined(_PRIMDG)
+#if defined(_PRIM)
 #define V_IS_LATLON
   integer, parameter :: varcnt = 45
   integer, parameter :: maxdims =  5
@@ -234,7 +230,7 @@ contains
     use pio, only : pio_setdebuglevel, PIO_Put_att, pio_put_var, pio_global ! _EXTERNAL
     use parallel_mod, only : parallel_t, haltmp, syncmp
     use interpolate_mod, only : get_interp_lat, get_interp_lon, get_interp_gweight
-#if defined(_PRIM) || defined(_PRIMDG)
+#if defined(_PRIM)
     use hybvcoord_mod, only : hvcoord_t
     use physics_io_mod, only : physics_movie_init
 #endif
@@ -243,7 +239,7 @@ contains
     type(element_t) :: elem(:)
     type(parallel_t), intent(in) :: par
     
-#if defined(_PRIM) || defined(_PRIMDG)
+#if defined(_PRIM)
     type(hvcoord_t), intent(in), optional :: hvcoord
 #else
     ! ignored
@@ -285,7 +281,7 @@ contains
     call PIO_setDebugLevel(0)
     call nf_output_init_begin(ncdf,par%masterproc,par%nprocs,par%rank, &
          par%comm,hname,runtype)
-#if defined(_PRIM) || defined(_PRIMDG)
+#if defined(_PRIM)
     dimsize=(/nlon,nlat,nlev,nlev+1,0/)
 #else
     dimsize=(/nlon,nlat,nlev,0/)
@@ -337,7 +333,7 @@ contains
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'zeta', 'Relative vorticity','1/s')
-#if defined(_PRIM) || defined(_PRIMDG)
+#if defined(_PRIM)
     call nf_variable_attributes(ncdf, 'geo', 'Geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'geos', 'Surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
@@ -367,7 +363,7 @@ contains
     call nf_variable_attributes(ncdf, 'C4', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C5', 'concentration','kg/kg')
 
-#if defined(_PRIM) || defined(_PRIMDG)
+#if defined(_PRIM)
     if(columnpackage.ne.'none') then
        call physics_movie_init(ncdf)
     end if
@@ -397,7 +393,7 @@ contains
         ierr = pio_put_var(ncdf(ios)%FileID,varid, gw)
 
 
-#if defined(_PRIM) || defined(_PRIMDG)
+#if defined(_PRIM)
           if (present(hvcoord)) then
              vindex = get_varindex('lev',ncdf(ios)%varlist)
              varid = ncdf(ios)%varlist(vindex)%vardesc%varid
@@ -448,8 +444,6 @@ contains
 #if defined(_PRIM) 
     use hybvcoord_mod, only :  hvcoord_t 
     use physics_io_mod, only : physics_movie_output
-#elif defined _PRIMDG
-    use hybvcoord_mod, only :  hvcoord_t
 #endif
     use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
     use derivative_mod, only : derivinit, derivative_t, vorticity, laplace_sphere_wk
@@ -464,18 +458,10 @@ contains
     ! ---------------------    
     type (element_t),target    :: elem(:)
     type (parallel_t)     :: par
-    
-#if defined(_SPELT)
-    type (spelt_struct), optional   :: fvm(:)
-#else
-    type (fvm_struct), optional   :: fvm(:)    
-#endif
-    
+    type (fvm_struct), optional   :: fvm(:)
     type (TimeLevel_t)  :: tl
 
 #if defined(_PRIM)
-    type (hvcoord_t)    :: hvcoord
-#elif defined(_PRIMDG)
     type (hvcoord_t)    :: hvcoord
 #else
     integer,optional    :: hvcoord
@@ -535,9 +521,6 @@ contains
                    en=st+interpdata(ie)%n_interp-1
 #ifdef _PRIM
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%ps_v(:,:,n0), &
-                        np, datall(st:en,1))
-#elif defined _PRIMDG
-                   call interpolate_scalar(interpdata(ie),elem(ie)%state%pr3d(:,:,nlev+1), &
                         np, datall(st:en,1))
 #else
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%ps, &
@@ -639,38 +622,6 @@ contains
                 deallocate(var3d)
              end if
 
-#if defined(_PRIMDG) 
-             if(nf_selectedvar('T', output_varnames)) then
-                if (par%masterproc) print *,'writing real temperature Y (not potential)...'
-                allocate(datall(ncnt,nlev))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), elem(ie)%state%T(:,:,:,n0), &
-                        np, nlev, datall(st:en,:))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='T')
-                deallocate(datall)
-             end if
-             if(nf_selectedvar('Q', output_varnames) .and. qsize>=1) then
-                if (par%masterproc) print *,'writing DG moist Q...'
-                allocate(datall(ncnt,nlev))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   ! Not sure if this interpolation is the right one, HOMME-SE uses something different
-                   ! but for now we get what we can to the output file.
-                   call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,:,n0), &
-                        np, nlev, datall(st:en,:))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='Q')
-                 deallocate(datall)
-             end if
-
-#endif
-
            if(nf_selectedvar('psC', output_varnames)) then
               if (par%masterproc) print *,'writing psC...'
               st=1
@@ -742,54 +693,6 @@ contains
                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='div_fvm')
                deallocate(datall)
             end if
-            
-#if defined(_SPELT) 
-           if(nf_selectedvar('psC', output_varnames)) then
-              if (par%masterproc) print *,'writing for SPELT: psC...'
-              st=1
-              allocate(datall(ncnt,1))
-              do ie=1,nelemd
-                 en=st+interpdata(ie)%n_interp-1
-                 call interpol_spelt_latlon(interpdata(ie),fvm(ie)%psc, &
-                                    fvm(ie),elem(ie)%corners,datall(st:en,1))
-                 st=st+interpdata(ie)%n_interp
-              enddo
-        
-#ifdef _PRIM
-              if (p0 < 2000)  then  ! convert to Pa, if using mb
-                 datall(:,1) = 100*(datall(:,1)) 
-              endif
-#endif
-              call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='psC')
-              deallocate(datall)
-           endif
-
-
-            do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
-               write(vname,'(a1,i1)') 'C for SPELT: ',cindex
-               if (cindex==1) vname='C'
-
-               if(nf_selectedvar(vname, output_varnames)) then
-                  if (par%masterproc) print *,'writing for SPELT: ',vname
-                  allocate(datall(ncnt,nlev))
-                  st=1
-
-
-                  do ie=1,nelemd
-                     en=st+interpdata(ie)%n_interp-1
-                     do k=1,nlev                       
-                       call interpol_spelt_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
-                                          fvm(ie),elem(ie)%corners,datall(st:en,k))                                          
-                     end do
-                     st=st+interpdata(ie)%n_interp
-                  enddo                  
-                  call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)                  
-                  deallocate(datall)                  
-               end if
-            enddo
-#endif
-
-
 
              if(nf_selectedvar('geop', output_varnames)) then
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
@@ -799,10 +702,6 @@ contains
                    do k=1,nlev
 #ifdef _PRIM
                       var3d(:,:,k,1) = 0  ! need to compute PHI from hydrostatic relation
-#elif defined _SWDG
-                      var3d(:,:,k,1) = elem(ie)%state%ht(:,:,k)
-#elif defined _PRIMDG
-                      var3d(:,:,k,1) = (elem(ie)%state%p(:,:,k,n0) + elem(ie)%state%phis(:,:) + phimean)/g 
 #else
                       if(test_case.eq.'vortex') then
                          var3d(:,:,k,1) = elem(ie)%state%p(:,:,k,n0)
@@ -843,10 +742,6 @@ contains
                       var3d(:,:,k,ie) = 0
 #ifdef _PRIM
                       var3d(:,:,k,ie) = elem(ie)%state%ps_v(:,:,n0)
-#elif defined _SWDG
-                      var3d(:,:,k,ie) = 0  ! set this to surface pressure
-#elif defined _PRIMDG
-                      var3d(:,:,k,ie) = 0  ! set this to surface pressure
 #else
                       var3d(:,:,k,ie) = elem(ie)%state%p(:,:,k,n0)
 #endif

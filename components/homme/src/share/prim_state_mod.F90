@@ -3,42 +3,26 @@
 #endif
 
 module prim_state_mod
-  ! ------------------------------
-  use kinds, only : real_kind, iulog
-  ! ------------------------------
-  use dimensions_mod, only : nlev, np, nc, qsize_d, qsize, nelemd, ntrac, ntrac_d
-  ! ------------------------------
-  use parallel_mod, only :  iam, ordered, parallel_t, syncmp
-  use parallel_mod, only: global_shared_buf, global_shared_sum
-  ! ------------------------------
+
+  use kinds,            only: real_kind, iulog
+  use dimensions_mod,   only: nlev, np, nc, qsize_d, qsize, nelemd, ntrac, ntrac_d
+  use parallel_mod,     only:  iam, ordered, parallel_t, syncmp
+  use parallel_mod,     only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
-  ! ------------------------------
-  use hybrid_mod, only : hybrid_t
-  ! ------------------------------
+  use hybrid_mod,       only: hybrid_t
+  use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
+  use control_mod,      only: integration, test_case, runtype, moisture, &
+                              tstep_type,energy_fixer, qsplit, ftype, use_cpstar, rsplit
+  use hybvcoord_mod,    only: hvcoord_t
+  use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
+  use element_mod,      only: element_t
+  use viscosity_mod,    only: compute_zeta_C0
+  use reduction_mod,    only: parallelmax,parallelmin
+  use perf_mod,         only: t_startf, t_stopf
   use physical_constants, only : p0,Cp,g
-  ! ------------------------------
-  use time_mod, only : tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
-  ! ------------------------------
-  use control_mod, only : integration, test_case, runtype, moisture, &
-       tstep_type,energy_fixer, qsplit, ftype, use_cpstar, rsplit
-  ! ------------------------------
-  use hybvcoord_mod, only : hvcoord_t 
-  ! ------------------------------
-  use global_norms_mod, only : global_integral, linf_snorm, l1_snorm, l2_snorm
-  ! ------------------------------
-  use element_mod, only : element_t
-  ! ------------------------------
-  use fvm_control_volume_mod, only : fvm_struct
-  use spelt_mod, only : spelt_struct
-  ! ------------------------------
-  use viscosity_mod, only : compute_zeta_C0
-  ! ------------------------------
-  use reduction_mod, only : parallelmax,parallelmin
-  ! ------------------------------
-  use perf_mod, only : t_startf, t_stopf
-  ! ------------------------------
+  use fvm_control_volume_mod, only: fvm_struct
 #ifdef _REFSOLN
-  use ref_state_mod, only : ref_state_read, ref_state_write
+  use ref_state_mod,    only : ref_state_read, ref_state_write
 #endif
 
 implicit none
@@ -81,21 +65,17 @@ contains
 !=======================================================================================================! 
 
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, fvm)
-    use physical_constants, only : dd_pi
-    use control_mod, only : tracer_transport_type
-    use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 
-    type (element_t), intent(in) :: elem(:)
-    
-#if defined(_SPELT)
-      type(spelt_struct), optional, intent(in) :: fvm(:)
-#else
-      type(fvm_struct), optional, intent(in) :: fvm(:)
-#endif
-    type (TimeLevel_t), target, intent(in) :: tl
-    type (hybrid_t),intent(in)     :: hybrid
-    type (hvcoord_t), intent(in)   :: hvcoord
-    integer,intent(in)             :: nets,nete
+    use physical_constants,     only: dd_pi
+    use control_mod,            only: tracer_transport_type
+    use fvm_control_volume_mod, only: n0_fvm, np1_fvm
+
+    type(element_t),            intent(in) :: elem(:)
+    type(fvm_struct), optional, intent(in) :: fvm(:)
+    type(TimeLevel_t),target,   intent(in) :: tl
+    type(hybrid_t),             intent(in) :: hybrid
+    type(hvcoord_t),            intent(in) :: hvcoord
+    integer,                    intent(in) :: nets,nete
 
     ! Local variables...
     integer :: i,j,k,ie

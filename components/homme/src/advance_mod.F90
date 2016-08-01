@@ -3,44 +3,31 @@
 #endif
 
 module advance_mod
-  use kinds, only : real_kind
-  use dimensions_mod, only : np,npdg
-  use physical_constants, only : rearth, rrearth 
-  implicit none
-  ! semi-implicit needs to be re-initialized each time dt changes 
-  real (kind=real_kind) :: initialized_for_dt   = 0
-contains
+  use kinds,              only: real_kind
+  use dimensions_mod,     only: np
+  use physical_constants, only: rearth, rrearth
 
+  implicit none
+
+  ! semi-implicit needs to be re-initialized each time dt changes
+  real (kind=real_kind) :: initialized_for_dt   = 0
+
+contains
 
   subroutine advance_nonstag( elem, edge2,  edge3,  deriv,  flt,   hybrid,  &
        dt,  pmean,     tl,   nets,   nete)
 
-    ! ---------------------
-    use kinds, only : real_kind
-    ! ---------------------
-    use dimensions_mod, only : np, nlev
-    ! ---------------------
-    use element_mod, only : element_t
-    ! ---------------------
-    use edgetype_mod, only : EdgeBuffer_t
-    ! ---------------------
-    use filter_mod, only : filter_t
-    ! ---------------------
-    use hybrid_mod, only : hybrid_t
-    ! ---------------------
-    use derivative_mod, only : derivative_t
-    ! ---------------------
-    use time_mod, only : timelevel_t, smooth
-    ! ---------------------
-    use control_mod, only : LFTfreq
-    ! ---------------------
-    !  FOR DEBUGING use only 
-    ! ---------------------
-    !    use schedule_mod
+    use kinds,          only: real_kind
+    use dimensions_mod, only: np, nlev
+    use element_mod,    only: element_t
+    use edgetype_mod,   only: EdgeBuffer_t
+    use filter_mod,     only: filter_t
+    use hybrid_mod,     only: hybrid_t
+    use derivative_mod, only: derivative_t
+    use time_mod,       only: timelevel_t, smooth
+    use control_mod,    only: LFTfreq
+    use perf_mod,       only : t_startf, t_stopf ! _EXTERNAL
     use global_norms_mod
-    ! ---------------------
-    use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-
 
     implicit none
 
@@ -188,37 +175,24 @@ contains
   subroutine advance_nonstag_rk( MyRk, elem, edge2,  edge3,  deriv,  flt,   hybrid,  &
        dt,  pmean,     tl,   nets,   nete)
 
-    ! ---------------------
-    use kinds, only : real_kind
-    ! ---------------------
-    use dimensions_mod, only : np, nlev
-    ! ---------------------
-    use element_mod, only : element_t
-    ! ---------------------
-    use edge_mod, only : edgevpack, edgevunpack, edgedgvunpack
-    use edgetype_mod, only : EdgeBuffer_t
-    ! ---------------------
-    use filter_mod, only : filter_t
-    ! ---------------------
-    use hybrid_mod, only : hybrid_t
-    ! ---------------------
-    use derivative_mod, only : derivative_t, gradient_sphere, divergence_sphere,vorticity_sphere,&
-         divergence_sphere_wk, edge_flux_u_cg, dgmodal_to_gll, gll_to_dgmodal
-    ! ---------------------
-    use time_mod, only : timelevel_t
-    ! ---------------------
-    use control_mod, only :  test_case, limiter_option, nu, nu_s, &
+    use kinds,          only: real_kind
+    use dimensions_mod, only: np, nlev
+    use element_mod,    only: element_t
+    use edge_mod,       only: edgevpack, edgevunpack, edgedgvunpack
+    use edgetype_mod,   only: EdgeBuffer_t
+    use filter_mod,     only: filter_t
+    use hybrid_mod,     only: hybrid_t
+    use derivative_mod, only: derivative_t, gradient_sphere, divergence_sphere,vorticity_sphere,&
+         divergence_sphere_wk, edge_flux_u_cg
+    use time_mod,       only: timelevel_t
+    use control_mod,    only:  test_case, limiter_option, nu, nu_s, &
          tracer_advection_formulation, TRACERADV_UGRADQ, kmass
-    ! ---------------------
-    use bndry_mod, only : bndry_exchangev
-    use viscosity_mod, only : neighbor_minmax, biharmonic_wk
-    ! ---------------------
+    use bndry_mod,      only: bndry_exchangev
+    use viscosity_mod,  only: neighbor_minmax, biharmonic_wk
     !  FOR DEBUGING use only 
-    ! ---------------------
     !    use schedule_mod
     use global_norms_mod
-    ! ---------------------
-    use types_mod, only : rk_t
+    use types_mod,      only: rk_t
 
 
     implicit none
@@ -252,9 +226,7 @@ contains
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: vtens
     real (kind=real_kind), dimension(np,np,nlev,nets:nete)   :: ptens
     real (kind=real_kind), dimension(np,np,nlev,nets:nete)   :: ptens_dg
-    real (kind=real_kind), dimension(npdg,npdg)   :: phat
-
-    real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)   :: pedges
+    real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)     :: pedges
 
     real (kind=real_kind), dimension(np,np,2)    :: grade   ! kinetic energy gradient
     real (kind=real_kind), dimension(np,np,2)    :: gradh   ! grad(h)
@@ -265,37 +237,26 @@ contains
     real (kind=real_kind), dimension(np,np)      :: div, flux, plocal
     real (kind=real_kind), dimension(np,np,2)    :: ulatlon
 
-
     real (kind=real_kind) :: v1,v2,fjmax(4)
     real (kind=real_kind) :: vtens1,vtens2
     real (kind=real_kind) :: pmin(nlev,nets:nete),pmax(nlev,nets:nete)
-
     real (kind=real_kind) :: real_time
-
     real (kind=real_kind) :: dtstage
-    integer    :: i,j,k,s,ie
-    integer    :: kptr
-    integer    :: n0,np1
-    integer    :: nstep
-    integer    :: ntmp
+
+    integer :: i,j,k,s,ie
+    integer :: kptr
+    integer :: n0,np1
+    integer :: nstep
+    integer :: ntmp
 
     logical :: Debug = .FALSE.
-    logical :: use_advective_flux 
 
-
-    ! flux used for DG tracers in hybrid CG/DG option (npdg>0):
-    if (test_case=="swtc1" .or. test_case=="vortex" .or. test_case=="swirl") then
-       ! advection test cases support conservation form or advective form
-       use_advective_flux=.true.
-    else
-       ! use shallow water flux
-       use_advective_flux=.false.
-       ! shallow water test cases require conservation form of h equation
-       if (tracer_advection_formulation==TRACERADV_UGRADQ) then
-          print *,'ERROR: shallow water tests require conservation formulation:'
-          stop '(tracer_advection_formulation=1)'
-       endif   
+    ! shallow water test cases require conservation form of h equation
+    if (tracer_advection_formulation==TRACERADV_UGRADQ) then
+      print *,'ERROR: shallow water tests require conservation formulation:'
+      stop '(tracer_advection_formulation=1)'
     endif
+
     if (kmass==-1) then
        if (limiter_option ==0 .or. limiter_option==4) then
           ! when we dont advect a seperate density, we only allow limiter=0 or 4
@@ -308,7 +269,6 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
-
 
     ! We want to make this leap-frog compliant
     ! Copy u^n to u^n+1
@@ -450,9 +410,6 @@ contains
              else
                 div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar
              endif
-             if (npdg>0) then
-                ptens_dg(:,:,k,ie) = divergence_sphere_wk(pv,deriv,elem(ie))      ! latlon vector -> scalar
-             endif
 
              ! ==============================================
              ! Compute velocity tendency terms
@@ -505,12 +462,6 @@ contains
           ! ===================================================
           ! Pack cube edges of tendencies, rotate velocities
           ! ===================================================
-          if (npdg>0) then
-             ! for hybrid cg/dg element, pack p for flux calculation below
-             do k=1,nlev
-                ptens(:,:,k,ie)=elem(ie)%state%p(:,:,k,n0)
-             enddo
-          endif
           kptr=0
           call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
           kptr=nlev
@@ -537,10 +488,9 @@ contains
           ! ===========================================================
           ! Unpack the edges for vgradp and vtens
           ! ===========================================================
-          if (npdg==0) then
-             kptr=0
-             call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
-          endif
+          kptr=0
+          call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
+
           kptr=nlev
           call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
@@ -561,54 +511,6 @@ contains
              end do
           end do
 
-          if (npdg>0) then
-             kptr=0
-             call edgeDGVunpack(edge3, pedges, nlev, kptr, ie)
-             pedges=pedges+pmean  ! add in mean value, to get edge flux correct
-             do k=1,nlev
-                plocal(:,:)=elem(ie)%state%p(:,:,k,n0)+pmean  ! add in mean value
-                if (use_advective_flux) then
-                   ! simple upwind flux
-                   !flux=edge_flux_u_cg( elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),&
-                   !     pedges(:,:,k), deriv, elem(ie), u_is_contra=.true.)
-                   flux=adv_flux_term(elem(ie),deriv,elem(ie)%state%v(:,:,:,k,n0),plocal,pedges(:,:,k))
-                else
-                   ! shallow water flux:
-                   fjmax=sw_fjmax(elem(ie)%state%v(:,:,:,k,n0),plocal,pedges(:,:,k),elem(ie))
-                   call swsys_flux(1,elem(ie),deriv,fjmax,plocal,pedges(:,:,k),elem(ie)%state%v(:,:,:,k,n0),flux)
-                endif
-
-                ! combine weak gradient and edge flux:
-                ptens(:,:,k,ie) = ptens_dg(:,:,k,ie) + flux(:,:)
-
-                ! advance in time. GLL quadrature, cardinal function basis, under-integrated.  
-                ! local mass matrix is diagonal, with entries elem(ie)%spheremp(),
-                ! so we divide through by elem(ie)%spheremp().
-                ptens(:,:,k,ie) = elem(ie)%state%p(:,:,k,n0) - dtstage*ptens(:,:,k,ie)/elem(ie)%spheremp(:,:)
-                if (npdg<np) then
-                   ! modal timestep, with exact integration.  using prognostic variable: p*metdet
-                   ! local mass matrix is diagonal assuming npdg<np so that GLL quadrature is exact)
-                   ! (note: GLL/modal conversion comutes with time-stepping)
-
-                   ! compute modal coefficients of p*metdet
-                   ! (spherical inner-product of Legendre polynomial and p)
-                   phat = gll_to_dgmodal(ptens(:,:,k,ie)*elem(ie)%metdet(:,:),deriv)   
-
-                   ! modal based limiter goes here
-
-                   ! evalute modal expanion of p*metdet on GLL points
-                   ptens(:,:,k,ie)=dgmodal_to_gll(phat,deriv) 
-                   
-                   ! convert back to p
-                   ptens(:,:,k,ie)=ptens(:,:,k,ie)*elem(ie)%rmetdet(:,:)
-                endif
-             enddo
-             ! truncation + mass weighted redistribution:
-             if (limiter_option==4) call limiter2d_zero(ptens(:,:,:,ie),elem(ie)%spheremp, kmass)
-             ! Find optimal (l2 norm) solution which is closest to unlimited solution:
-             if (limiter_option==8) call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
-                  pmin(:,ie),pmax(:,ie),kmass)
-          endif
           do k=1,nlev
              ! ====================================================
              ! average different timelevels for RK-SSP
@@ -825,7 +727,6 @@ contains
     use edgetype_mod, only : EdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use viscosity_mod, only : biharmonic_wk, neighbor_minmax
-    ! ---------------------
     implicit none
 
     type (hybrid_t)      , intent(in) :: hybrid
@@ -1016,39 +917,23 @@ contains
        dt   ,   pmean ,  tl      ,            &
        nets ,    nete)
 
-    ! ---------------------
     use kinds, only : real_kind
-    ! ---------------------
     use dimensions_mod, only : np, nlev
-    ! ---------------------
     use element_mod, only : element_t
-    ! ---------------------
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
-    ! ---------------------
     use filter_mod, only : filter_t, filter_P
-    ! ---------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t
-    ! ---------------------
     !    use parallel_mod
-    ! ---------------------
     use derivative_mod, only : derivative_t,  gradient_wk, divergence, &
          vorticity, gradient
-    ! ---------------------
     use time_mod, only : timelevel_t, smooth
-    ! ---------------------
     use control_mod, only : filter_freq, precon_method
-    ! ---------------------
     use cg_mod, only : cg_t
-    ! ---------------------
     use solver_mod, only : pcg_solver, blkjac_t, blkjac_init
-    ! ---------------------
     use bndry_mod, only : bndry_exchangev
-    ! ---------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-    ! ---------------------
     !    use schedule_mod
-    ! ---------------------
     implicit none
     type (element_t), intent(inout), target :: elem(:)
     type (EdgeBuffer_t)               :: edge1

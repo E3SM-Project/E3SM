@@ -26,7 +26,6 @@ module control_mod
   integer, public, parameter :: TRACERTRANSPORT_SEMILAGRANG_GLL = 2
   integer, public, parameter :: TRACERTRANSPORT_LAGRANGIAN_FVM  = 3
   integer, public, parameter :: TRACERTRANSPORT_FLUXFORM_FVM    = 4
-  integer, public, parameter :: TRACERTRANSPORT_SPELT_FVM       = 5
   integer, public            :: tracer_transport_type = TRACERTRANSPORT_SE_GLL
   integer, public, parameter :: TRACER_GRIDTYPE_GLL = 11
   integer, public, parameter :: TRACER_GRIDTYPE_FVM = 12

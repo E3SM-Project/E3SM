@@ -57,17 +57,11 @@ ENDIF ()
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
-OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" OFF)
-OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-# Primitive equations FEM with separate tracer routines
-OPTION(BUILD_PREQX_SPELT "Primitive euqations with SPELT tracers" OFF)
-
 # Cristoph's "standalone" executables
 OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
-OPTION(BUILD_HOMME_SPELT  "Standalone SPELT tracers" OFF)
 
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
@@ -186,20 +180,8 @@ IF(${BUILD_HOMME_PREQX_ACC})
   ADD_SUBDIRECTORY(src/preqx_acc)
 ENDIF()
 
-IF(${BUILD_HOMME_SWDGX})
-  ADD_SUBDIRECTORY(src/swdgx)
-ENDIF()
-
-IF(${BUILD_HOMME_PRIMDGX})
-  ADD_SUBDIRECTORY(src/primdgx)
-ENDIF()
-
 IF(${BUILD_HOMME_FVM})
   ADD_SUBDIRECTORY(src/fvm)
-ENDIF()
-
-IF(${BUILD_HOMME_SPELT})
-  ADD_SUBDIRECTORY(src/spelt)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})
