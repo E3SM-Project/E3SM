@@ -156,14 +156,14 @@ OR
                         help="Set the wallclock limit for all tests in the suite. "
                         "Can use env var CIME_GLOBAL_WALLTIME to set this for all test.")
 
-    parser.add_argument("--xml-machine",
-                        help="Use this machine key in the lookup in testlist.xml")
-    parser.add_argument("--xml-compiler",
-                        help="Use this compiler key in the lookup in testlist.xml")
-    parser.add_argument("--xml-category",
-                        help="Use this category key in the lookup in testlist.xml")
-    parser.add_argument("--xml-testlist",
-                        help="Use this testlist to lookup tests")
+    parser.add_argument("--xml-machine",default=argparse.SUPPRESS,
+                        help="Use this machine key in the lookup in testlist.xml, default is all if any --xml- argument is used")
+    parser.add_argument("--xml-compiler",default=argparse.SUPPRESS,
+                        help="Use this compiler key in the lookup in testlist.xml, default is all if any --xml- argument is used")
+    parser.add_argument("--xml-category",default=argparse.SUPPRESS,
+                        help="Use this category key in the lookup in testlist.xml, default is all if any --xml- argument is used")
+    parser.add_argument("--xml-testlist",default=argparse.SUPPRESS,
+                        help="Use this testlist to lookup tests, default specified in config_files.xml")
     parser.add_argument("--testfile",
                         help="A file containing an ascii list of tests to run")
 
