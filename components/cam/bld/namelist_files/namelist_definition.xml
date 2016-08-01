@@ -2884,7 +2884,7 @@ Default: 2.4
 
 <entry id="gamma_coef" type="real" category="pblrad"
        group="initvars" valid_values="" >
-Constant of the width of PDF in w-coordinate
+Constant of the width of PDF in w-coordinate Low Skw. gamma coef. Skw. Fnct
 Default: 0.32
 </entry>
 
@@ -2912,6 +2912,18 @@ Default: 1.0. See clubb/parameters_tunable.F90
        group="clubb_param_nl" valid_values="" >
 Constant associated with the dissipation of the variance of total water
 Default: 1.0
+</entry>
+
+<entry id="clubb_C2thl" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+C2 coef. for the thlp2_dp1 term
+Default: 1.0 or clubb_C2rt if it is specified
+</entry>
+
+<entry id="clubb_C2rtthl" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+C2 coef. for the rtpthlp_dp1 term
+Default: 1.3 or 1.3*clubb_C2rt if it is specified
 </entry>
 
 <entry id="clubb_C6rt" type="real" category="pblrad"
@@ -2972,6 +2984,12 @@ Default: 2.4
        group="clubb_param_nl" valid_values="" >
 Constant of the width of PDF in w-coordinate
 Default: 0.32
+</entry>
+
+<entry id="clubb_gamma_coefb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High Skw. gamma coef. Skw. Fnct.
+Default: 0.32 or clubb_gamma_coef if it is specified
 </entry>
 
 <entry id="clubb_mu" type="real" category="pblrad"
