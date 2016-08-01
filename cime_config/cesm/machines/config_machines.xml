@@ -615,7 +615,7 @@
 	<command name="purge"></command>
       </modules>
       <modules compiler="intel">
-	<command name="load">compiler/intel/16.0.2.181</command>
+	<command name="load">compiler/intel/15.0.2.164</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
 	<command name="load">  tool/parallel-netcdf/1.7.0/intel/mvapich2  </command>
