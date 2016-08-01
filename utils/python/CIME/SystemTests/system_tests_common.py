@@ -49,10 +49,15 @@ class SystemTestsCommon(object):
         self._case.set_value("TEST",True)
         self._case.flush()
 
+    def fail_test(self):
+        self._runstatus = "FAIL"
 
     def has_failed(self):
         return self._runstatus == "FAIL"
 
+    def pass_test(self):
+        if not self.has_failed():
+            self._runstatus = "PASS"
 
     def has_passed(self):
         return self._runstatus == "PASS"
@@ -85,7 +90,7 @@ class SystemTestsCommon(object):
     def _run(self, suffix="base", coupler_log_path=None, st_archive=False):
         if self._case.get_value("IS_FIRST_RUN"):
             self._runstatus = "PEND"
-        self.update_test_status(self._runstatus,"RUN with suffix %s"%suffix)
+        self.update_test_status(self._runstatus,"RUN")
 
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
@@ -106,12 +111,9 @@ class SystemTestsCommon(object):
 
             if success and self._coupler_log_indicates_run_complete(coupler_log_path):
                 self._runstatus = "PASS"
-                self.update_test_status("PASS","RUN with suffix %s"%suffix)
             else:
                 success = False
                 self._runstatus = "FAIL"
-                self.update_test_status("FAIL","RUN with suffix %s"%suffix)
-
             if success and suffix is not None:
                 self._component_compare_move(suffix)
         except:
@@ -119,7 +121,6 @@ class SystemTestsCommon(object):
             # being marked FAIL
             success = False
             self._runstatus = "FAIL"
-            self.update_test_status("FAIL","RUN with suffix %s"%suffix)
             logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
 
         return success
@@ -144,10 +145,10 @@ class SystemTestsCommon(object):
                 else:
                     f.write(line+"\n")
             if not found:
-                    f.write("%s %s %d\n"%(status, string, total_time))
+                f.write("%s %s %d\n"%(status, string, total_time))
         # This prevents the __del__ method from overwritting an up to date status
         if phase.startswith("RUN"):
-           self._runstatus = None
+            self._runstatus = None
 
 
     def _coupler_log_indicates_run_complete(self, coupler_log_path):
@@ -401,7 +402,9 @@ class FakeTest(SystemTestsCommon):
             self._case.flush()
 
     def run(self):
-        return SystemTestsCommon._run(self, suffix=None)
+        success = SystemTestsCommon._run(self, suffix=None)
+        if success and self._runstatus is None:
+            self._runstatus = "PASS"
 
 class TESTRUNPASS(FakeTest):
 
@@ -417,7 +420,9 @@ echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
-
+    '''
+    This test is intended to be run from scripts_regression_tests.py only
+    '''
     def build(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
