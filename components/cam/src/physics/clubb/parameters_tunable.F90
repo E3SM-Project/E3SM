@@ -46,6 +46,8 @@ module parameters_tunable
   real( kind = core_rknd ) ::      &
     clubb_C1,                      &
     clubb_C2rt,                    &
+    clubb_C2thl,                   &
+    clubb_C2rtthl,                 &
     clubb_C6rt,                    &
     clubb_C6rtb,                   &
     clubb_C7,                      &
@@ -56,6 +58,7 @@ module parameters_tunable
     clubb_C14,                     &
     clubb_beta,                    &
     clubb_gamma_coef,              &
+    clubb_gamma_coefb,             &
     clubb_mu,                      &
     clubb_nu1,                     &
     clubb_c_K10
@@ -321,6 +324,8 @@ module parameters_tunable
     namelist /clubb_param_nl/      &
     clubb_C1,                      &
     clubb_C2rt,                    &
+    clubb_C2thl,                   &
+    clubb_C2rtthl,                 &
     clubb_C6rt,                    &
     clubb_C6rtb,                   &
     clubb_C7,                      &
@@ -331,6 +336,7 @@ module parameters_tunable
     clubb_C14,                     &
     clubb_beta,                    &
     clubb_gamma_coef,              &
+    clubb_gamma_coefb,             &
     clubb_mu,                      &
     clubb_nu1,                     &
     clubb_c_K10
@@ -345,6 +351,8 @@ module parameters_tunable
      
     clubb_C1 = init_value
     clubb_C2rt = init_value
+    clubb_C2thl = init_value
+    clubb_C2rtthl = init_value
     clubb_C6rt = init_value
     clubb_C6rtb = init_value
     clubb_C7 = init_value
@@ -355,6 +363,7 @@ module parameters_tunable
     clubb_C14 = init_value
     clubb_beta = init_value
     clubb_gamma_coef = init_value
+    clubb_gamma_coefb = init_value
     clubb_mu = init_value
     clubb_nu1 = init_value
     clubb_c_K10 = init_value
@@ -376,6 +385,8 @@ module parameters_tunable
    ! Broadcast namelist variables
    call mpibcast(clubb_C1,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2rt,       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C2thl,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C2rtthl,    1, mpir8,  0, mpicom)
    call mpibcast(clubb_C6rt,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C6rtb,      1, mpir8,  0, mpicom)
    call mpibcast(clubb_C7,         1, mpir8,  0, mpicom)
@@ -386,6 +397,7 @@ module parameters_tunable
    call mpibcast(clubb_C14,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_beta,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_gamma_coef, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_gamma_coefb,1, mpir8,  0, mpicom)
    call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_c_K10,      1, mpir8,  0, mpicom)
@@ -805,11 +817,16 @@ module parameters_tunable
        C1 = clubb_C1
        C1b = C1
     end if
+    ! if clubb_C2thl and clubb_C2rtthl not specified, continue to use C2thl=C2rt, C2rtthl = 1.3*C2rt
+    ! to preserve existing compsets that have assumed so and only vary C2rt
     if (clubb_C2rt /= init_value) then
        C2rt = clubb_C2rt
-       C2thl = C2rt
-        C2rtthl = C2rt*1.3_core_rknd
+       if (clubb_C2thl == init_value) C2thl = C2rt
+       if (clubb_C2rtthl == init_value) C2rtthl = C2rt*1.3_core_rknd
     end if
+    ! Allows C2thl and C2rtthl to vary separately
+    if (clubb_C2thl /= init_value) C2thl = clubb_C2thl
+    if (clubb_C2rtthl /= init_value) C2rtthl = clubb_C2rtthl
     if (clubb_C6rt /= init_value) then
        C6rt = clubb_C6rt
        C6thl = C6rt
@@ -822,10 +839,14 @@ module parameters_tunable
     if (clubb_C11b /= init_value) C11b = clubb_C11b
     if (clubb_C14 /= init_value) C14 = clubb_C14
     if (clubb_beta /= init_value) beta = clubb_beta
+    ! if clubb_gamma_coefb not specified, continue to use gamma_coefb=gamma_coef
+    ! to preserve existing compsets that have assumed so  and only vary gamma_coef
     if (clubb_gamma_coef /= init_value) then
        gamma_coef = clubb_gamma_coef
-       gamma_coefb = gamma_coef
+       if (clubb_gamma_coefb == init_value) gamma_coefb = gamma_coef
     end if
+    ! Allows gamma_coefb to vary separately
+    if (clubb_gamma_coefb /= init_value) gamma_coefb = clubb_gamma_coefb
     if (clubb_mu /= init_value) mu = clubb_mu
     if (clubb_nu1 /= init_value) nu1 = clubb_nu1
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10

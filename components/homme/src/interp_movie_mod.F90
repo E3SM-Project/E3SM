@@ -590,7 +590,7 @@ contains
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie), &
-                                        elem(ie)%state%v(:,:,:,:,n0), np, nlev, var3d(st:en,:,:,1), 0)
+                                        elem(ie)%state%v(:,:,:,:,n0), nlev, var3d(st:en,:,:,1), 0)
                    st=st+interpdata(ie)%n_interp
                 enddo
 #else
@@ -606,7 +606,7 @@ contains
                                           elem(ie)%D(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
                    end do
                    call interpolate_vector(interpdata(ie), elem(ie), &
-                                        varvtmp, np, nlev, var3d(st:en,:,:,1), 0)
+                                        varvtmp, nlev, var3d(st:en,:,:,1), 0)
                    st=st+interpdata(ie)%n_interp
                 enddo
                 deallocate(varvtmp)
@@ -982,7 +982,7 @@ contains
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie),  &
-                        elem(ie)%derived%FM(:,:,:,:,tl%np1), np, nlev, var3d(st:en,:,:,1), 0)
+                        elem(ie)%derived%FM(:,:,:,:,tl%np1), nlev, var3d(st:en,:,:,1), 0)
                    st=st+interpdata(ie)%n_interp
                 enddo
 
@@ -1004,7 +1004,7 @@ contains
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie), &
-                        elem(ie)%accum%DIFF(:,:,:,:), np, nlev, var3d(st:en,:,:,1), 0)
+                        elem(ie)%accum%DIFF(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
                    st=st+interpdata(ie)%n_interp
                 enddo
 
@@ -1024,7 +1024,7 @@ contains
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie), &
-                        elem(ie)%accum%CONV(:,:,:,:), np, nlev, var3d(st:en,:,:,1), 0)
+                        elem(ie)%accum%CONV(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
                    st=st+interpdata(ie)%n_interp
                 enddo
 
