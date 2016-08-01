@@ -5,7 +5,14 @@
 #==============================================================================
 
 find_package(Doxygen)
-if(DOXYGEN_FOUND)
+  if (PIO_ENABLE_ASYNC)
+    SET(C_SRC_FILES "@CMAKE_CURRENT_SOURCE_DIR@/../src/clib/bget.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pioc.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pioc_sc.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_darray_async.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_get_nc_async.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_internal.h @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_nc4.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_put_nc_async.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_spmd.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/bget.h @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pioc_support.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_lists.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_nc_async.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_varm.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/dtypes.h  @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_file.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio.h @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_msg.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_rearrange.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/topology.c")
+  else ()
+    SET(C_SRC_FILES "@CMAKE_CURRENT_SOURCE_DIR@/../src/clib/bget.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pioc.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pioc_sc.c  @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_internal.h @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_nc4.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_spmd.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/bget.h @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pioc_support.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_darray.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_get_nc.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_lists.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_put_nc.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_varm.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/dtypes.h @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_file.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio.h @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_msg.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_nc.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/pio_rearrange.c @CMAKE_CURRENT_SOURCE_DIR@/../src/clib/topology.c")
+  endif ()
+
+  if(DOXYGEN_FOUND)
+
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in 
                    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
