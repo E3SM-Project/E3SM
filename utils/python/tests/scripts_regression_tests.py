@@ -731,7 +731,8 @@ class TestBlessTestResults(TestCreateTestCommon):
         if (self._hasbatch):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
+            cmd = "%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id)
+            stat, output, errput = run_cmd(cmd, from_dir=self._testroot)
 
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
