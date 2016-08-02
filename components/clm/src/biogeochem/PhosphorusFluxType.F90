@@ -294,6 +294,7 @@ module PhosphorusFluxType
      real(r8), pointer :: desorb_to_solutionp_vr                    (:,:)
      real(r8), pointer :: adsorb_to_labilep_col                     (:)
      real(r8), pointer :: desorb_to_solutionp_col                   (:)
+     real(r8), pointer :: pmpf_decomp_cascade                       (:,:,:)
 
      real(r8), pointer :: plant_p_uptake_flux                       (:)     ! for the purpose of mass balance check  
      real(r8), pointer :: soil_p_immob_flux                         (:)     ! for the purpose of mass balance check
@@ -620,6 +621,7 @@ contains
     allocate(this%desorb_to_solutionp_vr      (begc:endc,1:nlevdecomp_full )) ; this%desorb_to_solutionp_vr      (:,:) = nan
     allocate(this%adsorb_to_labilep_col       (begc:endc                   )) ; this%adsorb_to_labilep_col       (:)   = nan
     allocate(this%desorb_to_solutionp_col     (begc:endc                   )) ; this%desorb_to_solutionp_col     (:)   = nan
+    allocate(this%pmpf_decomp_cascade(begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions)); this%pmpf_decomp_cascade(:,:,:) = nan
     
     allocate(this%plant_p_uptake_flux         (begc:endc                   )) ; this%plant_p_uptake_flux         (:)   = nan
     allocate(this%soil_p_immob_flux           (begc:endc                   )) ; this%soil_p_immob_flux           (:)   = nan

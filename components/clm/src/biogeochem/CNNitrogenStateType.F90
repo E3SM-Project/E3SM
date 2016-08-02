@@ -139,6 +139,54 @@ module CNNitrogenStateType
      real(r8), pointer :: seedn_end_col                (:)
      real(r8), pointer :: ntrunc_end_col               (:)
 
+     ! for dynamic C/N/P allocation cost-benefit analysis
+     real(r8), pointer :: npimbalance_patch                         (:)
+     real(r8), pointer :: pnup_pfrootc_patch                        (:)
+     real(r8), pointer :: ppup_pfrootc_patch                        (:)
+     real(r8), pointer :: ptlai_pleafc_patch                        (:)
+     
+     real(r8), pointer :: ppsnsun_ptlai_patch                       (:)
+     real(r8), pointer :: ppsnsun_pleafn_patch                      (:)
+     real(r8), pointer :: ppsnsun_pleafp_patch                      (:)
+     
+     real(r8), pointer :: plmrsun_ptlai_patch                       (:)
+     real(r8), pointer :: plmrsun_pleafn_patch                      (:)
+     real(r8), pointer :: plaisun_ptlai_patch                       (:)
+     
+     real(r8), pointer :: ppsnsha_ptlai_patch                       (:)
+     real(r8), pointer :: ppsnsha_pleafn_patch                      (:)
+     real(r8), pointer :: ppsnsha_pleafp_patch                      (:)
+     
+     real(r8), pointer :: plmrsha_ptlai_patch                       (:)
+     real(r8), pointer :: plmrsha_pleafn_patch                      (:)
+     real(r8), pointer :: plaisha_ptlai_patch                       (:)
+     
+     real(r8), pointer :: benefit_pgpp_pleafc_patch                 (:)     ! partial gpp / partial leaf carbon (used by symbiotic n2 fixation and dynamic allocation)
+     real(r8), pointer :: benefit_pgpp_pleafn_patch                 (:)     ! partial gpp / partial leaf nitrogen (used by phosphatase activity and dynamic allocation)
+     real(r8), pointer :: benefit_pgpp_pleafp_patch                 (:)     ! partial gpp / partial leaf phosphorus (used by phosphatase activity and dynamic allocation)
+     real(r8), pointer :: cost_pgpp_pfrootc_patch                   (:)     ! partial gpp /  partial fine root carbon (used by dynamic allocation)
+     real(r8), pointer :: cost_plmr_pleafc_patch                    (:)     ! partial maintenance respiration /  partial leaf carbon (used by dynamic allocation)
+     real(r8), pointer :: cost_plmr_pleafn_patch                    (:)     ! partial maintenance respiration /  partial leaf nitrogen (used by dynamic allocation)
+     
+     real(r8), pointer :: ppsn_ptlai_z                              (:,:)
+     real(r8), pointer :: ppsn_pleafn_z                             (:,:)
+     real(r8), pointer :: ppsn_pleafp_z                             (:,:)
+     
+     real(r8), pointer :: ppsn_ptlai_z_vcmax                        (:,:)
+     real(r8), pointer :: ppsn_pleafn_z_vcmax                       (:,:)
+     real(r8), pointer :: ppsn_pleafp_z_vcmax                       (:,:)
+     
+     real(r8), pointer :: ppsn_ptlai_z_jmax                         (:,:)
+     real(r8), pointer :: ppsn_pleafn_z_jmax                        (:,:)
+     real(r8), pointer :: ppsn_pleafp_z_jmax                        (:,:)
+     
+     real(r8), pointer :: ppsn_ptlai_z_tpu                          (:,:)
+     real(r8), pointer :: ppsn_pleafn_z_tpu                         (:,:)
+     real(r8), pointer :: ppsn_pleafp_z_tpu                         (:,:)
+    
+     real(r8), pointer :: plmr_ptlai_z                              (:,:)
+     real(r8), pointer :: plmr_pleafn_z                             (:,:)
+
    contains
 
      procedure , public  :: Init   
@@ -289,6 +337,44 @@ contains
     allocate(this%totprodn_end_col    (begc:endc))   ; this%totprodn_end_col    (:) = nan
     allocate(this%seedn_end_col       (begc:endc))   ; this%seedn_end_col       (:) = nan
     allocate(this%ntrunc_end_col      (begc:endc))   ; this%ntrunc_end_col      (:) = nan
+
+    ! for dynamic C/N/P allocation
+    allocate(this%npimbalance_patch           (begp:endp)) ;             this%npimbalance_patch           (:) = 0.0_r8 ! initialize to zero for Phosphatase module
+    allocate(this%pnup_pfrootc_patch          (begp:endp)) ;             this%pnup_pfrootc_patch          (:) = 0.0_r8 ! initialize to zero for N2 Fixation module
+    allocate(this%ppup_pfrootc_patch          (begp:endp)) ;             this%ppup_pfrootc_patch          (:) = nan
+    allocate(this%ptlai_pleafc_patch          (begp:endp)) ;             this%ptlai_pleafc_patch          (:) = nan
+    allocate(this%ppsnsun_ptlai_patch         (begp:endp)) ;             this%ppsnsun_ptlai_patch         (:) = nan
+    allocate(this%ppsnsun_pleafn_patch        (begp:endp)) ;             this%ppsnsun_pleafn_patch        (:) = nan
+    allocate(this%ppsnsun_pleafp_patch        (begp:endp)) ;             this%ppsnsun_pleafp_patch        (:) = nan
+    allocate(this%plmrsun_ptlai_patch         (begp:endp)) ;             this%plmrsun_ptlai_patch         (:) = nan
+    allocate(this%plmrsun_pleafn_patch        (begp:endp)) ;             this%plmrsun_pleafn_patch        (:) = nan
+    allocate(this%plaisun_ptlai_patch         (begp:endp)) ;             this%plaisun_ptlai_patch         (:) = nan
+    allocate(this%ppsnsha_ptlai_patch         (begp:endp)) ;             this%ppsnsha_ptlai_patch         (:) = nan
+    allocate(this%ppsnsha_pleafn_patch        (begp:endp)) ;             this%ppsnsha_pleafn_patch        (:) = nan
+    allocate(this%ppsnsha_pleafp_patch        (begp:endp)) ;             this%ppsnsha_pleafp_patch        (:) = nan
+    allocate(this%plmrsha_ptlai_patch         (begp:endp)) ;             this%plmrsha_ptlai_patch         (:) = nan
+    allocate(this%plmrsha_pleafn_patch        (begp:endp)) ;             this%plmrsha_pleafn_patch        (:) = nan
+    allocate(this%plaisha_ptlai_patch         (begp:endp)) ;             this%plaisha_ptlai_patch         (:) = nan
+    allocate(this%benefit_pgpp_pleafc_patch   (begp:endp)) ;             this%benefit_pgpp_pleafc_patch   (:) = 0.0_r8 ! initialize to zero for N2 Fixation module
+    allocate(this%benefit_pgpp_pleafn_patch   (begp:endp)) ;             this%benefit_pgpp_pleafn_patch   (:) = nan
+    allocate(this%benefit_pgpp_pleafp_patch   (begp:endp)) ;             this%benefit_pgpp_pleafp_patch   (:) = nan
+    allocate(this%cost_pgpp_pfrootc_patch     (begp:endp)) ;             this%cost_pgpp_pfrootc_patch     (:) = nan
+    allocate(this%cost_plmr_pleafc_patch      (begp:endp)) ;             this%cost_plmr_pleafc_patch      (:) = nan
+    allocate(this%cost_plmr_pleafn_patch      (begp:endp)) ;             this%cost_plmr_pleafn_patch      (:) = nan
+    allocate(this%ppsn_ptlai_z                (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z                (:,:) = nan
+    allocate(this%ppsn_pleafn_z               (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z               (:,:) = nan
+    allocate(this%ppsn_pleafp_z               (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z               (:,:) = nan
+    allocate(this%ppsn_ptlai_z_vcmax          (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z_vcmax          (:,:) = nan
+    allocate(this%ppsn_pleafn_z_vcmax         (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z_vcmax         (:,:) = nan
+    allocate(this%ppsn_pleafp_z_vcmax         (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z_vcmax         (:,:) = nan
+    allocate(this%ppsn_ptlai_z_jmax           (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z_jmax           (:,:) = nan
+    allocate(this%ppsn_pleafn_z_jmax          (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z_jmax          (:,:) = nan
+    allocate(this%ppsn_pleafp_z_jmax          (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z_jmax          (:,:) = nan
+    allocate(this%ppsn_ptlai_z_tpu            (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z_tpu            (:,:) = nan
+    allocate(this%ppsn_pleafn_z_tpu           (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z_tpu           (:,:) = nan
+    allocate(this%ppsn_pleafp_z_tpu           (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z_tpu           (:,:) = nan
+    allocate(this%plmr_ptlai_z                (begp:endp,1:nlevcan)) ;   this%plmr_ptlai_z                (:,:) = nan
+    allocate(this%plmr_pleafn_z               (begp:endp,1:nlevcan)) ;   this%plmr_pleafn_z               (:,:) = nan
 
     allocate(this%smin_nh4sorb_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%smin_nh4sorb_vr_col      (:,:) = nan
     allocate(this%smin_nh4sorb_col         (begc:endc))                   ; this%smin_nh4sorb_col         (:)   = nan
@@ -750,13 +836,12 @@ contains
           end if
           
           if (nu_com .ne. 'RD') then
-             if (pft%itype(p) == noveg) then
-                this%frootn_patch(p) = 0._r8
-                this%frootn_storage_patch(p) = 0._r8
-             else
-                this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft%itype(p))
-                this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft%itype(p))
-             end if
+              ! ECA competition calculate root NP uptake as a function of fine root biomass
+              ! better to initialize root CNP pools with a non-zero value
+              if (pft%itype(p) .ne. noveg) then
+                 this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft%itype(p))
+                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft%itype(p))
+              end if
           end if
 
           this%deadstemn_storage_patch(p)  = 0._r8
