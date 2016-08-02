@@ -2420,10 +2420,10 @@
   <entry id="PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO">
     <type>integer</type>
     <valid_values></valid_values>
-    <default_value>64</default_value>
+    <default_value>0</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communication max pending requests (comp2io) </desc>
+    <desc>pio rearranger communication max pending requests (comp2io) : 0 implies that CIME internally calculates the value ( = max(64, 2 * PIO_NUMTASKS) ), -1 implies no bound on max pending requests </desc>
   </entry>
 
   <entry id="PIO_REARR_COMM_ENABLE_HS_COMP2IO">
@@ -2450,13 +2450,15 @@
     <default_value>64</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communication max pending requests (io2comp)</desc>
+    <desc>pio rearranger communication max pending requests (io2comp) : -1 implies no bound on max pending requests </desc>
   </entry>
 
+  <!-- Handshaking is a very bad idea for large process counts and for -->
+  <!-- io2comp (but important for comp2io -->
   <entry id="PIO_REARR_COMM_ENABLE_HS_IO2COMP">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
+    <default_value>FALSE</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger communiation options (io2comp) : TRUE implies enable handshake</desc>
@@ -2465,7 +2467,7 @@
   <entry id="PIO_REARR_COMM_ENABLE_ISEND_IO2COMP">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
+    <default_value>TRUE</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger communiation options (io2comp) : TRUE implies enable isend</desc>
