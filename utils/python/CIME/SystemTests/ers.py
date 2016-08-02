@@ -52,8 +52,9 @@ class ERS(SystemTestsCompareTwo):
         self._case.set_value("CONTINUE_RUN", False)
         self._case.set_value("REST_OPTION", self._stop_option)
         self._case.set_value("REST_N", self._rest_n)
-        logger.info("doing an %s %s initial test with restart file at %s %s"
-                    %(str(stop_n), stop_option, str(rest_n), stop_option))
+        logger.info("doing a %d %s initial test with restart file at %d %s"
+                    %(self._stop_n, self._stop_option,
+                      self._rest_n, self._stop_option))
 
     def _run_two_setup(self):
         stop_new = self._stop_n - self._rest_n
@@ -63,5 +64,5 @@ class ERS(SystemTestsCompareTwo):
         self._case.set_value("STOP_N", stop_new)
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
-        logger.info("doing an %s %s restart test"
-                    %(str(stop_n), stop_option))
+        logger.info("doing a %d %s restart test"
+                    %(stop_new, self._stop_option))
