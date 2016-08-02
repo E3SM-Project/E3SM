@@ -89,10 +89,10 @@ module ocn_analysis_driver
    character (len=*), parameter :: finalizeTimerPrefix = 'finalize_'
    character (len=*), parameter :: computeAlarmSuffix = 'CMPALRM'
 
-   character (len=*), parameter :: timeSeriesDailyTAG = 'Daily'
-   character (len=*), parameter :: timeSeriesMonthlyTAG = 'Monthly'
-   character (len=*), parameter :: timeSeriesClimatologyTAG = 'Climatology'
-   character (len=*), parameter :: timeSeriesCustomTAG = 'Custom'
+   character (len=StrKIND), parameter :: timeSeriesDailyTAG = 'Daily'
+   character (len=StrKIND), parameter :: timeSeriesMonthlyTAG = 'Monthly'
+   character (len=StrKIND), parameter :: timeSeriesClimatologyTAG = 'Climatology'
+   character (len=StrKIND), parameter :: timeSeriesCustomTAG = 'Custom'
 
    type (mpas_pool_type), pointer :: analysisMemberList
 
