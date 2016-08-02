@@ -13,8 +13,8 @@ subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 
 from CIME.utils import run_cmd, run_cmd_no_fail
 import CIME.utils, update_acme_tests, wait_for_tests
-import CIME.system_test
-from  CIME.system_test import SystemTest
+import CIME.test_scheduler
+from  CIME.test_scheduler import TestScheduler
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
@@ -476,7 +476,7 @@ class C_TestCreateTest(TestCreateTestCommon):
         self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
-class E_TestSystemTest(TestCreateTestCommon):
+class E_TestTestScheduler(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -487,7 +487,7 @@ class E_TestSystemTest(TestCreateTestCommon):
                                                        "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X", "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
-        ct = SystemTest(tests)
+        ct = TestScheduler(tests)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -499,9 +499,9 @@ class E_TestSystemTest(TestCreateTestCommon):
 
         for idx, phase in enumerate(ct._phases):
             for test in ct._tests:
-                if (phase == CIME.system_test.INITIAL_PHASE):
+                if (phase == CIME.test_scheduler.INITIAL_PHASE):
                     continue
-                elif (phase == CIME.system_test.MODEL_BUILD_PHASE):
+                elif (phase == CIME.test_scheduler.MODEL_BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
 
                     if (test == build_fail_test):
@@ -513,7 +513,7 @@ class E_TestSystemTest(TestCreateTestCommon):
                         self.assertFalse(ct._is_broken(test))
                         self.assertTrue(ct._work_remains(test))
 
-                elif (phase == CIME.system_test.RUN_PHASE):
+                elif (phase == CIME.test_scheduler.RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
                             ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
@@ -557,7 +557,7 @@ class E_TestSystemTest(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = SystemTest(tests, test_id=test_id, no_batch=NO_BATCH)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -568,7 +568,7 @@ class E_TestSystemTest(TestCreateTestCommon):
         log_lvl = logging.getLogger().getEffectiveLevel()
         logging.disable(logging.CRITICAL)
         try:
-            ct.system_test()
+            ct.run_tests()
         finally:
             logging.getLogger().setLevel(log_lvl)
 
@@ -581,16 +581,16 @@ class E_TestSystemTest(TestCreateTestCommon):
         for test_status in test_statuses:
             status, test_name = wait_for_tests.parse_test_status_file(test_status)
             if (test_name == build_fail_test):
-                self.assertEqual(status[CIME.system_test.MODEL_BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.test_scheduler.MODEL_BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
-                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.test_scheduler.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == mem_fail_test):
                 self.assertTrue("memleak" in status, "memleak missing in %s for test %s" % (status, test_name))
                 self.assertEqual(status["memleak"], wait_for_tests.TEST_FAIL_STATUS)
-                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(status[CIME.test_scheduler.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
-                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(status[CIME.test_scheduler.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
                 if (test_name == mem_pass_test):
                     self.assertEqual(status["memleak"], wait_for_tests.TEST_PASS_STATUS)
 
@@ -731,7 +731,8 @@ class TestBlessTestResults(TestCreateTestCommon):
         if (self._hasbatch):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
+            cmd = "%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id)
+            stat, output, errput = run_cmd(cmd, from_dir=self._testroot)
 
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))

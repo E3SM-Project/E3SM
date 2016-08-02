@@ -1,6 +1,9 @@
 """
-Implementation of System Test functionality from CIME
+A library for scheduling/running through the phases of a set
+of system tests. Supports phase-level parallelism (can make progres
+on multiple system tests at once).
 """
+
 import shutil, traceback, stat, glob, threading, time, thread
 from CIME.XML.standard_module_setup import *
 import compare_namelists
@@ -30,12 +33,12 @@ CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-class SystemTest(object):
+class TestScheduler(object):
 ###############################################################################
 
     ###########################################################################
     def __init__(self, test_names,
-                 no_run=False, no_build=False, no_batch=None,
+                 no_run=False, no_build=False, no_setup=False, no_batch=None,
                  test_root=None, test_id=None,
                  machine_name=None, compiler=None,
                  baseline_root=None, baseline_name=None,
@@ -61,8 +64,9 @@ class SystemTest(object):
         self._machobj = Machines(machine=machine_name)
         machine_name = self._machobj.get_machine_name()
 
-        self._no_build = no_build if not namelists_only else True
-        self._no_run = no_run if not self._no_build else True
+        self._no_setup = no_setup
+        self._no_build = no_build or no_setup or namelists_only
+        self._no_run   = no_run or self._no_build
 
         # Figure out what project to use
         if project is None:
@@ -203,10 +207,12 @@ class SystemTest(object):
 
         # Setup phases
         self._phases = list(PHASES)
-        if no_build:
+        if self._no_setup:
+            self._phases.remove(SETUP_PHASE)
+        if self._no_build:
             self._phases.remove(SHAREDLIB_BUILD_PHASE)
             self._phases.remove(MODEL_BUILD_PHASE)
-        if no_run:
+        if self._no_run:
             self._phases.remove(RUN_PHASE)
         if not self._compare and not self._generate:
             self._phases.remove(NAMELIST_PHASE)
@@ -410,6 +416,7 @@ class SystemTest(object):
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
+        envtest.add_elements_by_group(files, {}, "env_test.xml")
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
         envtest.set_value("TESTCASE", test_case)
         envtest.set_value("TEST_TESTID", self._test_id)
@@ -793,28 +800,32 @@ class SystemTest(object):
 
             template_file = os.path.join(python_libs_root, "cs.submit.template")
             template = open(template_file, "r").read()
-            build_cmd = "./*.build" if self._no_build else ":"
-            cmd = "./*.test" if self._no_batch else "./*.submit"
-            template = template.replace("<BUILD_CMD>", build_cmd).\
-                       replace("<RUN_CMD>", cmd).\
+            setup_cmd = "./case.setup" if self._no_setup else ":"
+            build_cmd = "./case.build" if self._no_build else ":"
+            test_cmd  = "./case.submit"
+            template = template.replace("<SETUP_CMD>", setup_cmd).\
+                       replace("<BUILD_CMD>", build_cmd).\
+                       replace("<RUN_CMD>", test_cmd).\
                        replace("<TESTID>", self._test_id)
 
-            if self._no_build or self._no_run:
+            if self._no_run:
                 cs_submit_file = os.path.join(self._test_root, "cs.submit.%s" % self._test_id)
                 with open(cs_submit_file, "w") as fd:
                     fd.write(template)
                 os.chmod(cs_submit_file,
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+
             if CIME.utils.get_model == "cesm":
                 testreporter =  os.path.join(self._test_root,"testreporter.pl")
                 shutil.copy(os.path.join(self._cime_root,"scripts","Testing","testreporter.pl"),
                             testreporter)
                 os.chmod(testreporter, os.stat(testreporter).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+
         except Exception as e:
             logger.warning("FAILED to set up cs files: %s" % str(e))
 
     ###########################################################################
-    def system_test(self):
+    def run_tests(self):
     ###########################################################################
         """
         Main API for this class.
@@ -838,7 +849,7 @@ class SystemTest(object):
         self._setup_cs_files()
 
         # Return True if all tests passed
-        logger.info( "At system_test close, state is:")
+        logger.info( "At test-scheduler close, state is:")
         rv = True
         for test in self._tests:
             phase, status, nl_fail = self._get_test_data(test)
@@ -864,6 +875,6 @@ class SystemTest(object):
 
             logger.info( "    Case dir: %s" % self._get_test_dir(test))
 
-        logger.info( "system_test took %s seconds"% (time.time() - start_time))
+        logger.info( "test-scheduler took %s seconds"% (time.time() - start_time))
 
         return rv

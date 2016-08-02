@@ -3,6 +3,7 @@ Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
 import logging, gzip, sys, os, time, re, shutil
+from importlib import import_module
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -872,3 +873,48 @@ def touch(fname):
         os.utime(fname, None)
     else:
         open(fname, 'a').close()
+
+def find_system_test(testname, case):
+    '''
+    Find and import the test matching testname
+    Look through the paths set in config_files.xml variable SYSTEM_TESTS_DIR
+    for components used in this case to find a test matching testname.  Add the
+    path to that directory to sys.path if its not there and return the test object
+    Fail if the test is not found in any of the paths.
+    '''
+    system_test_path = None
+    if testname.startswith("TEST"):
+        system_test_path =  "CIME.SystemTests.system_tests_common.%s"%(testname)
+    else:
+        components = ["any"]
+        components.extend( case.get_compset_components())
+        env_test = case.get_env("test")
+        for component in components:
+            tdir = env_test.get_value("SYSTEM_TESTS_DIR",
+                                      attribute={"component":component})
+
+            if tdir is not None:
+                tdir = os.path.abspath(tdir)
+                system_test_file = os.path.join(tdir  ,"%s.py"%testname.lower())
+                if os.path.isfile(system_test_file):
+                    logger.debug( "found "+system_test_file)
+                    if component == "any":
+                        system_test_path = "CIME.SystemTests.%s.%s"%(testname.lower(),testname)
+                    else:
+                        system_test_dir = os.path.dirname(system_test_file)
+                        if system_test_dir not in sys.path:
+                            sys.path.append(system_test_dir)
+                        system_test_path = "%s.%s"%(testname.lower(),testname)
+                    break
+
+    expect(system_test_path is not None, "No test %s found"%testname)
+
+    path, m = system_test_path.rsplit('.',1)
+    mod = import_module(path)
+    return getattr(mod, m)
+
+
+
+
+
+

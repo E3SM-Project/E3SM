@@ -1,5 +1,117 @@
 ======================================================================
 
+Originator: Bill Sacks
+Date: Aug 02, 2016
+Tag: cime5.0.5
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:  None (removes dependency of cime5.0.4 on clm branch)
+
+Description:	
+- move LII test from CLM back to CIME (until new API is solidified)
+
+Modified files:
+utils/python/CIME/SystemTests/lii.py
+	
+======================================================================
+
+Originator: Jim Edwards
+Date: Aug 01, 2016
+Tag: cime5.0.4
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies: Needs clm branch containing LII test
+
+Description:
+
+- Updates of hobart machine 
+- Put provenance back in README -
+- Update TestStatus to run tests multiple times in a case - Fix for
+- Add README files back to test directories
+- Dynamically search for system tests, move LII test to CLM cime_config 
+- Add python profiling tool
+- Minor bug fixes in prep_ocn_mod and prep_wav_mod  pointed out by CRAY compiler	
+
+Modified files:
+	
+cime_config/acme/config_files.xml
+cime_config/cesm/config_files.xml
+cime_config/cesm/machines/config_batch.xml
+cime_config/cesm/machines/config_compilers.xml
+cime_config/cesm/machines/config_machines.xml
+driver_cpl/driver/prep_ocn_mod.F90
+driver_cpl/driver/prep_wav_mod.F90
+scripts/Testing/Testcases/README
+scripts/Tools/advanced-py-prof
+scripts/Tools/bless_test_results
+scripts/Tools/case.build
+scripts/Tools/simple-py-prof
+scripts/create_test
+utils/python/CIME/SystemTests/README
+utils/python/CIME/SystemTests/lii.py
+utils/python/CIME/SystemTests/system_tests_common.py
+utils/python/CIME/XML/env_test.py
+utils/python/CIME/case.py
+utils/python/CIME/case_test.py
+utils/python/CIME/check_input_data.py
+utils/python/CIME/system_test.py
+utils/python/CIME/test_scheduler.py
+utils/python/CIME/test_utils.py
+utils/python/CIME/user_mod_support.py
+utils/python/CIME/utils.py
+utils/python/cs.submit.template
+utils/python/tests/scripts_regression_tests.py
+	
+	
+	
+====================================================================
+
+Originator: Jim Edwards
+Date: July 26, 2016
+Tag: cime5.0.3
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary: 
+- fixes as a result of cesm2_alpha01b testing
+- print output from buildnml
+- improve mismatch argument to NAG compiler
+- fix memleak error if baseline not found
+- add support to create_test for ascii testfile
+- move pecount support from create_test to create_newcase
+- fix LII test, fix ERP test
+- reintroduce --verbose option
+
+User interface changes: none
+
+Modified files: git diff --name-status
+M       ChangeLog
+M       cime_config/acme/config_files.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_compilers.xml
+A       cime_config/cesm/machines/nag_mpi_argument.txt
+M       driver_cpl/cime_config/buildexe
+M       scripts/Tools/case.build
+M       scripts/Tools/code_checker
+M       scripts/Tools/component_compare_test.sh
+M       scripts/Tools/preview_namelists
+M       scripts/create_newcase
+M       scripts/create_test
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/SystemTests/lii.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/system_test.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+======================================================================
+
 Originator: Jim Edwards
 Date: July 22, 2016
 Tag: cime5.0.2

@@ -97,6 +97,7 @@ contains
          wav_present=wav_present      , &
          ocn_gnam=ocn_gnam            , &
          wav_gnam=wav_gnam            , &
+         atm_gnam=atm_gnam            , &
          esmf_map_flag=esmf_map_flag  )
 
     allocate(mapper_sa2w)

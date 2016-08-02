@@ -369,7 +369,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.0</command>
+	<command name="switch">cce cce/8.5.1</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -468,7 +468,7 @@
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <NODENAME_REGEX>edison</NODENAME_REGEX>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
+    <CESMSCRATCHROOT>$ENV{CSCRATCH}</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
@@ -534,7 +534,7 @@
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.3</command>
+	<command name="switch">cce cce/8.5.1</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -577,10 +577,7 @@
     <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
     <NODENAME_REGEX>hobart</NODENAME_REGEX>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
-    <MPILIBS compiler="nag">openmpi</MPILIBS>
-    <MPILIBS compiler="intel">mvapich2</MPILIBS>
-    <MPILIBS compiler="pgi">mvapich2</MPILIBS>
-    <MPILIBS compiler="gnu">mvapich2</MPILIBS>
+    <MPILIBS>mvapich2</MPILIBS>
     <RUNDIR>/scratch/cluster/$USER/$CASE/run</RUNDIR>
     <EXEROOT>/scratch/cluster/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
@@ -621,22 +618,22 @@
 	<command name="load">compiler/intel/15.0.2.164</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
-	<command name="load">  tool/parallel-netcdf/1.6.1/intel/mvapich2  </command>
+	<command name="load">  tool/parallel-netcdf/1.7.0/intel/mvapich2  </command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">compiler/pgi/15.1</command>
       </modules>
       <modules  compiler="pgi" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
+	  <command name="load">  tool/parallel-netcdf/1.7.0/pgi/mvapich2  </command>
       </modules>
       <modules compiler="nag">
-	<command name="load">compiler/nag/6.0</command>
+	<command name="load">compiler/nag/6.1</command>
       </modules>
-      <modules compiler="nag" mpilib="openmpi">
-	  <command name="load">  tool/parallel-netcdf/1.6.1/nag/openmpi </command>
+      <modules compiler="nag" mpilib="mvapich2">
+	  <command name="load">  tool/parallel-netcdf/1.7.0/nag/mvapich2 </command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">compiler/gnu/4.8.3</command>
+	<command name="load">compiler/gnu/4.8.5</command>
       </modules>
     </module_system>
     <environment_variables>
