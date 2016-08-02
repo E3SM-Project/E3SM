@@ -4,13 +4,14 @@
 
 The following are the test functionality categories:
   1) smoke tests
-  2) restart tests
-  3) threading/pe-count modification tests
-  4) sequencing (layout) modification tests
-  5) multi-instance tests
-  6) archiving (short-term and long-term) tests
-  7) performance tests
-  8) spinup tests 
+  2) basic reproducibility tests
+  3) restart tests
+  4) threading/pe-count modification tests
+  5) sequencing (layout) modification tests
+  6) multi-instance tests
+  7) archiving (short-term and long-term) tests
+  8) performance tests
+  9) spinup tests
 
 NOTES:
 - unless otherwise noted everything is run in one executable directory
@@ -30,7 +31,7 @@ SMS    smoke startup test (default length)
 SBN    smoke build-namelist test (just run preview_namelist and check_input_data)
 
 ======================================================================
-    Reproducibility Tests
+    Basic reproducibility Tests
 ======================================================================
 
 REP    reproducibility: do two identical runs give the same results?
