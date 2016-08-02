@@ -637,18 +637,6 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
             self._thread_error = str(e)
 
     ###########################################################################
-    def assert_no_sentinel(self):
-    ###########################################################################
-        self.assertFalse(os.path.isfile(os.path.join(self._testdir, "ONGOING_TEST")),
-                         "job did not cleanup successfully")
-
-    ###########################################################################
-    def assert_sentinel(self):
-    ###########################################################################
-        self.assertTrue(os.path.isfile(os.path.join(self._testdir, "ONGOING_TEST")),
-                        "Missing sentinel")
-
-    ###########################################################################
     def assert_num_leftovers(self, test_id=None):
     ###########################################################################
         # There should only be two directories matching the test_id in both
@@ -682,7 +670,6 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         build_name = "jenkins_generic_job_pass_%s" % CIME.utils.get_utc_timestamp()
         self.simple_test(True, "-t acme_test_only_pass -b %s" % self._baseline_name, build_name=build_name)
         self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
-        self.assert_no_sentinel()
         assert_dashboard_has_build(self, build_name)
 
     ###########################################################################
@@ -695,15 +682,12 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
 
         time.sleep(120)
 
-        self.assert_sentinel()
-
         kill_subprocesses(sig=signal.SIGTERM)
 
         run_thread.join(timeout=10)
 
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
-        self.assert_no_sentinel()
         assert_dashboard_has_build(self, build_name)
 
 ###############################################################################
