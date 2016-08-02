@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Batch system directives
+{{ batchdirectives }}
+
 """
 template to create a case run script. This should only ever be called
 by case.submit when on batch system. This script only exists as a way of providing
@@ -21,8 +24,6 @@ logger = logging.getLogger(__name__)
 
 import argparse, doctest
 
-# Batch system directives
-{{ batchdirectives }}
 
 # PE Layout Documentation:
 {{ pedocumentation }}
