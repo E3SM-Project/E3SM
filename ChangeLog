@@ -1,5 +1,20 @@
 ======================================================================
 
+Originator: Bill Sacks
+Date: Aug 02, 2016
+Tag: cime5.0.5
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:  None (removes dependency of cime5.0.4 on clm branch)
+
+Description:	
+- move LII test from CLM back to CIME (until new API is solidified)
+
+Modified files:
+utils/python/CIME/SystemTests/lii.py
+	
+======================================================================
+
 Originator: Jim Edwards
 Date: Aug 01, 2016
 Tag: cime5.0.4
@@ -12,8 +27,6 @@ Description:
 - Updates of hobart machine 
 - Put provenance back in README -
 - Update TestStatus to run tests multiple times in a case - Fix for
-- Update test mods so that the user_nl_xxx files are not parsed multiple times
-- Baseline indicates BFAIL if baseline directory is not found
 - Add README files back to test directories
 - Dynamically search for system tests, move LII test to CLM cime_config 
 - Add python profiling tool
