@@ -3,7 +3,6 @@ Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
 import logging, gzip, sys, os, time, re, shutil
-from importlib import import_module
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -882,6 +881,8 @@ def find_system_test(testname, case):
     path to that directory to sys.path if its not there and return the test object
     Fail if the test is not found in any of the paths.
     '''
+    from importlib import import_module
+
     system_test_path = None
     if testname.startswith("TEST"):
         system_test_path =  "CIME.SystemTests.system_tests_common.%s"%(testname)
