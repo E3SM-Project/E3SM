@@ -160,7 +160,7 @@ contains
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
                                                       deltaVelocitySquared, normalVelocitySum, &
                                                       potentialDensitySum
-      real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed
+      real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
       logical :: bulkRichardsonFlag
 
       real (kind=RKIND), pointer :: config_cvmix_background_viscosity, config_cvmix_background_diffusion
@@ -311,6 +311,9 @@ contains
       allocate(cvmix_variables % kpp_Tnonlocal_iface(nVertLevels+1))
       allocate(cvmix_variables % kpp_Snonlocal_iface(nVertLevels+1))
 
+      allocate(OBLDepths(nVertLevels))
+      allocate(interfaceForcings(nVertLevels))
+
       allocate(Nsqr_iface(nVertLevels+1))
       allocate(turbulentScalarVelocityScale(nVertLevels))
       allocate(RiSmoothed(nVertLevels+1))
@@ -450,13 +453,8 @@ contains
                  cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables % zw_iface(kIndexOBL+1))
                  sigma = -cvmix_variables % zt_cntr(kIndexOBL) / cvmix_variables % BoundaryLayerDepth
 
-                 ! compute the turbulent scales in order to compute the bulk Richardson number
-                 call cvmix_kpp_compute_turbulent_scales( &
-                      sigma_coord = sigma, &
-                      OBL_depth = cvmix_variables % BoundaryLayerDepth, &
-                      surf_buoy_force = cvmix_variables % SurfaceBuoyancyForcing, &
-                      surf_fric_vel = cvmix_variables % SurfaceFriction, &
-                      w_s = turbulentScalarVelocityScale(kIndexOBL))
+                 OBLDepths(kIndexOBL) = abs(cvmix_variables % zw_iface(kIndexOBL+1))
+                 interfaceForcings(kIndexOBL) = cvmix_variables % SurfaceBuoyancyForcing
 
                  ! move progressively downward to find the bottom most layer within the surface layer
                  sfc_layer_depth = cvmix_variables % BoundaryLayerDepth * config_cvmix_kpp_surface_layer_extent
@@ -468,6 +466,14 @@ contains
                  enddo
                  topIndex = surfaceAverageIndex(kIndexOBL) - 1
               end do
+
+              ! compute the turbulent scales in order to compute the bulk Richardson number
+              call cvmix_kpp_compute_turbulent_scales( &
+                   sigma_coord = config_cvmix_kpp_surface_layer_extent, &
+                   OBL_depth = OBLDepths(1:maxLevelCell(iCell)), &
+                   surf_buoy_force = interfaceForcings(1:maxLevelCell(iCell)), &
+                   surf_fric_vel = cvmix_variables % SurfaceFriction, &
+                   w_s = turbulentScalarVelocityScale(1:maxLevelCell(iCell)))
 
               ! averaging over a surface layer assuming that BLdepth is cell bottom
               ! Build deltaVelocitySquared
@@ -670,6 +676,9 @@ contains
       deallocate(potentialDensitySum)
       deallocate(surfaceAverageIndex)
       deallocate(deltaVelocitySquared)
+
+      deallocate(OBLDepths)
+      deallocate(interfaceForcings)
 
    !--------------------------------------------------------------------
 
