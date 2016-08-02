@@ -178,7 +178,7 @@ contains
 !-----------------------------------------------------------------------
 subroutine ocn_bootstrap_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -221,7 +221,7 @@ end subroutine ocn_bootstrap_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character (len=*), intent(in) :: instance 
+  character (len=StrKIND), intent(in) :: instance 
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -283,7 +283,7 @@ end subroutine ocn_init_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine ocn_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
   integer, intent(in) :: timeLevel
 
   ! input/output variables
@@ -363,7 +363,7 @@ end subroutine ocn_compute_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine ocn_restart_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -392,7 +392,7 @@ end subroutine ocn_restart_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine ocn_finalize_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -644,7 +644,7 @@ end function check_real_time
 !-----------------------------------------------------------------------
 subroutine get_state(domain, instance, series)
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -806,7 +806,7 @@ end subroutine get_state
 !-----------------------------------------------------------------------
 subroutine start_state(domain, instance, series, valid_input, err)
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -1008,7 +1008,7 @@ end subroutine start_state
 !-----------------------------------------------------------------------
 subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -1306,7 +1306,7 @@ end function operator_enum
 !-----------------------------------------------------------------------
 subroutine get_alarms(domain, instance, series, alarms, err)
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -1420,7 +1420,7 @@ end subroutine get_alarms
 !-----------------------------------------------------------------------
 subroutine set_alarms(domain, instance, series, alarms, err)
   ! input variables
-  character (len=*), intent(in) :: instance
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
