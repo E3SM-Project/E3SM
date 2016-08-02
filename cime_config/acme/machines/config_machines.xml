@@ -533,19 +533,17 @@
     <cmd_path lang="sh">module</cmd_path>
     <modules>
       <command name="purge"/>
-      <command name="unload">intel</command>
-      <command name="unload">openmpi-intel</command>
-      <command name="use">/projects/ccsm/tpl/modules/skybridge/acme/tpl</command>
-      <command name="load">sierra-python</command>
+      <command name="load">sems-env</command>
+      <command name="load">sems-python/2.7.9</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">intel/intel-15.0.3.187</command>
       <command name="load" mpilib="!mpi-serial">openmpi-intel/1.6</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load" mpilib="!mpi-serial">hdf5/1.8.11/intel/13.0.1/openmpi/1.6.5</command>
-      <command name="load" mpilib="!mpi-serial">netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</command>
-      <command name="load" mpilib="mpi-serial">hdf5/1.8.11/intel/13.0.1/base</command>
-      <command name="load" mpilib="mpi-serial">netcdf/4.3.2/intel/13.0.1/base</command>
+      <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.11/parallel</command>
+      <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command>
+      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command>
+      <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command>
     </modules>
   </module_system>
   <environment_variables>
