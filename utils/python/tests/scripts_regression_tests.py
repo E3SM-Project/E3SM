@@ -51,14 +51,10 @@ class A_RunUnitTests(unittest.TestCase):
         # within this single unit test, but doing it this way makes it
         # consistent with how we run other tests in this module.
 
-        testsuite = unittest.defaultTestLoader.discover(
-            start_dir = LIB_DIR,
-            pattern = 'test*.py')
+        cmd = 'python -m unittest discover'
+        stat, output, _ = run_cmd("%s 2>&1"%cmd, from_dir = LIB_DIR)
 
-        testrunner = unittest.TextTestRunner(buffer=False)
-
-        results = testrunner.run(testsuite)
-        self.assertTrue(results.wasSuccessful())
+        self.assertEqual(stat, 0, msg=output)
 
     def test_cime_bisect_unit_test(self):
         self.do_unit_tests("cime_bisect",from_dir=TOOLS_DIR)
