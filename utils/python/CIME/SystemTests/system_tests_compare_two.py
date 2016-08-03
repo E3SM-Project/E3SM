@@ -43,7 +43,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                  case,
                  two_builds_for_sharedlib,
                  two_builds_for_model,
-                 run_one_suffix = 'base',
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = ''):
@@ -59,10 +58,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             two_builds_for_model (bool): Whether two separate builds are needed
                 for the model build (this should be False for tests that only
                 change runtime options)
-            run_one_suffix (str, optional): Suffix appended to files output by
-                the first run. Defaults to 'base'.
             run_two_suffix (str, optional): Suffix appended to files output by
-                the second run. Defaults to 'test'.
+                the second run. Defaults to 'test'. This can be anything other
+                than 'base' (which is the suffix used for the first run).
             run_one_description (str, optional): Description printed to log file
                 when starting the first run. Defaults to ''.
             run_two_description (str, optional): Description printed to log file
@@ -72,8 +70,17 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
         self._two_builds_for_sharedlib = two_builds_for_sharedlib
         self._two_builds_for_model = two_builds_for_model
-        self._run_one_suffix = run_one_suffix
-        self._run_two_suffix = run_two_suffix
+
+        # NOTE(wjs, 2016-08-03) It is currently CRITICAL for run_one_suffix to
+        # be 'base', because this is assumed for baseline comparison and
+        # generation. Once that assumption is relaxed, then run_one_suffix can
+        # be set in the call to the constructor just like run_two_suffix
+        # currently is.
+        self._run_one_suffix = 'base'
+        self._run_two_suffix = run_two_suffix.rstrip()
+        expect(self._run_two_suffix != self._run_one_suffix,
+               "ERROR: Must have different suffixes for run one and run two")
+
         self._run_one_description = run_one_description
         self._run_two_description = run_two_description
 

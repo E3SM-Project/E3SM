@@ -12,7 +12,6 @@ class REP(SystemTestsCompareTwo):
         SystemTestsCompareTwo.__init__(self, case,
                                        two_builds_for_sharedlib = False,
                                        two_builds_for_model = False,
-                                       run_one_suffix = 'rep1',
                                        run_two_suffix = 'rep2')
 
     def _run_common_setup(self):

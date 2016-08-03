@@ -121,12 +121,19 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
                 will pass.
         """
 
+        # NOTE(wjs, 2016-08-03) Currently, due to limitations in the test
+        # infrastructure, run_one_suffix MUST be 'base'. However, I'm keeping it
+        # as an explicit argument to the constructor so that it's easy to relax
+        # this requirement later: To relax this assumption, remove the following
+        # assertion and add run_one_suffix as an argument to
+        # SystemTestsCompareTwo.__init__
+        assert(run_one_suffix == 'base')
+
         case = CaseStub()
         SystemTestsCompareTwo.__init__(self,
                                        case,
                                        two_builds_for_sharedlib = False,
                                        two_builds_for_model = False,
-                                       run_one_suffix = run_one_suffix,
                                        run_two_suffix = run_two_suffix)
 
         self._run_pass_suffixes = []
@@ -219,7 +226,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # when a test is run with no failures
 
         # Setup
-        run_one_suffix = 'run1'
+        run_one_suffix = 'base'
         run_two_suffix = 'run2'
         mytest = SystemTestsCompareTwoFake(
             run_one_suffix = run_one_suffix,
@@ -265,7 +272,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # If run 1 fails, then run 2 and the comparison should NOT be done
 
         # Setup
-        run_one_suffix = 'run1'
+        run_one_suffix = 'base'
         run_two_suffix = 'run2'
         mytest = SystemTestsCompareTwoFake(
             run_one_suffix = run_one_suffix,
