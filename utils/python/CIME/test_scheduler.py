@@ -46,12 +46,13 @@ class TestScheduler(object):
                  project=None, parallel_jobs=None,
                  xml_machine=None, xml_compiler=None, xml_category=None,
                  xml_testlist=None, walltime=None, proc_pool=None,
-                 use_existing=False, save_timing=False):
+                 use_existing=False, save_timing=False, queue=None):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
 
         self._save_timing = save_timing
+        self._queue       = queue
 
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
@@ -79,6 +80,8 @@ class TestScheduler(object):
         # We will not use batch system if user asked for no_batch or if current
         # machine is not a batch machine
         self._no_batch = no_batch or not self._machobj.has_batch_system()
+        expect(not (self._no_batch and self._queue is not None),
+               "Does not make sense to request a queue without batch system")
 
         self._test_root = test_root if test_root is not None \
             else self._machobj.get_value("CESMSCRATCHROOT")
@@ -393,6 +396,9 @@ class TestScheduler(object):
                 if case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount %s"%pesize
+
+        if self._queue is not None:
+            create_newcase_cmd += " --queue=%s" % self._queue
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime

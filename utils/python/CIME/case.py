@@ -443,7 +443,7 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None):
+                  walltime=None, queue=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -614,7 +614,7 @@ class Case(object):
         env_batch = self.get_env("batch")
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime)
+        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue)
         self.schedule_rewrite(env_batch)
 
         self.set_value("COMPSET",self._compsetname)
