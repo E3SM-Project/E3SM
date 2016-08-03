@@ -21,43 +21,49 @@ int my_rank;
  * null is returned.
  *
  * @param pioerr the error code returned by a PIO function call. 
+ * @param errmsg Pointer that will get the error message. It will be
+ * PIO_MAX_NAME chars or less.
  *
- * @return Pointer to a constant string with the error message. 
+ * @return 0 on success
  */
-const char *PIOc_strerror(int pioerr)
+int
+PIOc_strerror(int pioerr, char *errmsg)
 {
 
     /* System error? */
     if(pioerr > 0)
     {
 	const char *cp = (const char *)strerror(pioerr);
-	if(!cp)
-	    return "Unknown Error";
-	return cp;
+	if (cp)
+	    strncpy(errmsg, cp, PIO_MAX_NAME);
+	else
+	    strcpy(errmsg, "Unknown Error");
     }
-
-    /* Not an error? */
-    if (pioerr == PIO_NOERR)
-	return "No error";
-
-    /* NetCDF error? */
+    else if (pioerr == PIO_NOERR)
+    {
+	strcpy(errmsg, "No error");
+    }
+    else if (pioerr <= NC2_ERR && pioerr >= NC4_LAST_ERROR)     /* NetCDF error? */
+    {
 #if defined( _PNETCDF) || defined(_NETCDF)
-    /* The if condition is somewhat confusing becuase netCDF uses
-     * negative error codes.*/
-    if (pioerr <= NC2_ERR && pioerr >= NC4_LAST_ERROR)
-	return nc_strerror(pioerr);
+	strncpy(errmsg, nc_strerror(pioerr), NC_MAX_NAME);
 #else /* defined( _PNETCDF) || defined(_NETCDF) */
-    if (pioerr <= NC2_ERR && pioerr >= NC4_LAST_ERROR)
-	return "NetCDF error code, PIO not built with netCDF.";
+	strcpy(errmsg, "NetCDF error code, PIO not built with netCDF.");
 #endif /* defined( _PNETCDF) || defined(_NETCDF) */
-	
-    /* Handle PIO errors. */
-    switch(pioerr) {
-    case PIO_EBADIOTYPE:
-	return "Bad IO type";
-    default:
-	return "unknown PIO error";
     }
+    else
+    {
+	/* Handle PIO errors. */
+	switch(pioerr) {
+	case PIO_EBADIOTYPE:
+	    strcpy(errmsg, "Bad IO type");
+	    break;
+	default:
+	    strcpy(errmsg, "unknown PIO error");
+	}
+    }
+
+    return PIO_NOERR;
 }
 
 /** Set the logging level. Set to -1 for nothing, 0 for errors only, 1

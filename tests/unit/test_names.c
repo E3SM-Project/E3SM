@@ -171,8 +171,10 @@ check_strerror(int my_rank, int verbose) {
 
     for (int try = 0; try < NUM_TRIES; try++)
     {
+	char result[PIO_MAX_NAME];
+	
 	/* Get the error string for this errcode. */
-	strcpy(errstr, PIOc_strerror(errcode[try]));
+	PIOc_strerror(errcode[try], errstr);	
 
 	/* Check that it was as expected. */
 	if (strcmp(errstr, expected[try]))

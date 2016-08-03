@@ -55,6 +55,8 @@ Program pio_unit_test_driver
      write(*,"(A,1x,I0,1x,A,1x,I0)") "Running unit tests with", ntasks, &
           "MPI tasks and stride of", stride
 
+!     print *, 'errcode =', -33, ' strerror = ', PIO_strerror(-33)
+
      if (stride.gt.ntasks) then
         stride = ntasks
         write(*,"(A,1x,A,I0)") "WARNING: stride value in namelist is larger than", &

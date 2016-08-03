@@ -440,7 +440,7 @@ enum PIO_ERROR_HANDLERS
 #if defined(__cplusplus)
 extern "C" {
 #endif
-    const char *PIOc_strerror(int pioerr);
+    int PIOc_strerror(int pioerr, char *errstr);
     int PIOc_freedecomp(int iosysid, int ioid);
     int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp); 
     int PIOc_inq_format (int ncid, int *formatp); 
