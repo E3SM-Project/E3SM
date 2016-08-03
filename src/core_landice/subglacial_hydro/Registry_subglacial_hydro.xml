@@ -73,6 +73,28 @@
 		            description="maximum water thickness in till"
 		            possible_values="positive real number"
 		/>
+                <!-- channel options -->
+                <nml_option name="config_SGH_chnl_active" type="logical" default_value=".false." units="unitless"
+		            description="activate channels in subglacial hydrology model"
+		            possible_values=".true. or .false."
+		/>
+                <nml_option name="config_SGH_chnl_alpha" type="real" default_value="1.25" units="unitless"
+		            description="power in flux formula"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_chnl_beta" type="real" default_value="1.5" units="unitless"
+		            description="power in flux formula"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_chnl_conduc_coeff" type="real" default_value="0.1" units="COMPLICATED"
+		            description="conductivity coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_chnl_creep_coefficient" type="real" default_value="0.04" units="none"
+		            description="creep closure coefficient"
+		            possible_values="positive real number"
+		/>
+
 	</nml_record>
 
 <!-- ======================================================================= -->
@@ -166,6 +188,34 @@
 		     description="time step length limited by pressure equation scheme" />
                 <var name="deltatSGH" type="real" dimensions="Time" units="s"
                      description="time step used for subglacial hydro" />
+                <!-- channel variables -->
+                <var name="channelArea" type="real" dimensions="nEdges Time" units="m^2"
+		     description="area of subglacial channel" />
+                <var name="channelDischarge" type="real" dimensions="nEdges Time" units="m^3 s^-1"
+		     description="discharge through subglacial channel" />
+                <var name="channelVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
+		     description="velocity in subglacial channel" />
+                <var name="hydropotentialEdge" type="real" dimensions="nEdges Time" units="Pa"
+		     description="hydropotential on edges, used for channel" />
+                <var name="channelMelt" type="real" dimensions="nEdges Time" units="kg m^-2 s^-1"
+		     description="melt rate in subglacial channel" />
+                <var name="flowParamAChannel" type="real" dimensions="nEdges Time" units="Pa^-3 s^-1"
+		     description="flow parameter A on edges used for channel" />
+                <var name="channelEffectivePressure" type="real" dimensions="nEdges Time" units="Pa"
+		     description="effective pressure in the channel" />
+                <var name="channelClosingRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="closing rate from creep of the channel" />
+                <var name="channelOpeningRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="opening rate from melt of the channel" />
+                <var name="channelChangeRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="rate of change of channel area" />
+                <var name="deltatSGHchannel" type="real" dimensions="Time" units="s"
+		     description="time step length limited by channel advection" />
+                <var name="divergenceChannel" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="divergence due to channel flow" />
+                <var name="channelAreaChangeCell" type="real" dimensions="nCells Time" units="m s^-1"
+                     description="change in channel area within each cell, averaged over cell area" />
+
 	</var_struct>
 
 <!-- ======================================================================= -->

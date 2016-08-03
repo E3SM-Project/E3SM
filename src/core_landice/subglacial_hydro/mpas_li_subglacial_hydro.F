@@ -222,6 +222,7 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! Pools pointers
       logical, pointer :: config_SGH
+      logical, pointer :: config_SGH_chnl_active
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
@@ -234,6 +235,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: waterThicknessOld
       real (kind=RKIND), dimension(:), pointer :: waterThicknessTendency
+      real (kind=RKIND), dimension(:), pointer :: divergenceChannel
+      real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -247,7 +250,6 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: tillMax
       integer, pointer :: nCellsSolve
       integer :: iCell, iEdge, iEdgeOnCell
-      integer :: cell1, cell2
       integer :: err_tmp
 
 
@@ -262,6 +264,7 @@ module li_subglacial_hydro
       endif
 
       write(stdoutUnit,*) 'Beginning subglacial hydro solve.'
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_active', config_SGH_chnl_active)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_drainage', Cd)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
 
@@ -310,6 +313,25 @@ module li_subglacial_hydro
 
 
       ! =============
+      ! Update Channel fields
+      ! =============
+      if (config_SGH_chnl_active) then
+         block => domain % blocklist
+         do while (associated(block))
+
+            call update_channel(block, err_tmp)
+            err = ior(err, err_tmp)
+
+            block => block % next
+         end do
+         ! Update halos on channel
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'channelChangeRate')
+         call mpas_timer_stop("halo updates")
+      endif
+
+
+      ! =============
       ! Calculate time step if being adaptive, otherwise check for CFL
       ! =============
       call check_timestep(domain, err_tmp)
@@ -339,8 +361,6 @@ module li_subglacial_hydro
             ! compute fluxes for each edge of the cell
             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iEdgeOnCell, iCell)
-               cell1 = cellsOnEdge(1, iEdge)
-               cell2 = cellsOnEdge(2, iEdge)
                ! add on advective & diffusive fluxes
                divergence(iCell) = divergence(iCell) - waterFlux(iEdge) * dvEdge(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
             end do ! edges
@@ -353,6 +373,25 @@ module li_subglacial_hydro
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'divergence')
       call mpas_timer_stop("halo updates")
+
+
+      ! =============
+      ! Update channel area now that we have time step
+      ! =============
+      if (config_SGH_chnl_active) then
+         block => domain % blocklist
+         do while (associated(block))
+
+            call evolve_channel(block, err_tmp)
+            err = ior(err, err_tmp)
+
+            block => block % next
+         end do
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'divergenceChannel')
+         call mpas_dmpar_field_halo_exch(domain, 'channelAreaChangeCell')
+         call mpas_timer_stop("halo updates")
+      endif
 
 
       ! =============
@@ -384,10 +423,13 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
          call mpas_pool_get_array(hydroPool, 'externalWaterInput', externalWaterInput)
          call mpas_pool_get_array(hydroPool, 'divergence', divergence)
+         call mpas_pool_get_array(hydroPool, 'divergenceChannel', divergenceChannel)
+         call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          waterThicknessOld = waterThickness
          waterThickness = waterThicknessOld + deltatSGH * ( (basalMeltInput + externalWaterInput) / rho_water - divergence  &
+             - divergenceChannel - channelAreaChangeCell  &
              - (Wtill - WtillOld) / deltatSGH)
          waterThickness = waterThickness * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
          waterThickness = max(0.0_RKIND, waterThickness)
@@ -713,22 +755,26 @@ module li_subglacial_hydro
 !        type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
+      real (kind=RKIND), dimension(:), pointer :: channelVelocity
       real (kind=RKIND), dimension(:), pointer :: diffusivity
       real (kind=RKIND), dimension(:), pointer :: dcEdge
       real (kind=RKIND), pointer :: deltatSGH
       real (kind=RKIND), pointer :: deltatSGHadvec
       real (kind=RKIND), pointer :: deltatSGHdiffu
       real (kind=RKIND), pointer :: deltatSGHpressure
+      real (kind=RKIND), pointer :: deltatSGHchannel
       real (kind=RKIND), pointer :: porosity
       type (block_type), pointer :: block
       real (kind=RKIND), pointer :: deltat
       integer, pointer :: nEdgesSolve
       logical, pointer :: config_SGH_adaptive_timestep
+      logical, pointer :: config_SGH_chnl_active
       ! in the following variables, "Proc" indicates the value on the current processor,
       ! and "Block" indicates value on current block
       real (kind=RKIND) :: dtSGHadvecBlock, dtSGHadvecProc
       real (kind=RKIND) :: dtSGHdiffuBlock, dtSGHdiffuProc
       real (kind=RKIND) :: dtSGHpressureBlock, dtSGHpressureProc
+      real (kind=RKIND) :: dtSGHadvecChanBlock, dtSGHadvecChanProc
       integer :: err_tmp
       real(kind=RKIND), parameter :: bigNumber = 1.0e36_RKIND
       real(kind=RKIND), pointer :: CFLfraction
@@ -742,10 +788,12 @@ module li_subglacial_hydro
 
       call mpas_pool_get_config(liConfigs, 'config_SGH_englacial_porosity', porosity)
       call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_active', config_SGH_chnl_active)
 
       dtSGHadvecProc = bigNumber
       dtSGHdiffuProc = bigNumber
       dtSGHpressureProc = bigNumber
+      dtSGHadvecChanProc = bigNumber
 
       block => domain % blocklist
       do while (associated(block))
@@ -760,7 +808,9 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'deltatSGHadvec', deltatSGHadvec)
          call mpas_pool_get_array(hydroPool, 'deltatSGHdiffu', deltatSGHdiffu)
          call mpas_pool_get_array(hydroPool, 'deltatSGHpressure', deltatSGHpressure)
+         call mpas_pool_get_array(hydroPool, 'deltatSGHchannel', deltatSGHchannel)
          call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
+         call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
          call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
@@ -777,6 +827,12 @@ module li_subglacial_hydro
                    / (2.0_RKIND * diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
          dtSGHpressureProc = min(dtSGHpressureProc, dtSGHpressureBlock)
 
+         if (config_SGH_chnl_active) then
+            ! Calculate channel advection limited time step
+            dtSGHadvecChanBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(channelVelocity(1:nEdgesSolve)) + 1.0e-12_RKIND))  ! regularize
+            dtSGHadvecChanProc = min(dtSGHadvecChanProc, dtSGHadvecChanBlock)
+         endif
+
          ! Master deltat is needed below, so grab it in this block loop
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
@@ -784,9 +840,13 @@ module li_subglacial_hydro
       end do
 
       ! reduce across procs
+      ! TODO Pack these into array so only need 1 comm?
       call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecProc, deltatSGHadvec)
       call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuProc, deltatSGHdiffu)
       call mpas_dmpar_min_real(domain % dminfo, dtSGHpressureProc, deltatSGHpressure)
+      if (config_SGH_chnl_active) then
+         call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecChanProc, deltatSGHchannel)
+      endif
 
 
       ! Set time step
@@ -794,8 +854,11 @@ module li_subglacial_hydro
          call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep_fraction', CFLfraction)
          call mpas_pool_get_config(liConfigs, 'config_SGH_max_adaptive_timestep', maxDt)
 
-         ! Find smallest of 3 limiting time steps
+         ! Find smallest of 4 limiting time steps
          proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
+         if (config_SGH_chnl_active) then
+            proposedDt = min(proposedDt, deltatSGHchannel)
+         endif
          proposedDt = proposedDt * CFLfraction
 
          ! Don't let SGH time step exceed master time step - technically need to check the interval til completion, because we might already be partway through the deltat
@@ -827,7 +890,11 @@ module li_subglacial_hydro
 
 
       ! optional: always write out for debugging
-      write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
+      if (config_SGH_chnl_active) then
+         write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHchannel:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHchannel
+      else
+         write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
+      endif
 
       ! compare timesteps
       if (deltatSGH > deltatSGHadvec) then
@@ -839,9 +906,9 @@ module li_subglacial_hydro
       if (deltatSGH > deltatSGHpressure) then
          write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHpressure  ", deltatSGH, deltatSGHpressure
       endif
-
-
-
+      if (config_SGH_chnl_active .and. (deltatSGH > deltatSGHchannel)) then
+         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHchannel  ", deltatSGH, deltatSGHchannel
+      endif
 
    !--------------------------------------------------------------------
    end subroutine check_timestep
@@ -898,6 +965,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: basalSpeed
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: divergenceChannel
+      real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltatSGH
       real (kind=RKIND), pointer :: bedRough, bedRoughMax
@@ -941,6 +1010,8 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
       call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
       call mpas_pool_get_array(hydroPool, 'divergence', divergence)
+      call mpas_pool_get_array(hydroPool, 'divergenceChannel', divergenceChannel)
+      call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
       call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -965,7 +1036,7 @@ module li_subglacial_hydro
          elsewhere (.not. li_mask_is_ice(cellMask))
             waterPressure = 0.0_RKIND
          elsewhere
-            waterPressure = (zeroOrderSum - divergence) * rho_water * gravity * deltatSGH / porosity + waterPressureOld
+            waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * rho_water * gravity * deltatSGH / porosity + waterPressureOld
          end where
 
       case ('overburden')
@@ -1057,6 +1128,221 @@ module li_subglacial_hydro
 
    !--------------------------------------------------------------------
    end subroutine calc_pressure_diag_vars
+
+
+
+!***********************************************************************
+!
+!  routine update_channel
+!
+!> \brief   Calculate SGH channel area
+!> \author  Matt Hoffman
+!> \date    28 July 2016
+!> \details
+!>  This routine updates the channel area in the subglacial hydrology model.
+!>  It uses the conduit space evolution equation.
+!-----------------------------------------------------------------------
+   subroutine update_channel(block, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pools pointers
+!!      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      real (kind=RKIND), pointer :: Kc
+      real (kind=RKIND), pointer :: alpha_c
+      real (kind=RKIND), pointer :: beta_c
+      real (kind=RKIND), pointer :: creep_coeff
+      real (kind=RKIND), pointer :: rhoi
+
+      real (kind=RKIND), dimension(:), pointer :: channelArea
+      real (kind=RKIND), dimension(:), pointer :: channelMelt
+      real (kind=RKIND), dimension(:), pointer :: channelDischarge
+      real (kind=RKIND), dimension(:), pointer :: channelVelocity
+      real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+      real (kind=RKIND), dimension(:), pointer :: channelOpeningRate
+      real (kind=RKIND), dimension(:), pointer :: channelClosingRate
+      real (kind=RKIND), dimension(:), pointer :: channelChangeRate
+      real (kind=RKIND), dimension(:), pointer :: flowParamAChannel
+      real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
+      real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:,:), pointer :: flowParamA
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, pointer :: nVertLevels
+
+      integer, pointer :: nEdgesSolve
+      integer :: iEdge, cell1, cell2
+
+
+      err = 0
+
+      ! Get pools things
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+!      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_conduc_coeff', Kc)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_alpha', alpha_c)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_beta', beta_c)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_creep_coefficient', creep_coeff)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
+      call mpas_pool_get_array(hydroPool, 'channelMelt', channelMelt)
+      call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
+      call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
+      call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'channelOpeningRate', channelOpeningRate)
+      call mpas_pool_get_array(hydroPool, 'channelClosingRate', channelClosingRate)
+      call mpas_pool_get_array(hydroPool, 'channelChangeRate', channelChangeRate)
+      call mpas_pool_get_array(hydroPool, 'flowParamAChannel', flowParamAChannel)
+      call mpas_pool_get_array(hydroPool, 'channelEffectivePressure', channelEffectivePressure)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+      call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+
+
+
+      ! Calculate terms needed for opening (melt) rate
+
+      where(gradMagPhiEdge < 0.01_RKIND)
+         channelDischarge(:) = 0.0_RKIND
+      elsewhere
+         channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * hydropotentialBaseSlopeNormal
+      end where
+
+      channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
+      channelMelt = abs(channelDischarge * hydropotentialBaseSlopeNormal) / latent_heat_ice  ! TODO: add sheet dissipation
+      channelOpeningRate = channelMelt / rhoi
+
+      ! Calculate terms needed for closing (creep) rate
+      ! Need cell center quantities on edges
+      do iEdge = 1, nEdgesSolve
+         cell1 = cellsOnEdge(1, iEdge)
+         cell2 = cellsOnEdge(2, iEdge)
+
+         ! Not sure if these ought to be upwind average, but using centered
+         flowParamAChannel(iEdge) = 0.5_RKIND * ( flowParamA(nVertLevels, cell1) + flowParamA(nVertLevels, cell2) )
+         channelEffectivePressure(iEdge) = 0.5_RKIND * (effectivePressure(cell1) + effectivePressure(cell2))
+      end do
+      channelClosingRate(:) = creep_coeff * channelArea(:) * flowParamAChannel(:) * channelEffectivePressure(:)**3
+
+      channelChangeRate = channelOpeningRate - channelClosingRate
+
+   !--------------------------------------------------------------------
+   end subroutine update_channel
+
+
+!***********************************************************************
+!
+!  routine evolve_channel
+!
+!> \brief   Evolve SGH channel area, calculate changes on cells
+!> \author  Matt Hoffman
+!> \date    28 July 2016
+!> \details
+!>  This routine updates the channel area in the subglacial hydrology model.
+!>  It uses the conduit space evolution equation.
+!-----------------------------------------------------------------------
+   subroutine evolve_channel(block, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pools pointers
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: meshPool
+      real (kind=RKIND), dimension(:), pointer :: channelArea
+      real (kind=RKIND), dimension(:), pointer :: channelDischarge
+      real (kind=RKIND), dimension(:), pointer :: channelChangeRate
+      real (kind=RKIND), dimension(:), pointer :: divergenceChannel
+      real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
+      real (kind=RKIND), pointer :: deltatSGH
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: edgeSignOnCell
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      integer, pointer :: nCellsSolve
+      integer :: iCell, iEdgeOnCell, iEdge
+
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
+      call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
+      call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
+      call mpas_pool_get_array(hydroPool, 'channelChangeRate', channelChangeRate)
+      call mpas_pool_get_array(hydroPool, 'divergenceChannel', divergenceChannel)
+      call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+
+      ! Calculate flux divergence on cells and channel area change on cells
+      divergenceChannel(:) = 0.0_RKIND  ! zero div before accumulating
+      channelAreaChangeCell(:) = 0.0_RKIND  ! zero before accumulating
+      ! loop over locally owned cells
+      do iCell = 1, nCellsSolve
+         ! compute fluxes for each edge of the cell
+         do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(iEdgeOnCell, iCell)
+            ! add on advective & diffusive fluxes
+            divergenceChannel(iCell) = divergenceChannel(iCell) - channelDischarge(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
+            channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND  ! only half of channel is in this cell
+         end do ! edges
+      end do ! cells
+      divergenceChannel(1:nCellsSolve) = divergenceChannel(1:nCellsSolve) / areaCell(1:nCellsSolve)
+      channelAreaChangeCell(1:nCellsSolve) = channelAreaChangeCell(1:nCellsSolve) / areaCell(1:nCellsSolve)
+
+      ! Now update channel area
+      channelArea = channelChangeRate * deltatSGH + channelArea
+      channelArea = max(0.1_RKIND, channelArea)  ! TODO: need min channel area parameter?
+
+   !--------------------------------------------------------------------
+   end subroutine evolve_channel
+
 
 
 end module li_subglacial_hydro

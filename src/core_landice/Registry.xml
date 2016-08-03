@@ -436,6 +436,7 @@
 			<var name="externalWaterInput" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
 			<var name="waterPressure" packages="hydro"/>
+			<var name="channelArea" packages="hydro"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
