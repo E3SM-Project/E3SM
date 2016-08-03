@@ -262,23 +262,28 @@ class EnvBatch(EnvBase):
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, bjobs, pesize=None, walltime=None):
+    def set_job_defaults(self, bjobs, pesize=None, walltime=None, force_queue=None):
         if self.batchtype is None:
             self.batchtype = self.get_batch_system_type()
+
         if self.batchtype == 'none':
             return
+
         for job, jsect in bjobs:
             task_count = jsect["task_count"]
             if task_count is None or task_count == "default":
                 task_count = pesize
             else:
                 task_count = int(task_count)
-            queue = self.select_best_queue(task_count)
+
+            queue = force_queue if force_queue is not None else self.select_best_queue(task_count)
             self.set_value("JOB_QUEUE", queue, subgroup=job)
+
             walltime = self.get_max_walltime(queue) if walltime is None else walltime
             if walltime is None:
                 logger.warn("Could not find a queue matching task count %d, falling back to depreciated default walltime parameter"%task_count)
                 walltime = self.get_default_walltime()
+
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
             logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
 
