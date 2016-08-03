@@ -928,7 +928,7 @@ module ocn_time_integration_split
                    btrvel_temp => btrvel_tempField % array
 
                    !$omp do schedule(runtime)
-                   do iEdge = 1, nEdges
+                   do iEdge = 1, nEdges+1
                       btrvel_temp(iEdge) = normalBarotropicVelocitySubcycleNew(iEdge)
                    end do
                    !$omp end do
