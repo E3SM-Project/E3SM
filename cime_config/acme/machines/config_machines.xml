@@ -537,10 +537,10 @@
       <command name="load">sems-python/2.7.9</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">intel/intel-15.0.3.187</command>
-      <command name="load" mpilib="!mpi-serial">openmpi-intel/1.6</command>
+      <command name="load" mpilib="!mpi-serial">openmpi-intel/1.8</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.11/parallel</command>
+      <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command>
       <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command>
       <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command>
       <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command>
