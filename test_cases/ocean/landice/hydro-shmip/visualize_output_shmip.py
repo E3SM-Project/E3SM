@@ -2,6 +2,7 @@
 '''
 Plots profiles for hydro-ship test case
 '''
+import sys
 import numpy as np
 import netCDF4
 #import datetime
@@ -21,6 +22,7 @@ parser.add_option("-t", "--time", dest="time", help="time step to visualize (0 b
 parser.add_option("-s", "--save", action="store_true", dest="saveimages", help="include this flag to save plots as files")
 parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="include this flag to not display plots (usually used with -s)")
 parser.add_option("-3", dest="A3", action="store_true", help="plot GLADS results for experiment 3")
+parser.add_option("-5", dest="A5", action="store_true", help="plot GLADS results for experiment 5")
 
 options, args = parser.parse_args()
 
@@ -35,6 +37,8 @@ else:
         time_slice = int(options.time)
 
 
+if options.A3 and options.A5:
+   sys.exit("Only one of -3 and -5 can be specified.")
 
 f = netCDF4.Dataset(options.filename,'r')
 
@@ -42,14 +46,14 @@ f = netCDF4.Dataset(options.filename,'r')
 xCell = f.variables['xCell'][:]
 yCell = f.variables['yCell'][:]
 yVertex = f.variables['yVertex'][:]
-#xEdge = f.variables['xEdge'][:]
+xEdge = f.variables['xEdge'][:]
 #yEdge = f.variables['yEdge'][:]
 h = f.variables['waterThickness'][time_slice,:]
 u = f.variables['waterVelocityCellX'][time_slice,:]
 N = f.variables['effectivePressure'][time_slice,:]
 days = f.variables['daysSinceStart'][:]
-basalmelt = f.variables['basalMeltInput'][time_slice,:]
-surfmelt = f.variables['externalWaterInput'][time_slice,:]
+#basalmelt = f.variables['basalMeltInput'][time_slice,:]
+#surfmelt = f.variables['externalWaterInput'][time_slice,:]
 xtime= f.variables['xtime']
 areaCell = f.variables['areaCell'][:]
 
@@ -92,10 +96,15 @@ ax1 = fig.add_subplot(311)
 ax2 = fig.add_subplot(312, sharex=ax1)
 ax3 = fig.add_subplot(313, sharex=ax1)
 
+if options.A5:
+   G_x, G_Nmean, G_Nmin, G_Nmax, G_qmean, G_qmin, G_qmax, G_Qmax = np.loadtxt('tuning_A5.txt', skiprows=1, unpack=True, delimiter=",")
+
 if options.A3:
+   G_x, G_Nmean, G_Nmin, G_Nmax, G_qmean, G_qmin, G_qmax, G_Qmax = np.loadtxt('tuning_A5.txt', skiprows=1, unpack=True, delimiter=",")
+
+if options.A3 or options.A5:
    # plot GLADS data
    lw = 3  # lineweight to use
-   G_x, G_Nmean, G_Nmin, G_Nmax, G_qmean, G_qmin, G_qmax, G_Qmax = np.loadtxt('tuning_A3.txt', skiprows=1, unpack=True, delimiter=",")
    ax1.plot(G_x/1000.0, G_Nmin/1.0e6, 'g--', linewidth=lw)
    ax1.plot(G_x/1000.0, G_Nmean/1.0e6, 'g-', linewidth=lw, label='GLADS mean/range')
    ax1.plot(G_x/1000.0, G_Nmax/1.0e6, 'g--', linewidth=lw)
@@ -131,9 +140,20 @@ plt.legend(loc='best')
 
 # panel 3: channel flux
 plt.sca(ax3)
-#plt.plot(allx/1000.0, np.absolute(q_mean), '.-b')
-#plt.plot(allx/1000.0, np.absolute(q_min), '.--b')
-#plt.plot(allx/1000.0, np.absolute(q_max), '.--b')
+try:
+   channelDischarge = f.variables['channelDischarge'][time_slice,:]
+   allxEdge=np.unique(xEdge[:])
+   Q_max = np.zeros(allxEdge.shape)
+   Q_sum = np.zeros(allxEdge.shape)
+   for i in range(len(allxEdge)):
+     Q_max[i] = np.absolute(channelDischarge[ xEdge == allxEdge[i] ]).max()
+     Q_sum[i] = np.absolute(channelDischarge[ xEdge == allxEdge[i] ]).sum()
+
+   plt.plot(allxEdge/1000.0, np.absolute(Q_max), 'bx', label='MPAS max')
+   plt.plot(allxEdge/1000.0, np.absolute(Q_sum), 'bo', label='MPAS sum')
+except:
+   print "Skipping plotting of channel output."
+
 plt.xlabel('X-position (km)')
 plt.ylabel('channel water flux (m^3/s)')
 plt.grid(True)

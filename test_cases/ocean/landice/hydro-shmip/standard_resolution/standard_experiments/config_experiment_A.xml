@@ -8,6 +8,7 @@
         <add_link source_path="script_configuration_dir" source="setup_hydro-shmip_initial_conditions.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="visualize_output_shmip.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="tuning_A3.txt" dest="."/>
+        <add_link source_path="script_configuration_dir" source="tuning_A5.txt" dest="."/>
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
