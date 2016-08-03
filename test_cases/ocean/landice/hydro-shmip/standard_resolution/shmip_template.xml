@@ -21,6 +21,10 @@
                 <option name="config_SGH_bed_roughness">0.5</option>
                 <option name="config_SGH_englacial_porosity">0.01</option>
                 <option name="config_SGH_creep_coefficient">1.0</option>
+                <option name="config_SGH_chnl_active">.true.</option>
+                <option name="config_SGH_chnl_alpha">1.25</option>
+                <option name="config_SGH_chnl_beta">1.5</option>
+                <option name="config_SGH_chnl_creep_coefficient">1.0</option>
         </namelist>
 
         <streams>
@@ -32,7 +36,7 @@
                 <stream name="output">
                         <attribute name="type">output</attribute>
                         <attribute name="filename_template">output.nc</attribute>
-                        <attribute name="output_interval">0000-01-00_00:00:00</attribute>
+                        <attribute name="output_interval">0000-06-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
@@ -43,11 +47,31 @@
                         </add_contents>
                 </stream>
 
+                <stream name="output2">
+                        <attribute name="type">output</attribute>
+                        <attribute name="filename_template">output2.nc</attribute>
+                        <attribute name="output_interval">0000-00-15_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <add_contents>
+                                <member name="basicmesh" type="stream"/>
+                                <member name="xtime" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
+                                <member name="waterThickness" type="var"/>
+                                <member name="waterVelocityCellX" type="var"/>
+                                <member name="effectivePressure" type="var"/>
+                                <member name="channelDischarge" type="var"/>
+                                <member name="channelArea" type="var"/>
+                                <member name="waterFlux" type="var"/>
+                                <member name="waterPressure" type="var"/>
+                        </add_contents>
+                </stream>
+
+
                 <stream name="restart">
                         <attribute name="type">input;output</attribute>
                         <attribute name="filename_template">restart.$Y.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
-                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0002-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <attribute name="precision">double</attribute>
                         <attribute name="input_interal">initial_only</attribute>
