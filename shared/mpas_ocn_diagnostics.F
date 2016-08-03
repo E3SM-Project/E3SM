@@ -20,10 +20,10 @@
 
 module ocn_diagnostics
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
-   use mpas_timer
    use mpas_threading
    use mpas_vector_reconstruction
 
@@ -148,6 +148,8 @@ contains
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
+
+      call mpas_timer_start('diagnostic solve')
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -547,7 +549,6 @@ contains
       !
       ! equation of state
       !
-      call mpas_timer_start("equation of state")
 
       ! compute in-place density
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
@@ -571,8 +572,6 @@ contains
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
       call mpas_threading_barrier()
-
-      call mpas_timer_stop("equation of state")
 
       !
       ! Pressure
@@ -795,10 +794,8 @@ contains
 
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
-      call mpas_timer_start("land_ice_diagnostic_fields", .false.)
       call ocn_compute_land_ice_flux_input_fields(meshPool, statePool, forcingPool, scratchPool, &
                                          diagnosticsPool, timeLevel)
-      call mpas_timer_stop("land_ice_diagnostic_fields")
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
@@ -815,9 +812,11 @@ contains
       end do
       !$omp end do
 
-     call mpas_threading_barrier()
+      call mpas_threading_barrier()
 
-
+      call mpas_deallocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
+      call mpas_deallocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
+      call mpas_timer_stop('diagnostic solve')
 
    end subroutine ocn_diagnostic_solve!}}}
 
@@ -1547,6 +1546,7 @@ contains
          return
       end if
 
+      call mpas_timer_start("land_ice_diagnostic_fields", .false.)
 
       jenkinsOn = .false.
       hollandJenkinsOn = .false.
@@ -1734,6 +1734,8 @@ contains
            + (1.0_RKIND - landIceFraction(iCell))*surfaceFluxAttenuationCoefficient(iCell)
       end do
       !$omp end do
+
+      call mpas_timer_stop("land_ice_diagnostic_fields")
 
    !--------------------------------------------------------------------
 

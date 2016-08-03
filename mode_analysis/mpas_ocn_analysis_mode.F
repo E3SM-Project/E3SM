@@ -243,7 +243,6 @@ module ocn_analysis_mode
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
       ! fill in diagnostics variables
-      call mpas_timer_start("diagnostic solve")
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
@@ -256,7 +255,6 @@ module ocn_analysis_mode
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 1)
          block_ptr => block_ptr % next
       end do
-      call mpas_timer_stop("diagnostic solve")
 
       if (config_write_output_on_startup) then
          call ocn_analysis_compute_startup(domain, err)
