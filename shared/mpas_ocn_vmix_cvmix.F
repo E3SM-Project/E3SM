@@ -311,6 +311,11 @@ contains
       allocate(cvmix_variables % kpp_Tnonlocal_iface(nVertLevels+1))
       allocate(cvmix_variables % kpp_Snonlocal_iface(nVertLevels+1))
 
+      ! Initialize some of the cvmix variables that are not set later.
+      cvmix_variables % Mdiff_iface(1:nVertLevels+1) = 0.0_RKIND
+      cvmix_variables % Tdiff_iface(1:nVertLevels+1) = 0.0_RKIND
+      cvmix_variables % Sdiff_iface(1:nVertLevels+1) = 0.0_RKIND
+
       allocate(OBLDepths(nVertLevels))
       allocate(interfaceForcings(nVertLevels))
 
