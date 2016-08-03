@@ -387,6 +387,7 @@ contains
 
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
+      use li_setup, only: li_cells_to_vertices_1dfield_using_kiteAreas
       use li_thermal
 
       !-----------------------------------------------------------------
@@ -604,7 +605,7 @@ contains
                    baryWeightsOnVertex(:, 1:nVertices), upperSurface, upperSurfaceVertex(1:nVertices), err_tmp)
                 err = ior(err, err_tmp)
              case ('from_vertex_barycentric_kiteareas')
-                call cells_to_vertices_1dfield_using_kiteAreas(meshPool, upperSurface, upperSurfaceVertex)
+                call li_cells_to_vertices_1dfield_using_kiteAreas(meshPool, upperSurface, upperSurfaceVertex)
              end select
 
              ! Calculate tangent slope
@@ -856,74 +857,6 @@ contains
 
    end subroutine diagnostic_solve_after_velocity
 
-
-!***********************************************************************
-!
-!  subroutine cells_to_vertices_1dfield_using_kiteAreas
-!
-!> \brief   Converts a 1d scalar field from cells to vertices
-!> \author  Matt Hoffman
-!> \date    21 May 2012
-!> \details
-!>  This routine converts a 1d scalar field from cells to vertices.
-!>  It will give garbage values on obtuse triangles!  But it does work
-!>  on periodic meshes.
-!>  TODO: It would be more efficient to calculate the weights once on init and then only
-!>  perform the interp. in this routine.
-!-----------------------------------------------------------------------
-   subroutine cells_to_vertices_1dfield_using_kiteAreas(meshPool, fieldCells, fieldVertices)
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         fieldCells    !< Input: field on cells
-
-      !-----------------------------------------------------------------
-      ! input/output variables
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      ! output variables
-      !-----------------------------------------------------------------
-      real (kind=RKIND), dimension(:), intent(out) :: &
-         fieldVertices    !< Input: field on vertices
-
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
-      integer, dimension(:,:), pointer :: cellsOnVertex
-      integer, pointer :: nVertices, vertexDegree
-      integer :: iCell, icell2, iVertex, cellIndex
-      real (kind=RKIND) :: fVertexAccum, baryweight, weightAccum
-
-      ! Get needed items from mesh pool
-      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
-      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
-
-      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
-      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
-
-      ! Calculate h on vertices using barycentric interpolation
-      do iVertex = 1, nVertices  ! Loop over vertices
-        fVertexAccum = 0.0_RKIND
-        weightAccum = 0.0_RKIND
-        ! Loop over cells on this vertex
-        do iCell = 1, vertexDegree
-          cellIndex = cellsOnVertex(iCell, iVertex)
-          baryweight = 0.0_RKIND
-          do iCell2 = 1, vertexDegree
-            if (iCell2 /= icell) baryweight = baryweight + 0.5 * kiteAreasOnVertex(iCell2, iVertex)
-          enddo
-          fVertexAccum = fVertexAccum + baryweight * fieldCells(cellIndex)  ! add the contribution from this cell's kite
-          weightAccum = weightAccum + kiteAreasOnVertex(iCell, iVertex)  ! This doesn't match areaTriangle for obtuse triangles!!!
-        enddo
-        fieldVertices(iVertex) = fVertexAccum / weightAccum  ! I assume this should never be 0...
-      enddo
-
-   end subroutine cells_to_vertices_1dfield_using_kiteAreas
 
 !***********************************************************************
 !

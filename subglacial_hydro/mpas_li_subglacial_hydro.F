@@ -533,7 +533,9 @@ module li_subglacial_hydro
 !-----------------------------------------------------------------------
    subroutine calc_edge_quantities(block, err)
 
+      use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
+      use li_setup, only: li_cells_to_vertices_1dfield_using_kiteAreas
       use mpas_vector_reconstruction
 
       !-----------------------------------------------------------------
@@ -559,6 +561,7 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: hydroPool
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseVertex
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
       real (kind=RKIND), dimension(:), pointer :: waterThickness
@@ -568,6 +571,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
       real (kind=RKIND), dimension(:), pointer :: diffusivity
       real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterFluxAdvec
@@ -576,13 +580,18 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterVelocityCellY
       integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: edgeMask
       real (kind=RKIND), dimension(:), allocatable :: cellJunk
       integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: verticesOnEdge
+      integer, dimension(:,:), pointer :: baryCellsOnVertex
+      real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
       real (kind=RKIND), pointer :: alpha, beta
       real (kind=RKIND), pointer :: conduc_coeff
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
       integer, pointer :: nEdgesSolve
       integer, pointer :: nCells
+      integer, pointer :: nVertices
       integer :: iEdge, cell1, cell2
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
@@ -599,6 +608,7 @@ module li_subglacial_hydro
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
 
       call mpas_pool_get_config(liConfigs, 'config_SGH_alpha', alpha)
       call mpas_pool_get_config(liConfigs, 'config_SGH_beta', beta)
@@ -646,21 +656,36 @@ module li_subglacial_hydro
       end do
 
 
-      ! Calculate tangent slope of hydropotentialBase
+      ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
+
+      ! Calculate hydropotentialBaseVertex if needed
+      call mpas_pool_get_array(hydroPool, 'hydropotentialBaseVertex', hydropotentialBaseVertex)  ! this array could be protected by logic if desired
+      select case (trim(config_SGH_tangent_slope_calculation))
+      case ('from_vertex_barycentric')
+         call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
+         call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+         call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
+              baryWeightsOnVertex(:, 1:nVertices), hydropotentialBase, hydropotentialBaseVertex(1:nVertices), err_tmp)
+              err = ior(err, err_tmp)
+      case ('from_vertex_barycentric_kiteareas')
+         call li_cells_to_vertices_1dfield_using_kiteAreas(meshPool, hydropotentialBase, hydropotentialBaseVertex)
+      end select
+
+      ! Now perform tangent slope calculation based on method chosen
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
-         ! TODO: add these options if desired
-         write (stdErrUnit,*) "Error: 'from_vertex_barycentric' and 'from_vertex_barycentric_kiteareas' are not yet supported for the config_SGH_tangent_slope_calculation option."
-         err = 1
-!         do iEdge = 1, nEdgesSolve
-!            ! Only calculate slope for edges that have ice on at least one side.
-!            if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
-!               hydropotentialBaseSlopeTangent(iEdge) = ( upperSurfaceVertex(verticesOnEdge(1,iEdge)) -  &
-!                     upperSurfaceVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
-!            else
-!               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
-!            endif
-!         end do  ! edges
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+         do iEdge = 1, nEdgesSolve
+            ! Only calculate slope for edges that have ice on at least one side.
+            if ( li_mask_is_ice(edgeMask(iEdge)) ) then
+               hydropotentialBaseSlopeTangent(iEdge) = ( hydropotentialBaseVertex(verticesOnEdge(1,iEdge)) -  &
+                     hydropotentialBaseVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
+            else
+               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+            endif
+         end do  ! edges
       case ('from_normal_slope')
          call mpas_tangential_vector_1d(hydropotentialBaseSlopeNormal, meshPool, &
                   includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
