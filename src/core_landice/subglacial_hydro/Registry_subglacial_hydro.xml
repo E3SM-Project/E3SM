@@ -166,6 +166,8 @@
 		     description="effective Darcy hydraulic conductivity" />
                 <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"
 		     description="hydropotential without water thickness contribution" />
+                <var name="hydropotentialBaseVertex" type="real" dimensions="nVertices Time" units="Pa"
+		     description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
                 <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa"
 		     description="normal component of gradient of hydropotentialBase" />
                 <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa"
