@@ -112,12 +112,7 @@
      <batch_submit>sbatch</batch_submit>
      <batch_directive>#MSUB</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
-     <depend_string> --dependency=afterok:jobid</depend_string>
-     <submit_args>
-       <arg flag="-q" name="queue"/>
-       <arg flag="-l" name="wall_time"/>
-       <arg flag="-A" name="project"/>
-     </submit_args>
+     <depend_string> -l depend=jobid</depend_string>
      <directives>
        <directive>-V</directive>
        <directive>-q {{ queue }}</directive>
