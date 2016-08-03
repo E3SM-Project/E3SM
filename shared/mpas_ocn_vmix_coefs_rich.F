@@ -136,6 +136,10 @@ contains
 
       err = 0
 
+      if ( .not. richViscOn .and. .not. richDiffOn ) then
+         return
+      end if
+
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       if (present(timeLevelIn)) then
