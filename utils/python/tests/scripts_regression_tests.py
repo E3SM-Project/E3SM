@@ -39,23 +39,6 @@ class A_RunUnitTests(unittest.TestCase):
         stat, output, _ = run_cmd("./%s --test 2>&1" % script, from_dir=from_dir)
         self.assertEqual(stat, 0, msg=output)
 
-    def test_unittests(self):
-        # Finds all files contained in LIB_DIR or its subdirectories that match
-        # the pattern 'test*.py', and runs the unit tests found there (i.e.,
-        # tests defined using python's unittest module).
-        #
-        # This is analogous to running:
-        #     python -m unittest discover
-        #
-        # It seems kind of funny to run a bunch of other unit test suites from
-        # within this single unit test, but doing it this way makes it
-        # consistent with how we run other tests in this module.
-
-        cmd = 'python -m unittest discover'
-        stat, output, _ = run_cmd("%s 2>&1"%cmd, from_dir = LIB_DIR)
-
-        self.assertEqual(stat, 0, msg=output)
-
     def test_cime_bisect_unit_test(self):
         self.do_unit_tests("cime_bisect",from_dir=TOOLS_DIR)
 
@@ -1647,7 +1630,25 @@ def _main_func():
 
     CIME.utils.handle_standard_logging_options(args)
 
-    unittest.main(verbosity=2, catchbreak=True)
+    # Finds all files contained in LIB_DIR or its subdirectories that match the
+    # pattern 'test*.py', and runs the unit tests found there (i.e., tests
+    # defined using python's unittest module).
+    #
+    # This is analogous to running:
+    #     python -m unittest discover
+    testsuite_from_discovery = \
+      unittest.defaultTestLoader.discover(start_dir=LIB_DIR)
+
+    # Add tests defined in this module
+    testsuite_from_this_module = \
+      unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__])
+
+    # Run all tests found here and elsewhere
+    suitelist = [testsuite_from_discovery, testsuite_from_this_module]
+    fullsuite = unittest.TestSuite(suitelist)
+    unittest.installHandler()
+    unittest.TextTestRunner(verbosity=2).run(fullsuite)
+
 
 if (__name__ == "__main__"):
     _main_func()
