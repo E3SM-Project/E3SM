@@ -78,7 +78,7 @@ if (-e /opt/modules/default/init/csh) then
   endif
 
   module load subversion/1.8.3
-  module load cmake/2.8.11.2
+  module load cmake/2.8.10.2
 endif
 
 module list >& software_environment.txt
