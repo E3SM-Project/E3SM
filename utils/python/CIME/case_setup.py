@@ -141,19 +141,20 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         models = drv_comp.get_valid_model_components()
         models.remove("DRV")
 
-        mach = case.get_value("MACH")
+        mach, compiler, debug, mpilib = \
+            case.get_value("MACH"), case.get_value("COMPILER"), case.get_value("DEBUG"), case.get_value("MPILIB")
         expect(mach is not None, "xml variable MACH is not set")
 
         # Create Macros file only if it does not exist
         if not os.path.exists("Macros"):
             logger.debug("Creating Macros file for %s" % mach)
-            compilers = Compilers(compiler=case.get_value("COMPILER"), machine=mach, os_=case.get_value("OS"), mpilib=case.get_value("MPILIB"))
+            compilers = Compilers(compiler=compiler, machine=mach, os_=case.get_value("OS"), mpilib=mpilib)
             compilers.write_macros_file()
         else:
             logger.debug("Macros script already created ...skipping")
 
         # Set tasks to 1 if mpi-serial library
-        if case.get_value("MPILIB") == "mpi-serial":
+        if mpilib == "mpi-serial":
             for vid, value in case:
                 if vid.startswith("NTASKS_") and value != 1:
                     case.set_value(vid, 1)
@@ -172,7 +173,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst[comp_model], comp, ntasks))
 
-        expect(not (case.get_value("BUILD_THREADED") and case.get_value("COMPILER") == "nag"),
+        expect(not (case.get_value("BUILD_THREADED") and compiler == "nag"),
                "it is not possible to run with OpenMP if using the NAG Fortran compiler")
 
         if os.path.exists("case.run"):
@@ -198,7 +199,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             pcost = 3 - pcnt / 10 # (3 is 64 with 6)
 
             # Compute cost based on DEBUG
-            dcost = 3 if case.get_value("DEBUG") else 0
+            dcost = 3 if debug else 0
 
             # Compute cost based on run length
             # For simplicity, we use a heuristic just based on STOP_OPTION (not considering
@@ -279,3 +280,11 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         msg = "case.setup complete"
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
+        # Record env information
+        env_module = case.get_env("mach_specific")
+        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
+        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
+        with open("software_environment.txt", "w") as f:
+            f.write(env_module.list_modules())
+        run_cmd_no_fail("echo -e '\n' >> software_environment.txt && \
+                         env >> software_environment.txt")
