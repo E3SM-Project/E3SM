@@ -17,6 +17,49 @@ int pio_log_level = 0;
 int my_rank;
 #endif /* PIO_ENABLE_LOGGING */
 
+/** Return a string description of an error code. If zero is passed, a
+ * null is returned.
+ *
+ * @param pioerr the error code returned by a PIO function call. 
+ *
+ * @return Pointer to a constant string with the error message. 
+ */
+const char *PIOc_strerror(int pioerr)
+{
+
+    /* System error? */
+    if(pioerr > 0)
+    {
+	const char *cp = (const char *)strerror(pioerr);
+	if(!cp)
+	    return "Unknown Error";
+	return cp;
+    }
+
+    /* Not an error? */
+    if (pioerr == PIO_NOERR)
+	return "No error";
+
+    /* NetCDF error? */
+#if defined( _PNETCDF) || defined(_NETCDF)
+    /* The if condition is somewhat confusing becuase netCDF uses
+     * negative error codes.*/
+    if (pioerr <= NC2_ERR && pioerr >= NC4_LAST_ERROR)
+	return nc_strerror(pioerr);
+#else /* defined( _PNETCDF) || defined(_NETCDF) */
+    if (pioerr <= NC2_ERR && pioerr >= NC4_LAST_ERROR)
+	return "NetCDF error code, PIO not built with netCDF.";
+#endif /* defined( _PNETCDF) || defined(_NETCDF) */
+	
+    /* Handle PIO errors. */
+    switch(pioerr) {
+    case PIO_EBADIOTYPE:
+	return "Bad IO type";
+    default:
+	return "unknown PIO error";
+    }
+}
+
 /** Set the logging level. Set to -1 for nothing, 0 for errors only, 1
  * for important logging, and so on. Log levels below 1 are only
  * printed on the io/component root. If the library is not built with
