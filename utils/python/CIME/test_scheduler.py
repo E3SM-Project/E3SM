@@ -368,9 +368,11 @@ class TestScheduler(object):
             machine, compiler, test_mods = CIME.utils.parse_test_name(test)
 
         create_newcase_cmd = "%s --case %s --res %s --mach %s --compiler %s --compset %s"\
-                               " --project %s --test"%\
+                               " --test" % \
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
-                               test_dir, grid, machine, compiler, compset, self._project)
+                               test_dir, grid, machine, compiler, compset)
+        if self._project is not None:
+            create_newcase_cmd += " --project %s " % self._project
 
         if test_mods is not None:
             files = Files()
