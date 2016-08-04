@@ -325,6 +325,7 @@ enum PIO_ERROR_HANDLERS
     PIO_RETURN_ERROR = (-53)  
 };
 
+/** Define the netCDF-based error codes. */
 #if defined( _PNETCDF) || defined(_NETCDF)
 #define PIO_GLOBAL NC_GLOBAL
 #define PIO_UNLIMITED NC_UNLIMITED
@@ -417,25 +418,29 @@ enum PIO_ERROR_HANDLERS
 #define PIO_EBADCHUNK NC_EBADCHUNK
 #define PIO_ENOTBUILT NC_ENOTBUILT
 #define PIO_EDISKLESS NC_EDISKLESS
-
 #define PIO_FILL_DOUBLE NC_FILL_DOUBLE
 #define PIO_FILL_FLOAT NC_FILL_FLOAT
 #define PIO_FILL_INT NC_FILL_INT
 #define PIO_FILL_CHAR NC_FILL_CHAR
+#endif /*  defined( _PNETCDF) || defined(_NETCDF) */
 
-#endif
+/** Define the extra error codes for the parallel-netcdf library. */
 #ifdef _PNETCDF
 #define PIO_EINDEP  NC_EINDEP
-#else
+#else  /* _PNETCDF */
 #define PIO_EINDEP  (-203) 
-#endif
+#endif /* _PNETCDF */
 
+/** Define error codes for PIO. */
 #define PIO_EBADIOTYPE  -255
+
+/** ??? */
 #define PIO_REQ_NULL (NC_REQ_NULL-1)
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+    int PIOc_strerror(int pioerr, char *errstr);
     int PIOc_freedecomp(int iosysid, int ioid);
     int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp); 
     int PIOc_inq_format (int ncid, int *formatp); 
