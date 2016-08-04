@@ -32,6 +32,8 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 
 #ifdef FORTPRINTF_DEBUG
 	printf("call to fortprintf\n");
+	printf("Format string is: %s\n", str);
+	printf("\n");
 #endif
 
 	/* Assume no errors */
@@ -40,6 +42,10 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 	/* Add formatted string to the buffer of fortran code to be written */
 	va_start(ap, str);
 	i = vsnprintf(fbuffer+nbuf, 1024-nbuf, str, ap);
+#ifdef FORTPRINTF_DEBUG
+	printf("Full buffer is:\n");
+	printf("%s\n", fbuffer);
+#endif
 	va_end(ap);
 
 	/* Set the next free position in the fortran buffer */
@@ -55,9 +61,13 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 		/* Scan through the max line length - 1 (since we may have to add an & character) or the end of the buffer, whichever comes first */
 		for (i=0; i<MAX_LINE_LEN-1 && i<nbuf; i++) {
 			lastchar = (i == nbuf-1) ? 1 : 0;
-			if (fbuffer[i] == '\'' && (fbuffer[i+1] != '\'' || lastchar)) {                               /* Whether we are inside a quoted string */
-				inquotes = (inquotes + 1) % 2;
-				q = inquotes ? i : -1;
+			if (fbuffer[i] == '\'') {
+				if ( fbuffer[i+1] != '\'' || lastchar ) {
+					inquotes = (inquotes + 1) % 2;
+					q = inquotes ? i : -1;
+				} else if ( !lastchar && fbuffer[i+1] == '\'' ) {
+					i++;
+				}
 			}
 			if (fbuffer[i] == '\n') nl = i;                                                               /* The last occurrence of a newline */
 			if (fbuffer[i] == ' ' && !lastchar && fbuffer[i+1] != '&') {                             /* The last occurrence of a space */
@@ -67,7 +77,7 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 		}
 
 #ifdef FORTPRINTF_DEBUG
-		printf("1: i = %d, nl = %d, sp = %d, fbuffer[i] = %c\n", i, nl, sp, fbuffer[i]);
+		printf("1: i = %d, nl = %d, sp = %d, fbuffer[i] = %c, inquotes = %d\n", i, nl, sp, fbuffer[i], inquotes);
 #endif
 
 		/* If we haven't reached the column limit, don't consider breaking the line yet */
