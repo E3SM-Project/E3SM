@@ -2,6 +2,10 @@
 A library for scheduling/running through the phases of a set
 of system tests. Supports phase-level parallelism (can make progres
 on multiple system tests at once).
+
+TestScheduler will handle the TestStatus for the 1-time setup
+phases. All other phases need to handle their own status because
+they can be run outside the context of TestScheduler.
 """
 
 import shutil, traceback, stat, glob, threading, time, thread
@@ -9,9 +13,8 @@ from CIME.XML.standard_module_setup import *
 import compare_namelists
 import CIME.utils
 from CIME.utils import append_status
-import wait_for_tests, update_acme_tests
-from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, \
-    TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
+from test_status import *
+import update_acme_tests
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
@@ -20,17 +23,12 @@ from CIME.XML.tests import Tests
 from CIME.case import Case
 import CIME.test_utils
 
-INITIAL_PHASE         = "INIT"
-CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
-XML_PHASE             = "XML"
-SETUP_PHASE           = "SETUP"
-SHAREDLIB_BUILD_PHASE = "SHAREDLIB_BUILD"
-MODEL_BUILD_PHASE     = "MODEL_BUILD"
+logger = logging.getLogger(__name__)
+
+# Phases managed by TestScheduler
 PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
           NAMELIST_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
-
-logger = logging.getLogger(__name__)
 
 ###############################################################################
 class TestScheduler(object):
@@ -611,33 +609,6 @@ class TestScheduler(object):
         return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
-    def _update_test_status_file(self, test):
-    ###########################################################################
-        # TODO: The run scripts heavily use the TestStatus file. So we write out
-        # the phases we have taken care of and then let the run scrips go from there
-        # Eventually, it would be nice to have TestStatus management encapsulated
-        # into a single place.
-
-        str_to_write = ""
-        made_it_to_phase = self._get_test_phase(test)
-
-        made_it_to_phase_idx = self._phases.index(made_it_to_phase)
-        for phase in self._phases[0:made_it_to_phase_idx+1]:
-            if "BUILD" not in phase:
-                # the build phase status is always write by the test itself
-                str_to_write += "%s %s %s\n" % (self._get_test_status(test, phase), test, phase)
-
-        if not self._no_run and not self._is_broken(test) and made_it_to_phase == MODEL_BUILD_PHASE:
-            # Ensure PEND state always gets added to TestStatus file if we are
-            # about to run test
-            str_to_write += "%s %s %s\n" % (TEST_PENDING_STATUS, test, RUN_PHASE)
-
-        test_status_file = os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME)
-
-        with open(test_status_file, "w") as fd:
-            fd.write(str_to_write)
-
-    ###########################################################################
     def _run_catch_exceptions(self, test, phase, run):
     ###########################################################################
         try:
@@ -672,33 +643,6 @@ class TestScheduler(object):
         else:
             return 1
 
-    ###########################################################################
-    def _handle_test_status_file(self, test, test_phase, success):
-    ###########################################################################
-        #
-        # This complexity is due to sharing of TestStatus responsibilities
-        #
-        try:
-            if test_phase != RUN_PHASE and (not success or test_phase == SETUP_PHASE
-                                            or test_phase == self._phases[-1]):
-                self._update_test_status_file(test)
-
-            # If we failed VERY early on in the run phase, it's possible that
-            # the CIME scripts never got a chance to set the state.
-            elif test_phase == RUN_PHASE and not success:
-                test_status_file = os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME)
-                statuses = wait_for_tests.parse_test_status_file(test_status_file)[0]
-                if RUN_PHASE not in statuses or\
-                   (statuses[RUN_PHASE] in [TEST_PASS_STATUS, TEST_PENDING_STATUS]):
-                    self._update_test_status_file(test)
-
-        except Exception as e:
-            # TODO: What to do here? This failure is very severe because the
-            # only way for test results to be communicated is by the TestStatus
-            # file.
-            logger.critical("VERY BAD! Could not handle TestStatus file '%s': '%s'" %
-                             (os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME), str(e)))
-            thread.interrupt_main()
 
     ###########################################################################
     def _wait_for_something_to_finish(self, threads_in_flight):
@@ -728,13 +672,17 @@ class TestScheduler(object):
 
         if status != TEST_PENDING_STATUS:
             self._update_test_status(test, test_phase, status)
-        self._handle_test_status_file(test, test_phase, success)
 
         status_str = "Finished %s for test %s in %f seconds (%s)" %\
                      (test_phase, test, elapsed_time, status)
         if not success:
             status_str += "    Case dir: %s" % self._get_test_dir(test)
         logger.info(status_str)
+
+        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE]:
+            # These are the phases for which TestScheduler is reponsible for
+            # updating the TestStatus file
+            append_status("%s %s %s" % (status, test, test_phase))
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line

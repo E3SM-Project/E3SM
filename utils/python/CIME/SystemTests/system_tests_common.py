@@ -376,13 +376,13 @@ class SystemTestsCommon(object):
             append_status("Error in Baseline Generate: %s"%err,sfile="TestStatus.log")
 
 class FakeTest(SystemTestsCommon):
-    '''
+    """
     Inheriters of the FakeTest Class are intended to test the code.
 
     All members of the FakeTest Class must
     have names beginnig with "TEST" this is so that the find_system_test
     in utils.py will work with these classes.
-    '''
+    """
     def _set_script(self, script):
         self._script = script # pylint: disable=attribute-defined-outside-init
 
@@ -419,9 +419,13 @@ echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
-    '''
-    This test is intended to be run from scripts_regression_tests.py only
-    '''
+    """
+    You can generate a diff with this test as follows:
+    1) Run the test and generate a baseline
+    2) set TESTRUNDIFF_ALTERNATE environment variable to TRUE
+    3) Re-run the same test from step 1 but do a baseline comparison instead of generation
+      3.a) This should give you a DIFF
+    """
     def build(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")

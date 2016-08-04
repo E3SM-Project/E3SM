@@ -58,6 +58,7 @@ OR
 
         description=description,
 
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
     CIME.utils.setup_standard_logging_options(parser)

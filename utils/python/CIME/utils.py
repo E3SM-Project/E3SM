@@ -875,13 +875,13 @@ def touch(fname):
         open(fname, 'a').close()
 
 def find_system_test(testname, case):
-    '''
+    """
     Find and import the test matching testname
     Look through the paths set in config_files.xml variable SYSTEM_TESTS_DIR
     for components used in this case to find a test matching testname.  Add the
     path to that directory to sys.path if its not there and return the test object
     Fail if the test is not found in any of the paths.
-    '''
+    """
     system_test_path = None
     if testname.startswith("TEST"):
         system_test_path =  "CIME.SystemTests.system_tests_common.%s"%(testname)
@@ -912,9 +912,4 @@ def find_system_test(testname, case):
     path, m = system_test_path.rsplit('.',1)
     mod = import_module(path)
     return getattr(mod, m)
-
-
-
-
-
 

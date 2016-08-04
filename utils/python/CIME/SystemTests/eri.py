@@ -99,8 +99,7 @@ class ERI(SystemTestsCommon):
                 with open("user_nl_cam", "a") as fd:
                     fd.write("inithist = 'ENDOFRUN'\n")
 
-        success = self._run(suffix="base",
-                            coupler_log_path=os.path.join(dout_sr1, "logs"),
+        success = self._run(coupler_log_path=os.path.join(dout_sr1, "logs"),
                             st_archive=True)
         if not success:
             return False
