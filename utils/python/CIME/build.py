@@ -5,7 +5,8 @@ from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status
 from CIME.preview_namelists     import preview_namelists
 from CIME.check_input_data      import check_input_data
-import glob, shutil, time, threading, gzip, subprocess
+
+import glob, shutil, time, threading, gzip, subprocess, tarfile
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +110,61 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     return logs
 
 ###############################################################################
+def cesm_post_build(case): # pylint: disable=unused-argument
+###############################################################################
+    pass
+
+###############################################################################
+def acme_post_build(case):
+###############################################################################
+    cimeroot = case.get_value("CIMEROOT")
+    exeroot = case.get_value("EXEROOT")
+    caseroot = case.get_value("CASEROOT")
+    lid = os.environ["LID"]
+
+    # Save git describe
+    describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.%s" % lid)
+    if os.path.exists(describe_prov):
+        os.remove(describe_prov)
+    run_cmd_no_fail("git describe > %s" % describe_prov, from_dir=cimeroot)
+
+    # Save HEAD
+    headfile = os.path.join(cimeroot, ".git", "logs", "HEAD")
+    headfile_prov = os.path.join(exeroot, "GIT_LOGS_HEAD.%s" % lid)
+    if os.path.exists(headfile_prov):
+        os.remove(headfile_prov)
+    if os.path.exists(headfile):
+        shutil.copy(headfile, headfile_prov)
+
+    # Save SourceMods
+    sourcemods = os.path.join(caseroot, "SourceMods")
+    sourcemods_prov = os.path.join(exeroot, "SourceMods.%s.tar.gz" % lid)
+    if os.path.exists(sourcemods_prov):
+        os.remove(sourcemods_prov)
+    if os.path.isdir(sourcemods):
+        with tarfile.open(sourcemods_prov, "w:gz") as tfd:
+            tfd.add(sourcemods)
+
+    # Save build env
+    env_prov = os.path.join(exeroot, "build_environment.%s.txt" % lid)
+    if os.path.exists(env_prov):
+        os.remove(env_prov)
+    shutil.copy(os.path.join(caseroot, "software_environment.txt"), env_prov)
+
+    # For all the just-created post-build provenance files, symlink a generic name
+    # to them to indicate that these are the most recent or active.
+    for item in ["GIT_DESCRIBE", "GIT_LOGS_HEAD", "SourceMods", "build_environment"]:
+        globstr = "%s/%s.%s*" % (exeroot, item, lid)
+        matches = glob.glob(globstr)
+        expect(len(matches) < 2, "Multiple matches for glob %s should not have happened" % globstr)
+        if matches:
+            the_match = matches[0]
+            generic_name = the_match.replace(".%s" % lid, "")
+            if os.path.exists(generic_name):
+                os.remove(generic_name)
+            os.symlink(the_match, generic_name)
+
+###############################################################################
 def post_build(case, logs):
 ###############################################################################
 
@@ -139,6 +195,12 @@ def post_build(case, logs):
         os.remove("LockedFiles/env_build.xml")
 
     shutil.copy("env_build.xml", "LockedFiles")
+
+    model = case.get_value("MODEL")
+    if model == "acme":
+        acme_post_build(case)
+    else:
+        cesm_post_build(case)
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False):
