@@ -8,6 +8,7 @@
 #
 
 {{ batchdirectives }}
+
 mpirun={{ mpirun }}
 
 # xmlquery to get POSTPROCESS_VIRTUALENV, BATCHSUBMIT variable settings
