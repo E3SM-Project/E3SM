@@ -132,8 +132,6 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         case = CaseStub()
         SystemTestsCompareTwo.__init__(self,
                                        case,
-                                       two_builds_for_sharedlib = False,
-                                       two_builds_for_model = False,
                                        run_two_suffix = run_two_suffix)
 
         self._run_pass_suffixes = []

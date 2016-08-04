@@ -41,8 +41,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
     def __init__(self,
                  case,
-                 two_builds_for_sharedlib,
-                 two_builds_for_model,
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = ''):
@@ -52,12 +50,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
         Args:
             case: case object passsed to __init__ method of individual test
-            two_builds_for_sharedlib (bool): Whether two separate builds are
-                needed for the sharedlib build (this should be False for tests
-                that only change runtime options)
-            two_builds_for_model (bool): Whether two separate builds are needed
-                for the model build (this should be False for tests that only
-                change runtime options)
             run_two_suffix (str, optional): Suffix appended to files output by
                 the second run. Defaults to 'test'. This can be anything other
                 than 'base' (which is the suffix used for the first run).
@@ -67,9 +59,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 when starting the second run. Defaults to ''.
         """
         SystemTestsCommon.__init__(self, case)
-
-        self._two_builds_for_sharedlib = two_builds_for_sharedlib
-        self._two_builds_for_model = two_builds_for_model
 
         # NOTE(wjs, 2016-08-03) It is currently CRITICAL for run_one_suffix to
         # be 'base', because this is assumed for baseline comparison and
@@ -150,12 +139,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
     def build(self, sharedlib_only=False, model_only=False):
         self._pre_build()
-
-        if self._needs_two_builds(sharedlib_only = sharedlib_only,
-                                  model_only = model_only):
-            raise NotImplementedError('Two builds not yet implemented')
-        else:
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):
         """
@@ -212,30 +196,4 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         and run 2
         """
         return self._status_compare
-
-    # ========================================================================
-    # Private methods
-    # ========================================================================
-
-    def _needs_two_builds(self, sharedlib_only, model_only):
-        if (not sharedlib_only and not model_only):
-            # building both at once
-            two_builds_needed = (self._two_builds_for_sharedlib or self._two_builds_for_model)
-        elif sharedlib_only:
-            two_builds_needed = self._two_builds_for_sharedlib
-        elif model_only:
-            two_builds_needed = self._two_builds_for_model
-        else:
-            raise ValueError('Invalid for both sharedlib_only and model_only to be set')
-
-        return two_builds_needed
-
-    def _has_two_executables(self):
-        if (self._two_builds_for_sharedlib or
-            self._two_builds_for_model):
-            two_executables = True
-        else:
-            two_executables = False
-
-        return two_executables
 
