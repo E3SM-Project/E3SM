@@ -329,10 +329,11 @@ contains
       allocate(surfaceAverageIndex(nVertLevels))
       allocate(deltaVelocitySquared(nVertLevels))
 
-      do k = 1, nVertLevelsP1
+      do k = 1, nVertLevels
          Nsqr_iface(k) = 0.0_RKIND
          turbulentScalarVelocityScale(k) = 0.0_RKIND
       end do
+      Nsqr_iface(nVertLevelsP1) = 0.0_RKIND
 
       call mpas_timer_start('cvmix cell loop', .false.)
       !$omp do schedule(runtime) private(k, bulkRichardsonNumberStop, kIndexOBL, bulkRichardsonFlag)
@@ -469,7 +470,7 @@ contains
                        exit
                     end if
                  enddo
-                 topIndex = surfaceAverageIndex(kIndexOBL) - 1
+                 topIndex = max(1, surfaceAverageIndex(kIndexOBL) - 1)
               end do
 
               ! compute the turbulent scales in order to compute the bulk Richardson number
