@@ -17,6 +17,8 @@ from CIME.case import Case
 
 import argparse, doctest, shutil, glob, time
 
+logger = logging.getLogger("xmlchange")
+
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
@@ -86,8 +88,18 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
               append=None, noecho=False, warn=None, force=False):
     with Case(caseroot, read_only=False) as case:
         if listofsettings:
+            
+            # Error handling, exit with grace if xmlval or equal sign is missing. Check first before changing any attributes 
+            for setting in listofsettings:
+                (xmlid, xmlval) = setting.split('=', 1)         
+                if xmlval == None :
+                    logger.error("Missing value for %s. Please all settings have to be in the form of attribute=value." , xmlid)
+                    sys.exit(1)
+                    
+            # Change values         
             for setting in listofsettings:
                 (xmlid, xmlval) = setting.split('=', 1)
+                        
                 type_str = case.get_type_info(xmlid)
                 if(append is True):
                     value = case.get_value(xmlid, resolved=False,
