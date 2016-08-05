@@ -73,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, k_displaced, & !{{{
+   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, k_displaced, & !{{{
                                             displacement_type, density, err, thermalExpansionCoeff, &
                                             salineContractionCoeff, timeLevelIn)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -99,6 +99,7 @@ contains
       type (mpas_pool_type), intent(inout) :: diagnosticsPool
       type (mpas_pool_type), intent(in) :: meshPool
       type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
+      integer, intent(in) :: nCells
       integer, intent(in), optional :: timeLevelIn
       type (mpas_pool_type), pointer :: tracersPool
       integer :: k_displaced
@@ -135,13 +136,13 @@ contains
 
       if (linearEos) then
 
-         call ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, &
+         call ocn_equation_of_state_linear_density(meshPool, nCells, k_displaced, displacement_type, indexT, indexS, &
                                                    activeTracers, density, err, tracersSurfaceValue, &
                                                    thermalExpansionCoeff, salineContractionCoeff)
 
       elseif (jmEos) then
 
-         call ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, indexT, indexS, &
+         call ocn_equation_of_state_jm_density(meshPool, scratchPool, nCells, k_displaced, displacement_type, indexT, indexS, &
                                                activeTracers, density, err, tracersSurfaceValue, thermalExpansionCoeff, &
                                                salineContractionCoeff)
 

@@ -704,7 +704,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, iErr, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'relative', density, iErr, &
            timeLevelIn=1)
 
       if(iErr .ne. 0) then
