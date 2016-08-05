@@ -874,6 +874,7 @@ contains
     PetscErrorCode                  :: ierr
 
     call VecCopy(this%soln, this%soln_prev,ierr); CHKERRQ(ierr)
+    call VSFMSOEUpdateAuxVarsODE(this, this%soln)
 
     select case (this%itype)
     case(SOE_RE_ODE)
@@ -884,6 +885,8 @@ contains
           select type(cur_goveq)
              class is (goveqn_richards_ode_pressure_type)
 
+             call cur_goveq%GetFromSOEAuxVarsIntrn(this%aux_vars_in, 0)
+             call cur_goveq%UpdateAuxVarsIntrn()
              call cur_goveq%SetDataInSOEAuxVar(AUXVAR_INTERNAL, this%aux_vars_in)
 
           end select
@@ -1045,6 +1048,7 @@ contains
     PetscErrorCode                :: ierr
 
     call VecCopy(this%soln_prev_clm, this%soln_prev, ierr); CHKERRQ(ierr)
+    call VecCopy(this%soln_prev_clm, this%soln     , ierr); CHKERRQ(ierr)
 
   end subroutine VSFMSPreStepDT
 
