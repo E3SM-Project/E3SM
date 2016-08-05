@@ -20,6 +20,7 @@
 
 module ocn_surface_land_ice_fluxes
 
+   use mpas_timer
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -411,6 +412,8 @@ contains
 
       if ( .not. standaloneOn ) return
 
+      call mpas_timer_start("land_ice_build_arrays")
+
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_ISOMIP_gammaT', config_land_ice_flux_ISOMIP_gammaT)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', &
                                 config_land_ice_flux_useHollandJenkinsAdvDiff)
@@ -567,6 +570,8 @@ contains
          call mpas_deallocate_scratch_field(freezeHeatFluxField, .true.)
          call mpas_deallocate_scratch_field(freezeIceHeatFluxField, .true.)
       end if
+
+      call mpas_timer_stop("land_ice_build_arrays")
 
    !--------------------------------------------------------------------
 
