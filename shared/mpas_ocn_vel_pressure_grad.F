@@ -127,8 +127,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k, cell1, cell2, iCell, kMax
-      integer, pointer :: nVertLevels, nCells, nEdgesSolve
+      integer :: iEdge, k, cell1, cell2, iCell, kMax, nEdges
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nEdgesArray
       integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgeMask
 
@@ -144,13 +145,14 @@ contains
       call mpas_timer_start("pressure grad")
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels',nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nCells',nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+
+      nEdges = nEdgesArray( 1 )
 
       if (config_pressure_gradient_type.eq.'pressure_and_zmid') then
 
@@ -158,7 +160,7 @@ contains
          ! -1/density_0 (grad p_k + density g grad z_k^{mid})
 
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-         do iEdge=1,nEdgesSolve
+         do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -177,7 +179,7 @@ contains
          ! the gradient of Montgomery Potential
 
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-         do iEdge=1,nEdgesSolve
+         do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -198,7 +200,7 @@ contains
          ! See Bleck (2002) equation 1, and last equation in Appendix A.
 
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-         do iEdge=1,nEdgesSolve
+         do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -217,7 +219,7 @@ contains
          allocate(JacobianDxDs(nVertLevels))
 
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k, pGrad)
-         do iEdge=1,nEdgesSolve
+         do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -255,7 +257,7 @@ contains
          allocate(T2(nVertLevels), S1(nVertLevels), S2(nVertLevels))
 
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, kMax, k, pGrad, alpha, beta)
-         do iEdge=1,nEdgesSolve
+         do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
