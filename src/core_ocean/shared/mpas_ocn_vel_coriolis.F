@@ -21,6 +21,7 @@
 
 module ocn_vel_coriolis
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -127,6 +128,8 @@ contains
 
       if ( .not. coriolisOn ) return
 
+      call mpas_timer_start("coriolis")
+
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -173,6 +176,8 @@ contains
       !$omp end do
 
       deallocate( qArr )
+
+      call mpas_timer_stop("coriolis")
 
    !--------------------------------------------------------------------
 

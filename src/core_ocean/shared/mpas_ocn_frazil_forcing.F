@@ -109,9 +109,13 @@ contains
 
       if ( .not. frazilFormationOn ) return
 
+      call mpas_timer_start("tracer frazil")
+
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_frazil_forcing_active_tracers(meshPool, tracersPool, forcingPool, tracersTend, err)
       end if
+
+      call mpas_timer_stop("tracer frazil")
 
    end subroutine ocn_frazil_forcing_tracers!}}}
 
@@ -167,6 +171,8 @@ contains
 
       if ( .not. frazilFormationOn ) return
 
+      call mpas_timer_start("frazil thickness tendency")
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
@@ -179,6 +185,8 @@ contains
         end do
       end do
       !$omp end do
+
+      call mpas_timer_stop("frazil thickness tendency")
 
    end subroutine ocn_frazil_forcing_layer_thickness!}}}
 
@@ -261,7 +269,6 @@ contains
       !$omp end do
 
    end subroutine ocn_frazil_forcing_active_tracers!}}}
-
 
 !***********************************************************************
 !

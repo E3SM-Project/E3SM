@@ -22,6 +22,7 @@ module ocn_vel_forcing_rayleigh
 
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_timer
    use ocn_constants
 
    implicit none
@@ -123,6 +124,8 @@ contains
 
       if ( .not. rayleighFrictionOn ) return
 
+      call mpas_timer_start('vel rayleigh forcing')
+
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
@@ -135,6 +138,8 @@ contains
         enddo
       enddo
       !$omp end do
+
+      call mpas_timer_stop('vel rayleigh forcing')
 
    !--------------------------------------------------------------------
 

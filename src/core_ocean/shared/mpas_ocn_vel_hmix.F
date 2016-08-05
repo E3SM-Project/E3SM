@@ -142,6 +142,8 @@ contains
 
       if(.not.hmixOn) return
 
+      call mpas_timer_start("vel hmix")
+
       viscosity = 0.0_RKIND
       err = 0
 
@@ -159,6 +161,8 @@ contains
 
       call ocn_vel_hmix_del4_tensor_tend(meshPool, normalVelocity, tangentialVelocity, viscosity, scratchPool, tend, err1)
       err = ior(err1, err)
+
+      call mpas_timer_stop("vel hmix")
 
    !--------------------------------------------------------------------
 

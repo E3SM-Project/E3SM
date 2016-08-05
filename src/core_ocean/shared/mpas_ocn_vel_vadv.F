@@ -21,6 +21,7 @@
 
 module ocn_vel_vadv
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -120,6 +121,8 @@ contains
 
       if (.not. velVadvOn) return
 
+      call mpas_timer_start("vel vadv")
+
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -154,6 +157,8 @@ contains
       !$omp end do
 
       deallocate(w_dudzTopEdge)
+
+      call mpas_timer_stop("vel vadv")
 
    !--------------------------------------------------------------------
 

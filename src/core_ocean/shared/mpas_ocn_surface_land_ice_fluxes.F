@@ -113,9 +113,13 @@ contains
 
       if ( .not. landIceFluxesOn ) return
 
+      call mpas_timer_start("land_ice_" // trim(groupName))
+
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_land_ice_fluxes_active_tracers(meshPool, forcingPool, tracersSurfaceFlux, err)
       end if
+
+      call mpas_timer_stop("land_ice_" // trim(groupName))
 
    end subroutine ocn_surface_land_ice_fluxes_tracers!}}}
 
@@ -172,6 +176,8 @@ contains
 
       if ( .not. landIceFluxesOn ) return
 
+      call mpas_timer_start("top_drag", .false.)
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
@@ -190,6 +196,8 @@ contains
         surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + topDragMagnitude(iCell)
       end do
       !$omp end do
+
+      call mpas_timer_stop("top_drag")
 
    !--------------------------------------------------------------------
 
@@ -248,6 +256,8 @@ contains
 
       if ( .not. landIceFluxesOn ) return
 
+      call mpas_timer_start("land_ice_thick")
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
@@ -258,6 +268,8 @@ contains
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
       !$omp end do
+
+      call mpas_timer_stop("land_ice_thick")
 
    end subroutine ocn_surface_land_ice_fluxes_thick!}}}
 

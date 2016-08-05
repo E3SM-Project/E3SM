@@ -20,6 +20,7 @@
 
 module ocn_thick_surface_flux
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -126,6 +127,8 @@ contains
 
       if (.not. surfaceThicknessFluxOn) return
 
+      call mpas_timer_start("thick surface flux")
+
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -152,6 +155,8 @@ contains
         end if
       end do
       !$omp end do
+
+      call mpas_timer_stop("thick surface flux")
 
    !--------------------------------------------------------------------
 

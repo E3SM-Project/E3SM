@@ -19,6 +19,7 @@
 
 module ocn_tracer_DMS
 
+   use mpas_timer
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -158,6 +159,8 @@ contains
 
       integer :: iCell, iLevel, iTracer, numColumns, column, iLevelSurface
 
+      call mpas_timer_start("DMS source-sink")
+
       err = 0
 
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
@@ -165,6 +168,8 @@ contains
       numColumns = 1
       column = 1
       iLevelSurface = 1
+
+      !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
          DMS_input%number_of_active_levels(column) = maxLevelCell(iCell)
 
@@ -207,6 +212,8 @@ contains
          enddo
 
       enddo  !  iCell
+
+      call mpas_timer_stop("DMS source-sink")
 
    !--------------------------------------------------------------------
 
@@ -302,6 +309,8 @@ contains
 
       err = 0
 
+      call mpas_timer_start("DMS surface flux")
+
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
 
@@ -327,6 +336,8 @@ contains
       numColumns = 1
       column = 1
       iLevelSurface = 1
+
+      !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
 
          DMS_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
@@ -357,6 +368,8 @@ contains
          dms_flux_diag_ws(iCell)        = DMS_flux_diagnostic_fields%diag_DMS_WS(column)
 
       enddo  !  iCell
+
+      call mpas_timer_stop("DMS surface flux")
 
    !--------------------------------------------------------------------
 

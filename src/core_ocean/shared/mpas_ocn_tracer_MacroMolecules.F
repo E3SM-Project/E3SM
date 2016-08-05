@@ -19,6 +19,7 @@
 
 module ocn_tracer_MacroMolecules
 
+   use mpas_timer
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -149,10 +150,13 @@ contains
 
       integer :: iCell, iLevel, iTracer, numColumns, column
 
+      call mpas_timer_start("MacroMolecules source-sink")
+
       err = 0
 
       numColumns = 1
       column = 1
+      !DWJ 08/05/2016: This loop needs OpenMP added to it
       do iCell=1,nCellsSolve
          MacroMolecules_input%number_of_active_levels(column) = maxLevelCell(iCell)
          do iLevel=1,maxLevelCell(iCell)
@@ -197,6 +201,8 @@ contains
          enddo
 
       enddo  !  iCell
+
+      call mpas_timer_stop("MacroMolecules source-sink")
 
    !--------------------------------------------------------------------
 
@@ -262,10 +268,13 @@ contains
 
       integer :: iCell
 
+      call mpas_timer_start("MacroMolecules surface flux")
+
       err = 0
 
       ! fluxes are zero
 
+      !DWJ 08/05/2016: This loop needs OpenMP added to it
       do iCell = 1, nCellsSolve
 
          MacroMoleculesSurfaceFlux(macrosIndices%prot_ind,iCell) = 0.0_RKIND
@@ -273,6 +282,8 @@ contains
          MacroMoleculesSurfaceFlux(macrosIndices%lip_ind, iCell) = 0.0_RKIND
 
       enddo  !  iCell
+
+      call mpas_timer_stop("MacroMolecules surface flux")
 
    !--------------------------------------------------------------------
 
