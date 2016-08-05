@@ -170,11 +170,11 @@ module ocn_forward_mode
       call mpas_timer_stop('reset_io_alarms')
 
       ! Read the remaining input streams
-      call mpas_timer_start('io_read', .false.)
+      call mpas_timer_start('io_read')
       call mpas_stream_mgr_read(domain % streamManager, ierr=err_tmp)
       ierr = ior(ierr, err_tmp)
       call mpas_timer_stop('io_read')
-      call mpas_timer_start('reset_io_alarms', .false.)
+      call mpas_timer_start('reset_io_alarms')
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
       ierr = ior(ierr, err_tmp)
       call mpas_timer_stop('reset_io_alarms')
@@ -511,7 +511,7 @@ module ocn_forward_mode
            call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
            call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
-           call mpas_timer_start("land_ice_build_arrays", .false.)
+           call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
                                                          forcingPool, scratchPool, err)
            call mpas_timer_stop("land_ice_build_arrays")
@@ -521,7 +521,7 @@ module ocn_forward_mode
            block_ptr => block_ptr % next
          end do
 
-         call mpas_timer_start("time integration", .false.)
+         call mpas_timer_start("time integration")
 
          !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
 
