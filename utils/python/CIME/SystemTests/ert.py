@@ -30,7 +30,7 @@ class ERT(SystemTestsCommon):
         self._case.flush()
 
         logger.info("doing a 2 month initial test with restart files at 1 month")
-        return SystemTestsCommon.run(self)
+        self.run_indv()
 
     def _ert_second_phase(self):
 
@@ -40,21 +40,10 @@ class ERT(SystemTestsCommon):
         self._case.flush()
 
         logger.info("doing an 1 month restart test with no restart files")
-        success = SystemTestsCommon._run(self, "rest")
-
+        self.run_indv(suffix="rest")
         # Compare restart file
-        if success:
-            return self._component_compare_test("base", "rest")
-        else:
-            return False
+        self._component_compare_test("base", "rest")
 
-    def run(self):
-        success = self._ert_first_phase()
-
-        if success:
-            return self._ert_second_phase()
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+    def run_phase(self):
+        self._ert_first_phase()
+        self._ert_second_phase()

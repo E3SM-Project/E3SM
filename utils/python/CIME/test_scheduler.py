@@ -217,12 +217,10 @@ class TestScheduler(object):
 
         if use_existing:
             for test in self._tests:
-                test_status_file = os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME)
-                statuses = wait_for_tests.parse_test_status_file(test_status_file)[0]
-                for phase, status in statuses.iteritems():
-                    if phase != INITIAL_PHASE:
-                        self._update_test_status(test, phase, TEST_PENDING_STATUS)
-                        self._update_test_status(test, phase, status)
+                ts = TestStatus(self._get_test_dir(test))
+                for phase, status in ts:
+                    self._update_test_status(test, phase, TEST_PENDING_STATUS)
+                    self._update_test_status(test, phase, status)
         else:
             # None of the test directories should already exist.
             for test in self._tests:
@@ -679,10 +677,13 @@ class TestScheduler(object):
             status_str += "    Case dir: %s" % self._get_test_dir(test)
         logger.info(status_str)
 
-        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE]:
+        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE, NAMELIST_PHASE]:
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
-            append_status("%s %s %s" % (status, test, test_phase))
+            test_dir = self._get_test_dir(test)
+
+            with TestStatus(test_dir=test_dir, test_name=test) as ts:
+                ts.set_status(test_phase, status)
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
@@ -801,20 +802,11 @@ class TestScheduler(object):
         # Setup cs files
         self._setup_cs_files()
 
-        # Return True if all tests passed
+        # Return True if all tests passed from our point of view
         logger.info( "At test-scheduler close, state is:")
         rv = True
         for test in self._tests:
             phase, status, nl_fail = self._get_test_data(test)
-            logger.debug("phase %s status %s" % (phase, status))
-            if status == TEST_PASS_STATUS and phase == RUN_PHASE:
-                # Be cautious about telling the user that the test passed. This
-                # status should match what they would see on the dashboard. Our
-                # self._test_states does not include comparison fail information,
-                # so we need to parse test status.
-                test_status_file = os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME)
-                status = wait_for_tests.interpret_status_file(test_status_file)[1]
-
             if status not in [TEST_PASS_STATUS, TEST_PENDING_STATUS]:
                 logger.info( "%s %s (phase %s)" % (status, test, phase))
                 rv = False
@@ -824,7 +816,7 @@ class TestScheduler(object):
                 rv = False
 
             else:
-                logger.info("status=%s test=%s phase=%s"%( status, test, phase))
+                logger.info("%s %s %s" % (status, test, phase))
 
             logger.info( "    Case dir: %s" % self._get_test_dir(test))
 

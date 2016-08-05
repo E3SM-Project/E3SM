@@ -15,9 +15,3 @@ class SMS(SystemTestsCommon):
         initialize an object interface to the SMS system test
         """
         SystemTestsCommon.__init__(self, case)
-
-    def run(self):
-        return SystemTestsCommon.run(self)
-
-    def report(self):
-        SystemTestsCommon.report(self)

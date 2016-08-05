@@ -17,13 +17,13 @@ class ERR(ERS):
         """
         ERS.__init__(self, case)
 
-    def run(self):
+    def run_phase(self):
         first_phase = self._case.get_value("RESUBMIT") == 1
 
         if first_phase:
             self._case.set_value("DOUT_S", True)
             self._case.flush()
-            return self._ers_first_phase()
+            self._ers_first_phase()
         else:
             dout_s_root = self._case.get_value("DOUT_S_ROOT")
             rundir = self._case.get_value("RUNDIR")
@@ -31,4 +31,4 @@ class ERR(ERS):
             for item in glob.glob(os.path.join(dout_s_root, "rest", "*", "*")):
                 shutil.copy(item, rundir)
 
-            return self._ers_second_phase()
+            self._ers_second_phase()
