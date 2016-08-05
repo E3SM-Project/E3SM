@@ -22,6 +22,7 @@ Classes that inherit from this are REQUIRED to implement the following methods:
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.case import Case
 
 import shutil, os
 
