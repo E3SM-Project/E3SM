@@ -119,8 +119,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, depLev
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, depLev, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -131,7 +132,7 @@ contains
 
       err = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -141,6 +142,8 @@ contains
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
+
+      nCells = nCellsArray( 2 )
 
       !$omp do schedule(runtime) private(depth, k, depLev)
       do iCell = 1, nCells

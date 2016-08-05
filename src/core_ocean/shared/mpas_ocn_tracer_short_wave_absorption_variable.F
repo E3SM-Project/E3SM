@@ -118,8 +118,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, depLev
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, depLev, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -134,7 +135,7 @@ contains
 
       err = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -152,6 +153,8 @@ contains
 
       call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
       call mpas_pool_get_array(swForcingPool,'clearSkyRadiation',clearSkyRadiation)
+
+      nCells = nCellsArray( 1 )
 
       !$omp do schedule(runtime) private(depth, k, cloudRatio, depLev)
       do iCell = 1, nCells
