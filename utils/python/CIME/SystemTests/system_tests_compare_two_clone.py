@@ -24,7 +24,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
 
-import shutil, os
+import shutil, os, glob
 
 logger = logging.getLogger(__name__)
 
@@ -192,12 +192,15 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
             self._status_run2 = "FAIL"
             return False
 
-        # FIXME(wjs, 2016-08-05) Call a function to make sym links from the
-        # case1 run directory pointing to the files in the case2 run directory
-
         # Compare results
         # Case1 is the "main" case, and we need to do the comparisons from there
         self._activate_case1()
+        self._link_to_case2_output(casename1 = self._case1.get_value("CASE"),
+                                   casename2 = self._case2.get_value("CASE"),
+                                   rundir1 = self._case1.get_value("RUNDIR"),
+                                   rundir2 = self._case2.get_value("RUNDIR"),
+                                   run2suffix = self._run_two_suffix)
+
         success = self._component_compare_test(self._run_one_suffix, self._run_two_suffix)
         if success:
             self._status_compare = "PASS"
@@ -297,3 +300,41 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         # Trick the scripts into thinking that we are running via the submit
         # script, like we're supposed to
         self._case2.set_value("RUN_WITH_SUBMIT",True)
+
+    # The following is a static method so that it can be tested more easily
+    @staticmethod
+    def _link_to_case2_output(casename1, casename2,
+                              rundir1, rundir2,
+                              run2suffix):
+        """
+        Looks for all files in rundir2 matching the pattern casename2*.nc.run2suffix
+
+        For each file found, makes a link in rundir1 pointing to this file; the
+        link is renamed so that the original occurrence of casename2 is replaced
+        with casename1.
+
+        For example:
+
+        /glade/scratch/sacks/somecase/run/somecase.clm2.h0.nc.run2 ->
+        /glade/scratch/sacks/somecase.run2/run/somecase.run2.clm2.h0.nc.run2
+
+        If the destination link already exists and points to the correct
+        location, it is maintained as is. However, an exception will be raised
+        if the destination link is not exactly as it should be: we avoid
+        overwriting some existing file or link.
+        """
+
+        pattern = '%s*.nc.%s'%(casename2, run2suffix)
+        case2_files = glob.glob(os.path.join(rundir2, pattern))
+        for one_file in case2_files:
+            file_basename = os.path.basename(one_file)
+            modified_basename = file_basename.replace(casename2, casename1, 1)
+            one_link = os.path.join(rundir1, modified_basename)
+            if (os.path.islink(one_link) and
+                os.readlink(one_link) == one_file):
+                # Link is already set up correctly: do nothing
+                # (os.symlink raises an exception if you try to replace an
+                # existing file)
+                pass
+            else:
+                os.symlink(one_file, one_link)
