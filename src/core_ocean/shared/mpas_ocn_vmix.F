@@ -167,25 +167,11 @@ contains
       end do
       !$omp end do
 
-      call mpas_timer_start('coef const build', .false.)
       call ocn_vmix_coefs_const_build(meshPool, statePool, diagnosticsPool, err1, timeLevel)
-      call mpas_timer_stop('coef const build')
-
-      call mpas_timer_start('coef tanh build', .false.)
       call ocn_vmix_coefs_tanh_build(meshPool, statePool, diagnosticsPool, err2, timeLevel)
-      call mpas_timer_stop('coef tanh build')
-
-      call mpas_timer_start('coef rich build', .false.)
       call ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, scratchPool, err3, timeLevel)
-      call mpas_timer_stop('coef rich build')
-
-      call mpas_timer_start('coef cvmix build', .false.)
       call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, diagnosticsPool, err4, timeLevel)
-      call mpas_timer_stop('coef cvmix build')
-
-      call mpas_timer_start('coef redi build', .false.)
       call ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err5, timeLevel)
-      call mpas_timer_stop('coef redi build')
 
       err = ior(ior(ior(err1, ior(err2, err3)), err4), err5)
 
