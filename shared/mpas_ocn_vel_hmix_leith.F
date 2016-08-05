@@ -20,6 +20,7 @@
 
 module ocn_vel_hmix_leith
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
@@ -144,6 +145,8 @@ contains
 
       if(.not.hmixLeithOn) return
 
+      call mpas_timer_start("vel leith")
+
       call mpas_pool_get_config(ocnConfigs, 'config_Leith_parameter', config_leith_parameter)
       call mpas_pool_get_config(ocnConfigs, 'config_Leith_dx', config_leith_dx)
       call mpas_pool_get_config(ocnConfigs, 'config_Leith_visc2_max', config_leith_visc2_max)
@@ -191,6 +194,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop("vel leith")
 
    !--------------------------------------------------------------------
 

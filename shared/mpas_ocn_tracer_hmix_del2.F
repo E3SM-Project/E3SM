@@ -22,6 +22,7 @@
 
 module ocn_tracer_hmix_del2
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_threading
@@ -129,6 +130,8 @@ contains
 
       if (.not.del2On) return
 
+      call mpas_timer_start("tracer del2")
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       num_tracers = size(tracers, dim=1)
 
@@ -171,6 +174,8 @@ contains
         end do
       end do
       !$omp end do
+
+      call mpas_timer_stop("tracer del2")
 
    !--------------------------------------------------------------------
 
