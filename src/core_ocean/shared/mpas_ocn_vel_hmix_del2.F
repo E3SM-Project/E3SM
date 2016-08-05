@@ -20,6 +20,7 @@
 
 module ocn_vel_hmix_del2
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_threading
@@ -141,6 +142,8 @@ contains
 
       if(.not.hmixDel2On) return
 
+      call mpas_timer_start("vel del2")
+
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del2', config_mom_del2)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
@@ -181,6 +184,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop("vel del2")
 
    !--------------------------------------------------------------------
 
@@ -275,6 +280,8 @@ contains
 
       if ( .not. config_use_mom_del2_tensor ) return
 
+      call mpas_timer_start("vel del2_tensor")
+
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del2_tensor ', config_mom_del2_tensor )
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -347,6 +354,8 @@ contains
       call mpas_deallocate_scratch_field(divTensorR3CellField, .true.)
       call mpas_deallocate_scratch_field(outerProductEdgeField, .true.)
       call mpas_deallocate_scratch_field(normalVectorEdgeField, .true.)
+
+      call mpas_timer_stop("vel del2_tensor")
 
    !--------------------------------------------------------------------
 
