@@ -80,7 +80,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, &
+   subroutine ocn_equation_of_state_jm_density(meshPool, scratchPool, nCells, k_displaced, displacement_type, &
        indexT, indexS, tracers, density, err, &
        tracersSurfaceLayerValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -108,6 +108,7 @@ contains
 
       type (mpas_pool_type), intent(in) :: meshPool
       type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
+      integer, intent(in) :: nCells
       integer, intent(in) :: k_displaced, indexT, indexS
       character(len=*), intent(in) :: displacement_type
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -119,7 +120,7 @@ contains
          salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
 
       integer :: iEdge, iCell, iVertex, k, k_displaced_local
-      integer, pointer :: nCells, nEdges, nVertices, nVertLevels
+      integer, pointer :: nVertices, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       character(len=60) :: displacement_type_local
 
@@ -223,7 +224,6 @@ contains
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       allocate(tracerTemp(nVertLevels))
       allocate(tracerSalt(nVertLevels))

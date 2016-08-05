@@ -114,8 +114,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2, err3, timeLevel
-      integer, pointer :: indexTemperature, indexSalinity
+      integer :: err1, err2, err3, timeLevel, nCells
+      integer, pointer :: indexTemperature, indexSalinity, nCellsSolve
 
       type (mpas_pool_type), pointer :: tracersPool
 
@@ -148,6 +148,7 @@ contains
          timeLevel = 1
       end if
 
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
@@ -163,13 +164,15 @@ contains
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
+      nCells = nCellsSolve
+
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, err, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'relative', density, err, &
                                          timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, err, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'relative', displacedDensity, err, &
                                          timeLevelIn=timeLevel)
 
       call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, &

@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, tracers, & !{{{
+   subroutine ocn_equation_of_state_linear_density(meshPool, nCells, k_displaced, displacement_type, indexT, indexS, tracers, & !{{{
                                                    density, err, tracersSurfaceLayerValue, thermalExpansionCoeff, &
                                                    salineContractionCoeff)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -106,6 +106,7 @@ contains
       implicit none
 
       type (mpas_pool_type), intent(in) :: meshPool
+      integer, intent(in) :: nCells
       character(len=*), intent(in) :: displacement_type
       integer, intent(in) :: k_displaced, indexT, indexS
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -118,12 +119,11 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
       integer :: iCell, k, k_displaced_local, k_ref
-      integer, pointer :: nCells, nVertLevels
+      integer, pointer :: nVertLevels
       character(len=60) :: displacement_type_local
       type (dm_info) :: dminfo
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       err = 0
