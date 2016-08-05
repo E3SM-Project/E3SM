@@ -163,7 +163,7 @@ module ocn_tracer_advection_mono
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
         do k=1, maxLevelCell(iCell)
-          inv_h_new(k, iCell) = 1.0 / (layerThickness(k, iCell) + dt * tend_layerThickness(k, iCell))
+          inv_h_new(k, iCell) = 1.0_RKIND / (layerThickness(k, iCell) + dt * tend_layerThickness(k, iCell))
         end do
       end do
       !$omp end do
@@ -184,6 +184,7 @@ module ocn_tracer_advection_mono
             tracer_cur(k,iCell) = tracers(iTracer,k,iCell)
             upwind_tendency(k, iCell) = 0.0_RKIND
           end do ! k loop
+          high_order_vert_flux(nVertLevels+1, iCell) = 0.0_RKIND
 
           if ( monotonicityCheck ) then
             do k = 1, maxLevelCell(iCell)
