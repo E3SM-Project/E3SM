@@ -102,7 +102,7 @@ setenv MPSTKZ 128M
 setenv OMP_STACKSIZE 128M
 
 if ( $COMPILER == "intel" ) then
-  setenv XTPE_LINK_TYPE dynamic
+  setenv CRAYPE_LINK_TYPE dynamic
 endif 
 if ( $?PERL ) then
   printenv
