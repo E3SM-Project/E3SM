@@ -20,6 +20,7 @@
 
 module ocn_high_freq_thickness_hmix_del2
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -122,6 +123,8 @@ contains
 
       if(.not.config_use_highFreqThick_del2) return
 
+      call mpas_timer_start("thick hmix del2")
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
@@ -160,6 +163,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop("thick hmix del2")
 
    end subroutine ocn_high_freq_thickness_hmix_del2_tend!}}}
 

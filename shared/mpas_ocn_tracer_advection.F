@@ -26,6 +26,7 @@ module ocn_tracer_advection
    use mpas_pool_routines
    use mpas_sort
    use mpas_hash
+   use mpas_timer
 
    use ocn_tracer_advection_std
    use ocn_tracer_advection_mono
@@ -77,6 +78,8 @@ module ocn_tracer_advection
 
       if(.not. tracerAdvOn) return
 
+      call mpas_timer_start("tracer adv")
+
       call mpas_pool_get_array(meshPool, 'advCoefs', advCoefs)
       call mpas_pool_get_array(meshPool, 'advCoefs3rd', advCoefs3rd)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -97,6 +100,8 @@ module ocn_tracer_advection
             verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
             highOrderAdvectionMask, edgeSignOnCell)
       endif
+
+      call mpas_timer_stop("tracer adv")
    end subroutine ocn_tracer_advection_tend!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

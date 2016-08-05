@@ -1323,6 +1323,8 @@ contains
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
 
+      call mpas_timer_start('KPP input fields')
+
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
@@ -1461,6 +1463,8 @@ contains
       call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_deallocate_scratch_field(salineContractionCoeffField, .true.)
       call mpas_deallocate_scratch_field(densitySurfaceDisplacedField, .true.)
+
+      call mpas_timer_stop('KPP input fields')
 
     end subroutine ocn_compute_KPP_input_fields!}}}
 

@@ -20,6 +20,7 @@
 
 module ocn_tracer_surface_flux_to_tend
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
 
@@ -128,6 +129,8 @@ contains
 
       if (.not. surfaceTracerFluxOn) return
 
+      call mpas_timer_start("surface_tracer_flux")
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
@@ -154,30 +157,37 @@ contains
       end do
       !$omp end do
 
+      call mpas_timer_stop("surface_tracer_flux")
+
       ! now do runoff component
 
       if (associated(surfaceTracerFluxRunoff)) then
-      !$omp do schedule(runtime) private(remainingFlux, k, iTracer)
-      do iCell = 1, nCells
-        remainingFlux = 1.0_RKIND
-        do k = 1, maxLevelCell(iCell)
-          remainingFlux = remainingFlux - fractionAbsorbedRunoff(k, iCell)
 
-          do iTracer = 1, nTracers
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) +  &
-               surfaceTracerFluxRunoff(iTracer, iCell) * fractionAbsorbedRunoff(k, iCell)
+        call mpas_timer_start("surface_tracer_runoff_flux")
+        !$omp do schedule(runtime) private(remainingFlux, k, iTracer)
+        do iCell = 1, nCells
+          remainingFlux = 1.0_RKIND
+          do k = 1, maxLevelCell(iCell)
+            remainingFlux = remainingFlux - fractionAbsorbedRunoff(k, iCell)
+
+            do iTracer = 1, nTracers
+              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) +  &
+                 surfaceTracerFluxRunoff(iTracer, iCell) * fractionAbsorbedRunoff(k, iCell)
+            end do
           end do
+
+          if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
+            do iTracer = 1, nTracers
+              tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) &
+                                                        + surfaceTracerFluxRunoff(iTracer, iCell) * remainingFlux
+            end do
+          end if
         end do
+        !$omp end do
 
-        if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
-          do iTracer = 1, nTracers
-            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) &
-                                                      + surfaceTracerFluxRunoff(iTracer, iCell) * remainingFlux
-          end do
-        end if
-      end do
-      !$omp end do
+        call mpas_timer_stop("surface_tracer_runoff_flux")
       endif
+
 
    !--------------------------------------------------------------------
 

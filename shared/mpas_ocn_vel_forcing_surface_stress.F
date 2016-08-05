@@ -22,6 +22,7 @@ module ocn_vel_forcing_surface_stress
 
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_timer
 
    use ocn_constants
    use ocn_forcing
@@ -132,6 +133,8 @@ contains
 
       if ( .not. surfaceStressOn ) return
 
+      call mpas_timer_start('vel surface stress')
+
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
@@ -169,6 +172,8 @@ contains
         end if
       enddo
       !$omp end do
+
+      call mpas_timer_stop('vel surface stress')
 
    !--------------------------------------------------------------------
 
