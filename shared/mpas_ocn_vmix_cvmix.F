@@ -148,11 +148,11 @@ contains
       real (kind=RKIND), pointer :: configure_cvmix_kpp_minimum_OBL_under_sea_ice
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
-      integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge
+      integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge, nCells
       integer :: topIndex
-      integer, pointer :: nVertLevels, nVertLevelsP1, nCells
+      integer, pointer :: nVertLevels, nVertLevelsP1
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), allocatable :: surfaceAverageIndex
-
 
       real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth, invAreaCell
       real (kind=RKIND) :: normalVelocityAv, factor, delU2
@@ -209,7 +209,7 @@ contains
                                 configure_cvmix_kpp_minimum_OBL_under_sea_ice)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
@@ -275,6 +275,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)
 
+      nCells = nCellsArray( size(nCellsArray) )
+
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          vertViscTopOfCell(:, iCell) = 0.0_RKIND
@@ -282,6 +284,8 @@ contains
          vertNonLocalFlux(:, :, iCell) = 0.0_RKIND
       end do
       !$omp end do
+
+      nCells = nCellsArray( 2 )
 
       !
       ! start by adding the mininum background values to the visocity/diffusivity arrays
