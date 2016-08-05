@@ -106,8 +106,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: MaxLevelCell
 
       !-----------------------------------------------------------------
@@ -126,8 +127,10 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      nCells = nCellsArray( 1 )
 
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
