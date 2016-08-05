@@ -130,8 +130,8 @@ contains
       integer :: err1, err2, err3, err4, err5
       integer :: timeLevel
 
-      integer :: iEdge, iCell
-      integer, pointer :: nEdges, nCells
+      integer :: iEdge, iCell, nEdges, nCells
+      integer, dimension(:), pointer :: nEdgesArray, nCellsArray
 
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfEdge, vertDiffTopOfCell
 
@@ -149,17 +149,21 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+
+      nEdges = nEdgesArray( 2 )
 
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          vertViscTopOfEdge(:, iEdge) = 0.0_RKIND
       end do
       !$omp end do
+
+      nCells = nCellsArray( 2 )
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
@@ -242,8 +246,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k, cell1, cell2, N
-      integer, pointer :: nEdges, nVertLevels
+      integer :: iEdge, k, cell1, cell2, N, nEdges
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nEdgesArray
 
       integer, dimension(:), pointer :: maxLevelEdgeTop
 
@@ -259,11 +264,13 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_bottom_drag_coeff', config_bottom_drag_coeff)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+
+      nEdges = nEdgesArray( 1 )
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
       A(1)=0
@@ -378,8 +385,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, num_tracers, N
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, num_tracers, N, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -390,13 +398,15 @@ contains
 
       if(.not.tracerVmixOn) return
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),tracersTemp(num_tracers,nVertLevels))
+
+      nCells = nCellsArray( 1 )
 
       call mpas_timer_start('vmix tracers tend imp loop', .false.)
       !$omp do schedule(runtime) private(N, k)
@@ -457,15 +467,15 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool
       type (mpas_pool_type), intent(inout) :: diagnosticsPool
       type (mpas_pool_type), intent(inout) :: statePool
-    type (mpas_pool_type), intent(inout) :: forcingPool
+      type (mpas_pool_type), intent(inout) :: forcingPool
       type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
       integer, intent(out) :: err
       integer, intent(in), optional :: timeLevelIn
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      integer :: timeLevel, k, cell1, cell2, iEdge
-      integer, pointer :: nCells, nEdges
+      integer :: timeLevel, k, cell1, cell2, iEdge, nCells, nEdges
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, &
                                                     vertDiffTopOfCell, kineticEnergyCell
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
@@ -502,8 +512,8 @@ contains
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
       call mpas_timer_start('vmix coefs', .false.)
       call ocn_vmix_coefs(meshPool, statePool, forcingPool, diagnosticsPool, scratchPool, err, timeLevel)
@@ -512,19 +522,19 @@ contains
       ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
       if ( config_use_cvmix ) then
 
-      call mpas_timer_start('CVMix avg', .false.)
-      !$omp do schedule(runtime) private(cell1, cell2, k)
-      do iEdge=1,nEdges
-         vertViscTopOfEdge(:, iedge) = 0.0_RKIND
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         do k=1,maxLevelEdgeTop(iEdge)
-           vertViscTopOfEdge(k,iEdge) = 0.5_RKIND*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
-         enddo
-      enddo
-      !$omp end do
-      call mpas_timer_stop('CVMix avg')
-
+         nEdges = nEdgesArray( 1 )
+         call mpas_timer_start('CVMix avg', .false.)
+         !$omp do schedule(runtime) private(cell1, cell2, k)
+         do iEdge=1,nEdges
+            vertViscTopOfEdge(:, iedge) = 0.0_RKIND
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k=1,maxLevelEdgeTop(iEdge)
+               vertViscTopOfEdge(k,iEdge) = 0.5_RKIND*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
+            end do
+         end do
+         !$omp end do
+         call mpas_timer_stop('CVMix avg')
       endif
 
       !

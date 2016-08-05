@@ -187,8 +187,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k, iEdge
-      integer, pointer :: nVertLevels, nEdges
+      integer :: k, iEdge, nEdges
+      integer, pointer :: nVertLevels, nEdgesSolve
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), pointer :: config_max_visc_tanh, config_min_visc_tanh, config_ZMid_tanh
@@ -205,9 +205,11 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+
+      nEdges = nEdgesSolve
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
@@ -275,8 +277,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k, iCell
-      integer, pointer :: nVertLevels, nCells
+      integer :: k, iCell, nCells
+      integer, pointer :: nVertLevels, nCellsSolve
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
 
@@ -294,9 +296,11 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+
+      nCells = nCellsSolve
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
