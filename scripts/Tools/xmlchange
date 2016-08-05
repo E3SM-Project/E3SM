@@ -88,7 +88,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=None, subgroup=None,
               append=None, noecho=False, warn=None, force=False):
     with Case(caseroot, read_only=False) as case:
-        if listofsettings:
+        if len(listofsettings):
             logger.warning("List of attributes to change: %s" , listofsettings)
 
             # Error handling, exit with grace if xmlval or equal sign is missing. Check first before changing any attributes 
