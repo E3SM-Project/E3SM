@@ -92,11 +92,11 @@ module ocn_analysis_mode
       !
       ! Read input data for model
       !
-      call mpas_timer_start('io_read', .false.)
+      call mpas_timer_start('io_read')
       call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
       call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       call mpas_timer_stop('io_read')
-      call mpas_timer_start('io_reset_alarms', .false.)
+      call mpas_timer_start('io_reset_alarms')
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
       call mpas_timer_stop('io_reset_alarms')
 
@@ -258,7 +258,7 @@ module ocn_analysis_mode
 
       if (config_write_output_on_startup) then
          call ocn_analysis_compute_startup(domain, err)
-         call mpas_timer_start('io_write', .false.)
+         call mpas_timer_start('io_write')
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          call mpas_timer_stop('io_write')
       endif
