@@ -22,6 +22,7 @@
 
 module ocn_vel_hmix
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_threading

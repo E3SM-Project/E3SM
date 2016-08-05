@@ -116,6 +116,8 @@ contains
       type (field2DReal), pointer :: gradDensityEdgeField, gradDensityTopOfEdgeField, gradDensityConstZTopOfEdgeField, &
          gradZMidEdgeField, gradZMidTopOfEdgeField, dDensityDzTopOfCellField, dDensityDzTopOfEdgeField,areaCellSumField
 
+      call mpas_timer_start('gm bolus velocity')
+
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
@@ -581,6 +583,8 @@ contains
       call mpas_deallocate_scratch_field(dDensityDzTopOfEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradZMidEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradZMidTopOfEdgeField, .true.)
+
+      call mpas_timer_stop('gm bolus velocity')
 
    end subroutine ocn_gm_compute_Bolus_velocity!}}}
 

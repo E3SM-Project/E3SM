@@ -356,11 +356,11 @@ module ocn_time_integration_rk4
         call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
         ! Update halos for diagnostic variables.
-        call mpas_timer_start("RK4-boundary layer depth halo update")
         if (config_use_cvmix_kpp) then
+           call mpas_timer_start("RK4-boundary layer depth halo update")
            call mpas_dmpar_field_halo_exch(domain, 'boundaryLayerDepth')
+           call mpas_timer_stop("RK4-boundary layer depth halo update")
         end if
-        call mpas_timer_stop("RK4-boundary layer depth halo update")
 
 
         call mpas_timer_start("RK4-diagnostic halo update")
