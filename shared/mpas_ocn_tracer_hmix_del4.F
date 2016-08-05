@@ -117,9 +117,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, num_tracers
+      integer :: iEdge, num_tracers, nCells, nEdges
       integer :: iTracer, k, iCell, cell1, cell2, i
-      integer, pointer :: nEdges, nVertLevels, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
@@ -147,8 +148,8 @@ contains
 
       call mpas_timer_start("tracer del4")
 
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
 
@@ -176,6 +177,9 @@ contains
 
       delsq_tracer => delsq_tracerField % array
 
+      ! Need 1 halo around owned cells
+      nCells = nCellsArray( 2 )
+
       ! first del2: div(h \nabla \phi) at cell center
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
       do iCell = 1, nCells
@@ -200,6 +204,9 @@ contains
         end do
       end do
       !$omp end do
+
+      ! Only need tendency on owned cells
+      nCells = nCellsArray( 1 )
 
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)

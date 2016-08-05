@@ -119,8 +119,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, iTracer, nTracers
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, iTracer, nTracers, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND) :: remainingFlux
@@ -131,11 +132,13 @@ contains
 
       call mpas_timer_start("surface_tracer_flux")
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+      nCells = nCellsArray( 1 )
 
       !$omp do schedule(runtime) private(remainingFlux, k, iTracer)
       do iCell = 1, nCells
@@ -162,8 +165,8 @@ contains
       ! now do runoff component
 
       if (associated(surfaceTracerFluxRunoff)) then
-
         call mpas_timer_start("surface_tracer_runoff_flux")
+
         !$omp do schedule(runtime) private(remainingFlux, k, iTracer)
         do iCell = 1, nCells
           remainingFlux = 1.0_RKIND
@@ -186,7 +189,7 @@ contains
         !$omp end do
 
         call mpas_timer_stop("surface_tracer_runoff_flux")
-      endif
+      end if
 
 
    !--------------------------------------------------------------------

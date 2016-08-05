@@ -108,8 +108,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, iTracer, nTracers
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, iTracer, nTracers, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND) :: fluxTopOfCell, fluxBottomOfCell
 
@@ -119,11 +120,13 @@ contains
 
       call mpas_timer_start('non-local flux')
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+      nCells = nCellsArray( 1 )
 
       !$omp do schedule(runtime) private(k, iTracer, fluxTopOfCell, fluxBottomOfCell)
       do iCell = 1, nCells
