@@ -184,6 +184,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         # Second run
         logger.info('Doing second run: ' + self._run_two_description)
         self._activate_case2()
+        self._force_case2_settings()
         success = self._run(self._run_two_suffix)
         if success:
             self._status_run2 = "PASS"
@@ -246,6 +247,20 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
 
         return caseroot2
 
+    def _activate_case1(self):
+        """
+        Make case 1 active for upcoming calls
+        """
+        os.chdir(self._caseroot1)
+        self._set_active_case(self._case1)
+
+    def _activate_case2(self):
+        """
+        Make case 2 active for upcoming calls
+        """
+        os.chdir(self._caseroot2)
+        self._set_active_case(self._case2)
+
     def _setup_cases(self):
         """
         Does all test-specific set up for the two test cases.
@@ -270,16 +285,15 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         self._activate_case1()
         self._case.flush()
 
-    def _activate_case1(self):
+    def _force_case2_settings(self):
         """
-        Make case 1 active for upcoming calls
-        """
-        os.chdir(self._caseroot1)
-        self._set_active_case(self._case1)
+        Sets some settings in case2 that are normally set automatically.
 
-    def _activate_case2(self):
+        This is needed because we aren't running case2 via the normal mechanism
+        (i.e., via the submit script).
         """
-        Make case 2 active for upcoming calls
-        """
-        os.chdir(self._caseroot2)
-        self._set_active_case(self._case2)
+
+        # RUN_WITH_SUBMIT is normally set when you run the case's submit script.
+        # Trick the scripts into thinking that we are running via the submit
+        # script, like we're supposed to
+        self._case2.set_value("RUN_WITH_SUBMIT",True)
