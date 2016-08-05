@@ -2438,13 +2438,13 @@ contains
                     !leafp_to_retransp(p) = max(min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p)),0.0)*0.65_r8
                     !frootp_to_litter(p) = max(min(prev_frootp_to_litter(p) + t1*(frootp(p) - prev_frootp_to_litter(p)*offset_counter(p)),frootp(p)),0.0)
                     
-                    leafn_to_litter(p)  = leafc_to_litter(p) / max(leafc(p), 1e-20) * leafn(p) * 0.38_r8
-                    leafn_to_retransn(p) = leafc_to_litter(p) / max(leafc(p), 1e-20) * leafn(p) * 0.62_r8
-                    frootn_to_litter(p) = frootc_to_litter(p) /  max(frootc(p), 1e-20) * frootn(p)
+                    leafn_to_litter(p)  = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.38_r8
+                    leafn_to_retransn(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.62_r8
+                    frootn_to_litter(p) = frootc_to_litter(p) /  max(frootc(p), 1.e-20_r8) * frootn(p)
                     
-                    leafp_to_litter(p)  = leafc_to_litter(p) / max(leafc(p), 1e-20) * leafp(p) * 0.35_r8
-                    leafp_to_retransp(p) = leafc_to_litter(p) / max(leafc(p), 1e-20) * leafp(p) * 0.65_r8
-                    frootp_to_litter(p) = frootc_to_litter(p) /  max(frootc(p), 1e-20) * frootp(p)
+                    leafp_to_litter(p)  = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.35_r8
+                    leafp_to_retransp(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.65_r8
+                    frootp_to_litter(p) = frootc_to_litter(p) /  max(frootc(p), 1.e-20_r8) * frootp(p)
                 end if
                 ! save the current litterfall fluxes
                 !prev_leafn_to_litter(p)  = leafn_to_litter(p)

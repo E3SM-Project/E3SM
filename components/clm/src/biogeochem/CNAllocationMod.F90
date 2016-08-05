@@ -379,6 +379,36 @@ contains
     real(r8):: temp_sminn_to_plant(bounds%begc:bounds%endc)
     real(r8):: temp_sminp_to_plant(bounds%begc:bounds%endc)
 
+    real(r8), pointer :: sminp_to_plant_patch         (:)
+    real(r8), pointer :: desorb_to_solutionp_vr       (:,:)
+    real(r8), pointer :: primp_to_labilep_vr_col      (:,:)
+    real(r8), pointer :: biochem_pmin_vr_col          (:,:)
+    real(r8), pointer :: secondp_to_labilep_vr_col    (:,:)
+    real(r8), pointer :: labilep_to_secondp_vr_col    (:,:)
+    real(r8), pointer :: adsorb_to_labilep_vr         (:,:)
+    real(r8), pointer :: plant_pdemand_vr_patch       (:,:)
+    real(r8), pointer :: plant_n_uptake_flux          (:)
+
+    real(r8), pointer :: labilep_vr                   (:,:)
+    real(r8), pointer :: secondp_vr                   (:,:)
+    real(r8), pointer :: actual_leafcp                (:)
+    real(r8), pointer :: actual_frootcp               (:)
+    real(r8), pointer :: actual_livewdcp              (:)
+    real(r8), pointer :: actual_deadwdcp              (:)
+    real(r8), pointer :: leafp                        (:)
+    real(r8), pointer :: plant_p_uptake_flux          (:)
+
+    real(r8), pointer :: col_plant_ndemand_vr         (:,:)
+    real(r8), pointer :: col_plant_nh4demand_vr       (:,:)
+    real(r8), pointer :: col_plant_no3demand_vr       (:,:)
+    real(r8), pointer :: col_plant_pdemand_vr         (:,:)
+    real(r8), pointer :: plant_nh4demand_vr_patch     (:,:)
+    real(r8), pointer :: plant_no3demand_vr_patch     (:,:)
+    real(r8), pointer :: plant_ndemand_vr_patch       (:,:)
+    real(r8), pointer :: actual_immob_no3             (:)
+    real(r8), pointer :: actual_immob_nh4             (:)
+    real(r8), pointer :: benefit_pgpp_pleafc          (:)
+
     !-----------------------------------------------------------------------
 
     associate(                                                                                   &
@@ -612,37 +642,39 @@ contains
          smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch             , &
          sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch                , &
          pnup_pfrootc                 => nitrogenstate_vars%pnup_pfrootc_patch                 , &
-         leafn                        => nitrogenstate_vars%leafn_patch                        , &
-         sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch              , &
-         secondp_vr                   => phosphorusstate_vars%secondp_vr_col                   , &               
-         actual_leafcp                => phosphorusstate_vars%actual_leafcp                    , &
-         actual_frootcp               => phosphorusstate_vars%actual_frootcp                   , &
-         actual_livewdcp              => phosphorusstate_vars%actual_livewdcp                  , &
-         actual_deadwdcp              => phosphorusstate_vars%actual_deadwdcp                  , &
-         leafp                        => phosphorusstate_vars%leafp_patch                      , &
-         col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr                , &
-         col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr              , &
-         col_plant_no3demand_vr       => nitrogenflux_vars%col_plant_no3demand_vr              , &
-         col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr                , &
-         plant_nh4demand_vr_patch     => nitrogenflux_vars%plant_nh4demand_vr_patch            , &
-         plant_no3demand_vr_patch     => nitrogenflux_vars%plant_no3demand_vr_patch            , &
-         plant_ndemand_vr_patch       => nitrogenflux_vars%plant_ndemand_vr_patch              , &
-         plant_pdemand_vr_patch       => phosphorusflux_vars%plant_pdemand_vr_patch            , &
-         actual_immob_no3             => nitrogenflux_vars%actual_immob_no3_col                , &
-         actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col                , &
-         adsorb_to_labilep_vr         => phosphorusflux_vars%adsorb_to_labilep_vr              , &
-         desorb_to_solutionp_vr       => phosphorusflux_vars%desorb_to_solutionp_vr            , &
-         primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col           , &
-         biochem_pmin_vr_col          => phosphorusflux_vars%biochem_pmin_vr_col               , &
-         secondp_to_labilep_vr_col    => phosphorusflux_vars%secondp_to_labilep_vr_col         , &
-         labilep_to_secondp_vr_col    => phosphorusflux_vars%labilep_to_secondp_vr_col         , &
-         labilep_vr                   => phosphorusstate_vars%labilep_vr_col                   , &
-         benefit_pgpp_pleafc          => nitrogenstate_vars%benefit_pgpp_pleafc_patch          , &
-         
-         ! for debug
-         plant_n_uptake_flux	      => nitrogenflux_vars%plant_n_uptake_flux	               , &
-         plant_p_uptake_flux	      => phosphorusflux_vars%plant_p_uptake_flux	         &
+         leafn                        => nitrogenstate_vars%leafn_patch                          &
          )
+
+
+      sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch
+      secondp_vr                   => phosphorusstate_vars%secondp_vr_col
+      actual_leafcp                => phosphorusstate_vars%actual_leafcp
+      actual_frootcp               => phosphorusstate_vars%actual_frootcp
+      actual_livewdcp              => phosphorusstate_vars%actual_livewdcp
+      actual_deadwdcp              => phosphorusstate_vars%actual_deadwdcp
+      leafp                        => phosphorusstate_vars%leafp_patch
+      col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr
+      col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr
+      col_plant_no3demand_vr       => nitrogenflux_vars%col_plant_no3demand_vr
+      col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr
+      plant_nh4demand_vr_patch     => nitrogenflux_vars%plant_nh4demand_vr_patch
+      plant_no3demand_vr_patch     => nitrogenflux_vars%plant_no3demand_vr_patch
+      plant_ndemand_vr_patch       => nitrogenflux_vars%plant_ndemand_vr_patch
+      plant_pdemand_vr_patch       => phosphorusflux_vars%plant_pdemand_vr_patch
+      actual_immob_no3             => nitrogenflux_vars%actual_immob_no3_col
+      actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col
+      adsorb_to_labilep_vr         => phosphorusflux_vars%adsorb_to_labilep_vr
+      desorb_to_solutionp_vr       => phosphorusflux_vars%desorb_to_solutionp_vr
+      primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col
+      biochem_pmin_vr_col          => phosphorusflux_vars%biochem_pmin_vr_col
+      secondp_to_labilep_vr_col    => phosphorusflux_vars%secondp_to_labilep_vr_col
+      labilep_to_secondp_vr_col    => phosphorusflux_vars%labilep_to_secondp_vr_col
+      labilep_vr                   => phosphorusstate_vars%labilep_vr_col
+      benefit_pgpp_pleafc          => nitrogenstate_vars%benefit_pgpp_pleafc_patch
+
+      ! for debug
+      plant_n_uptake_flux          => nitrogenflux_vars%plant_n_uptake_flux
+      plant_p_uptake_flux          => phosphorusflux_vars%plant_p_uptake_flux
 
       ! set time steps
       dt = real( get_step_size(), r8 )
@@ -3219,7 +3251,7 @@ contains
 
                      plant_palloc(p) = plant_nalloc(p) * (p_allometry(p)/n_allometry(p))
 
-                     sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(p),0.0) ! in case of strong N limitation, and plant_palloc(p) < retransp_to_ppool(p)
+                     sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(p),0.0_r8) ! in case of strong N limitation, and plant_palloc(p) < retransp_to_ppool(p)
                      
                      retransp_to_ppool(p) = min(plant_palloc(p) , retransp_to_ppool(p)) ! in case of strong N limitation, and plant_palloc(p) < retransp_to_ppool(p)
                  else
@@ -3227,7 +3259,7 @@ contains
 
                      plant_nalloc(p) = plant_palloc(p) * (n_allometry(p)/p_allometry(p))
 
-                     sminn_to_npool(p) = max(plant_nalloc(p) - retransn_to_npool(p), 0.0) ! in case of strong P limitation, and plant_nalloc(p) < retransn_to_npool(p)
+                     sminn_to_npool(p) = max(plant_nalloc(p) - retransn_to_npool(p), 0.0_r8) ! in case of strong P limitation, and plant_nalloc(p) < retransn_to_npool(p)
                      
                      retransn_to_npool(p) = min(plant_nalloc(p) , retransn_to_npool(p)) ! in case of strong P limitation, and plant_nalloc(p) < retransn_to_npool(p)
                  endif
