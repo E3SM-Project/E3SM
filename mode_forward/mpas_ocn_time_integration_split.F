@@ -357,7 +357,7 @@ module ocn_time_integration_split
       n_bcl_iter(config_n_ts_iter) = config_n_bcl_iter_end
 
       do split_explicit_step = 1, config_n_ts_iter
-         call mpas_timer_start('se loop', .false.)
+         call mpas_timer_start('se loop')
 
          stage1_tend_time = min(split_explicit_step,2)
 
@@ -365,11 +365,11 @@ module ocn_time_integration_split
 
          call mpas_threading_barrier()
          ! ---  update halos for diagnostic ocean boundayr layer depth
-         call mpas_timer_start("se halo diag obd")
          if (config_use_cvmix_kpp) then
+            call mpas_timer_start("se halo diag obd")
             call mpas_dmpar_field_halo_exch(domain, 'boundaryLayerDepth')
+            call mpas_timer_stop("se halo diag obd")
          end if
-         call mpas_timer_stop("se halo diag obd")
 
          ! ---  update halos for diagnostic variables
          call mpas_timer_start("se halo diag")
@@ -448,7 +448,7 @@ module ocn_time_integration_split
          ! compute velocity tendencies, T(u*,w*,p*)
          call mpas_timer_start("se bcl vel")
 
-         call mpas_timer_start('se bcl vel tend', .false.)
+         call mpas_timer_start('se bcl vel tend')
          block => domain % blocklist
          do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -487,7 +487,7 @@ module ocn_time_integration_split
                split = 1
             endif
 
-            call mpas_timer_start('bcl iters on linear Coriolis', .false.)
+            call mpas_timer_start('bcl iters on linear Coriolis')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -600,7 +600,7 @@ module ocn_time_integration_split
 
          if (trim(config_time_integrator) == 'unsplit_explicit') then
 
-            call mpas_timer_start('btr vel ue', .false.)
+            call mpas_timer_start('btr vel ue')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -646,7 +646,7 @@ module ocn_time_integration_split
          elseif (trim(config_time_integrator) == 'split_explicit') then
 
             ! Initialize variables for barotropic subcycling
-            call mpas_timer_start('btr vel se init', .false.)
+            call mpas_timer_start('btr vel se init')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -710,7 +710,7 @@ module ocn_time_integration_split
 
             call mpas_threading_barrier()
 
-            call mpas_timer_start('btr se subcycle loop', .false.)
+            call mpas_timer_start('btr se subcycle loop')
             do j = 1, nBtrSubcycles * config_btr_subcycle_loop_factor
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1146,7 +1146,7 @@ module ocn_time_integration_split
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             ! Normalize Barotropic subcycle sums: ssh, normalBarotropicVelocity, and F
-            call mpas_timer_start('btr se norm', .false.)
+            call mpas_timer_start('btr se norm')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -1186,7 +1186,7 @@ module ocn_time_integration_split
             ! over the barotropic subcycles.
             ! efficiency: This next block of code is really a check for debugging, and can
             ! be removed later.
-            call mpas_timer_start('btr se ssh verif', .false.)
+            call mpas_timer_start('btr se ssh verif')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -1278,7 +1278,7 @@ module ocn_time_integration_split
 
          ! Thickness tendency computations and thickness halo updates are completed before tracer
          ! tendency computations to allow monotonic advection.
-         call mpas_timer_start('se thick tend', .false.)
+         call mpas_timer_start('se thick tend')
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1302,7 +1302,7 @@ module ocn_time_integration_split
             ! compute vertAleTransportTop.  Use normalTransportVelocity for advection of layerThickness and tracers.
             ! Use time level 1 values of layerThickness and layerThicknessEdge because
             ! layerThickness has not yet been computed for time level 2.
-            call mpas_timer_start('thick vert trans vel top', .false.)
+            call mpas_timer_start('thick vert trans vel top')
             if (associated(highFreqThicknessNew)) then
                call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                  layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
@@ -1366,7 +1366,7 @@ module ocn_time_integration_split
 
          call mpas_threading_barrier()
 
-         call mpas_timer_start('se loop fini', .false.)
+         call mpas_timer_start('se loop fini')
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -1593,13 +1593,9 @@ module ocn_time_integration_split
 
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
         if (config_use_standardGM) then
-           call mpas_timer_start('se vmix gm comp Bolus vel', .false.)
            call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
-           call mpas_timer_stop('se vmix gm comp Bolus vel')
         end if
-        call mpas_timer_start('se vmix vmix imp', .false.)
         call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
-        call mpas_timer_stop('se vmix vmix imp')
 
         block => block % next
       end do
@@ -1610,12 +1606,12 @@ module ocn_time_integration_split
       ! this leads to lack of volume conservation.  It is required because halo updates in stage 3 are only
       ! conducted on tendencies, not on the velocity and tracer fields.  So this update is required to
       ! communicate the change due to implicit vertical mixing across the boundary.
-      call mpas_timer_start('se vmix halos', .false.)
+      call mpas_timer_start('se vmix halos')
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
 
-      call mpas_timer_start('se vmix halos normalVelFld', .false.)
+      call mpas_timer_start('se vmix halos normalVelFld')
       call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
       call mpas_timer_stop('se vmix halos normalVelFld')
 
@@ -1631,7 +1627,7 @@ module ocn_time_integration_split
 
       call mpas_threading_barrier()
 
-      call mpas_timer_start('se fini', .false.)
+      call mpas_timer_start('se fini')
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -1694,9 +1690,7 @@ module ocn_time_integration_split
 
          ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
          if (config_use_standardGM) then
-            call mpas_timer_start('se final gm comp Bolus vel', .false.)
             call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
-            call mpas_timer_stop('se final gm comp Bolus vel')
          end if
 
          call mpas_timer_start('se final mpas reconstruct', .false.)
@@ -1729,9 +1723,7 @@ module ocn_time_integration_split
          call mpas_threading_barrier()
 
          if (config_use_standardGM) then
-            call mpas_timer_start('se final reconstruct gm vect', .false.)
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
-            call mpas_timer_stop('se final reconstruct gm vect')
          end if
 
          block => block % next

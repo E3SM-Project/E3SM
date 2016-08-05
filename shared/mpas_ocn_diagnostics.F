@@ -1769,71 +1769,75 @@ contains
          relativeSlopeTopOfCellY, relativeSlopeTopOfCellZ, relativeSlopeTopOfCellZonal, relativeSlopeTopOfCellMeridional, &
          gmStreamFuncTopOfEdge, GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional
 
-         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
-         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityX', transportVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityY', transportVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZ', transportVelocityZ)
-         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZonal', transportVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityMeridional', transportVelocityMeridional)
+      call mpas_timer_start('reconstruct gm vecs')
 
-         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', GMBolusVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityY', GMBolusVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZ', GMBolusVelocityZ)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal', GMBolusVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityX', transportVelocityX)
+      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityY', transportVelocityY)
+      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZ', transportVelocityZ)
+      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZonal', transportVelocityZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityMeridional', transportVelocityMeridional)
 
-         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellX', relativeSlopeTopOfCellX)
-         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellY', relativeSlopeTopOfCellY)
-         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellZ', relativeSlopeTopOfCellZ)
-         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellZonal', relativeSlopeTopOfCellZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellMeridional', relativeSlopeTopOfCellMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', GMBolusVelocityX)
+      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityY', GMBolusVelocityY)
+      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZ', GMBolusVelocityZ)
+      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal', GMBolusVelocityZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
 
-         call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncX', GMStreamFuncX)
-         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncY', GMStreamFuncY)
-         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZ', GMStreamFuncZ)
-         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZonal', GMStreamFuncZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', GMStreamFuncMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellX', relativeSlopeTopOfCellX)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellY', relativeSlopeTopOfCellY)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellZ', relativeSlopeTopOfCellZ)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellZonal', relativeSlopeTopOfCellZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellMeridional', relativeSlopeTopOfCellMeridional)
 
-         !$omp sections
-         !$omp section
-         call mpas_reconstruct(meshPool, normalTransportVelocity,          &
-                          transportVelocityX,            &
-                          transportVelocityY,            &
-                          transportVelocityZ,            &
-                          transportVelocityZonal,        &
-                          transportVelocityMeridional    &
-                         )
+      call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncX', GMStreamFuncX)
+      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncY', GMStreamFuncY)
+      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZ', GMStreamFuncZ)
+      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZonal', GMStreamFuncZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', GMStreamFuncMeridional)
 
-         !$omp section
-         call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
-                          GMBolusVelocityX,            &
-                          GMBolusVelocityY,            &
-                          GMBolusVelocityZ,            &
-                          GMBolusVelocityZonal,        &
-                          GMBolusVelocityMeridional    &
-                         )
+      !$omp sections
+      !$omp section
+      call mpas_reconstruct(meshPool, normalTransportVelocity,          &
+                       transportVelocityX,            &
+                       transportVelocityY,            &
+                       transportVelocityZ,            &
+                       transportVelocityZonal,        &
+                       transportVelocityMeridional    &
+                      )
 
-         !$omp section
-         call mpas_reconstruct(meshPool, relativeSlopeTopOfEdge,          &
-                         relativeSlopeTopOfCellX,            &
-                         relativeSlopeTopOfCellY,            &
-                         relativeSlopeTopOfCellZ,            &
-                         relativeSlopeTopOfCellZonal,        &
-                         relativeSlopeTopOfCellMeridional    &
-                        )
+      !$omp section
+      call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
+                       GMBolusVelocityX,            &
+                       GMBolusVelocityY,            &
+                       GMBolusVelocityZ,            &
+                       GMBolusVelocityZonal,        &
+                       GMBolusVelocityMeridional    &
+                      )
 
-         !$omp section
-         call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
-                         GMStreamFuncX,            &
-                         GMStreamFuncY,            &
-                         GMStreamFuncZ,            &
-                         GMStreamFuncZonal,        &
-                         GMStreamFuncMeridional    &
-                        )
-         !$omp end sections
+      !$omp section
+      call mpas_reconstruct(meshPool, relativeSlopeTopOfEdge,          &
+                      relativeSlopeTopOfCellX,            &
+                      relativeSlopeTopOfCellY,            &
+                      relativeSlopeTopOfCellZ,            &
+                      relativeSlopeTopOfCellZonal,        &
+                      relativeSlopeTopOfCellMeridional    &
+                     )
+
+      !$omp section
+      call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
+                      GMStreamFuncX,            &
+                      GMStreamFuncY,            &
+                      GMStreamFuncZ,            &
+                      GMStreamFuncZonal,        &
+                      GMStreamFuncMeridional    &
+                     )
+      !$omp end sections
+
+      call mpas_timer_stop('reconstruct gm vecs')
 
    end subroutine ocn_reconstruct_gm_vectors!}}}
 

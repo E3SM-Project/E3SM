@@ -477,6 +477,8 @@ contains
 
       err = 0
 
+      call mpas_timer_start('vmix imp')
+
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       if (present(timeLevelIn)) then
@@ -549,6 +551,8 @@ contains
          end if
       end do
       call mpas_timer_stop('vmix solve tracers')
+
+      call mpas_timer_stop('vmix imp')
 
 
    end subroutine ocn_vmix_implicit!}}}
