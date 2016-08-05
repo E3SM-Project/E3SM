@@ -121,8 +121,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, cell1, cell2, vertex1, vertex2, k
-      integer, pointer :: nEdgesSolve
+      integer :: iEdge, cell1, cell2, vertex1, vertex2, k, nEdges
+      integer, dimension(:), pointer :: nEdgesArray
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask
 
@@ -146,7 +146,7 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del2', config_mom_del2)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -156,8 +156,10 @@ contains
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
+      nEdges = nEdgesArray( 1 )
+
       !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invLength1, invLength2, k, u_diffusion, visc2)
-      do iEdge = 1, nEdgesSolve
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          vertex1 = verticesOnEdge(1,iEdge)
@@ -252,8 +254,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k
-      integer, pointer :: nEdgesSolve, nEdges, nVertLevels
+      integer :: iEdge, k, nEdges
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nEdgesArray
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: edgeMask, edgeSignOnCell
 
@@ -284,9 +287,8 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del2_tensor ', config_mom_del2_tensor )
 
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
@@ -319,6 +321,9 @@ contains
 
       call mpas_matrix_cell_to_edge(strainRateR3Cell, meshPool, .true., strainRateR3Edge)
 
+      ! Need to compute strain rate and viscosity for all edges.
+      nEdges = nEdgesArray( size(nEdgesArray) )
+
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(visc2, k)
       do iEdge = 1, nEdges
@@ -338,6 +343,9 @@ contains
       call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, .true., divTensorR3Cell)
 
       call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, meshPool, .true., normalVectorEdge)
+
+      ! Only need tendency on owned edges
+      nEdges = nEdgesArray( 1 )
 
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(k)
