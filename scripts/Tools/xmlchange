@@ -41,7 +41,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("listofsettings", nargs="*",
+    parser.add_argument("listofsettings", nargs="?", default='' ,
                         help="Comma seperated list of settings in the form: var1=value,var2=value,...")
 
     parser.add_argument("--caseroot", default=os.getcwd(),
@@ -77,7 +77,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
-
+    
+    logger.warning(args.listofsettings)
     listofsettings = []
     if( len(args.listofsettings) == 1 ):
         listofsettings = args.listofsettings[0].split(',')
@@ -88,11 +89,12 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
               append=None, noecho=False, warn=None, force=False):
     with Case(caseroot, read_only=False) as case:
         if listofsettings:
-            
+            logger.warning("List of attributes to change: %s" , listofsettings)
+
             # Error handling, exit with grace if xmlval or equal sign is missing. Check first before changing any attributes 
             for setting in listofsettings:
                 (xmlid, xmlval) = setting.split('=', 1)         
-                if xmlval == None :
+                if xmlval is None :
                     logger.error("Missing value for %s. Please all settings have to be in the form of attribute=value." , xmlid)
                     sys.exit(1)
                     
