@@ -18,6 +18,9 @@ Classes that inherit from this are REQUIRED to implement the following methods:
 
 (3) _case_two_setup
     This method will be called to set up case 2, the "test" case
+
+NOTE: Currently assumes that only one build is needed - i.e., there are no
+build-time settings that need to be changed between the two cases.
 """
 
 from CIME.XML.standard_module_setup import *
