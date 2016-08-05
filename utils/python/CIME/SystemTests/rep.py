@@ -6,7 +6,7 @@ This test verifies that two identical runs give bit-for-bit results
 
 from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
 
-class REP(SystemTestsCompareTwo):
+class REP(SystemTestsCompareTwoClone):
 
     def __init__(self, case):
         SystemTestsCompareTwoClone.__init__(self, case,

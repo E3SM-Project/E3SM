@@ -23,6 +23,8 @@ Classes that inherit from this are REQUIRED to implement the following methods:
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
+import shutil, os
+
 logger = logging.getLogger(__name__)
 
 class SystemTestsCompareTwoClone(SystemTestsCommon):
@@ -96,12 +98,25 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         if os.path.exists(self._caseroot2):
             self._case2 = Case(case_root=self._caseroot2, read_only=False)
         else:
-            # TODO(wjs, 2016-08-05) For now, we're hard-coding keepexe=True; in
-            # the future, make this set-able via an argument to the constructor.
-            self._case2 = self._case1.create_clone(
-                newcase = self._caseroot2,
-                keepexe = True)
-            self._setup_cases()
+            try:
+                # TODO(wjs, 2016-08-05) For now, we're hard-coding keepexe=True; in
+                # the future, make this set-able via an argument to the constructor.
+                self._case2 = self._case1.create_clone(
+                    newcase = self._caseroot2,
+                    keepexe = True)
+                self._setup_cases()
+            except:
+                # If a problem occurred in setting up the test cases, it's
+                # important to blow away the case2 directory: If it's kept
+                # around, that would signal that test setup was done
+                # successfully, and thus doesn't need to be redone - which is
+                # not the case. Of course, we'll likely be left in an
+                # inconsistent state in this case, but if we didn't blow away
+                # the case2 directory, the next re-build of the test would
+                # think, "okay, setup is done, I can move on to the build",
+                # which would be wrong.
+                shutil.rmtree(self._caseroot2)
+                raise
 
     # ========================================================================
     # Methods that MUST be implemented by specific tests that inherit from this
@@ -244,6 +259,15 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         self._activate_case2()
         self._common_setup()
         self._case_two_setup()
+        # Flush the case so that, if errors occur later, then at least case2 is
+        # in a correct, post-setup state
+        self._case.flush()
+
+        # Flush case 1. We do this at the end rather than immediately after
+        # setting up case 1 so that, if an exception is raised in the set up for
+        # case 2, then case 1 will be in its original (pre-setup) state.
+        self._activate_case1()
+        self._case.flush()
 
     def _activate_case1(self):
         """
