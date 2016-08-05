@@ -78,10 +78,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
     
-    logger.warning(args.listofsettings)
     listofsettings = []
-    if( len(args.listofsettings) == 1 ):
-        listofsettings = args.listofsettings[0].split(',')
+    if( len(args.listofsettings) ):
+        listofsettings = args.listofsettings.split(',')
 
     return args.caseroot, listofsettings, args.file, args.id, args.val, args.subgroup, args.append, args.noecho, args.warn, args.force
 
@@ -91,17 +90,20 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
         if len(listofsettings):
             logger.warning("List of attributes to change: %s" , listofsettings)
 
-            # Error handling, exit with grace if xmlval or equal sign is missing. Check first before changing any attributes 
+            # Error handling, exit with grace if xmlval or equal sign is missing. Check first all attributes before changing
             for setting in listofsettings:
-                (xmlid, xmlval) = setting.split('=', 1)         
-                if xmlval is None :
-                    logger.error("Missing value for %s. Please all settings have to be in the form of attribute=value." , xmlid)
-                    sys.exit(1)
-                    
+                # Test for equal sign
+                pair = setting.split("=")
+                expect(len(pair) == 2 , "Wrong format for %s. Expecting a key value pair in form of key=value." % (setting) ) 
+                (xmlid, xmlval) = pair
+    
             # Change values         
             for setting in listofsettings:
-                (xmlid, xmlval) = setting.split('=', 1)
-                        
+                
+                pair = setting.split("=")
+                expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value.") 
+                (xmlid, xmlval) = pair
+                
                 type_str = case.get_type_info(xmlid)
                 if(append is True):
                     value = case.get_value(xmlid, resolved=False,
