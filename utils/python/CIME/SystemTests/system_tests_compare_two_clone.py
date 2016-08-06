@@ -121,7 +121,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
                 # which would be wrong.
                 shutil.rmtree(self._caseroot2)
                 self._activate_case1()
-                logger.warning("Test case setup failed. Case2 has been removed, "
+                logger.warning("WARNING: Test case setup failed. Case2 has been removed, "
                                "but the main case may be in an inconsistent state. "
                                "If you want to rerun this test, you should create "
                                "a new test rather than trying to rerun this one.")
