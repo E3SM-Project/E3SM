@@ -40,6 +40,13 @@ module ocn_init_routines
    use ocn_surface_land_ice_fluxes
    use ocn_forcing
 
+   interface ocn_init_add_tau_metadata
+      module procedure ocn_init_add_tau_metadata_real
+      module procedure ocn_init_add_tau_metadata_int
+      module procedure ocn_init_add_tau_metadata_logical
+      module procedure ocn_init_add_tau_metadata_character
+   end interface
+
    private
 
    !--------------------------------------------------------------------
@@ -59,7 +66,8 @@ module ocn_init_routines
       ocn_init_routines_compute_mesh_scaling, &
       ocn_init_routines_setup_sign_and_index_fields, &
       ocn_init_routines_vert_coord, &
-      ocn_init_routines_block
+      ocn_init_routines_block, &
+      ocn_init_metadata
 
    !--------------------------------------------------------------------
    !
@@ -682,6 +690,166 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
 
    end subroutine ocn_init_routines_block!}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_init_metadata
+!
+!> \brief   Initialize any metadata for this processor
+!> \author  Doug Jacobsen
+!> \date    08/05/2016
+!> \details
+!>  This routine sets up any metadata for this MPI task and it's associated threads.
+!>  The meta data could be related to performance data, or information about
+!>  all the blocks on this processor.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_init_metadata(domain)!{{{
+      type (domain_type), intent(inout) :: domain
+
+      type (block_type), pointer :: block
+
+      character (len=StrKIND) :: metaDataName
+
+      integer :: iHalo
+      integer :: numBlocks
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray, nVerticesArray
+
+      numBlocks = 0
+
+      block => domain % blocklist
+      do while ( associated(block) )
+         numBlocks = numBlocks + 1
+
+         call mpas_pool_get_dimension(block % dimensions, 'nCellsArray', nCellsArray)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdgesArray', nEdgesArray)
+         call mpas_pool_get_dimension(block % dimensions, 'nVerticesArray', nVerticesArray)
+
+         call ocn_init_add_tau_metadata( 'numCellHalos', size(nCellsArray) )
+         call ocn_init_add_tau_metadata( 'numEdgeHalos', size(nEdgesArray) )
+         call ocn_init_add_tau_metadata( 'numVertexHalos', size(nVerticesArray) )
+
+         do iHalo = 1, size(nCellsArray)
+            write(metaDataName, '(a8, i2)' ) 'cellHalo', iHalo
+            call ocn_init_add_tau_metadata( metaDataName, nCellsArray(iHalo) )
+         end do
+
+         do iHalo = 1, size(nEdgesArray)
+            write(metaDataName, '(a8, i2)' ) 'edgeHalo', iHalo
+            call ocn_init_add_tau_metadata( metaDataName, nEdgesArray(iHalo) )
+         end do
+
+         do iHalo = 1, size(nVerticesArray)
+            write(metaDataName, '(a10, i2)' ) 'vertexHalo', iHalo
+            call ocn_init_add_tau_metadata( metaDataName, nVerticesArray(iHalo) )
+         end do
+         
+         block => block % next
+      end do
+
+      call ocn_init_add_tau_metadata( 'numBlocks', numBlocks )
+
+   end subroutine ocn_init_metadata!}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_init_add_tau_metadata_real
+!
+!> \brief   Add tau real metadata
+!> \author  Doug Jacobsen
+!> \date    08/05/2016
+!> \details
+!>  This routine adds a real value metadata for TAU to this task.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_init_add_tau_metadata_real( dataName, dataValue )!{{{
+      character (len=*), intent(in) :: dataName
+      real (kind=RKIND), intent(in) :: dataValue
+
+      character (len=StrKIND) :: dataString
+
+#ifdef MPAS_TAU
+      dataString = ''
+      write( dataString, * ) dataValue
+      call tau_metadata( trim(dataName), trim(dataString) )
+#endif
+
+   end subroutine ocn_init_add_tau_metadata_real!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_add_tau_metadata_int
+!
+!> \brief   Add tau integer metadata
+!> \author  Doug Jacobsen
+!> \date    08/05/2016
+!> \details
+!>  This routine adds an integer value metadata for TAU to this task.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_init_add_tau_metadata_int( dataName, dataValue )!{{{
+      character (len=*), intent(in) :: dataName
+      integer, intent(in) :: dataValue
+
+      character (len=StrKIND) :: dataString
+
+#ifdef MPAS_TAU
+      dataString = ''
+      write( dataString, * ) dataValue
+      call tau_metadata( trim(dataName), trim(dataString) )
+#endif
+
+   end subroutine ocn_init_add_tau_metadata_int!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_add_tau_metadata_logical
+!
+!> \brief   Add tau logical metadata
+!> \author  Doug Jacobsen
+!> \date    08/05/2016
+!> \details
+!>  This routine adds a logical value metadata for TAU to this task.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_init_add_tau_metadata_logical( dataName, dataValue )!{{{
+      character (len=*), intent(in) :: dataName
+      logical, intent(in) :: dataValue
+
+      character (len=StrKIND) :: dataString
+
+#ifdef MPAS_TAU
+      dataString = ''
+      write( dataString, * ) dataValue
+      call tau_metadata( trim(dataName), trim(dataString) )
+#endif
+
+   end subroutine ocn_init_add_tau_metadata_logical!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_add_tau_metadata_character
+!
+!> \brief   Add tau character metadata
+!> \author  Doug Jacobsen
+!> \date    08/05/2016
+!> \details
+!>  This routine adds a character value metadata for TAU to this task.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_init_add_tau_metadata_character( dataName, dataValue )!{{{
+      character (len=*), intent(in) :: dataName
+      character (len=*), intent(in) :: dataValue
+
+#ifdef MPAS_TAU
+      call tau_metadata( trim(dataName), trim(dataValue) )
+#endif
+
+   end subroutine ocn_init_add_tau_metadata_character!}}}
+
+
 
 end module ocn_init_routines
 
