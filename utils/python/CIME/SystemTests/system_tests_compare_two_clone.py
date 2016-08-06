@@ -120,6 +120,11 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
                 # think, "okay, setup is done, I can move on to the build",
                 # which would be wrong.
                 shutil.rmtree(self._caseroot2)
+                self._activate_case1()
+                logger.warning("Test case setup failed. Case2 has been removed, "
+                               "but the main case may be in an inconsistent state. "
+                               "If you want to rerun this test, you should create "
+                               "a new test rather than trying to rerun this one.")
                 raise
 
     # ========================================================================
@@ -276,6 +281,13 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         self._activate_case1()
         self._common_setup()
         self._case_one_setup()
+        # Flush the case so that, if errors occur later, then at least case 1 is
+        # in a correct, post-setup state. Note that case 1 will be in its
+        # post-setup state even if case 2 setup fails. Putting the case1 flush
+        # after case 2 setup doesn't seem to help with that (presumably some
+        # flush is called automatically), and anyway wouldn't help with things
+        # like appending to user_nl files (which don't rely on flush).
+        self._case.flush()
 
         # Set up case 2
         self._activate_case2()
@@ -285,11 +297,8 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         # in a correct, post-setup state
         self._case.flush()
 
-        # Flush case 1. We do this at the end rather than immediately after
-        # setting up case 1 so that, if an exception is raised in the set up for
-        # case 2, then case 1 will be in its original (pre-setup) state.
+        # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
-        self._case.flush()
 
     def _force_case2_settings(self):
         """
