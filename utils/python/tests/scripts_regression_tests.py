@@ -43,14 +43,12 @@ class A_RunUnitTests(unittest.TestCase):
 
     def test_CIME_unit_tests(self):
         # Find and run all the unit tests in the CIME directory tree
-        os.environ["PYTHONPATH"] = LIB_DIR
-        stat, output, _ = run_cmd("python -m doctest *.py 2>&1", from_dir=os.path.join(LIB_DIR,"CIME"))
+        stat, output, _ = run_cmd("PYTHONPATH=%s:$PYTHONPATH python -m doctest *.py 2>&1" % LIB_DIR, from_dir=os.path.join(LIB_DIR,"CIME"))
         self.assertEqual(stat, 0, msg=output)
 
     def test_CIMEXML_unit_tests(self):
         # Find and run all the unit tests in the XML directory tree
-        os.environ["PYTHONPATH"] = LIB_DIR
-        stat, output, _ = run_cmd("python -m doctest *.py 2>&1", from_dir=os.path.join(LIB_DIR,"CIME","XML"))
+        stat, output, _ = run_cmd("PYTHONPATH=%s:$PYTHONPATH python -m doctest *.py 2>&1" % LIB_DIR, from_dir=os.path.join(LIB_DIR,"CIME","XML"))
         self.assertEqual(stat, 0, msg=output)
 
 ###############################################################################
@@ -690,10 +688,11 @@ class TestBlessTestResults(TestCreateTestCommon):
         cmd = "%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args)
         stat, output, errput = run_cmd(cmd)
 
-        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
-        test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-        cmd = "%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id)
-        stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
+        if self._hasbatch:
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
+            test_id = extra_args.split()[extra_args.split().index("-t") + 1]
+            cmd = "%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id)
+            stat, output, errput = run_cmd(cmd, from_dir=self._testroot)
 
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))

@@ -95,10 +95,12 @@ class TestStatus(object):
         ...     ts.set_status(XML_PHASE, "PASS")
         ...     ts.set_status(SETUP_PHASE, "PASS")
         ...     ts.set_status(SETUP_PHASE, "FAIL")
+        ...     ts.set_status("%s_baseline" % COMPARE_PHASE, "FAIL")
+        ...     ts.set_status(SHAREDLIB_BUILD_PHASE, "PASS", comments='Time=42')
         ...     result = OrderedDict(ts._phase_statuses)
         ...     ts._phase_statuses = None
         >>> result
-        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', ''))])
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', '')), ('COMPARE_baseline', ('FAIL', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42'))])
         """
         expect(self._ok_to_modify, "TestStatus not in a modifiable state, use 'with' syntax")
         expect(phase in ALL_PHASES or phase.startswith(COMPARE_PHASE),
@@ -129,9 +131,11 @@ class TestStatus(object):
         ... PASS ERS.foo.A CREATE_NEWCASE
         ... PASS ERS.foo.A XML
         ... FAIL ERS.foo.A SETUP
+        ... PASS ERS.foo.A COMPARE_baseline
+        ... PASS ERS.foo.A SHAREDLIB_BUILD Time=42
         ... '''
         >>> _test_helper1(contents)
-        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', ''))])
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', '')), ('COMPARE_baseline', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42'))])
         """
         for line in file_contents.splitlines():
             line = line.strip()

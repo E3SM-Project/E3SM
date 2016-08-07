@@ -691,7 +691,11 @@ class TestScheduler(object):
             test_dir = self._get_test_dir(test)
 
             with TestStatus(test_dir=test_dir, test_name=test) as ts:
-                ts.set_status(test_phase, status)
+                nl_problem = self._get_test_data(test)[2]
+                if test_phase == NAMELIST_PHASE and nl_problem:
+                    ts.set_status(test_phase, TEST_FAIL_STATUS)
+                else:
+                    ts.set_status(test_phase, status)
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
@@ -815,6 +819,15 @@ class TestScheduler(object):
         rv = True
         for test in self._tests:
             phase, status, nl_fail = self._get_test_data(test)
+
+            if status == TEST_PASS_STATUS and phase == RUN_PHASE:
+                # Be cautious about telling the user that the test passed. This
+                # status should match what they would see on the dashboard. Our
+                # self._test_states does not include comparison fail information,
+                # so we need to parse test status.
+                ts = TestStatus(self._get_test_dir(test))
+                status = ts.get_overall_test_status()
+
             if status not in [TEST_PASS_STATUS, TEST_PENDING_STATUS]:
                 logger.info( "%s %s (phase %s)" % (status, test, phase))
                 rv = False
