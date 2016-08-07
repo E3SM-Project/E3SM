@@ -2,9 +2,7 @@ import CIME.wait_for_tests
 from CIME.utils import expect
 from CIME.XML.machines import Machines
 
-import os, shutil, glob, signal, time, logging
-
-SENTINEL_FILE = "ONGOING_TEST"
+import os, shutil, glob, signal, logging
 
 _MACHINE = Machines()
 
@@ -34,8 +32,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     """
     Return True if all tests passed
     """
-    start_time = time.time()
-
     use_batch = _MACHINE.has_batch_system() and not no_batch
     compiler = _MACHINE.get_default_compiler()
     test_suite = _MACHINE.get_value("TESTS")
@@ -60,117 +56,97 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
 
     CIME.utils.run_cmd_no_fail("git submodule update --init", from_dir=CIME.utils.get_cime_root())
 
-    #
-    # Cleanup previous test leftovers. Code beyond here assumes that
-    # we have the scratch_root and test_root to ourselves. No other ACME testing
-    # should be happening for the current user. A sentinel file helps
-    # enforce this.
-    #
-    # Very tiny race window here, not going to sweat it
-    #
-
-    sentinel_path = os.path.join(scratch_root, SENTINEL_FILE)
-    expect(not os.path.isfile(sentinel_path),
-           "Tests were already in progress, cannot start more!")
-
     if (not os.path.isdir(scratch_root)):
         os.makedirs(scratch_root)
 
-    open(sentinel_path, 'w').close()
+    # Important, need to set up signal handlers before we officially
+    # kick off tests. We don't want this process getting killed outright
+    # since it's critical that the cleanup in the finally block gets run
+    CIME.wait_for_tests.set_up_signal_handlers()
 
-    try:
+    #
+    # Clean up leftovers from previous run of jenkins_generic_job. This will
+    # break the previous run of jenkins_generic_job if it's still running. Set up
+    # the Jenkins jobs with timeouts to avoid this.
+    #
 
-        # Important, need to set up signal handlers before we officially
-        # kick off tests. We don't want this process getting killed outright
-        # since it's critical that the cleanup in the finally block gets run
-        CIME.wait_for_tests.set_up_signal_handlers()
+    # Remove the old CTest XML
+    if (os.path.isdir("Testing")):
+        shutil.rmtree("Testing")
 
-        #
-        # Clean up leftovers from previous run of jenkins_generic_job
-        #
+    # Remove the old build/run dirs
+    test_id_root = "jenkins_%s" % baseline_name
+    for old_dir in glob.glob("%s/*%s*" % (scratch_root, test_id_root)):
+        shutil.rmtree(old_dir)
 
-        # Remove the old CTest XML
-        if (os.path.isdir("Testing")):
-            shutil.rmtree("Testing")
-
-        # Remove the old build/run dirs
-        test_id_root = "jenkins_%s" % baseline_name
-        for old_dir in glob.glob("%s/*%s*" % (scratch_root, test_id_root)):
-            shutil.rmtree(old_dir)
-
-        # Remove the old cases
-        for old_file in glob.glob("%s/*%s*" % (test_root, test_id_root)):
-            if (os.path.isdir(old_file)):
-                shutil.rmtree(old_file)
-            else:
-                os.remove(old_file)
-
-        #
-        # Make note of things already in the queue so we know not to delete
-        # them if we timeout
-        #
-        preexisting_queued_jobs = []
-        if (use_batch):
-            preexisting_queued_jobs = CIME.utils.get_my_queued_jobs()
-
-        #
-        # Set up create_test command and run it
-        #
-
-        baseline_args = ""
-        if (generate_baselines):
-            baseline_args = "-g -b %s" % baseline_name
-        elif (baseline_compare == "yes"):
-            baseline_args = "-c -b %s" % baseline_name
-
-        batch_args = "--no-batch" if no_batch else ""
-        pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
-
-        test_id = "%s_%s" % (test_id_root, CIME.utils.get_utc_timestamp())
-        create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s" % \
-                          (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
-
-        if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
-            create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
-                                                 verbose=True, arg_stdout=None, arg_stderr=None)[0]
-            # Create_test should have either passed, detected failing tests, or timed out
-            expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
-                   "Create_test script FAILED with error code '%d'!" % create_test_stat)
-
-        if (use_batch):
-            # This is not fullproof. Any jobs that happened to be
-            # submitted by this user while create_test was running will be
-            # potentially deleted. This is still a big improvement over the
-            # previous implementation which just assumed all queued jobs for this
-            # user came from create_test.
-            # TODO: change this to probe test_root for jobs ids
-            #
-            our_jobs = set(CIME.utils.get_my_queued_jobs()) - set(preexisting_queued_jobs)
-
-        #
-        # Wait for tests
-        #
-
-        if (submit_to_cdash):
-            cdash_build_name = "_".join([test_suite, baseline_name, compiler]) if arg_cdash_build_name is None else arg_cdash_build_name
+    # Remove the old cases
+    for old_file in glob.glob("%s/*%s*" % (test_root, test_id_root)):
+        if (os.path.isdir(old_file)):
+            shutil.rmtree(old_file)
         else:
-            cdash_build_name = None
+            os.remove(old_file)
 
-        tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("%s/*%s*/TestStatus" % (test_root, test_id)),
-                                                     no_wait=not use_batch, # wait if using queue
-                                                     check_throughput=False, # don't check throughput
-                                                     check_memory=False, # don't check memory
-                                                     ignore_namelists=False, # don't ignore namelist diffs
-                                                     ignore_memleak=False, # don't ignore memleaks
-                                                     cdash_build_name=cdash_build_name,
-                                                     cdash_project=cdash_project,
-                                                     cdash_build_group=cdash_build_group)
-        if (not tests_passed and use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED):
-            # Cleanup
-            cleanup_queue(our_jobs)
+    #
+    # Make note of things already in the queue so we know not to delete
+    # them if we timeout
+    #
+    preexisting_queued_jobs = []
+    if (use_batch):
+        preexisting_queued_jobs = CIME.utils.get_my_queued_jobs()
 
-        return tests_passed
-    finally:
-        expect(os.path.isfile(sentinel_path), "Missing sentinel file")
-        os.remove(sentinel_path)
-        logging.info("TOTAL TIME: %d" % (time.time() - start_time))
+    #
+    # Set up create_test command and run it
+    #
+
+    baseline_args = ""
+    if (generate_baselines):
+        baseline_args = "-g -b %s" % baseline_name
+    elif (baseline_compare == "yes"):
+        baseline_args = "-c -b %s" % baseline_name
+
+    batch_args = "--no-batch" if no_batch else ""
+    pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
+
+    test_id = "%s_%s" % (test_id_root, CIME.utils.get_utc_timestamp())
+    create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s" % \
+                      (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
+
+    if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
+        create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
+                                             verbose=True, arg_stdout=None, arg_stderr=None)[0]
+        # Create_test should have either passed, detected failing tests, or timed out
+        expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
+               "Create_test script FAILED with error code '%d'!" % create_test_stat)
+
+    if (use_batch):
+        # This is not fullproof. Any jobs that happened to be
+        # submitted by this user while create_test was running will be
+        # potentially deleted. This is still a big improvement over the
+        # previous implementation which just assumed all queued jobs for this
+        # user came from create_test.
+        # TODO: change this to probe test_root for jobs ids
+        #
+        our_jobs = set(CIME.utils.get_my_queued_jobs()) - set(preexisting_queued_jobs)
+
+    #
+    # Wait for tests
+    #
+
+    if (submit_to_cdash):
+        cdash_build_name = "_".join([test_suite, baseline_name, compiler]) if arg_cdash_build_name is None else arg_cdash_build_name
+    else:
+        cdash_build_name = None
+
+    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("%s/*%s*/TestStatus" % (test_root, test_id)),
+                                                 no_wait=not use_batch, # wait if using queue
+                                                 check_throughput=False, # don't check throughput
+                                                 check_memory=False, # don't check memory
+                                                 ignore_namelists=False, # don't ignore namelist diffs
+                                                 cdash_build_name=cdash_build_name,
+                                                 cdash_project=cdash_project,
+                                                 cdash_build_group=cdash_build_group)
+    if (not tests_passed and use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED):
+        # Cleanup
+        cleanup_queue(our_jobs)
+
+    return tests_passed
