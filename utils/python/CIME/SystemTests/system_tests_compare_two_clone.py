@@ -87,45 +87,12 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         self._case1 = self._case
         self._caseroot1 = self._get_caseroot()
 
-        # Determine if case2 already exists on disk. If it does, create a _case2
-        # object that points to the case directory. If it doesn't, create it.
-        #
-        # We also use the existence of the case2 directory to signal whether we
-        # have done the necessary test setup for this test: When we initially
-        # create the case2 directory, we set up both test cases; then, if we
-        # find that the case2 directory already exists, we assume that the setup
-        # has already been done. (In some cases it could be problematic to redo
-        # the test setup when it's not needed - e.g., by appending things to
-        # user_nl files multiple times. This is why we want to make sure to just
-        # do the test setup once.)
         self._caseroot2 = self._get_caseroot2()
-        if os.path.exists(self._caseroot2):
-            self._case2 = Case(case_root=self._caseroot2, read_only=False)
-        else:
-            try:
-                # TODO(wjs, 2016-08-05) For now, we're hard-coding keepexe=True; in
-                # the future, make this set-able via an argument to the constructor.
-                self._case2 = self._case1.create_clone(
-                    newcase = self._caseroot2,
-                    keepexe = True)
-                self._setup_cases()
-            except:
-                # If a problem occurred in setting up the test cases, it's
-                # important to blow away the case2 directory: If it's kept
-                # around, that would signal that test setup was done
-                # successfully, and thus doesn't need to be redone - which is
-                # not the case. Of course, we'll likely be left in an
-                # inconsistent state in this case, but if we didn't blow away
-                # the case2 directory, the next re-build of the test would
-                # think, "okay, setup is done, I can move on to the build",
-                # which would be wrong.
-                shutil.rmtree(self._caseroot2)
-                self._activate_case1()
-                logger.warning("WARNING: Test case setup failed. Case2 has been removed, "
-                               "but the main case may be in an inconsistent state. "
-                               "If you want to rerun this test, you should create "
-                               "a new test rather than trying to rerun this one.")
-                raise
+        # Initialize self._case2; it will get set to its true value in
+        # _setup_cases_if_not_yet_done
+        self._case2 = None
+
+        self._setup_cases_if_not_yet_done()
 
     # ========================================================================
     # Methods that MUST be implemented by specific tests that inherit from this
@@ -257,6 +224,60 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         caseroot2 = os.path.join(caseroot1, casename2)
 
         return caseroot2
+
+    def _setup_cases_if_not_yet_done(self):
+        """
+        Determines if case2 already exists on disk. If it does, this method
+        creates the self._case2 object pointing to the case directory. If it
+        doesn't exist, then this method creates case2 as a clone of case1, and
+        sets the self._case2 object appropriately.
+
+        This also does the setup for both case1 and case2.
+
+        Assumes that the following variables are already set in self:
+            _caseroot1
+            _caseroot2
+            _case1
+
+        Sets self._case2
+        """
+
+        # Use the existence of the case2 directory to signal whether we have
+        # done the necessary test setup for this test: When we initially create
+        # the case2 directory, we set up both test cases; then, if we find that
+        # the case2 directory already exists, we assume that the setup has
+        # already been done. (In some cases it could be problematic to redo the
+        # test setup when it's not needed - e.g., by appending things to user_nl
+        # files multiple times. This is why we want to make sure to just do the
+        # test setup once.)
+
+        if os.path.exists(self._caseroot2):
+            self._case2 = Case(case_root=self._caseroot2, read_only=False)
+        else:
+            try:
+                # TODO(wjs, 2016-08-05) For now, we're hard-coding keepexe=True; in
+                # the future, make this set-able via an argument to the constructor.
+                self._case2 = self._case1.create_clone(
+                    newcase = self._caseroot2,
+                    keepexe = True)
+                self._setup_cases()
+            except:
+                # If a problem occurred in setting up the test cases, it's
+                # important to blow away the case2 directory: If it's kept
+                # around, that would signal that test setup was done
+                # successfully, and thus doesn't need to be redone - which is
+                # not the case. Of course, we'll likely be left in an
+                # inconsistent state in this case, but if we didn't blow away
+                # the case2 directory, the next re-build of the test would
+                # think, "okay, setup is done, I can move on to the build",
+                # which would be wrong.
+                shutil.rmtree(self._caseroot2)
+                self._activate_case1()
+                logger.warning("WARNING: Test case setup failed. Case2 has been removed, "
+                               "but the main case may be in an inconsistent state. "
+                               "If you want to rerun this test, you should create "
+                               "a new test rather than trying to rerun this one.")
+                raise
 
     def _activate_case1(self):
         """
