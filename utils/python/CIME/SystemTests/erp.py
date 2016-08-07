@@ -31,7 +31,7 @@ class ERP(SystemTestsCommon):
         with different numbers of mpi tasks.
         """
         if sharedlib_only:
-            self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             return
 
         exeroot = self._case.get_value("EXEROOT")
@@ -81,7 +81,7 @@ class ERP(SystemTestsCommon):
 
             # Now rebuild the system, given updated information in env_build.xml
 
-            self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))
 

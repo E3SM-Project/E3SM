@@ -158,8 +158,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-
-    if (verbose or logger.level == logging.DEBUG):
+    if (verbose or logger.isEnabledFor(logging.DEBUG)):
         logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
@@ -179,7 +178,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    if (verbose or logger.level == logging.DEBUG):
+    if (verbose or logger.isEnabledFor(logging.DEBUG)):
         if stat != 0:
             logger.info("  stat: %d\n" % stat)
         if output:
@@ -811,6 +810,10 @@ def transform_vars(text, case=None, subgroup=None, check_members=None, default=N
 def get_my_queued_jobs():
     # TODO
     return []
+
+def delete_jobs(_):
+    # TODO
+    return True
 
 def wait_for_unlocked(filepath):
     locked = True

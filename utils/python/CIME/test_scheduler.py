@@ -8,12 +8,12 @@ phases. All other phases need to handle their own status because
 they can be run outside the context of TestScheduler.
 """
 
-import shutil, traceback, stat, glob, threading, time, thread
+import shutil, traceback, stat, glob, threading, time
 from CIME.XML.standard_module_setup import *
-import compare_namelists
+import CIME.compare_namelists
 import CIME.utils
 from CIME.utils import append_status
-from test_status import *
+from CIME.test_status import *
 import update_acme_tests
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
@@ -545,7 +545,7 @@ class TestScheduler(object):
                     self._log_output(test, "Missing baseline namelist '%s'" % baseline_counterpart)
                     has_fails = True
                 else:
-                    if compare_namelists.is_namelist_file(item):
+                    if CIME.compare_namelists.is_namelist_file(item):
                         rc, output, _  = run_cmd("%s %s %s -c %s 2>&1" %
                                                  (compare_nl, baseline_counterpart, item, test))
                     else:

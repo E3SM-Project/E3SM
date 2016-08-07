@@ -12,13 +12,14 @@ import subprocess
 subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 
 from CIME.utils import run_cmd, run_cmd_no_fail
-import CIME.utils, update_acme_tests, wait_for_tests
+import update_acme_tests
 import CIME.test_scheduler
 from  CIME.test_scheduler import TestScheduler
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
 from  CIME.macros import MacroMaker
+from CIME.test_status import *
 
 SCRIPT_DIR  = CIME.utils.get_scripts_root()
 TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
@@ -33,32 +34,6 @@ os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 ###############################################################################
 class A_RunUnitTests(unittest.TestCase):
 ###############################################################################
-
-    def do_unit_tests(self, script,from_dir=SCRIPT_DIR):
-        os.environ["CIMEROOT"] = CIME.utils.get_cime_root()
-        stat, output, _ = run_cmd("./%s --test 2>&1" % script, from_dir=from_dir)
-        self.assertEqual(stat, 0, msg=output)
-
-    def test_cime_bisect_unit_test(self):
-        self.do_unit_tests("cime_bisect",from_dir=TOOLS_DIR)
-
-    def test_compare_namelists_unit_test(self):
-        self.do_unit_tests("compare_namelists",from_dir=TOOLS_DIR)
-
-    def test_jenkins_generic_job_unit_test(self):
-        self.do_unit_tests("jenkins_generic_job",from_dir=TOOLS_DIR)
-
-    def test_simple_compare_unit_test(self):
-        self.do_unit_tests("simple_compare", from_dir=TOOLS_DIR)
-
-    def test_update_acme_tests_unit_test(self):
-        self.do_unit_tests("update_acme_tests", from_dir=TOOLS_DIR)
-
-    def test_list_acme_tests_unit_test(self):
-        self.do_unit_tests("list_acme_tests", from_dir=TOOLS_DIR)
-
-    def test_wait_for_tests_unit_test(self):
-        self.do_unit_tests("wait_for_tests", from_dir=TOOLS_DIR)
 
     def test_resolve_variable_name(self):
         files = Files()
@@ -205,13 +180,16 @@ class D_TestWaitForTests(unittest.TestCase):
             os.makedirs(testdir)
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_all_pass, "TestStatus_%d" % r), "Test_%d" % r, "PASS", "RUN")
+            os.makedirs(os.path.join(self._testdir_all_pass, str(r)))
+            make_fake_teststatus(os.path.join(self._testdir_all_pass, str(r), "TestStatus"), "Test_%d" % r, "PASS", "RUN")
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_with_fail, "TestStatus_%d" % r), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL", "SETUP" )
+            os.makedirs(os.path.join(self._testdir_with_fail, str(r)))
+            make_fake_teststatus(os.path.join(self._testdir_with_fail, str(r), "TestStatus"), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL", "SETUP" )
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "PEND" if r == 5 else "PASS", "compare")
+            os.makedirs(os.path.join(self._testdir_unfinished, str(r)))
+            make_fake_teststatus(os.path.join(self._testdir_unfinished, str(r), "TestStatus"), "Test_%d" % r, "PEND" if r == 5 else "PASS", "COMPARE")
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -237,7 +215,7 @@ class D_TestWaitForTests(unittest.TestCase):
         if CIME.utils.get_model() == "acme" and build_name is not None:
             extra_args += " -b %s" % build_name
 
-        cmd = "%s/wait_for_tests -p ACME_test TestStatus* %s" % (TOOLS_DIR, extra_args)
+        cmd = "%s/wait_for_tests -p ACME_test */TestStatus %s" % (TOOLS_DIR, extra_args)
         stat, output, errput = run_cmd(cmd, from_dir=testdir)
         if (expected_results == ["PASS"]*len(expected_results)):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
@@ -288,7 +266,7 @@ class D_TestWaitForTests(unittest.TestCase):
 
         self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
 
-        make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "PASS", "RUN")
+        make_fake_teststatus(os.path.join(self._testdir_unfinished, "5", "TestStatus"), "Test_5", "PASS", "RUN")
 
         run_thread.join(timeout=10)
 
@@ -502,52 +480,52 @@ class E_TestTestScheduler(TestCreateTestCommon):
                 if (phase == CIME.test_scheduler.INITIAL_PHASE):
                     continue
                 elif (phase == CIME.test_scheduler.MODEL_BUILD_PHASE):
-                    ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                    ct._update_test_status(test, phase, TEST_PENDING_STATUS)
 
                     if (test == build_fail_test):
-                        ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+                        ct._update_test_status(test, phase, TEST_FAIL_STATUS)
                         self.assertTrue(ct._is_broken(test))
                         self.assertFalse(ct._work_remains(test))
                     else:
-                        ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+                        ct._update_test_status(test, phase, TEST_PASS_STATUS)
                         self.assertFalse(ct._is_broken(test))
                         self.assertTrue(ct._work_remains(test))
 
                 elif (phase == CIME.test_scheduler.RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
-                            ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                            ct._update_test_status(test, phase, TEST_PENDING_STATUS)
                     else:
-                        ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                        ct._update_test_status(test, phase, TEST_PENDING_STATUS)
                         self.assertFalse(ct._work_remains(test))
 
                         if (test == run_fail_test):
-                            ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+                            ct._update_test_status(test, phase, TEST_FAIL_STATUS)
                             self.assertTrue(ct._is_broken(test))
                         else:
-                            ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+                            ct._update_test_status(test, phase, TEST_PASS_STATUS)
                             self.assertFalse(ct._is_broken(test))
 
                     self.assertFalse(ct._work_remains(test))
 
                 else:
                     with self.assertRaises(SystemExit):
-                        ct._update_test_status(test, ct._phases[idx+1], wait_for_tests.TEST_PENDING_STATUS)
+                        ct._update_test_status(test, ct._phases[idx+1], TEST_PENDING_STATUS)
 
                     with self.assertRaises(SystemExit):
-                        ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+                        ct._update_test_status(test, phase, TEST_PASS_STATUS)
 
-                    ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                    ct._update_test_status(test, phase, TEST_PENDING_STATUS)
                     self.assertFalse(ct._is_broken(test))
                     self.assertTrue(ct._work_remains(test))
 
                     with self.assertRaises(SystemExit):
-                        ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                        ct._update_test_status(test, phase, TEST_PENDING_STATUS)
 
-                    ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+                    ct._update_test_status(test, phase, TEST_PASS_STATUS)
 
                     with self.assertRaises(SystemExit):
-                        ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+                        ct._update_test_status(test, phase, TEST_FAIL_STATUS)
 
                     self.assertFalse(ct._is_broken(test))
                     self.assertTrue(ct._work_remains(test))
@@ -579,20 +557,20 @@ class E_TestTestScheduler(TestCreateTestCommon):
         self.assertEqual(len(tests), len(test_statuses))
 
         for test_status in test_statuses:
-            status, test_name = wait_for_tests.parse_test_status_file(test_status)
+            ts = TestStatus(test_dir=os.path.dirname(test_status))
+            test_name = ts.get_name()
             if (test_name == build_fail_test):
-                self.assertEqual(status[CIME.test_scheduler.MODEL_BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
-                self.assertEqual(status[CIME.test_scheduler.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
             elif (test_name == mem_fail_test):
-                self.assertTrue("memleak" in status, "memleak missing in %s for test %s" % (status, test_name))
-                self.assertEqual(status["memleak"], wait_for_tests.TEST_FAIL_STATUS)
-                self.assertEqual(status[CIME.test_scheduler.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
-                self.assertEqual(status[CIME.test_scheduler.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
                 if (test_name == mem_pass_test):
-                    self.assertEqual(status["memleak"], wait_for_tests.TEST_PASS_STATUS)
+                    self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_PASS_STATUS)
 
 ###############################################################################
 class TestJenkinsGenericJob(TestCreateTestCommon):
@@ -728,10 +706,9 @@ class TestBlessTestResults(TestCreateTestCommon):
         cmd = "%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args)
         stat, output, errput = run_cmd(cmd)
 
-        if (self._hasbatch):
-            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
-            test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
+        test_id = extra_args.split()[extra_args.split().index("-t") + 1]
+        stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
 
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
@@ -1037,7 +1014,7 @@ class CheckCode(unittest.TestCase):
     ###########################################################################
     def test_check_code(self):
     ###########################################################################
-        stat, output, _ = run_cmd(os.path.join(TOOLS_DIR, "code_checker 2>&1"))
+        stat, output, _ = run_cmd(os.path.join(TOOLS_DIR, "code_checker -d 2>&1"))
         self.assertEqual(stat, 0, msg=output)
 
 # Machinery for Macros generation tests.

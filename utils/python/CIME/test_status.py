@@ -43,7 +43,8 @@ ALL_PHASES = [INITIAL_PHASE,
               MODEL_BUILD_PHASE,
               RUN_PHASE,
               THROUGHPUT_PHASE,
-              MEMORY_PHASE,
+              MEMCOMP_PHASE,
+              MEMLEAK_PHASE,
               GENERATE_PHASE]
 
 def _test_helper1(file_contents):
@@ -84,6 +85,9 @@ class TestStatus(object):
         for phase, data in self._phase_statuses.iteritems():
             yield phase, data[0]
 
+    def get_name(self):
+        return self._test_name
+
     def set_status(self, phase, status, comments=""):
         """
         >>> with TestStatus(test_dir="/", test_name="ERS.foo.A") as ts:
@@ -106,12 +110,18 @@ class TestStatus(object):
     def get_status(self, phase):
         return self._phase_statuses[phase][0] if phase in self._phase_statuses else None
 
+    def get_comment(self, phase):
+        return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
+
     def flush(self):
         if self._phase_statuses:
             with open(self._filename, "w") as fd:
                 for phase, data in self._phase_statuses.iteritems():
                     status, comments = data
-                    fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
+                    if not comments:
+                        fd.write("%s %s %s\n" % (status, self._test_name, phase))
+                    else:
+                        fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
 
     def _parse_test_status(self, file_contents):
         """
@@ -151,7 +161,7 @@ class TestStatus(object):
         with open(self._filename, "r") as fd:
             self._parse_test_status(fd.read())
 
-    def get_overall_test_status(self, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
+    def get_overall_test_status(self, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
         r"""
         Given the current phases and statuses, produce a single results for this test. Preference
         is given to PEND since we don't want to stop waiting for a test
@@ -171,7 +181,7 @@ class TestStatus(object):
         'FAIL'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
         'NLFAIL'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A MEMLEAK')
+        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A MEMCOMP')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP', ignore_namelists=True)
         'PASS'
@@ -194,8 +204,9 @@ class TestStatus(object):
 
             elif (status == TEST_FAIL_STATUS):
                 if ( (not check_throughput and phase == THROUGHPUT_PHASE) or
-                     (not check_memory and phase == MEMORY_PHASE) or
-                     (ignore_namelists and phase == NAMELIST_PHASE) ):
+                     (not check_memory and phase == MEMCOMP_PHASE) or
+                     (ignore_namelists and phase == NAMELIST_PHASE) or
+                     (ignore_memleak and phase == MEMLEAK_PHASE) ):
                     continue
 
                 if (phase == NAMELIST_PHASE):

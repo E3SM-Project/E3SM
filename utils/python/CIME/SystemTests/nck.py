@@ -62,7 +62,7 @@ class NCK(SystemTestsCommon):
             if not sharedlib_only:
                 self.clean_build()
 
-            self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             if not model_only:
                 shutil.copy("env_mach_pes.xml", machpes)
             if not sharedlib_only:

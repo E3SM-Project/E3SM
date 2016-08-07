@@ -2,6 +2,7 @@
 Run a testcase.
 """
 
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, find_system_test
 from CIME.SystemTests.system_tests_common import *
 
@@ -13,7 +14,6 @@ def case_test(case, testname=None):
     logging.warn("Running test for %s" % testname)
 
     test = find_system_test(testname, case)(case)
-    with test:
-        success = test.run()
+    success = test.run()
 
     return success

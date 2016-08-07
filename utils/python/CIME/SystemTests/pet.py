@@ -31,7 +31,7 @@ class PET(SystemTestsCommon):
         case_setup(self._case, reset=True)
 
         self.clean_build()
-        self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def _pet_first_phase(self):
         #Do a run with default threading

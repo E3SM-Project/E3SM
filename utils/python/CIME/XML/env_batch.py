@@ -415,7 +415,8 @@ class EnvBatch(EnvBase):
             else:
                 # This is what we want longterm
                 function_name = job.replace(".", "_")
-                locals()[function_name](case)
+                success = locals()[function_name](case)
+                expect(success, "%s failed" % function_name)
 
             return
 

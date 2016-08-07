@@ -23,14 +23,12 @@ class SystemTestsCommon(object):
         changed in a previous run of the test.
         """
         self._case = case
-        self._start_time = time.time()
         caseroot = case.get_value("CASEROOT")
         self._caseroot = caseroot
         self._orig_caseroot = caseroot
         self._runstatus = None
         self._casebaseid = self._case.get_value("CASEBASEID")
         self._test_status = TestStatus(test_dir=caseroot, test_name=self._casebaseid)
-        self._ok_to_use = False
 
         # Needed for sh scripts
         os.environ["CASEROOT"] = caseroot
@@ -53,27 +51,6 @@ class SystemTestsCommon(object):
         self._case.set_value("TEST",True)
         self._case.flush()
 
-    def __enter__(self):
-        self._ok_to_use = True
-        return self
-
-    def __exit__(self):
-        # Due to wait_for_tests, the RUN phase must be the very last thing updated
-        with self._test_status:
-
-    def fail_test(self):
-        self._runstatus = "FAIL"
-
-    def has_failed(self):
-        return self._runstatus == "FAIL"
-
-    def pass_test(self):
-        if not self.has_failed():
-            self._runstatus = "PASS"
-
-    def has_passed(self):
-        return self._runstatus == "PASS"
-
     def build(self, sharedlib_only=False, model_only=False):
         """
         Do NOT override this method, this method is the framework that
@@ -87,6 +64,7 @@ class SystemTestsCommon(object):
                 with self._test_status:
                     self._test_status.set_status(phase_name, TEST_PENDING_STATUS)
 
+                start_time = time.time()
                 try:
                     success = self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
                                                model_only=(phase_name==MODEL_BUILD_PHASE))
@@ -96,11 +74,12 @@ class SystemTestsCommon(object):
                 except:
                     success = False
 
-            with self._test_status:
-                self._test_status.set_status(phase_name, TEST_PASSED_STATUS if success else TEST_FAILED_STATUS)
+                time_taken = time.time() - start_time
+                with self._test_status:
+                    self._test_status.set_status(phase_name, TEST_PASS_STATUS if success else TEST_FAIL_STATUS, comments=("Time=%d" % int(time_taken)))
 
-            if not success:
-                break
+                if not success:
+                    break
 
         return success
 
@@ -130,8 +109,9 @@ class SystemTestsCommon(object):
         the run phase. run_phase is the extension point that subclasses should use.
         """
         success = True
+        start_time = time.time()
         try:
-            expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASSED_STATUS,
+            expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
                    "Model was not built!")
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PENDING_STATUS)
@@ -142,22 +122,26 @@ class SystemTestsCommon(object):
                 success = True
 
             if success:
-                self.pass_test()
-
                 if self._case.get_value("GENERATE_BASELINE"):
-                    self.generate_baseline()
+                    self._generate_baseline()
 
                 if self._case.get_value("COMPARE_BASELINE"):
-                    self.compare_baseline()
-            else:
-                self.fail_test()
+                    self._compare_baseline()
+
+                self._check_for_memleak()
+
         except:
             success = False
-            self.fail_test()
             logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
 
         # Always try to report
-        test.report()
+        self.report()
+
+        # Writing the run status should be the very last thing due to wait_for_tests
+        time_taken = time.time() - start_time
+        status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
+        with self._test_status:
+            self._test_status.set_status(RUN_PHASE, status, comments=("TIME=%d" % int(time_taken)))
 
         return success
 
@@ -199,7 +183,7 @@ class SystemTestsCommon(object):
             case_st_archive(self._case)
 
         if not self._coupler_log_indicates_run_complete(coupler_log_path):
-            except(False, "Coupler did not indicate run passed")
+            expect(False, "Coupler did not indicate run passed")
 
         if suffix is not None:
             self._component_compare_move(suffix)
@@ -219,8 +203,7 @@ class SystemTestsCommon(object):
         """
         Please explain what kind of things happen in report
         """
-        newestcpllogfile = self._get_latest_cpl_log()
-        self._check_for_memleak(newestcpllogfile)
+        pass
 
     def _component_compare_move(self, suffix):
         cmd = os.path.join(self._case.get_value("SCRIPTSROOT"), "Tools",
@@ -240,7 +223,7 @@ class SystemTestsCommon(object):
                                %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
                                  self._case.get_value('CASEBASEID'), suffix1, suffix2, suffix1, suffix2))
         logger.debug("run %s results %d %s %s"%(cmd,rc,out,err))
-        status = TEST_PASSED_STATUS if rc == 0 else TEST_FAILED_STATUS
+        status = TEST_PASS_STATUS if rc == 0 else TEST_FAIL_STATUS
         with self._test_status:
             self._test_status.set_status("%s_%s_%s" % (COMPARE_PHASE, suffix1, suffix2), status)
 
@@ -279,20 +262,18 @@ class SystemTestsCommon(object):
                     return float(m.group(1))
         return None
 
-    def _check_for_memleak(self, cpllog):
+    def _check_for_memleak(self):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        if not self.has_passed():
-            append_status("Cannot check memory, test did not pass.\n", sfile="TestStatus.log")
-            return
+        cpllog = self._get_latest_cpl_log()
 
         memlist = self._get_mem_usage(cpllog)
 
         with self._test_status:
             if len(memlist)<3:
-                self._test_status.set_status(MEMLEAK_PHASE, TEST_PASSED_STATUS, comment="insuffiencient data for memleak test")
+                self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
             else:
                 finaldate = int(memlist[-1][0])
                 originaldate = int(memlist[0][0])
@@ -303,13 +284,13 @@ class SystemTestsCommon(object):
                     memdiff = (finalmem - originalmem)/originalmem
 
                 if memdiff < 0:
-                    self._test_status.set_status(MEMLEAK_PHASE, TEST_PASSED_STATUS, comment="insuffiencient data for memleak test")
+                    self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
                 elif memdiff < 0.1:
-                    self._test_status.set_status(MEMLEAK_PHASE, TEST_PASSED_STATUS)
+                    self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "memleak detected, memory went from %f to %f in %d days" % (originalmem, finalmem, finaldate-originaldate)
                     append_status(comment, sfile="TestStatus.log")
-                    self._test_status.set_status(MEMLEAK_PHASE, TEST_FAILED_STATUS, comment=comment)
+                    self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
         f1obj = EnvRun(self._caseroot, "env_run.xml")
@@ -339,19 +320,17 @@ class SystemTestsCommon(object):
 
         return cpllog
 
-    def compare_baseline(self):
+    def _compare_baseline(self):
         """
         compare the current test output to a baseline result
         """
-        expect(self.has_passed(), "Should not be trying to compare baselines if test didn't pass")
-
         with self._test_status:
             baselineroot = self._case.get_value("BASELINE_ROOT")
             basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
             for bdir in (baselineroot, basecmp_dir):
                 if not os.path.isdir(bdir):
                     comment = "ERROR %s does not exist" % bdir
-                    self._test_status("%s_baseline" % COMPARE_PHASE, TEST_FAILED_STATUS, comment=comment)
+                    self._test_status.set_status("%s_baseline" % COMPARE_PHASE, TEST_FAIL_STATUS, comments=comment)
                     append_status(comment, sfile="TestStatus.log")
                     return -1
 
@@ -364,8 +343,8 @@ class SystemTestsCommon(object):
             compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
             rc, out, err = run_cmd(compgen)
 
-            status = TEST_PASSED_STATUS if rc == 0 else TEST_FAILED_STATUS
-            self._test_status("%s_baseline" % COMPARE_PHASE, status)
+            status = TEST_PASS_STATUS if rc == 0 else TEST_FAIL_STATUS
+            self._test_status.set_status("%s_baseline" % COMPARE_PHASE, status)
             append_status("Baseline compare results: %s\n%s"%(out,err), sfile="TestStatus.log")
 
             # compare memory usage to baseline
@@ -380,10 +359,10 @@ class SystemTestsCommon(object):
                 curmem = memlist[-1][1]
                 diff = (curmem-blmem)/blmem
                 if(diff < 0.1):
-                    self._test_status.set_status(MEMCOMP_PHASE, TEST_PASSED_STATUS)
+                    self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "Error: Memory usage increase > 10% from baseline"
-                    self._test_status.set_status(MEMCOMP_PHASE, TEST_FAILED_STATUS, comment=comment)
+                    self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
                     append_status(comment, sfile="TestStatus.log")
 
             # compare throughput to baseline
@@ -393,18 +372,16 @@ class SystemTestsCommon(object):
             if baseline is not None and current is not None:
                 diff = (baseline - current)/baseline
                 if(diff < 0.25):
-                    self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASSED_STATUS)
+                    self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "Error: Computation time increase > 25% from baseline"
-                    self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAILED_STATUS, comment=comment)
+                    self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
                     append_status(comment, sfile="TestStatus.log")
 
-    def generate_baseline(self):
+    def _generate_baseline(self):
         """
         generate a new baseline case based on the current test
         """
-        expect(self.has_passed(), "Should not be trying to generate baselines if test didn't pass")
-
         with self._test_status:
             newestcpllogfile = self._get_latest_cpl_log()
             baselineroot = self._case.get_value("BASELINE_ROOT")
@@ -412,7 +389,7 @@ class SystemTestsCommon(object):
             for bdir in (baselineroot, basegen_dir):
                 if not os.path.isdir(bdir):
                     comment = "ERROR %s does not exist" % bdir
-                    self._test_status("%s" % GENERATE_PHASE, TEST_FAILED_STATUS, comment=comment)
+                    self._test_status.set_status("%s" % GENERATE_PHASE, TEST_FAIL_STATUS, comments=comment)
                     append_status(comment, sfile="TestStatus.log")
                     return -1
 
@@ -425,8 +402,8 @@ class SystemTestsCommon(object):
             compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
             rc, out, err = run_cmd(compgen)
 
-            status = TEST_PASSED_STATUS if rc == 0 else TEST_FAILED_STATUS
-            self._test_status("%s" % GENERATE_PHASE, status)
+            status = TEST_PASS_STATUS if rc == 0 else TEST_FAIL_STATUS
+            self._test_status.set_status("%s" % GENERATE_PHASE, status)
             append_status("Baseline generate results: %s\n%s"%(out,err), sfile="TestStatus.log")
 
             # copy latest cpl log to baseline
@@ -460,7 +437,7 @@ class FakeTest(SystemTestsCommon):
             self._case.flush()
 
     def run_phase(self):
-        self.run_indv(self, suffix=None)
+        self.run_indv(suffix=None)
 
 class TESTRUNPASS(FakeTest):
 
@@ -472,7 +449,7 @@ echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
         self._set_script(script)
-        FakeTest.build(self,
+        FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
@@ -498,7 +475,7 @@ else
 fi
 """ % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
-        FakeTest.build(self,
+        FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNFAIL(FakeTest):
@@ -512,8 +489,8 @@ echo model failed > %s/cpl.log.$LID
 exit -1
 """ % rundir
         self._set_script(script)
-        FakeTest.build(self,
-                        sharedlib_only=sharedlib_only, model_only=model_only)
+        FakeTest.build_phase(self,
+                             sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTBUILDFAIL(FakeTest):
 
@@ -532,7 +509,7 @@ echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
         self._set_script(script)
-        FakeTest.build(self,
+        FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKFAIL(FakeTest):
@@ -546,7 +523,7 @@ echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
         self._set_script(script)
-        FakeTest.build(self,
+        FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKPASS(FakeTest):
@@ -560,5 +537,5 @@ echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
         self._set_script(script)
-        FakeTest.build(self,
+        FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)

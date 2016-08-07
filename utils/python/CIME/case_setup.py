@@ -11,7 +11,7 @@ from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
 from CIME.utils             import append_status, parse_test_name
 from CIME.user_mod_support  import apply_user_mods
-from CIME.test_status       import SETUP_PHASE, TEST_FAIL_STATUS, TEST_PASS_STATUS
+from CIME.test_status       import *
 
 import shutil, time, glob
 
@@ -283,9 +283,10 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
-    with TestStatus(test_dir=caseroot, test_name=casebaseid) as ts:
+    test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
+    with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
         try:
-            case_setup(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
+            _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
         except:
             ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
             raise

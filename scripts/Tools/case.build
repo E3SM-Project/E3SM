@@ -88,8 +88,7 @@ def _main_func(description):
 
             append_status("case.testbuild starting ",
                           caseroot=caseroot,sfile="CaseStatus")
-            with test:
-                test.build(sharedlib_only=sharedlib_only, model_only=model_only)
+            test.build(sharedlib_only=sharedlib_only, model_only=model_only)
             append_status("case.testbuild complete",
                           caseroot=caseroot,sfile="CaseStatus")
         else:

@@ -54,7 +54,7 @@ class PEM(SystemTestsCommon):
             self._case.flush()
             case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
-            self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
                 shutil.move("%s/%s.exe"%(exeroot,cime_model),
                             "%s/%s.exe.PEM%s"%(exeroot,cime_model,bld))

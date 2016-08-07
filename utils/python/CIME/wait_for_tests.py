@@ -5,6 +5,7 @@ import xml.etree.ElementTree as xmlet
 import CIME.utils
 from CIME.utils import expect
 from CIME.XML.machines import Machines
+from CIME.test_status import *
 
 SIGNAL_RECEIVED           = False
 ACME_MAIN_CDASH           = "ACME_Climate"
@@ -26,13 +27,14 @@ def set_up_signal_handlers():
 ###############################################################################
 def get_test_time(test_path):
 ###############################################################################
-    cmd = "grep TIME %s" % os.path.join(test_path, TEST_STATUS_FILENAME)
-    stat, output, _ = CIME.utils.run_cmd(cmd)
-    if (stat == 0):
-        return int(output.split()[-1])
-    else:
-        logging.warning("No timing data found in %s" % test_path)
+    ts = TestStatus(test_dir=test_path)
+    comment = ts.get_comment(RUN_PHASE)
+    if comment is None or "Time=" not in comment:
+        logging.warning("No run-phase time data found in %s" % test_path)
         return 0
+    else:
+        time_data = [token for token in comment.split() if token.startswith("Time=")][0]
+        return int(time_data.split("=")[1])
 
 ###############################################################################
 def get_test_output(test_path):
@@ -148,20 +150,19 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             test_path, test_status = test_data
 
             if (test_status not in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]):
-                full_results = parse_test_status_file(test_path)[0]
+                ts = TestStatus(os.path.dirname(test_path))
 
-                if ("BUILD" in full_results): # If did not even make it to build phase, no useful logs
-                    if ( full_results["BUILD"] != TEST_PASS_STATUS or
-                         ("RUN" in full_results and full_results["RUN"] != TEST_PASS_STATUS) ):
+                build_status = ts.get_status(MODEL_BUILD_PHASE)
+                run_status   = ts.get_status(RUN_PHASE)
+                if ( build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS ):
+                    param = "EXEROOT" if build_status == TEST_FAIL_STATUS else "RUNDIR"
+                    src_dir = CIME.utils.run_cmd_no_fail("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
+                    log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
+                    os.makedirs(log_dst_dir)
+                    for log_file in glob.glob(os.path.join(src_dir, "*log*")):
+                        shutil.copy(log_file, log_dst_dir)
 
-                        param = "EXEROOT" if full_results["BUILD"] != TEST_PASS_STATUS else "RUNDIR"
-                        src_dir = CIME.utils.run_cmd_no_fail("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
-                        log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
-                        os.makedirs(log_dst_dir)
-                        for log_file in glob.glob(os.path.join(src_dir, "*log*")):
-                            shutil.copy(log_file, log_dst_dir)
-
-                        need_to_upload = True
+                    need_to_upload = True
 
         if (need_to_upload):
 
@@ -257,7 +258,7 @@ NightlyStartTime: %s UTC
     CIME.utils.run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, check_memory, ignore_namelists):
+def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, check_memory, ignore_namelists, ignore_memleak):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -268,7 +269,11 @@ def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, chec
 
     while (True):
         if (os.path.exists(test_status_filepath)):
-            test_name, test_status = interpret_status_file(test_status_filepath, wait_for_run, check_throughput, check_memory, ignore_namelists)
+            ts = TestStatus(test_dir=os.path.dirname(test_status_filepath))
+            test_name = ts.get_name()
+            test_status = ts.get_overall_test_status(wait_for_run=wait_for_run, check_throughput=check_throughput,
+                                                     check_memory=check_memory, ignore_namelists=ignore_namelists,
+                                                     ignore_memleak=ignore_memleak)
 
             if (test_status == TEST_PENDING_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
@@ -287,12 +292,12 @@ def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, chec
                 break
 
 ###############################################################################
-def wait_for_tests_impl(test_paths, no_wait=False, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
+def wait_for_tests_impl(test_paths, no_wait=False, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
 ###############################################################################
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists, ignore_memleak))
         t.daemon = True
         t.start()
 
@@ -327,6 +332,7 @@ def wait_for_tests(test_paths,
                    check_throughput=False,
                    check_memory=False,
                    ignore_namelists=False,
+                   ignore_memleak=False,
                    cdash_build_name=None,
                    cdash_project=ACME_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP):
@@ -335,7 +341,7 @@ def wait_for_tests(test_paths,
     # is terminated
     set_up_signal_handlers()
 
-    test_results = wait_for_tests_impl(test_paths, no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists)
+    test_results = wait_for_tests_impl(test_paths, no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists, ignore_memleak)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):

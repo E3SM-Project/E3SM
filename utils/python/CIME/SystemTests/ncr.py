@@ -51,7 +51,7 @@ class NCR(SystemTestsCommon):
 
             case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
-            self.build_indv(self, sharedlib_only, model_only)
+            self.build_indv(sharedlib_only, model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCR%s.xml"%bld))

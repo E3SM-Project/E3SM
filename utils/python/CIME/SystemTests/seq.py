@@ -21,7 +21,7 @@ class SEQ(SystemTestsCommon):
         Build two cases.
         """
         # Build the default configuration
-        self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         if sharedlib_only:
             return
 
@@ -62,7 +62,7 @@ class SEQ(SystemTestsCommon):
         self._case.flush()
         case_setup(self._case, test_mode=True, reset=True)
         self.clean_build()
-        self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         shutil.move("%s/%s.exe"%(exeroot,cime_model),
                     "%s/%s.exe.SEQ2"%(exeroot,cime_model))
         machpes2 = os.path.join("LockedFiles","env_mach_pes.SEQ2.xml")
