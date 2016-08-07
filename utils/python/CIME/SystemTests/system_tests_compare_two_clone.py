@@ -310,11 +310,18 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         self._common_setup()
         self._case_one_setup()
         # Flush the case so that, if errors occur later, then at least case 1 is
-        # in a correct, post-setup state. Note that case 1 will be in its
-        # post-setup state even if case 2 setup fails. Putting the case1 flush
-        # after case 2 setup doesn't seem to help with that (presumably some
-        # flush is called automatically), and anyway wouldn't help with things
-        # like appending to user_nl files (which don't rely on flush).
+        # in a correct, post-setup state. This is important because the mere
+        # existence of a case 2 directory signals that setup is done. So if the
+        # build fails and the user rebuilds, setup won't be redone - so it's
+        # important to ensure that the results of setup are flushed to disk.
+        #
+        # Note that case 1 will be in its post-setup state even if case 2 setup
+        # fails. Putting the case1 flush after case 2 setup doesn't seem to help
+        # with that (presumably some flush is called automatically), and anyway
+        # wouldn't help with things like appending to user_nl files (which don't
+        # rely on flush). So we just have to live with that possibility (but
+        # note that we print a warning to the log file if that happens, in the
+        # caller of this method).
         self._case.flush()
 
         # Set up case 2
