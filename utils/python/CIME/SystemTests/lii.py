@@ -10,7 +10,7 @@ configuration gives identical results:
 
 from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
 from CIME.XML.standard_module_setup import *
-from CIME.SystemTests.test_utils.user_nl_utils import save_user_nl_files, append_to_saved_files
+from CIME.SystemTests.test_utils.user_nl_utils import append_to_user_nl_files
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,6 @@ class LII(SystemTestsCompareTwoClone):
         self._case.set_value("HIST_N","$STOP_N")
 
     def _case_one_setup(self):
-        # FIXME(wjs, 2016-08-05) Need to implement this method
         append_to_user_nl_files(caseroot = self._get_caseroot(),
                                 component = "clm",
                                 contents = "use_init_interp = .false.")
