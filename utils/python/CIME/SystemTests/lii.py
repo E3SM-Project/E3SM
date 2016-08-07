@@ -18,6 +18,7 @@ class LII(SystemTestsCompareTwoClone):
 
     def __init__(self, case):
         SystemTestsCompareTwoClone.__init__(self, case,
+                                            separate_builds = False,
                                             run_two_suffix = 'interp',
                                             run_one_description = 'use_init_interp set to false',
                                             run_two_description = 'use_init_interp set to true')

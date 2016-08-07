@@ -10,6 +10,7 @@ class REP(SystemTestsCompareTwoClone):
 
     def __init__(self, case):
         SystemTestsCompareTwoClone.__init__(self, case,
+                                            separate_builds = False,
                                             run_two_suffix = 'rep2')
 
     def _common_setup(self):

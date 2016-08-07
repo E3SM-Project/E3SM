@@ -35,6 +35,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
 
     def __init__(self,
                  case,
+                 separate_builds,
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = ''):
@@ -44,6 +45,8 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
 
         Args:
             case: case object passsed to __init__ method of individual test
+            separate_builds (bool): Whether separate builds are needed for the
+                two cases. If False, case2 uses the case1 executable.
             run_two_suffix (str, optional): Suffix appended to the case name for
                 the second run. Defaults to 'test'. This can be anything other
                 than 'base'.
@@ -53,6 +56,10 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
                 when starting the second run. Defaults to ''.
         """
         SystemTestsCommon.__init__(self, case)
+
+        self._separate_builds = separate_builds
+        expect(not self._separate_builds,
+               "ERROR: separate builds not yet implemented")
 
         # run_one_suffix is just used as the suffix for the netcdf files
         # produced by the first case; we may eventually remove this, but for now
@@ -135,9 +142,9 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
     def build(self, sharedlib_only=False, model_only=False):
         # TODO(wjs, 2016-08-05) This currently assumes that the two cases use
         # the same build. Once we relax that assumption, we'll need a
-        # conditional here: If the two cases use the same build (set by an
-        # argument to the __init__ method), then use the below logic; otherwise,
-        # do two builds.
+        # conditional here: If the two cases use the same build (based on
+        # self._separate_builds), then use the below logic; otherwise, do two
+        # builds.
         self._activate_case1()
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
@@ -256,7 +263,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         else:
             try:
                 # TODO(wjs, 2016-08-05) For now, we're hard-coding keepexe=True; in
-                # the future, make this set-able via an argument to the constructor.
+                # the future, make this based on self._separate_builds.
                 self._case2 = self._case1.create_clone(
                     newcase = self._caseroot2,
                     keepexe = True)
