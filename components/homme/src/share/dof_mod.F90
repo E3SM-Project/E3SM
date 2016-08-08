@@ -277,9 +277,9 @@ contains
   end subroutine putUniquePoints4D
 
   subroutine SetElemOffset(par,elem,GlobalUniqueColsP)
-#ifdef _MPI
+
      use parallel_mod, only : mpi_sum
-#endif
+
      type (parallel_t) :: par
      type (element_t) :: elem(:)
      integer, intent(out) :: GlobalUniqueColsP
@@ -302,11 +302,8 @@ contains
 	ig = elem(ie)%GlobalId
 	numElemP(ig) = elem(ie)%idxP%NumUniquePts
      enddo
-#ifdef _MPI
+
      call MPI_Allreduce(numElemP,numElem2P,nelem,MPIinteger_t,MPI_SUM,par%comm,ierr) 
-#else
-     numElem2P=numElemP
-#endif
 
      gOffset(1)=1
      do ig=2,nelem

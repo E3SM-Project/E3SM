@@ -1027,9 +1027,7 @@ contains
   !
   subroutine ApplyShearDamping(elem,elem_physics, tau_damp,hybrid,tl,nets,nete)
 
-#ifdef _MPI
     use parallel_mod, only: mpi_sum, mpireal_t
-#endif
 
     type (element_t),    intent(inout):: elem(:)
     type (elem_physics_t),    intent(inout):: elem_physics(:)
@@ -1072,13 +1070,11 @@ contains
 
     ! share 1D function
 
-#ifdef _MPI
     do i=1,nlat
        udamp_copy(i) = udamp(i)
        udamp(i)      = 0.0D0
     end do
     call MPI_Allreduce(udamp_copy(1),udamp(1),nlat,MPIreal_t,MPI_SUM,hybrid%par%comm,ierr)
-#endif
 
     ! linear interpolation back to cubed sphere
 

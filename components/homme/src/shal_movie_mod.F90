@@ -7,35 +7,20 @@
 #define _SPHERE_VEL
 module shal_movie_mod
 #ifndef PIO_INTERP
-  ! ---------------------
-  use kinds, only : real_kind
-  ! ---------------------
-  use dimensions_mod, only : np, ne, nelem, nelemd, nlev, nelemdmax, &
-       GlobalUniqueCols, npsq ,ntrac, nc
-  ! ---------------------
-  use hybrid_mod, only : hybrid_t
-  ! ---------------------
-#ifdef _MPI
-  use parallel_mod, only : mpireal_t, mpi_max, iam, abortmp, mpi_sum, mpiinteger_t
-#else
-  use parallel_mod, only : iam, abortmp
-#endif
-  ! ---------------------
+  use kinds,          only : real_kind
+  use dimensions_mod, only : np, ne, nelem, nelemd, nlev, nelemdmax, GlobalUniqueCols, npsq ,ntrac, nc
+  use hybrid_mod,     only : hybrid_t
+  use parallel_mod,   only : mpireal_t, mpi_max, iam, abortmp, mpi_sum, mpiinteger_t
+
   use time_mod, only : timelevel_t
-  ! ---------------------
   use control_mod, only : test_case, runtype, kmass
-  ! ---------------------
   use element_mod, only : element_t
   use fvm_control_volume_mod, only : fvm_struct
-  ! ---------------------
   use coordinate_systems_mod, only : cartesian2d_t, spherical_polar_t
-  ! ---------------------
   use physical_constants, only : omega, g, rearth, dd_pi, g
   use derivative_mod, only : derivative_t, derivative_stag_t, vorticity
-  ! ---------------------
 
 !  use interpolate_mod
-  ! ---------------------
   use common_io_mod, only : &
        output_start_time,   &
        output_end_time,     &
@@ -66,9 +51,7 @@ module shal_movie_mod
 
   use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile, & 
                   pio_iotask_rank
-  ! ---------------------
   use dof_mod, only : UniqueNcolsP, Uniquepoints, UniqueCoords, CreateUniqueIndex
-  ! ---------------------
 
     use common_movie_mod, only: varrequired, vartype, varnames, varcnt, vardims, &
 	dimnames, maxdims

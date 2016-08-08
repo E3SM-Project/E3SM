@@ -115,7 +115,7 @@ contains
        call AddStateField(RestDesc,len,type)
     end if
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
     if(Debug) call PrintStateDescriptor(RestDesc)
     call ConstructElementFile(RestDesc,File,ierr)
 #endif

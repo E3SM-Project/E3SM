@@ -51,11 +51,9 @@ contains
     use dimensions_mod, only : nc
 
     implicit none
-#ifdef _MPI
 ! _EXTERNAL
 #include <mpif.h> 
-#endif
-!   G95  "pointer attribute conflicts with INTENT attribute":  
+!   G95  "pointer attribute conflicts with INTENT attribute":
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
     type (fvm_struct), pointer, optional :: fvm(:)
@@ -212,11 +210,8 @@ contains
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
 
     nelemd = LocalElemCount(MetaVertex(1))
-#ifdef _MPI
+
     call mpi_allreduce(nelemd,nelemdmax,1, MPIinteger_t,MPI_MAX,par%comm,ierr)
-#else
-    nelemdmax=nelemd
-#endif
 
     allocate(elem(nelemd))
     call allocate_element_desc(elem)

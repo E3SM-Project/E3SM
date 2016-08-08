@@ -39,12 +39,9 @@ contains
     use metagraph_mod, only : metavertex_t
     use dimensions_mod, only : nelem, max_neigh_edges
     use gridgraph_mod, only : gridvertex_t, gridedge_t, assignment ( = )
-#ifdef _MPI
     use parallel_mod, only : nComPoints, iam, mpi_status_size, rrequest, srequest, &
 	status, npackpoints
-#else
-    use parallel_mod, only : nComPoints, iam
-#endif
+
      use parallel_mod, only : haltmp, iam
     implicit none
     type(element_t), intent(inout)        :: elem(:)
@@ -256,7 +253,6 @@ contains
 
     deallocate(Global2Local)
     !S-JMD call CheckSchedule()
-#ifdef _MPI
     !================================================================
     !     Allocate a couple of structures for bndry_exchange
     !        done here to remove it from the critical path
@@ -279,7 +275,6 @@ contains
     enddo
     nPackPoints = nComPoints + LSchedule%MoveCycle(1)%lengthP
 
-#endif
 #ifdef DEBUGPART
     call haltmp("genEdgeSched: Just testing the partitioning algorithms")
 #endif

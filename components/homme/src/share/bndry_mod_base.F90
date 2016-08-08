@@ -45,13 +45,12 @@ module bndry_mod_base
 contains 
 
   subroutine bndry_exchangeV_core(par,ithr,buffer)
+
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use perf_mod, only : t_startf, t_stopf
-#ifdef _MPI
     use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
-#endif
     use perf_mod, only : t_startf, t_stopf
     type (parallel_t)              :: par
     integer                        :: ithr  ! The OpenMP thread ID
@@ -143,10 +142,7 @@ contains
   subroutine bndry_exchangeS_core(par,ithr,buffer)
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
+    use parallel_mod, only : status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
     type (parallel_t)              :: par
     integer                        :: ithr
     type (EdgeBuffer_t)            :: buffer
@@ -233,12 +229,11 @@ contains
   end subroutine bndry_exchangeS_core
 
   subroutine bndry_exchangeS_core_start(par,ithr,buffer)
+
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
+    use parallel_mod, only : status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
+
     type (parallel_t)              :: par
     integer                        :: ithr
     type (EdgeBuffer_t)            :: buffer
@@ -308,12 +303,11 @@ contains
   end subroutine bndry_exchangeS_core_start
 
   subroutine bndry_exchangeS_core_finish(par,ithr,buffer)
+
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
+    use parallel_mod, only : status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
+
     type (parallel_t)              :: par
     integer                        :: ithr
     type (EdgeBuffer_t)            :: buffer
@@ -359,12 +353,11 @@ contains
   end subroutine bndry_exchangeS_core_finish
 
   subroutine long_bndry_exchangeV_nonth(par,buffer)
+
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
+    use parallel_mod, only : status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
+
     type (parallel_t)              :: par
     type (LongEdgeBuffer_t)            :: buffer
 
@@ -381,7 +374,6 @@ contains
 
     integer        :: i
 
-#ifdef _MPI
     if(omp_in_parallel()) then
        print *,'bndry_exchangeV: Warning you are calling a non-thread safe'
        print *,'		 routine inside a threaded region....     '
@@ -450,8 +442,6 @@ contains
           buffer%buf(1:nlyr,iptr+i) = buffer%receive(1:nlyr,iptr+i)
        enddo
     end do   ! icycle
-
-#endif
 
   end subroutine long_bndry_exchangeV_nonth
   !********************************************************************************
@@ -647,11 +637,10 @@ contains
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
+    use parallel_mod, only : status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
+
     implicit none
+
     type (parallel_t)              :: par
     integer                        :: ithr     ! hybrid%ithr 0 if called outside threaded region
 
@@ -676,8 +665,6 @@ contains
 #endif
     if(ithr == 0) then 
 
-
-#ifdef _MPI
        ! Setup the pointer to proper Schedule
        pSchedule => Schedule(1)
        nlyr = buffer%nlyr
@@ -739,8 +726,6 @@ contains
           enddo
        end do   ! icycle
 
-
-#endif
     endif  ! if (hybrid%ithr == 0)
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -765,10 +750,8 @@ contains
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
+    use parallel_mod, only : status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
+
     implicit none
 
     type (hybrid_t)                   :: hybrid
@@ -793,7 +776,6 @@ contains
 #endif
     if(hybrid%ithr == 0) then 
 
-#ifdef _MPI
        ! Setup the pointer to proper Schedule
        pSchedule => Schedule(1)
        nlyr = buffer%nlyr
@@ -858,10 +840,8 @@ contains
              enddo
           enddo
        end do   ! icycle
-
-
-#endif
     endif  ! if (hybrid%ithr == 0)
+
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif

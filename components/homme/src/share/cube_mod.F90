@@ -2104,9 +2104,6 @@ contains
 
   end subroutine CubeTopology
 
-
-
-
   ! =======================================
   ! cube_assemble:
   !
@@ -2117,12 +2114,7 @@ contains
 
   function cube_assemble(gbl,fld,elem,par,nelemd,nelem,ielem) result(ierr)
     use element_mod, only : element_t
-
-#ifdef _MPI
     use parallel_mod, only : parallel_t, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_STATUS_SIZE, MPI_REAL8,MPI_TAG
-#else
-    use parallel_mod, only : parallel_t
-#endif
     real (kind=real_kind) :: gbl(:,:,:,:)    ! global output field 
     real (kind=real_kind) :: fld(:,:,:)      ! local model field  
     type (element_t)      :: elem            ! element to assemble 
@@ -2138,20 +2130,16 @@ contains
     integer :: ibase,jbase
     integer :: i,j,k
     integer :: elem_number
-
     integer :: ne1,ne2    ! element dimensions
     integer :: n1,n2      ! gbl face dimensions
     integer :: nface      ! number of faces (must be 6)
     integer :: nlyr       ! number of layers
-
-#if defined(_MPI)
     integer :: ectr       ! global element counter
     integer tag
     integer :: count      ! w/o "::", triggers PGI 3.1 F90 bug 
     integer pe
     integer status(MPI_STATUS_SIZE)
     integer mpi_err
-#endif      
 
     call abortmp('Because convert_gbl_index is not used cube_assemble is broken. ')
     ne1   = SIZE(fld,1)
@@ -2207,7 +2195,6 @@ contains
           end do
        end if
 
-#if defined(_MPI)
        if (ielem==nelemd) then
           ectr=nelemd
           do while(ectr<nelem)
@@ -2241,20 +2228,6 @@ contains
              ectr=ectr+1
           end do
        end if
-
-    else
-
-       pe    = par%root
-       tag   = elem%vertex%number
-       count = ne1*ne2*nlyr
-       call MPI_SEND(fld(1,1,1),    &
-            count,         &
-            MPI_REAL8,     &
-            pe,            &
-            tag,           &
-            par%comm,      &
-            mpi_err)
-#endif
     end if
 
   end function cube_assemble

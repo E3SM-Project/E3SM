@@ -54,67 +54,36 @@ contains
 
   subroutine prim_init1(elem, fvm, par, dom_mt, Tl)
 
-    ! --------------------------------
-    use thread_mod, only : nthreads, omp_get_thread_num, vert_num_threads
-    ! --------------------------------
-    use control_mod, only : runtype, restartfreq, filter_counter, integration, topology, &
-         partmethod, while_iter, use_semi_lagrange_transport
-    ! --------------------------------
-    use prim_state_mod, only : prim_printstate_init
-    ! --------------------------------
-    use namelist_mod, only : readnl
-    ! --------------------------------
-    use mesh_mod, only : MeshUseMeshFile
-    ! --------------------------------
-    use time_mod, only : nmax, time_at, timelevel_init, timelevel_t
-    ! --------------------------------
-    use element_mod, only : setup_element_pointers
-    ! --------------------------------
-    use mass_matrix_mod, only : mass_matrix
-    ! --------------------------------
-    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
-    ! --------------------------------
-    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
-         MeshCubeElemCount, MeshCubeEdgeCount
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
-    ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
-    ! --------------------------------
-    use derivative_mod, only : allocate_subcell_integration_matrix
-    ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
-    ! --------------------------------
-    use schedtype_mod, only : schedule
-    ! --------------------------------
-    use schedule_mod, only : genEdgeSched,  PrintSchedule
-    ! --------------------------------
+    use thread_mod,     only: nthreads, omp_get_thread_num, vert_num_threads
+    use control_mod,    only: runtype, restartfreq, filter_counter, integration, topology, &
+                              partmethod, while_iter, use_semi_lagrange_transport
+    use prim_state_mod, only: prim_printstate_init
+    use namelist_mod,   only: readnl
+    use mesh_mod,       only: MeshUseMeshFile
+    use time_mod,       only: nmax, time_at, timelevel_init, timelevel_t
+    use element_mod,    only: setup_element_pointers
+    use mass_matrix_mod, only: mass_matrix
+    use cube_mod,       only: cubeedgecount , cubeelemcount, cubetopology
+    use mesh_mod,       only: MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, MeshCubeElemCount, MeshCubeEdgeCount
+    use cube_mod,       only: cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
+    use metagraph_mod,  only: metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
+    use derivative_mod, only: allocate_subcell_integration_matrix
+    use gridgraph_mod,  only: gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
+    use schedtype_mod,  only: schedule
+    use schedule_mod,   only: genEdgeSched,  PrintSchedule
     use prim_advection_mod, only: prim_advec_init1
-    ! --------------------------------
     use prim_advance_mod, only: prim_advance_init
-    ! --------------------------------
+    use diffusion_mod,  only: diffusion_init
+    use parallel_mod,   only: iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
+    use parallel_mod,   only: mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
 
-    ! --------------------------------
-    use diffusion_mod, only      : diffusion_init
-    ! --------------------------------
-    use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
-#ifdef _MPI
-    use parallel_mod, only : mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
-#endif
-    ! --------------------------------
     use metis_mod, only : genmetispart
-    ! --------------------------------
     use spacecurve_mod, only : genspacepart
-    ! --------------------------------
     use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
-    ! --------------------------------
     use params_mod, only : SFCURVE
-    ! --------------------------------
     use domain_mod, only : domain1d_t, decompose
-    ! --------------------------------
     use physical_constants, only : dd_pi
-    ! --------------------------------
     use bndry_mod, only : sort_neighbor_buffer_mapping
-    ! --------------------------------
 #ifndef CAM
     use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
          repro_sum_setopts
@@ -297,12 +266,8 @@ contains
        call abortmp('Not yet ready to handle nelemd = 0 yet' )
        stop
     endif
-#ifdef _MPI
-    call mpi_allreduce(nelemd,nelemdmax,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
-#else
-    nelemdmax=nelemd
-#endif
 
+    call mpi_allreduce(nelemd,nelemdmax,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
 
     if (nelemd>0) then
        allocate(elem(nelemd))
