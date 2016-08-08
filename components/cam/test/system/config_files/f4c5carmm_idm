@@ -1,7 +1,0 @@
--spmd -nosmp
--dyn fv
--res 4x5
--phys cam5
--carma meteor_impact
--debug
--s

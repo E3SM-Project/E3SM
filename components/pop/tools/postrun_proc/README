@@ -1,9 +1,0 @@
-
------------------------------------------------------------------------------------
- 
-The files in this directory are intended to be used after pop2 has been run
-in the cesm context, prior to the invocation of the cesm long-term archiving
-script.
- 
------------------------------------------------------------------------------------
-

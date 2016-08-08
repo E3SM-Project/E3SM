@@ -1,6 +1,0 @@
--spmd -nosmp
--dyn fv
--res 4x5
--phys ideal
--debug
--s

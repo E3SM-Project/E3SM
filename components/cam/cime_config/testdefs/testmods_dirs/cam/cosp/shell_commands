@@ -1,2 +1,0 @@
-./xmlchange -append CAM_CONFIG_OPTS="-cosp"
-./xmlchange ROF_NCPL=\$ATM_NCPL

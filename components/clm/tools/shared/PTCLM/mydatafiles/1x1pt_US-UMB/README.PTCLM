@@ -1,1 +1,0 @@
-../PTCLMmkdata -d /glade/p/cesmdata/cseg/inputdata -s US-UMB --clmnmlusecase=20thC_transient --debug --cesm_root ../../../../../../.. 

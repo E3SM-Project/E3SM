@@ -1,1 +1,0 @@
-../PTCLMmkdata --verbose --phys clm4_0 --cesm_root ../../../../../../.. -s US-NR1 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/stdclm40_file_creation 

@@ -1,4 +1,0 @@
-trans_year,pft_f1,pft_c1,pft_f2,pft_c2,pft_f3,pft_c3,pft_f4,pft_c4,pft_f5,pft_c5,har_vh1,har_vh2,har_sh1,har_sh2,har_sh3,graze,hold_harv,hold_graze
-1850,100,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-1946,100,7,0,0,0,0,0,0,0,0,0.50,0,0,0,0,0,0,0
-2005,100,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

@@ -1,9 +1,0 @@
-Notes about config.inc.cmake.in:
-
-Autoconf generated a config.inc file with lots of defines.
-This file is an attempt to hardwire the required defines and
-just rename this file config.inc at cmake configuration time.
-Not sure if it will work to have it machine independent. Andy 6/2012
-
-FC_FUNC_: As FC_FUNC, but for C identifiers containing underscores.
-

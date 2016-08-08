@@ -1,7 +1,0 @@
--spmd -nosmp
--dyn fv
--res 1.9x2.5
--chem none
--debug
--phys cam5
--s
