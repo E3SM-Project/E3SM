@@ -1087,6 +1087,7 @@
 	   </modules>
 	   <modules>
 	     <command name="load">cmake/2.8.11.2</command>
+	     <command name="load">python/2.7.9</command>
 	   </modules>
 	   <environment_variables>
 	     <env name="MPICH_ENV_DISPLAY">1</env>
