@@ -20,6 +20,7 @@
 
 module ocn_thick_hadv
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -129,6 +130,8 @@ contains
 
       if(.not.thickHadvOn) return
 
+      call mpas_timer_start("thick hadv")
+
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -155,6 +158,8 @@ contains
         end do
       end do
       !$omp end do
+
+      call mpas_timer_stop("thick hadv")
 
    !--------------------------------------------------------------------
 

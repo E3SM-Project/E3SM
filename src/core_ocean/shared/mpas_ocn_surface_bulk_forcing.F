@@ -20,6 +20,7 @@
 
 module ocn_surface_bulk_forcing
 
+   use mpas_timer
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -113,10 +114,12 @@ contains
 
       err = 0
 
+      call mpas_timer_start("bulk_" // trim(groupName))
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
             tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)
       end if
+      call mpas_timer_stop("bulk_" // trim(groupName))
 
    end subroutine ocn_surface_bulk_forcing_tracers!}}}
 
@@ -177,6 +180,8 @@ contains
 
       if ( .not. bulkWindStressOn ) return
 
+      call mpas_timer_start("bulk_ws", .false.)
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
@@ -207,6 +212,8 @@ contains
                                       + windStressMeridional(iCell)**2 )
       end do
       !$omp end do
+
+      call mpas_timer_stop("bulk_ws")
 
    end subroutine ocn_surface_bulk_forcing_vel!}}}
 
@@ -268,6 +275,8 @@ contains
 
       if ( .not. bulkThicknessFluxOn ) return
 
+      call mpas_timer_start("bulk_thick", .false.)
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
@@ -286,6 +295,8 @@ contains
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
       end do
       !$omp end do
+
+      call mpas_timer_stop("bulk_thick")
 
    end subroutine ocn_surface_bulk_forcing_thick!}}}
 

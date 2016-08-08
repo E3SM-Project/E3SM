@@ -198,6 +198,8 @@ contains
 
       if(.not.tanhViscOn) return
 
+      call mpas_timer_start('vel tanh coef')
+
       call mpas_pool_get_config(ocnConfigs, 'config_max_visc_tanh', config_max_visc_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_min_visc_tanh', config_min_visc_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
@@ -220,6 +222,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop('vel tanh coef')
 
 
    !--------------------------------------------------------------------
@@ -283,6 +287,8 @@ contains
 
       if ( .not. tanhDiffOn ) return
 
+      call mpas_timer_start('tracer tanh coef')
+
       call mpas_pool_get_config(ocnConfigs, 'config_max_diff_tanh', config_max_diff_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_min_diff_tanh', config_min_diff_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
@@ -305,6 +311,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop('tracer tanh coef')
 
 
    !--------------------------------------------------------------------

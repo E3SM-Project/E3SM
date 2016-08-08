@@ -20,6 +20,7 @@
 
 module ocn_vel_hmix_del4
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_threading
@@ -144,6 +145,8 @@ contains
 
       if(.not.hmixDel4On) return
 
+      call mpas_timer_start("vel del4")
+
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del4', config_mom_del4)
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del4_div_factor', config_mom_del4_div_factor)
 
@@ -261,6 +264,8 @@ contains
       call mpas_deallocate_scratch_field(delsq_divergenceField, .true.)
       call mpas_deallocate_scratch_field(delsq_relativeVorticityField, .true.)
 
+      call mpas_timer_stop("vel del4")
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_hmix_del4_tend!}}}
@@ -356,6 +361,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_mom_del4_tensor', config_use_mom_del4_tensor)
 
       if(.not.config_use_mom_del4_tensor) return
+
+      call mpas_timer_start("vel del4_tensor")
 
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del4_tensor', config_mom_del4_tensor)
 
@@ -462,6 +469,8 @@ contains
       call mpas_deallocate_scratch_field(outerProductEdgeField, .true.)
       call mpas_deallocate_scratch_field(normalVectorEdgeField, .true.)
       call mpas_deallocate_scratch_field(tangentialVectorEdgeField, .true.)
+
+      call mpas_timer_stop("vel del4_tensor")
 
    !--------------------------------------------------------------------
 

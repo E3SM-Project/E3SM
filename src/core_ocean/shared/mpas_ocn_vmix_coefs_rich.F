@@ -163,8 +163,6 @@ contains
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
-      call mpas_timer_start("eos rich")
-
       ! compute in-place density
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, err, &
                                          timeLevelIn=timeLevel)
@@ -173,8 +171,6 @@ contains
       ! That is, layer k has been displaced to the depth of layer k+1.
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, err, &
                                          timeLevelIn=timeLevel)
-
-      call mpas_timer_stop("eos rich")
 
       call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, &
                                      layerThicknessEdge, density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err1)
@@ -250,6 +246,8 @@ contains
 
       if(.not.richViscOn) return
 
+      call mpas_timer_start('vel rich coef')
+
       call mpas_pool_get_config(ocnConfigs, 'config_rich_mix', config_rich_mix)
       call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_visc', config_bkrd_vert_visc)
       call mpas_pool_get_config(ocnConfigs, 'config_convective_visc', config_convective_visc)
@@ -276,6 +274,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop('vel rich coef')
 
 
    !--------------------------------------------------------------------
@@ -345,6 +345,8 @@ contains
 
       if(.not.richDiffOn) return
 
+      call mpas_timer_start('tracer rich coef')
+
       call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_diff', config_bkrd_vert_diff)
       call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_visc', config_bkrd_vert_visc)
       call mpas_pool_get_config(ocnConfigs, 'config_rich_mix', config_rich_mix)
@@ -375,6 +377,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop('tracer rich coef')
 
    !--------------------------------------------------------------------
 
@@ -459,6 +463,8 @@ contains
       err = 0
 
       if ( ( .not. richViscOn ) .and. ( .not. richDiffOn ) ) return
+
+      call mpas_timer_start('get rich nums')
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -583,6 +589,8 @@ contains
       call mpas_deallocate_scratch_field(ddensityTopOfEdgeField, .true.)
       call mpas_deallocate_scratch_field(du2TopOfCellField, .true.)
       call mpas_deallocate_scratch_field(du2TopOfEdgeField, .true.)
+
+      call mpas_timer_stop('get rich nums')
 
    !--------------------------------------------------------------------
 

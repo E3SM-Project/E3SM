@@ -20,6 +20,7 @@
 
 module ocn_surface_land_ice_fluxes
 
+   use mpas_timer
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -112,9 +113,13 @@ contains
 
       if ( .not. landIceFluxesOn ) return
 
+      call mpas_timer_start("land_ice_" // trim(groupName))
+
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_land_ice_fluxes_active_tracers(meshPool, forcingPool, tracersSurfaceFlux, err)
       end if
+
+      call mpas_timer_stop("land_ice_" // trim(groupName))
 
    end subroutine ocn_surface_land_ice_fluxes_tracers!}}}
 
@@ -171,6 +176,8 @@ contains
 
       if ( .not. landIceFluxesOn ) return
 
+      call mpas_timer_start("top_drag", .false.)
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
@@ -189,6 +196,8 @@ contains
         surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + topDragMagnitude(iCell)
       end do
       !$omp end do
+
+      call mpas_timer_stop("top_drag")
 
    !--------------------------------------------------------------------
 
@@ -247,6 +256,8 @@ contains
 
       if ( .not. landIceFluxesOn ) return
 
+      call mpas_timer_start("land_ice_thick")
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
@@ -257,6 +268,8 @@ contains
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
       !$omp end do
+
+      call mpas_timer_stop("land_ice_thick")
 
    end subroutine ocn_surface_land_ice_fluxes_thick!}}}
 
@@ -410,6 +423,8 @@ contains
       err = 0
 
       if ( .not. standaloneOn ) return
+
+      call mpas_timer_start("land_ice_build_arrays")
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_ISOMIP_gammaT', config_land_ice_flux_ISOMIP_gammaT)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', &
@@ -567,6 +582,8 @@ contains
          call mpas_deallocate_scratch_field(freezeHeatFluxField, .true.)
          call mpas_deallocate_scratch_field(freezeIceHeatFluxField, .true.)
       end if
+
+      call mpas_timer_stop("land_ice_build_arrays")
 
    !--------------------------------------------------------------------
 

@@ -22,6 +22,7 @@
 
 module ocn_tracer_hmix_redi
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_threading
@@ -146,6 +147,8 @@ contains
       err = 0
 
       if (.not.rediOn) return
+
+      call mpas_timer_start("tracer redi")
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -378,6 +381,8 @@ contains
       call mpas_deallocate_scratch_field(gradHTracerSlopedTopOfCellField, .true.)
       call mpas_deallocate_scratch_field(dTracerdZTopOfCellField, .true.)
       call mpas_deallocate_scratch_field(dTracerdZTopOfEdgeField, .true.)
+
+      call mpas_timer_stop("tracer redi")
 
    !--------------------------------------------------------------------
 

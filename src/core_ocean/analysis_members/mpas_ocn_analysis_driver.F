@@ -265,7 +265,7 @@ contains
       poolErrorLevel = mpas_pool_get_error_level()
       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
 
-      call mpas_timer_start('analysis_bootstrap', .false.)
+      call mpas_timer_start('analysis_bootstrap')
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
@@ -278,7 +278,7 @@ contains
 
          if ( config_AM_enable ) then
             timerName = trim(initReadTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
 
             write(stderrUnit,*) '      Bootstrapping AM ' // poolItr % memberName(1:nameLength)
             call ocn_bootstrap_analysis_members(domain, poolItr % memberName(1:nameLength), ierr=err)
@@ -408,7 +408,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_init', .false.)
+      call mpas_timer_start('analysis_init')
 
       call mpas_pool_begin_iteration(analysisMemberList)
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
@@ -419,7 +419,7 @@ contains
          if ( config_AM_enable ) then
             write(stderrUnit,*) '      Initializing AM ' // poolItr % memberName(1:nameLength)
             timerName = trim(initTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
             call ocn_init_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
 
@@ -545,7 +545,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_compute_startup', .false.)
+      call mpas_timer_start('analysis_compute_startup')
 
       timeLevel=1
 
@@ -564,7 +564,7 @@ contains
             if ( config_AM_compute_on_startup ) then
                timerName = trim(computeStartupTimerPrefix) // poolItr % memberName(1:nameLength)
                write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
-               call mpas_timer_start(timerName, .false.)
+               call mpas_timer_start(timerName)
                call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
                err = ior(err, err_tmp)
@@ -643,7 +643,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_compute', .false.)
+      call mpas_timer_start('analysis_compute')
 
       timeLevel=1
 
@@ -668,14 +668,14 @@ contains
                if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, &
                     direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
                   write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
-                  call mpas_timer_start(timerName, .false.)
+                  call mpas_timer_start(timerName)
                   call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)
                end if
             else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
                write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
-               call mpas_timer_start(timerName, .false.)
+               call mpas_timer_start(timerName)
                call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
             end if
@@ -738,7 +738,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_restart', .false.)
+      call mpas_timer_start('analysis_restart')
 
       call mpas_pool_begin_iteration(analysisMemberList)
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
@@ -749,7 +749,7 @@ contains
          if ( config_AM_enable ) then
             write(stderrUnit,*) '      Preparing AM ' // poolItr % memberName(1:nameLength) // ' for restart write'
             timerName = trim(restartTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
             call ocn_restart_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop(timerName)
@@ -820,7 +820,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_write', .false.)
+      call mpas_timer_start('analysis_write')
       nowTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr=err_tmp)
 
       call mpas_pool_begin_iteration(analysisMemberList)
@@ -847,7 +847,7 @@ contains
             call mpas_pool_set_error_level(poolErrorLevel)
             if ( config_AM_output_stream /= 'none' ) then
                timerName = trim(writeTimerPrefix) // poolItr % memberName(1:nameLength)
-               call mpas_timer_start(timerName, .false.)
+               call mpas_timer_start(timerName)
 
                if ( associated(config_AM_backwardOffset) ) then
                   if ( associated(config_AM_forwardOffset) ) then
@@ -869,7 +869,7 @@ contains
                call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, writeTime=outputTimeString, ierr=err_tmp)
                call mpas_timer_stop(timerName)
                timerName = trim(alarmTimerPrefix) // poolItr % memberName(1:nameLength)
-               call mpas_timer_start(timerName, .false.)
+               call mpas_timer_start(timerName)
                call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
                call mpas_timer_stop(timerName)
             end if
@@ -932,7 +932,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_finalize', .false.)
+      call mpas_timer_start('analysis_finalize')
 
       call mpas_pool_begin_iteration(analysisMemberList)
 
@@ -944,7 +944,7 @@ contains
          if ( config_AM_enable ) then
             write(stderrUnit,*) '      Finalizing AM ' // poolItr % memberName(1:nameLength)
             timerName = trim(finalizeTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
             call ocn_finalize_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop(timerName)

@@ -92,11 +92,11 @@ module ocn_analysis_mode
       !
       ! Read input data for model
       !
-      call mpas_timer_start('io_read', .false.)
+      call mpas_timer_start('io_read')
       call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
       call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       call mpas_timer_stop('io_read')
-      call mpas_timer_start('io_reset_alarms', .false.)
+      call mpas_timer_start('io_reset_alarms')
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
       call mpas_timer_stop('io_reset_alarms')
 
@@ -243,7 +243,6 @@ module ocn_analysis_mode
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
       ! fill in diagnostics variables
-      call mpas_timer_start("diagnostic solve")
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
@@ -256,11 +255,10 @@ module ocn_analysis_mode
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 1)
          block_ptr => block_ptr % next
       end do
-      call mpas_timer_stop("diagnostic solve")
 
       if (config_write_output_on_startup) then
          call ocn_analysis_compute_startup(domain, err)
-         call mpas_timer_start('io_write', .false.)
+         call mpas_timer_start('io_write')
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          call mpas_timer_stop('io_write')
       endif

@@ -202,6 +202,7 @@ contains
 
       if ( .not. constViscOn ) return
 
+      call mpas_timer_start('vel const coef')
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       !$omp do schedule(runtime)
@@ -209,6 +210,8 @@ contains
          vertViscTopOfEdge(:, iEdge) = vertViscTopOfEdge(:, iEdge) + constVisc
       end do
       !$omp end do
+
+      call mpas_timer_stop('vel const coef')
 
    !--------------------------------------------------------------------
 
@@ -266,6 +269,8 @@ contains
 
       if ( .not. constDiffOn ) return
 
+      call mpas_timer_start('tracer const coef')
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       !$omp do schedule(runtime)
@@ -273,6 +278,8 @@ contains
          vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + constDiff
       end do
       !$omp end do
+
+      call mpas_timer_stop('tracer const coef')
 
    !--------------------------------------------------------------------
 

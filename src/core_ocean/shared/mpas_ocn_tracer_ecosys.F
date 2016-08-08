@@ -22,6 +22,7 @@ module ocn_tracer_ecosys
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_timer
    use ocn_constants
 
 !  use BGC_mod
@@ -212,6 +213,8 @@ contains
 
       err = 0
 
+      call mpas_timer_start("ecosys source-sink")
+
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
       call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_3D', PH_PREV_3D)
@@ -274,6 +277,7 @@ contains
 
       numColumns = 1
       column = 1
+      !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
          BGC_input%number_of_active_levels(column) = maxLevelCell(iCell)
          BGC_forcing%dust_FLUX_IN(column) = dust_FLUX_IN(iCell)
@@ -556,6 +560,8 @@ contains
 
       enddo  !  iCell
 
+      call mpas_timer_stop("ecosys source-sink")
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_ecosys_compute!}}}
@@ -676,6 +682,8 @@ contains
 !        PascalsToAtmospheres = 0.0_RKIND,  &
 !        mSquared_to_cmSquared = 1.0_RKIND
 
+      call mpas_timer_start("ecosys surface flux")
+
       err = 0
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
@@ -722,6 +730,7 @@ contains
       numColumns = 1
       column = 1
       iLevelSurface = 1
+      !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
 
          BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
@@ -826,6 +835,8 @@ contains
          CO2_alt_gas_flux(iCell) = BGC_forcing%gasFlux(column,BGC_indices%dic_alt_co2_ind)*renormFluxes
 
       enddo  !  iCell
+
+      call mpas_timer_stop("ecosys surface flux")
 
    !--------------------------------------------------------------------
 
