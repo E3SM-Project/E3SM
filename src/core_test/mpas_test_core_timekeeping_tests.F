@@ -103,9 +103,16 @@ module test_core_timekeeping_tests
             call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
-
+         call mpas_log_write('  Test 7:')
+         call test_core_interval_test('0000-01-01_00:00:00', '1850-00-00_00:00:00', '00:00:01', 58341600000_I8KIND, '0000-00-00_00:00:00', err_tmp)
+         if ( err_tmp == 0 ) then
+            call mpas_log_write('   Result: PASSED')
+         else
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
+         end if
 
          call mpas_log_write(' Completed time interval tests')
+
       end if
 
       call mpas_timer_stop('timekeeping tests')
