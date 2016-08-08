@@ -9,7 +9,6 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_write_output_on_startup">.false.</option>
 	</namelist>
 
@@ -26,7 +25,6 @@
 		</stream>
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 
 	</streams>
 

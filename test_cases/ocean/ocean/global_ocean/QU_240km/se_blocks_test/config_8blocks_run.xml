@@ -9,7 +9,6 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_number_of_blocks">8</option>
 	</namelist>
 
@@ -23,7 +22,6 @@
 		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 	</streams>
 
 	<run_script name="run.py">
