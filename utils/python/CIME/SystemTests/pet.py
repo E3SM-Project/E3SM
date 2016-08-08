@@ -21,7 +21,7 @@ class PET(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         # first make sure that all components have threaded settings
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
             if self._case.get_value("NTHRDS_%s"%comp) <= 1:
@@ -31,7 +31,7 @@ class PET(SystemTestsCommon):
         case_setup(self._case, reset=True)
 
         self.clean_build()
-        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def _pet_first_phase(self):
         #Do a run with default threading
@@ -46,7 +46,7 @@ class PET(SystemTestsCommon):
         logger.info("doing a %d %s initial test with default threading, no restarts written"
                     % (stop_n, stop_option))
 
-        return SystemTestsCommon._run(self)
+        self.run_indv()
 
     def _pet_second_phase(self):
         #Do a run with all threads set to 1
@@ -60,20 +60,9 @@ class PET(SystemTestsCommon):
         logger.info("doing a %d %s initial test with threads set to 1, no restarts written"
                     % (stop_n, stop_option))
 
-        success = SystemTestsCommon._run(self, "single_thread")
+        self.run_indv(suffix="single_thread")
+        self._component_compare_test("base", "single_thread")
 
-        if success:
-            return self._component_compare_test("base", "single_thread")
-        else:
-            return False
-
-    def run(self):
-        success = self._pet_first_phase()
-
-        if success:
-            return self._pet_second_phase()
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+    def run_phase(self):
+        self._pet_first_phase()
+        self._pet_second_phase()

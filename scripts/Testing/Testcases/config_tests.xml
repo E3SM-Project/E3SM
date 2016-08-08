@@ -10,7 +10,7 @@ The following are the test functionality categories:
   5) multi-instance tests
   6) archiving (short-term and long-term) tests
   7) performance tests
-  8) spinup tests 
+  8) spinup tests
 
 NOTES:
 - unless otherwise noted everything is run in one executable directory
@@ -129,7 +129,7 @@ OCP    pop performance test
     SPINUP tests
 ======================================================================
 
-SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45)  
+SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45)
        do an initial spin test (setting CLM_ACCELERATED_SPINUP to on)
          write restarts at the end of the run
          short term archiving is on
@@ -403,6 +403,10 @@ LAR    long term archive test
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="SSP">
@@ -412,7 +416,7 @@ LAR    long term archive test
     <STOP_OPTION>ndays</STOP_OPTION>
     <RUN_TYPE>startup</RUN_TYPE>
     <STOP_N>4</STOP_N>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
 </config_test>

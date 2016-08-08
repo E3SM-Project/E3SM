@@ -87,17 +87,17 @@ def _main_func(description):
             test = find_system_test(testname, case)(case)
 
             append_status("case.testbuild starting ",
-                         caseroot=caseroot,sfile="CaseStatus")
+                          caseroot=caseroot,sfile="CaseStatus")
             test.build(sharedlib_only=sharedlib_only, model_only=model_only)
             append_status("case.testbuild complete",
-                         caseroot=caseroot,sfile="CaseStatus")
+                          caseroot=caseroot,sfile="CaseStatus")
         else:
             append_status("case.build starting",
-                         caseroot=caseroot,sfile="CaseStatus")
+                          caseroot=caseroot,sfile="CaseStatus")
             build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
-                         model_only=model_only)
+                             model_only=model_only)
             append_status("case.build complete",
-                         caseroot=caseroot,sfile="CaseStatus")
+                          caseroot=caseroot,sfile="CaseStatus")
 
 if __name__ == "__main__":
     _main_func(__doc__)

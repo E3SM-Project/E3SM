@@ -44,7 +44,6 @@ OR
 
     parser.add_argument("--resubmit", action="store_true",
                         help="Used with tests only, to continue rather than restart a test. ")
-                        
 
     args = parser.parse_args(args[1:])
 

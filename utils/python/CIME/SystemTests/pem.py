@@ -24,7 +24,7 @@ class PEM(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         """
         Build two cases.  Case one uses defaults, case2 uses half the number of threads
         and tasks. This test will fail for components (e.g. pop) that do not reproduce exactly
@@ -54,7 +54,7 @@ class PEM(SystemTestsCommon):
             self._case.flush()
             case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
                 shutil.move("%s/%s.exe"%(exeroot,cime_model),
                             "%s/%s.exe.PEM%s"%(exeroot,cime_model,bld))
@@ -94,7 +94,7 @@ class PEM(SystemTestsCommon):
         self._case.flush()
         logger.info("doing an %d %s initial test, no restarts written" % (stop_n, stop_option))
 
-        return SystemTestsCommon._run(self)
+        self.run_indv()
 
     def _pem_second_phase(self):
 
@@ -122,20 +122,9 @@ class PEM(SystemTestsCommon):
         self._case.flush()
         logger.info("doing an %d %s initial test, no restarts written" % (stop_n, stop_option))
 
-        success = SystemTestsCommon._run(self, "modpes")
+        self.run_indv(suffix="modpes")
+        self._component_compare_test("base", "modpes")
 
-        if success:
-            return self._component_compare_test("base", "modpes")
-        else:
-            return False
-
-    def run(self):
-        success = self._pem_first_phase()
-
-        if success:
-            return self._pem_second_phase()
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+    def run_phase(self):
+        self._pem_first_phase()
+        self._pem_second_phase()

@@ -157,8 +157,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-
-    if (verbose or logger.level == logging.DEBUG):
+    if (verbose or logger.isEnabledFor(logging.DEBUG)):
         logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
@@ -178,7 +177,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    if (verbose or logger.level == logging.DEBUG):
+    if (verbose or logger.isEnabledFor(logging.DEBUG)):
         if stat != 0:
             logger.info("  stat: %d\n" % stat)
         if output:
@@ -811,6 +810,10 @@ def get_my_queued_jobs():
     # TODO
     return []
 
+def delete_jobs(_):
+    # TODO
+    return True
+
 def wait_for_unlocked(filepath):
     locked = True
     file_object = None
@@ -874,13 +877,13 @@ def touch(fname):
         open(fname, 'a').close()
 
 def find_system_test(testname, case):
-    '''
+    """
     Find and import the test matching testname
     Look through the paths set in config_files.xml variable SYSTEM_TESTS_DIR
     for components used in this case to find a test matching testname.  Add the
     path to that directory to sys.path if its not there and return the test object
     Fail if the test is not found in any of the paths.
-    '''
+    """
     from importlib import import_module
 
     system_test_path = None
@@ -913,9 +916,4 @@ def find_system_test(testname, case):
     path, m = system_test_path.rsplit('.',1)
     mod = import_module(path)
     return getattr(mod, m)
-
-
-
-
-
 

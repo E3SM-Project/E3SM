@@ -16,12 +16,12 @@ class SEQ(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case, expected=["TEST"])
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         """
         Build two cases.
         """
         # Build the default configuration
-        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         if sharedlib_only:
             return
 
@@ -62,14 +62,14 @@ class SEQ(SystemTestsCommon):
         self._case.flush()
         case_setup(self._case, test_mode=True, reset=True)
         self.clean_build()
-        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         shutil.move("%s/%s.exe"%(exeroot,cime_model),
                     "%s/%s.exe.SEQ2"%(exeroot,cime_model))
         machpes2 = os.path.join("LockedFiles","env_mach_pes.SEQ2.xml")
         logging.info("Copying env_mach_pes.xml to %s"%(machpes2))
         shutil.copy("env_mach_pes.xml", machpes2)
 
-    def run(self):
+    def run_phase(self):
         # Move to config_tests.xml once that's ready.
         self._case.set_value("CONTINUE_RUN", False)
         self._case.set_value("REST_OPTION", "never")
@@ -79,8 +79,8 @@ class SEQ(SystemTestsCommon):
 
         stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = self._case.get_value("MODEL")
+        exeroot     = self._case.get_value("EXEROOT")
+        cime_model  = self._case.get_value("MODEL")
 
         #
         # do an initial run test with default layout
@@ -91,22 +91,15 @@ class SEQ(SystemTestsCommon):
                     "%s/%s.exe"%(exeroot,cime_model))
         shutil.copy(os.path.join("LockedFiles", "env_mach_pes.SEQ1.xml"), "env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles", "env_mach_pes.xml"))
-        success = SystemTestsCommon._run(self)
-        if not success:
-            return False
+        self.run_indv()
+
         shutil.copy(os.path.join("LockedFiles", "env_mach_pes.SEQ2.xml"), "env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles", "env_mach_pes.xml"))
 
         os.remove("%s/%s.exe"%(exeroot,cime_model))
         shutil.copy("%s/%s.exe.SEQ1"%(exeroot,cime_model),
                     "%s/%s.exe"%(exeroot,cime_model))
+
         logger.info("doing a second %d %s test with rootpes set to zero" % (stop_n, stop_option))
-        success = SystemTestsCommon._run(self, "seq")
-
-        if success:
-            return self._component_compare_test("base", "seq")
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+        self.run_indv(suffix="seq")
+        self._component_compare_test("base", "seq")

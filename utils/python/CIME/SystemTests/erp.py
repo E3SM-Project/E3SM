@@ -24,14 +24,14 @@ class ERP(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         """
         Build two cases.  Case one uses defaults, case2 uses half the number of threads
         and tasks. This test will fail for components (e.g. pop) that do not reproduce exactly
         with different numbers of mpi tasks.
         """
         if sharedlib_only:
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             return
 
         exeroot = self._case.get_value("EXEROOT")
@@ -81,7 +81,7 @@ class ERP(SystemTestsCommon):
 
             # Now rebuild the system, given updated information in env_build.xml
 
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))
 
@@ -92,7 +92,7 @@ class ERP(SystemTestsCommon):
         #
         #
 
-    def run(self):
+    def run_phase(self):
         # run will have values 1,2
         for run in range(1,3):
 
@@ -138,16 +138,6 @@ class ERP(SystemTestsCommon):
                 self._case.set_value("CONTINUE_RUN", True)
                 self._case.set_value("REST_OPTION","never")
                 suffix = "rest"
-            success = SystemTestsCommon._run(self, suffix=suffix)
-            if not success:
-                break
+            self.run_indv(suffix=suffix)
 
-        if success:
-            return self._component_compare_test("base", "rest")
-        else:
-            return False
-
-
-
-    def report(self):
-        SystemTestsCommon.report(self)
+        self._component_compare_test("base", "rest")

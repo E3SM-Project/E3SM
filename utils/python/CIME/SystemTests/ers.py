@@ -31,7 +31,7 @@ class ERS(SystemTestsCommon):
         expect(stop_n > 2, "ERROR: stop_n value %d too short"%stop_n)
         logger.info("doing an %s %s initial test with restart file at %s %s"
                     %(str(stop_n), stop_option, str(rest_n), stop_option))
-        return SystemTestsCommon.run(self)
+        self.run_indv()
 
     def _ers_second_phase(self):
         stop_n      = self._case.get_value("STOP_N")
@@ -47,21 +47,11 @@ class ERS(SystemTestsCommon):
         self._case.flush()
         logger.info("doing an %s %s restart test"
                     %(str(stop_n), stop_option))
-        success = SystemTestsCommon._run(self, "rest")
+        self.run_indv(suffix="rest")
 
         # Compare restart file
-        if success:
-            return self._component_compare_test("base", "rest")
-        else:
-            return False
+        self._component_compare_test("base", "rest")
 
-    def run(self):
-        success = self._ers_first_phase()
-
-        if success:
-            return self._ers_second_phase()
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+    def run_phase(self):
+        self._ers_first_phase()
+        self._ers_second_phase()
