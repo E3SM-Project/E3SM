@@ -44,6 +44,7 @@ module mpas_timekeeping
 
    interface operator (*)
       module procedure mul_ti_n
+      module procedure mul_ti_n8
    end interface
 
    interface operator (/)
@@ -1567,6 +1568,18 @@ module mpas_timekeeping
       mul_ti_n % ti = ti % ti * n
 
    end function mul_ti_n
+
+
+   type (MPAS_TimeInterval_type) function mul_ti_n8(ti, n8)
+
+      implicit none
+
+      type (MPAS_TimeInterval_type), intent(in) :: ti
+      integer (kind=I8KIND), intent(in) :: n8
+
+      mul_ti_n8 % ti = ti % ti * n8
+
+   end function mul_ti_n8
 
 
    type (MPAS_TimeInterval_type) function div_ti_n(ti, n)
