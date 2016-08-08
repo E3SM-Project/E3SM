@@ -21,6 +21,7 @@
 
 module ocn_tracer_nonlocalflux
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -116,6 +117,8 @@ contains
 
       if (.not. nonLocalFluxOn) return
 
+      call mpas_timer_start('non-local flux')
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
@@ -152,6 +155,8 @@ contains
 
       end do
       !$omp end do
+
+      call mpas_timer_stop('non-local flux')
 
    !--------------------------------------------------------------------
 

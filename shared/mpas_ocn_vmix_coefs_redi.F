@@ -188,6 +188,8 @@ contains
 
       if(.not.rediDiffOn) return
 
+      call mpas_timer_start('tracer redi coef')
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       !$omp do schedule(runtime)
@@ -195,6 +197,8 @@ contains
          vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + vertRediDiff(:, iCell)
       end do
       !$omp end do
+
+      call mpas_timer_stop('tracer redi coef')
 
    !--------------------------------------------------------------------
 

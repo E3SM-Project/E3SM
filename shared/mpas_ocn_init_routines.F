@@ -598,9 +598,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          end do
       end if
 
-      call mpas_timer_start("diagnostic solve")
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool)
-      call mpas_timer_stop("diagnostic solve")
 
       ! initialize velocities and active tracers on land to be zero.
       areaCell(nCells+1) = -1.0e34_RKIND
@@ -673,10 +671,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       ! compute land-ice fluxes for potential output at startup
       call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, err1, 1)
       err = ior(err, err1)
-      call mpas_timer_start("land_ice_build_arrays", .false.)
       call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
                                                     forcingPool, scratchPool, err1)
-      call mpas_timer_stop("land_ice_build_arrays")
       err = ior(err, err1)
 
 

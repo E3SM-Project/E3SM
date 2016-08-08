@@ -21,6 +21,7 @@
 
 module ocn_vel_pressure_grad
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
@@ -139,6 +140,8 @@ contains
       err = 0
 
       if (.not. pgradOn) return
+
+      call mpas_timer_start("pressure grad")
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels',nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells',nCells)
@@ -314,6 +317,8 @@ contains
          err = 1
 
       endif
+
+      call mpas_timer_stop("pressure grad")
 
    !--------------------------------------------------------------------
 

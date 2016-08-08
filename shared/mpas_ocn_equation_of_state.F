@@ -20,6 +20,7 @@
 
 module ocn_equation_of_state
 
+   use mpas_timer
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -118,6 +119,8 @@ contains
 
       err = 0
 
+      call mpas_timer_start("equation of state")
+
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
@@ -143,6 +146,8 @@ contains
                                                salineContractionCoeff)
 
       endif
+
+      call mpas_timer_stop("equation of state")
 
    end subroutine ocn_equation_of_state_density!}}}
 

@@ -20,6 +20,7 @@
 
 module ocn_thick_vadv
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -121,6 +122,8 @@ contains
 
       if(.not.thickVadvOn) return
 
+      call mpas_timer_start("thick vadv")
+
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -133,6 +136,8 @@ contains
          end do
       end do
       !$omp end do
+
+      call mpas_timer_stop("thick vadv")
 
    !--------------------------------------------------------------------
 

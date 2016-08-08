@@ -22,9 +22,9 @@
 
 module ocn_tracer_hmix
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use ocn_constants
    use ocn_tracer_hmix_del2
    use ocn_tracer_hmix_del4
@@ -137,18 +137,15 @@ contains
 
       if(.not.tracerHmixOn) return
 
-      call mpas_timer_start("del2")
+      call mpas_timer_start("tracer hmix")
+
       call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
-      call mpas_timer_stop("del2")
-      call mpas_timer_start("del4")
       call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
-      call mpas_timer_stop("del4")
-      call mpas_timer_start("redi")
       call ocn_tracer_hmix_redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                                      relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err1)
-      call mpas_timer_stop("redi")
 
       err = ior(err1, err2)
+      call mpas_timer_stop("tracer hmix")
 
    !--------------------------------------------------------------------
 
