@@ -1,0 +1,210 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of DICE model namelists.
+The element names are the same as the corresponding namelist
+variables.  
+
+strm_year_first is the first year of the stream data that will be used 
+strm_year_last  is the last  year of the stream data that will be used 
+strm_year_align is the model year that will be aligned with stream data for year_first 
+
+Replace any instance of the following substring indicators with the appropriate values:
+    %y    = year from the range yearfirst to yearlast
+    %ym   = year-month from the range yearfirst to yearlast with all 12 months
+    %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
+
+In dice_atm_in,  streams namelist input has the form
+     streams = 'stream1.txt year_align year_first year_last ',
+               'stream2.txt year_align year_first year_last ',
+               ...
+               'streamN.txt year_align year_first year_last '
+
+Currently the following datamode values are supported
+     SSMI
+     SSMI_IAF
+     NULL 
+
+-->
+
+<!-- =========================================  -->
+<!--- datamode                                  -->
+<!-- =========================================  -->
+
+<datamode dice_mode="null"      >NULL</datamode>
+<datamode dice_mode="ssmi"      >SSTDATA</datamode>
+<datamode dice_mode="ssmi_iaf"  >SSTDATA</datamode>
+<datamode dice_mode="prescribed">SSTDATA</datamode>
+<datamode dice_mode="copyall"   >COPYALL</datamode>
+
+<!-- =========================================  -->
+<!--- streams                                   -->
+<!-- =========================================  -->
+
+<streamslist dice_mode="null"      >NULL</streamslist>
+<streamslist dice_mode="ssmi"      >SSMI</streamslist>
+<streamslist dice_mode="ssmi_iaf"  >SSMI_IAF</streamslist>
+<streamslist dice_mode="prescribed">prescribed</streamslist>
+<streamslist dice_mode="copyall"   >copyall</streamslist>
+
+<!-- =========================================  -->
+<!--- stream: SSMI                              -->
+<!-- =========================================  -->
+
+<strm_year_align stream="SSMI">1 </strm_year_align>
+<strm_year_start stream="SSMI">1 </strm_year_start>
+<strm_year_end   stream="SSMI">1 </strm_year_end>
+<strm_domdir     stream="SSMI">$DIN_LOC_ROOT/ice/dice7</strm_domdir>
+<strm_domfil     stream="SSMI">domain.ocn.x0.5.090227.nc</strm_domfil>
+<strm_datdir     stream="SSMI">$DIN_LOC_ROOT/ice/dice7/SSMI</strm_datdir>
+<strm_datfil     stream="SSMI">ssmi_ifrac.clim.x0.5.090319.nc</strm_datfil>
+<strm_domvar     stream="SSMI">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="SSMI">
+  ifrac  ifrac
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- stream: SSMI_IAF                          -->
+<!-- =========================================  -->
+
+<strm_year_align stream="SSMI_IAF">   1 </strm_year_align>
+<strm_year_start stream="SSMI_IAF">1948 </strm_year_start>
+<strm_year_end   stream="SSMI_IAF">2009 </strm_year_end>
+<strm_domdir     stream="SSMI_IAF">$DIN_LOC_ROOT/ice/dice7</strm_domdir>
+<strm_domfil     stream="SSMI_IAF">domain.ocn.x0.5.090227.nc</strm_domfil>
+<strm_datdir     stream="SSMI_IAF">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="SSMI_IAF">
+ssmi.ifrac.0.5x0.5.1948.nc
+ssmi.ifrac.0.5x0.5.1949.nc
+ssmi.ifrac.0.5x0.5.1950.nc
+ssmi.ifrac.0.5x0.5.1951.nc
+ssmi.ifrac.0.5x0.5.1952.nc
+ssmi.ifrac.0.5x0.5.1953.nc
+ssmi.ifrac.0.5x0.5.1954.nc
+ssmi.ifrac.0.5x0.5.1955.nc
+ssmi.ifrac.0.5x0.5.1956.nc
+ssmi.ifrac.0.5x0.5.1957.nc
+ssmi.ifrac.0.5x0.5.1958.nc
+ssmi.ifrac.0.5x0.5.1959.nc
+ssmi.ifrac.0.5x0.5.1960.nc
+ssmi.ifrac.0.5x0.5.1961.nc
+ssmi.ifrac.0.5x0.5.1962.nc
+ssmi.ifrac.0.5x0.5.1963.nc
+ssmi.ifrac.0.5x0.5.1964.nc
+ssmi.ifrac.0.5x0.5.1965.nc
+ssmi.ifrac.0.5x0.5.1966.nc
+ssmi.ifrac.0.5x0.5.1967.nc
+ssmi.ifrac.0.5x0.5.1968.nc
+ssmi.ifrac.0.5x0.5.1969.nc
+ssmi.ifrac.0.5x0.5.1970.nc
+ssmi.ifrac.0.5x0.5.1971.nc
+ssmi.ifrac.0.5x0.5.1972.nc
+ssmi.ifrac.0.5x0.5.1973.nc
+ssmi.ifrac.0.5x0.5.1974.nc
+ssmi.ifrac.0.5x0.5.1975.nc
+ssmi.ifrac.0.5x0.5.1976.nc
+ssmi.ifrac.0.5x0.5.1977.nc
+ssmi.ifrac.0.5x0.5.1978.nc
+ssmi.ifrac.0.5x0.5.1979.nc
+ssmi.ifrac.0.5x0.5.1980.nc
+ssmi.ifrac.0.5x0.5.1981.nc
+ssmi.ifrac.0.5x0.5.1982.nc
+ssmi.ifrac.0.5x0.5.1983.nc
+ssmi.ifrac.0.5x0.5.1984.nc
+ssmi.ifrac.0.5x0.5.1985.nc
+ssmi.ifrac.0.5x0.5.1986.nc
+ssmi.ifrac.0.5x0.5.1987.nc
+ssmi.ifrac.0.5x0.5.1988.nc
+ssmi.ifrac.0.5x0.5.1989.nc
+ssmi.ifrac.0.5x0.5.1990.nc
+ssmi.ifrac.0.5x0.5.1991.nc
+ssmi.ifrac.0.5x0.5.1992.nc
+ssmi.ifrac.0.5x0.5.1993.nc
+ssmi.ifrac.0.5x0.5.1994.nc
+ssmi.ifrac.0.5x0.5.1995.nc
+ssmi.ifrac.0.5x0.5.1996.nc
+ssmi.ifrac.0.5x0.5.1997.nc
+ssmi.ifrac.0.5x0.5.1998.nc
+ssmi.ifrac.0.5x0.5.1999.nc
+ssmi.ifrac.0.5x0.5.2000.nc
+ssmi.ifrac.0.5x0.5.2001.nc
+ssmi.ifrac.0.5x0.5.2002.nc
+ssmi.ifrac.0.5x0.5.2003.nc
+ssmi.ifrac.0.5x0.5.2004.nc
+ssmi.ifrac.0.5x0.5.2005.nc
+ssmi.ifrac.0.5x0.5.2006.nc
+ssmi.ifrac.0.5x0.5.2007.nc
+ssmi.ifrac.0.5x0.5.2008.20120420.nc
+ssmi.ifrac.0.5x0.5.2009.20120420.nc
+</strm_datfil>
+<strm_domvar     stream="SSMI_IAF">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="SSMI_IAF">
+  ifrac  ifrac
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- stream: prescribed                        -->
+<!-- =========================================  -->
+
+<strm_year_align stream="prescribed">$SSTICE_YEAR_ALIGN</strm_year_align>
+<strm_year_start stream="prescribed">$SSTICE_YEAR_START</strm_year_start>
+<strm_year_end   stream="prescribed">$SSTICE_YEAR_END</strm_year_end>
+<strm_grid_file  stream="prescribed">$SSTICE_GRID_FILENAME</strm_grid_file>
+<strm_data_file  stream="prescribed">$SSTICE_DATA_FILENAME</strm_data_file>
+
+<!-- =========================================  -->
+<!--- stream: copyall                           -->
+<!-- =========================================  -->
+
+<strm_year_align stream="copyall">$SSTICE_YEAR_ALIGN</strm_year_align>
+<strm_year_start stream="copyall">$SSTICE_YEAR_START</strm_year_start>
+<strm_year_end   stream="copyall">$SSTICE_YEAR_END</strm_year_end>
+<strm_grid_file  stream="copyall">$SSTICE_GRID_FILENAME</strm_grid_file>
+<strm_data_file  stream="copyall">$SSTICE_DATA_FILENAME</strm_data_file>
+
+<strm_domvar     stream="copyall" sstice_stream="WW3">
+  time    time
+  gridLon lon
+  gridLat lat
+</strm_domvar>
+<strm_datvar     stream="copyall" sstice_stream="WW3">
+  iceCon  ifrac
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- non stream-specific vars (for now)        -->
+<!-- =========================================  -->
+
+<decomp>1d</decomp>
+
+<flux_qacc>.true.</flux_qacc>
+
+<strm_fillalgo>nn</strm_fillalgo>
+
+<strm_fillmask>nomask</strm_fillmask>
+
+<strm_mapalgo>bilinear</strm_mapalgo>
+
+<strm_mapmask>dstmask</strm_mapmask>
+
+<strm_tintalgo>linear</strm_tintalgo>
+
+<strm_taxmode>cycle</strm_taxmode>
+
+</namelist_defaults>
