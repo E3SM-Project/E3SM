@@ -29,11 +29,11 @@ def get_test_time(test_path):
 ###############################################################################
     ts = TestStatus(test_dir=test_path)
     comment = ts.get_comment(RUN_PHASE)
-    if comment is None or "Time=" not in comment:
+    if comment is None or "time=" not in comment:
         logging.warning("No run-phase time data found in %s" % test_path)
         return 0
     else:
-        time_data = [token for token in comment.split() if token.startswith("Time=")][0]
+        time_data = [token for token in comment.split() if token.startswith("time=")][0]
         return int(time_data.split("=")[1])
 
 ###############################################################################

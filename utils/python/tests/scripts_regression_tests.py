@@ -13,7 +13,7 @@ subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 
 from CIME.utils import run_cmd, run_cmd_no_fail
 import update_acme_tests
-import CIME.test_scheduler
+import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
@@ -549,9 +549,9 @@ class E_TestTestScheduler(TestCreateTestCommon):
             logging.getLogger().setLevel(log_lvl)
 
         if (self._hasbatch):
-            run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
+            run_cmd("%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
 
-        test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
+        test_statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))
 
         for test_status in test_statuses:
@@ -691,7 +691,7 @@ class TestBlessTestResults(TestCreateTestCommon):
         if self._hasbatch:
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-            cmd = "%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id)
+            cmd = "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id)
             stat, output, errput = run_cmd(cmd, from_dir=self._testroot)
 
         if (expect_works):
@@ -812,7 +812,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         if (self._hasbatch):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                            from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
@@ -821,6 +821,13 @@ class Z_FullSystemTest(TestCreateTestCommon):
                                        from_dir=self._testroot)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+        # Ensure that we can get test times
+        test_statuses = glob.glob(os.path.join(self._testroot, "*%s" % self._baseline_name, "TestStatus"))
+        for test_status in test_statuses:
+            test_time = CIME.wait_for_tests.get_test_time(os.path.dirname(test_status))
+            self.assertIs(type(test_time), int, msg="get time did not return int for %s" % test_status)
+            self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
 ###############################################################################
 class TestCimeCase(TestCreateTestCommon):
@@ -882,7 +889,7 @@ class TestSingleSubmit(TestCreateTestCommon):
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-        stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus -r" % (TOOLS_DIR, self._baseline_name),
+        stat, output, errput = run_cmd("%s/wait_for_tests *%s/TestStatus -r" % (TOOLS_DIR, self._baseline_name),
                                        from_dir=self._testroot)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
@@ -903,7 +910,7 @@ class TestSaveTimings(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         if (self._hasbatch):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                            from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))

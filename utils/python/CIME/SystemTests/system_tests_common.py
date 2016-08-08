@@ -66,17 +66,14 @@ class SystemTestsCommon(object):
 
                 start_time = time.time()
                 try:
-                    success = self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
-                                               model_only=(phase_name==MODEL_BUILD_PHASE))
-                    if not isinstance(success, bool):
-                        logger.warning("build_phase did not return a bool, assuming PASS!")
-                        success = True
+                    self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
+                                     model_only=(phase_name==MODEL_BUILD_PHASE))
                 except:
                     success = False
 
                 time_taken = time.time() - start_time
                 with self._test_status:
-                    self._test_status.set_status(phase_name, TEST_PASS_STATUS if success else TEST_FAIL_STATUS, comments=("Time=%d" % int(time_taken)))
+                    self._test_status.set_status(phase_name, TEST_PASS_STATUS if success else TEST_FAIL_STATUS, comments=("time=%d" % int(time_taken)))
 
                 if not success:
                     break
@@ -89,16 +86,16 @@ class SystemTestsCommon(object):
         This is the subclass' extension point if they need to define a custom build
         phase.
 
-        PLEASE THROW EXCEPTION OR RETURN FALSE ON FAIL
+        PLEASE THROW EXCEPTION ON FAIL
         """
-        return self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def build_indv(self, sharedlib_only=False, model_only=False):
         """
         Perform an individual build
         """
-        return build.case_build(self._caseroot, case=self._case,
-                                sharedlib_only=sharedlib_only, model_only=model_only)
+        build.case_build(self._caseroot, case=self._case,
+                         sharedlib_only=sharedlib_only, model_only=model_only)
 
     def clean_build(self, comps=None):
         build.clean(self._case, cleanlist=comps)
@@ -116,43 +113,40 @@ class SystemTestsCommon(object):
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PENDING_STATUS)
 
-            success = self.run_phase()
-            if not isinstance(success, bool):
-                logger.warning("build_phase did not return a bool, assuming PASS!")
-                success = True
+            self.run_phase()
 
-            if success:
-                if self._case.get_value("GENERATE_BASELINE"):
-                    self._generate_baseline()
+            if self._case.get_value("GENERATE_BASELINE"):
+                self._generate_baseline()
 
-                if self._case.get_value("COMPARE_BASELINE"):
-                    self._compare_baseline()
+            if self._case.get_value("COMPARE_BASELINE"):
+                self._compare_baseline()
 
-                self._check_for_memleak()
+            self._check_for_memleak()
 
         except:
             success = False
             logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
 
-        # Always try to report
+        # Always try to report, should NOT throw an exception
         self.report()
 
         # Writing the run status should be the very last thing due to wait_for_tests
         time_taken = time.time() - start_time
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
-            self._test_status.set_status(RUN_PHASE, status, comments=("TIME=%d" % int(time_taken)))
+            self._test_status.set_status(RUN_PHASE, status, comments=("time=%d" % int(time_taken)))
 
-        return success
+        # We only return success if every phase, build and later, passed
+        return self._test_status.get_overall_test_status(ignore_namelists=True) == TEST_PASS_STATUS
 
     def run_phase(self):
         """
         This is the default run phase implementation, it just does an individual run.
         This is the subclass' extension point if they need to define a custom run phase.
 
-        PLEASE THROW AN EXCEPTION OR RETURN FALSE ON FAIL
+        PLEASE THROW AN EXCEPTION ON FAIL
         """
-        return self.run_indv()
+        self.run_indv()
 
     def _set_active_case(self, case):
         """
@@ -213,10 +207,14 @@ class SystemTestsCommon(object):
         if rc == 0:
             append_status(out, sfile="TestStatus.log")
         else:
-            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n" % (out, err),
+            append_status("Component_compare_move.sh failed out: %s\n\nerr: %s\n" % (out, err),
                           sfile="TestStatus.log")
 
     def _component_compare_test(self, suffix1, suffix2):
+        """
+        Return value is not generally checked, but is provided in case a custom
+        run case needs indirection based on success.
+        """
         cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
                            "component_compare_test.sh")
         rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 %s -suffix2 %s -msg 'Compare %s and %s'"

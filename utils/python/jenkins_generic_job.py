@@ -137,7 +137,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     else:
         cdash_build_name = None
 
-    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("%s/*%s*/TestStatus" % (test_root, test_id)),
+    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("%s/*%s/TestStatus" % (test_root, test_id)),
                                                  no_wait=not use_batch, # wait if using queue
                                                  check_throughput=False, # don't check throughput
                                                  check_memory=False, # don't check memory
