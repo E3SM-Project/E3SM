@@ -1,0 +1,239 @@
+<?xml version="1.0"?>
+
+<config_ccsmtest>
+
+<ccsmtest NAME="APT"
+          DESC="auto promotion test (to be deleted)"
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          DOUT_S="FALSE" />
+          
+<ccsmtest NAME="CME"
+          DESC="compare mct and esmf interfaces (default is 10 days for each)"
+          COMP_INTERFACE="MCT"
+          USE_ESMF_LIB="TRUE"
+          STOP_OPTION="ndays"
+          STOP_N="10"
+          REST_OPTION="none"
+          INFO_DBUG="1"
+          CCSM_TCOST="4"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="ERI"
+          DESC="hybrid/branch/exact restart test, default 3+19/10+9/5+4 days"
+          INFO_DBUG="1"
+          STOP_OPTION="ndays" 
+          STOP_N="22" 
+          CCSM_TCOST="1"
+          DOUT_S="FALSE" />
+          
+<ccsmtest NAME="ERP"
+          DESC="pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days"
+          INFO_DBUG="1"
+          BFBFLAG="TRUE"
+          CCSM_TCOST="1"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="ERS"
+          DESC="exact restart from startup, default 6 days + 5 days"
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTBUILDFAIL"
+          DESC="For testing infra only. Insta-fail build step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNFAIL"
+          DESC="For testing infra only. Insta-fail run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNPASS"
+          DESC="For testing infra only. Insta-pass run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNDIFF"
+          DESC="For testing infra only. Produces a canned hist file."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNSLOWPASS"
+          DESC="For testing infra only. After 5 minutes of sleep, pass run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="HOMME"
+          DESC="Run homme tests."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="ERT"
+          DESC="exact restart from startup, default 2 month + 1 month (ERS with info dbug = 1)"
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="nmonths"
+          STOP_N="3"
+          AVGHIST_OPTION="nmonths"
+          AVGHIST_N="1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="ICP"
+          DESC="cice performance test"
+          INFO_DBUG="1"
+          STOP_OPTION="ndays"
+          STOP_N="10"
+          REST_OPTION="none"
+          COMP_RUN_BARRIERS="TRUE"
+          TIMER_LEVEL="20"
+          CCSM_TCOST="4"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="LAR"
+          DESC="long term archive test"
+          INFO_DBUG="1"
+          STOP_OPTION="nmonths"
+          STOP_N="1"
+          DOUT_S="TRUE" 
+          CCSM_TCOST="4"
+          DOUT_L_MS="TRUE" />
+
+<ccsmtest NAME="PEA"
+          DESC="single pe bfb test (default length)"
+          INFO_DBUG="1"
+          REST_OPTION="never"
+          CCSM_TCOST="1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="PEM"
+          DESC="pes counts mpi bfb test (seq tests; default length)"
+          INFO_DBUG="1"
+          BFBFLAG="TRUE"
+          REST_OPTION="never"
+          CCSM_TCOST="1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="PET"
+          DESC="openmp bfb test (seq tests; default length)"
+          INFO_DBUG="1"
+          BFBFLAG="TRUE"
+          BUILD_THREADED="TRUE"
+          REST_OPTION="never"
+          CCSM_TCOST="1"
+          DOUT_S="FALSE" />
+         
+<ccsmtest NAME="PFS"
+          DESC="performance test setup"
+          INFO_DBUG="1"
+          STOP_OPTION="ndays"
+          STOP_N="20"
+          REST_OPTION="none"
+          CCSM_TCOST="0"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="NCK"
+          DESC="multi-instance validation vs single instance (default length)"
+          INFO_DBUG="1"
+          CCSM_TCOST="-1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="NCR"
+          DESC="multi-instance validation sequential vs concurrent (default length)"
+          INFO_DBUG="1"
+          CCSM_TCOST="-1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="NOC"
+          DESC="multi-instance validation for single instance ocean (default length)"
+          INFO_DBUG="1"
+          CCSM_TCOST="-1"
+          DOUT_S="FALSE" />
+          
+<ccsmtest NAME="OCP"
+          DESC="pop performance test"
+          INFO_DBUG="1"
+          STOP_OPTION="ndays"
+          STOP_N="10"
+          REST_OPTION="none"
+          COMP_RUN_BARRIERS="TRUE"
+          TIMER_LEVEL="20"
+          CCSM_TCOST="4"
+          DOUT_S="FALSE" />
+          
+<ccsmtest NAME="PMT"
+          DESC="modified-task/modified-thread count BFB test "
+          INFO_DBUG="1"
+          STOP_OPTION="ndays"
+          STOP_N="10"
+          REST_OPTION="none"
+          TIMER_LEVEL="20"
+          CCSM_TCOST="4"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="SBN"
+          DESC="smoke build-namelist test (just run preview_namelist and check_input_data)"
+          INFO_DBUG="1"
+          CCSM_TCOST="-1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="SEQ"
+          DESC="sequencing bfb test (10 day seq,conc tests)"
+          INFO_DBUG="1"
+          STOP_OPTION="ndays"
+          STOP_N="10"
+          REST_OPTION="never"
+          CCSM_TCOST="0"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="SMS"
+          DESC="smoke startup test (default length)"
+          INFO_DBUG="1"
+          CCSM_TCOST="-1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="SSP"
+          DESC="smoke CLM spinup test (only valid for CLM compsets with CLM45 and CN or BGC)"
+          INFO_DBUG="1"
+          CCSM_TCOST="-1"
+          STOP_OPTION="ndays"
+          RUN_TYPE="startup"
+          STOP_N="4"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="STA"
+	  DESC="Short-term archiving restart test"
+	  INFO_DBUG="1"
+	  CCSM_TCOST="-1"
+	  DOUT_S="FALSE" />
+
+</config_ccsmtest>

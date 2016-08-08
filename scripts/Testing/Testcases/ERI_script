@@ -1,0 +1,353 @@
+
+#======================================================================
+# Test setup:
+#======================================================================
+
+cd $CASEROOT
+
+set CASE    = `./xmlquery CASE -value`
+set CASE0   = ${CASE}
+set CASER0  = ${CASEROOT}
+set CASERR1 = ${CASEROOT}.ref1
+set CASERR2 = ${CASEROOT}.ref2
+
+# turn on memory leak check - if comparing with baseline also 
+# compare memory highwater mark from baseline 
+set DETECT_MEMORY_LEAK
+if ($?COMPARE_BASELINE ) then
+  set COMPARE_MEMORY
+  set COMPARE_THROUGHPUT
+endif
+
+#--- clone the main case to create ref1 and ref2 cases
+cd $CIMEROOT/scripts
+rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0} 
+rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0} 
+
+cd $CASERR1
+./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
+./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
+./cesm_setup
+
+cd $CASERR2
+./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
+./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
+./cesm_setup
+
+#---- determine run lengths needed below 
+cd $CASER0
+
+set STOP_N        = `./xmlquery STOP_N		-value`
+set STOP_OPTION   = `./xmlquery STOP_OPTION	-value`
+set RUN_STARTDATE = `./xmlquery RUN_STARTDATE	-value`
+
+@ stopn1 = ${STOP_N} / 6
+@ restn1 = ${stopn1}
+set start1 = ${RUN_STARTDATE}
+
+@ stopn2 = ${STOP_N} - ${stopn1}
+@ restn2 = ${stopn2} / 2 + 1
+@ histn  = ${stopn2}
+set sy = `echo $start1 | cut -f 1 -d "-"`
+set sc = `echo $start1 | cut -f 2- -d "-"`
+@ sy = $sy + 2
+set sy2 = `$CIMEROOT/scripts/Tools/year_string.sh $sy`
+set start2 = "${sy2}-${sc}"
+
+@ stopn3 = ${stopn2} - ${restn2}
+@ restn3 = ${stopn3} / 2 + 1
+
+@ stopn4 = ${stopn3} - ${restn3}
+
+if (${stopn4} < 1 || ${stopn1} < 1) then
+  echo "ERROR in ${0}:  run length too short" >>& $TESTSTATUS_LOG
+  echo "TFAIL ${CASE} " >>& $TESTSTATUS_OUT
+  exit -1
+endif
+
+#======================================================================
+# (1) Test run: 
+# do an initial ref1 case run
+# cloned the case and running there 
+# (NOTE: short term archiving is on)
+#======================================================================
+
+cd ${CASERR1}
+
+echo "" >>& $TESTSTATUS_LOG
+echo "ref1 startup: doing a ${stopn1} ${STOP_OPTION} startup run from ${start1} and 00000 seconds " >>& $TESTSTATUS_LOG 
+echo "  writing restarts at ${restn1} ${STOP_OPTION}"  >>& $TESTSTATUS_LOG 
+echo "  short term archiving is on " >>& $TESTSTATUS_LOG 
+echo "" >>& $TESTSTATUS_LOG
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN  -val FALSE
+./xmlchange -file env_run.xml -id RUN_STARTDATE -val ${start1}
+./xmlchange -file env_run.xml -id STOP_N        -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION   -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N        -val ${restn1}
+./xmlchange -file env_run.xml -id HIST_OPTION   -val never
+
+# note - must look in short term archiving directory for cpl log files
+
+set CASE        = `./xmlquery CASE        -value`
+set RUNDIR      = `./xmlquery RUNDIR      -value`
+set DOUTSR1     = `./xmlquery DOUT_S_ROOT -value`
+
+# force cam namelist to write out initial file at end of run
+if (-e user_nl_cam) then
+  set cnt = `grep inithist user_nl_cam | wc -l`
+  if ($cnt == 0) then
+     echo "inithist = 'ENDOFRUN'" >> user_nl_cam
+  endif
+endif
+
+./$CASE.run
+if ($status != 0) then
+    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+# Run the short-term archiver.. this is a short-term hack until
+# a better solution can be found.
+./$CASE.st_archive
+if($status != 0) then
+    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+# must look in short term archiving directory for cpl log files
+set CplLogFile = `ls -1t $DOUTSR1/cpl/logs/cpl.log* | head -1`
+if ( $?CplLogFile ) then
+    if (-e $CplLogFile) then
+       set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+       if ($pass != 1) then
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 	   exit -1
+       else 
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       endif
+    endif
+else
+    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+#======================================================================
+# (2) Test run: 
+# do a hybrid ref2 case run 
+# cloned the main case and running with ref1 restarts 
+# (NOTE: short term archiving is on)
+#======================================================================
+
+cd ${CASERR2}
+
+set CASE    = `./xmlquery CASE     -value`
+set RUNDIR  = `./xmlquery RUNDIR   -value`
+
+# Set startdate to start2, set ref date based on ref1 restart
+set refdate2 = `ls -1dt ${DOUTSR1}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" `
+set reftod2  = "00000"
+
+echo "" >>& $TESTSTATUS_LOG
+echo " ref2 hybrid: doing a ${stopn2} ${STOP_OPTION} hybrid run " >>& $TESTSTATUS_LOG 
+echo "  starting from $start2 and using ref1 ${refdate2} and ${reftod2} seconds" >>& $TESTSTATUS_LOG 
+echo "  writing restarts at ${restn2} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
+echo "  short term archiving is on " >>& $TESTSTATUS_LOG 
+echo "" >>& $TESTSTATUS_LOG
+
+# setup ref2 case 
+./xmlchange -file env_run.xml -id RUN_TYPE      -val hybrid
+./xmlchange -file env_run.xml -id RUN_STARTDATE -val ${start2}
+./xmlchange -file env_run.xml -id RUN_REFCASE   -val $CASE0.ref1
+./xmlchange -file env_run.xml -id RUN_REFDATE   -val ${refdate2}
+./xmlchange -file env_run.xml -id RUN_REFTOD    -val ${reftod2}
+./xmlchange -file env_run.xml -id GET_REFCASE   -val FALSE
+./xmlchange -file env_run.xml -id CONTINUE_RUN  -val FALSE
+./xmlchange -file env_run.xml -id STOP_N        -val ${stopn2}
+./xmlchange -file env_run.xml -id REST_OPTION   -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N        -val ${restn2}
+./xmlchange -file env_run.xml -id HIST_OPTION   -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N        -val ${histn}
+
+mkdir -p $RUNDIR
+ln -s ${DOUTSR1}/rest/${refdate2}-${reftod2}/*${refdate2}* $RUNDIR/.
+cp    ${DOUTSR1}/rest/${refdate2}-${reftod2}/*rpointer*    $RUNDIR/.
+
+# run ref2 case (all component history files will go to short term archiving)
+
+./$CASE.run
+if ($status != 0) then
+    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+# Run the short-term archiver.. this is a short-term hack until
+# a better solution can be found.
+./$CASE.st_archive
+if($status != 0) then
+    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+set DOUTSR2 = `./xmlquery DOUT_S_ROOT -value`
+
+# must look in short term archiving directory for cpl log files
+set CplLogFile = `ls -1t $DOUTSR2/cpl/logs/cpl.log* | head -1`
+if ( $?CplLogFile ) then
+    if (-e $CplLogFile) then
+       set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+       if ($pass != 1) then
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 	   exit -1
+       else 
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       endif
+    endif
+else
+    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+
+#======================================================================
+# (3a) Test run: 
+# do a branch run from ref2 restart (short term archiving is off)
+#======================================================================
+
+cd $CASER0
+
+set CASE    = `./xmlquery CASE     -value`
+set RUNDIR  = `./xmlquery RUNDIR   -value`
+
+set refdate3 = `ls -1dt ${DOUTSR2}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" `
+set reftod3  = "00000"
+
+echo "" >>& $TESTSTATUS_LOG
+echo "branch: doing a ${stopn3} ${STOP_OPTION} branch " >>& $TESTSTATUS_LOG 
+echo "  starting from ref2 ${refdate3} and ${reftod3} seconds restarts " >>& $TESTSTATUS_LOG 
+echo "  writing restarts at ${restn3} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
+echo "  short term archiving is off " >>& $TESTSTATUS_LOG 
+echo "" >>& $TESTSTATUS_LOG
+
+./xmlchange -file env_run.xml -id RUN_TYPE      -val branch
+./xmlchange -file env_run.xml -id RUN_REFCASE   -val $CASE0.ref2
+./xmlchange -file env_run.xml -id RUN_REFDATE   -val ${refdate3}
+./xmlchange -file env_run.xml -id RUN_REFTOD    -val ${reftod3}
+./xmlchange -file env_run.xml -id GET_REFCASE   -val FALSE
+./xmlchange -file env_run.xml -id CONTINUE_RUN  -val FALSE
+./xmlchange -file env_run.xml -id STOP_N        -val ${stopn3}
+./xmlchange -file env_run.xml -id REST_OPTION   -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N        -val ${restn3}
+./xmlchange -file env_run.xml -id HIST_OPTION   -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N        -val ${stopn2}
+./xmlchange -file env_run.xml -id DOUT_S        -val FALSE
+
+mkdir -p $RUNDIR
+ln -s ${DOUTSR2}/rest/${refdate3}-${reftod3}/*${refdate3}* $RUNDIR/.
+cp    ${DOUTSR2}/rest/${refdate3}-${reftod3}/*rpointer*    $RUNDIR/.
+
+# the following lines creates the initial component history files for the restart test
+set nonomatch
+foreach file ( ${DOUTSR2}/*/hist/*nc )
+   set newfile = `echo $file:t | sed -e "s/ref2.//"`
+   ln -s $file $RUNDIR/$newfile
+end
+
+echo "" >>& $TESTSTATUS_LOG
+echo "  first moving relevant history files from ref2 to suffix with command " >>& $TESTSTATUS_LOG
+echo "  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix hybrid $add_iop" >>& $TESTSTATUS_LOG
+echo "" >>& $TESTSTATUS_LOG
+
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "hybrid" $add_iop
+
+# run branch case (short term archiving is off)
+./$CASE.run
+if ($status != 0) then
+    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+if ( $?CplLogFile ) then
+    if (-e $CplLogFile) then
+       set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+       if ($pass != 1) then
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 	   exit -1
+       else 
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       endif
+    endif
+else
+    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+echo "" >>& $TESTSTATUS_LOG
+echo "  moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
+echo "  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
+echo "" >>& $TESTSTATUS_LOG
+
+# the following line creates the component history files used in comparison to baselines
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase "$CASE" -suffix "base" $add_iop
+
+#======================================================================
+# (3b) Test run: 
+# do a restart continue from (3a) (short term archiving off)
+#======================================================================
+
+cd $CASER0
+
+set CASE    = `./xmlquery CASE     -value`
+set RUNDIR  = `./xmlquery RUNDIR   -value`
+
+echo "branch restart: doing a ${stopn4} ${STOP_OPTION} continue restart test" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN  -val TRUE
+./xmlchange -file env_run.xml -id STOP_N        -val ${stopn4}
+./xmlchange -file env_run.xml -id REST_OPTION   -val never
+./xmlchange -file env_run.xml -id DOUT_S        -val FALSE
+./xmlchange -file env_run.xml -id HIST_OPTION   -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N        -val ${histn}
+
+# do the restart run (short term archiving is off)
+
+./$CASE.run
+if ($status != 0) exit -1
+
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+if ( $?CplLogFile ) then
+    if (-e $CplLogFile) then
+       set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+       if ($pass != 1) then
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 	   exit -1
+       else 
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       endif
+    endif
+else
+    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+echo "" >>& $TESTSTATUS_LOG
+echo "  moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
+echo "  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix rest $add_iop" >>& $TESTSTATUS_LOG
+echo "" >>& $TESTSTATUS_LOG
+
+# the following creates the restart file used in the restart test
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest"
+
+#======================================================================
+# Test status check:
+#======================================================================
+
+set CPLLOG = $CplLogFile
+
+echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
+echo "" >>& $TESTSTATUS_LOG
+
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "hybrid" -msg "hybrid test  .base and .hybrid files" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "rest"   -msg "restart test .base and .rest   files" >>& $TESTSTATUS_OUT
+

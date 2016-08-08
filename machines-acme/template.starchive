@@ -1,0 +1,63 @@
+#! /usr/bin/env perl
+#------------------------------------------------------------------------------
+# Batch system directives
+#------------------------------------------------------------------------------
+{{ batchdirectives }}
+use POSIX qw(strftime);
+use File::Path;
+use File::Copy;
+use File::Spec;
+use File::Basename;
+use XML::LibXML;
+my $scriptname = $0;
+my $caseroot = "{{ caseroot }}";
+my $cimeroot = "{{ cimeroot }}";
+chdir $caseroot;
+my $toolsdir = "$caseroot/Tools";
+push(@INC, $toolsdir);
+my $perl5lib = "$cimeroot/utils/perl5lib";
+push(@INC, $perl5lib);
+require ConfigCase;
+require Run::RunChecks;
+require Module::ModuleLoader;
+require Batch::BatchUtils;
+my %config;
+
+
+#------------------------------------------------------------------------------
+# PE Layout Documentation:
+#------------------------------------------------------------------------------
+{{ pedocumentation }}
+# -------------------------------------------------------------------------
+# global data needed by the script, stuff like the max number of threads,
+# -------------------------------------------------------------------------
+
+sub main
+{
+
+    # First, get the configuration from every xml file.
+    my $buildenv = ConfigCase->new("./Tools/config_definition.xml", "./env_build.xml");
+    %config = ConfigCase->getAllResolved();
+
+
+    # Change to the case root
+    chdir($config{'CASEROOT'});
+
+	qx(./st_archive >> stArchiveStatus 2>&1);
+	resubmitCheck();
+}
+
+sub resubmitCheck()
+{
+    if($config{'CONTINUE_RUN'} eq 'TRUE' && $config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
+    {
+
+        my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'}, caseconfig => \%config, caseroot => $config{'CASEROOT'},
+                                                                  ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
+                                                                  machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
+                                                                  scriptsroot => $config{'SCRIPTSROOT'} );
+        $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
+    }	
+}
+	
+main(@ARGV) unless caller;

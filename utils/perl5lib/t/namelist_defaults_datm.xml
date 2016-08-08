@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<strm_year_align stream="CLM1PT.1x1_mexicocityMEX">1993</strm_year_align>
+<strm_year_start stream="CLM1PT.1x1_mexicocityMEX">1993</strm_year_start>
+<strm_year_end   stream="CLM1PT.1x1_mexicocityMEX">1993</strm_year_end>
+<strm_domdir     stream="CLM1PT.1x1_mexicocityMEX">$DIN_LOC_ROOT/atm/datm7/domain.clm</strm_domdir>
+<strm_domfil     stream="CLM1PT.1x1_mexicocityMEX">domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</strm_domfil>
+<strm_datdir     stream="CLM1PT.1x1_mexicocityMEX">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/mexicocityMEX.c080124</strm_datdir>
+<strm_datfil     stream="CLM1PT.1x1_mexicocityMEX">clm1pt-1993-12.nc</strm_datfil>
+<strm_offset     stream="CLM1PT.1x1_mexicocityMEX">0</strm_offset>
+<strm_tintalgo   stream="CLM1PT.1x1_mexicocityMEX">nearest</strm_tintalgo>
+<strm_domvar     stream="CLM1PT.1x1_mexicocityMEX">
+   time    time
+   xc      lon
+   yc      lat
+   area    area
+   mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLM1PT.1x1_mexicocityMEX">
+   ZBOT     z
+   TBOT     tbot
+   RH       rh
+   WIND     wind
+   PRECTmms precn
+   FSDS     swdn
+   FSDSdir  swdndr
+   FSDSdif  swdndf
+   PSRF     pbot
+   FLDS     lwdn
+</strm_datvar>
+
+<!-- CLM_USRDAT_NAME -->
+<strm_year_align stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
+<strm_year_start stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_START</strm_year_start>
+<strm_year_end   stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_END</strm_year_end>
+<strm_domdir     stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT/domainpath</strm_domdir>
+<strm_domfil     stream="CLM1PT.CLM_USRDAT">domain.lnd.1x1pt-$CLM_USRDAT_NAME.nc</strm_domfil>
+<strm_datdir     stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT/CLM1PT_data/$CLM_USRDAT_NAME</strm_datdir>
+<strm_datfil     stream="CLM1PT.CLM_USRDAT">clm1pt${CLM_USRDAT_NAME}_%ym.nc</strm_datfil>
+<strm_offset     stream="CLM1PT.CLM_USRDAT">0</strm_offset>
+<strm_tintalgo   stream="CLM1PT.CLM_USRDAT">nearest</strm_tintalgo>
+<strm_domvar     stream="CLM1PT.CLM_USRDAT">
+   time    time
+   xc      lon
+   yc      lat
+   area    area
+   mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLM1PT.CLM_USRDAT">
+   ZBOT     z
+   TBOT     tbot
+   RH       rh
+   WIND     wind
+   PRECTmms precn
+   FSDS     swdn
+   FSDSdir  swdndr
+   FSDSdif  swdndf
+   PSRF     pbot
+   FLDS     lwdn
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- CPLHIST3HrWx                              -->
+<!-- =========================================  -->
+
+<strm_cpl_case   stream="CPLHIST3HrWx.Solar">b40.1850.track1.1deg.006a</strm_cpl_case>
+<strm_year_align stream="CPLHIST3HrWx.Solar">0001</strm_year_align>
+<strm_year_start stream="CPLHIST3HrWx.Solar">1000</strm_year_start>
+<strm_year_end   stream="CPLHIST3HrWx.Solar">2000</strm_year_end>
+<strm_domdir     stream="CPLHIST3HrWx.Solar">$DIN_LOC_ROOT/atm/datm7</strm_domdir>
+<strm_domfil     stream="CPLHIST3HrWx.Solar">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</strm_domfil>
+<strm_datdir     stream="CPLHIST3HrWx.Solar">$DIN_LOC_ROOT/csm/$DATM_CPL_CASE/cpl/hist</strm_datdir>
+<strm_datfil     stream="CPLHIST3HrWx.Solar">$DATM_CPL_CASE.cpl.ha2x3h.%ym.nc</strm_datfil>
+<strm_offset     stream="CPLHIST3HrWx.Solar">-10800</strm_offset>
+<strm_tintalgo   stream="CPLHIST3HrWx.Solar">coszen</strm_tintalgo>
+<strm_domvar     stream="CPLHIST3HrWx.Solar">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CPLHIST3HrWx.Solar">
+  a2x3h_Faxa_swndr     swndr
+  a2x3h_Faxa_swvdr     swvdr
+  a2x3h_Faxa_swndf     swndf
+  a2x3h_Faxa_swvdf     swvdf
+</strm_datvar>
+
+<!-- =============== -->
+<!-- == CLM_QIAN === -->
+<!-- =============== -->
+
+<!-- == Solar    === -->
+<strm_year_start stream="CLM_QIAN.Solar">1948</strm_year_start>
+<strm_year_end   stream="CLM_QIAN.Solar">2004</strm_year_end>
+<strm_year_align stream="CLM_QIAN.Solar">1850</strm_year_align>
+<strm_domdir     stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7</strm_domdir>
+<strm_domfil     stream="CLM_QIAN.Solar">domain.T62.050609.nc</strm_domfil>
+<strm_datdir     stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Solar6Hrly</strm_datdir>
+<strm_datfil     stream="CLM_QIAN.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</strm_datfil>
+<strm_offset     stream="CLM_QIAN.Solar">0</strm_offset>
+<strm_tintalgo   stream="CLM_QIAN.Solar">coszen</strm_tintalgo>
+<strm_domvar     stream="CLM_QIAN.Solar">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLM_QIAN.Solar">
+  FSDS swdn
+</strm_datvar>
+
+<!-- == Precip   === -->
+
+<strm_year_start stream="CLM_QIAN.Precip">1972</strm_year_start>
+<strm_year_end   stream="CLM_QIAN.Precip">2000</strm_year_end>
+<strm_year_align stream="CLM_QIAN.Precip">2004</strm_year_align>
+<strm_domdir     stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7</strm_domdir>
+<strm_domdir     stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7</strm_domdir>
+<strm_domfil     stream="CLM_QIAN.Precip">domain.T62.050609.nc</strm_domfil>
+<strm_datdir     stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Precip6Hrly</strm_datdir>
+<strm_datfil     stream="CLM_QIAN.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</strm_datfil>
+<strm_offset     stream="CLM_QIAN.Precip">0</strm_offset>
+<strm_tintalgo   stream="CLM_QIAN.Precip">nearest</strm_tintalgo>
+<strm_domvar     stream="CLM_QIAN.Precip">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLM_QIAN.Precip">
+  PRECTmms precn
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- dlnd.sno.cplhist                          -->
+<!-- These dlnd values are included here for    -->
+<!-- the sake of testing %glc substitution      -->
+<!-- =========================================  -->
+
+<strm_year_align stream="sno.cplhist">0001</strm_year_align>
+<strm_year_start stream="sno.cplhist">1972</strm_year_start>
+<strm_year_end   stream="sno.cplhist">1973</strm_year_end>
+<strm_cpl_case   stream="sno.cplhist">mycase</strm_cpl_case>
+<strm_offset     stream="sno.cplhist">0</strm_offset>
+<strm_tintalgo   stream="sno.cplhist">lower</strm_tintalgo>
+<strm_taxmode    stream="sno.cplhist">cycle</strm_taxmode>
+<strm_domdir     stream="sno.cplhist">$DIN_LOC_ROOT/lnd/dlnd7</strm_domdir>
+<strm_domfil     stream="sno.cplhist">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</strm_domfil>
+<strm_datdir     stream="sno.cplhist">mydir</strm_datdir>
+<strm_datfil     stream="sno.cplhist">mycase.cpl.hs2x.%y-01-01.nc</strm_datfil>
+<strm_domvar     stream="sno.cplhist">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="sno.cplhist">
+  s2x_Ss_tsrf%glc     tsrf%glc
+  s2x_Ss_topo%glc     topo%glc
+  s2x_Fgss_qice%glc   qice%glc
+</strm_datvar>
+
+
+</namelist_defaults>

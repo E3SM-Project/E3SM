@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+
+<config_definition>
+
+<entry id="cam_bld" value="." list="0" valid_values="">
+CAM build directory; contains .o and .mod files.
+</entry>
+<entry id="chem" value="none" list="0" valid_values="none,waccm_mozart,waccm_ghg,trop_mozart">
+Chemistry package: none, waccm_mozart, waccm_ghg, or trop_mozart.
+</entry>
+<entry id="cpl" value="0" list="0" valid_values="0,1">
+Is CAM being coupled with the concurrent CCSM?  0 => no, 1 => yes.
+</entry>
+<entry id="dyn" value="fv" list="0" valid_values="eul,sld,fv,se">
+Dynamics package: eul, sld, fv, or se.
+</entry>
+<entry id="ocn" value="dom" list="0" valid_values="dom,som">
+Use SST data or slab ocean model: dom or som.
+</entry>
+<entry id="phys" value="cam" list="0" valid_values="cam,waccm">
+Physics package: cam or waccm.
+</entry>
+<entry id="prog_aero" value="none" list="1" valid_values="none,dust,seasalt,caer4,caer16,sulfur">
+Prognostic aerosol package: list of any subset of the following: none,dust,seasalt,caer4,caer16,sulfur
+</entry>
+<entry id="res" value="10x15" list="0" valid_values="">
+Horizontal resolution specifier.  The recognized values depend on
+the dynamics type and are contained in the resolution_parameters.xml file.
+</entry>
+<entry id="target_os" value="" list="0" valid_values="">
+OS for which CAM is being built.  The value is the name returned by the "uname -s"
+command on the target platform.  This parameter is to allow cross-compilation.
+</entry>
+<entry id="test_one_valid_value" value="" list="0" valid_values="one_value">
+Test that a single valid value works correctly
+</entry>
+<entry id="usr_src" value="" list="1" valid_values="">
+User source directories to prepend to the filepath.  Multiple directories
+are specified as a comma separated list with no embedded white space.
+</entry>
+
+</config_definition>

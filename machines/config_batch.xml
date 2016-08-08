@@ -1,0 +1,215 @@
+<?xml version="1.0"?>
+<config_batch version="1.0.0">
+  <!--
+     File:    config_batch.xml
+     Purpose: abstract out the parts of run scripts that are different, and use this configuration to 
+     create cesm run scripts from a single template.  
+
+     batch_system:     the batch system type and version 
+     batch_query:      the batch query command for each batch system. 
+     batch_redirect:   Whether a redirect character is needed to submit jobs. 
+     batch_directive:  The string that prepends a batch directive for the batch system. 
+     jobid_pattern:    A perl regular expression used to filter out the returned job id from a
+                       queue submission. 
+     depend_pattern:   
+    -->
+  <batch_system type="template" version="x.y">
+    <batch_query args=""></batch_query>
+    <batch_submit></batch_submit>
+    <batch_redirect></batch_redirect>
+    <batch_directive></batch_directive>
+    <directives>
+      <directive name=""></directive>
+    </directives>
+  </batch_system>
+
+   <batch_system type="cobalt" version="x.y">
+     <batch_query>qstat</batch_query>
+     <batch_submit>bash</batch_submit>
+     <batch_directive></batch_directive>
+     <jobid_pattern>(\d+)</jobid_pattern>
+     <depend_string> --dependencies</depend_string>
+     <submit_args>
+       <arg flag="-A" name="project"/>
+       <arg flag="-t" name="wall_time"/>
+       <arg flag="-n" name="num_nodes"/>
+       <arg flag="-q" name="queue"/>
+       <arg flag="--mode script"/>
+     </submit_args>
+   </batch_system>
+
+  <batch_system type="lsf" version="9.1">
+    <batch_query args=" -w" >bjobs</batch_query>
+    <batch_submit>bsub</batch_submit>
+    <batch_redirect>&lt;</batch_redirect>
+    <batch_directive>#BSUB</batch_directive>
+    <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
+    <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
+    <depend_string> -w "done(jobid)"</depend_string>
+    <directives>
+      <directive                       > -n {{ totaltasks }} </directive>
+      <directive                       > -R "span[ptile={{ ptile }}]"</directive>
+      <directive                       > -q {{ queue }} </directive>
+      <directive                       > -N  </directive>
+      <directive default="poe"         > -a {{ poe }} </directive>
+      <directive                       > -x {{ queue_exclusive }} </directive>
+      <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
+      <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
+      <directive                       > -J {{ job_id }} </directive>
+      <directive                       > -W {{ wall_time }} </directive>
+      <directive                       > -P {{ account }}  </directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="pbs" version="x.y">
+    <batch_query args="-f" >qstat</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <directives>
+      <directive> -N {{ job_id }}</directive>
+      <directive> -q {{ queue }}</directive>
+      <directive> -l walltime={{ wall_time }}</directive>
+      <directive default="n"> -r {{ rerunnable }} </directive>
+      <!-- <directive> -j oe {{ output_error_path }} </directive> -->
+      <directive> -j oe </directive>
+      <directive default="ae"  > -m {{ mail_options }} </directive>
+      <directive default="/bin/bash" > -S {{ shell }} </directive>
+    </directives>
+  </batch_system>
+
+   <batch_system type="slurm" version="x.y">
+     <batch_query>squeue</batch_query>
+     <batch_submit>sbatch</batch_submit>
+     <batch_directive>#SBATCH</batch_directive>
+     <jobid_pattern>(\d+)$</jobid_pattern>
+     <depend_string> --dependency=afterok:jobid</depend_string>
+     <directives>
+       <directive> -J {{ job_id }}</directive>
+       <directive> --time={{ wall_time }} </directive>
+       <directive> --nodes={{ num_nodes }}</directive>
+       <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive> --qos={{ queue }}</directive>
+     </directives>
+   </batch_system>
+
+    <!-- edison is PBS -->
+    <batch_system MACH="edison" version="x.y">
+      <directives>
+	<directive>-l mppwidth={{ mppwidth }}</directive>
+      <directive> -P {{ account }} </directive>
+      </directives>
+    </batch_system> 
+
+    <!-- eos is PBS -->
+    <batch_system MACH="eos" version="x.y">
+    <jobid_pattern>^(\d+)</jobid_pattern>
+    <directives>
+      <directive>-A {{ project }}</directive>
+      <directive>-l mppwidth={{ mppwidth }}</directive>
+      <directive>-l  nodes={{ num_nodes }}</directive>
+    </directives>
+   </batch_system> 
+
+   <!-- gaea is PBS -->
+   <batch_system MACH="gaea" version="x.y">
+   <directives>
+     <directive>-A cpo</directive>
+     <directive>-l {{ partition }}</directive>
+     <directive>-l size={{ mppsize }}</directive>
+	 <directive>-E </directive>
+	 <directive>-d {{ rundir }}</directive>
+     <directive>-o {{ rundir }}/{{ case }}.out </directive>
+     <directive>-S /bin/bash -V </directive>
+   </directives>
+   </batch_system>
+
+   <!-- hera is SLURM -->
+   <batch_system MACH="hera">
+   <batch_directive>#MSUB</batch_directive>
+   <directives>
+     <directive>-A ees</directive>
+     <directive>-l gres=lscratchd</directive>
+   </directives>
+   </batch_system>
+
+    <!-- skybridge is slurm -->
+
+   <batch_system MACH="skybridge" version="x.y">
+     <directives>
+       <directive>--account={{ project }}</directive>
+       <directive>--partition={{ queue }}</directive>
+     </directives>
+   </batch_system>
+
+  <!-- all pleiades machines are PBS -->
+  <batch_system MACH="pleiades-has" version="x.y">
+    <directives>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-L select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:has</directive>
+      <directive>-l place=scatter:excl</directive>
+    </directives>
+  </batch_system>
+
+  <!-- all pleiades machines are PBS -->
+  <batch_system MACH="pleiades-ivy" version="x.y">
+    <directives>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:ivy</directive>
+      <directive>-l place=scatter:excl</directive>
+    </directives>
+  </batch_system>
+
+  <!-- all pleiades machines are PBS -->
+  <batch_system MACH="pleiades-san" version="x.y">
+    <directives>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:san</directive>
+      <directive>-l place=scatter:excl</directive>
+    </directives>
+  </batch_system>
+
+  <!-- all pleiades machines are PBS -->
+  <batch_system MACH="pleiades-wes" version="x.y">
+    <directives>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-L select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:wes</directive>
+      <directive>-l place=scatter:excl</directive>
+    </directives>
+  </batch_system>
+
+   <batch_system MACH="sierra">
+   <batch_directive>#MSUB</batch_directive>
+   <directives>
+     <directive>-V </directive>
+     <directive>-A ees </directive>
+     <directive>-l nodes={{ num_nodes }}</directive>
+     <directive>-l gres=lscratchd</directive>
+   </directives>
+   </batch_system>
+
+
+  <batch_system MACH="bluewaters" version="x.y">
+    <directives>
+      <directive>-A {{ project }}</directive>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}:xe</directive>
+    </directives>
+   </batch_system>
+   
+  <batch_system MACH="goldbach" version="x.y">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+  </batch_system>
+
+  <batch_system MACH="hobart" version="x.y">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+  </batch_system>
+  
+
+
+</config_batch>
+

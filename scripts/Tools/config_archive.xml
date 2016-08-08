@@ -1,0 +1,916 @@
+
+<components>
+  <comp_archive_spec name="cam">
+    <rootdir>atm</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rs\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".ra\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh0\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh1\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh2\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh3\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh4\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh5\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".i\.+">
+	<subdir>init</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h0\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h1\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
+	<tseries_tper>daily</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h2\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly6</tseries_output_subdir>
+	<tseries_tper>hourly6</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h3\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly3</tseries_output_subdir>
+	<tseries_tper>hourly3</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h4\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly1</tseries_output_subdir>
+	<tseries_tper>hourly1</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h5\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/min30</tseries_output_subdir>
+	<tseries_tper>min30</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h6\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>undefined</tseries_output_subdir>
+	<tseries_tper>undefined</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h7\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>undefined</tseries_output_subdir>
+	<tseries_tper>undefined</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h8\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>undefined</tseries_output_subdir>
+	<tseries_tper>undefined</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".hs\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+    </files>
+    <tseries_time_variant_variables>
+      <variable>ch4vmr</variable>
+      <variable>co2vmr</variable>
+      <variable>date</variable>
+      <variable>date_written</variable>
+      <variable>datesec</variable>
+      <variable>f11vmr</variable>
+      <variable>f12vmr</variable>
+      <variable>n2ovmr</variable>
+      <variable>ndcur</variable>
+      <variable>nscur</variable>
+      <variable>nsteph</variable>
+      <variable>sol_tsi</variable>
+      <variable>time</variable>
+      <variable>time_bnds</variable>
+      <variable>time_written</variable>
+    </tseries_time_variant_variables>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="datm">
+    <rootdir>atm</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rs\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="clm[0-9]+">
+    <rootdir>lnd</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh0\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh1\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh2\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh3\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh4\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh5\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".i\.+">
+	<subdir>init</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h0\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h1\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
+	<tseries_tper>daily</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h2\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly6</tseries_output_subdir>
+	<tseries_tper>hourly6</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h3\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly3</tseries_output_subdir>
+	<tseries_tper>hourly3</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h4\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly1</tseries_output_subdir>
+	<tseries_tper>hourly1</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h5\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/min30</tseries_output_subdir>
+	<tseries_tper>min30</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".hv\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+    </files>
+    <tseries_time_variant_variables>
+      <variable>date_written</variable>
+      <variable>mcdate</variable>
+      <variable>mcsec</variable>
+      <variable>mdcur</variable>
+      <variable>mscur</variable>
+      <variable>nstep</variable>
+      <variable>time</variable>
+      <variable>time_bounds</variable>
+      <variable>time_written</variable>
+    </tseries_time_variant_variables>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="dlnd">
+    <rootdir>lnd</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rs\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="rtm">
+    <rootdir>rof</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh0\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh1\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh2\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh3\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h0\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h1\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
+	<tseries_tper>daily</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h2\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly6</tseries_output_subdir>
+	<tseries_tper>hourly6</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h3\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly3</tseries_output_subdir>
+	<tseries_tper>hourly3</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+    </files>
+    <tseries_time_variant_variables>
+      <variable>date_written</variable>
+      <variable>mcdate</variable>
+      <variable>mcsec</variable>
+      <variable>mdcur</variable>
+      <variable>mscur</variable>
+      <variable>nstep</variable>
+      <variable>time</variable>
+      <variable>time_bounds</variable>
+      <variable>time_written</variable>
+    </tseries_time_variant_variables>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="mosart">
+    <rootdir>rof</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh0\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh1\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh2\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh3\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h0\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h1\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
+	<tseries_tper>daily</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h2\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly6</tseries_output_subdir>
+	<tseries_tper>hourly6</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h3\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly3</tseries_output_subdir>
+	<tseries_tper>hourly3</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+    </files>
+    <tseries_time_variant_variables>
+      <variable>date_written</variable>
+      <variable>mcdate</variable>
+      <variable>mcsec</variable>
+      <variable>mdcur</variable>
+      <variable>mscur</variable>
+      <variable>nstep</variable>
+      <variable>time</variable>
+      <variable>time_bounds</variable>
+      <variable>time_written</variable>
+    </tseries_time_variant_variables>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="cice">
+    <rootdir>ice</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.\w+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".i\.+">
+	<subdir>init</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+    </files>
+    <tseries_time_variant_variables>
+      <variable>time</variable>
+      <variable>time_bounds</variable>
+    </tseries_time_variant_variables>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="dice">
+    <rootdir>ice</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rs\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+
+  <comp_archive_spec name="pop">
+    <rootdir>ocn</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.+\.hdr">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.[0-9|-]+\.nc">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.[0-9|-]+[^\.nc]">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh.ecosys\.\w+\.hdr">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh.ecosys\.\w+\.nc">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh.ecosys\.[0-9|-]+[^\.nc]">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh\.+\.hdr">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh\.[0-9|-]+\.nc">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh\.[0-9|-]+[^\.nc]">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".ro\.+">
+	<subdir>rest</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".d\w*">
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".h.\d{4}-\d{2}\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h.nday1\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+	<tseries_create>TRUE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
+	<tseries_tper>daily</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h.nyear1\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/yearly</tseries_output_subdir>
+	<tseries_tper>yearly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>undefined</tseries_output_subdir>
+	<tseries_tper>undefined</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+    </files>
+    <tseries_time_variant_variables>
+      <variable>time</variable>
+      <variable>time_bound</variable>
+    </tseries_time_variant_variables>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="docn">
+    <rootdir>ocn</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rs\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="cism">
+    <rootdir>glc</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r.[0-9]*">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.\w+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".i\.+">
+	<subdir>init</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".h*">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="ww3">
+    <rootdir>wav</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r.[0-9]*">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".i\.+">
+	<subdir>init</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="dwav">
+    <rootdir>wav</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rs\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="dart"> 
+    <rootdir>dart</rootdir>
+    <multi_instance>n</multi_instance>
+    <files>
+      <file_extension suffix="assimilate_\w{3}/\w*/\w*dart_log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="assimilate_\w{3}/\w*/output\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="\w*dart_log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="\w*True_State\.+.nc">
+	<subdir></subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="\w*Prior_Diag\.+.nc">
+	<subdir></subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="\w*Posterior_Diag\.+.nc">
+	<subdir></subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="\w*obs_seq\.+.out">
+	<subdir></subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="\w*obs_seq\.+.final">
+	<subdir></subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="\w*obs_seq\.+.perfect">
+	<subdir></subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix="cam_\w*pr\w*inflate_restart\w*">
+	<subdir>rest</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix="cam_\w*po\w*inflate_restart\w*">
+	<subdir>rest</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix="clm_\w*pr\w*inflate_restart\w*">
+	<subdir>rest</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix="clm_\w*po\w*inflate_restart\w*">
+	<subdir>rest</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix="pop_\w*pr\w*inflate_restart\w*">
+	<subdir>rest</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix="pop_\w*po\w*inflate_restart\w*">
+	<subdir>rest</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="cpl"> 
+    <rootdir>cpl</rootdir>
+    <multi_instance>n</multi_instance>
+    <files>
+      <file_extension suffix="cpl.log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix="cesm*.log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".h\w*">
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+</components>

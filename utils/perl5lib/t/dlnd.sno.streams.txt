@@ -1,0 +1,62 @@
+      <dataSource>
+         GENERIC
+      </dataSource>
+      <domainInfo>
+         <variableNames>
+            time    time
+            xc      lon
+            yc      lat
+            area    area
+            mask    mask
+         </variableNames>
+         <filePath>
+            /fs/cgd/csm/inputdata/lnd/dlnd7
+         </filePath>
+         <fileNames>
+            domain.lnd.fv0.9x1.25_gx1v6.090309.nc
+         </fileNames>
+      </domainInfo>
+      <fieldInfo>
+         <variableNames>
+            s2x_Ss_tsrf01     tsrf01
+            s2x_Ss_tsrf02     tsrf02
+            s2x_Ss_tsrf03     tsrf03
+            s2x_Ss_tsrf04     tsrf04
+            s2x_Ss_tsrf05     tsrf05
+            s2x_Ss_tsrf06     tsrf06
+            s2x_Ss_tsrf07     tsrf07
+            s2x_Ss_tsrf08     tsrf08
+            s2x_Ss_tsrf09     tsrf09
+            s2x_Ss_tsrf10     tsrf10
+            s2x_Ss_topo01     topo01
+            s2x_Ss_topo02     topo02
+            s2x_Ss_topo03     topo03
+            s2x_Ss_topo04     topo04
+            s2x_Ss_topo05     topo05
+            s2x_Ss_topo06     topo06
+            s2x_Ss_topo07     topo07
+            s2x_Ss_topo08     topo08
+            s2x_Ss_topo09     topo09
+            s2x_Ss_topo10     topo10
+            s2x_Fgss_qice01   qice01
+            s2x_Fgss_qice02   qice02
+            s2x_Fgss_qice03   qice03
+            s2x_Fgss_qice04   qice04
+            s2x_Fgss_qice05   qice05
+            s2x_Fgss_qice06   qice06
+            s2x_Fgss_qice07   qice07
+            s2x_Fgss_qice08   qice08
+            s2x_Fgss_qice09   qice09
+            s2x_Fgss_qice10   qice10
+         </variableNames>
+         <filePath>
+            mydir
+         </filePath>
+         <fileNames>
+            mycase.cpl.hs2x.1972-01-01.nc
+            mycase.cpl.hs2x.1973-01-01.nc
+         </fileNames>
+         <offset>
+            0
+         </offset>
+      </fieldInfo>
