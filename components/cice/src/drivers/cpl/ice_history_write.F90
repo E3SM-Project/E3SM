@@ -459,16 +459,16 @@
       title = 'CF-1.0'
       status =  &
            pio_put_att(File,pio_global,'conventions',title)
-
+      if (my_task == master_task) then
       call date_and_time(date=current_date, time=current_time)
-      write(start_time,1000) current_date(1:4), current_date(5:6), &
+        write(start_time,1000) current_date(1:4), current_date(5:6), &
            current_date(7:8), current_time(1:2), &
            current_time(3:4)
-1000  format('This dataset was created on ', &
+1000    format('This dataset was created on ', &
            a,'-',a,'-',a,' at ',a,':',a)
-
+      end if
+      call broadcast_scalar(start_time, my_task)
       status = pio_put_att(File,pio_global,'history',start_time)
-
       !-----------------------------------------------------------------
       ! end define mode
       !-----------------------------------------------------------------
