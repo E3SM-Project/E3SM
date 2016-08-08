@@ -147,7 +147,7 @@ contains
 
       write(stderrUnit,*) 'Initializing vertical coordinate with ssh = 0.'
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
-      ! based on bottomDepth and refBottomDepth (and refSSH if land ice is present)
+      ! based on bottomDepth and refBottomDepth and apply PBCS if requested
       call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
@@ -184,7 +184,7 @@ contains
 
       if (config_global_ocean_depress_by_land_ice) then
          write(stderrUnit,*) 'Recalculating ocean layer topography due to land ice depression'
-         ! compute or update the SSP (or possibly SSH), also computing density and bottomPressure along the way
+         ! compute or update the SSP (or possibly SSH), also computing density along the way
          ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
          call ocn_init_ssh_and_ssp_balance(domain, iErr)
 
@@ -825,13 +825,14 @@ contains
 
        type (block_type), pointer :: block_ptr
 
-       type (mpas_pool_type), pointer :: meshPool, forcingPool, landIceInitPool, diagnosticsPool
+       type (mpas_pool_type), pointer :: meshPool, forcingPool, landIceInitPool, diagnosticsPool, &
+                                         statePool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
        real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, landIceDraftObserved, &
                                                    landIceFracObserved, landIceGroundedFracObserved
 
-       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, landIceFraction, refSSH, &
+       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, landIceFraction, ssh, &
                                                    bottomDepth
 
        integer, pointer :: nCells
@@ -858,6 +859,7 @@ contains
           call mpas_pool_get_subpool(block_ptr % structs, 'landIceInit', landIceInitPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -868,7 +870,7 @@ contains
           call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
-          call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
+          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
           call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
           call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
@@ -922,7 +924,7 @@ contains
              call mpas_dmpar_finalize(domain % dminfo)
           endif
 
-          refSSH(:) = 0.0_RKIND
+          ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
           modifySSHMask(:) = 0
            do iCell = 1, nCells
@@ -952,9 +954,10 @@ contains
                 ! we compute the SSP first and find out the SSH
                 seaSurfacePressure(iCell) = config_land_ice_flux_rho_ice &
                    * gravity * landIceThkObserved(iCell)
-             else if(config_iterative_init_variable == 'ssp') then
-                ! we compute the refSSH first and find out the SSP
-                refSSH(iCell) = min(0.0_RKIND,landIceDraftObserved(iCell))
+             else if(config_iterative_init_variable == 'ssp' &
+                .or. config_iterative_init_variable == 'ssp_from_top_density') then
+                ! we compute the SSH first and find out the SSP
+                ssh(iCell) = min(0.0_RKIND,landIceDraftObserved(iCell))
              else
                 write(stderrUnit,*) 'ERROR: Invalid choice of config_iterative_init_variable.'
                 iErr = 1

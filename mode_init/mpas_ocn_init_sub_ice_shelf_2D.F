@@ -114,7 +114,7 @@ module ocn_init_sub_ice_shelf_2D
      logical, pointer :: on_a_sphere
 
      type (mpas_pool_type), pointer :: diagnosticsPool
-     real(kind=RKIND), dimension(:), pointer :: landIceFraction, refSSH
+     real(kind=RKIND), dimension(:), pointer :: landIceFraction, ssh
      real (kind=RKIND), dimension(:,:), pointer :: zMid
 
      iErr = 0
@@ -215,7 +215,7 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-        call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
         call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
         call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
@@ -251,7 +251,7 @@ module ocn_init_sub_ice_shelf_2D
            else
               totalSubIceThickness = d3
            endif
-           refSSH(iCell) = -config_sub_ice_shelf_2D_bottom_depth + totalSubIceThickness
+           ssh(iCell) = -config_sub_ice_shelf_2D_bottom_depth + totalSubIceThickness
         end do
 
         do iCell = 1, nCells
@@ -317,7 +317,7 @@ module ocn_init_sub_ice_shelf_2D
         block_ptr => block_ptr % next
      end do
 
-     ! compute or update the SSP (or possibly SSH), also computing density and bottomPressure along the way
+     ! compute or update the SSP (or possibly SSH), also computing density along the way
      ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
      call ocn_init_ssh_and_ssp_balance(domain, iErr)
 

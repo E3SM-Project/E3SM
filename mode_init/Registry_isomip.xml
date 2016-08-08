@@ -39,10 +39,6 @@
 					description="Coriolis parameter for entrie domain."
 					possible_values="Any real number."
 		/>
-		<nml_option name="config_isomip_effective_density" type="real" default_value="1026.0" units="kg m^{-3}"
-					description="The initial value for the effective density in land ice, used to determine flotation with land-ice coupling."
-					possible_values="Any non-negative real number."
-		/>
 		<nml_option name="config_isomip_southern_boundary" type="real" default_value="0.0" units="m"
 					description="The y location of the southern boundary."
 					possible_values="Any real number."
