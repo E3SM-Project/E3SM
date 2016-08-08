@@ -107,8 +107,6 @@
 				<member name="landIceGroundedFracObserved" type="var"/>
 				<member name="landIceFraction" type="var"/>
 				<member name="ssh" type="var"/>
-				<member name="refSSH" type="var"/>
-				<member name="deltaSSH" type="var"/>
 				<member name="modifySSHMask" type="var"/>
 				<member name="rx1Cell" type="var"/>
 				<member name="rx1Edge" type="var"/>
