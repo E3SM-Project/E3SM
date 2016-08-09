@@ -9,7 +9,6 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_run_duration">'0000_02:00:00'</option>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_check_ssh_consistency">.false.</option>
@@ -27,7 +26,6 @@
 		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 
 	</streams>
 

@@ -13,6 +13,8 @@
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_run_duration">'0000_04:00:00'</option>
 		<option name="config_write_output_on_startup">.false.</option>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">16</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -31,8 +33,8 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="graph.info">4</argument>
+			<argument flag="graph.info">16</argument>
 		</step>
-		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>

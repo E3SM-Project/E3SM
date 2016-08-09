@@ -12,7 +12,7 @@
 		<compare_fields file1="forward/output.nc">
 			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
 		</compare_fields>
-		<compare_timers rundir1="forward" rundir2="forward">
+		<compare_timers rundir1="forward">
 			<timer name="time integration"/>
 		</compare_timers>
 	</validation>

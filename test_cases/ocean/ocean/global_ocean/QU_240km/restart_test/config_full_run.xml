@@ -9,8 +9,9 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">4</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -23,7 +24,6 @@
 		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
 	</streams>
 
