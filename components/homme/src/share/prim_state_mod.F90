@@ -21,9 +21,6 @@ module prim_state_mod
   use perf_mod,         only: t_startf, t_stopf
   use physical_constants, only : p0,Cp,g
   use fvm_control_volume_mod, only: fvm_struct
-#ifdef _REFSOLN
-  use ref_state_mod,    only : ref_state_read, ref_state_write
-#endif
 
 implicit none
 private
@@ -689,46 +686,6 @@ contains
        ps_v(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
     enddo
        simday = 0
-
-#ifdef _REFSOLN
-! parallel write file with state vector in unformatted blocks for later calculation of norms
-!    call ref_state_write(v(:,:,:,:,nets:nete),T(:,:,:,nets:nete),ps_v(:,:,nets:nete), & 
-!	fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       vp(:,:,:,:,ie)=v(:,:,:,:,ie)
-!       Tp(:,:,:,ie)=T(:,:,:,ie)
-!       ps_vp(:,:,ie)=ps_v(:,:,ie)
-!    end do
-#endif
-
-#ifdef _REFSOLN
-! parallel read file with state vector in unformatted blocks as written above
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-!    call ref_state_read(vp(:,:,:,:,nets:nete),Tp(:,:,:,nets:nete),ps_vp(:,:,nets:nete), & 
-!	fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    npts=np
-
-    l1   = l1_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(ps_v(:,:,nets:nete),ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-#endif
-
 
   end subroutine prim_printstate_par
 
