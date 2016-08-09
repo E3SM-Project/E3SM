@@ -3,11 +3,9 @@
 """
 Wait for a queued set of ACME tests to finish by watching the
 TestStatus files.  If all tests pass, 0 is returned, otherwise a
-non-zero error code is returned.
-
-The easiest way to test this script is to keep a set of create_test
-results laying around somewhere so you don't have to wait for tests
-to run to test this script.
+non-zero error code is returned. Note that this program waits
+for the RUN phase specifically and will not terminate if the
+RUN phase didn't happen.
 """
 
 from standard_script_setup import *
