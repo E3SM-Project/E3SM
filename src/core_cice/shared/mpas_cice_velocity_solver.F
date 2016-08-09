@@ -564,12 +564,7 @@ contains
     type(MPAS_pool_type), pointer :: &
          icestatePool, &
          tracersAggregatePool, &
-         meshPool, &
-         velocitySolverPool
-
-    type(field1DReal), pointer :: &
-         iceAreaCellInitialField, &
-         totalMassCellField
+         meshPool
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaVertex, &
@@ -577,9 +572,6 @@ contains
          iceAreaCell, &
          totalMassVertex, &
          totalMassCell
-
-    type(field1DInteger), pointer :: &
-         solveVelocityField
 
     logical, pointer :: &
          config_use_column_package, &
@@ -609,11 +601,10 @@ contains
 
     ! halo exchange of initial ice area of cell
     call mpas_timer_start("ice area halo")
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "icestate", icestatePool)
-    call MPAS_pool_get_field(icestatePool, "iceAreaCellInitial", iceAreaCellInitialField)
-    call MPAS_pool_get_field(icestatePool, "totalMassCell", totalMassCellField)
-    call MPAS_dmpar_exch_halo_field(iceAreaCellInitialField)
-    call MPAS_dmpar_exch_halo_field(totalMassCellField)
+
+    call MPAS_dmpar_field_halo_exch(domain, 'iceAreaCellInitial')
+    call MPAS_dmpar_field_halo_exch(domain, 'totalMassCell')
+
     call mpas_timer_stop("ice area halo")
 
     ! interpolate area and mass from cells to vertices
@@ -648,9 +639,9 @@ contains
 
     ! halo exchange velocity mask
     call mpas_timer_start("velocity mask halo")
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
-    call MPAS_pool_get_field(velocitySolverPool, "solveVelocity", solveVelocityField)
-    call MPAS_dmpar_exch_halo_field(solveVelocityField)
+
+    call MPAS_dmpar_field_halo_exch(domain, 'solveVelocity')
+
     call mpas_timer_stop("velocity mask halo")
 
   end subroutine calculation_masks
@@ -904,10 +895,6 @@ contains
          solveVelocity, &
          solveVelocityPrevious
 
-    type(field1DReal), pointer :: &
-         uVelocityField, &
-         vVelocityField
-
     integer, pointer :: &
          nVerticesSolve
 
@@ -986,11 +973,8 @@ contains
     ! halo exchange velocities
     call mpas_timer_start("velocity halo")
 
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
-    call MPAS_pool_get_field(velocitySolverPool, "uVelocity", uVelocityField)
-    call MPAS_pool_get_field(velocitySolverPool, "vVelocity", vVelocityField)
-    call MPAS_dmpar_exch_halo_field(uVelocityField)
-    call MPAS_dmpar_exch_halo_field(vVelocityField)
+    call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+    call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
     call mpas_timer_stop("velocity halo")
 
@@ -1041,9 +1025,6 @@ contains
 
     integer, dimension(:), pointer :: &
          solveStress
-
-    type(field1DReal), pointer :: &
-         icePressureField
 
     logical, pointer :: &
          config_use_column_package, &
@@ -1129,9 +1110,7 @@ contains
     ! halo exchange ice strength
     call mpas_timer_start("ice strength halo")
 
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
-    call MPAS_pool_get_field(velocitySolverPool, "icePressure", icePressureField)
-    call MPAS_dmpar_exch_halo_field(icePressureField)
+    call MPAS_dmpar_field_halo_exch(domain, 'icePressure')
 
     call mpas_timer_stop("ice strength halo")
 
@@ -1175,10 +1154,6 @@ contains
          airStressCellU, &
          airStressCellV
 
-    type(field1DReal), pointer :: &
-         airStressCellUField, &
-         airStressCellVField!, &
-
     ! calculate the air stress
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
@@ -1205,11 +1180,8 @@ contains
     ! halo exchange air stress
     call mpas_timer_start("air stress halo")
 
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
-    call MPAS_pool_get_field(velocitySolverPool, "airStressCellU", airStressCellUField)
-    call MPAS_pool_get_field(velocitySolverPool, "airStressCellV", airStressCellVField)
-    call MPAS_dmpar_exch_halo_field(airStressCellUField)
-    call MPAS_dmpar_exch_halo_field(airStressCellVField)
+    call MPAS_dmpar_field_halo_exch(domain, 'airStressCellU')
+    call MPAS_dmpar_field_halo_exch(domain, 'airStressCellV')
 
     call mpas_timer_stop("air stress halo")
 
@@ -1643,10 +1615,6 @@ contains
          seaSurfaceTiltVertexU, &
          seaSurfaceTiltVertexV
 
-    type(field1DReal), pointer :: &
-         seaSurfaceTiltUField, &
-         seaSurfaceTiltVField
-
     integer, dimension(:), pointer :: &
          solveVelocity
 
@@ -1659,11 +1627,8 @@ contains
     ! halo exchange surface tilt
     call mpas_timer_start("sea surface tilt halo")
 
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "ocean_coupling", oceanCouplingPool)
-    call MPAS_pool_get_field(oceanCouplingPool, "seaSurfaceTiltU", seaSurfaceTiltUField)
-    call MPAS_pool_get_field(oceanCouplingPool, "seaSurfaceTiltV", seaSurfaceTiltVField)
-    call MPAS_dmpar_exch_halo_field(seaSurfaceTiltUField)
-    call MPAS_dmpar_exch_halo_field(seaSurfaceTiltVField)
+    call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltU')
+    call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltV')
 
     call mpas_timer_stop("sea surface tilt halo")
 
@@ -1974,13 +1939,6 @@ contains
     logical, pointer :: &
          config_revised_evp
 
-    type(MPAS_pool_type), pointer :: &
-         velocitySolverPool
-
-    type(field1DReal), pointer :: &
-         uVelocity, &
-         vvelocity
-
     call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
     call MPAS_pool_get_config(domain % configs, "config_revised_evp", config_revised_evp)
 
@@ -2022,13 +1980,8 @@ contains
     ! halo exchange
     call mpas_timer_start("Velocity solver halo")
 
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
-
-    call MPAS_pool_get_field(velocitySolverPool, "uVelocity", uVelocity)
-    call MPAS_pool_get_field(velocitySolverPool, "vVelocity", vVelocity)
-
-    call MPAS_dmpar_exch_halo_field(uVelocity)
-    call MPAS_dmpar_exch_halo_field(vVelocity)
+    call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+    call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
     call mpas_timer_stop("Velocity solver halo")
 
@@ -2684,10 +2637,6 @@ contains
     integer, dimension(:), pointer :: &
          solveVelocity
 
-    type(field1DReal), pointer :: &
-         oceanStressUField, &
-         oceanStressVField
-
     logical, pointer :: &
          configUseOceanStress
 
@@ -2771,13 +2720,8 @@ contains
        ! halo exchange ocean stress
        call mpas_timer_start("ocean stress halo")
 
-       call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
-
-       call MPAS_pool_get_field(velocitySolverPool, "oceanStressU", oceanStressUField)
-       call MPAS_pool_get_field(velocitySolverPool, "oceanStressV", oceanStressVField)
-
-       call MPAS_dmpar_exch_halo_field(oceanStressUField)
-       call MPAS_dmpar_exch_halo_field(oceanStressVField)
+       call MPAS_dmpar_field_halo_exch(domain, 'oceanStressU')
+       call MPAS_dmpar_field_halo_exch(domain, 'oceanStressV')
 
        call mpas_timer_stop("ocean stress halo")
 

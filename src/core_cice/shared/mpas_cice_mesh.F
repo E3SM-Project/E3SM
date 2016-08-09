@@ -386,14 +386,6 @@ contains
     integer, dimension(:), pointer :: &
          blockIDout
 
-    type (MPAS_pool_type), pointer :: &
-         boundaryField
-
-    type(field1DInteger), pointer :: &
-         interiorVertexField, &
-         interiorCellField, &
-         interiorEdgeField
-
     block => domain % blocklist
     do while (associated(block))
 
@@ -411,15 +403,9 @@ contains
     end do
 
     ! exchange fields
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "boundary", boundaryField)
-
-    call MPAS_pool_get_field(boundaryField, "interiorVertex", interiorVertexField)
-    call MPAS_pool_get_field(boundaryField, "interiorCell", interiorCellField)
-    call MPAS_pool_get_field(boundaryField, "interiorEdge", interiorEdgeField)
-
-    call MPAS_dmpar_exch_halo_field(interiorVertexField)
-    call MPAS_dmpar_exch_halo_field(interiorCellField)
-    call MPAS_dmpar_exch_halo_field(interiorEdgeField)
+    call MPAS_dmpar_field_halo_exch(domain, 'interiorVertex')
+    call MPAS_dmpar_field_halo_exch(domain, 'interiorCell')
+    call MPAS_dmpar_field_halo_exch(domain, 'interiorEdge')
 
   end subroutine init_boundary!}}}
 

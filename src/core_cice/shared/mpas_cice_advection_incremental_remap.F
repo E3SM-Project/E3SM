@@ -249,9 +249,6 @@ contains
     real(kind=RKIND), dimension(:,:,:), pointer ::  & 
          coeffsReconstruct        ! coefficients for reconstructing edge-based fields at cell centers
 
-    type(field3DReal), pointer :: &
-         coeffsReconstructField   ! field for reconstruction coefficients (needed for halo update)
-
     logical, pointer :: &         
          on_a_sphere,                & ! if true, then the mesh lives on the surface of a sphere; else in a plane
          config_rotate_cartesian_grid  ! if true, then rotate the true North and South Poles to the equator
@@ -741,9 +738,7 @@ contains
 
     ! Do a halo update for the reconstruction coefficients.
     ! Otherwise the coefficients are zero in halo cells.
-
-    call mpas_pool_get_field(meshPool, 'coeffs_reconstruct', coeffsReconstructField)
-    call mpas_dmpar_exch_halo_field(coeffsReconstructField)
+    call MPAS_dmpar_field_halo_exch(domain, 'coeffs_reconstruct')
 
     ! get the number of points for triangle quadrature
     ! = 6 for exact integration of polynomials up to degree 4
@@ -2355,11 +2350,6 @@ contains
          configConservationCheck, & ! namelist configuration whether perform conservation check
          configMonotonicityCheck    ! namelist configuration whether perform monotonicity check
 
-    ! 1D fields (nVertices)
-    type(field1DReal), pointer :: &
-         uVelocityField, &
-         vVelocityField
-
     ! dynamics time step
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
@@ -2405,11 +2395,9 @@ contains
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
-       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity_solver', velocitySolverPool)
-       call mpas_pool_get_field(velocitySolverPool, 'uVelocity', uVelocityField)
-       call mpas_pool_get_field(velocitySolverPool, 'vVelocity', vVelocityField)
-       call mpas_dmpar_exch_halo_field(uVelocityField)
-       call mpas_dmpar_exch_halo_field(vVelocityField)
+
+       call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+       call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
        ! mass and tracers
        call cice_update_tracer_halo(tracersHead, domain, timeLevel)
@@ -8238,12 +8226,6 @@ contains
     type(block_type), pointer :: &
          block
 
-    type(field2DReal), pointer :: tracerField2D
-    type(field3DReal), pointer :: tracerField3D
-
-    !TODO: Remove thisFieldInfo when no longer needed (see TODO message below)
-    type(MPAS_pool_field_info_type) :: thisFieldInfo
-
     real(kind=RKIND) :: toleranceMin  ! error tolerance below local min
     real(kind=RKIND) :: toleranceMax  ! error tolerance above local max
 
@@ -8288,28 +8270,10 @@ contains
                 ! halo update for local max/min
 
                 call mpas_timer_start("tracer mono check 2D halo")
-                ! Find out how many dimensions the LocalMin field has (and assume the LocalMax field has the same number).
-                ! Note: This is temporary logic associated with the fact that some fields are both formally and physically 2D,
-                !      whereas others are physically 2D but formally 3D. In the latter case, we need to get a 3D field.
-                ! TODO: Once all fields that are physically 2D are also formally 2D, remove this extra logic.
 
-                call MPAS_pool_get_field_info(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', thisFieldInfo)
+                call MPAS_dmpar_field_halo_exch(domain, trim(thisTracer % tracerName) // 'LocalMin')
+                call MPAS_dmpar_field_halo_exch(domain, trim(thisTracer % tracerName) // 'LocalMax')
 
-                if (thisFieldInfo % ndims == 2) then
-
-                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField2D)
-                   call mpas_dmpar_exch_halo_field(tracerField2D)
-                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField2D)
-                   call mpas_dmpar_exch_halo_field(tracerField2D)
-
-                elseif (thisFieldInfo % ndims == 3) then
-
-                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField3D)
-                   call mpas_dmpar_exch_halo_field(tracerField3D)
-                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField3D)
-                   call mpas_dmpar_exch_halo_field(tracerField3D)
-                   
-                endif
                 call mpas_timer_stop("tracer mono check 2D halo")
 
                 ! loop over blocks
@@ -8409,10 +8373,10 @@ contains
                 ! halo update for local max/min
 
                 call mpas_timer_start("tracer mono check 3D halo")
-                call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField3D)               
-                call mpas_dmpar_exch_halo_field(tracerField3D)
-                call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField3D)
-                call mpas_dmpar_exch_halo_field(tracerField3D)
+
+                call MPAS_dmpar_field_halo_exch(domain, trim(thisTracer % tracerName) // 'LocalMin')
+                call MPAS_dmpar_field_halo_exch(domain, trim(thisTracer % tracerName) // 'LocalMax')
+
                 call mpas_timer_stop("tracer mono check 3D halo")
                 
                 ! loop over blocks

@@ -236,24 +236,12 @@ contains
          interiorVertex
 
     type(MPAS_pool_type), pointer :: &
-         tracers_fields, &
-         velocity_solver_fields, &
          icestate, &
          tracers_aggregate
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCellInitial, &
          iceAreaCell
-
-    type(field3DReal), pointer :: &
-         iceAreaCategoryField, &
-         iceVolumeCategoryField, &
-         snowVolumeCategoryField, &
-         surfaceTemperatureField
-
-    type(field1DReal), pointer :: &
-         uVelocityField, &
-         vVelocityField
 
     logical, pointer :: &
          config_do_restart, &
@@ -340,17 +328,10 @@ contains
        end do
 
        ! halo exchanges
-       call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers_fields)
-
-       call MPAS_pool_get_field(tracers_fields, "iceAreaCategory", iceAreaCategoryField, 1)
-       call MPAS_pool_get_field(tracers_fields, "iceVolumeCategory", iceVolumeCategoryField, 1)
-       call MPAS_pool_get_field(tracers_fields, "snowVolumeCategory", snowVolumeCategoryField, 1)
-       call MPAS_pool_get_field(tracers_fields, "surfaceTemperature", surfaceTemperatureField, 1)
-
-       call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
-       call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
-       call MPAS_dmpar_exch_halo_field(snowVolumeCategoryField)
-       call MPAS_dmpar_exch_halo_field(surfaceTemperatureField)
+       call MPAS_dmpar_field_halo_exch(domain, 'iceAreaCategory', timeLevel=1)
+       call MPAS_dmpar_field_halo_exch(domain, 'iceVolumeCategory', timeLevel=1)
+       call MPAS_dmpar_field_halo_exch(domain, 'snowVolumeCategory', timeLevel=1)
+       call MPAS_dmpar_field_halo_exch(domain, 'surfaceTemperature', timeLevel=1)
 
        ! other initialize variables
        block => domain % blocklist
@@ -407,13 +388,8 @@ contains
        end do
 
        ! halo exchanges
-       call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocity_solver_fields)
-
-       call MPAS_pool_get_field(velocity_solver_fields, "uVelocity", uVelocityField)
-       call MPAS_pool_get_field(velocity_solver_fields, "vVelocity", vVelocityField)
-
-       call MPAS_dmpar_exch_halo_field(uVelocityField)
-       call MPAS_dmpar_exch_halo_field(vVelocityField)
+       call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+       call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
     endif
 
@@ -1668,12 +1644,6 @@ contains
     type(domain_type), intent(inout) :: &
          domain
 
-    type(MPAS_pool_type), pointer :: &
-         velocity_weak_fields
-
-    type(field3DReal), pointer :: &
-         normalVectorTriangleField
-
     logical, pointer :: &
          pkgWeakActive
 
@@ -1681,11 +1651,7 @@ contains
 
     if (pkgWeakActive) then
 
-       call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_weak", velocity_weak_fields)
-
-       call MPAS_pool_get_field(velocity_weak_fields, "normalVectorTriangle", normalVectorTriangleField)
-
-       call MPAS_dmpar_exch_halo_field(normalVectorTriangleField)
+       call MPAS_dmpar_field_halo_exch(domain, 'normalVectorTriangle')
 
     endif
 
