@@ -514,6 +514,7 @@ class TestScheduler(object):
             envtest.set_initial_values(case)
             if self._save_timing:
                 case.set_value("SAVE_TIMING", True)
+                case.set_value("CHECK_TIMING", True)
 
         return True
 
