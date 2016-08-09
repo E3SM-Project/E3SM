@@ -77,9 +77,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
-<paramfile                 >lnd/clm2/paramdata/clm_params.c160128.nc</paramfile>
+<paramfile                 >lnd/clm2/paramdata/clm_params_c160711.nc</paramfile>
 <paramfile use_ed=".true." >lnd/clm2/paramdata/clm_params.ED.c140115.nc</paramfile>
-<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params.c151111.nc</paramfile>
+<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c160711.nc</paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon> 
@@ -397,6 +397,10 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 
 <flanduse_timeseries hgrid="ne30np4"       sim_year_range="1850-2000" 
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2000"
+ use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
+ use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne11np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 
 <!-- Dynamic PFT surface datasets for future scenarios(relative to {csmdata}) -->
 
