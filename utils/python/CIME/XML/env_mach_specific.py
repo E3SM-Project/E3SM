@@ -107,7 +107,8 @@ class EnvMachSpecific(EnvBase):
         if (module_system == "module"):
             return run_cmd_no_fail("%smodule list 2>&1" % source_cmd)
         elif (module_system == "soft"):
-            return run_cmd_no_fail("%ssoftenv" % source_cmd)
+            # Does soft really not provide this capability?
+            return ""
         elif (module_system == "dotkit"):
             return run_cmd_no_fail("%suse -lv" % source_cmd)
         elif (module_system == "none"):

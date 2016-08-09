@@ -160,7 +160,7 @@ def save_timing_setup_acme(case, lid):
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
     cimeroot = case.get_value("CIMEROOT")
-    base_case = case.get_value("CASEBASEID")
+    base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
     expect(not os.path.exists(full_timing_dir), "%s already exists" % full_timing_dir)
 
@@ -248,7 +248,7 @@ def save_timing_acme(case, lid):
     timing_dir = case.get_value("SAVE_TIMING_DIR")
     caseroot = case.get_value("CASEROOT")
     mach = case.get_value("MACH")
-    base_case = case.get_value("CASEBASEID")
+    base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
 
     # Kill mach_syslog
