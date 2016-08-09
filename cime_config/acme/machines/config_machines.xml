@@ -378,7 +378,7 @@
     </module_system>
     <environment_variables>
       <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT">$SEMS_NETCDF_ROOT</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
     </environment_variables>
 </machine>
 
@@ -533,19 +533,17 @@
     <cmd_path lang="sh">module</cmd_path>
     <modules>
       <command name="purge"/>
-      <command name="unload">intel</command>
-      <command name="unload">openmpi-intel</command>
-      <command name="use">/projects/ccsm/tpl/modules/skybridge/acme/tpl</command>
-      <command name="load">sierra-python</command>
+      <command name="load">sems-env</command>
+      <command name="load">sems-python/2.7.9</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">intel/intel-15.0.3.187</command>
-      <command name="load" mpilib="!mpi-serial">openmpi-intel/1.6</command>
+      <command name="load" mpilib="!mpi-serial">openmpi-intel/1.8</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load" mpilib="!mpi-serial">hdf5/1.8.11/intel/13.0.1/openmpi/1.6.5</command>
-      <command name="load" mpilib="!mpi-serial">netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</command>
-      <command name="load" mpilib="mpi-serial">hdf5/1.8.11/intel/13.0.1/base</command>
-      <command name="load" mpilib="mpi-serial">netcdf/4.3.2/intel/13.0.1/base</command>
+      <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command>
+      <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command>
+      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command>
+      <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command>
     </modules>
   </module_system>
   <environment_variables>
@@ -682,7 +680,7 @@
          <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <PES_PER_NODE>8</PES_PER_NODE>
+         <PES_PER_NODE>4</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>HiRes_EarthSys_2</PROJECT>
@@ -692,14 +690,13 @@
              <arguments>
                <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
-               <arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
+               <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+               <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
-               <arg name="colon">:</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -805,7 +802,7 @@
 	 <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
-         <PES_PER_NODE>8</PES_PER_NODE>
+         <PES_PER_NODE>4</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>HiRes_EarthSys_2</PROJECT>
@@ -815,9 +812,9 @@
              <arguments>
                <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
-               <arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
+               <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+               <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>

@@ -348,5 +348,3 @@ if [ -n "$generate_tag" ]; then
         exit 2
     fi
 fi
-
-

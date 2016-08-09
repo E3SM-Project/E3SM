@@ -218,8 +218,5 @@ class GenericXML(object):
             elif var == "SRCROOT":
                 srcroot = os.path.join(get_cime_root(),"..")
                 item_data = item_data.replace(m.group(), srcroot)
-            elif var in os.environ:
-                logging.debug("resolve from env: " + var)
-                item_data = item_data.replace(m.group(), os.environ[var])
 
         return item_data

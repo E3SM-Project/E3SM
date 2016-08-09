@@ -24,7 +24,7 @@ class SSP(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def run(self):
+    def run_phase(self):
         caseroot = self._case.get_value("CASEROOT")
         orig_case = self._case
         orig_casevar = self._case.get_value("CASE")
@@ -56,11 +56,9 @@ class SSP(SystemTestsCommon):
         clone.flush()
 
         dout_sr = clone.get_value("DOUT_S_ROOT")
-        success = self._run(suffix="spinup",
-                            coupler_log_path=os.path.join(dout_sr, "logs"),
-                            st_archive=True)
-        if not success:
-            return False
+        self.run_indv(suffix="spinup",
+                      coupler_log_path=os.path.join(dout_sr, "logs"),
+                      st_archive=True)
 
         #-------------------------------------------------------------------
         # (2) do a hybrid, non-spinup run in orig_case
@@ -93,7 +91,4 @@ class SSP(SystemTestsCommon):
         self._case.flush()
 
         # do the restart run (short term archiving is off)
-        success = self._run(suffix="base")
-
-    def report(self):
-        SystemTestsCommon.report(self)
+        self.run_indv()

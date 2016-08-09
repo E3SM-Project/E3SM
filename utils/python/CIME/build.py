@@ -307,6 +307,8 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     logger.info("Time spent not building: %f sec" % (t2 - t1))
     logger.info("Time spent building: %f sec" % (t3 - t2))
 
+    return True
+
 ###############################################################################
 def check_all_input_data(case):
 ###############################################################################

@@ -21,7 +21,7 @@ class NCR(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
@@ -51,7 +51,7 @@ class NCR(SystemTestsCommon):
 
             case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
-            SystemTestsCommon.build(self, sharedlib_only, model_only)
+            self.build_indv(sharedlib_only, model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCR%s.xml"%bld))
@@ -63,7 +63,7 @@ class NCR(SystemTestsCommon):
         shutil.copy("env_mach_pes.xml",
                     os.path.join("LockedFiles","env_mach_pes.xml"))
 
-    def run(self):
+    def run_phase(self):
         os.chdir(self._caseroot)
 
         exeroot = self._case.get_value("EXEROOT")
@@ -94,28 +94,21 @@ class NCR(SystemTestsCommon):
         # do an initial run test with NINST 1
         #======================================================================
         logger.info("default: doing a %s %s with NINST1" % (stop_n, stop_option))
-        success = SystemTestsCommon.run(self)
+        self.run_indv()
 
         #======================================================================
         # do an initial run test with NINST 2
         # want to run on same pe counts per instance and same cpl pe count
         #======================================================================
 
-        if success:
-            os.remove("%s/%s.exe" % (exeroot, cime_model))
-            shutil.copy("%s/%s.exe.NCR2" % (exeroot, cime_model),
-                        "%s/%s.exe" % (exeroot, cime_model))
-            shutil.copy("LockedFiles/env_build.NCR2.xml", "env_build.xml")
-            shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+        os.remove("%s/%s.exe" % (exeroot, cime_model))
+        shutil.copy("%s/%s.exe.NCR2" % (exeroot, cime_model),
+                    "%s/%s.exe" % (exeroot, cime_model))
+        shutil.copy("LockedFiles/env_build.NCR2.xml", "env_build.xml")
+        shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
 
-            logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
-            success = SystemTestsCommon._run(self, "multiinst")
+        logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
+        self.run_indv(suffix="multiinst")
 
         # Compare
-        if success:
-            return self._component_compare_test("base", "multiinst")
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+        self._component_compare_test("base", "multiinst")

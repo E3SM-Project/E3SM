@@ -54,7 +54,7 @@ def _get_ninst_info(case, compclass):
 
 
 ###############################################################################
-def _archive_rpointer_files(case, archive, archive_entry, archive_restdir, 
+def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                             datename, datename_is_last):
 ###############################################################################
 

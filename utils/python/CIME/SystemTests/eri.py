@@ -26,7 +26,7 @@ class ERI(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
         self._testname = "ERI"
 
-    def run(self):
+    def run_phase(self):
         caseroot = self._case.get_value("CASEROOT")
         clone1_path = "%s.ref1" % caseroot
         clone2_path = "%s.ref2" % caseroot
@@ -99,11 +99,8 @@ class ERI(SystemTestsCommon):
                 with open("user_nl_cam", "a") as fd:
                     fd.write("inithist = 'ENDOFRUN'\n")
 
-        success = self._run(suffix=None,
-                            coupler_log_path=os.path.join(dout_sr1, "logs"),
-                            st_archive=True)
-        if not success:
-            return False
+        self.run_indv(coupler_log_path=os.path.join(dout_sr1, "logs"),
+                      st_archive=True)
 
         #
         # (2) Test run:
@@ -149,11 +146,9 @@ class ERI(SystemTestsCommon):
 
         # run ref2 case (all component history files will go to short term archiving)
 
-        success = self._run(suffix=None,
-                            coupler_log_path=os.path.join(dout_sr2, "logs"),
-                            st_archive=True)
-        if not success:
-            return False
+        self.run_indv(suffix="hybrid",
+                      coupler_log_path=os.path.join(dout_sr2, "logs"),
+                      st_archive=True)
 
         #
         # (3a) Test run:
@@ -200,9 +195,8 @@ class ERI(SystemTestsCommon):
         self._component_compare_move("hybrid")
 
         # run branch case (short term archiving is off)
-        success = self._run()
-        if not success:
-            return False
+        self.run_indv()
+
         #
         # (3b) Test run:
         # do a restart continue from (3a) (short term archiving off)
@@ -219,9 +213,7 @@ class ERI(SystemTestsCommon):
         self._case.flush()
 
         # do the restart run (short term archiving is off)
-        success = self._run(suffix="rest")
-        if not success:
-            return False
+        self.run_indv(suffix="rest")
 
-        return self._component_compare_test("base", "hybrid") and \
-               self._component_compare_test("base", "rest")
+        self._component_compare_test("base", "hybrid")
+        self._component_compare_test("base", "rest")
