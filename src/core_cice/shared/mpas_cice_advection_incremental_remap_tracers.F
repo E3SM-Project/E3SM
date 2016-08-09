@@ -1072,19 +1072,12 @@ contains
     type(tracer_type), pointer, intent(in) :: &
          tracersHead ! do not alter this pointer - it should always point to the first element
 
-    type(domain_type), intent(in) :: domain
+    type(domain_type), intent(inout) :: domain
     
     integer, intent(in), optional :: timeLevelIn
 
     type(tracer_type), pointer :: &
          thisTracer
-
-    type(MPAS_pool_type), pointer :: tracerPool
-
-    type(MPAS_pool_field_info_type) :: thisFieldInfo
-
-    type(field2DReal), pointer :: tracerField2D
-    type(field3DReal), pointer :: tracerField3D
 
     integer :: timeLevel
 
@@ -1094,24 +1087,12 @@ contains
        timeLevel = 1
     endif
 
-    call MPAS_pool_get_subpool(domain % blocklist % structs, 'tracers', tracerPool)
-
     thisTracer => tracersHead   ! point to first element of linked list
     do while(associated(thisTracer))
 
-       call MPAS_pool_get_field_info(tracerPool, trim(thisTracer % tracerName), thisFieldInfo)
+       if (verboseTracers) write(stderrUnit,*) 'Halo update:', trim(thisTracer % tracerName)
 
-       ! halo update for local max/min fields
-       select case(thisFieldInfo % ndims)
-       case(2)
-          if (verboseTracers) write(stderrUnit,*) '2D halo update:', trim(thisTracer % tracerName)
-          call mpas_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField2D, timeLevel)
-          call mpas_dmpar_exch_halo_field(tracerField2D)
-       case(3)
-          if (verboseTracers) write(stderrUnit,*) '3D halo update:', trim(thisTracer % tracerName)
-          call mpas_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField3D, timeLevel)
-          call mpas_dmpar_exch_halo_field(tracerField3D)
-       end select
+       call MPAS_dmpar_field_halo_exch(domain, trim(thisTracer % tracerName), timeLevel=timeLevel)
        
        thisTracer => thisTracer % next
 
