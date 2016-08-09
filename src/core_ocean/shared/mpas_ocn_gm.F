@@ -111,7 +111,9 @@ contains
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
 
       ! Dimensions
-      integer, pointer :: nCells, nEdges, nVertLevels
+      integer :: nCells, nEdges
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       type (field2DReal), pointer :: gradDensityEdgeField, gradDensityTopOfEdgeField, gradDensityConstZTopOfEdgeField, &
          gradZMidEdgeField, gradZMidTopOfEdgeField, dDensityDzTopOfCellField, dDensityDzTopOfEdgeField,areaCellSumField
@@ -146,8 +148,8 @@ contains
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell',  nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell',  edgesOnCell)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_field(scratchPool, 'gradDensityEdge', gradDensityEdgeField)
@@ -159,14 +161,14 @@ contains
       call mpas_pool_get_field(scratchPool, 'gradZMidTopOfEdge', gradZMidTopOfEdgeField)
       call mpas_pool_get_field(scratchPool, 'areaCellSum', areaCellSumField)
 
-      call mpas_allocate_scratch_field(gradDensityEdgeField, .True.)
-      call mpas_allocate_scratch_field(gradDensityTopOfEdgeField, .True.)
-      call mpas_allocate_scratch_field(gradDensityConstZTopOfEdgeField, .True.)
-      call mpas_allocate_scratch_field(dDensityDzTopOfCellField, .True.)
-      call mpas_allocate_scratch_field(dDensityDzTopOfEdgeField, .True.)
-      call mpas_allocate_scratch_field(gradZMidEdgeField, .True.)
-      call mpas_allocate_scratch_field(gradZMidTopOfEdgeField, .True.)
-      call mpas_allocate_scratch_field(areaCellSumField, .True.)
+      call mpas_allocate_scratch_field(gradDensityEdgeField, .True., .false.)
+      call mpas_allocate_scratch_field(gradDensityTopOfEdgeField, .True., .false.)
+      call mpas_allocate_scratch_field(gradDensityConstZTopOfEdgeField, .True., .false.)
+      call mpas_allocate_scratch_field(dDensityDzTopOfCellField, .True., .false.)
+      call mpas_allocate_scratch_field(dDensityDzTopOfEdgeField, .True., .false.)
+      call mpas_allocate_scratch_field(gradZMidEdgeField, .True., .false.)
+      call mpas_allocate_scratch_field(gradZMidTopOfEdgeField, .True., .false.)
+      call mpas_allocate_scratch_field(areaCellSumField, .True., .false.)
 
       call mpas_threading_barrier()
 
@@ -184,27 +186,34 @@ contains
       allocate(tridiagB(nVertLevels))
       allocate(tridiagC(nVertLevels))
 
+      nCells = nCellsArray( size(nCellsArray) )
+      nEdges = nEdgesArray( size(nEdgesArray) )
+
       ! Assign a huge value to the scratch variables which may manifest itself when
       ! there is a bug.
       !$omp do schedule(runtime)
-      do iEdge = 1, nEdges
-         gradDensityEdge(:, iEdge) = huge(0D0)
-         gradDensityTopOfEdge(:, iEdge) = huge(0D0)
-         dDensityDzTopOfEdge(:, iEdge) = huge(0D0)
-         gradZMidEdge(:, iEdge) = huge(0D0)
-         gradZMidTopOfEdge(:, iEdge) = huge(0D0)
-         relativeSlopeTopOfEdge(:, iEdge) = 0.0_RKIND
-         relativeSlopeTapering(:, iEdge) = 0.0_RKIND
-         normalGMBolusVelocity(:, iEdge) = 0.0_RKIND
+      do iEdge = 1, nEdges + 1
+         do k = 1, nVertLevels
+            gradDensityEdge(k, iEdge) = huge(0D0)
+            gradDensityTopOfEdge(k, iEdge) = huge(0D0)
+            dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
+            gradZMidEdge(k, iEdge) = huge(0D0)
+            gradZMidTopOfEdge(k, iEdge) = huge(0D0)
+            relativeSlopeTopOfEdge(k, iEdge) = 0.0_RKIND
+            relativeSlopeTapering(k, iEdge) = 0.0_RKIND
+            normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
+         end do
       end do
       !$omp end do
 
       !$omp do schedule(runtime)
-      do iCell = 1, nCells
-         dDensityDzTopOfCell(:,  iCell) = huge(0D0)
-         k33(:, iCell) = 0.0_RKIND
-         relativeSlopeTopOfCell(:, iCell) = 0.0_RKIND
-         relativeSlopeTaperingCell(:, iCell) = 0.0_RKIND
+      do iCell = 1, nCells + 1
+         do k = 1, nVertLevels
+            dDensityDzTopOfCell(k,  iCell) = huge(0D0)
+            k33(k, iCell) = 0.0_RKIND
+            relativeSlopeTopOfCell(k, iCell) = 0.0_RKIND
+            relativeSlopeTaperingCell(k, iCell) = 0.0_RKIND
+         end do
       end do
       !$omp end do
 
@@ -215,6 +224,7 @@ contains
       !
       !--------------------------------------------------------------------
 
+      nCells = nCellsArray( 3 )
       ! Compute vertical derivative of density (dDensityDzTopOfCell) at cell center and layer interface
       ! Note that displacedDensity is used from the upper cell, so that the EOS reference level for
       ! pressure is the same for both displacedDensity(k-1,iCell) and density(k,iCell).
@@ -232,6 +242,8 @@ contains
          dDensityDzTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
       end do
       !$omp end do
+
+      nEdges = nEdgesArray( 3 )
 
       ! Interpolate dDensityDzTopOfCell to edge and layer interface
       !$omp do schedule(runtime) private(k, cell1, cell2)
@@ -251,6 +263,8 @@ contains
       !
       !--------------------------------------------------------------------
 
+      nEdges = nEdgesArray( 3 )
+
       ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge)
       ! along the constant coordinate surface.
       ! The computed variables lives at edge and mid-layer depth
@@ -265,6 +279,8 @@ contains
          end do
       end do
       !$omp end do
+
+      nEdges = nEdgesArray( 3 )
 
       ! Interpolate gradDensityEdge and gradZMidEdge to layer interface
       !$omp do schedule(runtime) private(k, h1, h2)
@@ -296,6 +312,8 @@ contains
       !
       !--------------------------------------------------------------------
 
+      nEdges = nEdgesArray( 3 )
+
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          if (maxLevelEdgeTop(iEdge) .GE. 1) then
@@ -313,6 +331,8 @@ contains
       ! These variables are used in del2 velocity tendency routines.
       !
       !--------------------------------------------------------------------
+
+      nEdges = nEdgesArray( 3 )
 
       ! Compute relativeSlopeTopOfEdge at edge and layer interface
       ! set relativeSlopeTopOfEdge to zero for horizontal land/water edges.
@@ -338,6 +358,8 @@ contains
       end do
       !$omp end do
 
+      nEdges = nEdgesArray( 3 )
+
       ! slope can be unbounded in regions of neutral stability, reset to the large, but bounded, value
       ! values is hardwrite to 1.0, this is equivalent to a slope of 45 degrees
       !$omp do schedule(runtime) private(k)
@@ -350,6 +372,8 @@ contains
 
       ! average relative slope to cell centers
       ! do this by computing (relative slope)^2, then taking sqrt
+
+      nCells = nCellsArray( 2 )
 
       !$omp do schedule(runtime) private(i, iEdge, areaEdge, rtmp, k)
       do iCell = 1, nCells
@@ -368,6 +392,8 @@ contains
       end do
       !$omp end do
 
+      nCells = nCellsArray( 2 )
+
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
         do k = 1, maxLevelCell(iCell)
@@ -379,6 +405,8 @@ contains
       ! Compute tapering function
       ! Compute k33 at cell center and layer interface
 
+      nCells = nCellsArray( size(nCellsArray) )
+
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          k33(:, iCell) = 0.0_RKIND
@@ -389,6 +417,8 @@ contains
       relativeSlopeTaperingCell = relativeSlopeTopOfCell
       do iter = 1, 5
          !$omp barrier
+         
+         nCells = nCellsArray( 2 )
 
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
@@ -403,11 +433,12 @@ contains
          end do
          !$omp end do
       end do  ! iter
-      relativeSlopeTaperingCell = 0.0_RKIND
 
+      nCells = nCellsArray ( 2 )
       ! first, compute tapering across full domain based on a maximum allowable slope
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
+        relativeSlopeTaperingCell(k, iCell) = 0.0_RKIND
         do k = 1, maxLevelCell(iCell)
           relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope / (relativeSlopeTopOfCell(k,iCell)+epsGM))
         end do
@@ -418,6 +449,7 @@ contains
       ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
       ! rtmp = 1 @ zMid = -2.0*OBL, rtmp = 0 @ zMid = -OBL
       if(config_use_Redi_surface_layer_tapering) then
+         nCells = nCellsArray ( 2 )
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
@@ -434,6 +466,7 @@ contains
       ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
       ! rtmp = 1 @ zMid = zMid(maxLevelCell) + config_Redi_bottom_layer_tapering_depth, rtmp = 0 @ zMid = zMid(maxLevelCell)
       if(config_use_Redi_bottom_layer_tapering) then
+         nCells = nCellsArray ( 2 )
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
@@ -446,6 +479,7 @@ contains
          !$omp end do
       endif ! config_use_Redi_bottom_layer_tapering
 
+      nCells = nCellsArray( 2 )
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
         k33(:, iCell) = 0.0_RKIND
@@ -454,6 +488,8 @@ contains
         end do
       end do
       !$omp end do
+
+      nEdges = nEdgesArray( 3 )
 
       ! average tapering function to layer edges
       !$omp do schedule(runtime) private(cell1, cell2, k)
@@ -468,6 +504,7 @@ contains
 
       ! allow disabling of K33 for testing
       if(config_disable_redi_k33) then
+        nCells = nCellsArray( size(nCellsArray) )
         !$omp do schedule(runtime)
         do iCell = 1, nCells
            k33(:, iCell) = 0.0_RKIND
@@ -482,6 +519,8 @@ contains
       !--------------------------------------------------------------------
 
       c = config_gravWaveSpeed_trunc**2
+
+      nEdges = nEdgesArray( 3 )
 
       !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, N)
       do iEdge = 1, nEdges
@@ -535,6 +574,7 @@ contains
       end do
       !$omp end do
 
+      nEdges = nEdgesArray( 3 )
       ! Compute normalGMBolusVelocity from the stream function
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
@@ -544,6 +584,8 @@ contains
          end do
       end do
       !$omp end do
+
+      nCells = nCellsArray( 1 )
 
       ! Interpolate gmStreamFuncTopOfEdge to cell centers for visualization
       !$omp do schedule(runtime) private(i, iEdge, areaEdge, k, rtmp)
