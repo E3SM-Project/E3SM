@@ -125,8 +125,9 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, iEdge, cell1, cell2
-      integer :: i, k, iTracer, num_tracers
-      integer, pointer :: nCells, nVertLevels, nEdges
+      integer :: i, k, iTracer, num_tracers, nCells, nEdges
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       integer, dimension(:,:), allocatable :: boundaryMask
 
@@ -150,8 +151,8 @@ contains
 
       call mpas_timer_start("tracer redi")
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
 
@@ -183,12 +184,12 @@ contains
       call mpas_pool_get_field(scratchPool, 'dTracerdZTopOfEdge', dTracerdZTopOfEdgeField)
       call mpas_pool_get_field(scratchPool, 'areaCellSum', areaCellSumField)
 
-      call mpas_allocate_scratch_field(gradTracerEdgeField, .true.)
-      call mpas_allocate_scratch_field(gradTracerTopOfEdgeField, .true.)
-      call mpas_allocate_scratch_field(gradHTracerSlopedTopOfCellField, .true.)
-      call mpas_allocate_scratch_field(dTracerdZTopOfCellField, .true.)
-      call mpas_allocate_scratch_field(dTracerdZTopOfEdgeField, .true.)
-      call mpas_allocate_scratch_field(areaCellSumField, .True.)
+      call mpas_allocate_scratch_field(gradTracerEdgeField, .true., .false.)
+      call mpas_allocate_scratch_field(gradTracerTopOfEdgeField, .true., .false.)
+      call mpas_allocate_scratch_field(gradHTracerSlopedTopOfCellField, .true., .false.)
+      call mpas_allocate_scratch_field(dTracerdZTopOfCellField, .true., .false.)
+      call mpas_allocate_scratch_field(dTracerdZTopOfEdgeField, .true., .false.)
+      call mpas_allocate_scratch_field(areaCellSumField, .true., .false.)
       call mpas_threading_barrier()
 
       gradTracerEdge => gradTracerEdgeField % array
@@ -197,6 +198,9 @@ contains
       dTracerdZTopOfCell => dTracerdZTopOfCellField % array
       dTracerdZTopOfEdge => dTracerdZTopOfEdgeField % array
       areaCellSum => areaCellSumField % array
+
+      nCells = nCellsArray( size(nCellsArray) )
+      nEdges = nEdgesArray( size(nEdgesArray) )
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
@@ -216,6 +220,7 @@ contains
       ! this is the "standard" del2 term, but forced to use config_redi_kappa
       if(.not.config_disable_redi_horizontal_term1) then
 
+         nCells = nCellsArray( 1 )
          !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, s_tmp, iTracer, tracer_turb_flux, flux)
          do iCell = 1, nCells
             invAreaCell = 1.0_RKIND / areaCell(iCell)
@@ -251,6 +256,7 @@ contains
          ! Sync threads before starting on tracers
          call mpas_threading_barrier()
 
+         nCells = nCellsArray( 2 )
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 2, maxLevelCell(iCell)
@@ -266,6 +272,7 @@ contains
          end do
          !$omp end do
 
+         nEdges = nEdgesArray( 2 )
          ! Compute tracer gradient (gradTracerEdge) along the constant coordinate surface.
          ! The computed variables lives at edge and mid-layer depth
          !$omp do schedule(runtime) private(cell1, cell2, k)
@@ -279,6 +286,7 @@ contains
          end do
          !$omp end do
 
+         nEdges = nEdgesArray( 2 )
          ! Interpolate dTracerdZTopOfCell to edge and top of layer
          !$omp do schedule(runtime) private(cell1, cell2, k)
          do iEdge = 1, nEdges
@@ -291,6 +299,7 @@ contains
          end do
          !$omp end do
 
+         nEdges = nEdgesArray( 2 )
          ! Interpolate gradTracerEdge to edge and top of layer
          !$omp do schedule(runtime) private(k, h1, h2)
          do iEdge = 1, nEdges
@@ -311,6 +320,7 @@ contains
 
          ! Compute \nabla\cdot(relativeSlope d\phi/dz)
          if(.not.config_disable_redi_horizontal_term2) then
+            nCells = nCellsArray( 1 )
             !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, s_tmpU, s_tmpD, flux)
             do iCell = 1, nCells
                invAreaCell = 1.0_RKIND / areaCell(iCell)
@@ -334,10 +344,11 @@ contains
          ! Compute dz * d(relativeSlope\cdot\nabla\phi)/dz  (so the dz cancel out)
 
          ! Compute relativeSlope\cdot\nabla\phi (variable gradHTracerSlopedTopOfCell) at non-boundary edges
-         areaCellSum = 1.0e-34_RKIND
 
+         nCells = nCellsArray( 1 )
          !$omp do schedule(runtime) private(i, iedge, areaEdge, k, r_tmp)
          do iCell = 1, nCells
+            areaCellSum(:, iCell) = 1.0e-34_RKIND
             gradHTracerSlopedTopOfCell(:, iCell) = 0.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
@@ -351,6 +362,7 @@ contains
          end do
          !$omp end do
 
+         nCells = nCellsArray( 1 )
          !$omp do schedule(runtime) private(k)
          do iCell=1,nCells
             do k = 1, maxLevelCell(iCell)
@@ -360,6 +372,7 @@ contains
          !$omp end do
 
          if(.not.config_disable_redi_horizontal_term3) then
+            nCells = nCellsArray( 1 )
             !$omp do schedule(runtime) private(k, s_tmp)
             do iCell = 1, nCells
                ! impose no-flux boundary conditions at top and bottom of column
