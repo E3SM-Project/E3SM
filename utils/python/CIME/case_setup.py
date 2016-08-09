@@ -6,6 +6,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
+from CIME.task_maker        import TaskMaker
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
@@ -187,7 +188,8 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             case.flush()
             check_lockedfiles()
 
-            pestot = int(run_cmd_no_fail("Tools/taskmaker.pl -sumonly"))
+            tm = TaskMaker(case)
+            pestot = tm.fullsum
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
