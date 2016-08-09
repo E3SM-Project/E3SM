@@ -28,8 +28,7 @@
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<stream name="output">
 			<attribute name="output_interval">0000_01:30:00</attribute>
-                </stream>
-
+		</stream>
 	</streams>
 
 	<run_script name="run.py">
