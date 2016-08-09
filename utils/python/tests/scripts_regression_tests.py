@@ -169,25 +169,24 @@ class D_TestWaitForTests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir_all_pass     = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
-        self._testdir_with_fail    =  os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
-        self._testdir_unfinished =  os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
-        for testdir in self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished:
+        self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
+        self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
+        self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
+        self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2')
+        testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2]
+        for testdir in testdirs:
             if os.path.exists(testdir):
                 shutil.rmtree(testdir)
             os.makedirs(testdir)
 
         for r in range(10):
-            os.makedirs(os.path.join(self._testdir_all_pass, str(r)))
-            make_fake_teststatus(os.path.join(self._testdir_all_pass, str(r), "TestStatus"), "Test_%d" % r, "PASS", "RUN")
+            for testdir in testdirs:
+                os.makedirs(os.path.join(testdir, str(r)))
+                make_fake_teststatus(os.path.join(testdir, str(r), "TestStatus"), "Test_%d" % r, "PASS", "RUN")
 
-        for r in range(10):
-            os.makedirs(os.path.join(self._testdir_with_fail, str(r)))
-            make_fake_teststatus(os.path.join(self._testdir_with_fail, str(r), "TestStatus"), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL", "SETUP" )
-
-        for r in range(10):
-            os.makedirs(os.path.join(self._testdir_unfinished, str(r)))
-            make_fake_teststatus(os.path.join(self._testdir_unfinished, str(r), "TestStatus"), "Test_%d" % r, "PEND" if r == 5 else "PASS", "COMPARE")
+        make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5", "TestStatus"), "Test_5", "FAIL", "RUN")
+        make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5", "TestStatus"), "Test_5", "PEND", "RUN")
+        make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5", "TestStatus"), "Test_5", "PASS", "MODEL_BUILD")
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -244,7 +243,7 @@ class D_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def test_wait_for_test_with_fail(self):
     ###########################################################################
-        expected_results = ["PASS" if item % 2 == 0 else "FAIL" for item in range(10)]
+        expected_results = ["FAIL" if item == 5 else "PASS" for item in range(10)]
         self.simple_test(self._testdir_with_fail, expected_results)
 
     ###########################################################################
@@ -264,7 +263,28 @@ class D_TestWaitForTests(unittest.TestCase):
 
         self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
 
-        make_fake_teststatus(os.path.join(self._testdir_unfinished, "5", "TestStatus"), "Test_5", "PASS", "RUN")
+        with TestStatus(test_dir=os.path.join(self._testdir_unfinished, "5")) as ts:
+            ts.set_status(RUN_PHASE, TEST_PASS_STATUS)
+
+        run_thread.join(timeout=10)
+
+        self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
+
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+
+    ###########################################################################
+    def test_wait_for_test_wait2(self):
+    ###########################################################################
+        run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_unfinished2, ["PASS"] * 10))
+        run_thread.daemon = True
+        run_thread.start()
+
+        time.sleep(5) # Kinda hacky
+
+        self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
+
+        with TestStatus(test_dir=os.path.join(self._testdir_unfinished2, "5")) as ts:
+            ts.set_status(RUN_PHASE, TEST_PASS_STATUS)
 
         run_thread.join(timeout=10)
 
@@ -889,7 +909,7 @@ class TestSingleSubmit(TestCreateTestCommon):
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-        stat, output, errput = run_cmd("%s/wait_for_tests *%s/TestStatus -r" % (TOOLS_DIR, self._baseline_name),
+        stat, output, errput = run_cmd("%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                        from_dir=self._testroot)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
