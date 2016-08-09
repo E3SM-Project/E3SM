@@ -1049,7 +1049,7 @@ contains
     end if
 
     if ( use_ed ) then
-       write(iulog,*) 'SPM before this one line 1040 '
+!       write(iulog,*) 'SPM before this one line 1040 '
        call extract_accum_field ('ED_GDD0', rbufslp, nstep)
        this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
     end if
@@ -1285,7 +1285,7 @@ contains
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
           end if
        end do
-       write(iulog,*) 'SPM before this one line 1258 '
+!       write(iulog,*) 'SPM before this one line 1258 '
        call update_accum_field  ('GDD0', rbufslp, nstep)
        call extract_accum_field ('GDD0', this%gdd0_patch, nstep)
 

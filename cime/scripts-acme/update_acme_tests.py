@@ -42,6 +42,7 @@ _TEST_SUITES = {
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
                               "SMS.hcru_hcru.I1850CRUCLM45CN",
+                              ("SMS_Ly3.1x1_smallvilleIA.ICLM45BGCCROP", "force_netcdf_pio"),
                               "ERS.ne11_qu240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
                              ),
