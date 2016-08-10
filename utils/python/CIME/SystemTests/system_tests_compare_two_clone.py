@@ -270,14 +270,13 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
                 self._setup_cases()
             except:
                 # If a problem occurred in setting up the test cases, it's
-                # important to blow away the case2 directory: If it's kept
-                # around, that would signal that test setup was done
-                # successfully, and thus doesn't need to be redone - which is
-                # not the case. Of course, we'll likely be left in an
-                # inconsistent state in this case, but if we didn't blow away
-                # the case2 directory, the next re-build of the test would
-                # think, "okay, setup is done, I can move on to the build",
-                # which would be wrong.
+                # important to remove the case2 directory: If it's kept around,
+                # that would signal that test setup was done successfully, and
+                # thus doesn't need to be redone - which is not the case. Of
+                # course, we'll likely be left in an inconsistent state in this
+                # case, but if we didn't remove the case2 directory, the next
+                # re-build of the test would think, "okay, setup is done, I can
+                # move on to the build", which would be wrong.
                 shutil.rmtree(self._caseroot2)
                 self._activate_case1()
                 logger.warning("WARNING: Test case setup failed. Case2 has been removed, "
