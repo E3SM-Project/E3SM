@@ -286,10 +286,11 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
         env_module = case.get_env("mach_specific")
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
-        with open("software_environment.txt", "w") as f:
-            f.write(env_module.list_modules())
-        run_cmd_no_fail("echo -e '\n' >> software_environment.txt && \
-                         env >> software_environment.txt")
+# FIXME This code is not working with tcsh and csh users using modules
+#        with open("software_environment.txt", "w") as f:
+#            f.write(env_module.list_modules())
+#        run_cmd_no_fail("echo -e '\n' >> software_environment.txt && \
+#                         env >> software_environment.txt")
 
 ###############################################################################
 def case_setup(case, clean=False, test_mode=False, reset=False):
