@@ -259,7 +259,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         # test setup once.)
 
         if os.path.exists(self._caseroot2):
-            self._case2 = Case(case_root=self._caseroot2, read_only=False)
+            self._case2 = self._case_from_existing_caseroot(self._caseroot2)
         else:
             try:
                 # TODO(wjs, 2016-08-05) For now, we're hard-coding keepexe=True; in
@@ -284,6 +284,15 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
                                "If you want to rerun this test, you should create "
                                "a new test rather than trying to rerun this one.")
                 raise
+
+    def _case_from_existing_caseroot(self, caseroot):
+        """
+        Returns a Case object from an existing caseroot directory
+
+        Args:
+            caseroot (str): path to existing caseroot
+        """
+        return Case(case_root=caseroot, read_only=False)
 
     def _activate_case1(self):
         """
