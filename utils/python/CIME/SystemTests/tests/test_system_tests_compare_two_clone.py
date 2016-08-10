@@ -6,6 +6,7 @@ This module contains unit tests of the core logic in SystemTestsCompareTwoClone.
 
 import unittest
 from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
+import CIME.test_status as test_status
 
 import os
 import shutil
@@ -152,6 +153,12 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
             separate_builds = False,
             run_two_suffix = run_two_suffix)
 
+        # Need to tell test status that case has been built, since this is
+        # checked in the run call
+        with self._test_status:
+            self._test_status.set_status(
+                test_status.MODEL_BUILD_PHASE,
+                test_status.TEST_PASS_STATUS)
 
     # ------------------------------------------------------------------------
     # Stubs of methods called by SystemTestsCommon.__init__ that interact with
@@ -169,6 +176,39 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
 
     # ------------------------------------------------------------------------
     # Fake implementations of methods that are typically provided by
+    # SystemTestsCommon
+    # ------------------------------------------------------------------------
+
+    def run_indv(self, suffix="base"):
+        # FIXME(wjs, 2016-08-10) Introduce ability to raise exception
+        pass
+
+    def _component_compare_test(self, suffix1, suffix2):
+        # Trying to use the real version of _component_compare_test would pull
+        # too much baggage into these tests. Since the return value from this
+        # method isn't important, it's sufficient for the tests of this class to
+        # just ensure that _component_compare_test was actually called
+        # correctly.
+        #
+        # An alternative would be to extract the main work of
+        # _component_compare_test into a different method that returns a True
+        # (success) / False (failure) result, with _component_compare_test then
+        # updating test_status appropriately. Then we could override that new
+        # method in this Fake class, using the true implementation of
+        # _component_compare_test. Then the test verification would include
+        # verification that TestStatus is set correctly for the COMPARE
+        # phase. But that seems more about testing _component_compare_test than
+        # testing SystemTestsCompareTwoClone itself, so I don't see much added
+        # value of that.
+
+        # FIXME(wjs, 2016-08-10) Record that this wass called
+        pass
+
+    def _check_for_memleak(self):
+        pass
+
+    # ------------------------------------------------------------------------
+    # Fake implementations of methods that are typically provided by
     # SystemTestsCompareTwoClone
     #
     # Since we're overriding these, their functionality is untested!
@@ -179,6 +219,13 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
         Returns a CaseFake object instead of a Case object
         """
         return CaseFake(caseroot, create_case_root=False)
+
+    @staticmethod
+    def _link_to_case2_output(casename1, casename2,
+                              rundir1, rundir2,
+                              run2suffix):
+        # FIXME(wjs, 2016-08-10) record that this was called, and its arguments
+        pass
 
     # ------------------------------------------------------------------------
     # Fake implementations of methods that are typically provided by the
@@ -282,3 +329,32 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
 
         # Verify
         self.assertFalse(os.path.exists(os.path.join(case1root, 'case1.test')))
+
+    def test_run_phase_succeeds(self):
+        # Make sure the run phase behaves properly when all runs succeed
+
+        # Setup
+        case1root = os.path.join(self.tempdir, 'case1')
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(case1)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
+        # Verify that run phase didn't raise any exceptions
+        self.assertEqual(test_status.TEST_PASS_STATUS,
+                         mytest._test_status.get_status(test_status.RUN_PHASE))
+
+        # FIXME(wjs, 2016-08-10) Verify test status
+
+        # FIXME(wjs, 2016-08-10) Verify that link_to_case2_output was called correctly
+
+        # FIXME(wjs, 2016-08-10) Verify that compare was called correctly (test
+        # should fail if I change / remove the call to component_compare_test)
+
+    # FIXME(wjs, 2016-08-10) run 1 fails should raise exception (test should
+    # fail if I remove call to first run)
+
+    # FIXME(wjs, 2016-08-10) run 2 fails should raise exception (test should
+    # fail if I remove activate_case2)

@@ -81,14 +81,6 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         self._run_one_description = run_one_description
         self._run_two_description = run_two_description
 
-        # Initialize test results
-        # TODO(wjs, 2016-07-27) Currently these results of the individual pieces
-        # aren't used anywhere, but I'm storing them because I think it would be
-        # helpful to use them in the test reporting
-        self._status_run1 = "NOT RUN"
-        self._status_run2 = "NOT RUN"
-        self._status_compare = "NOT RUN"
-
         # Save case for first run so we can return to it if we switch self._case
         # to point to self._case2
         self._case1 = self._case
@@ -139,16 +131,16 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
     # Main public methods
     # ========================================================================
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         # TODO(wjs, 2016-08-05) This currently assumes that the two cases use
         # the same build. Once we relax that assumption, we'll need a
         # conditional here: If the two cases use the same build (based on
         # self._separate_builds), then use the below logic; otherwise, do two
         # builds.
         self._activate_case1()
-        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
-    def run(self):
+    def run_phase(self):
         """
         Runs both phases of the two-phase test and compares their results
         """
@@ -156,23 +148,13 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         # First run
         logger.info('Doing first run: ' + self._run_one_description)
         self._activate_case1()
-        success = self._run(self._run_one_suffix)
-        if success:
-            self._status_run1 = "PASS"
-        else:
-            self._status_run1 = "FAIL"
-            return False
+        self.run_indv(suffix = self._run_one_suffix)
 
         # Second run
         logger.info('Doing second run: ' + self._run_two_description)
         self._activate_case2()
         self._force_case2_settings()
-        success = self._run(self._run_two_suffix)
-        if success:
-            self._status_run2 = "PASS"
-        else:
-            self._status_run2 = "FAIL"
-            return False
+        self.run_indv(suffix = self._run_two_suffix)
 
         # Compare results
         # Case1 is the "main" case, and we need to do the comparisons from there
@@ -183,33 +165,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
                                    rundir2 = self._case2.get_value("RUNDIR"),
                                    run2suffix = self._run_two_suffix)
 
-        success = self._component_compare_test(self._run_one_suffix, self._run_two_suffix)
-        if success:
-            self._status_compare = "PASS"
-        else:
-            self._status_compare = "FAIL"
-            return False
-
-        return success
-
-    def get_run_one_status(self):
-        """
-        Returns a string specifying the status of run 1
-        """
-        return self._status_run1
-
-    def get_run_two_status(self):
-        """
-        Returns a string specifying the status of run 2
-        """
-        return self._status_run2
-
-    def get_compare_status(self):
-        """
-        Returns a string specifying the status of the comparison between run 1
-        and run 2
-        """
-        return self._status_compare
+        self._component_compare_test(self._run_one_suffix, self._run_two_suffix)
 
     # ========================================================================
     # Private methods
