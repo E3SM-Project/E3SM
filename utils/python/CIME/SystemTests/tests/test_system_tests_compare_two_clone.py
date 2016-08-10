@@ -5,13 +5,14 @@ This module contains unit tests of the core logic in SystemTestsCompareTwoClone.
 """
 
 import unittest
-from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
-import CIME.test_status as test_status
-
+from collections import namedtuple
 import os
 import shutil
 import tempfile
 from copy import deepcopy
+
+from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
+import CIME.test_status as test_status
 
 # ========================================================================
 # Fake version of Case object that provides the functionality needed for these
@@ -37,6 +38,7 @@ class CaseFake(object):
         casename = os.path.basename(case_root)
         self.set_value('CASE', casename)
         self.set_value('CASEBASEID', casename)
+        self._set_rundir()
 
     def get_value(self, item):
         """
@@ -61,8 +63,8 @@ class CaseFake(object):
 
     def copy(self, newcasename, newcaseroot):
         """
-        Create and return a copy of self, but with CASE and CASEBASEID set to newcasename
-        and CASEROOT set to newcaseroot
+        Create and return a copy of self, but with CASE and CASEBASEID set to newcasename,
+        CASEROOT set to newcaseroot, and RUNDIR set appropriately.
 
         Args:
             newcasename (str): new value for CASE
@@ -72,6 +74,7 @@ class CaseFake(object):
         newcase.set_value('CASE', newcasename)
         newcase.set_value('CASEBASEID', newcasename)
         newcase.set_value('CASEROOT', newcaseroot)
+        newcase._set_rundir()
 
         return newcase
 
@@ -96,6 +99,13 @@ class CaseFake(object):
 
     def flush(self):
         pass
+
+    def _set_rundir(self):
+        """
+        Assumes CASEROOT is already set; sets an appropriate RUNDIR (nested
+        inside CASEROOT)
+        """
+        self.set_value('RUNDIR', os.path.join(self.get_value('CASEROOT'), 'run'))
 
 # ========================================================================
 # Tests of CaseFake
@@ -124,15 +134,72 @@ class TestCaseFake(unittest.TestCase):
         self.assertEqual('newcase', clone.get_value('CASE'))
         self.assertEqual('newcase', clone.get_value('CASEBASEID'))
         self.assertEqual(new_caseroot, clone.get_value('CASEROOT'))
+        self.assertEqual(os.path.join(new_caseroot, 'run'),
+                         clone.get_value('RUNDIR'))
+
+# ========================================================================
+# Structure for storing information about calls made to methods
+# ========================================================================
+
+"""
+You can create a Call object to record a single call made to a method:
+
+Call(method, arguments)
+    method (str): name of method
+    arguments (dict): dictionary mapping argument names to values
+
+Example:
+    If you want to record a call to foo(bar = 1, baz = 2):
+        somecall = Call(method = 'foo', arguments = {'bar': 1, 'baz': 2})
+    Or simply:
+        somecall = Call('foo', {'bar': 1, 'baz': 2})
+"""
+Call = namedtuple('Call', ['method', 'arguments'])
+
+def get_call_methods(calls):
+    """
+    Given a list of calls, return a list of just the methods.
+
+    Args:
+        calls (list of Call objects)
+
+    >>> mycalls = [Call('hello', {'x': 3}), Call('goodbye', {'y': 4})]
+    >>> get_call_methods(mycalls)
+    ['hello', 'goodbye']
+    """
+    return [onecall.method for onecall in calls]
+
+# ========================================================================
+# Names of methods for which we want to record calls
+# ========================================================================
+
+# We use constants for these method names because, in some cases, a typo in a
+# hard-coded string could cause a test to always pass, which would be a Bad
+# Thing.
+#
+# For now the names of the constants match the strings they equate to, which
+# match the actual method names. But it's fine if this doesn't remain the case
+# moving forward (which is another reason to use constants rather than
+# hard-coded strings in the tests).
+
+METHOD_component_compare_test = "_component_compare_test"
+METHOD_link_to_case2_output = "_link_to_case2_output"
 
 # ========================================================================
 # Fake version of SystemTestsCompareTwo that overrides some functionality for
 # the sake of unit testing
 # ========================================================================
 
+# A SystemTestsCompareTwoFake object can be controlled to fail at a given
+# point. See the documentation in its __init__ method for details.
+#
+# It logs what stubbed-out methods have been called in its log attribute; this
+# is a list of Call objects (see above for their definition).
+
 class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
     def __init__(self,
                  case1,
+                 run_one_suffix = 'base',
                  run_two_suffix = 'test',
                  case2setup_raises_exception=False):
         """
@@ -147,6 +214,14 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
 
         self._case2setup_raises_exception = case2setup_raises_exception
 
+        # NOTE(wjs, 2016-08-03) Currently, due to limitations in the test
+        # infrastructure, run_one_suffix MUST be 'base'. However, I'm keeping it
+        # as an explicit argument to the constructor so that it's easy to relax
+        # this requirement later: To relax this assumption, remove the following
+        # assertion and add run_one_suffix as an argument to
+        # SystemTestsCompareTwo.__init__
+        assert(run_one_suffix == 'base')
+
         SystemTestsCompareTwoClone.__init__(
             self,
             case1,
@@ -159,6 +234,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
             self._test_status.set_status(
                 test_status.MODEL_BUILD_PHASE,
                 test_status.TEST_PASS_STATUS)
+
+        self.log = []
 
     # ------------------------------------------------------------------------
     # Stubs of methods called by SystemTestsCommon.__init__ that interact with
@@ -201,8 +278,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
         # testing SystemTestsCompareTwoClone itself, so I don't see much added
         # value of that.
 
-        # FIXME(wjs, 2016-08-10) Record that this wass called
-        pass
+        self.log.append(Call(METHOD_component_compare_test,
+                             {'suffix1': suffix1, 'suffix2': suffix2}))
 
     def _check_for_memleak(self):
         pass
@@ -224,8 +301,16 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
     def _link_to_case2_output(casename1, casename2,
                               rundir1, rundir2,
                               run2suffix):
-        # FIXME(wjs, 2016-08-10) record that this was called, and its arguments
+        # FIXME(wjs, 2016-08-10) remove pass, uncomment this
         pass
+        """
+        self.log.append(Call(METHOD_link_to_case2_output,
+                             {'casename1': casename1,
+                              'casename2': casename2,
+                              'rundir1': rundir1,
+                              'rundir2': rundir2,
+                              'run2suffix': run2suffix}))
+        """
 
     # ------------------------------------------------------------------------
     # Fake implementations of methods that are typically provided by the
@@ -330,8 +415,8 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
         # Verify
         self.assertFalse(os.path.exists(os.path.join(case1root, 'case1.test')))
 
-    def test_run_phase_succeeds(self):
-        # Make sure the run phase behaves properly when all runs succeed
+    def test_run_phase_passes(self):
+        # Make sure the run phase behaves properly when all runs succeed.
 
         # Setup
         case1root = os.path.join(self.tempdir, 'case1')
@@ -346,9 +431,37 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
         self.assertEqual(test_status.TEST_PASS_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
 
-        # FIXME(wjs, 2016-08-10) Verify test status
+    # FIXME(wjs, 2016-08-10) remove skip
+    @unittest.skip('skipping')
+    def test_run_phase_internal_calls(self):
+        # Make sure that the correct calls are made to methods stubbed out by
+        # SystemTestsCompareTwoFake (when runs succeed)
 
+        # Setup
+        run_one_suffix = 'base'
+        run_two_suffix = 'run2'
+        casename = 'mytest'
+        case1root = os.path.join(self.tempdir, casename)
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(case1,
+            run_one_suffix = run_one_suffix,
+            run_two_suffix = run_two_suffix)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
         # FIXME(wjs, 2016-08-10) Verify that link_to_case2_output was called correctly
+        expected_calls = [
+            Call(METHOD_link_to_case2_output,
+                 {'casename1': casename,
+                  'casename2': '%s.%s'%(casename, run_two_suffix),
+                  'rundir1': mytest._case1.get_value('RUNDIR'),
+                  'rundir2': mytest._case2.get_value('RUNDIR'),
+                  'run2suffix': run_two_suffix}),
+            Call(METHOD_component_compare_test,
+                 {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})]
+        self.assertEqual(expected_calls, mytest.log)
 
         # FIXME(wjs, 2016-08-10) Verify that compare was called correctly (test
         # should fail if I change / remove the call to component_compare_test)
