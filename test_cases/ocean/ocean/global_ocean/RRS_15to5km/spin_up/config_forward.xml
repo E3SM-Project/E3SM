@@ -17,7 +17,7 @@
 		<option name="config_start_time">'file'</option>
 		<option name="config_write_output_on_startup">.false.</option>
 		<option name="config_Rayleigh_friction">.false.</option>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="global_stats_text_only.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -37,7 +37,7 @@
 
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="global_stats_text_only.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 
 	</streams>
 
