@@ -1,5 +1,135 @@
 ======================================================================
 
+Originator: Jim Edwards
+Date: Aug 10, 2016
+Tag: cime5.0.6
+Answer Changes: None
+Tests: scripts_regression_tests - others run for specific updates
+Dependencies: None
+
+Brief Summary:
+d083933 (mydev/user_mod_0len_fix, user_mod_0len_fix) user_nl_ file was being removed if a user_nl file in any mods directory was missing
+39de940 Fix comment
+0773aac Increase default walltime for blues
+c4dce0f Remove last uses of taskmaker.pl
+76eb1bc Remove -A directive from edison
+c9b8910 Seperate out modelio namelist definition since it uses the same names, but defines them differently
+805ad7f Add -mismatch_all when compiling cism with nag
+fff9a9b (origin/jgfouca/minor_timing_chg) Set CHECK_TIMING to true in addition to SAVE_TIMING if --save-timing given to create_test
+f25a518 (origin/jgfouca/wait_for_test_refactor) wait_for_tests will now always specifically wait for the RUN phase
+e19e72c Update drv buildnamelist test to work with cime5
+893c6c6 Add support for LANL's mustang and wolf to cime
+c103e08 (origin/rljacob/machines/fix-acme) Add SAVE_TIMING_DIR for edison
+84000ee Fixing the runjob command for ACME on Mira
+1a55232 Adding config for ERS_Ld3.ne30_g16_rx1.A test
+d1df346 Error handling; check for correct length of key-value pair array after split
+fa1cb49 listofsettings allways an array, test for length of array
+a6a3d33 Changed number of expected positional arguments to 0 or 1 , warnings and debug statements
+74d2100 checking for missing values in settings string from command line
+cd350da (origin/santos/fix-env-leakage) Remove `GenericXML` check for env variables.
+43807a5 Add white space after batch directives in script templates
+edc1671 Autosave environment information in case_setup.
+c3f8f84 (origin/jgfouca/fix_create_test_not_catching_missing_project) create_test was not failing the create_newcase phase when project info was missing
+731f8a0 (origin/jgfouca/add_queue_option_to_create_test) Add ability to select queue to create_test and create_newcase
+11877a2 (origin/jgfouca/even_more_sky_env_fixes) Fix mismatch between MPI_PATH and the mpi module being loaded
+0268cb7 Only report present files in debug mode
+47b4216 Fix spelling mistake
+07aeb52 Get cime_developer building again on skybridge.
+d8f331c moved batchdirectives to top of the template
+dbbd3a1 Users should get a nice error when their python is too old
+ca3e004 Fix skybridge environment problems, port to new SEMS modules
+e266dd9 Remove sentinel concept from jenkins_generic_job
+
+
+User interface changes: None
+
+Modified files: git diff --name-status
+M       cime_config/acme/allactive/config_pesall.xml
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+D       cime_config/acme/machines/env_mach_specific.melvin
+D       cime_config/acme/machines/env_mach_specific.redsky
+D       cime_config/acme/machines/env_mach_specific.skybridge
+D       cime_config/acme/machines/taskmaker.pl
+M       cime_config/acme/machines/template.case.run
+M       cime_config/acme/machines/template.case.test
+M       cime_config/acme/machines/template.lt_archive
+M       cime_config/acme/machines/template.ocn_diagnostics
+M       cime_config/acme/machines/template.st_archive
+M       cime_config/acme/machines/template.timeseries
+M       cime_config/acme/machines/template.tseries_generate.pl
+D       cime_config/acme/machines/userdefined_laptop_template/mkbatch.no_batch_system
+M       cime_config/cesm/machines/config_compilers.xml
+M       cime_config/cesm/machines/config_machines.xml
+D       cime_config/cesm/machines/taskmaker.pl
+D       cime_config/cesm/machines/userdefined_laptop_template/mkbatch.no_batch_system
+M       driver_cpl/bld/build-namelist
+M       driver_cpl/bld/testdir/env_build.xml
+M       driver_cpl/bld/testdir/env_case.xml
+M       driver_cpl/bld/testdir/env_mach_pes.xml
+M       driver_cpl/bld/testdir/env_run.xml
+M       driver_cpl/cime_config/buildnml
+M       scripts/Testing/Testcases/config_tests.xml
+M       scripts/Tools/bless_test_results
+M       scripts/Tools/case.build
+M       scripts/Tools/case.submit
+M       scripts/Tools/code_checker
+M       scripts/Tools/compare_namelists
+M       scripts/Tools/component_compgen_baseline.sh
+M       scripts/Tools/cs_status
+M       scripts/Tools/jenkins_generic_job
+M       scripts/Tools/simple_compare
+M       scripts/Tools/standard_script_setup.py
+A       scripts/Tools/taskmaker
+M       scripts/Tools/wait_for_tests
+M       scripts/create_newcase
+M       scripts/create_test
+M       utils/python/CIME/SystemTests/eri.py
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/SystemTests/err.py
+M       utils/python/CIME/SystemTests/ers.py
+M       utils/python/CIME/SystemTests/ert.py
+M       utils/python/CIME/SystemTests/icp.py
+M       utils/python/CIME/SystemTests/lii.py
+M       utils/python/CIME/SystemTests/nck.py
+M       utils/python/CIME/SystemTests/ncr.py
+M       utils/python/CIME/SystemTests/pea.py
+M       utils/python/CIME/SystemTests/pem.py
+M       utils/python/CIME/SystemTests/pet.py
+M       utils/python/CIME/SystemTests/pfs.py
+M       utils/python/CIME/SystemTests/seq.py
+M       utils/python/CIME/SystemTests/sms.py
+M       utils/python/CIME/SystemTests/ssp.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/generic_xml.py
+A       utils/python/CIME/bless_test_results.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/case_st_archive.py
+M       utils/python/CIME/case_test.py
+M       utils/python/CIME/check_input_data.py
+A       utils/python/CIME/compare_namelists.py
+A       utils/python/CIME/simple_compare.py
+M       utils/python/CIME/task_maker.py
+M       utils/python/CIME/test_scheduler.py
+A       utils/python/CIME/test_status.py
+M       utils/python/CIME/user_mod_support.py
+M       utils/python/CIME/utils.py
+A       utils/python/CIME/wait_for_tests.py
+D       utils/python/compare_namelists.py
+A       utils/python/jenkins_generic_job.py
+D       utils/python/simple_compare.py
+M       utils/python/tests/scripts_regression_tests.py
+D       utils/python/wait_for_tests.py
+
+======================================================================
+
+======================================================================
+
 Originator: Bill Sacks
 Date: Aug 02, 2016
 Tag: cime5.0.5
@@ -7,12 +137,12 @@ Answer Changes: None
 Tests: scripts_regression_tests
 Dependencies:  None (removes dependency of cime5.0.4 on clm branch)
 
-Description:	
+Description:
 - move LII test from CLM back to CIME (until new API is solidified)
 
 Modified files:
 utils/python/CIME/SystemTests/lii.py
-	
+
 ======================================================================
 
 Originator: Jim Edwards
@@ -24,16 +154,16 @@ Dependencies: Needs clm branch containing LII test
 
 Description:
 
-- Updates of hobart machine 
+- Updates of hobart machine
 - Put provenance back in README -
 - Update TestStatus to run tests multiple times in a case - Fix for
 - Add README files back to test directories
-- Dynamically search for system tests, move LII test to CLM cime_config 
+- Dynamically search for system tests, move LII test to CLM cime_config
 - Add python profiling tool
-- Minor bug fixes in prep_ocn_mod and prep_wav_mod  pointed out by CRAY compiler	
+- Minor bug fixes in prep_ocn_mod and prep_wav_mod  pointed out by CRAY compiler
 
 Modified files:
-	
+
 cime_config/acme/config_files.xml
 cime_config/cesm/config_files.xml
 cime_config/cesm/machines/config_batch.xml
@@ -61,9 +191,9 @@ utils/python/CIME/user_mod_support.py
 utils/python/CIME/utils.py
 utils/python/cs.submit.template
 utils/python/tests/scripts_regression_tests.py
-	
-	
-	
+
+
+
 ====================================================================
 
 Originator: Jim Edwards
@@ -73,7 +203,7 @@ Answer Changes: None
 Tests: scripts_regression_tests
 Dependencies:
 
-Brief Summary: 
+Brief Summary:
 - fixes as a result of cesm2_alpha01b testing
 - print output from buildnml
 - improve mismatch argument to NAG compiler
