@@ -196,10 +196,10 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd_no_fail('echo foo')
     'foo'
 
-    >>> run_cmd_no_fail('ls file_i_hope_doesnt_exist')
+    >>> run_cmd_no_fail('echo THE ERROR >&2; false')
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
+    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR'
 
     >>> run_cmd_no_fail('grep foo', input_str='foo')
     'foo'
