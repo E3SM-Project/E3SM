@@ -158,12 +158,12 @@ check_att_name(int my_rank, int ncid, int verbose)
 int
 check_strerror(int my_rank, int verbose) {
     
-#define NUM_TRIES 7
+#define NUM_TRIES 6
     char errstr[PIO_MAX_NAME + 1];
-    int errcode[NUM_TRIES] = {NC2_ERR, PIO_EBADID,
+    int errcode[NUM_TRIES] = {PIO_EBADID,
 			      NC_ENOTNC3, NC4_LAST_ERROR - 1, 0, 1,
 			      PIO_EBADIOTYPE};
-    const char *expected[NUM_TRIES] = {"Unknown Error", "NetCDF: Not a valid ID",
+    const char *expected[NUM_TRIES] = {"NetCDF: Not a valid ID",
 				       "NetCDF: Attempting netcdf-3 operation on netcdf-4 file",
 				       "unknown PIO error", "No error",
 				       nc_strerror(1), "Bad IO type"};
