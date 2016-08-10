@@ -431,8 +431,8 @@ class FakeTest(SystemTestsCommon):
                 f.write(self._script)
 
             os.chmod(modelexe, 0755)
-            self._case.set_value("BUILD_COMPLETE", True)
-            self._case.flush()
+
+            build.post_build(self._case, [])
 
     def run_phase(self):
         self.run_indv(suffix=None)
