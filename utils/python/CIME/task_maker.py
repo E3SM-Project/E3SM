@@ -137,7 +137,7 @@ class TaskMaker(object):
                 task_count = 1
 
             else:
-                task_count = 1
+                task_count += 1
 
         max_tasks_per_node = min(self.MAX_TASKS_PER_NODE / max_thread_count, self.PES_PER_NODE, max_task_count)
         max_total_node_count = int(math.ceil(float(max_task_count) / max_tasks_per_node))
