@@ -93,9 +93,10 @@ class EnvMachSpecific(EnvBase):
             expect(False, "Unhandled module system '%s'" % module_system)
 
     def list_modules(self):
+        import subprocess
         module_system = self.get_module_system_type()
         if (module_system == "module"):
-            return run_cmd_no_fail("module list 2>&1")
+            return run_cmd_no_fail("module list", arg_stderr=subprocess.STDOUT)
         elif (module_system == "soft"):
             return run_cmd_no_fail("softenv")
         elif (module_system == "dotkit"):
