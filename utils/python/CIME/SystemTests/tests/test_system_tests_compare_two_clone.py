@@ -217,15 +217,25 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
         # Setup
         case1root = os.path.join(self.tempdir, 'case1')
         case1 = CaseFake(case1root)
+        case1.set_value('var_preset', 'preset_value')
 
         # Exercise
         mytest = SystemTestsCompareTwoFake(case1)
 
         # Verify
+        # Make sure that pre-existing values in case1 are copied to case2 (via
+        # clone)
+        self.assertEqual('preset_value',
+                         mytest._case2.get_value('var_preset'))
+
+        # Make sure that _common_setup is called for both
         self.assertEqual('common_val',
                          mytest._case1.get_value('var_set_in_common_setup'))
         self.assertEqual('common_val',
                          mytest._case2.get_value('var_set_in_common_setup'))
+
+        # Make sure that _case_one_setup and _case_two_setup are called
+        # appropriately
         self.assertEqual('case1val',
                          mytest._case1.get_value('var_set_in_setup'))
         self.assertEqual('case2val',
@@ -243,7 +253,12 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
         mytest = SystemTestsCompareTwoFake(case1,
                                            run_two_suffix = 'test')
 
-        # Verify: variables set in various setup methods should not be set
+        # Verify:
+
+        # Make sure that case2 object is set (i.e., that it doesn't remain None)
+        self.assertEqual('case1.test', mytest._case2.get_value('CASE'))
+
+        # Variables set in various setup methods should not be set
         # (In the real world - i.e., outside of this unit testing fakery - these
         # values would be set when the Case objects are created.)
         self.assertIsNone(mytest._case1.get_value('var_set_in_common_setup'))
