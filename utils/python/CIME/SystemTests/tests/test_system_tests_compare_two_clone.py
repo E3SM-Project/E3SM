@@ -177,16 +177,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
         return CaseFake(caseroot, create_case_root=False)
 
     def _link_to_case2_output(self):
-        # FIXME(wjs, 2016-08-10) remove pass, uncomment this
-        pass
-        """
-        self.log.append(Call(METHOD_link_to_case2_output,
-                             {'casename1': casename1,
-                              'casename2': casename2,
-                              'rundir1': rundir1,
-                              'rundir2': rundir2,
-                              'run2suffix': run2suffix}))
-        """
+        self.log.append(Call(METHOD_link_to_case2_output, {}))
 
     # ------------------------------------------------------------------------
     # Fake implementations of methods that are typically provided by the
@@ -307,8 +298,6 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
         self.assertEqual(test_status.TEST_PASS_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
 
-    # FIXME(wjs, 2016-08-10) remove skip
-    @unittest.skip('skipping')
     def test_run_phase_internal_calls(self):
         # Make sure that the correct calls are made to methods stubbed out by
         # SystemTestsCompareTwoFake (when runs succeed)
@@ -327,20 +316,11 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
         mytest.run()
 
         # Verify
-        # FIXME(wjs, 2016-08-10) Verify that link_to_case2_output was called correctly
         expected_calls = [
-            Call(METHOD_link_to_case2_output,
-                 {'casename1': casename,
-                  'casename2': '%s.%s'%(casename, run_two_suffix),
-                  'rundir1': mytest._case1.get_value('RUNDIR'),
-                  'rundir2': mytest._case2.get_value('RUNDIR'),
-                  'run2suffix': run_two_suffix}),
+            Call(METHOD_link_to_case2_output, {}),
             Call(METHOD_component_compare_test,
                  {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})]
         self.assertEqual(expected_calls, mytest.log)
-
-        # FIXME(wjs, 2016-08-10) Verify that compare was called correctly (test
-        # should fail if I change / remove the call to component_compare_test)
 
     # FIXME(wjs, 2016-08-10) run 1 fails should raise exception (test should
     # fail if I remove call to first run)
