@@ -189,8 +189,8 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
 
   ! The rearranger options in IODESC overrides the defaults
   if(IOsystem%rearr_opts%comm_type == PIO_rearr_comm_p2p) then
-    if( (IOsystem%rearr_opts%comm_fc_opts%fcd == PIO_rearr_comm_fc_2d_disable) .or.&
-        (IOsystem%rearr_opts%comm_fc_opts%fcd == PIO_rearr_comm_fc_1d_io2comp) ) then
+    if( (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_2d_disable) .or.&
+        (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_1d_io2comp) ) then
       pio_option = POINT_TO_POINT
     else
       pio_option = FLOW_CONTROL
@@ -210,9 +210,9 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
   endif
 
   if (pio_option == FLOW_CONTROL) then
-    pio_hs     = IOsystem%rearr_opts%comm_fc_opts%enable_hs
-    pio_isend  = IOsystem%rearr_opts%comm_fc_opts%enable_isend
-    pio_maxreq = IOsystem%rearr_opts%comm_fc_opts%max_pend_req
+    pio_hs     = IOsystem%rearr_opts%comm_fc_opts_comp2io%enable_hs
+    pio_isend  = IOsystem%rearr_opts%comm_fc_opts_comp2io%enable_isend
+    pio_maxreq = IOsystem%rearr_opts%comm_fc_opts_comp2io%max_pend_req
 
     ! The rearranger options passed to this function overrides
     ! both the default and the options in IODESC
@@ -489,8 +489,8 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
   ! The rearranger options in IODESC overrides the defaults
   if(IOsystem%rearr_opts%comm_type == PIO_rearr_comm_p2p) then
-    if( (IOsystem%rearr_opts%comm_fc_opts%fcd == PIO_rearr_comm_fc_2d_disable) .or.&
-        (IOsystem%rearr_opts%comm_fc_opts%fcd == PIO_rearr_comm_fc_1d_comp2io) ) then
+    if( (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_2d_disable) .or.&
+        (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_1d_comp2io) ) then
       pio_option = POINT_TO_POINT
     else
       pio_option = FLOW_CONTROL
@@ -510,9 +510,9 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   endif
 
   if (pio_option == FLOW_CONTROL) then
-    pio_hs     = IOsystem%rearr_opts%comm_fc_opts%enable_hs
-    pio_isend  = IOsystem%rearr_opts%comm_fc_opts%enable_isend
-    pio_maxreq = IOsystem%rearr_opts%comm_fc_opts%max_pend_req
+    pio_hs     = IOsystem%rearr_opts%comm_fc_opts_io2comp%enable_hs
+    pio_isend  = IOsystem%rearr_opts%comm_fc_opts_io2comp%enable_isend
+    pio_maxreq = IOsystem%rearr_opts%comm_fc_opts_io2comp%max_pend_req
 
     ! The rearranger options passed to this function overrides
     ! both the default and the options in IODESC
