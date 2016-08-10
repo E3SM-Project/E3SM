@@ -88,20 +88,13 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
               append=None, noecho=False, warn=None, force=False):
     with Case(caseroot, read_only=False) as case:
         if len(listofsettings):
-            logger.warning("List of attributes to change: %s" , listofsettings)
+            logger.debug("List of attributes to change: %s" , listofsettings)
 
-            # Error handling, exit with grace if xmlval or equal sign is missing. Check first all attributes before changing
-            for setting in listofsettings:
-                # Test for equal sign
-                pair = setting.split("=")
-                expect(len(pair) == 2 , "Wrong format for %s. Expecting a key value pair in form of key=value." % (setting) ) 
-                (xmlid, xmlval) = pair
-    
             # Change values         
             for setting in listofsettings:
                 
-                pair = setting.split("=")
-                expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value.") 
+                pair = setting.split("=",1)
+                expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value. Got %s" % (pair) ) 
                 (xmlid, xmlval) = pair
                 
                 type_str = case.get_type_info(xmlid)
