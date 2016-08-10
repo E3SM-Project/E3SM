@@ -3,7 +3,7 @@ CIME HOMME test. This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.build import post_build, case_build
+from CIME.build import post_build
 
 import shutil
 

@@ -432,7 +432,7 @@ class FakeTest(SystemTestsCommon):
 
             os.chmod(modelexe, 0755)
 
-            post_build(self._case, [])
+            build.post_build(self._case, [])
 
     def run_phase(self):
         self.run_indv(suffix=None)
