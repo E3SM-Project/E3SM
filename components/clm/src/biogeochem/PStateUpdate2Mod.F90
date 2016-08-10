@@ -12,6 +12,8 @@ module PStateUpdate2Mod
   use clm_varctl          , only : iulog
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
+  use PatchType           , only : pft
+  use pftvarcon           , only : npcropmin
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
@@ -143,6 +145,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                      & 
+         ivt => pft%itype           , & ! Input:  [integer  (:) ]  pft vegetation type
          pf => phosphorusflux_vars  , &
          ps => phosphorusstate_vars   &
          )
@@ -187,6 +190,12 @@ contains
          ps%livecrootp_patch(p) = ps%livecrootp_patch(p) - pf%hrv_livecrootp_to_litter_patch(p) * dt
          ps%deadcrootp_patch(p) = ps%deadcrootp_patch(p) - pf%hrv_deadcrootp_to_litter_patch(p) * dt
          ps%retransp_patch(p)   = ps%retransp_patch(p)   - pf%hrv_retransp_to_litter_patch(p)   * dt
+
+       if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+           ps%livestemp_patch(p)= ps%livestemp_patch(p)  - pf%hrv_livestemp_to_prod1p_patch(p)  * dt
+           ps%leafp_patch(p)    = ps%leafp_patch(p)      - pf%hrv_leafp_to_prod1p_patch(p)      * dt
+           ps%grainp_patch(p)   = ps%grainp_patch(p)     - pf%hrv_grainp_to_prod1p_patch(p)     * dt
+       end if
 
          ! storage pools
          ps%leafp_storage_patch(p)      = ps%leafp_storage_patch(p)      - pf%hrv_leafp_storage_to_litter_patch(p)      * dt

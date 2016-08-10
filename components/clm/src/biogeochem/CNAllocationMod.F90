@@ -831,8 +831,10 @@ contains
                   if (peaklai(p) == 1) then ! lai at maximum allowed
                      arepr(p) = 0._r8
                      aleaf(p) = 1.e-5_r8
-                     astem(p) = 0._r8
-                     aroot(p) = 1._r8 - arepr(p) - aleaf(p) - astem(p)
+                     aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
+                          (arooti(ivt(p)) - arootf(ivt(p))) *  &
+                          min(1._r8, hui(p)/gddmaturity(p))))
+                     astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
                   else
                      arepr(p) = 0._r8
                      aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
@@ -894,7 +896,7 @@ contains
                   !would be bypassed altogether, not the intended outcome. I checked several of my output files and
                   !they all seemed to be going through the retranslocation loop for soybean - good news.
 
-                  if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p))) then
+                  if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p)) .or. peaklai(p) == 1._r8) then
                      if (grain_flag(p) == 0._r8) then
                         t1 = 1 / dt
                         leafn_to_retransn(p) = t1 * ((leafc(p) / leafcn(ivt(p))) - (leafc(p) / &
@@ -945,10 +947,11 @@ contains
 
          else if (ivt(p) >= npcropmin) then ! skip generic crops
             cng = graincn(ivt(p))
+            cpg = graincp(ivt(p))
             c_allometry(p) = (1._r8+g1)*(1._r8+f1+f5+f3*(1._r8+f2))
             n_allometry(p) = 1._r8/cnl + f1/cnfr + f5/cng + (f3*f4*(1._r8+f2))/cnlw + &
                  (f3*(1._r8-f4)*(1._r8+f2))/cndw
-            p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
+            p_allometry(p) = 1._r8/cpl + f1/cpfr + f5/cpg + (f3*f4*(1._r8+f2))/cplw + &
                  (f3*(1._r8-f4)*(1._r8+f2))/cpdw
 
          else
@@ -3466,10 +3469,11 @@ contains
 
              else if (ivt(p) >= npcropmin) then ! skip generic crops
                  cng = graincn(ivt(p))
+                 cpg = graincp(ivt(p))
                  c_allometry(p) = (1._r8+g1)*(1._r8+f1+f5+f3*(1._r8+f2))
                  n_allometry(p) = 1._r8/cnl + f1/cnfr + f5/cng + (f3*f4*(1._r8+f2))/cnlw + &
                      (f3*(1._r8-f4)*(1._r8+f2))/cndw
-                 p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
+                 p_allometry(p) = 1._r8/cpl + f1/cpfr + f5/cpg + (f3*f4*(1._r8+f2))/cplw + &
                      (f3*(1._r8-f4)*(1._r8+f2))/cpdw
 
              else
