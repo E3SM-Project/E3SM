@@ -93,14 +93,23 @@ class EnvMachSpecific(EnvBase):
             expect(False, "Unhandled module system '%s'" % module_system)
 
     def list_modules(self):
-        import subprocess
         module_system = self.get_module_system_type()
+
+        # If the user's login shell is not sh, it's possible that modules
+        # won't be configured so we need to be sure to source the module
+        # setup script if it exists.
+        init_path = self.get_module_system_init_path("sh")
+        if init_path:
+            source_cmd = "source %s && " % init_path
+        else:
+            source_cmd = ""
+
         if (module_system == "module"):
-            return run_cmd_no_fail("module list", arg_stderr=subprocess.STDOUT)
+            return run_cmd_no_fail("%smodule list 2>&1" % source_cmd)
         elif (module_system == "soft"):
-            return run_cmd_no_fail("softenv")
+            return run_cmd_no_fail("%ssoftenv" % source_cmd)
         elif (module_system == "dotkit"):
-            return run_cmd_no_fail("use -lv")
+            return run_cmd_no_fail("%suse -lv" % source_cmd)
         elif (module_system == "none"):
             return ""
         else:
