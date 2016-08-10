@@ -61,6 +61,7 @@ def get_call_methods(calls):
 
 METHOD_component_compare_test = "_component_compare_test"
 METHOD_link_to_case2_output = "_link_to_case2_output"
+METHOD_run_indv = "_run_indv"
 
 # ========================================================================
 # Fake version of SystemTestsCompareTwo that overrides some functionality for
@@ -78,7 +79,9 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
                  case1,
                  run_one_suffix = 'base',
                  run_two_suffix = 'test',
-                 case2setup_raises_exception=False):
+                 case2setup_raises_exception = False,
+                 run_one_should_pass = True,
+                 run_two_should_pass = True):
         """
         Initialize a SystemTestsCompareTwoFake object
 
@@ -88,7 +91,11 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
                 to 'base'. Currently MUST be 'base'.
             run_two_suffix (str, optional): Suffix used for the second run. Defaults to 'test'.
             case2setup_raises_exception (bool, optional): If True, then the call
-                to _case_two_setup will raise an exception. Defaults to False.
+                to _case_two_setup will raise an exception. Default is False.
+            run_one_should_pass (bool, optional): Whether the run_indv method should
+                pass for the first run. Default is True, meaning it will pass.
+            run_two_should_pass (bool, optional): Whether the run_indv method should
+                pass for the second run. Default is True, meaning it will pass.
         """
 
         self._case2setup_raises_exception = case2setup_raises_exception
@@ -114,6 +121,12 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
                 test_status.MODEL_BUILD_PHASE,
                 test_status.TEST_PASS_STATUS)
 
+        self.run_pass_casenames = []
+        if run_one_should_pass:
+            self.run_pass_casenames.append(self._case1.get_value('CASE'))
+        if run_two_should_pass:
+            self.run_pass_casenames.append(self._case2.get_value('CASE'))
+
         self.log = []
 
     # ------------------------------------------------------------------------
@@ -136,8 +149,10 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
     # ------------------------------------------------------------------------
 
     def run_indv(self, suffix="base"):
-        # FIXME(wjs, 2016-08-10) Introduce ability to raise exception
-        pass
+        self.log.append(Call(METHOD_run_indv, {'suffix': suffix}))
+        casename = self._case.get_value('CASE')
+        if casename not in self.run_pass_casenames:
+            raise RuntimeError('casename not in run_pass_casenames')
 
     def _component_compare_test(self, suffix1, suffix2):
         # Trying to use the real version of _component_compare_test would pull
@@ -294,13 +309,17 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
         mytest.run()
 
         # Verify
-        # Verify that run phase didn't raise any exceptions
         self.assertEqual(test_status.TEST_PASS_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
 
     def test_run_phase_internal_calls(self):
         # Make sure that the correct calls are made to methods stubbed out by
         # SystemTestsCompareTwoFake (when runs succeed)
+        #
+        # The point of this is: A number of methods called from the run_phase
+        # method are stubbed out in the Fake test implementation, because their
+        # actions are awkward in these unit tests. But we still want to make
+        # sure that those methods actually got called correctly.
 
         # Setup
         run_one_suffix = 'base'
@@ -317,13 +336,42 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
 
         # Verify
         expected_calls = [
+            Call(METHOD_run_indv, {'suffix': run_one_suffix}),
+            Call(METHOD_run_indv, {'suffix': run_two_suffix}),
             Call(METHOD_link_to_case2_output, {}),
             Call(METHOD_component_compare_test,
                  {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})]
         self.assertEqual(expected_calls, mytest.log)
 
-    # FIXME(wjs, 2016-08-10) run 1 fails should raise exception (test should
-    # fail if I remove call to first run)
+    def test_run1_fails(self):
+        # Make sure that a failure in run1 is reported correctly
 
-    # FIXME(wjs, 2016-08-10) run 2 fails should raise exception (test should
-    # fail if I remove activate_case2)
+        # Setup
+        case1root = os.path.join(self.tempdir, 'case1')
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(case1,
+                                           run_one_should_pass = False)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
+        self.assertEqual(test_status.TEST_FAIL_STATUS,
+                         mytest._test_status.get_status(test_status.RUN_PHASE))
+
+    def test_run2_fails(self):
+        # Make sure that a failure in run2 is reported correctly
+
+        # Setup
+        case1root = os.path.join(self.tempdir, 'case1')
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(case1,
+                                           run_two_should_pass = False)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
+        self.assertEqual(test_status.TEST_FAIL_STATUS,
+                         mytest._test_status.get_status(test_status.RUN_PHASE))
+
