@@ -159,11 +159,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         # Compare results
         # Case1 is the "main" case, and we need to do the comparisons from there
         self._activate_case1()
-        self._link_to_case2_output(casename1 = self._case1.get_value("CASE"),
-                                   casename2 = self._case2.get_value("CASE"),
-                                   rundir1 = self._case1.get_value("RUNDIR"),
-                                   rundir2 = self._case2.get_value("RUNDIR"),
-                                   run2suffix = self._run_two_suffix)
+        self._link_to_case2_output()
 
         self._component_compare_test(self._run_one_suffix, self._run_two_suffix)
 
@@ -312,11 +308,7 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         # script, like we're supposed to
         self._case2.set_value("RUN_WITH_SUBMIT",True)
 
-    # The following is a static method so that it can be tested more easily
-    @staticmethod
-    def _link_to_case2_output(casename1, casename2,
-                              rundir1, rundir2,
-                              run2suffix):
+    def _link_to_case2_output(self):
         """
         Looks for all files in rundir2 matching the pattern casename2*.nc.run2suffix
 
@@ -334,6 +326,12 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         if the destination link is not exactly as it should be: we avoid
         overwriting some existing file or link.
         """
+
+        casename1 = self._case1.get_value("CASE")
+        casename2 = self._case2.get_value("CASE")
+        rundir1 = self._case1.get_value("RUNDIR")
+        rundir2 = self._case2.get_value("RUNDIR")
+        run2suffix = self._run_two_suffix
 
         pattern = '%s*.nc.%s'%(casename2, run2suffix)
         case2_files = glob.glob(os.path.join(rundir2, pattern))

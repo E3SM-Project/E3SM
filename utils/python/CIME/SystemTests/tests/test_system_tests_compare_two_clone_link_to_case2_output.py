@@ -10,6 +10,54 @@ import os
 import shutil
 import tempfile
 from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
+from CIME.SystemTests.tests.case_fake import CaseFake
+
+# ========================================================================
+# Fake version of SystemTestsCompareTwo that overrides some functionality for
+# the sake of unit testing
+# ========================================================================
+
+class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
+    def __init__(self,
+                 case1,
+                 run_two_suffix = 'test'):
+
+        SystemTestsCompareTwoClone.__init__(
+            self,
+            case1,
+            separate_builds = False,
+            run_two_suffix = run_two_suffix)
+
+    # ------------------------------------------------------------------------
+    # Stubs of methods called by SystemTestsCommon.__init__ that interact with
+    # the system or case object in ways we want to avoid here
+    # ------------------------------------------------------------------------
+
+    def _init_environment(self, caseroot):
+        pass
+
+    def _init_locked_files(self, caseroot, expected):
+        pass
+
+    def _init_case_setup(self):
+        pass
+
+    # ------------------------------------------------------------------------
+    # Stubs of methods that are typically provided by the individual test
+    # ------------------------------------------------------------------------
+
+    def _common_setup(self):
+        pass
+
+    def _case_one_setup(self):
+        pass
+
+    def _case_two_setup(self):
+        pass
+
+# ========================================================================
+# Test class itself
+# ========================================================================
 
 class TestLinkToCase2Output(unittest.TestCase):
 
@@ -18,16 +66,39 @@ class TestLinkToCase2Output(unittest.TestCase):
     # ========================================================================
 
     def setUp(self):
-        self._run2_suffix = 'run2'
-        self._casename1 = 'mytest'
-        self._casename2 = 'mytest.run2'
-        self._rundir1 = tempfile.mkdtemp()
-        self._rundir2 = tempfile.mkdtemp()
+        # Create a sandbox in which case directories can be created
+        self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self._rundir1, ignore_errors=True)
-        shutil.rmtree(self._rundir2, ignore_errors=True)
+        shutil.rmtree(self.tempdir, ignore_errors=True)
 
+    def setup_test_and_directories(self, casename1, run2_suffix):
+        """
+        Returns test object
+        """
+
+        case1root = os.path.join(self.tempdir, casename1)
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(case1, run_two_suffix = run2_suffix)
+        mytest._case1.make_rundir()
+        mytest._case2.make_rundir()
+
+        return mytest
+
+    def create_file_in_rundir2(self, mytest, core_filename, run2_suffix):
+        """
+        Creates a file in rundir2 named CASE2.CORE_FILENAME.nc.RUN2_SUFFIX
+        (where CASE2 is the casename of case2)
+
+        Returns full path to the file created
+        """
+        filename = '%s.%s.nc.%s'%(
+            mytest._case2.get_value('CASE'),
+            core_filename,
+            run2_suffix)
+        filepath = os.path.join(mytest._case2.get_value('RUNDIR'), filename)
+        open(filepath, 'w').close()
+        return filepath
 
     # ========================================================================
     # Begin actual tests
@@ -35,54 +106,42 @@ class TestLinkToCase2Output(unittest.TestCase):
 
     def test_basic(self):
         # Setup
-        filename1 = '%s.clm2.h0.nc.%s'%(self._casename2, self._run2_suffix)
-        filepath1 = os.path.join(self._rundir2, filename1)
-        open(filepath1, 'w').close()
+        casename1 = 'mytest'
+        run2_suffix = 'run2'
 
-        filename2 = '%s.clm2.h1.nc.%s'%(self._casename2, self._run2_suffix)
-        filepath2 = os.path.join(self._rundir2, filename2)
-        open(filepath2, 'w').close()
+        mytest = self.setup_test_and_directories(casename1, run2_suffix)
+        filepath1 = self.create_file_in_rundir2(mytest, 'clm2.h0', run2_suffix)
+        filepath2 = self.create_file_in_rundir2(mytest, 'clm2.h1', run2_suffix)
 
         # Exercise
-        SystemTestsCompareTwoClone._link_to_case2_output(
-            casename1 = self._casename1,
-            casename2 = self._casename2,
-            rundir1 = self._rundir1,
-            rundir2 = self._rundir2,
-            run2suffix = self._run2_suffix)
+        mytest._link_to_case2_output()
 
         # Verify
-        expected_link_filename1 = '%s.clm2.h0.nc.%s'%(self._casename1, self._run2_suffix)
-        expected_link_filepath1 = os.path.join(self._rundir1, expected_link_filename1)
+        expected_link_filename1 = '%s.clm2.h0.nc.%s'%(casename1, run2_suffix)
+        expected_link_filepath1 = os.path.join(mytest._case1.get_value('RUNDIR'),
+                                               expected_link_filename1)
         self.assertTrue(os.path.islink(expected_link_filepath1))
         self.assertEqual(filepath1, os.readlink(expected_link_filepath1))
 
-        expected_link_filename2 = '%s.clm2.h1.nc.%s'%(self._casename1, self._run2_suffix)
-        expected_link_filepath2 = os.path.join(self._rundir1, expected_link_filename2)
+        expected_link_filename2 = '%s.clm2.h1.nc.%s'%(casename1, run2_suffix)
+        expected_link_filepath2 = os.path.join(mytest._case1.get_value('RUNDIR'),
+                                               expected_link_filename2)
         self.assertTrue(os.path.islink(expected_link_filepath2))
         self.assertEqual(filepath2, os.readlink(expected_link_filepath2))
 
     def test_existing_link(self):
         # Setup
-        filename1 = '%s.clm2.h0.nc.%s'%(self._casename2, self._run2_suffix)
-        filepath1 = os.path.join(self._rundir2, filename1)
-        open(filepath1, 'w').close()
+        casename1 = 'mytest'
+        run2_suffix = 'run2'
+
+        mytest = self.setup_test_and_directories(casename1, run2_suffix)
+        filepath1 = self.create_file_in_rundir2(mytest, 'clm2.h0', run2_suffix)
 
         # Create initial link via a call to _link_to_case2_output
-        SystemTestsCompareTwoClone._link_to_case2_output(
-            casename1 = self._casename1,
-            casename2 = self._casename2,
-            rundir1 = self._rundir1,
-            rundir2 = self._rundir2,
-            run2suffix = self._run2_suffix)
+        mytest._link_to_case2_output()
 
         # Exercise
         # See what happens when we try to recreate that link
-        SystemTestsCompareTwoClone._link_to_case2_output(
-            casename1 = self._casename1,
-            casename2 = self._casename2,
-            rundir1 = self._rundir1,
-            rundir2 = self._rundir2,
-            run2suffix = self._run2_suffix)
+        mytest._link_to_case2_output()
 
         # (No verification: Test passes if no exception was raised)
