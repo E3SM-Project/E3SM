@@ -258,11 +258,12 @@ class EnvMachSpecific(EnvBase):
     def _load_dotkit_modules(self, _):
         expect(False, "Not yet implemented")
 
-    def _load_none_modules(self, _):
+    def _load_none_modules(self, modules_to_load):
         """
         No Action required
         """
-        pass
+        expect(not modules_to_load,
+               "Module system was specified as 'none' yet there are modules that need to be loaded?")
 
     def _mach_specific_header(self, shell):
         '''
@@ -287,10 +288,10 @@ class EnvMachSpecific(EnvBase):
         return module_system.get("type")
 
     def get_module_system_init_path(self, lang):
-        init_nodes = self.get_node("init_path", attributes={"lang":lang})
-        return init_nodes.text
+        init_nodes = self.get_optional_node("init_path", attributes={"lang":lang})
+        return init_nodes.text if init_nodes else None
 
     def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang})
-        return cmd_nodes.text
+        cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
+        return cmd_nodes.text if cmd_nodes else None
 
