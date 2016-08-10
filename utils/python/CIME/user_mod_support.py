@@ -23,11 +23,12 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
 
     include_dirs = build_include_dirs_list(user_mods_path)
     for include_dir in include_dirs:
-
         # write user_nl_xxx file in caseroot
         for user_nl in glob.iglob(os.path.join(include_dir,"user_nl_*")):
             with open(os.path.join(include_dir, user_nl), "r") as fd:
                 newcontents = fd.read()
+            if len(newcontents) == 0:
+                continue
             case_user_nl = user_nl.replace(include_dir, caseroot)
             comp = case_user_nl.split('_')[-1]
             if ninst is not None and comp in ninst.keys():
