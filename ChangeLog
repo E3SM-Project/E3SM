@@ -2,6 +2,24 @@
 
 Originator: Jim Edwards
 Date: Aug 10, 2016
+Tag: cime5.0.7
+Answer Changes: None
+Tests: None
+Dependencies:
+
+Brief Summary: fix issue with module list command affecting csh/tcsh users
+
+User interface changes:
+
+Modified files: git diff --name-status
+	utils/python/CIME/XML/env_mach_specific.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
+Date: Aug 10, 2016
 Tag: cime5.0.6
 Answer Changes: None
 Tests: scripts_regression_tests - others run for specific updates
