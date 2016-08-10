@@ -130,7 +130,8 @@ def post_build(case, logs):
     # Set XML to indicate build complete
     case.set_value("BUILD_COMPLETE", True)
     case.set_value("BUILD_STATUS", 0)
-    case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
+    if "SMP_VALUE" in os.environ:
+        case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
     case.flush()
 
     if os.path.exists("LockedFiles/env_build.xml"):
