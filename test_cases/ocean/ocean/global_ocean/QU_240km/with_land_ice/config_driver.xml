@@ -7,7 +7,6 @@
 	</case>
 	<step executable="./iterate_init.py">
  		<argument flag="">--iteration_count=15</argument>
- 		<argument flag="">--plot_globalStats</argument>
  		<argument flag="">--variable_to_modify=ssp</argument>
 	</step>
 	<case name="forward">
