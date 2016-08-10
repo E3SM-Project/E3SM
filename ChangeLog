@@ -7,12 +7,12 @@ Answer Changes: None
 Tests: None
 Dependencies:
 
-Brief Summary: fix issue with module list command affecting csh/tcsh users
+Brief Summary: Comment out code added in PR 337 until it works for tcsh and csh users
 
 User interface changes:
 
 Modified files: git diff --name-status
-	utils/python/CIME/XML/env_mach_specific.py
+	utils/python/CIME/case_setup.py
 
 ======================================================================
 
