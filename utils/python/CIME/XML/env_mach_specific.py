@@ -289,9 +289,9 @@ class EnvMachSpecific(EnvBase):
 
     def get_module_system_init_path(self, lang):
         init_nodes = self.get_optional_node("init_path", attributes={"lang":lang})
-        return init_nodes.text if init_nodes else None
+        return init_nodes.text if init_nodes is not None else None
 
     def get_module_system_cmd_path(self, lang):
         cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
-        return cmd_nodes.text if cmd_nodes else None
+        return cmd_nodes.text if cmd_nodes is not None else None
 
