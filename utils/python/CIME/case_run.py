@@ -156,7 +156,7 @@ def save_timing_setup_acme(case, lid):
     if timing_dir is None or timing_dir == 'UNSET':
         logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
         return
-    logger.warn("timing dir is %s"%timing_dir)
+    logger.info("timing dir is %s" % timing_dir)
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
     cimeroot = case.get_value("CIMEROOT")
@@ -198,7 +198,7 @@ def save_timing_setup_acme(case, lid):
             tfd.add(source_mods_dir)
 
     # Save various case configuration items
-    case_docs = os.path.join(full_timing_dir, "CaseDocs")
+    case_docs = os.path.join(full_timing_dir, "CaseDocs.%s" % lid)
     os.mkdir(case_docs)
     globs_to_copy = [
         "CaseDocs/*",
@@ -230,7 +230,7 @@ def save_timing_setup_acme(case, lid):
                 fd.write("%s\n" % syslog_jobid)
 
     # Save state of repo
-    run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE"), from_dir=cimeroot)
+    run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=cimeroot)
 
 ###############################################################################
 def save_timing_cesm(case, lid):
@@ -288,7 +288,18 @@ def save_timing_acme(case, lid):
 
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
-            shutil.copy(item, full_timing_dir)
+            basename = os.path.basename(item)
+            if lid not in basename and not basename.endswith(".gz"):
+                shutil.copy(item, os.path.join(full_timing_dir, "%s.%s" % (basename, lid)))
+            else:
+                shutil.copy(item, full_timing_dir)
+
+
+    # zip everything
+    for root, _, files in os.walk(full_timing_dir):
+        for filename in files:
+            if not filename.endswith(".gz"):
+                gzip_existing_file(os.path.join(root, filename))
 
 ###############################################################################
 def get_timings(case, lid):
