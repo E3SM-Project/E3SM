@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
+	<add_link source="../spin_up4/Restart_timestamp" dest="Restart_timestamp"/>
+	<add_link source="../spin_up4/restarts" dest="restarts"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<option name="config_run_duration">'00-00-01_00:00:00'</option>
+		<option name="config_do_restart">.true.</option>
+		<option name="config_start_time">'file'</option>
+		<option name="config_write_output_on_startup">.false.</option>
+		<option name="config_Rayleigh_friction">.false.</option>
+		<template file="global_stats_text_only.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<stream name="output">
+			<attribute name="output_interval">00-00-10_00:00:00</attribute>
+		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+		</stream>
+
+		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="global_stats_text_only.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">1200</argument>
+		</step>
+
+		<model_run procs="1200" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>
