@@ -10,7 +10,7 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<option name="config_run_duration">'00-00-00_06:00:00'</option>
+		<option name="config_run_duration">'00-00-00_12:00:00'</option>
 		<option name="config_dt">'00:00:30'</option>
 		<option name="config_btr_dt">'00:00:01.5'</option>
 		<option name="config_write_output_on_startup">.false.</option>
@@ -31,7 +31,7 @@
 			<attribute name="output_interval">00-00-10_00:00:00</attribute>
 		</stream>
 		<stream name="restart">
-			<attribute name="output_interval">00-00-00_06:00:00</attribute>
+			<attribute name="output_interval">00-00-00_12:00:00</attribute>
 		</stream>
 
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
