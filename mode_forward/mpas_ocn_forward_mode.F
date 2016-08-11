@@ -582,6 +582,9 @@ module ocn_forward_mode
          call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .false.)
          call mpas_timer_stop('io_shortwave')
 
+         ! Validate that the state is OK to run with for the next timestep.
+         call ocn_validate_state(domain, timeLevel=1)
+
       end do
 
    end function ocn_forward_mode_run!}}}

@@ -56,7 +56,8 @@ module ocn_diagnostics
              ocn_filter_btr_mode_tend_vel, &
              ocn_reconstruct_gm_vectors, &
              ocn_diagnostics_init, &
-             ocn_compute_kpp_input_fields
+             ocn_compute_kpp_input_fields, &
+             ocn_validate_state
 
    !--------------------------------------------------------------------
    !
@@ -1830,6 +1831,599 @@ contains
          !$omp end sections
 
    end subroutine ocn_reconstruct_gm_vectors!}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_validate_state
+!
+!> \brief   Ocean state validation routine
+!> \author  Doug Jacobsen
+!> \date    08/11/2016
+!> \details
+!>  This routine validates that the ocean state is able to continue running
+!>  with for the next time step.
+!>  If a processor detects that it is unable to continue running, some
+!>  diagnostic information is written out about it.
+!>  This routine relies on the definition that a NaN does not equal itself
+!>  for detecting issues with the state.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_validate_state(domain, timeLevel)!{{{
+      type (domain_type), intent(inout) :: domain 
+      integer, intent(in), optional :: timeLevel
+
+      integer :: timeLevelLocal
+
+      type (block_type), pointer :: block
+
+      integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve
+
+      type (mpas_pool_type), pointer :: meshPool, statePool, tracersPool
+      type (mpas_pool_type), pointer :: forcingPool
+
+      real (kind=RKIND), dimension(:, :), pointer :: layerThickness, normalVelocity
+      real (kind=RKIND), dimension(:, :, :), pointer :: activeTracers
+
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeBot, maxLevelVertexBot
+
+      real (kind=RKIND), dimension(:), pointer :: real1DArr
+      real (kind=RKIND), dimension(:, :), pointer :: real2DArr
+      real (kind=RKIND), dimension(:, :, :), pointer :: real3DArr
+      real (kind=RKIND), dimension(:, :, :, :), pointer :: real4DArr
+      real (kind=RKIND), dimension(:, :, :, :, :), pointer :: real5DArr
+      integer, dimension(:), pointer :: int1DArr
+      integer, dimension(:, :), pointer :: int2DArr
+      integer, dimension(:, :, :), pointer :: int3DArr
+
+      integer :: iCell, iEdge, iVertex, iTracer, k
+
+      logical :: fatalErrorDetected
+
+      logical :: thickNanFound, velNanFound, tracersNanFound
+
+      real (kind=RKIND) :: minValue, maxValue
+
+      integer :: debugUnit
+      character (len=StrKIND) :: debugFilename, fieldName
+
+      if ( present(timeLevel) ) then
+         timeLevelLocal = timeLevel
+      else
+         timeLevelLocal = 1
+      end if
+
+      fatalErrorDetected = .false.
+
+      call mpas_new_unit(debugUnit)
+
+      block => domain % blocklist
+      do while ( associated(block) )
+         thickNanFound = .false.
+         velNanFound = .false.
+         tracersNanFound = .false.
+
+         debugFilename = ocn_build_log_filename('mpas_ocean_block_stats_', block % blockID)
+
+         ! Get standard fields, for checking errors
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
+
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+         call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
+
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevelLocal)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevelLocal)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel=timeLevelLocal)
+
+         ! Check for errors in the state fields
+         do iCell = 1, nCellsSolve
+            do k = 1, maxLevelCell(iCell)
+               thickNanFound = thickNanFound .or. ( .not. layerThickness(k, iCell) == layerThickness(k, iCell) )
+               do iTracer = 1, size(activeTracers, dim=1)
+                  tracersNanFound = tracersNanFound .or. &
+                                  ( .not. activeTracers(iTracer, k, iCell) == activeTracers(iTracer, k, iCell) )
+               end do
+            end do
+         end do
+
+         do iEdge = 1, nEdgesSolve
+            do k = 1, maxLevelEdgeBot(iEdge)
+               velNanFound = velNanFound .or. ( .not. normalVelocity(k, iEdge) == normalVelocity(k, iEdge) )
+            end do
+         end do
+
+         ! If an error was found, we need to open the file to write data out.
+         if ( thickNanFound .or. tracersNanFound .or. velNanFound ) then!{{{
+            open(unit=debugUnit, file=debugFilename, form='formatted', status='unknown')
+
+            write(debugUnit, *) 'ERROR: NaN Detected in state see below for which field contained a NaN.'
+            write(debugUnit, *) '  -- Statistics information for block fields'
+
+            ! Also, write general block information, like lat/lon bounds
+
+            ! Test latCell
+            fieldName = 'latCell'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(meshPool, fieldName, real1DArr)
+            do iCell = 1, nCellsSolve
+               minValue = min( minValue, real1DArr(iCell) )
+               maxValue = max( maxValue, real1DArr(iCell) )
+            end do
+            call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+
+            ! Test lonCell
+            fieldName = 'lonCell'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(meshPool, fieldName, real1DArr)
+            do iCell = 1, nCellsSolve
+               minValue = min( minValue, real1DArr(iCell) )
+               maxValue = max( maxValue, real1DArr(iCell) )
+            end do
+            call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+
+            ! Test xCell
+            fieldName = 'xCell'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(meshPool, fieldName, real1DArr)
+            do iCell = 1, nCellsSolve
+               minValue = min( minValue, real1DArr(iCell) )
+               maxValue = max( maxValue, real1DArr(iCell) )
+            end do
+            call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+
+            ! Test yCell
+            fieldName = 'yCell'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(meshPool, fieldName, real1DArr)
+            do iCell = 1, nCellsSolve
+               minValue = min( minValue, real1DArr(iCell) )
+               maxValue = max( maxValue, real1DArr(iCell) )
+            end do
+            call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+
+            ! Test zCell
+            fieldName = 'zCell'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(meshPool, fieldName, real1DArr)
+            do iCell = 1, nCellsSolve
+               minValue = min( minValue, real1DArr(iCell) )
+               maxValue = max( maxValue, real1DArr(iCell) )
+            end do
+            call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+
+            ! Test areaCell
+            fieldName = 'areaCell'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(meshPool, fieldName, real1DArr)
+            do iCell = 1, nCellsSolve
+               minValue = min( minValue, real1DArr(iCell) )
+               maxValue = max( maxValue, real1DArr(iCell) )
+            end do
+            call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+         end if!}}}
+
+         ! If there was a thickness NaN found, write out information about fields that affect thickness
+         if ( thickNanFound ) then!{{{
+            write(debugUnit, *) ''
+            write(debugUnit, *) ''
+            write(debugUnit, *) 'ERROR: NaN Detected in layerThickness.'
+            write(debugUnit, *) '  -- Statistics information for layerThickness fields'
+
+            ! Test rainFlux
+            fieldName = 'seaSurfacePressure'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test rainFlux
+            fieldName = 'rainFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test evaporationFlux
+            fieldName = 'evaporationFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test snowFlow
+            fieldName = 'snowFlow'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test seaIceFreshWaterFlux
+            fieldName = 'seaIceFreshWaterFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test iceRunoffFlux
+            fieldName = 'iceRunoffFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test riverRunoffFlux
+            fieldName = 'riverRunoffFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+         end if!}}}
+
+         ! If there was a velocity NaN found, write out information about fields that affect velocity
+         if ( velNanFound ) then!{{{
+            write(debugUnit, *) ''
+            write(debugUnit, *) ''
+            write(debugUnit, *) 'ERROR: NaN Detected in normalVelocity.'
+            write(debugUnit, *) '  -- Statistics information for normalVelocity fields'
+
+            ! Test seaSurfacePressure
+            fieldName = 'seaSurfacePressure'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test windStressZonal
+            fieldName = 'windStressZonal'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test windStressMeridional
+            fieldName = 'windStressMeridional'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test surfaceStressMagnitude
+            fieldName = 'surfaceStressMagnitude'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test surfaceStress
+            fieldName = 'surfaceStress'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iEdge = 1, nEdgesSolve
+                  minValue = min( minValue, real1DArr(iEdge) )
+                  maxValue = max( maxValue, real1DArr(iEdge) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test angleEdge
+            fieldName = 'angleEdge'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(meshPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iEdge = 1, nEdgesSolve
+                  minValue = min( minValue, real1DArr(iEdge) )
+                  maxValue = max( maxValue, real1DArr(iEdge) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+         end if!}}}
+
+         ! If there was a tracers NaN found, write out information about fields that affect tracers
+         if ( tracersNanFound ) then!{{{
+            write(debugUnit, *) ''
+            write(debugUnit, *) ''
+            write(debugUnit, *) 'ERROR: NaN Detected in activeTracers.'
+            write(debugUnit, *) '  -- Statistics information for activeTracers fields'
+
+            ! Test latentHeatFlux
+            fieldName = 'latentHeatFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test sensibleHeatFlux
+            fieldName = 'sensibleHeatFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test longWaveHeatFluxUp
+            fieldName = 'longWaveHeatFluxUp'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test longWaveHeatFluxDown
+            fieldName = 'longWaveHeatFluxDown'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test seaIceHeatFlux
+            fieldName = 'seaIceHeatFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test seaIceFreshWaterFlux
+            fieldName = 'snowFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+
+            ! Test rainFlux
+            fieldName = 'rainFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test snowFlux
+            fieldName = 'snowFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test iceRunoffFlux
+            fieldName = 'iceRunoffFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test riverRunoffFlux
+            fieldName = 'riverRunoffFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test seaIceSalinityFlux
+            fieldName = 'seaIceSalinityFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test shortWaveHeatFlux
+            fieldName = 'shortWaveHeatFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+         end if!}}}
+
+         ! If an error was found, we need to close the file now.
+         if ( thickNanFound .or. tracersNanFound .or. velNanFound ) then!{{{
+            flush(debugUnit)
+            close(debugUnit)
+            fatalErrorDetected = .true.
+         end if!}}}
+
+         block => block % next
+      end do
+
+      call mpas_release_unit(debugUnit)
+
+      if ( fatalErrorDetected ) then
+         call mpas_dmpar_global_abort('ERROR: MPAS-O: State validation failed. See block stats files for more information.')
+      end if
+
+   end subroutine ocn_validate_state!}}}
+
+   function ocn_build_log_filename(prefix, identifier) result(filename)!{{{
+      character (len=*), intent(in) :: prefix
+      integer, intent(in) :: identifier
+
+      character (len=StrKIND) :: filename
+      
+      character (len=StrKIND) :: identifierString
+
+      if ( identifier .lt. 10 ) then
+         write(identifierString, '(I1)') identifier
+      else if ( identifier .lt. 100 ) then
+         write(identifierString, '(I2)') identifier
+      else if ( identifier .lt. 1000 ) then
+         write(identifierString, '(I3)') identifier
+      else if ( identifier .lt. 10000 ) then
+         write(identifierString, '(I4)') identifier
+      else if ( identifier .lt. 100000 ) then
+         write(identifierString, '(I5)') identifier
+      else if ( identifier .lt. 1000000 ) then
+         write(identifierString, '(I6)') identifier
+      else if ( identifier .lt. 10000000 ) then
+         write(identifierString, '(I7)') identifier
+      else
+         write(identifierString, '(I99)') identifier
+      end if
+
+      filename = trim(prefix) // trim(identifierString)
+
+   end function ocn_build_log_filename!}}}
+
+   subroutine ocn_write_field_statistics(unitNumber, fieldName, minValue, maxValue)!{{{
+      integer, intent(in) :: unitNumber
+      character (len=*), intent(in) :: fieldName
+      real (kind=RKIND), intent(in) :: minValue, maxValue
+
+      write(unitNumber, *) '    Field: ', trim(fieldName)
+      write(unitNumber, *) '        Min: ', minValue
+      write(unitNumber, *) '        Max: ', maxValue
+
+   end subroutine ocn_write_field_statistics!}}}
 
 !***********************************************************************
 
