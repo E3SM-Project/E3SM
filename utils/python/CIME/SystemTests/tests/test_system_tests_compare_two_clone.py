@@ -33,19 +33,6 @@ Example:
 """
 Call = namedtuple('Call', ['method', 'arguments'])
 
-def get_call_methods(calls):
-    """
-    Given a list of calls, return a list of just the methods.
-
-    Args:
-        calls (list of Call objects)
-
-    >>> mycalls = [Call('hello', {'x': 3}), Call('goodbye', {'y': 4})]
-    >>> get_call_methods(mycalls)
-    ['hello', 'goodbye']
-    """
-    return [onecall.method for onecall in calls]
-
 # ========================================================================
 # Names of methods for which we want to record calls
 # ========================================================================
@@ -149,8 +136,25 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
     # ------------------------------------------------------------------------
 
     def run_indv(self, suffix="base"):
-        self.log.append(Call(METHOD_run_indv, {'suffix': suffix}))
+        """
+        This fake implementation appends to the log and raises an exception if
+        it's supposed to
+
+        Note that the Call object appended to the log has the current CASE name
+        in addition to the method arguments. (This is mainly to ensure that the
+        proper suffix is used for the proper case, but this extra check can be
+        removed if it's a maintenance problem.)
+        """
         casename = self._case.get_value('CASE')
+        self.log.append(Call(METHOD_run_indv,
+                             {'suffix': suffix, 'CASE': casename}))
+
+        # Determine whether we should raise an exception
+        #
+        # It's important that this check be based on some attribute of the
+        # self._case object, to ensure that the right case has been activated
+        # for this call to run_indv (e.g., to catch if we forgot to activate
+        # case2 before the second call to run_indv).
         if casename not in self.run_pass_casenames:
             raise RuntimeError('casename not in run_pass_casenames')
 
@@ -182,7 +186,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
     # Fake implementations of methods that are typically provided by
     # SystemTestsCompareTwoClone
     #
-    # Since we're overriding these, their functionality is untested!
+    # Since we're overriding these, their functionality is untested here!
+    # (Though note that _link_to_case2_output is tested elsewhere.)
     # ------------------------------------------------------------------------
 
     def _case_from_existing_caseroot(self, caseroot):
@@ -336,8 +341,10 @@ class TestSystemTestsCompareTwoClone(unittest.TestCase):
 
         # Verify
         expected_calls = [
-            Call(METHOD_run_indv, {'suffix': run_one_suffix}),
-            Call(METHOD_run_indv, {'suffix': run_two_suffix}),
+            Call(METHOD_run_indv,
+                 {'suffix': run_one_suffix, 'CASE': casename}),
+            Call(METHOD_run_indv,
+                 {'suffix': run_two_suffix, 'CASE': '%s.%s'%(casename, run_two_suffix)}),
             Call(METHOD_link_to_case2_output, {}),
             Call(METHOD_component_compare_test,
                  {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})]

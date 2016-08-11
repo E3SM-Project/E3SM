@@ -44,7 +44,8 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
         inherit from SystemTestsCompareTwoClone MUST call this __init__ method.
 
         Args:
-            case: case object passsed to __init__ method of individual test
+            case: case object passsed to __init__ method of individual
+                test. This is the main case associated with the test.
             separate_builds (bool): Whether separate builds are needed for the
                 two cases. If False, case2 uses the case1 executable.
             run_two_suffix (str, optional): Suffix appended to the case name for
