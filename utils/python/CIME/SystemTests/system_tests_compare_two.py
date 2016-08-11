@@ -3,7 +3,7 @@ Base class for CIME system tests that involve doing two runs and comparing their
 output.
 
 In the __init__ method for your test, you MUST call
-    SystemTestsCompareTwoClone.__init__
+    SystemTestsCompareTwo.__init__
 See the documentation of that method for details.
 
 Classes that inherit from this are REQUIRED to implement the following methods:
@@ -31,7 +31,7 @@ import shutil, os, glob
 
 logger = logging.getLogger(__name__)
 
-class SystemTestsCompareTwoClone(SystemTestsCommon):
+class SystemTestsCompareTwo(SystemTestsCommon):
 
     def __init__(self,
                  case,
@@ -40,8 +40,8 @@ class SystemTestsCompareTwoClone(SystemTestsCommon):
                  run_one_description = '',
                  run_two_description = ''):
         """
-        Initialize a SystemTestsCompareTwoClone object. Individual test cases that
-        inherit from SystemTestsCompareTwoClone MUST call this __init__ method.
+        Initialize a SystemTestsCompareTwo object. Individual test cases that
+        inherit from SystemTestsCompareTwo MUST call this __init__ method.
 
         Args:
             case: case object passsed to __init__ method of individual

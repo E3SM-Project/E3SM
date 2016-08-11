@@ -2,14 +2,14 @@
 
 """
 This module contains unit tests of the method
-SystemTestsCompareTwoClone._link_to_case2_output
+SystemTestsCompareTwo._link_to_case2_output
 """
 
 import unittest
 import os
 import shutil
 import tempfile
-from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
+from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.SystemTests.tests.case_fake import CaseFake
 
 # ========================================================================
@@ -17,12 +17,12 @@ from CIME.SystemTests.tests.case_fake import CaseFake
 # the sake of unit testing
 # ========================================================================
 
-class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
+class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
     def __init__(self,
                  case1,
                  run_two_suffix = 'test'):
 
-        SystemTestsCompareTwoClone.__init__(
+        SystemTestsCompareTwo.__init__(
             self,
             case1,
             separate_builds = False,

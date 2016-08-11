@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-This module contains unit tests of the core logic in SystemTestsCompareTwoClone.
+This module contains unit tests of the core logic in SystemTestsCompareTwo.
 """
 
 import unittest
@@ -10,7 +10,7 @@ import os
 import shutil
 import tempfile
 
-from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
+from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 import CIME.test_status as test_status
 from CIME.SystemTests.tests.case_fake import CaseFake
 
@@ -61,7 +61,7 @@ METHOD_run_indv = "_run_indv"
 # It logs what stubbed-out methods have been called in its log attribute; this
 # is a list of Call objects (see above for their definition).
 
-class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
+class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
     def __init__(self,
                  case1,
                  run_one_suffix = 'base',
@@ -95,7 +95,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
         # SystemTestsCompareTwo.__init__
         assert(run_one_suffix == 'base')
 
-        SystemTestsCompareTwoClone.__init__(
+        SystemTestsCompareTwo.__init__(
             self,
             case1,
             separate_builds = False,
@@ -173,8 +173,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
         # _component_compare_test. Then the test verification would include
         # verification that TestStatus is set correctly for the COMPARE
         # phase. But that seems more about testing _component_compare_test than
-        # testing SystemTestsCompareTwoClone itself, so I don't see much added
-        # value of that.
+        # testing SystemTestsCompareTwo itself, so I don't see much added value
+        # of that.
 
         self.log.append(Call(METHOD_component_compare_test,
                              {'suffix1': suffix1, 'suffix2': suffix2}))
@@ -184,7 +184,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
 
     # ------------------------------------------------------------------------
     # Fake implementations of methods that are typically provided by
-    # SystemTestsCompareTwoClone
+    # SystemTestsCompareTwo
     #
     # Since we're overriding these, their functionality is untested here!
     # (Though note that _link_to_case2_output is tested elsewhere.)
@@ -221,7 +221,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwoClone):
 # Test class itself
 # ========================================================================
 
-class TestSystemTestsCompareTwoClone(unittest.TestCase):
+class TestSystemTestsCompareTwo(unittest.TestCase):
 
     def setUp(self):
         # create a sandbox in which case directories can be created

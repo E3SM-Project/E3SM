@@ -4,14 +4,14 @@ Implementation of the CIME REP test
 This test verifies that two identical runs give bit-for-bit results
 """
 
-from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
+from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 
-class REP(SystemTestsCompareTwoClone):
+class REP(SystemTestsCompareTwo):
 
     def __init__(self, case):
-        SystemTestsCompareTwoClone.__init__(self, case,
-                                            separate_builds = False,
-                                            run_two_suffix = 'rep2')
+        SystemTestsCompareTwo.__init__(self, case,
+                                       separate_builds = False,
+                                       run_two_suffix = 'rep2')
 
     def _common_setup(self):
         # TODO(wjs, 2016-07-27) Many of these settings are made for most tests -

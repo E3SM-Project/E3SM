@@ -8,20 +8,20 @@ configuration gives identical results:
 (2) do a run with use_init_interp true (suffix init_interp_on)
 """
 
-from CIME.SystemTests.system_tests_compare_two_clone import SystemTestsCompareTwoClone
+from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.test_utils.user_nl_utils import append_to_user_nl_files
 
 logger = logging.getLogger(__name__)
 
-class LII(SystemTestsCompareTwoClone):
+class LII(SystemTestsCompareTwo):
 
     def __init__(self, case):
-        SystemTestsCompareTwoClone.__init__(self, case,
-                                            separate_builds = False,
-                                            run_two_suffix = 'interp',
-                                            run_one_description = 'use_init_interp set to false',
-                                            run_two_description = 'use_init_interp set to true')
+        SystemTestsCompareTwo.__init__(self, case,
+                                       separate_builds = False,
+                                       run_two_suffix = 'interp',
+                                       run_one_description = 'use_init_interp set to false',
+                                       run_two_description = 'use_init_interp set to true')
 
     def _common_setup(self):
         self._case.set_value("CONTINUE_RUN",False)
