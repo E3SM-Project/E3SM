@@ -115,10 +115,9 @@ contains
         real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
         real (kind=RKIND), dimension(:,:), pointer :: layerThickness, fractionAbsorbed, fractionAbsorbedRunoff
 
-        integer :: iCell, k, timeLevel
-        integer, pointer :: nCells
+        integer :: iCell, k, timeLevel, nCells
 
-        integer, dimension(:), pointer :: maxLevelCell
+        integer, dimension(:), pointer :: maxLevelCell, nCellsArray
 
         err = 0
 
@@ -128,7 +127,7 @@ contains
            timeLevel = 1
         end if
 
-        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+        call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
@@ -140,6 +139,8 @@ contains
 
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
+
+        nCells = nCellsArray( 2 )
 
         do iCell = 1, nCells
            zTop = 0.0_RKIND
