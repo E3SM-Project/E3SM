@@ -286,7 +286,7 @@ contains
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
- 
+
 
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
