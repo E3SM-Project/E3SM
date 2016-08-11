@@ -146,7 +146,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # self._separate_builds), then use the below logic; otherwise, do two
         # builds.
         self._activate_case1()
-        self.build_indv(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run_phase(self):
         """
