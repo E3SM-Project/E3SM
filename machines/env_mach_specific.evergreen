@@ -1,0 +1,26 @@
+#! /bin/csh -f
+
+#--- set modules
+
+if ( ! $?CCSM_TWIG2_SET ) then
+  echo "set twig2"
+  eval `twig2 -q intel400`
+  eval `twig2 -q openmpi143-intel`
+  eval `twig2 -q netcdf411-intel`
+  setenv CCSM_TWIG2_SET TRUE
+endif
+
+#--- set paths
+
+#--- set env variables for Macros if needed
+#setenv NETCDF ${NETCDF_HOME}
+#setenv PNETCDF /share/apps/pnetcdf/mvapich-1.0.1/pgi
+#setenv LD_LIBRARY_PATH ${NETCDF}/lib:${LD_LIBRARY_PATH}
+
+#-------------------------------------------------------------------------------
+
+limit coredumpsize 1000000
+limit stacksize unlimited
+if ( $?PERL ) then
+  printenv
+endif

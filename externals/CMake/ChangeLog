@@ -1,0 +1,8 @@
+This repository tracks changes using the Git log.
+
+For small changes, e.g. fixing typos, use a one line, 50 character summary.
+
+For larger changes, this summary should be followed by a blank line and a
+longer description. The following link gives good advice:
+
+http://justinhileman.info/article/changing-history/#make-the-most-of-your-commit-message

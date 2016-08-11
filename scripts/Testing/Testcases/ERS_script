@@ -1,0 +1,133 @@
+
+#======================================================================
+# Test setup:
+#======================================================================
+
+# turn on memory leak check - if comparing with baseline also 
+# compare memory highwater mark from baseline 
+set DETECT_MEMORY_LEAK
+if ($?COMPARE_BASELINE ) then
+  set COMPARE_MEMORY
+  set COMPARE_THROUGHPUT
+endif
+
+set STOP_N      = `./xmlquery STOP_N      -value`
+set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+
+if (${STOP_N} < 3) then
+  echo "ERROR:  stop_n too short" >>& $TESTSTATUS_LOG
+  echo "TFAIL ${CASE} "     >>& $TESTSTATUS_OUT
+  exit -1
+endif
+
+@ stopn1 = ${STOP_N}
+@ restn1 = ${stopn1} / 2 + 1
+@ histn  = ${stopn1}
+@ stopn2 = ${stopn1} - ${restn1}
+
+#======================================================================
+# (1) Test run:
+# do an initial run test
+#======================================================================
+
+cd $CASEROOT
+
+echo "" >>& $TESTSTATUS_LOG 
+echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
+./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+./$CASE.run
+if ($status != 0) then
+    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+if ( $?CplLogFile ) then
+    if (-e $CplLogFile) then
+       set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+       if ($pass != 1) then
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 	   exit -1
+       else 
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       endif
+    endif
+else
+    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+echo "" >>& $TESTSTATUS_LOG
+echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
+echo "" >>& $TESTSTATUS_LOG
+
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" $add_iop
+
+#======================================================================
+# (2) Test run:
+# do a restart run
+#======================================================================
+
+cd $CASEROOT
+
+echo "restart: doing a ${stopn2} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn2}
+./xmlchange -file env_run.xml -id REST_OPTION  -val never
+./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+./$CASE.run
+if ($status != 0) then
+    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+if ( $?CplLogFile ) then
+    if (-e $CplLogFile) then
+       set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+       if ($pass != 1) then
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 	   exit -1
+       else 
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       endif
+    endif
+else
+    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+echo "" >>& $TESTSTATUS_LOG
+echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix rest $add_iop" >>& $TESTSTATUS_LOG
+echo ""	>>& $TESTSTATUS_LOG
+
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix rest $add_iop
+
+#======================================================================
+# Test status check:
+#======================================================================
+
+set CPLLOG = $CplLogFile
+
+echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
+echo "" >>& $TESTSTATUS_LOG
+
+echo "obtaining test functionality from history files with command "										     >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest $add_iop -msg $msg">>& $TESTSTATUS_LOG
+echo ""																		     >>& $TESTSTATUS_LOG
+
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+
+

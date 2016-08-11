@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<config_definition>
+
+<entry id="dyn" value="eul"/>
+<entry id="res" value="64x128"/>
+
+</config_definition>

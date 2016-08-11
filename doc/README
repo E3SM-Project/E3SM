@@ -1,0 +1,32 @@
+--------------------------------------------------------------------------------
+                         CESM1.3 DOCUMENTATION  README
+
+To generate documentation for a CESM1.3 tag, follow these steps:
+
+1. Check out the entire CESM code base tag from SVN
+
+2. generate usersguide using docbook
+   - cd scripts/doc/usersguide
+   - ./rundocbook.csh
+   - cp *.* [path-to-web-server-accessible-directory]
+     example on CGD host: cp *.* /cesmweb/html/models/cesm1.3/cesm/doc/usersguide
+     and corresponding URL: http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/usersguide/book1.html
+
+3. generate modelnl documentation
+   - cd scripts/doc/modelnl
+   - ./create_tables
+   - cp *.* [path-to-web-server-accessible-directory]
+     example on CGD host: cp * /cesmweb/html/models/cesm1.3/cesm/doc/modelnl
+     and corresponding URL: http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/modelnl/index.html
+
+4. generate scripts and tools API documentation using doxygen
+   - cd scripts/doc/apidocs
+   - doxygen
+   - cd html
+   - cp *.* [path-to-web-server-accessible-directory]
+     example on CGD host: cp -R html /cesmweb/html/models/cesm1.3/cesm/doc/apidocs
+     and corresponding URL: http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/apidocs/html
+   
+http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc
+
+--------------------------------------------------------------------------------

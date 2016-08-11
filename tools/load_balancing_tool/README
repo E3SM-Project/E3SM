@@ -1,0 +1,44 @@
+#######################################################################
+##
+## CESM Load Balancing Tool
+## 
+## Developed by Sheri Mickelson mickelso@ucar.edu
+##              Yuri Alekseev (ALCF/Argonne National Laboratory
+##
+########################################################################
+
+To Run:
+
+Edit global_variables.csh
+  >In the "Set case variables" section, set each env variable to correctly
+   describe the setup you're interested in.
+
+  >In the "Set the location of the load balancing results" section, set
+   "results_dir" to where you would like the scaling plots and load balancing
+   results be produced.
+
+  >In the "Set the test layouts to produce the scaling curves" section, set the
+   thread count to be used by all components.  You will also need to set the
+   pe counts/root locations for the scaling tests that will be ran by the
+   "run_first.csh" script.
+
+  >In the last section, you'll want to set the pes counts that you'd like to find
+   a balanced layout for.  This can be a single value or mult. values.
+
+
+After the global_variabes.csh file is setup, run the "run_first.csh" script.  This script
+will setup the scaling test runs for you, build them, and submit them to the queue.
+
+Once all of your runs have ran successfully, run the "run_second.csh" script.  This script
+will copy the timing files over to the "results_dir" you set in the global_variables.csh
+script.  They will be analyzed and the scaling curves will be plotted for reference.  It
+will give you a text file with the load balanced layout and create an evn_mach_pes.xml file
+you can use.  These files will have the "target_tasks" pe counts appended to the name and
+a set will be produced for each TARGET_TASK you listed.
+
+It is very important that you look at the scaling curves that are plotted out.  You want to make sure
+all curves are smooth.  Sometimes machine variability can cause one of the scaling runs to run
+longer than expected.  If this happens, the solver will not give you a balanced result
+because the curve is incorrect.  If the curve does not look correct, re-run the faulty CESM run(s) manually
+and then re-run "run_second.csh" once the run(s) complete.
+

@@ -1,0 +1,41 @@
+#! /usr/bin/env perl
+use POSIX qw(strftime);
+use File::Path;
+use File::Copy;
+use File::Spec;
+use File::Basename;
+use XML::LibXML;
+my $toolsdir = "./Tools";
+push(@INC, $toolsdir);
+require ConfigCase;
+require Run::RunChecks;
+require ModuleLoader;
+
+
+#------------------------------------------------------------------------------
+# Batch system directives
+#------------------------------------------------------------------------------
+{{ batchdirectives }}
+#------------------------------------------------------------------------------
+# PE Layout Documentation:
+#------------------------------------------------------------------------------
+{{ pedocumentation }}
+# -------------------------------------------------------------------------
+# global data needed by the script, stuff like the max number of threads,
+# -------------------------------------------------------------------------
+
+sub main
+{
+	$ENV{'maxthrds'} = 1;
+
+    # First, get the configuration from every xml file.
+    my %config = ConfigCase->getAllResolved();
+    my $buildenv = ConfigCase->new("./Tools/config_definition.xml", "./env_build.xml");
+
+
+    # Change to the case root
+    chdir($config{'CASEROOT'});
+
+	qx($config{'BATCHSUBMIT'} $config{'CASEROOT'}/Tools/lt_archive.sh >> ltArchiveStatus 2>&1);
+}
+main(@ARGV) unless caller;

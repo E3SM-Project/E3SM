@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<!-- ================================================================== -->
+<!-- Defaults for clm_inparm                                            -->
+<!-- ================================================================== -->
+
+
+
+<finidat res="1.9x2.5" ic_ymd="101">lnd/clm2/initdata/clmi_0000-01-01_1.9x2.5_gx1v5_c071203.nc</finidat>
+<finidat res="1.9x2.5" ic_ymd="901">lnd/clm2/initdata/clmi_0000-09-01_1.9x2.5_gx1v5_c071203.nc</finidat>
+
+<!-- Plant function types (relative to {csmdata}) -->
+<fpftcon>lnd/clm2/pftdata/pft-physiology.c070207</fpftcon>
+
+<!-- Surface datasets (relative to {csmdata}) -->
+<fsurdat res="128x256"   >lnd/clm2/surfdata/surfdata_128x256_070209.nc</fsurdat>
+<fsurdat res="64x128"    >lnd/clm2/surfdata/surfdata_064x128_061205.nc</fsurdat>
+<fsurdat res="48x96"     >lnd/clm2/surfdata/surfdata_048x096_061108.nc</fsurdat>
+<fsurdat res="32x64"     >lnd/clm2/surfdata/surfdata_32x64_USGS_070110.nc</fsurdat>
+<fsurdat res="8x16"      >lnd/clm2/surfdata/surfdata_8x16_USGS_070110.nc</fsurdat>
+
+<fsurdat res="0.23x0.31" >lnd/clm2/surfdata/surfdata_0.23x0.31_c070927.nc</fsurdat>
+<fsurdat res="0.47x0.63" >lnd/clm2/surfdata/surfdata_0.47x0.63_c070927.nc</fsurdat>
+<fsurdat res="0.9x1.25"  >lnd/clm2/surfdata/surfdata_0.9x1.25_c070501.nc</fsurdat>
+<fsurdat res="1x1.25"    >lnd/clm2/surfdata/surfdata_1x1.25_c070501.nc</fsurdat>
+<fsurdat res="1.9x2.5"   >lnd/clm2/surfdata/surfdata_1.9x2.5_c070501.nc</fsurdat>
+<fsurdat res="2x2.5"     >lnd/clm2/surfdata/surfdata_2x2.5_USGS_070206.nc</fsurdat>
+<fsurdat res="4x5"       >lnd/clm2/surfdata/surfdata_4x5_USGS_070208.nc</fsurdat>
+<fsurdat res="10x15"     >lnd/clm2/surfdata/surfdata_10x15_USGS_070110.nc</fsurdat>
+ 
+<!-- Grid datasets (relative to {csmdata}) -->
+<fatmgrid res="128x256"   >lnd/clm2/griddata/griddata_128x256_060829.nc</fatmgrid>
+<fatmgrid res="64x128"    >lnd/clm2/griddata/griddata_64x128_060829.nc</fatmgrid>
+<fatmgrid res="48x96"     >lnd/clm2/griddata/griddata_48x96_060829.nc</fatmgrid>
+<fatmgrid res="32x64"     >lnd/clm2/griddata/griddata_32x64_USGS_070110.nc</fatmgrid>
+<fatmgrid res="8x16"      >lnd/clm2/griddata/griddata_8x16_USGS_070110.nc</fatmgrid>
+
+<fatmgrid res="0.23x0.31" >lnd/clm2/griddata/griddata_0.23x0.31_c070927.nc</fatmgrid>
+<fatmgrid res="0.47x0.63" >lnd/clm2/griddata/griddata_0.47x0.63_c070918.nc</fatmgrid>
+<fatmgrid res="0.9x1.25"  >lnd/clm2/griddata/griddata_0.9x1.25_070212.nc</fatmgrid>
+<fatmgrid res="1x1.25"    >lnd/clm2/griddata/griddata_1x1.25_060404.nc</fatmgrid>
+<fatmgrid res="1.9x2.5"   >lnd/clm2/griddata/griddata_1.9x2.5_060404.nc</fatmgrid>
+<fatmgrid res="2x2.5"     >lnd/clm2/griddata/griddata_2x2.5_060502.nc</fatmgrid>
+<fatmgrid res="4x5"       >lnd/clm2/griddata/griddata_4x5_060404.nc</fatmgrid>
+<fatmgrid res="10x15"     >lnd/clm2/griddata/griddata_10x15_USGS_070110.nc</fatmgrid>
+
+<!-- Fraction datasets (relative to {csmdata}) -->
+
+<fatmlndfrc res="128x256"    >lnd/clm2/griddata/fracdata_128x256_USGS_070110.nc</fatmlndfrc>
+<fatmlndfrc res="64x128"     >lnd/clm2/griddata/fracdata_64x128_USGS_070110.nc</fatmlndfrc>
+<fatmlndfrc res="48x96"      >lnd/clm2/griddata/fracdata_48x96_USGS_070110.nc</fatmlndfrc>
+<fatmlndfrc res="32x64"     >lnd/clm2/griddata/fracdata_32x64_USGS_070110.nc</fatmlndfrc>
+<fatmlndfrc res="8x16"      >lnd/clm2/griddata/fracdata_8x16_USGS_070110.nc</fatmlndfrc>
+
+<fatmlndfrc res="0.23x0.31" >lnd/clm2/griddata/fracdata_0.23x0.31_USGS_c070927.nc</fatmlndfrc>
+<fatmlndfrc res="0.47x0.63" >lnd/clm2/griddata/fracdata_0.47x0.63_USGS_c070918.nc</fatmlndfrc>
+<fatmlndfrc res="0.9x1.25"  >lnd/clm2/griddata/fracdata_0.9x1.25_gx1v5_c070927.nc</fatmlndfrc>
+<fatmlndfrc res="1x1.25"    >lnd/clm2/griddata/fracdata_1x1.25_gx1v5_070612.nc</fatmlndfrc>
+<fatmlndfrc res="1.9x2.5"   >lnd/clm2/griddata/fracdata_1.9x2.5_gx1v5_070316.nc</fatmlndfrc>
+<fatmlndfrc res="2x2.5"     >lnd/clm2/griddata/fracdata_2x2.5_USGS_070110.nc</fatmlndfrc>
+<fatmlndfrc res="4x5"       >lnd/clm2/griddata/fracdata_4x5_USGS_070110.nc</fatmlndfrc>
+<fatmlndfrc res="10x15"     >lnd/clm2/griddata/fracdata_10x15_USGS_070110.nc</fatmlndfrc>
+
+</namelist_defaults>

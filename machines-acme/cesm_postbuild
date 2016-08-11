@@ -1,0 +1,32 @@
+#!/bin/csh -f
+# cesm_postbuild without support for performance data archving: 
+#  ./cesm_postbuild with the following required argument keyword/value pairs, in any order
+#   -cesmid <$LID in cesm-lingo>
+#   -cesmroot <top level of CESM/ACME checkout>
+#   -caseroot <directory from which job script was submitted>
+#   -exedir <bld directory>
+
+set lid = 'unknown'
+set cesmroot = '.'
+set caseroot = '.'
+set exe_dir = '.'
+
+set i = 1
+while ($i < $#argv)
+  if ("X$argv[$i]" == 'X-cesmid') then
+    @ i = $i + 1
+    set lid = $argv[$i]
+  else if ("X$argv[$i]" == 'X-cesmroot') then
+    @ i = $i + 1
+    set cesmroot = $argv[$i]
+  else if ("X$argv[$i]" == 'X-caseroot') then
+    @ i = $i + 1
+    set caseroot = $argv[$i]
+  else if ("X$argv[$i]" == 'X-exedir') then
+    @ i = $i + 1
+    set exe_dir = $argv[$i]
+  endif
+  @ i = $i + 1
+end
+
+

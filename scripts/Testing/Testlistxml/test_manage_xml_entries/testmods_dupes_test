@@ -1,0 +1,5 @@
+ERS.f10_f10.B.frankfurt_pgi.clm-default # Testmods comment
+ERS.f10_f10.B.frankfurt_pgi             # No Testmods comment
+ERS.f10_f10.B.frankfurt_pgi.clm-decStart # clm decStart
+ERS.f10_f10.B.frankfurt_pgi.clm-Foo1 # Foo1 comment
+ERS.f10_f10.B.frankfurt_pgi.clm-Foo2 # Foo2 comment
