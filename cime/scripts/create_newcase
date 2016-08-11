@@ -684,12 +684,6 @@ if (defined $opts{'pes_file'}) {
         }
     }
 
-    if ($decomp{NTASKS_ATM} == 1 && $decomp{NTASKS_LND} == 1 &&
-	$decomp{NTASKS_OCN} == 1 && $decomp{NTASKS_ICE} == 1 &&
-	$decomp{NTASKS_ROF} == 1 && $decomp{NTASKS_GLC} == 1 &&
-	$decomp{NTASKS_WAV} == 1 && $decomp{NTASKS_CPL} == 1 &&
-	$mpilib =~ 'unset') { $mpilib = "mpi-serial"; }
-
     $cfg_ref->set('NTASKS_ATM', $decomp{'NTASKS_ATM'});
     $cfg_ref->set('NTASKS_LND', $decomp{'NTASKS_LND'});
     $cfg_ref->set('NTASKS_ICE', $decomp{'NTASKS_ICE'});
