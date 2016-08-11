@@ -114,8 +114,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2, err3, timeLevel
-      integer, pointer :: indexTemperature, indexSalinity
+      integer :: err1, err2, err3, timeLevel, nCells
+      integer, pointer :: indexTemperature, indexSalinity, nCellsSolve
 
       type (mpas_pool_type), pointer :: tracersPool
 
@@ -148,6 +148,7 @@ contains
          timeLevel = 1
       end if
 
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
@@ -163,13 +164,15 @@ contains
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
+      nCells = nCellsSolve
+
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, err, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'relative', density, err, &
                                          timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, err, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'relative', displacedDensity, err, &
                                          timeLevelIn=timeLevel)
 
       call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, &
@@ -235,8 +238,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k
-      integer, pointer :: nEdges
+      integer :: iEdge, k, nEdges
+      integer, pointer :: nEdgesSolve
 
       integer, dimension(:), pointer :: maxLevelEdgeTop
 
@@ -252,9 +255,11 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_visc', config_bkrd_vert_visc)
       call mpas_pool_get_config(ocnConfigs, 'config_convective_visc', config_convective_visc)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+      nEdges = nEdgesSolve
 
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
@@ -333,8 +338,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
-      integer, pointer :: nCells
+      integer :: iCell, k, nCells
+      integer, pointer :: nCellsSolve
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -352,9 +357,11 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_rich_mix', config_rich_mix)
       call mpas_pool_get_config(ocnConfigs, 'config_convective_diff', config_convective_diff)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+      nCells = nCellsSolve
 
       coef = -gravity / rho_sw / 2.0_RKIND
       !$omp do schedule(runtime) private(k)
@@ -447,8 +454,9 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, iEdge, k, i
-      integer :: cell1, cell2
-      integer, pointer :: nVertLevels, nCells, nEdges
+      integer :: cell1, cell2, nCells, nEdges
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell, edgeSignOnCell
@@ -467,8 +475,8 @@ contains
       call mpas_timer_start('get rich nums')
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
@@ -485,16 +493,18 @@ contains
       call mpas_pool_get_field(scratchPool, 'ddensityTopOfEdge', ddensityTopOfEdgeField)
       call mpas_pool_get_field(scratchPool, 'du2TopOfCell', du2TopOfCellField)
       call mpas_pool_get_field(scratchPool, 'du2TopOfEdge', du2TopOfEdgeField)
-      call mpas_allocate_scratch_field(ddensityTopOfCellField, .true.)
-      call mpas_allocate_scratch_field(ddensityTopOfEdgeField, .true.)
-      call mpas_allocate_scratch_field(du2TopOfCellField, .true.)
-      call mpas_allocate_scratch_field(du2TopOfEdgeField, .true.)
+      call mpas_allocate_scratch_field(ddensityTopOfCellField, .true., .false.)
+      call mpas_allocate_scratch_field(ddensityTopOfEdgeField, .true., .false.)
+      call mpas_allocate_scratch_field(du2TopOfCellField, .true., .false.)
+      call mpas_allocate_scratch_field(du2TopOfEdgeField, .true., .false.)
       call mpas_threading_barrier()
 
       ddensityTopOfCell => ddensityTopOfCellField % array
       ddensityTopOfEdge => ddensityTopOfEdgeField % array
       du2TopOfCell => du2TopOfCellField % array
       du2TopOfEdge => du2TopOfEdgeField % array
+
+      nCells = nCellsArray( size(nCellsArray) )
 
       ! ddensityTopOfCell(k) = $\rho^*_{k-1}-\rho_k$, where $\rho^*$ has been adiabatically displaced to level k.
       !$omp do schedule(runtime)
@@ -505,6 +515,8 @@ contains
       end do
       !$omp end do
 
+      nEdges = nEdgesArray( size(nEdgesArray) )
+
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          ddensityTopOfEdge(:, iEdge) = 0.0_RKIND
@@ -512,6 +524,8 @@ contains
          RiTopOfEdge(:, iEdge) = 0.0_RKIND
       end do
       !$omp end do
+
+      nCells = nCellsArray( 2 )
 
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
@@ -521,27 +535,25 @@ contains
       end do
       !$omp end do
 
-      ! interpolate ddensityTopOfCell to ddensityTopOfEdge
+      nEdges = nEdgesArray( 2 )
+
       !$omp do schedule(runtime) private(cell1, cell2, k)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k = 2, maxLevelEdgeTop(iEdge)
+            ! interpolate ddensityTopOfCell to ddensityTopOfEdge
             ddensityTopOfEdge(k,iEdge) = &
                (ddensityTopOfCell(k,cell1) + &
                 ddensityTopOfCell(k,cell2))/2
+
+            ! du2TopOfEdge(k) = $u_{k-1}-u_k$
+            du2TopOfEdge(k,iEdge) = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
          end do
        end do
        !$omp end do
 
-      ! du2TopOfEdge(k) = $u_{k-1}-u_k$
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges
-         do k = 2, maxLevelEdgeTop(iEdge)
-            du2TopOfEdge(k,iEdge) = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
-         end do
-      end do
-      !$omp end do
+       nCells = nCellsArray( 1 )
 
       ! interpolate du2TopOfEdge to du2TopOfCell
       !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k)
@@ -562,6 +574,8 @@ contains
       ! coef = -g/density_0/2
       coef = -gravity / rho_sw / 2.0_RKIND
 
+      nEdges = nEdgesArray( 2 )
+
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 2, maxLevelEdgeTop(iEdge)
@@ -571,6 +585,8 @@ contains
          end do
       end do
       !$omp end do
+
+      nCells = nCellsArray( 1 )
 
       ! compute RiTopOfCell using ddensityTopOfCell and du2TopOfCell
       ! coef = -g/density_0/2

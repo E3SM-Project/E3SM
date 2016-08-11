@@ -167,8 +167,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, cell1, cell2, iCell
-      integer, pointer :: nCells, nEdges
+      integer :: iEdge, cell1, cell2, iCell, nCells, nEdges
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -182,14 +182,17 @@ contains
 
       call mpas_timer_start("bulk_ws", .false.)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
       call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
+
+      nEdges = nEdgesArray( 3 )
+      nCells = nCellsArray( 2 )
 
       ! Convert CESM wind stress to MPAS-O wind stress
       !$omp do schedule(runtime) private(cell1, cell2, zonalAverage, meridionalAverage)
@@ -262,8 +265,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell
-      integer, pointer :: nCells, nEdges
+      integer :: iCell, nCells, nEdges
+      integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -277,7 +280,7 @@ contains
 
       call mpas_timer_start("bulk_thick", .false.)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
       call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
@@ -286,6 +289,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
+      nCells = nCellsArray( 2 )
 
       ! Build surface fluxes at cell centers
       !$omp do schedule(runtime)
@@ -384,9 +388,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell
+      integer :: iCell, nCells
       integer, pointer :: index_temperature_flux, index_salinity_flux
-      integer, pointer :: nCells
+      integer, dimension(:), pointer :: nCellsArray
 
       type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
 
@@ -399,7 +403,7 @@ contains
 
       err = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
 
@@ -421,6 +425,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
+
+      nCells = nCellsArray( 2 )
 
       ! Build surface fluxes at cell centers
       !$omp do schedule(runtime) private(allowedSalt, requiredSalt)
