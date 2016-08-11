@@ -53,10 +53,14 @@ class A_RunUnitTests(unittest.TestCase):
         # within this single unit test, but doing it this way makes it
         # consistent with how we run other tests in this module.
 
-        cmd = 'python -m unittest discover'
-        stat, output, _ = run_cmd("%s 2>&1"%cmd, from_dir = LIB_DIR)
+        testsuite = unittest.defaultTestLoader.discover(
+            start_dir = LIB_DIR,
+            pattern = 'test*.py')
 
-        self.assertEqual(stat, 0, msg=output)
+        testrunner = unittest.TextTestRunner(buffer=False)
+
+        results = testrunner.run(testsuite)
+        self.assertTrue(results.wasSuccessful())
 
     def test_CIME_doctests(self):
         # Find and run all the doctests in the CIME directory tree
