@@ -336,7 +336,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
-      real (kind=RKIND),   dimension(:), pointer :: frazilSurfacePressure
+      real (kind=RKIND), dimension(:), pointer :: frazilSurfacePressure
+      integer, dimension(:), pointer :: landIceMask
 
       integer :: iCell, k, nCells
       integer, dimension(:), pointer :: nCellsArray
@@ -404,9 +405,10 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(forcingPool, 'frazilTemperatureTendency', frazilTemperatureTendency)
-      call mpas_pool_get_array(forcingPool,'frazilSalinityTendency', frazilSalinityTendency)
-      call mpas_pool_get_array(forcingPool,'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
-      call mpas_pool_get_array(forcingPool,'frazilSurfacePressure', frazilSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'frazilSalinityTendency', frazilSalinityTendency)
+      call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
       ! get configure parameters
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_maximum_depth', config_frazil_maximum_depth)
@@ -436,6 +438,13 @@ contains
       !$omp                              oceanFreezingTemperature, potential, freezingEnergy, meltingEnergy, &
       !$omp                              newFrazilIceThickness, meltedFrazilIceThickness)
       do iCell=1,nCells
+
+        if ( associated(landIceMask) ) then
+           if ( landIceMask(iCell) == 1) then
+              ! for now, no frazil is supported under land ice
+              cycle
+           end if
+        end if
 
         ! find deepest level where frazil can be created
         kBottomFrazil=maxLevelCell(iCell)

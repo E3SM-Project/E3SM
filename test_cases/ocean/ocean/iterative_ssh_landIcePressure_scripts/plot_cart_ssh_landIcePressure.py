@@ -117,7 +117,9 @@ parser = OptionParser()
 
 parser.add_option("--outImageFolder", type="string", default="plots", dest="outImageFolder")
 parser.add_option("--inFolder", type="string", default=".", dest="inFolder")
-parser.add_option("--initFile", type="string", default='ocean.nc', dest="initFile")
+parser.add_option("--initFile", type="string", default='init.nc', dest="initFile")
+parser.add_option("--forcingFile", type="string", default='forcing_data.nc', dest="forcingFile")
+parser.add_option("--sshFile", type="string", default='output_ssh.nc', dest="sshFile")
 parser.add_option("--iterIndex", type="int", default=0, dest="iterIndex")
 
 options, args = parser.parse_args()
@@ -128,23 +130,27 @@ except OSError as e:
   pass
 
 inFileName = '%s/%s'%(options.inFolder,options.initFile)
-print inFileName
 inFile = Dataset(inFileName,'r')
+inFileName = '%s/%s'%(options.inFolder,options.forcingFile)
+forcingFile = Dataset(inFileName,'r')
+inFileName = '%s/%s'%(options.inFolder,options.sshFile)
+sshFile = Dataset(inFileName,'r')
 
 nVertices = len(inFile.dimensions['nVertices'])
 nCells = len(inFile.dimensions['nCells'])
 nEdges = len(inFile.dimensions['nEdges'])
 nVertLevels = len(inFile.dimensions['nVertLevels'])
-nTime = len(inFile.dimensions['Time'])
 
 nVerticesOnCell = numpy.array(inFile.variables['nEdgesOnCell'])
 verticesOnCell = numpy.array(inFile.variables['verticesOnCell'])-1
 xVertex = numpy.array(inFile.variables['xVertex'])
 yVertex = numpy.array(inFile.variables['yVertex'])
 
-ssp = inFile.variables['seaSurfacePressure'][nTime-1,:]
-ssh = inFile.variables['ssh'][nTime-1,:]
-deltaSSH = inFile.variables['deltaSSH'][nTime-1,:]
+nTime = len(sshFile.dimensions['Time'])
+landIcePressure = forcingFile.variables['landIcePressure'][nTime-1,:]
+nTime = len(sshFile.dimensions['Time'])
+ssh = sshFile.variables['ssh'][nTime-1,:]
+deltaSSH = ssh - inFile.variables['ssh'][0,:]
 
 inFile.close()
 
@@ -152,7 +158,7 @@ cellPatches = computeCellPatches()
 
 tIndex = options.iterIndex
 
-plotHorizField(ssp, 'SSP (Pa)', 'ssp')
+plotHorizField(landIcePressure, 'land-ice pressure (Pa)', 'landIcePressure')
 plotHorizField(ssh, 'SSH (m)', 'ssh')
 plotHorizField(deltaSSH, 'delta SSH (m)', 'deltaSSH')
 

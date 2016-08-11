@@ -32,6 +32,7 @@
                                 <member name="landIceFraction" type="var"/>
                                 <member name="landIceSurfaceTemperature" type="var"/>
                                 <member name="seaSurfacePressure" type="var"/>
+                                <member name="landIcePressure" type="var"/>
                         </add_contents>
                 </stream>
 		<stream name="output">
@@ -47,6 +48,7 @@
 				<member name="layerThickness" type="var"/>
 				<member name="ssh" type="var"/>
 				<member name="seaSurfacePressure" type="var"/>
+				<member name="landIcePressure" type="var"/>
 				<member name="landIceFraction" type="var"/>
 				<member name="landIceFreshwaterFlux" type="var"/>
 				<member name="landIceHeatFlux" type="var"/>

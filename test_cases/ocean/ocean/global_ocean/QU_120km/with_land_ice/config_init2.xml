@@ -35,7 +35,7 @@
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
 		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
-		<option name="config_iterative_init_variable">'ssp_from_top_density'</option>
+		<option name="config_iterative_init_variable">'landIcePressure_from_top_density'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

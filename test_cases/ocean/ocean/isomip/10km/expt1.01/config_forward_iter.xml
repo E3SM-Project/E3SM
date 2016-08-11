@@ -9,7 +9,7 @@
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_run_duration">'0000_01:00:00'</option>
-		<option name="config_land_ice_flux_mode">'off'</option>
+		<option name="config_land_ice_flux_mode">'pressure_only'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

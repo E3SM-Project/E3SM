@@ -9,7 +9,7 @@
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init.xml" path_base="script_configuration_dir"/>
 		<option name="config_write_cull_cell_mask">.false.</option>
-		<option name="config_iterative_init_variable">'ssp_from_top_density'</option>
+		<option name="config_iterative_init_variable">'landIcePressure_from_top_density'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
@@ -17,7 +17,10 @@
 	</streams>
 
 	<run_script name="run.py">
-		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 
 </config>

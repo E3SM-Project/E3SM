@@ -16,6 +16,7 @@
 		<option name="config_dt">'00:20:00'</option>
 		<option name="config_run_duration">'0000_04:00:00'</option>
 		<option name="config_write_output_on_startup">.false.</option>
+		<option name="config_land_ice_flux_mode">'pressure_only'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

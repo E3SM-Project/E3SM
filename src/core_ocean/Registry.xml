@@ -204,10 +204,10 @@
 					possible_values="Any positive non-zero integer."
 		/>
 	</nml_record>
-	<nml_record name="init_ssh_and_ssp" mode="init">
-		<nml_option name="config_iterative_init_variable" type="character" default_value="ssp" units="unitless"
-					description="Which variable, ssh or ssp, is computed from the other.  If ssp is to be computed, 'ssp_from_top_density' indicates that the top density (rather than the mean density displaced by land ice) should be used to compute the ssp."
-					possible_values="'ssh', 'ssp_from_top_density' or 'ssp'"
+	<nml_record name="init_ssh_and_landIcePressure" mode="init">
+		<nml_option name="config_iterative_init_variable" type="character" default_value="landIcePressure" units="unitless"
+					description="Which variable, ssh or landIcePressure, is computed from the other.  If landIcePressure is to be computed, 'landIcePressure_from_top_density' indicates that the top density (rather than the mean density displaced by land ice) should be used to compute the landIcePressure."
+					possible_values="'ssh', 'landIcePressure_from_top_density' or 'landIcePressure'"
 		/>
 	</nml_record>
 
@@ -721,7 +721,7 @@
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off" units="unitless"
 					description="Selects the mode in which land-ice fluxes are computed."
-					possible_values="'off','standalone','coupled'"
+					possible_values="'off','pressure_only','standalone','coupled'"
 		/>
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins" units="unitless"
 					description="Name of land-ice flux formulation."
@@ -1096,6 +1096,7 @@
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
+		<package name="landIcePressurePKG" description="This package includes only land ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
@@ -1200,6 +1201,7 @@
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
 			<var name="landIceFraction"/>
+			<var name="landIcePressure"/>
 			<var name="landIceSurfaceTemperature"/>
 			<var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
 			<var_array name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG"/>
@@ -1341,6 +1343,7 @@
 			<var name="simulationStartTime"/>
 			<var name="boundaryLayerDepth"/>
 			<var name="seaSurfacePressure" packages="restartForcingFields"/>
+			<var name="landIcePressure" packages="restartForcingFields"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -1428,6 +1431,7 @@
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
 			<var name="landIceFraction"/>
+			<var name="landIcePressure"/>
 			<var name="landIceSurfaceTemperature"/>
 			<var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
 			<var_array name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG"/>
@@ -2619,6 +2623,14 @@
 			description="The fraction of each cell covered by land ice"
 			packages="landIceFluxesPKG"
 		/>
+		<var name="landIceMask" type="integer" dimensions="nCells Time" units="unitless"
+			description="Mask indicating where land-ice is present (1) or absent (0)"
+			packages="landIceFluxesPKG"
+		/>
+		<var name="landIcePressure" type="real" dimensions="nCells Time" units="Pa"
+			description="Pressure defined at the sea surface due to land ice."
+			packages="landIcePressurePKG"
+		/>
 		<!-- Input fields from initial condition for standalone land-ice fluxes -->
 		<var name="landIceSurfaceTemperature" type="real" dimensions="nCells Time" units="C"
 			description="temperature at the surface of land ice"
@@ -3036,7 +3048,7 @@
 			type="real" dimensions="nVertLevels nCells" units="various"
 			description="temporary space for holding one tracer at a time as part of horizontal interpolation"
 		/>
-		<!-- FIELDS FOR SSP AND SSH INITIALIZATION -->
+		<!-- FIELDS FOR LAND-ICE PRESSURE AND SSH INITIALIZATION -->
 		<var name="scratchZMid"
 			persistence="scratch"
 			type="real" dimensions="nVertLevels nCells" units="m"
