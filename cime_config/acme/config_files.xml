@@ -88,9 +88,9 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_compsets.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_compsets.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_compsets.xml</value>
-      <value component="mpas-o"   >$SRCROOT/components/mpas-o/cime_config/config_compsets.xml</value>
+      <value component="mpaso"    >$SRCROOT/components/mpas-o/cime_config/config_compsets.xml</value>
       <value component="mpasli"   >$SRCROOT/components/mpasli/cime_config/config_compsets.xml</value>
-      <value component="mpas-cice"   >$SRCROOT/components/mpas-cice/cime_config/config_compsets.xml</value>
+      <value component="mpascice"   >$SRCROOT/components/mpas-cice/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -108,9 +108,9 @@
       <value component="clm"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="cice"     >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="pop"     >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
-      <value component="mpas-o"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="mpaso"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="mpasli"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
-      <value component="mpas-cice"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="mpascice"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -131,8 +131,6 @@
     <file>env_test.xml</file>
     <desc>directories containing cime compatible system test modules</desc>
   </entry>
-
-
 
   <entry id="TESTS_SPEC_FILE">
     <type>char</type>
@@ -251,6 +249,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
+      <value component="mpascice">$SRCROOT/components/mpas-cice/cime_config/config_component.xml</value>
       <value component="cice">$SRCROOT/components/cice/cime_config/config_component.xml</value>
       <value component="dice">$CIMEROOT/components/data_comps/dice/cime_config/config_component.xml</value>
       <value component="sice">$CIMEROOT/components/stub_comps/sice/cime_config/config_component.xml</value>
@@ -265,6 +264,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
+      <value component="mpaso"  >$SRCROOT/components/mpas-o/cime_config/config_component.xml</value>
       <value component="pop"  >$SRCROOT/components/pop/cime_config/config_component.xml</value>
       <value component="aquap">$SRCROOT/components/aquap/cime_config/config_component.xml</value>
       <value component="docn" >$CIMEROOT/components/data_comps/docn/cime_config/config_component.xml</value>
@@ -280,6 +280,9 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
+      <value component="mpasli">$SRCROOT/components/mpasli/cime_config/config_component.xml</value>
+      <value component="mpaslisia">$SRCROOT/components/mpasli/cime_config/config_component.xml</value>
+      <value component="mpaslialb">$SRCROOT/components/mpasli/cime_config/config_component.xml</value>
       <value component="cism">$SRCROOT/components/cism/cime_config/config_component.xml</value>
       <value component="dglc">$CIMEROOT/components/data_comps/dglc/cime_config/config_component.xml</value>
       <value component="sglc">$CIMEROOT/components/stub_comps/sglc/cime_config/config_component.xml</value>
