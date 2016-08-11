@@ -49,9 +49,8 @@ class A_RunUnitTests(unittest.TestCase):
         # This is analogous to running:
         #     python -m unittest discover
         #
-        # It seems kind of funny to run a bunch of other unit test suites from
-        # within this single unit test, but doing it this way makes it
-        # consistent with how we run other tests in this module.
+        # Yes, that means we have a bunch of unit tests run from this one unit
+        # test.
 
         testsuite = unittest.defaultTestLoader.discover(
             start_dir = LIB_DIR,
@@ -59,7 +58,15 @@ class A_RunUnitTests(unittest.TestCase):
 
         testrunner = unittest.TextTestRunner(buffer=False)
 
-        results = testrunner.run(testsuite)
+        # Disable logging; otherwise log messages written by code under test
+        # clutter the unit test output
+        log_lvl = logging.getLogger().getEffectiveLevel()
+        logging.disable(logging.CRITICAL)
+        try:
+            results = testrunner.run(testsuite)
+        finally:
+            logging.getLogger().setLevel(log_lvl)
+
         self.assertTrue(results.wasSuccessful())
 
     def test_CIME_doctests(self):
