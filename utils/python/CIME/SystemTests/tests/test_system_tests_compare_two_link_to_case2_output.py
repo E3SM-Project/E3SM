@@ -46,9 +46,6 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
     # Stubs of methods that are typically provided by the individual test
     # ------------------------------------------------------------------------
 
-    def _common_setup(self):
-        pass
-
     def _case_one_setup(self):
         pass
 

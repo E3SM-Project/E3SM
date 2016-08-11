@@ -13,9 +13,6 @@ class REP(SystemTestsCompareTwo):
                                        separate_builds = False,
                                        run_two_suffix = 'rep2')
 
-    def _common_setup(self):
-        pass
-
     def _case_one_setup(self):
         pass
 

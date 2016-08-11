@@ -23,9 +23,6 @@ class LII(SystemTestsCompareTwo):
                                        run_one_description = 'use_init_interp set to false',
                                        run_two_description = 'use_init_interp set to true')
 
-    def _common_setup(self):
-        pass
-
     def _case_one_setup(self):
         append_to_user_nl_files(caseroot = self._get_caseroot(),
                                 component = "clm",

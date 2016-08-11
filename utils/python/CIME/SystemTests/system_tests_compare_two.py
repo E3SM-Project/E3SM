@@ -8,16 +8,18 @@ See the documentation of that method for details.
 
 Classes that inherit from this are REQUIRED to implement the following methods:
 
+(1) _case_one_setup
+    This method will be called to set up case 1, the "base" case
+
+(2) _case_two_setup
+    This method will be called to set up case 2, the "test" case
+
+In addition, they MAY require the following method:
+
 (1) _common_setup
     This method will be called to set up both cases. It should contain any setup
     that's needed in both cases. This is called before _case_one_setup or
     _case_two_setup.
-
-(2) _case_one_setup
-    This method will be called to set up case 1, the "base" case
-
-(3) _case_two_setup
-    This method will be called to set up case 2, the "test" case
 
 NOTE: Currently assumes that only one build is needed - i.e., there are no
 build-time settings that need to be changed between the two cases.
@@ -99,17 +101,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     # base class
     # ========================================================================
 
-    def _common_setup(self):
-        """
-        This method will be called to set up both cases. It should contain any setup
-        that's needed in both cases. This is called before _case_one_setup or
-        _case_two_setup.
-
-        This should be written to refer to self._case: It will be called once with
-        self._case pointing to case1, and once with self._case pointing to case2.
-        """
-        raise NotImplementedError
-
     def _case_one_setup(self):
         """
         This method will be called to set up case 1, the "base" case.
@@ -127,6 +118,22 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         case2 at the point that this is called.
         """
         raise NotImplementedError
+
+    # ========================================================================
+    # Methods that MAY be implemented by specific tests that inherit from this
+    # base class, if they have any work to do in these methods
+    # ========================================================================
+
+    def _common_setup(self):
+        """
+        This method will be called to set up both cases. It should contain any setup
+        that's needed in both cases. This is called before _case_one_setup or
+        _case_two_setup.
+
+        This should be written to refer to self._case: It will be called once with
+        self._case pointing to case1, and once with self._case pointing to case2.
+        """
+        pass
 
     # ========================================================================
     # Main public methods
