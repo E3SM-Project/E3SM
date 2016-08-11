@@ -1,6 +1,0 @@
-These files have been adapted from the mpi communication routines in CICE,
-which in turn are based on the communication routines in POP2.0, which
-were written by Phil Jones.
-
-These modules need to be tested further when we run in parallel.
-

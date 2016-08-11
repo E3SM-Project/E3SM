@@ -1,7 +1,0 @@
-domainMod.F90
-mkmapgrids.F90
-nanMod.F90
-shr_kind_mod.F90
-shr_file_mod.F90
-shr_sys_mod.F90
-shr_log_mod.F90

@@ -1,5 +1,0 @@
-This testmods directory is meant to be used in conjunction with a 20th
-century transient case at resolution 1x1_tropicAtl. 
-
-This starts the simulation in the middle of the dataset, in order to
-test the logic for starting in the middle of the landuse_timeseries file.

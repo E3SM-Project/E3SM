@@ -1,1 +1,0 @@
-../PTCLMmkdata --verbose --soilgrid -m yellowstone_intel -s CA-Ojp -d /glade/p/cesmdata/cseg/inputdata --cesm_root /Users/erik/clm_trunk --debug --mydatadir testing_dir/soigrid_file_creation 

@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<config_definition>
-
-<entry id="dyn"   value="sld"    />
-<entry id="hgrid" value="64x128" />
-
-</config_definition>

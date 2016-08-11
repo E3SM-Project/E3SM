@@ -1,7 +1,0 @@
-[time]
-dimensions:    time
-units:         year since 1-1-1 0:0:0
-long_name:     Model time
-standard_name: time
-calendar:      none
-

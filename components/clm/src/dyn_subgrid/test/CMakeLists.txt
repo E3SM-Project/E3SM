@@ -1,4 +1,0 @@
-add_subdirectory(dynInitColumns_test)
-add_subdirectory(dynLandunitArea_test)
-add_subdirectory(dynVar_test)
-add_subdirectory(dynTimeInfo_test)

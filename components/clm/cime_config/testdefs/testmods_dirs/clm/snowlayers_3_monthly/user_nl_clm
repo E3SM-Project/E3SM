@@ -1,4 +1,0 @@
-nlevsno = 3
-
-! Use cold start, because can't change number of snow layers for existing initial conditions file
-finidat = ' '

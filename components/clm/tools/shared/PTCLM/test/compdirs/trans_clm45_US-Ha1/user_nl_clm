@@ -1,6 +1,0 @@
-! user_nl_clm namelist options written by PTCLMmkdata:
-! ../PTCLMmkdata --verbose --pftgrid --phys clm4_5 --clmnmlusecase=20thC_transient --cesm_root ../../../../../../.. -s US-Ha1 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/clm45grd_trans_pft 
- fsurdat = '/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/clm45grd_trans_pft/1x1pt_US-Ha1/surfdata_1x1pt_US-Ha1_simyr1850_clm4_5_pftgrd_c140204.nc'
- flanduse_timeseries = /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/clm45grd_trans_pft/1x1pt_US-Ha1/surfdata.pftdyn1x1pt_US-Ha1_hist_simyr1850-2005_clm4_5_pftgrd_c140204.nc
- hist_nhtfrq = 0
- hist_mfilt  = 1200

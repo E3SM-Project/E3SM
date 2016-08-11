@@ -1,2 +1,0 @@
- use_ozone    = .true.
- hist_fincl2 += 'O3UPTAKESUN', 'O3UPTAKESHA'

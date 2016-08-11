@@ -1,3 +1,0 @@
- hist_fincl1   += 'GDD0', 'GDD8', 'GDD10', 
-                  'GDD020', 'GDD820', 'GDD1020',
-                  'GDDPLANT', 'GDDTSOI', 'A5TMIN', 'A10TMIN'
