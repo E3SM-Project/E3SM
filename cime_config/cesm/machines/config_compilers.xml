@@ -419,6 +419,12 @@ for mct, etc.
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
 
+  <!-- The SLAP library (which is part of the CISM build) has many instances of
+       arguments being passed to different types. So disable argument type
+       checking when building CISM. This can be removed once we remove SLAP from
+       CISM. -->
+  <ADD_FFLAGS MODEL="cism"> -mismatch_all </ADD_FFLAGS>
+
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
   <FIXEDFLAGS> -fixed </FIXEDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>

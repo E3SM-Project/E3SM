@@ -195,6 +195,14 @@ class TestStatus(object):
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD', wait_for_run=True)
         'PEND'
+        >>> _test_helper2('FAIL ERS.foo.A MODEL_BUILD', wait_for_run=True)
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN', wait_for_run=True)
+        'PEND'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nFAIL ERS.foo.A RUN', wait_for_run=True)
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN', wait_for_run=True)
+        'PASS'
         """
         rv = TEST_PASS_STATUS
         run_phase_found = False

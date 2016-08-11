@@ -258,7 +258,7 @@ NightlyStartTime: %s UTC
     CIME.utils.run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, check_memory, ignore_namelists, ignore_memleak):
+def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists, ignore_memleak):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -271,7 +271,8 @@ def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, chec
         if (os.path.exists(test_status_filepath)):
             ts = TestStatus(test_dir=os.path.dirname(test_status_filepath))
             test_name = ts.get_name()
-            test_status = ts.get_overall_test_status(wait_for_run=wait_for_run, check_throughput=check_throughput,
+            test_status = ts.get_overall_test_status(wait_for_run=True, # Important
+                                                     check_throughput=check_throughput,
                                                      check_memory=check_memory, ignore_namelists=ignore_namelists,
                                                      ignore_memleak=ignore_memleak)
 
@@ -292,12 +293,12 @@ def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, chec
                 break
 
 ###############################################################################
-def wait_for_tests_impl(test_paths, no_wait=False, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
+def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
 ###############################################################################
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists, ignore_memleak))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak))
         t.daemon = True
         t.start()
 
@@ -328,7 +329,6 @@ def wait_for_tests_impl(test_paths, no_wait=False, wait_for_run=False, check_thr
 ###############################################################################
 def wait_for_tests(test_paths,
                    no_wait=False,
-                   wait_for_run=False,
                    check_throughput=False,
                    check_memory=False,
                    ignore_namelists=False,
@@ -341,7 +341,7 @@ def wait_for_tests(test_paths,
     # is terminated
     set_up_signal_handlers()
 
-    test_results = wait_for_tests_impl(test_paths, no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists, ignore_memleak)
+    test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):

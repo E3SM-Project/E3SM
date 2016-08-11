@@ -394,4 +394,18 @@ else
     print_status "$overall_status" "$compare_info: test functionality summary ($msg)" "${testcase_base}"
 fi
 
+if [[ $overall_status == FAIL ]]; then
+  exit 1
+else
+  exit 0
+fi
+
+
+
+
+
+
+
+
+
 
