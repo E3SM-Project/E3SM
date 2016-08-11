@@ -310,8 +310,11 @@ LAR    long term archive test
     <DESC>CLM initial condition interpolation test (requires configuration with non-blank finidat)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>0</CCSM_TCOST>
-    <REST_OPTION>none</REST_OPTION>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="PEA">
@@ -388,8 +391,11 @@ LAR    long term archive test
     <DESC>reproducibility test: do two runs give the same answers?</DESC>
     <CCSM_TCOST>0</CCSM_TCOST>
     <INFO_DBUG>1</INFO_DBUG>
-    <REST_OPTION>never</REST_OPTION>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="SBN">

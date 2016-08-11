@@ -24,10 +24,7 @@ class LII(SystemTestsCompareTwo):
                                        run_two_description = 'use_init_interp set to true')
 
     def _common_setup(self):
-        self._case.set_value("CONTINUE_RUN",False)
-        self._case.set_value("REST_OPTION","none")
-        self._case.set_value("HIST_OPTION","$STOP_OPTION")
-        self._case.set_value("HIST_N","$STOP_N")
+        pass
 
     def _case_one_setup(self):
         append_to_user_nl_files(caseroot = self._get_caseroot(),
