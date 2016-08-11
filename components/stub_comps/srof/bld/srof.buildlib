@@ -1,0 +1,34 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR srof.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $model = "rof";
+my $comp  = "srof";
+
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
+my $MACH      = `./xmlquery MACH      -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+
+chdir "${OBJROOT}/${model}/obj";
+
+open(file,">Filepath") or die "Could not open file Filepath to write";
+print file "${CASEROOT}/SourceMods/src.${comp}\n";
+print file "${CIMEROOT}/components/stub_comps/${comp}\n";
+print file "${CIMEROOT}/components/stub_comps/${comp}/cpl\n";
+close(file);
+
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=${model} COMPLIB=${LIBROOT}/lib${model}.a -f ${CASETOOLS}/Makefile MACFILE=${CASEROOT}/Macros.${MACH}";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+exit(0);
+
+
