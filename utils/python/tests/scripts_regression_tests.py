@@ -577,8 +577,13 @@ class E_TestTestScheduler(TestCreateTestCommon):
         for test_status in test_statuses:
             ts = TestStatus(test_dir=os.path.dirname(test_status))
             test_name = ts.get_name()
+            log_files = glob.glob("%s/%s*%s/TestStatus.log" % (self._testroot, test_name, test_id))
+            self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, foudn %d" % len(log_files))
+            log_file = log_files[0]
             if (test_name == build_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+                self.assertTrue("Intentional fail for testing infrastructure" in open(log_file, "r").read(),
+                                "Broken test did not report build error")
             elif (test_name == run_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
             elif (test_name == mem_fail_test):

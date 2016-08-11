@@ -70,6 +70,7 @@ class SystemTestsCommon(object):
                                      model_only=(phase_name==MODEL_BUILD_PHASE))
                 except:
                     success = False
+                    logger.warning("Exception during build:\n%s" % (sys.exc_info()[1]))
 
                 time_taken = time.time() - start_time
                 with self._test_status:
@@ -125,7 +126,7 @@ class SystemTestsCommon(object):
 
         except:
             success = False
-            logger.warning("Exception during run: %s" % (sys.exc_info()[1]))
+            logger.warning("Exception during run:\n%s" % (sys.exc_info()[1]))
 
         # Always try to report, should NOT throw an exception
         self.report()
