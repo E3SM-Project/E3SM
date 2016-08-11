@@ -365,8 +365,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_Redi_surface_layer_tapering" type="logical" default_value=".false." units="NA"
-                                        description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
-                                        possible_values=".true. or .false."
+					description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_surface_layer_tapering_extent" type="real" default_value="0.0" units="non-dimensional"
 					description="Vertical component of Redi mixing limited in top config_Redi_surface_layer_tapering_extent*boundaryLayerDepth"
