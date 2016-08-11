@@ -7,19 +7,19 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_init_ssh_and_ssp
+!  ocn_init_ssh_and_landIcePressure
 !
-!> \brief MPAS ocean initialize matching SSH and SSP
+!> \brief MPAS ocean initialize matching SSH and land-ice pressure
 !> \author Xylar Asay-Davis
 !> \date   06/05/2015
 !> \details
 !>  This module contains the routines for aiding in initializing the
-!>  sea-surface pressure (SSP) based on the sea-surface height (SSH)
+!>  land-ice pressure based on the sea-surface height (SSH)
 !>  so that the barotropic pressure-gradient force (PGF) is initially small
 !
 !-----------------------------------------------------------------------
 
-module ocn_init_ssh_and_ssp
+module ocn_init_ssh_and_landIcePressure
 
    use mpas_kind_types
    use mpas_io_units
@@ -49,8 +49,8 @@ module ocn_init_ssh_and_ssp
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_init_ssh_and_ssp_vertical_grid, &
-             ocn_init_ssh_and_ssp_balance
+   public :: ocn_init_ssh_and_landIcePressure_vertical_grid, &
+             ocn_init_ssh_and_landIcePressure_balance
 
 
    !--------------------------------------------------------------------
@@ -66,7 +66,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_ssh_and_ssp_vertical_grid
+!  routine ocn_init_ssh_and_landIcePressure_vertical_grid
 !
 !> \brief   Initialize z* vertical grid based on SSH
 !> \author  Xylar Asay-Davis
@@ -74,12 +74,12 @@ contains
 !> \details
 !>  This routine sets up the vertical grid (layerThickness,
 !>  zMid and restingThickness) needed for computing SSH from
-!>  SSP or visa versa. bottomDepth, refBottomDepth, maxLevelCell
+!>  land-ice pressure or visa versa. bottomDepth, refBottomDepth, maxLevelCell
 !>  and modifySSHMask must have been computed by the test case
 !>  before calling this routine.  If
-!>  config_iterative_init_variable = 'ssp' or 'ssp_from_top_density', the test
+!>  config_iterative_init_variable = 'landIcePressure' or 'landIcePressure_from_top_density', the test
 !>  case must compute ssh before calling this routine.
-!>  modifySSHMask should be set to 1 wherever the ssh or ssp
+!>  modifySSHMask should be set to 1 wherever the ssh or landIcePressure
 !>  should be modified for consistency (e.g. under land ice). This
 !>  routine will take care of setting up partial bottom cells
 !>  by calling ocn_alter_bottomDepth_for_pbcs (except for the
@@ -88,7 +88,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)!{{{
+   subroutine ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)!{{{
 
    !--------------------------------------------------------------------
 
@@ -100,25 +100,25 @@ contains
      iErr = 0
      call ocn_init_vertical_grid(domain, updateWithSSH=.false., iErr=iErr)
 
-   end subroutine ocn_init_ssh_and_ssp_vertical_grid
+   end subroutine ocn_init_ssh_and_landIcePressure_vertical_grid
 
 !***********************************************************************
 !
-!  routine ocn_init_ssh_and_ssp_balance
+!  routine ocn_init_ssh_and_landIcePressure_balance
 !
-!> \brief   Compute the balance SSP given the SSH or visa versa
+!> \brief   Compute the balance land-ice pressure given the SSH or visa versa
 !> \author  Xylar Asay-Davis
 !> \date    8/8/2016
 !> \details
-!>  This routine either updates SSH based on SSP (if config_iterative_init_variable = 'ssh')
-!>  or visa versa (if config_iterative_init_variable = 'ssp' or 'ssp_from_top_density').
-!>  The routine produces an initial guess at SSP or SSH using either the density of the topmost layer
-!>  ('ssp_from_top_density') or of all layers above the SSH ('ssh' or 'ssp')
+!>  This routine either updates SSH based on land-ice pressure (if config_iterative_init_variable = 'ssh')
+!>  or visa versa (if config_iterative_init_variable = 'landIcePressure' or 'landIcePressure_from_top_density').
+!>  The routine produces an initial guess at land-ice pressure or SSH using either the density of the topmost layer
+!>  ('landIcePressure_from_top_density') or of all layers above the SSH ('ssh' or 'landIcePressure')
 !>  to determine the effective density of seawater within the land ice.
-!>  The resulting SSP and SSH are approximately consistent with one another
+!>  The resulting land-ice pressure and SSH are approximately consistent with one another
 !>  in the sense that the horizontal pressure-gradient force (HPGF)
 !>  should be small at the ocean surface.
-!>  ocn_init_ssh_and_ssp_vertical_grid should be called to produce
+!>  ocn_init_ssh_and_landIcePressure_vertical_grid should be called to produce
 !>  the appropriate vertical grid before calling this subroutine.
 !>  activeTracers should be initialized based on this vertical grid.
 !>  Upon completion, the vertical grid will have been updated
@@ -127,7 +127,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_ssh_and_ssp_balance(domain, iErr)!{{{
+   subroutine ocn_init_ssh_and_landIcePressure_balance(domain, iErr)!{{{
 
    !--------------------------------------------------------------------
 
@@ -148,7 +148,7 @@ contains
      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, zMid
 
      real (kind=RKIND), dimension(:,:), pointer :: density
-     real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, &
+     real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
                                                  effectiveDensityInLandIce
 
 
@@ -189,7 +189,7 @@ contains
 
        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
-       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
 
        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
        call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)
@@ -211,10 +211,10 @@ contains
        end if
 
        do iCell = 1, nCells
-         if(config_iterative_init_variable == 'ssp_from_top_density') then
+         if(config_iterative_init_variable == 'landIcePressure_from_top_density') then
            if(modifySSHMask(iCell) == 0) then
              ssh(iCell) = 0.0_RKIND
-             seaSurfacePressure(iCell) = 0.0_RKIND
+             landIcePressure(iCell) = 0.0_RKIND
 
              if (associated(effectiveDensityInLandIce)) &
                ! effective density cannot be determined
@@ -222,20 +222,20 @@ contains
              cycle
            end if
 
-           seaSurfacePressure(iCell) = max(0.0_RKIND, -density(1,iCell)*gravity*ssh(iCell))
+           landIcePressure(iCell) = max(0.0_RKIND, -density(1,iCell)*gravity*ssh(iCell))
          else if(config_iterative_init_variable == 'ssh') then
-           ! compute ssh where pressure equals seaSurfacePressure
-           ssh(iCell) = find_z_given_pressure(seaSurfacePressure(iCell), density(:,iCell), &
+           ! compute ssh where pressure equals landIcePressure
+           ssh(iCell) = find_z_given_pressure(landIcePressure(iCell), density(:,iCell), &
                                               layerThickness(:,iCell), nVertLevels, maxLevelCell(iCell))
          else
-           ! compute seaSurfcePressure based on hydrostatic pressure at SSH
-           seaSurfacePressure(iCell) = max(0.0_RKIND, find_pressure_given_z(ssh(iCell), density(:,iCell), &
+           ! compute landIcePressure based on hydrostatic pressure at SSH
+           landIcePressure(iCell) = max(0.0_RKIND, find_pressure_given_z(ssh(iCell), density(:,iCell), &
                                               layerThickness(:,iCell), nVertLevels, maxLevelCell(iCell)))
          end if
 
          if (associated(effectiveDensityInLandIce)) then
-           ! the effective density of ocean water in land ice is determined from the surface pressure and SSH
-           effectiveDensityInLandIce(iCell) = -seaSurfacePressure(iCell)/(gravity*ssh(iCell))
+           ! the effective density of ocean water in land ice is determined from the land-ice pressure and SSH
+           effectiveDensityInLandIce(iCell) = -landIcePressure(iCell)/(gravity*ssh(iCell))
          end if
 
        end do
@@ -247,7 +247,7 @@ contains
        block_ptr => block_ptr % next
      end do !block_ptr
 
-     if(config_iterative_init_variable .ne. 'ssp_from_top_density') then
+     if(config_iterative_init_variable .ne. 'landIcePressure_from_top_density') then
        ! update the vertical grid based on the new ssh
        call ocn_init_vertical_grid(domain, updateWithSSH=.true., iErr=iErr)
 
@@ -272,8 +272,6 @@ contains
        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
-       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
-
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
 
@@ -297,7 +295,7 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_init_ssh_and_ssp_balance
+   end subroutine ocn_init_ssh_and_landIcePressure_balance
 
 !***********************************************************************
 !
@@ -315,9 +313,9 @@ contains
 !> \details
 !>  This routine sets up the vertical grid (layerThickness,
 !>  zMid and restingThickness) needed for computing SSH from
-!>  SSP or visa versa. bottomDepth, refBottomDepth and maxLevelCell
+!>  land-ice pressure or visa versa. bottomDepth, refBottomDepth and maxLevelCell
 !>  must have been computed by the test case before calling this
-!>  routine.  If config_iterative_init_variable = 'ssp' or 'ssp_from_top_density', the test
+!>  routine.  If config_iterative_init_variable = 'landIcePressure' or 'landIcePressure_from_top_density', the test
 !>  case must compute ssh before calling this routine.  This
 !>  routine will take care of setting up partial bottom cells
 !>  by calling ocn_alter_bottomDepth_for_pbcs (except for the
@@ -360,17 +358,17 @@ contains
      call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
 
      if(config_iterative_init_variable .ne. 'ssh' &
-        .and. config_iterative_init_variable .ne. 'ssp_from_top_density' &
-        .and. config_iterative_init_variable .ne. 'ssp') then
+        .and. config_iterative_init_variable .ne. 'landIcePressure_from_top_density' &
+        .and. config_iterative_init_variable .ne. 'landIcePressure') then
        iErr = 1
        write(stderrUnit,*) 'ERROR: invalid value for config_iterative_init_variable', trim(config_iterative_init_variable)
        return
      end if
      call mpas_pool_get_config(ocnConfigs, 'config_use_rx1_constraint', config_use_rx1_constraint)
 
-     ! one reason for using config_iterative_init_variable == 'ssp_from_top_density' is that we can immediately compute
+     ! one reason for using config_iterative_init_variable == 'landIcePressure_from_top_density' is that we can immediately compute
      ! the vertical grid displaced by the ssh
-     initWithSSH = updateWithSSH .or. (config_iterative_init_variable == 'ssp_from_top_density')
+     initWithSSH = updateWithSSH .or. (config_iterative_init_variable == 'landIcePressure_from_top_density')
      initRx1WithSSH = initWithSSH .and. config_use_rx1_constraint
 
      if(.not. config_use_rx1_constraint .and. .not. updateWithSSH) then
@@ -401,7 +399,7 @@ contains
      end if
 
      if(initRx1WithSSH) then
-       ! We already know the ssh and ssp we want to use.
+       ! We already know the ssh and landIcePressure we want to use.
        ! Compute the layer thicknesses and zMid based on topography and ssh.
        ! Use rx1 constraint to recompute the vertical grid.
        call ocn_init_vertical_grid_with_max_rx1(domain, iErr)
@@ -436,7 +434,7 @@ contains
 
          do iCell = 1, nCells
            if(initWithSSH) then
-             ! we already know the ssh and ssp we want to use.
+             ! we already know the ssh and landIcePressure we want to use.
              ! compute the layer thicknesses and zMid based on topography and ssh
              call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell),zMid(:,iCell), &
                   refBottomDepth,bottomDepth(iCell), &
@@ -444,7 +442,7 @@ contains
                   restingThickness=restingThickness(:,iCell), &
                   ssh=ssh(iCell))
            else
-             ! We don't know the ssh or ssp yet, and we need tracers on a reference grid to figure it out.
+             ! We don't know the ssh or landIcePressure yet, and we need tracers on a reference grid to figure it out.
              ! compute restingThickness and reference layerThickness and zMid based on topography with ssh=0
              ! (omitting ssh argument)
              call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell),zMid(:,iCell), &
@@ -616,7 +614,7 @@ contains
 
 !***********************************************************************
 
-end module ocn_init_ssh_and_ssp
+end module ocn_init_ssh_and_landIcePressure
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

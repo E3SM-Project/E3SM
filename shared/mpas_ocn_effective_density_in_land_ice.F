@@ -105,11 +105,13 @@ contains
 
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
-      real (kind=RKIND), dimension(:), pointer :: landIceFraction, &
-                                                  seaSurfacePressure, ssh, &
+      real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
+                                                  ssh, &
                                                   effectiveDensityCur, &
                                                   effectiveDensityNew, &
                                                   effectiveDensityScratch
+
+      integer, dimension(:), pointer :: landIceMask
 
       type (field1DReal), pointer :: effectiveDensityField
 
@@ -135,8 +137,8 @@ contains
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
-      call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
       call mpas_pool_get_array(statePool, 'ssh', ssh, 2)
       call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityCur, 1)
       call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityNew, 2)
@@ -148,9 +150,9 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          ! TODO: should only apply to floating land ice, once wetting/drying is supported
-         if(landIceFraction(iCell) >= 0.5_RKIND) then
-            ! there is sufficient land ice to update the effective density
-            effectiveDensityScratch(iCell) = -seaSurfacePressure(iCell)/(ssh(iCell)*gravity)
+         if(landIceMask(iCell) == 1) then
+            ! land ice is present to update the effective density
+            effectiveDensityScratch(iCell) = -landIcePressure(iCell)/(ssh(iCell)*gravity)
          else
             ! we copy the previous effective density
             effectiveDensityScratch(iCell) = effectiveDensityCur(iCell)
