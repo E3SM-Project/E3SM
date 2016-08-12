@@ -37,7 +37,8 @@ module pio_nf
        pio_set_var_chunk_cache                              , &
        pio_get_var_chunk_cache                              , &
        pio_redef                                            , &
-       pio_set_log_level
+       pio_set_log_level                                    , &
+       pio_strerror
 !       pio_copy_att    to be done
 
   interface pio_def_var
@@ -193,6 +194,11 @@ module pio_nf
      module procedure &
           set_log_level                                      
   end interface pio_set_log_level
+
+  interface pio_strerror
+     module procedure &
+          strerror
+  end interface pio_strerror
 
   interface pio_inquire
      module procedure &
@@ -678,6 +684,34 @@ contains
     end interface
     ierr = PIOc_set_log_level(log_level)
   end function set_log_level
+
+  !>
+  !! @defgroup PIO_strerror
+  !<
+  !> 
+  !! @ingroup PIO_strerror
+  !! Returns a descriptive string for an error code.
+  !! 
+  !! @param errcode the error code
+  !! @retval a description of the error
+  !<
+  integer function strerror(errcode, errmsg) result(ierr)
+    integer, intent(in) :: errcode
+    character(len=*), intent(out) :: errmsg
+    interface
+       integer(C_INT) function PIOc_strerror(errcode, errmsg) &
+            bind(C, name="PIOc_strerror")
+         use iso_c_binding
+         integer(C_INT), value :: errcode
+         character(C_CHAR) :: errmsg(*)
+       end function PIOc_strerror
+    end interface
+    errmsg = C_NULL_CHAR
+    ierr = PIOc_strerror(errcode, errmsg)
+    call replace_c_null(errmsg)
+
+  end function strerror
+
 !> 
 !! @public
 !! @ingroup PIO_redef

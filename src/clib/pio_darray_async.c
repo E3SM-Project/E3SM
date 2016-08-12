@@ -1577,15 +1577,15 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 }
 
 /** Read an array of data from a file to the (serial) IO library.
- *  @ingroup PIO_read_darray
  *
  * @param file a pointer to the open file descriptor for the file
  * that will be written to
  * @param iodesc a pointer to the defined iodescriptor for the buffer
  * @param vid the variable id to be read.
- * @param IOBUF
+ * @param IOBUF the buffer to be read into from this mpi task
  *
  * @returns
+ * @ingroup PIO_read_darray
  */
 int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc,
 			      const int vid, void *IOBUF)
@@ -1813,7 +1813,7 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc,
  * processor.
  *
  * @return 0 for success, error code otherwise.
- * @ingroup PIO_write_darray
+ * @ingroup PIO_read_darray
  */
 int PIOc_read_darray(const int ncid, const int vid, const int ioid,
 		     const PIO_Offset arraylen, void *array)
