@@ -138,11 +138,11 @@ def _get_batch_job_id(case):
 ###############################################################################
     mach = case.get_value("MACH")
     if mach == 'titan':
-        return os.environ("PBS_JOBID")
+        return os.environ["PBS_JOBID"]
     elif mach in ['edison', 'corip1']:
-        return os.environ("SLURM_JOB_ID")
+        return os.environ["SLURM_JOB_ID"]
     elif mach == 'mira':
-        return os.environ("COBALT_JOBID")
+        return os.environ["COBALT_JOBID"]
     else:
         return None
 
