@@ -30,6 +30,7 @@ init = FULL_PATH_TO_INIT_TEMPLATE_STREAMS
 model = FULL_PATH_TO_MODEL
 mesh_converter = FULL_PATH_TO_MESH_CONVERTER
 cell_culler = FULL_PATH_TO_CELL_CULLER
+mask_creator = FULL_PATH_TO_MASK_CREATOR
 metis = FULL_PATH_TO_METIS
 
 
@@ -44,3 +45,4 @@ metis = FULL_PATH_TO_METIS
 # the test case is run again later.
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
 initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE
+gemoetric_features = FULL_PATH_TO_LOCAL_CHECKOUT_OF_GEOMETRIC_FEATURES_DATABASE
