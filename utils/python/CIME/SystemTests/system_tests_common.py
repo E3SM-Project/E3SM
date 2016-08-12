@@ -491,11 +491,22 @@ exit -1
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
 
+class TESTRUNFAILEXC(TESTRUNPASS):
+
+    def run_phase(self):
+        raise RuntimeError("Exception from run_phase")
+
 class TESTBUILDFAIL(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         if (not sharedlib_only):
-            expect(False, "ERROR: Intentional fail for testing infrastructure")
+            expect(False, "Intentional fail for testing infrastructure")
+
+class TESTBUILDFAILEXC(FakeTest):
+
+    def __init__(self, case):
+        FakeTest.__init__(self, case)
+        raise RuntimeError("Exception from init")
 
 class TESTRUNSLOWPASS(FakeTest):
 

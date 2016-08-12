@@ -217,8 +217,28 @@ LAR    long term archive test
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="TESTBUILDFAILEXC">
+    <DESC>For testing infra only. Insta-fail build step by failing to init.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="TESTRUNFAIL">
     <DESC>For testing infra only. Insta-fail run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNFAILEXC">
+    <DESC>For testing infra only. Insta-fail run step via exception.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>0</CCSM_TCOST>
     <STOP_OPTION>ndays</STOP_OPTION>
