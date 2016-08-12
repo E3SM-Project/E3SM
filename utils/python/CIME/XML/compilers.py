@@ -26,15 +26,15 @@ class Compilers(GenericXML):
         self.mpilib         = mpilib
         self.compiler_nodes = None # Listed from last to first
         self.compiler       = compiler
-
-        if self.compiler is not None:
-            self.set_compiler(compiler)
-
         #Append the contents of $HOME/.cime/config_compilers.xml if it exists
         #This could cause problems if node matchs are repeated when only one is expected
         infile = os.path.join(os.environ.get("HOME"),".cime","config_compilers.xml")
         if os.path.exists(infile):
             GenericXML.read(self, infile)
+
+        if self.compiler is not None:
+            self.set_compiler(compiler)
+
 
     def get_compiler(self):
         """
