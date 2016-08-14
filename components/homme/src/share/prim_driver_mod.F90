@@ -52,7 +52,7 @@ module prim_driver_mod
   public :: smooth_topo_datasets
 
   type (cg_t), allocatable  :: cg(:)              ! conjugate gradient struct (nthreads)
-  type (quadrature_t)   :: gp                     ! element GLL points
+  !type (quadrature_t)   :: gp                     ! element GLL points
   real(kind=longdouble_kind)  :: fvm_corners(nc+1)     ! fvm cell corners on reference element
   real(kind=longdouble_kind)  :: fvm_points(nc)     ! fvm cell centers on reference element
 
@@ -178,6 +178,7 @@ contains
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
 
+    type (quadrature_t)   :: gp
 
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
@@ -510,6 +511,9 @@ contains
     endif ! end of topology == 'cube'
 
     deallocate(aratio)
+
+    deallocate(gp%points)
+    deallocate(gp%weights)
 
     if(par%masterproc) write(iulog,*) 'Running mass_matrix after area corrections.'
     call mass_matrix(par,elem)
@@ -862,13 +866,13 @@ contains
     else if (transfer_type == "fm") then
        Tp    = fm_transfer(kcut_fm,wght_fm,np)
     end if
-    if (filter_type == "taylor") then
-       flt           = taylor_filter_create(Tp, filter_mu,gp)
-       flt_advection = taylor_filter_create(Tp, filter_mu_advection,gp)
-    else if (filter_type == "fischer") then
-       flt           = fm_filter_create(Tp, filter_mu, gp)
-       flt_advection = fm_filter_create(Tp, filter_mu_advection, gp)
-    end if
+    !if (filter_type == "taylor") then
+    !   flt           = taylor_filter_create(Tp, filter_mu,gp)
+    !   flt_advection = taylor_filter_create(Tp, filter_mu_advection,gp)
+    !else if (filter_type == "fischer") then
+    !   flt           = fm_filter_create(Tp, filter_mu, gp)
+    !   flt_advection = fm_filter_create(Tp, filter_mu_advection, gp)
+    !end if
 
 
 
