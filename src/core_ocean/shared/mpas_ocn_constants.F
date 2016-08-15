@@ -32,7 +32,7 @@ module ocn_constants
    private
    save
 
-   public :: ocn_constants_init, ocn_freezing_temperature
+   public :: ocn_constants_init
 
    type (mpas_pool_type), public, pointer :: ocnConfigs
    type (mpas_pool_type), public, pointer :: ocnPackages
@@ -262,24 +262,6 @@ contains
        fwmass_to_fwflux = 0.1_RKIND
 
    end subroutine ocn_constants_init!}}}
-
-!***********************************************************************
-!
-!  function ocn_freezing_temperature
-!
-!> \brief   Computes the freezing temperature of the ocean.
-!> \author  Doug Jacobsen
-!> \date    08/29/2013
-!> \details
-!>  This routine computes the freezing temperature of the ocean at a given
-!>  salinity value.
-!
-!-----------------------------------------------------------------------
-    real (kind=RKIND) function ocn_freezing_temperature(salinity)!{{{
-      real (kind=RKIND) :: salinity !< Input: Salinity value of water for freezing temperature
-
-      ocn_freezing_temperature = -1.8_RKIND
-    end function ocn_freezing_temperature!}}}
 
 !***********************************************************************
 
