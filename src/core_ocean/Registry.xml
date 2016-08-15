@@ -205,18 +205,9 @@
 		/>
 	</nml_record>
 	<nml_record name="init_ssh_and_ssp" mode="init">
-		<nml_option name="config_read_ssh_and_ssp_from_stream" type="logical" default_value=".false." units="unitless"
-					description="Logical flag that determines if the sea-surface height and pressure have been read from an input stream instead of being calculated.  This allows iterative balancing of the two fields using both init and forward mode."
-
-					possible_values=".true. or .false."
-		/>
 		<nml_option name="config_iterative_init_variable" type="character" default_value="ssp" units="unitless"
-					description="Which variable, ssh or ssp, is modified based on a previous forward run with the other held fixed during each init."
-					possible_values="'ssh' or 'ssp'"
-		/>
-		<nml_option name="config_modify_open_ocean_ssh" type="logical" default_value=".false." units="unitless"
-					description="Logical flag that determines if the SSH gets modified in the open ocean (where modifySSHMask == 1) to attempt to put the system in balance there.  By default, regions of open ocean are not balanced."
-					possible_values=".true. or .false."
+					description="Which variable, ssh or ssp, is computed from the other.  If ssp is to be computed, 'ssp_from_top_density' indicates that the top density (rather than the mean density displaced by land ice) should be used to compute the ssp."
+					possible_values="'ssh', 'ssp_from_top_density' or 'ssp'"
 		/>
 	</nml_record>
 
@@ -374,8 +365,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_Redi_surface_layer_tapering" type="logical" default_value=".false." units="NA"
-                                        description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
-                                        possible_values=".true. or .false."
+					description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_surface_layer_tapering_extent" type="real" default_value="0.0" units="non-dimensional"
 					description="Vertical component of Redi mixing limited in top config_Redi_surface_layer_tapering_extent*boundaryLayerDepth"
@@ -2052,21 +2043,9 @@
 		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="pressure used in the momentum equation"
 		/>
-		<var name="bottomPressure" type="real" dimensions="nCells Time" units="N m^{-2}"
-			 description="pressure at the sea floor"
-			 packages="initMode"
-		/>
-		<var name="deltaSSH" type="real" dimensions="nCells Time" units="m"
-			 description="change in sea-surface height over a forward run, used to compute a change in sea-surface pressure during iterative initialization."
-			 packages="initMode"
-		/>
-		<var name="refSSH" type="real" dimensions="nCells Time" units="m"
-			 description="reference sea-surface height computed in test cases that include ice-shelf cavities."
-			 packages="initMode"
-		/>
 		<var name="modifySSHMask" type="integer" dimensions="nCells Time" units="unitless"
-			 description="A mask indicating where the SSH can be modified from refSSH through iteriative init/forward runs.  The mask is 1 under (and perhaps near) ice shelves and 0 elsenwere."
-			 packages="initMode"
+			description="A mask indicating where the SSH can be modified from refSSH through iteriative init/forward runs.  The mask is 1 under (and perhaps near) ice shelves and 0 elsenwere."
+			packages="initMode"
 		/>
 		<var name="normalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="horizontal velocity used to transport mass and tracers"

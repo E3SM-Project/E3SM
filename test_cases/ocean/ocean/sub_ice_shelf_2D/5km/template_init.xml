@@ -5,7 +5,6 @@
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_land_ice_flux_mode">'standalone'</option>
 		<option name="config_eos_type">'jm'</option>
-		<option name="config_read_ssh_and_ssp_from_stream">.true.</option>
 		<option name="config_sub_ice_shelf_2D_cavity_thickness">10.0</option>
 	</namelist>
 
@@ -34,8 +33,6 @@
 				<member name="edgeMask" type="var"/>
 				<member name="cullCell" type="var"/>
 				<member name="ssh" type="var"/>
-				<member name="deltaSSH" type="var"/>
-				<member name="refSSH" type="var"/>
 				<member name="rx1Cell" type="var"/>
 				<member name="rx1Edge" type="var"/>
 				<member name="rx1MaxCell" type="var"/>

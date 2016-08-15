@@ -34,8 +34,6 @@
 				<member name="edgeMask" type="var"/>
 				<member name="cullCell" type="var"/>
 				<member name="ssh" type="var"/>
-				<member name="deltaSSH" type="var"/>
-				<member name="refSSH" type="var"/>
 				<member name="rx1Cell" type="var"/>
 				<member name="rx1Edge" type="var"/>
 				<member name="rx1MaxCell" type="var"/>

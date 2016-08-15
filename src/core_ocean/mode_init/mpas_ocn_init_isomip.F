@@ -132,8 +132,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, &
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge, &
-                                                  refSSH, landIceFraction, landIceSurfaceTemperature, &
-                                                  effectiveDensity, refLayerThickness, refZMid
+                                                  landIceFraction, landIceSurfaceTemperature, &
+                                                  refLayerThickness, refZMid, &
+                                                  ssh
       !real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore, maskRestore
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
@@ -269,6 +270,7 @@ contains
         call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
@@ -279,13 +281,12 @@ contains
         call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature, 1)
 
         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-        call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
         call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
- 
+
 
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
@@ -337,7 +338,7 @@ contains
           ! Compute iceDraft by linear fit
           do iFit = 1, 4
             if((y >= yFit(iFit)) .and. (y <= yFit(iFit+1))) then
-              refSSH(iCell) = (zFit(iFit+1) - zFit(iFit))*(y - yFit(iFit)) &
+              ssh(iCell) = (zFit(iFit+1) - zFit(iFit))*(y - yFit(iFit)) &
                          / (yFit(iFit+1) - yFit(iFit)) + zFit(iFit)
               landIceFraction(iCell) = (fracFit(iFit+1) - fracFit(iFit))*(y - yFit(iFit)) &
                          / (yFit(iFit+1) - yFit(iFit)) + fracFit(iFit)
@@ -384,12 +385,6 @@ contains
 
         end do
 
-        if(trim(config_land_ice_flux_mode) == 'coupled') then
-          call mpas_pool_get_config(ocnConfigs, 'config_isomip_effective_density', config_isomip_effective_density)
-          call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensity, 1)
-          effectiveDensity(:) = config_isomip_effective_density
-        end if
-
         block_ptr => block_ptr % next
       end do
 
@@ -405,7 +400,7 @@ contains
         return
       end if
 
-      ! compute or update the SSP (or possibly SSH), also computing density and bottomPressure along the way
+      ! compute or update the SSP (or possibly SSH), also computing density along the way
       ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
       call ocn_init_ssh_and_ssp_balance(domain, iErr)
 

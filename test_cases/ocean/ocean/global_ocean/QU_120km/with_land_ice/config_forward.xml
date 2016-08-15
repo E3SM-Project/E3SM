@@ -27,12 +27,6 @@
 		</stream>
 		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
-		<stream name="output">
-			<attribute name="output_interval">00-01-00_00:00:00</attribute>
-		</stream>
-		<stream name="restart">
-			<attribute name="output_interval">00-01-00_00:00:00</attribute>
-		</stream>
 
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
