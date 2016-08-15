@@ -491,9 +491,10 @@ class Case(object):
                       'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
-            value = machobj.get_value(nodename)
+            value = machobj.get_value(nodename, resolved=False)
             type_str = self.get_type_info(nodename)
             if type_str is not None:
+                logger.debug("machine nodname %s value %s"%(nodename, value))
                 self.set_value(nodename, convert_to_type(value, type_str, nodename))
 
         if compiler is None:

@@ -154,7 +154,7 @@
 
   <entry id="USER">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <default_value>$ENV{USER}</default_value>
     <group>case_desc</group>
     <file>env_case.xml</file>
     <desc>case user name</desc>
