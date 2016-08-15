@@ -9,7 +9,7 @@ import glob, os, shutil, traceback
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
-from CIME.utils                     import convert_to_type, get_model, get_project
+from CIME.utils                     import convert_to_type, get_model, get_project, get_current_branch
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -826,13 +826,17 @@ class Case(object):
         # create clone from self to case
         clone_cimeroot = self.get_value("CIMEROOT")
         if newcase_cimeroot != clone_cimeroot:
+            case_branch = get_current_branch(clone_cimeroot)
+            clone_branch =  get_current_branch(newcase_cimeroot)
             logger.warning(" case  CIMEROOT is %s " %newcase_cimeroot)
             logger.warning(" clone CIMEROOT is %s " %clone_cimeroot)
-            logger.warning(" It is NOT recommended to clone cases from different versions of CIMEROOT")
+            logger.warning(" It is NOT recommended to clone cases from different versions of CIME %s %s"%(case_branch, clone_branch))
+
 
         # *** create case object as deepcopy of clone object ***
         srcroot = os.path.join(newcase_cimeroot,"..")
         newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
+        newcase.set_value("CIMEROOT", newcase_cimeroot)
 
         # determine if will use clone executable or not
         if keepexe:
