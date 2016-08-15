@@ -13,7 +13,18 @@ def case_test(case, testname=None):
     expect(testname is not None, "testname argument not resolved")
     logging.warn("Running test for %s" % testname)
 
-    test = find_system_test(testname, case)(case)
+    try:
+        # The following line can throw exceptions if the testname is
+        # not found or the test constructor throws. We need to be
+        # sure to leave TestStatus in the appropriate state if that
+        # happens.
+        test = find_system_test(testname, case)(case)
+    except:
+        caseroot = case.get_value("CASEROOT")
+        with TestStatus(test_dir=caseroot) as ts:
+            ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
+        raise
+
     success = test.run()
 
     return success

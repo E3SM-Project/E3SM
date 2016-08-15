@@ -453,7 +453,7 @@ class C_TestCreateTest(TestCreateTestCommon):
     ###########################################################################
         if NO_BATCH:
             extra_args += " --no-batch"
-        cmd = "%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args)
+        cmd = "%s/create_test cime_test_only_pass %s" % (SCRIPT_DIR, extra_args)
         stat, output, errput = run_cmd(cmd)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
@@ -507,8 +507,11 @@ class E_TestTestScheduler(TestCreateTestCommon):
     def test_a_phases(self):
     ###########################################################################
         # exclude the MEMLEAK tests here.
-        tests = update_acme_tests.get_full_test_names(["acme_test_only",
-                                                       "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X", "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X"],
+        tests = update_acme_tests.get_full_test_names(["cime_test_only",
+                                                       "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
+                                                       "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X",
+                                                       "^TESTBUILDFAILEXC.f19_g16_rx1.A",
+                                                       "^TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
         ct = TestScheduler(tests)
@@ -579,15 +582,17 @@ class E_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
     def test_b_full(self):
     ###########################################################################
-        tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
+        tests = update_acme_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH)
 
-        build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
-        run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
-        pass_test       = [item for item in tests if "TESTRUNPASS" in item][0]
-        mem_fail_test   = [item for item in tests if "TESTMEMLEAKFAIL" in item][0]
-        mem_pass_test   = [item for item in tests if "TESTMEMLEAKPASS" in item][0]
+        build_fail_test     = [item for item in tests if "TESTBUILDFAIL." in item][0]
+        build_fail_exc_test = [item for item in tests if "TESTBUILDFAILEXC" in item][0]
+        run_fail_test       = [item for item in tests if "TESTRUNFAIL_" in item][0]
+        run_fail_exc_test   = [item for item in tests if "TESTRUNFAILEXC" in item][0]
+        pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
+        mem_fail_test       = [item for item in tests if "TESTMEMLEAKFAIL" in item][0]
+        mem_pass_test       = [item for item in tests if "TESTMEMLEAKPASS" in item][0]
 
         log_lvl = logging.getLogger().getEffectiveLevel()
         logging.disable(logging.CRITICAL)
@@ -605,10 +610,23 @@ class E_TestTestScheduler(TestCreateTestCommon):
         for test_status in test_statuses:
             ts = TestStatus(test_dir=os.path.dirname(test_status))
             test_name = ts.get_name()
+            log_files = glob.glob("%s/%s*%s/TestStatus.log" % (self._testroot, test_name, test_id))
+            self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, foudn %d" % len(log_files))
+            log_file = log_files[0]
             if (test_name == build_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+                self.assertTrue("Intentional fail for testing infrastructure" in open(log_file, "r").read(),
+                                "Broken test did not report build error")
+            elif (test_name == build_fail_exc_test):
+                self.assertEqual(ts.get_status(CIME.test_scheduler.SHAREDLIB_BUILD_PHASE), TEST_FAIL_STATUS)
+                self.assertTrue("Exception from init" in open(log_file, "r").read(),
+                                "Broken test did not report build error")
             elif (test_name == run_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
+            elif (test_name == run_fail_exc_test):
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
+                self.assertTrue("Exception from run_phase" in open(log_file, "r").read(),
+                                "Broken test did not report build error")
             elif (test_name == mem_fail_test):
                 self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
@@ -667,7 +685,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         # the testroot (bld/run dump area) and jenkins root
         if (test_id is None):
             test_id = self._baseline_name
-        num_tests_in_tiny = len(update_acme_tests.get_test_suite("acme_test_only_pass"))
+        num_tests_in_tiny = len(update_acme_tests.get_test_suite("cime_test_only_pass"))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, test_id)) # case dirs
         # scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
@@ -688,11 +706,11 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
 
         # Generate fresh baselines so that this test is not impacted by
         # unresolved diffs
-        self.simple_test(True, "-t acme_test_only_pass -g -b %s" % self._baseline_name)
+        self.simple_test(True, "-t cime_test_only_pass -g -b %s" % self._baseline_name)
         self.assert_num_leftovers()
 
         build_name = "jenkins_generic_job_pass_%s" % CIME.utils.get_utc_timestamp()
-        self.simple_test(True, "-t acme_test_only_pass -b %s" % self._baseline_name, build_name=build_name)
+        self.simple_test(True, "-t cime_test_only_pass -b %s" % self._baseline_name, build_name=build_name)
         self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         assert_dashboard_has_build(self, build_name)
 
@@ -700,7 +718,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     def test_jenkins_generic_job_kill(self):
     ###########################################################################
         build_name = "jenkins_generic_job_kill_%s" % CIME.utils.get_utc_timestamp()
-        run_thread = threading.Thread(target=self.threaded_test, args=(False, " -t acme_test_only_slow_pass -b master --baseline-compare=no", build_name))
+        run_thread = threading.Thread(target=self.threaded_test, args=(False, " -t cime_test_only_slow_pass -b master --baseline-compare=no", build_name))
         run_thread.daemon = True
         run_thread.start()
 
@@ -791,7 +809,7 @@ class TestUpdateACMETests(unittest.TestCase):
     ###########################################################################
         # Add some testable stuff to acme tests
         pass
-        # update_acme_tests._TEST_SUITES["acme_tiny"] = \
+        # update_acme_tests._TEST_SUITES["cime_tiny"] = \
         #     (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
         #             ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
         #      )
@@ -813,7 +831,7 @@ class TestUpdateACMETests(unittest.TestCase):
         # not_my_machine = "%s_jgftest" % machine
 
         # # Add some testable stuff to acme tests
-        # update_acme_tests._TEST_SUITES["acme_tiny"] = \
+        # update_acme_tests._TEST_SUITES["cime_tiny"] = \
         #     (None, (("ERS.f19_g16_rx1.A", "test_mod"),
         #             ("ERS.f19_g16_rx1.B", "test_mod", machine),
         #             ("ERS.f19_g16_rx1.C", "test_mod", (machine, not_my_machine)),
@@ -821,7 +839,7 @@ class TestUpdateACMETests(unittest.TestCase):
         #             "ERS.f19_g16_rx1.E")
         #      )
 
-        # tests = update_acme_tests.get_test_suite("acme_tiny", compiler="gnu")
+        # tests = update_acme_tests.get_test_suite("cime_tiny", compiler="gnu")
 
         # self.assertEqual(5, len(tests))
         # self.assertTrue("ERS.f19_g16_rx1.A.melvin_gnu.test_mod" in tests)
@@ -884,7 +902,7 @@ class TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case(self):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test acme_test_only -t %s --no-build" % (SCRIPT_DIR, self._baseline_name))
+        stat, output, errput = run_cmd("%s/create_test cime_test_only -t %s --no-build" % (SCRIPT_DIR, self._baseline_name))
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 

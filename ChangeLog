@@ -1,6 +1,40 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: Aug 11, 2012
+Tag: cime5.0.8
+Answer Changes: None
+Tests: scripts_regression_tests,
+Dependencies:
+
+Brief Summary: fix error in taskmaker task counter,
+	add error code for component_compare_test,
+	fix unit test for run_cmd
+	improve cime_bisect tool
+	add back software_environement.txt
+
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/config_files.xml
+D       scripts/Testing/Testcases/HOMME_script
+M       scripts/Tools/cime_bisect
+M       scripts/Tools/component_compare_test.sh
+A       utils/python/CIME/SystemTests/homme.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/task_maker.py
+M       utils/python/CIME/utils.py
+M       utils/python/update_acme_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: Aug 10, 2016
 Tag: cime5.0.7
 Answer Changes: None

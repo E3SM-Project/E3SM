@@ -91,7 +91,6 @@ class Case(object):
         self._pesfile = None
         self._gridfile = None
         self._components = []
-        self._component_config_files = []
         self._component_classes = []
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
@@ -399,12 +398,14 @@ class Case(object):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
             node_name = 'CONFIG_' + comp_class + '_FILE'
-            comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
+            # Add the group and elements for the config_files.xml
+            comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
+            self.set_value(node_name, comp_config_file)
+            comp_config_file = self.get_resolved_value(comp_config_file)
             expect(comp_config_file is not None,"No config file for component %s"%comp_name)
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
-            self._component_config_files.append((node_name,comp_config_file))
 
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
@@ -474,10 +475,6 @@ class Case(object):
 
         self.get_compset_var_settings()
 
-        # Add the group and elements for the config_files.xml
-        for config_file in self._component_config_files:
-            self.set_value(config_file[0],config_file[1])
-
         #--------------------------------------------
         # machine
         #--------------------------------------------
@@ -491,9 +488,10 @@ class Case(object):
                       'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
-            value = machobj.get_value(nodename)
+            value = machobj.get_value(nodename, resolved=False)
             type_str = self.get_type_info(nodename)
             if type_str is not None:
+                logger.debug("machine nodname %s value %s"%(nodename, value))
                 self.set_value(nodename, convert_to_type(value, type_str, nodename))
 
         if compiler is None:
@@ -828,13 +826,17 @@ class Case(object):
         # create clone from self to case
         clone_cimeroot = self.get_value("CIMEROOT")
         if newcase_cimeroot != clone_cimeroot:
+            case_branch = get_current_branch(clone_cimeroot)
+            clone_branch =  get_current_branch(newcase_cimeroot)
             logger.warning(" case  CIMEROOT is %s " %newcase_cimeroot)
             logger.warning(" clone CIMEROOT is %s " %clone_cimeroot)
-            logger.warning(" It is NOT recommended to clone cases from different versions of CIMEROOT")
+            logger.warning(" It is NOT recommended to clone cases from different versions of CIME.")
+
 
         # *** create case object as deepcopy of clone object ***
         srcroot = os.path.join(newcase_cimeroot,"..")
         newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
+        newcase.set_value("CIMEROOT", newcase_cimeroot)
 
         # determine if will use clone executable or not
         if keepexe:
