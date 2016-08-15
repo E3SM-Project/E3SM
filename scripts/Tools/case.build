@@ -11,6 +11,7 @@ from CIME.case import Case
 from CIME.utils           import expect, append_status, find_system_test
 from CIME.XML.files       import Files
 from CIME.XML.component   import Component
+from CIME.test_status     import *
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -85,7 +86,17 @@ def _main_func(description):
         elif(testname is not None):
             logging.warn("Building test for %s in directory %s" %
                          (testname, caseroot))
-            test = find_system_test(testname, case)(case)
+            try:
+                # The following line can throw exceptions if the testname is
+                # not found or the test constructor throws. We need to be
+                # sure to leave TestStatus in the appropriate state if that
+                # happens.
+                test = find_system_test(testname, case)(case)
+            except:
+                phase_to_fail = MODEL_BUILD_PHASE if model_only else SHAREDLIB_BUILD_PHASE
+                with TestStatus(test_dir=caseroot) as ts:
+                    ts.set_status(phase_to_fail, TEST_FAIL_STATUS, comments="failed to initialize")
+                raise
 
             append_status("case.testbuild starting ",
                           caseroot=caseroot,sfile="CaseStatus")
