@@ -276,24 +276,12 @@ if (defined $opts{'infile'}) {
     $nl->merge_nl($nl_infile_valid);
 }
 
+unshift @INC, "${CIMEROOT}/utils/perl5lib";
+require Config::SetupTools;
+
 #-----------------------------------------------------------------------------------------------
 # Determine xml variables
 #-----------------------------------------------------------------------------------------------
-
-my %xmlvars = ();
-my @files = <${CASEROOT}/*xml>;
-foreach my $file (@files) {
-    my $xml = XML::Lite->new( "$file" );
-    my @e = $xml->elements_by_name('entry');
-    while ( my $e = shift @e ) {
-	my %a = $e->get_attributes();
-	my $val = $a{value};
-	$xmlvars{$a{'id'}} = $a{'value'};
-    }
-}
-
-unshift @INC, "${CIMEROOT}/utils/perl5lib";
-require Config::SetupTools;
 
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);
