@@ -52,6 +52,9 @@
       integer :: ioDirection
       integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
       logical :: clobberRecords = .false.
+      ! When blockWrite is true, a stream only writes a single block.
+      ! This option is really only useful for writing debugging streams out.
+      logical :: blockWrite = .false.
       character(len=StrKIND) :: filename
       type (MPAS_IO_Handle_type) :: fileHandle
       type (att_list_type), pointer :: attList => null()
