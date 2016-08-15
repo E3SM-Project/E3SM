@@ -45,7 +45,7 @@ contains
 
   subroutine cice_deactivate_unneeded_stream_fields(domain, poolName)
 
-    type(domain_type), intent(in) :: &
+    type(domain_type), intent(inout) :: &
          domain
 
     character(len=*), intent(in) :: &
