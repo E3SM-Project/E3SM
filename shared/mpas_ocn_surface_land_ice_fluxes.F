@@ -26,6 +26,7 @@ module ocn_surface_land_ice_fluxes
    use mpas_pool_routines
 
    use ocn_constants
+   use ocn_equation_of_state
 
    implicit none
    private
@@ -57,7 +58,7 @@ module ocn_surface_land_ice_fluxes
 
    logical :: landIceFluxesOn, standaloneOn, isomipOn, jenkinsOn, hollandJenkinsOn
 
-   real (kind=RKIND) :: Tf0, dTf_dp, dTf_dS, cp_land_ice, rho_land_ice
+   real (kind=RKIND) :: cp_land_ice, rho_land_ice
 
 
 !***********************************************************************
@@ -479,9 +480,9 @@ contains
          !$omp do schedule(runtime) private(heatFlux)
          do iCell = 1, nCellsSolve
             ! linearized equaiton for the S and p dependent potential freezing temperature
-            landIceInterfaceTracers(indexIT,iCell) = Tf0 &
-                                          + dTf_dS*landIceBoundaryLayerTracers(indexBLT,iCell) &
-                                          + dTf_dp*landIcePressure(iCell)
+            landIceInterfaceTracers(indexIT,iCell) = ocn_freezing_temperature( &
+               salinity=landIceBoundaryLayerTracers(indexBLT,iCell), &
+               pressure=landIcePressure(iCell))
 
             ! using (3) and (4) from Hunter (2006)
             ! or (7) from Jenkins et al. (2001) if gamma constant
@@ -608,10 +609,7 @@ contains
 
       character (len=StrKIND), pointer :: config_land_ice_flux_formulation, config_land_ice_flux_mode
 
-      real (kind=RKIND), pointer :: config_land_ice_flux_Tf0, &
-                                    config_land_ice_flux_dTf_dp, &
-                                    config_land_ice_flux_dTf_dS, &
-                                    config_land_ice_flux_cp_ice, &
+      real (kind=RKIND), pointer :: config_land_ice_flux_cp_ice, &
                                     config_land_ice_flux_rho_ice
 
 
@@ -629,9 +627,6 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_formulation', config_land_ice_flux_formulation)
 
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_Tf0', config_land_ice_flux_Tf0)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_dTf_dp', config_land_ice_flux_dTf_dp)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_dTf_dS', config_land_ice_flux_dTf_dS)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_cp_ice', config_land_ice_flux_cp_ice)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_rho_ice', config_land_ice_flux_rho_ice)
 
@@ -648,9 +643,6 @@ contains
                                       // "or 'HollandJenkins'.")
       end if
 
-      Tf0 = config_land_ice_flux_Tf0
-      dTf_dp = config_land_ice_flux_dTf_dp
-      dTf_dS = config_land_ice_flux_dTf_dS
       cp_land_ice = config_land_ice_flux_cp_ice
       rho_land_ice = config_land_ice_flux_rho_ice
 
@@ -746,7 +738,7 @@ contains
     !-----------------------------------------------------------------
 
     real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta, &
-                         iceHeatFluxCoeff, iceDeltaT
+                         iceHeatFluxCoeff, iceDeltaT, dTf_dS
     integer :: iCell
 
     logical :: coupled
@@ -766,17 +758,25 @@ contains
         nu = 0.0_RKIND
         iceDeltaT = 0.0_RKIND
       end if
-      T0 = Tf0 + dTf_dp*interfacePressure(iCell)
+      T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
+      dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
+
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
       a = -dTf_dS*(1.0_RKIND + nu)
       b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
-      c = -transferVelocityRatio*Tlatent
+      c = -transferVelocityRatio*Tlatent*oceanSalinity(iCell)
 
-      ! a is strictly positive; c is strictly negative so we never get imaginary roots
-      ! The positive root is the one we want (salinity is strictly positive)
-      outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_RKIND*a*c*oceanSalinity(iCell)))/(2.0_RKIND*a)
-      if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
+      ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
+      ! Since a can be zero, we need a solution of the quadratic equation for 1/Si instead of Si.
+      ! Following: https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+      ! Since a and -c are are non-negative, the term in the square root is also always >= |b|.
+      ! In all reasonable cases, b will be strictly positive, since transferVelocityRatio*Tlatent ~ 2 C,
+      ! T0 ~ -1.8 C and oceanTemperature should never be able to get below about -2.4 C
+      ! As long as either b or both a and c are greater than zero, the strictly non-negative root is
+      outInterfaceSalinity(iCell) = -(2.0_RKIND*c)/(b + sqrt(b**2 - 4.0_RKIND*a*c))
+
+      if(outInterfaceSalinity(iCell) <= 0.0_RKIND) then
         write(stderrUnit, *) "ERROR: interfaceSalinity <= 0", outInterfaceSalinity(iCell), oceanSalinity(iCell), a, b, c
         err = 1
         call mpas_dmpar_global_abort('MPAS-ocean: ERROR: interfaceSalinity is negative...')
@@ -896,7 +896,7 @@ contains
     !
     !-----------------------------------------------------------------
 
-    real (kind=RKIND) :: T0, cpRatio, transferVelocityRatio, Tlatent, a, b, c, eta, TlatentStar
+    real (kind=RKIND) :: T0, cpRatio, transferVelocityRatio, Tlatent, a, b, c, eta, TlatentStar, dTf_dS
 
     integer :: iCell
 
@@ -904,7 +904,8 @@ contains
     cpRatio = cp_land_ice/cp_sw
     !$omp do schedule(runtime) private(T0, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
     do iCell = 1, nCells
-      T0 = Tf0 + dTf_dp*interfacePressure(iCell)
+      T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
+      dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
       transferVelocityRatio = (rho_fw/rho_sw)*oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
       Tlatent = latent_heat_fusion_mks/cp_sw
 

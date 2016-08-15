@@ -46,7 +46,9 @@ module ocn_equation_of_state
    !--------------------------------------------------------------------
 
    public :: ocn_equation_of_state_density, &
-             ocn_equation_of_state_init
+             ocn_equation_of_state_init, &
+             ocn_freezing_temperature, &
+             ocn_freezing_temperature_salinity_deriv
 
    !--------------------------------------------------------------------
    !
@@ -203,6 +205,81 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_equation_of_state_init!}}}
+
+
+!***********************************************************************
+!
+!  function ocn_freezing_temperature
+!
+!> \brief   Computes the freezing temperature of the ocean.
+!> \author  Xylar Asay-Davis
+!> \date    08/14/2016
+!> \details
+!>  This routine computes the freezing temperature of the ocean at a given
+!>  salinity and pressure.
+!
+!-----------------------------------------------------------------------
+    real (kind=RKIND) function ocn_freezing_temperature(salinity, pressure)!{{{
+      real (kind=RKIND), intent(in) :: salinity !< Input: Salinity value of water for freezing temperature
+      real (kind=RKIND), intent(in) :: pressure !< Input: Pressure value for freezing temperature
+
+      real (kind=RKIND), pointer :: config_freezing_temperature_coeff_0
+      real (kind=RKIND), pointer :: config_freezing_temperature_coeff_S
+      real (kind=RKIND), pointer :: config_freezing_temperature_coeff_p
+      real (kind=RKIND), pointer :: config_freezing_temperature_coeff_pS
+      real (kind=RKIND), pointer :: config_freezing_temperature_reference_pressure
+
+      real (kind=RKIND) :: pressureOffset
+
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_coeff_0', config_freezing_temperature_coeff_0)
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_coeff_S', config_freezing_temperature_coeff_S)
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_coeff_p', config_freezing_temperature_coeff_p)
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_coeff_pS', config_freezing_temperature_coeff_pS)
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_reference_pressure', &
+                                config_freezing_temperature_reference_pressure)
+
+      pressureOffset = max(pressure - config_freezing_temperature_reference_pressure, 0.0_RKIND)
+
+      ocn_freezing_temperature = config_freezing_temperature_coeff_0 &
+        + config_freezing_temperature_coeff_S * salinity &
+        + config_freezing_temperature_coeff_p * pressureOffset &
+        + config_freezing_temperature_coeff_pS * pressureOffset * salinity
+
+    end function ocn_freezing_temperature!}}}
+
+!***********************************************************************
+!
+!  function ocn_freezing_temperature_salinity_deriv
+!
+!> \brief   Computes the freezing-temperature salinity derivative
+!> \author  Xylar Asay-Davis
+!> \date    08/14/2016
+!> \details
+!>  This routine computes the derivative of the freezing temperature of the ocean with
+!>  respect to salinity at a given salinity and pressure.
+!
+!-----------------------------------------------------------------------
+    real (kind=RKIND) function ocn_freezing_temperature_salinity_deriv(salinity, pressure)!{{{
+      real (kind=RKIND), intent(in) :: salinity !< Input: Salinity value of water for freezing temperature
+      real (kind=RKIND), intent(in) :: pressure !< Input: Pressure value for freezing temperature
+
+      real (kind=RKIND), pointer :: config_freezing_temperature_coeff_S
+      real (kind=RKIND), pointer :: config_freezing_temperature_coeff_pS
+      real (kind=RKIND), pointer :: config_freezing_temperature_reference_pressure
+
+      real (kind=RKIND) :: pressureOffset
+
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_coeff_S', config_freezing_temperature_coeff_S)
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_coeff_pS', config_freezing_temperature_coeff_pS)
+      call mpas_pool_get_config(ocnConfigs, 'config_freezing_temperature_reference_pressure', &
+                                config_freezing_temperature_reference_pressure)
+
+      pressureOffset = max(pressure - config_freezing_temperature_reference_pressure, 0.0_RKIND)
+
+      ocn_freezing_temperature_salinity_deriv = config_freezing_temperature_coeff_S &
+        + config_freezing_temperature_coeff_pS * pressureOffset
+
+    end function ocn_freezing_temperature_salinity_deriv!}}}
 
 !***********************************************************************
 

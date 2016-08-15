@@ -26,6 +26,7 @@ module ocn_surface_bulk_forcing
    use mpas_pool_routines
    use mpas_timekeeping
    use ocn_constants
+   use ocn_equation_of_state
 
    implicit none
    private
@@ -477,7 +478,8 @@ contains
 
            ! Accumulate fluxes that use the freezing point
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-               + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) ) / rho_sw
+               + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) , &
+                                                                         pressure=0.0_RKIND) / rho_sw
 
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
