@@ -1766,14 +1766,6 @@
     <desc>Machine name</desc>
   </entry>
 
-  <entry id="MACHINES_FILE">
-    <type>char</type>
-    <default_value></default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>full pathname of file specifying supported machines location</desc>
-  </entry>
-
   <entry id="MACHDIR">
     <type>char</type>
     <default_value></default_value>
