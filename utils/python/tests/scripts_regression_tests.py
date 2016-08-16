@@ -161,6 +161,7 @@ class B_TestCreateNewcase(unittest.TestCase):
                 print "Leaving case directory : %s"%tfile
             elif do_teardown:
                 shutil.rmtree(tfile)
+
 ###############################################################################
 class D_TestWaitForTests(unittest.TestCase):
 ###############################################################################
@@ -578,7 +579,7 @@ class E_TestTestScheduler(TestCreateTestCommon):
             ts = TestStatus(test_dir=os.path.dirname(test_status))
             test_name = ts.get_name()
             log_files = glob.glob("%s/%s*%s/TestStatus.log" % (self._testroot, test_name, test_id))
-            self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, foudn %d" % len(log_files))
+            self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, found %d" % len(log_files))
             log_file = log_files[0]
             if (test_name == build_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)

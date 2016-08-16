@@ -9,6 +9,7 @@ from CIME.case_setup import case_setup
 from CIME.case_run import case_run
 from CIME.case_st_archive import case_st_archive
 from CIME.test_status import *
+from CIME.hist_utils import *
 
 import CIME.build as build
 
@@ -156,7 +157,7 @@ class SystemTestsCommon(object):
         self._case = case
         self._caseroot = case.get_value("CASEROOT")
 
-    def run_indv(self, suffix="base", coupler_log_path=None, st_archive=False):
+    def run_indv(self, suffix="base", st_archive=False):
         """
         Perform an individual run. Raises an EXCEPTION on fail.
         """
@@ -174,17 +175,18 @@ class SystemTestsCommon(object):
         logger.info(infostr)
 
         case_run(self._case)
-        if st_archive:
-            case_st_archive(self._case)
 
-        if not self._coupler_log_indicates_run_complete(coupler_log_path):
+        if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
 
         if suffix is not None:
             self._component_compare_move(suffix)
 
-    def _coupler_log_indicates_run_complete(self, coupler_log_path):
-        newestcpllogfile = self._get_latest_cpl_log(coupler_log_path)
+        if st_archive:
+            case_st_archive(self._case)
+
+    def _coupler_log_indicates_run_complete(self):
+        newestcpllogfile = self._get_latest_cpl_log()
         logger.debug("Latest Coupler log file is %s" % newestcpllogfile)
         # Exception is raised if the file is not compressed
         try:
@@ -201,37 +203,20 @@ class SystemTestsCommon(object):
         pass
 
     def _component_compare_move(self, suffix):
-        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"), "Tools",
-                           "component_compare_move.sh")
-        rc, out, err = run_cmd("%s -rundir %s -testcase %s -suffix %s" %
-                               (cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'), suffix))
-        if rc == 0:
-            append_status(out, sfile="TestStatus.log")
-        else:
-            append_status("Component_compare_move.sh failed out: %s\n\nerr: %s\n" % (out, err),
-                          sfile="TestStatus.log")
+        comments = move(self._case, suffix)
+        append_status(comments, sfile="TestStatus.log")
 
     def _component_compare_test(self, suffix1, suffix2):
         """
         Return value is not generally checked, but is provided in case a custom
         run case needs indirection based on success.
         """
-        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
-                           "component_compare_test.sh")
-        rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 %s -suffix2 %s -msg 'Compare %s and %s'"
-                               %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
-                                 self._case.get_value('CASEBASEID'), suffix1, suffix2, suffix1, suffix2))
-        logger.debug("run %s results %d %s %s"%(cmd,rc,out,err))
-        status = TEST_PASS_STATUS if rc == 0 else TEST_FAIL_STATUS
+        success, comments = compare_test(self._case, suffix1, suffix2)
+        append_status(comments, sfile="TestStatus.log")
+        status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
             self._test_status.set_status("%s_%s_%s" % (COMPARE_PHASE, suffix1, suffix2), status)
-
-        if rc != 0:
-            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err),
-                          sfile="TestStatus.log")
-            return False
-
-        return True
+        return success
 
     def _get_mem_usage(self, cpllog):
         """
@@ -307,11 +292,11 @@ class SystemTestsCommon(object):
                 return False
         return True
 
-    def _get_latest_cpl_log(self, coupler_log_path=None):
+    def _get_latest_cpl_log(self):
         """
         find and return the latest cpl log file in the run directory
         """
-        coupler_log_path = self._case.get_value("RUNDIR") if coupler_log_path is None else coupler_log_path
+        coupler_log_path = self._case.get_value("RUNDIR")
         cpllog = None
         cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl.log.*'))
         if cpllogs:
@@ -324,27 +309,13 @@ class SystemTestsCommon(object):
         compare the current test output to a baseline result
         """
         with self._test_status:
-            baselineroot = self._case.get_value("BASELINE_ROOT")
-            basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
-            for bdir in (baselineroot, basecmp_dir):
-                if not os.path.isdir(bdir):
-                    comment = "ERROR %s does not exist" % bdir
-                    self._test_status.set_status("%s_baseline" % COMPARE_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_status(comment, sfile="TestStatus.log")
-                    return -1
-
-            compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
-                                   "component_compgen_baseline.sh")
-            compgen += " -baseline_dir "+basecmp_dir
-            compgen += " -test_dir "+self._case.get_value("RUNDIR")
-            compgen += " -compare_tag "+self._case.get_value("BASELINE_NAME_CMP")
-            compgen += " -testcase "+self._case.get_value("CASE")
-            compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
-            rc, out, err = run_cmd(compgen)
-
-            status = TEST_PASS_STATUS if rc == 0 else TEST_FAIL_STATUS
-            self._test_status.set_status("%s_baseline" % COMPARE_PHASE, status)
-            append_status("Baseline compare results: %s\n%s"%(out,err), sfile="TestStatus.log")
+            # compare baseline
+            success, comments = compare_baseline(self._case)
+            append_status(comments, sfile="TestStatus.log")
+            status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
+            ts_comments = comments if "\n" not in comments else None
+            self._test_status.set_status("%s_baseline" % COMPARE_PHASE, status, comments=ts_comments)
+            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASECMP_CASE"))
 
             # compare memory usage to baseline
             newestcpllogfile = self._get_latest_cpl_log()
@@ -382,31 +353,16 @@ class SystemTestsCommon(object):
         generate a new baseline case based on the current test
         """
         with self._test_status:
-            newestcpllogfile = self._get_latest_cpl_log()
-            baselineroot = self._case.get_value("BASELINE_ROOT")
-            basegen_dir = os.path.join(baselineroot, self._case.get_value("BASEGEN_CASE"))
-            for bdir in (baselineroot, basegen_dir):
-                if not os.path.isdir(bdir):
-                    comment = "ERROR %s does not exist" % bdir
-                    self._test_status.set_status("%s" % GENERATE_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_status(comment, sfile="TestStatus.log")
-                    return -1
-
-            compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
-                                   "component_compgen_baseline.sh")
-            compgen += " -baseline_dir "+basegen_dir
-            compgen += " -test_dir "+self._case.get_value("RUNDIR")
-            compgen += " -generate_tag "+self._case.get_value("BASELINE_NAME_GEN")
-            compgen += " -testcase "+self._case.get_value("CASE")
-            compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
-            rc, out, err = run_cmd(compgen)
-
-            status = TEST_PASS_STATUS if rc == 0 else TEST_FAIL_STATUS
+            # generate baseline
+            success, comments = generate_baseline(self._case)
+            append_status(comments, sfile="TestStatus.log")
+            status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             self._test_status.set_status("%s" % GENERATE_PHASE, status)
-            append_status("Baseline generate results: %s\n%s"%(out,err), sfile="TestStatus.log")
+            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
 
             # copy latest cpl log to baseline
             # drop the date so that the name is generic
+            newestcpllogfile = self._get_latest_cpl_log()
             shutil.copyfile(newestcpllogfile,
                             os.path.join(basegen_dir,"cpl.log.gz"))
 
@@ -435,18 +391,18 @@ class FakeTest(SystemTestsCommon):
 
             build.post_build(self._case, [])
 
-    def run_phase(self):
-        self.run_indv(suffix=None)
-
 class TESTRUNPASS(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
         script = \
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-""" % rundir
+cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+""" % (rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
@@ -468,9 +424,9 @@ class TESTRUNDIFF(FakeTest):
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
-  cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
+  cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 else
-  cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.base
+  cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc
 fi
 """ % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
@@ -501,12 +457,15 @@ class TESTRUNSLOWPASS(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
         script = \
 """
 sleep 300
 echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-""" % rundir
+cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+""" % (rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -515,12 +474,14 @@ class TESTMEMLEAKFAIL(FakeTest):
     def build_phase(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
         testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.failmemleak.gz")
         script = \
 """
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
-""" % (testfile, rundir)
+cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+""" % (testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -529,12 +490,14 @@ class TESTMEMLEAKPASS(FakeTest):
     def build_phase(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
         testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.passmemleak.gz")
         script = \
 """
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
-""" % (testfile, rundir)
+cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+""" % (testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
