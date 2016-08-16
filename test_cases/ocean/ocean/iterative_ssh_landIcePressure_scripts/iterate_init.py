@@ -49,7 +49,7 @@ for iterIndex in range(args.first_iteration,args.iteration_count):
 
     if args.plot_globalStats:
         print "   * Plotting stats"
-        subprocess.check_call(['../plot_globalStats.py', '--out_dir=statsPlots','--iteration=%i'%iterIndex, 'kineticEnergyCellMax',
+        subprocess.check_call(['../scripts/plot_globalStats.py', '--out_dir=statsPlots','--iteration=%i'%iterIndex, 'kineticEnergyCellMax',
                                'kineticEnergyCellAvg', 'layerThicknessMin'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
         print "   - Complete"
 
