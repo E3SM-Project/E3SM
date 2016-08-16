@@ -14,6 +14,9 @@
 	<test name="ZISO 20km - Smoke Test" core="ocean" configuration="ziso" resolution="20km" test="default">
 		<script name="run_test.py"/>
 	</test>
+	<test name="ZISO 20km - Smoke Test with frazil" core="ocean" configuration="ziso" resolution="20km" test="with_frazil">
+		<script name="run_test.py"/>
+	</test>
 	<test name="Baroclinic Channel 10km - Thread Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="threads_test">
 		<script name="run_test.py"/>
 	</test>
