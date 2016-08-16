@@ -12,6 +12,7 @@ The following are the test functionality categories:
   7) archiving (short-term and long-term) tests
   8) performance tests
   9) spinup tests
+  10) other component-specific tests
 
 NOTES:
 - unless otherwise noted everything is run in one executable directory
@@ -149,6 +150,13 @@ SPO    smoke spinup-ocean test
 ======================================================================
 
 LAR    long term archive test
+
+======================================================================
+    Other component-specific tests
+======================================================================
+
+LII    CLM initial condition interpolation test
+
 
 -->
 

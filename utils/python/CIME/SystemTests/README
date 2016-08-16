@@ -1,11 +1,13 @@
 The following are the test functionality categories:
   1) smoke tests
-  2) restart tests
-  3) threading/pe-count modification tests
-  4) sequencing (layout) modification tests
-  5) multi-instance tests
-  6) performance tests
-  7) spinup tests (TODO)
+  2) basic reproducibility tests
+  3) restart tests
+  4) threading/pe-count modification tests
+  5) sequencing (layout) modification tests
+  6) multi-instance tests
+  7) performance tests
+  8) spinup tests (TODO)
+  9) other component-specific tests
 
 Some tests not yet implemented in python.  They can be found in
 cime/scripts/Testing/Testcases
@@ -22,6 +24,12 @@ SMS    smoke startup test (default length)
        do a 5 day initial test (suffix: base)
        if $IOP_ON is set then suffix is base_iop
        success for non-iop is just a successful coupler
+
+======================================================================
+    Basic reproducibility Tests
+======================================================================
+
+REP    reproducibility: do two identical runs give the same results?
 
 ======================================================================
     Restart Tests
@@ -138,3 +146,8 @@ SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45 and CN or B
          short term archiving is on
        do a hybrid non-spinup run run from the restart files generated in the first phase
 
+======================================================================
+    Other component-specific tests
+======================================================================
+
+LII    CLM initial condition interpolation test
