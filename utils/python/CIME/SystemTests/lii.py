@@ -21,7 +21,7 @@ class LII(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
 
         # Make copies of the namelist files for each part of the test. Enclose the
         # copies in conditionals so that we only do this namelist setup the first time
@@ -46,9 +46,9 @@ class LII(SystemTestsCommon):
                     newfile.write("use_init_interp = .true.")
 
         self.clean_build()
-        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
-    def run(self):
+    def run_phase(self):
         '''
         Do a run with init_interp false, a run with init_interp true and
         compare
@@ -70,13 +70,6 @@ class LII(SystemTestsCommon):
             logger.info("doing a %d %s initial test with init_interp set to %s, no restarts written"
                         % (stop_n, stop_option, user_nl_dir == "interp"))
 
-            success = SystemTestsCommon._run(self, suffix=user_nl_dir)
-            if not success:
-                break
-        if success:
-            return self._component_compare_test("nointerp", "interp")
-        else:
-            return False
+            self.run_indv(suffix=user_nl_dir)
 
-    def report(self):
-        SystemTestsCommon.report(self)
+        self._component_compare_test("nointerp", "interp")

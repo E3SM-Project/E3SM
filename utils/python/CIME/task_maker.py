@@ -130,14 +130,14 @@ class TaskMaker(object):
                 node_count = int(math.ceil(float(task_count) / tasks_per_node))
 
                 total_node_count += node_count
-                pbsrs += "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=" % (node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
+                pbsrs += "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=$MODEL" % (node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
 
                 thread_count = maxt[c1]
                 max_thread_count = max(max_thread_count, maxt[c1])
                 task_count = 1
 
             else:
-                task_count = 1
+                task_count += 1
 
         max_tasks_per_node = min(self.MAX_TASKS_PER_NODE / max_thread_count, self.PES_PER_NODE, max_task_count)
         max_total_node_count = int(math.ceil(float(max_task_count) / max_tasks_per_node))
@@ -174,7 +174,7 @@ class TaskMaker(object):
         self.aprun = aprun
         self.opt_node_count = total_node_count
         self.num_nodes = max_total_node_count
-        self.pbsrs = pbsrs + "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=" % (max_total_node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
+        self.pbsrs = pbsrs + "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=$MODEL" % (max_total_node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
 
         # calculate ptile..
         ptile = self.MAX_TASKS_PER_NODE / 2

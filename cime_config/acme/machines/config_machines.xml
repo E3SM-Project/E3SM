@@ -75,6 +75,7 @@
   <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
   <mpirun mpilib="default">
     <executable>srun</executable>
     <arguments>
@@ -680,7 +681,7 @@
          <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <PES_PER_NODE>8</PES_PER_NODE>
+         <PES_PER_NODE>4</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>HiRes_EarthSys_2</PROJECT>
@@ -690,14 +691,13 @@
              <arguments>
                <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
-               <arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
+               <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+               <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
-               <arg name="colon">:</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -803,7 +803,7 @@
 	 <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
-         <PES_PER_NODE>8</PES_PER_NODE>
+         <PES_PER_NODE>4</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>HiRes_EarthSys_2</PROJECT>
@@ -813,9 +813,9 @@
              <arguments>
                <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
-               <arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
+               <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+               <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
@@ -1048,8 +1048,8 @@
 
 <machine MACH="mustang">
 	<DESC>LANL Linux Cluster, 24 pes/node, batch system Moab</DESC>
-        <NODENAME_REGEX>mustang</NODENAME_REGEX>
-        <TESTS>acme_developer</TESTS>
+    <NODENAME_REGEX>mu.*.lanl.gov</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
@@ -1060,8 +1060,51 @@
 	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/scratch</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/mustang/cprnc/v0.40/cprnc</CCSM_CPRNC>
+	<module_system type="module">
+	   <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+	   <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+	   <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+	   <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+	   <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+	   <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+	   <cmd_path lang="sh">module</cmd_path>
+	   <cmd_path lang="csh">module</cmd_path>
+	   <modules>
+		  <command name="list"/>
+	      <command name="purge"/>
+		  <command name="use">/usr/projects/climate/SHARED_CLIMATE/modulefiles/all</command>
+		  <command name="load">friendly-testing</command>
+		  <command name="load">python/anaconda-2.7-climate</command>
+	   </modules>
+	   <modules compiler="intel">
+	      <command name="load">intel/15.0.5</command>
+	      <command name="load">mkl/11.3.3</command>
+	   </modules>
+	   <modules compiler="gnu">
+	      <command name="load">gcc/4.8.2</command>
+	   </modules>
+	   <modules mpilib="openmpi">
+	      <command name="load">openmpi/1.6.5</command>
+	   </modules>
+	   <modules mpilib="mvapich">
+	      <command name="load">mvapich2/1.8</command>
+	   </modules>
+	   <modules>
+	      <command name="load">netcdf/4.4.0</command>
+	   </modules>
+	   <modules mpilib="!mpi-serial">
+	      <command name="load">parallel-netcdf/1.5.0</command>
+	   </modules>
+	   <modules>
+		  <command name="list"/>
+	   </modules>
+	</module_system>
+	<environment_variables>
+	   <env name="LD_LIBRARY_PATH">$LD_LIBRARY_PATH:$NETCDF_ROOT/lib</env>
+	</environment_variables>
+
 	<BATCH_SYSTEM>moab</BATCH_SYSTEM>
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
@@ -1086,14 +1129,15 @@
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+	<PES_PER_NODE>24</PES_PER_NODE>
 	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>
 
 <machine MACH="wolf">
 	<DESC>LANL Linux Cluster, 16 pes/node, batch system Moab</DESC>
-        <NODENAME_REGEX>wolf</NODENAME_REGEX>
-        <TESTS>acme_developer</TESTS>
+    <NODENAME_REGEX>wf-fe.*.lanl.gov</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
@@ -1104,8 +1148,47 @@
 	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/scratch</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
+	<module_system type="module">
+	   <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+	   <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+	   <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+	   <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+	   <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+	   <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+	   <cmd_path lang="sh">module</cmd_path>
+	   <cmd_path lang="csh">module</cmd_path>
+	   <modules>
+	      <command name="purge"/>
+		  <command name="use">/usr/projects/climate/SHARED_CLIMATE/modulefiles/all</command>
+		  <command name="load">friendly-testing</command>
+		  <command name="load">python/anaconda-2.7-climate</command>
+	   </modules>
+	   <modules compiler="intel">
+	      <command name="load">intel/15.0.5</command>
+	      <command name="load">mkl/11.3.3</command>
+	   </modules>
+	   <modules compiler="gnu">
+	      <command name="load">gcc/4.8.2</command>
+	   </modules>
+	   <modules mpilib="openmpi">
+	      <command name="load">openmpi/1.6.5</command>
+	   </modules>
+	   <modules mpilib="mvapich">
+	      <command name="load">mvapich2/1.8</command>
+	   </modules>
+	   <modules>
+	      <command name="load">netcdf/4.4.0</command>
+	   </modules>
+	   <modules mpilib="!mpi-serial">
+	      <command name="load">parallel-netcdf/1.5.0</command>
+	   </modules>
+	</module_system>
+	<environment_variables>
+	   <env name="LD_LIBRARY_PATH">$LD_LIBRARY_PATH:$NETCDF_ROOT/lib</env>
+	</environment_variables>
+
 	<BATCH_SYSTEM>moab</BATCH_SYSTEM>
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
@@ -1130,6 +1213,7 @@
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+	<PES_PER_NODE>16</PES_PER_NODE>
 	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>

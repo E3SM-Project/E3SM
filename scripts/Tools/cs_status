@@ -5,9 +5,9 @@ no errors occured (not based on test statuses).
 """
 
 from standard_script_setup import *
-import wait_for_tests
 import argparse, sys, os, logging
 from CIME.utils import expect
+from CIME.test_status import *
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -43,10 +43,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def cs_status(test_paths, model):
 ###############################################################################
     for test_path in test_paths:
-        statuses, test_name = wait_for_tests.parse_test_status_file(test_path)
-        summary = wait_for_tests.reduce_stati(statuses)
+        ts = TestStatus(test_dir=os.path.dirname(test_path))
+        test_name = ts.get_name()
+        summary = ts.get_overall_test_status()
         print "%s (Overall: %s), details:" % (test_name, summary)
-        for phase, status in statuses.iteritems():
+        for phase, status in ts:
             print "  %s %s" % (status, phase)
 
 ###############################################################################

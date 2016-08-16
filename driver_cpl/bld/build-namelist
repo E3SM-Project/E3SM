@@ -236,8 +236,13 @@ my $cfg = Build::Config->new("$CASEROOT/Buildconf/cplconf/config_cache.xml");
 # output namelist variables are in the definition file, and are output in the correct
 # namelist groups.
 my $definition = Build::NamelistDefinition->new( shift(@nl_definition_paths) );
+my $modelio_definition;
 foreach my $nl_defin_file ( @nl_definition_paths ) {
-  $definition->add( "$nl_defin_file" );
+  if ( $nl_defin_file =~ /modio/ ) {
+    $modelio_definition = Build::NamelistDefinition->new( $nl_defin_file );
+  } else {
+    $definition->add( "$nl_defin_file" );
+  }
 }
 
 # Create a namelist defaults object.  This object provides default values for variables
@@ -940,6 +945,8 @@ check_input_files($nl, $DIN_LOC_ROOT, "../cpl.input_data_list");
 # (4) Write out model_modelio.nml files
 #-----------------------------------------------------------------------------------------------
 
+$definition = $modelio_definition;
+
 foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 
     my $LID     = "$ENV{'LID'}";
@@ -1042,6 +1049,9 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'GLC_PIO_TYPENAME'}");
 	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'GLC_PIO_REARRANGER'}");
 	}
+        # Validate that the namelist is correct
+        $definition->validate($nlio);
+
 	$nlio->write($modeliofile, 'groups'=>\@iogroup);
 	if ($print>=2) { print "Writing io namelist to $modeliofile $eol"; }
 	$inst_index = $inst_index + 1;

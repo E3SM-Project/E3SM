@@ -8,7 +8,7 @@ from copy   import deepcopy
 import glob, os, shutil, traceback
 from CIME.XML.standard_module_setup import *
 
-from CIME.utils                     import expect, get_cime_root
+from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -673,6 +673,7 @@ class Case(object):
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
+                    os.path.join(toolsdir, "taskmaker"),
                     os.path.join(toolsdir, "archive_metadata.sh"),
                     os.path.join(toolsdir, "xmlchange"),
                     os.path.join(toolsdir, "xmlquery"))
@@ -687,7 +688,6 @@ class Case(object):
         toolfiles = (os.path.join(toolsdir, "check_lockedfiles"),
                      os.path.join(toolsdir, "lt_archive.sh"),
                      os.path.join(toolsdir, "getTiming"),
-                     os.path.join(machines_dir,"taskmaker.pl"),
                      os.path.join(machines_dir,"Makefile"),
                      os.path.join(machines_dir,"mkSrcfiles"),
                      os.path.join(machines_dir,"mkDepends"))
@@ -779,9 +779,22 @@ class Case(object):
         for newdir in newdirs:
             os.makedirs(newdir)
         # Open a new README.case file in $self._caseroot
-        with open(os.path.join(self._caseroot,"README.case"), "w") as fd:
-            for arg in sys.argv:
-                fd.write(" %s"%arg)
+
+        append_status(" ".join(sys.argv), caseroot=self._caseroot, sfile="README.case")
+        append_status("Compset longname is %s"%self.get_value("COMPSET"),
+                      caseroot=self._caseroot, sfile="README.case")
+        append_status("Compset specification file is %s" %
+                      (self.get_value("COMPSETS_SPEC_FILE")),
+                      caseroot=self._caseroot, sfile="README.case")
+        append_status("Pes     specification file is %s" %
+                      (self.get_value("PES_SPEC_FILE")),
+                      caseroot=self._caseroot, sfile="README.case")
+        for component_class in self._component_classes:
+            if component_class == "DRV":
+                continue
+            comp_grid = "%s_GRID"%component_class
+            append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
+                          caseroot=self._caseroot, sfile="README.case")
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()

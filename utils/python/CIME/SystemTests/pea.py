@@ -17,7 +17,7 @@ class PEA(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
@@ -36,7 +36,7 @@ class PEA(SystemTestsCommon):
             self._case.flush()
             case_setup(self._case, reset=True)
             self.clean_build()
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
                 shutil.move("%s/%s.exe"%(exeroot,cime_model),
                             "%s/%s.exe.PEA_%s"%(exeroot,cime_model,mpilib))
@@ -64,7 +64,7 @@ class PEA(SystemTestsCommon):
         logger.info("doing an %d %s initial test with 1pe and mpi, no restarts written"
                     % (stop_n, stop_option))
 
-        return SystemTestsCommon._run(self)
+        self.run_indv()
 
     def _pea_second_phase(self):
 
@@ -90,21 +90,9 @@ class PEA(SystemTestsCommon):
         logger.info("doing an %d %s initial test with 1pe and serial mpi, no restarts written"
                     % (stop_n, stop_option))
 
-        success = SystemTestsCommon._run(self, "mpiserial")
+        self.run_indv(suffix="mpiserial")
+        self._component_compare_test("base", "mpiserial")
 
-        # Compare restart file
-        if success:
-            return self._component_compare_test("base", "mpiserial")
-        else:
-            return False
-
-    def run(self):
-        success = self._pea_first_phase()
-
-        if success:
-            return self._pea_second_phase()
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+    def run_phase(self):
+        self._pea_first_phase()
+        self._pea_second_phase()

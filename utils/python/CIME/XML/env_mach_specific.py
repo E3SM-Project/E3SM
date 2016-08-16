@@ -94,12 +94,22 @@ class EnvMachSpecific(EnvBase):
 
     def list_modules(self):
         module_system = self.get_module_system_type()
+
+        # If the user's login shell is not sh, it's possible that modules
+        # won't be configured so we need to be sure to source the module
+        # setup script if it exists.
+        init_path = self.get_module_system_init_path("sh")
+        if init_path:
+            source_cmd = "source %s && " % init_path
+        else:
+            source_cmd = ""
+
         if (module_system == "module"):
-            return run_cmd_no_fail("module list 2>&1")
+            return run_cmd_no_fail("%smodule list 2>&1" % source_cmd)
         elif (module_system == "soft"):
-            return run_cmd_no_fail("softenv")
+            return run_cmd_no_fail("%ssoftenv" % source_cmd)
         elif (module_system == "dotkit"):
-            return run_cmd_no_fail("use -lv")
+            return run_cmd_no_fail("%suse -lv" % source_cmd)
         elif (module_system == "none"):
             return ""
         else:
@@ -248,11 +258,12 @@ class EnvMachSpecific(EnvBase):
     def _load_dotkit_modules(self, _):
         expect(False, "Not yet implemented")
 
-    def _load_none_modules(self, _):
+    def _load_none_modules(self, modules_to_load):
         """
         No Action required
         """
-        pass
+        expect(not modules_to_load,
+               "Module system was specified as 'none' yet there are modules that need to be loaded?")
 
     def _mach_specific_header(self, shell):
         '''
@@ -277,10 +288,10 @@ class EnvMachSpecific(EnvBase):
         return module_system.get("type")
 
     def get_module_system_init_path(self, lang):
-        init_nodes = self.get_node("init_path", attributes={"lang":lang})
-        return init_nodes.text
+        init_nodes = self.get_optional_node("init_path", attributes={"lang":lang})
+        return init_nodes.text if init_nodes is not None else None
 
     def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang})
-        return cmd_nodes.text
+        cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
+        return cmd_nodes.text if cmd_nodes is not None else None
 

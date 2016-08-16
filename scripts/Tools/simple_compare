@@ -6,7 +6,7 @@ diffing non-namelist files.
 """
 
 from standard_script_setup import *
-import simple_compare
+import CIME.simple_compare
 from CIME.utils import expect
 
 import argparse, sys, os
@@ -65,7 +65,7 @@ def _main_func(description):
     else:
         logging.info("Using case: '%s'" % case)
 
-    expect(simple_compare.compare_files(gold_file, compare_file, case),
+    expect(CIME.simple_compare.compare_files(gold_file, compare_file, case),
            "Diff between files %s and %s" % (gold_file, compare_file))
 
     print "Files %s and %s MATCH" % (gold_file, compare_file)

@@ -145,15 +145,12 @@
 	<queue>shared</queue>
       </queues>
       <walltimes>
-	<walltime default="true">00:15:00</walltime>
+	<walltime default="true">01:00:00</walltime>
       </walltimes>
     </batch_system>
 
     <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" type="slurm" version="x.y">
-      <directives>
-        <directive> -A {{ account }} </directive>
-      </directives>
       <queues>
         <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" default="true">regular</queue>
 	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288">debug</queue>
@@ -255,7 +252,6 @@
 
 
    <batch_system MACH="mustang" type="moab" version="x.y">
-   <batch_directive>#MSUB</batch_directive>
    <directives>
      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
    </directives>
@@ -267,13 +263,9 @@
    </batch_system>
 
    <batch_system MACH="wolf" type="moab" version="x.y">
-     <batch_directive>#MSUB</batch_directive>
 	<directives>
 		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
 	</directives>
-	<BATCHQUERY>mshow</BATCHQUERY>
-	<BATCHSUBMIT>msub</BATCHSUBMIT>
-	<BATCHREDIRECT></BATCHREDIRECT>
 	<walltimes>
 	  <walltime default="true">00:30:00</walltime>
 	  <walltime ccsm_estcost="1">02:00:00</walltime>

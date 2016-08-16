@@ -10,7 +10,8 @@ import glob, shutil, time, threading, gzip, subprocess
 logger = logging.getLogger(__name__)
 
 def stringify_bool(val):
-    expect(type(val) is bool, "Wrong type")
+    val = False if val is None else val
+    expect(type(val) is bool, "Wrong type for val '%s'" % repr(val))
     return "TRUE" if val else "FALSE"
 
 ###############################################################################
@@ -130,7 +131,8 @@ def post_build(case, logs):
     # Set XML to indicate build complete
     case.set_value("BUILD_COMPLETE", True)
     case.set_value("BUILD_STATUS", 0)
-    case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
+    if "SMP_VALUE" in os.environ:
+        case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
     case.flush()
 
     if os.path.exists("LockedFiles/env_build.xml"):
@@ -231,10 +233,10 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     os.environ["CAM_CONFIG_OPTS"]      = cam_config_opts     if cam_config_opts     is not None else ""
     os.environ["PIO_CONFIG_OPTS"]      = pio_config_opts     if pio_config_opts     is not None else ""
     os.environ["OCN_SUBMODEL"]         = ocn_submodel        if ocn_submodel        is not None else ""
-    os.environ["PROFILE_PAPI_ENABLE"]  = stringify_bool(profile_papi_enable) if profile_papi_enable is not None else ""
-    os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)       if clm_use_petsc       is not None else ""
-    os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)   if cism_use_trilinos   is not None else ""
-    os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)   if mpasli_use_albany   is not None else ""
+    os.environ["PROFILE_PAPI_ENABLE"]  = stringify_bool(profile_papi_enable)
+    os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)
+    os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
+    os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)
 
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
@@ -268,9 +270,9 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     # the future there may be others -- so USE_ALBANY will be true if
     # ANY of those are true.
 
-    use_albany = mpasli_use_albany
+    use_albany = stringify_bool(mpasli_use_albany)
     case.set_value("USE_ALBANY", use_albany)
-    os.environ["USE_ALBANY"] = stringify_bool(use_albany)
+    os.environ["USE_ALBANY"] = use_albany
 
     # Load modules
     env_module = case.get_env("mach_specific")
@@ -306,6 +308,8 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     logger.info("Time spent not building: %f sec" % (t2 - t1))
     logger.info("Time spent building: %f sec" % (t3 - t2))
+
+    return True
 
 ###############################################################################
 def check_all_input_data(case):

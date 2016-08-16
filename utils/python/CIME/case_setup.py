@@ -6,11 +6,13 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
+from CIME.task_maker        import TaskMaker
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
 from CIME.utils             import append_status, parse_test_name
 from CIME.user_mod_support  import apply_user_mods
+from CIME.test_status       import *
 
 import shutil, time, glob
 
@@ -77,9 +79,8 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False):
+def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, reset=False):
 ###############################################################################
-    caseroot = case.get_value("CASEROOT")
     os.chdir(caseroot)
     msg = "case.setup starting"
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
@@ -187,7 +188,8 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             case.flush()
             check_lockedfiles()
 
-            pestot = int(run_cmd_no_fail("Tools/taskmaker.pl -sumonly"))
+            tm = TaskMaker(case)
+            pestot = tm.fullsum
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
@@ -257,7 +259,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         _build_usernl_files(case, "drv", "cpl")
 
         if case.get_value("TEST"):
-            test_mods = parse_test_name(case.get_value("CASEBASEID"))[6]
+            test_mods = parse_test_name(casebaseid)[6]
             if test_mods is not None:
                 user_mods_path = os.path.join(case.get_value("TESTS_MODS_DIR"), test_mods)
                 apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
@@ -288,3 +290,17 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             f.write(env_module.list_modules())
         run_cmd_no_fail("echo -e '\n' >> software_environment.txt && \
                          env >> software_environment.txt")
+
+###############################################################################
+def case_setup(case, clean=False, test_mode=False, reset=False):
+###############################################################################
+    caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
+    test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
+    with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
+        try:
+            _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
+        except:
+            ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
+            raise
+        else:
+            ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
