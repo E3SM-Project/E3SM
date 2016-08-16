@@ -10,7 +10,7 @@ import os
 import shutil
 import tempfile
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
-from CIME.SystemTests.tests.case_fake import CaseFake
+from CIME.tests.case_fake import CaseFake
 
 # ========================================================================
 # Fake version of SystemTestsCompareTwo that overrides some functionality for

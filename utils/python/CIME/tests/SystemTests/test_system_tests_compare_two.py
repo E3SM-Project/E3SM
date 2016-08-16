@@ -12,7 +12,7 @@ import tempfile
 
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 import CIME.test_status as test_status
-from CIME.SystemTests.tests.case_fake import CaseFake
+from CIME.tests.case_fake import CaseFake
 
 # ========================================================================
 # Structure for storing information about calls made to methods

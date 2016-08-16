@@ -42,19 +42,21 @@ class A_RunUnitTests(unittest.TestCase):
                         msg="Path did not resolve to existing file %s" % machinefile)
 
     def test_unittests(self):
-        # Finds all files contained in LIB_DIR or its subdirectories that match
-        # the pattern 'test*.py', and runs the unit tests found there (i.e.,
-        # tests defined using python's unittest module).
+        # Finds all files contained in CIME/tests or its subdirectories that
+        # match the pattern 'test*.py', and runs the unit tests found there
+        # (i.e., tests defined using python's unittest module).
         #
         # This is analogous to running:
-        #     python -m unittest discover
+        #     python -m unittest discover -s CIME/tests -t .
+        # from cime/utils/python
         #
         # Yes, that means we have a bunch of unit tests run from this one unit
         # test.
 
         testsuite = unittest.defaultTestLoader.discover(
-            start_dir = LIB_DIR,
-            pattern = 'test*.py')
+            start_dir = os.path.join(LIB_DIR,"CIME","tests"),
+            pattern = 'test*.py',
+            top_level_dir = LIB_DIR)
 
         testrunner = unittest.TextTestRunner(buffer=False)
 

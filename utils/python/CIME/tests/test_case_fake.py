@@ -9,7 +9,7 @@ import tempfile
 import os
 import shutil
 
-from CIME.SystemTests.tests.case_fake import CaseFake
+from CIME.tests.case_fake import CaseFake
 
 class TestCaseFake(unittest.TestCase):
 
