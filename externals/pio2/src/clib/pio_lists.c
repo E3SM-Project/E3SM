@@ -9,38 +9,35 @@ static iosystem_desc_t *pio_iosystem_list=NULL;
 static file_desc_t *pio_file_list = NULL;
 static file_desc_t *current_file=NULL;
 
+/** Add a new entry to the global list of open files. 
+ *
+ * @param file pointer to the file_desc_t struct for the new file.
+*/
 void pio_add_to_file_list(file_desc_t *file)
 {
   file_desc_t *cfile;
-  int cnt=-1;
-  // on iotasks the fh returned from netcdf should be unique, on non-iotasks we
-  // need to generate a unique fh, we do this with cnt, its a negative index
 
+  /* This file will be at the end of the list, and have no next. */
   file->next = NULL;
+
+  /* Get a pointer to the global list of files. */
   cfile = pio_file_list;
+
+  /* Keep a global pointer to the current file. */
   current_file = file;
-  if(cfile==NULL){
-    pio_file_list = file;
-  }else{
-    cnt =  min(cnt,cfile->fh-1);
-    while(cfile->next != NULL)
-      {
-	cfile=cfile->next;
-	cnt =  min(cnt,cfile->fh-1);
-      }
-    cfile->next = file;
+
+  /* If there is nothing in the list, then file will be the first
+   * entry. Otherwise, move to end of the list. */
+  if (!cfile) 
+      pio_file_list = file;
+  else
+  {
+      while (cfile->next)
+	  cfile = cfile->next;
+      cfile->next = file;
   }
-  if(! file->iosystem->ioproc || ((file->iotype != PIO_IOTYPE_PNETCDF &&
-				   file->iotype != PIO_IOTYPE_NETCDF4P)  &&
-				  file->iosystem->io_rank>0))
-    file->fh = cnt;
-
-  cfile = pio_file_list;
-
 }
-
-
-
+     
 file_desc_t *pio_get_file_from_id(int ncid)
 {
   file_desc_t *cfile;
@@ -61,7 +58,7 @@ file_desc_t *pio_get_file_from_id(int ncid)
   }
   return cfile;
 }
-
+  
 int pio_delete_file_from_list(int ncid)
 {
 
@@ -78,7 +75,7 @@ int pio_delete_file_from_list(int ncid)
       }
       if(current_file==cfile)
 	current_file=pfile;
-      free(cfile);
+      free(cfile);      
       return PIO_NOERR;
     }
     pfile = cfile;
@@ -148,7 +145,7 @@ iosystem_desc_t *pio_get_iosystem_from_id(int iosysid)
     ciosystem = ciosystem->next;
   }
   return NULL;
-
+  
 }
 
 int pio_add_to_iodesc_list(io_desc_t *iodesc)
@@ -170,7 +167,7 @@ int pio_add_to_iodesc_list(io_desc_t *iodesc)
   return iodesc->ioid;
 }
 
-
+     
 io_desc_t *pio_get_iodesc_from_id(int ioid)
 {
   io_desc_t *ciodesc;
@@ -195,7 +192,7 @@ io_desc_t *pio_get_iodesc_from_id(int ioid)
 
   return ciodesc;
 }
-
+  
 int pio_delete_iodesc_from_list(int ioid)
 {
 

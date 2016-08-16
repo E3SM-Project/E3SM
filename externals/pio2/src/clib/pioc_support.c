@@ -1,11 +1,132 @@
-/** @file
+/** @file 
  * Support functions.
  */
+#include <config.h>
+#if PIO_ENABLE_LOGGING
+#include <stdarg.h>
+#include <unistd.h>
+#endif /* PIO_ENABLE_LOGGING */
 #include <pio.h>
 #include <pio_internal.h>
 
 #include <execinfo.h>
 #define versno 2001
+
+#if PIO_ENABLE_LOGGING
+int pio_log_level = 0;
+int my_rank;
+#endif /* PIO_ENABLE_LOGGING */
+
+/** Return a string description of an error code. If zero is passed, a
+ * null is returned.
+ *
+ * @param pioerr the error code returned by a PIO function call. 
+ * @param errmsg Pointer that will get the error message. It will be
+ * PIO_MAX_NAME chars or less.
+ *
+ * @return 0 on success
+ */
+int
+PIOc_strerror(int pioerr, char *errmsg)
+{
+
+    /* System error? */
+    if(pioerr > 0)
+    {
+	const char *cp = (const char *)strerror(pioerr);
+	if (cp)
+	    strncpy(errmsg, cp, PIO_MAX_NAME);
+	else
+	    strcpy(errmsg, "Unknown Error");
+    }
+    else if (pioerr == PIO_NOERR)
+    {
+	strcpy(errmsg, "No error");
+    }
+    else if (pioerr <= NC2_ERR && pioerr >= NC4_LAST_ERROR)     /* NetCDF error? */
+    {
+#if defined( _PNETCDF) || defined(_NETCDF)
+	strncpy(errmsg, nc_strerror(pioerr), NC_MAX_NAME);
+#else /* defined( _PNETCDF) || defined(_NETCDF) */
+	strcpy(errmsg, "NetCDF error code, PIO not built with netCDF.");
+#endif /* defined( _PNETCDF) || defined(_NETCDF) */
+    }
+    else
+    {
+	/* Handle PIO errors. */
+	switch(pioerr) {
+	case PIO_EBADIOTYPE:
+	    strcpy(errmsg, "Bad IO type");
+	    break;
+	default:
+	    strcpy(errmsg, "unknown PIO error");
+	}
+    }
+
+    return PIO_NOERR;
+}
+
+/** Set the logging level. Set to -1 for nothing, 0 for errors only, 1
+ * for important logging, and so on. Log levels below 1 are only
+ * printed on the io/component root. If the library is not built with
+ * logging, this function does nothing. */
+int PIOc_set_log_level(int level)
+{
+#if PIO_ENABLE_LOGGING
+    printf("setting log level to %d\n", level);
+    pio_log_level = level;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+#endif /* PIO_ENABLE_LOGGING */
+    return PIO_NOERR;
+}
+
+#if PIO_ENABLE_LOGGING
+/** This function prints out a message, if the severity of the message
+   is lower than the global pio_log_level. To use it, do something
+   like this:
+   
+   pio_log(0, "this computer will explode in %d seconds", i);
+
+   After the first arg (the severity), use the rest like a normal
+   printf statement. Output will appear on stdout.
+   This function is heavily based on the function in section 15.5 of
+   the C FAQ. 
+*/
+void 
+pio_log(int severity, const char *fmt, ...)
+{
+   va_list argp;
+   int t;
+
+   /* If the severity is greater than the log level, we don't print
+      this message. */
+   if (severity > pio_log_level)
+      return;
+
+   /* If the severity is 0, only print on rank 0. */
+   if (severity < 1 && my_rank != 0)
+       return;
+
+   /* If the severity is zero, this is an error. Otherwise insert that
+      many tabs before the message. */
+   if (!severity)
+       fprintf(stdout, "ERROR: ");
+   for (t = 0; t < severity; t++)
+       fprintf(stdout, "\t");
+
+   /* Show the rank. */
+   fprintf(stdout, "%d ", my_rank);
+   
+   /* Print out the variable list of args with vprintf. */
+   va_start(argp, fmt);
+   vfprintf(stdout, fmt, argp);
+   va_end(argp);
+   
+   /* Put on a final linefeed. */
+   fprintf(stdout, "\n");
+   fflush(stdout);
+}
+#endif /* PIO_ENABLE_LOGGING */
 
 static pio_swapm_defaults swapm_defaults;
 bool PIO_Save_Decomps=false;
@@ -18,7 +139,7 @@ void pio_get_env(void)
   char *envptr;
   extern bufsize PIO_CNBUFFER_LIMIT;
   envptr = getenv("PIO_Save_Decomps");
-
+  
   if(envptr != NULL && (strcmp(envptr,"true")==0)){
     PIO_Save_Decomps=true;
   }
@@ -29,7 +150,7 @@ void pio_get_env(void)
   envptr = getenv("PIO_SWAPM");
   if(envptr != NULL){
     char *token = strtok(envptr, ":");
-
+    
     swapm_defaults.nreqs = atoi(token);
 
     token = strtok(NULL, ":");
@@ -38,7 +159,7 @@ void pio_get_env(void)
       swapm_defaults.handshake = true;
     }
     token = strtok(NULL, ":");
-
+    
     if((token!=NULL) && strcmp(token,"t")==0){
       swapm_defaults.isend = true;
     }
@@ -53,15 +174,15 @@ void pio_get_env(void)
       mult = 1000;
     }
     PIO_CNBUFFER_LIMIT=(bufsize) atoll(envptr)*mult;
-
+    
   }
 
-
+ 
 
 }
 
 
-
+     
 /* Obtain a backtrace and print it to stderr. */
 void print_trace (FILE *fp)
 {
@@ -69,18 +190,18 @@ void print_trace (FILE *fp)
   size_t size;
   char **strings;
   size_t i;
-
+  
   if(fp==NULL)
     fp = stderr;
 
   size = backtrace (array, 10);
   strings = backtrace_symbols (array, size);
-
+  
   fprintf (fp,"Obtained %zd stack frames.\n", size);
-
+     
   for (i = 0; i < size; i++)
     fprintf (fp,"%s\n", strings[i]);
-
+     
   free (strings);
 }
 
@@ -94,7 +215,7 @@ void piomemerror(iosystem_desc_t ios, size_t req, char *fname, const int line){
 
 void piodie(const char *msg,const char *fname, const int line){
   fprintf(stderr,"Abort with message %s in file %s at line %d\n",msg,fname,line);
-
+  
   print_trace(stderr);
 #ifdef MPI_SERIAL
   abort();
@@ -110,17 +231,46 @@ void pioassert(_Bool expression, const char *msg, const char *fname, const int l
   if(! expression){
     piodie(msg,fname,line);
   }
-#endif
+#endif  
 
 }
 
-/** Check the result of a netCDF API call.
- *
+/** Handle MPI errors. An error message is sent to stderr, then the
+  check_netcdf() function is called with PIO_EIO.
+
+  @param file pointer to the file_desc_t info
+  @param mpierr the MPI return code to handle
+  @param filename the name of the code file where error occured.
+  @param line the line of code where error occured.
+  @return PIO_NOERR for no error, otherwise PIO_EIO.
+ */
+int check_mpi(file_desc_t *file, const int mpierr, const char *filename,
+	       const int line)
+{
+    if (mpierr)
+    {
+	char errstring[MPI_MAX_ERROR_STRING];
+	int errstrlen;
+
+	/* If we can get an error string from MPI, print it to stderr. */
+	if (!MPI_Error_string(mpierr, errstring, &errstrlen))
+	    fprintf(stderr, "MPI ERROR: %s in file %s at line %d\n",
+		    errstring, filename, line);
+
+	/* Handle all MPI errors as PIO_EIO. */
+	check_netcdf(file, PIO_EIO, filename, line);
+	return PIO_EIO;
+    }
+    return PIO_NOERR;
+}
+
+/** Check the result of a netCDF API call. 
+ * 
  * @param file pointer to the PIO structure describing this file.
  * @param status the return value from the netCDF call.
- * @param fname the name of the code file.
- * @param line the line number of the netCDF call in the code.
- *
+ * @param fname the name of the code file. 
+ * @param line the line number of the netCDF call in the code. 
+ * 
  * @return the error code
 */
 int check_netcdf(file_desc_t *file, int status, const char *fname, const int line){
@@ -139,11 +289,11 @@ int check_netcdf(file_desc_t *file, int status, const char *fname, const int lin
   case PIO_IOTYPE_NETCDF:
     if(ios->iomaster){
       if(status != NC_NOERR && (ios->error_handler == PIO_INTERNAL_ERROR))
-         piodie(nc_strerror(status),fname,line);
+         piodie(nc_strerror(status),fname,line);	
 //	fprintf(stderr,"NETCDF ERROR: %s %s %d\n",nc_strerror(status),fname,line);
     }
     if(ios->error_handler == PIO_INTERNAL_ERROR){
-      if(status != NC_NOERR)
+      if(status != NC_NOERR)	
 	MPI_Abort(MPI_COMM_WORLD,status);
       // abort
     }else if(ios->error_handler==PIO_BCAST_ERROR){
@@ -164,7 +314,7 @@ int check_netcdf(file_desc_t *file, int status, const char *fname, const int lin
 #endif
   default:
     ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-  }
+  } 
   return status;
 }
 
@@ -199,7 +349,7 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
     fprintf(stderr,"ERROR: allocation error \n");
 
   switch(piotype){
-  case PIO_REAL:
+  case PIO_REAL:			
     iodesc->basetype=MPI_FLOAT;
     break;
   case PIO_DOUBLE:
@@ -208,11 +358,11 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   case PIO_CHAR:
     iodesc->basetype=MPI_CHAR;
     break;
-  case PIO_INT:
+  case PIO_INT:   
   default:
     iodesc->basetype = MPI_INTEGER;
     break;
-  }
+  }    
   iodesc->rearranger = 0;
   iodesc->maxregions=1;
   iodesc->rfrom = NULL;
@@ -251,7 +401,7 @@ void free_region_list(io_region *top)
       brel(ptr->count);
     tptr=ptr;
     ptr=ptr->next;
-    brel(tptr);
+    brel(tptr);      
   }
 
 }
@@ -314,7 +464,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
 
 int PIOc_readmap(const char file[], int *ndims, int *gdims[], PIO_Offset *fmaplen, PIO_Offset *map[], const MPI_Comm comm)
 {
-  int npes, myrank;
+  int npes, myrank;  
   int rnpes, rversno;
   int j;
   int *tdims;
@@ -324,12 +474,12 @@ int PIOc_readmap(const char file[], int *ndims, int *gdims[], PIO_Offset *fmaple
 
   MPI_Comm_size(comm, &npes);
   MPI_Comm_rank(comm, &myrank);
-
+  
   if(myrank == 0) {
     FILE *fp = fopen(file, "r");
     if(fp==NULL)
       piodie("Failed to open dof file",__FILE__,__LINE__);
-
+    
     fscanf(fp,"version %d npes %d ndims %d\n",&rversno, &rnpes,ndims);
 
     if(rversno != versno)
@@ -354,7 +504,7 @@ int PIOc_readmap(const char file[], int *ndims, int *gdims[], PIO_Offset *fmaple
       tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
       for(j=0;j<maplen;j++)
 	fscanf(fp,"%ld ",tmap+j);
-
+      
       if(i>0){
 	MPI_Send(&maplen, 1, PIO_OFFSET, i, i+npes, comm);
 	MPI_Send(tmap, maplen, PIO_OFFSET, i, i, comm);
@@ -381,7 +531,7 @@ int PIOc_readmap(const char file[], int *ndims, int *gdims[], PIO_Offset *fmaple
       maplen=0;
     }
     *fmaplen = maplen;
-  }
+  }      
   *gdims = tdims;
   return PIO_NOERR;
 }
@@ -429,11 +579,11 @@ int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Off
     for(i=0;i<ndims;i++){
       fprintf(fp,"%d ",gdims[i]);
     }
-    fprintf(fp,"\n");
+    fprintf(fp,"\n");    
     fprintf(fp,"0 %ld\n",nmaplen[0]);
     for( i=0;i<nmaplen[0];i++)
       fprintf(fp,"%ld ",map[i]);
-    fprintf(fp,"\n");
+    fprintf(fp,"\n");    
     for( i=1; i<npes;i++){
       nmap = (PIO_Offset *) malloc(nmaplen[i] * sizeof(PIO_Offset));
 
@@ -446,7 +596,7 @@ int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Off
       fprintf(fp,"\n");
 
       free(nmap);
-
+      
     }
 
     fprintf(fp,"\n");
@@ -460,7 +610,7 @@ int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Off
   return PIO_NOERR;
 }
 
-int PIOc_writemap_from_f90(const char file[], const int ndims, const int gdims[],
+int PIOc_writemap_from_f90(const char file[], const int ndims, const int gdims[], 
 			   const PIO_Offset maplen, const PIO_Offset map[], const int f90_comm)
 {
   // printf("%s %d %s %ld\n",__FILE__,__LINE__,file,maplen);
@@ -487,7 +637,7 @@ void print_memusage()
   printf("Allocated stack: %.2f MB, avail. stack: %.2f MB\n", (double)stack/(1024*1024), (double)stackavail/(1024*1024));
   printf("Memory: shared: %.2f MB, persist: %.2f MB, guard: %.2f MB, mmap: %.2f MB\n", (double)shared/(1024*1024), (double)persist/(1024*1024), (double)guard/(1024*1024), (double)mmap/(1024*1024));
 
-  return;
+  return; 
 }
 #endif
 */

@@ -397,7 +397,6 @@
     BGET CONFIGURATION
     ==================
 */
-//#define PIO_USE_MALLOC 1
 #ifdef PIO_USE_MALLOC
 #include <stdlib.h>
 #endif
@@ -419,7 +418,7 @@
 
 #define BufValid    1		      /* Define this symbol to enable the
 					 bpoolv() function for validating
-					 a buffer pool. */
+					 a buffer pool. */ 
 
 #define DumpData    1		      /* Define this symbol to enable the
 					 bufdump() function which allows
@@ -439,7 +438,7 @@
 					 pointers into released buffers. */
 
 //#define BestFit     1
-#undef BestFit
+#undef BestFit		
                                        /* Use a best fit algorithm when
 					 searching for space for an
 					 allocation request.  This uses
@@ -577,7 +576,7 @@ void bpoolrelease()
   numpblk = 0;	      /* Number of pool blocks */
   numpget = 0;
   numprel = 0; /* Number of block gets and rels */
-  numdget = 0;
+  numdget = 0; 
   numdrel = 0; /* Number of direct gets and rels */
 #endif /* BECtl */
 #endif /* BufStats */
@@ -587,7 +586,7 @@ void bpoolrelease()
   compfcn = NULL;
   acqfcn = NULL;
   relfcn = NULL;
-  exp_incr = 0;
+  exp_incr = 0;	
   pool_len = 0;
 #endif
 
@@ -618,7 +617,7 @@ void *bget(requested_size)
     buf = malloc(requested_size);
     //    printf("bget allocate %ld %x\n",requested_size,buf);
     return(buf);
-#endif
+#endif 
 
 
     if(size<=0)
@@ -773,7 +772,7 @@ void *bget(requested_size)
 	    /*only let this happen once */
 		printf("%s %d memory request exceeds block size %d %d %x\n",__FILE__,__LINE__,size,exp_incr,buf);
 	    exp_incr = size+sizeof(struct bhead);
-
+	    
 		return buf;
 	    }
 
@@ -881,7 +880,7 @@ void brel(buf)
     //    printf("bget free %d %x\n",__LINE__,buf);
     free(buf);
     return;
-#endif
+#endif    
 
 
     if(buf==NULL) return;       /* allow for null buffer */
