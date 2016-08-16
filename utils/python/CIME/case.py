@@ -80,10 +80,9 @@ class Case(object):
         # for xml files that haven't been created yet. We need a place
         # to store them until we are ready to create the file. At file
         # creation we get the values for those fields from this lookup
-        # table and then remove the entry. This was what I came up
-        # with in the perl anyway and I think that we still need it here.
+        # table and then remove the entry.
         self.lookups = {}
-        self.lookups['CIMEROOT'] = os.path.abspath(get_cime_root())
+        self.set_lookup_value('CIMEROOT',os.path.abspath(get_cime_root()))
 
         self._compsetname = None
         self._gridname = None
@@ -285,11 +284,12 @@ class Case(object):
                 logger.debug("Will rewrite file %s %s",env_file.filename, item)
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
-        if result is None:
-            if item in self.lookups.keys() and self.lookups[item] is not None:
-                logger.warn("Item %s already in lookups with value %s"%(item,self.lookups[item]))
-            else:
-                self.lookups[item] = value
+
+    def set_lookup_value(self, item, value):
+        if item in self.lookups.keys() and self.lookups[item] is not None:
+            logger.warn("Item %s already in lookups with value %s"%(item,self.lookups[item]))
+        else:
+            self.lookups[item] = value
 
 
     def _set_compset_and_pesfile(self, compset_name, user_compset=False, pesfile=None):
@@ -383,6 +383,10 @@ class Case(object):
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
         files = Files()
+        # Add the group and elements for the config_files.xml
+        for env_file in self._env_entryid_files:
+            env_file.add_elements_by_group(files, attlist)
+
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
@@ -407,9 +411,6 @@ class Case(object):
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
-        # Add the group and elements for the config_files.xml
-        for env_file in self._env_entryid_files:
-            env_file.add_elements_by_group(files, attlist)
 
         for key,value in self.lookups.items():
             result = self.set_value(key,value)
@@ -463,10 +464,11 @@ class Case(object):
         grids = Grids(gridfile)
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
+
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
             logger.debug("Set grid %s %s"%(key,value))
-            self.set_value(key,value)
+            self.set_lookup_value(key,value)
 
         #--------------------------------------------
         # component config data
