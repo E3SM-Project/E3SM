@@ -30,6 +30,7 @@ module ocn_eliassen_palm
    use mpas_constants
    use ocn_constants
    use ocn_diagnostics_routines
+   use ocn_equation_of_state
 
    implicit none
    private
@@ -744,6 +745,11 @@ contains
          call mpas_pool_get_array(am_epftPool, 'ErtelPV', ErtelPV)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVGradZonal', ErtelPVGradZonal)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVGradMerid', ErtelPVGradMerid)
+
+         ! Compute potentialDensity over the entire block to ensure it's valid for EPFT computation
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                            nCells, 1, 'absolute', potentialDensity, &
+                                            err) !, timeLevelIn=1)
 
          !--------------------------------------------------
          ! Get variables associated to diabatic processes
