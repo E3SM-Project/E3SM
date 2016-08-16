@@ -14,15 +14,21 @@ set (PIO_C_SRCS topology.c
                 pioc_sc.c
                 pio_spmd.c
                 pio_rearrange.c
-                pio_darray.c
+		pio_nc4.c
                 bget.c)
 
-set (PIO_GENNC_SRCS ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
-  ${CMAKE_CURRENT_BINARY_DIR}/pio_nc4.c
-  ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
-  ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c)
+set (PIO_GENNC_SRCS ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c)
 
-add_library (pioc ${PIO_C_SRCS} ${PIO_GENNC_SRCS})
+if (PIO_ENABLE_ASYNC)
+  set (PIO_ADDL_SRCS pio_nc_async.c pio_put_nc_async.c pio_get_nc_async.c
+    pio_msg.c pio_varm.c pio_darray_async.c)
+else ()
+  set (PIO_ADDL_SRCS pio_darray.c ${PIO_GENNC_SRCS})
+endif ()
+
+add_library (pioc ${PIO_C_SRCS} ${PIO_ADDL_SRCS})
 
 # set up include-directories
 include_directories(
@@ -67,7 +73,7 @@ install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
-
+    
 #===== MPI =====
 if (PIO_USE_MPISERIAL)
     find_package (MPISERIAL COMPONENTS C REQUIRED)
@@ -90,7 +96,7 @@ if (PIO_ENABLE_TIMING)
     find_package (GPTL COMPONENTS C QUIET)
     if (GPTL_C_FOUND)
         message (STATUS "Found GPTL C: ${GPTL_C_LIBRARIES}")
-        target_include_directories (pioc
+        target_include_directories (pioc 
             PUBLIC ${GPTL_C_INCLUDE_DIRS})
         target_link_libraries (pioc
             PUBLIC ${GPTL_C_LIBRARIES})
@@ -106,18 +112,18 @@ endif ()
 #===== NetCDF-C =====
 find_package (NetCDF "4.3.3" COMPONENTS C)
 if (NetCDF_C_FOUND)
-    target_include_directories (pioc
+    target_include_directories (pioc 
         PUBLIC ${NetCDF_C_INCLUDE_DIRS})
-    target_compile_definitions (pioc
+    target_compile_definitions (pioc 
         PUBLIC _NETCDF)
     target_link_libraries (pioc
         PUBLIC ${NetCDF_C_LIBRARIES})
     if (${NetCDF_C_HAS_PARALLEL})
-        target_compile_definitions (pioc
+        target_compile_definitions (pioc 
             PUBLIC _NETCDF4)
     endif ()
 else ()
-    target_compile_definitions (pioc
+    target_compile_definitions (pioc 
         PUBLIC _NONETCDF)
 endif ()
 
@@ -126,9 +132,9 @@ if (WITH_PNETCDF)
     find_package (PnetCDF "1.6" COMPONENTS C REQUIRED)
 endif ()
 if (PnetCDF_C_FOUND)
-    target_include_directories (pioc
+    target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
-    target_compile_definitions (pioc
+    target_compile_definitions (pioc 
         PUBLIC _PNETCDF)
     target_link_libraries (pioc
         PUBLIC ${PnetCDF_C_LIBRARIES})
@@ -140,9 +146,9 @@ if (PnetCDF_C_FOUND)
         target_compile_definitions(pioc
             PUBLIC USE_PNETCDF_VARN
             PUBLIC USE_PNETCDF_VARN_ON_READ)
-    endif()
+    endif()  
 else ()
-    target_compile_definitions (pioc
+    target_compile_definitions (pioc 
         PUBLIC _NOPNETCDF)
 endif ()
 
@@ -156,7 +162,7 @@ target_compile_options (pioc
 target_compile_definitions (pioc
     PUBLIC ${PIO_C_EXTRA_COMPILE_DEFINITIONS})
 if (PIO_C_EXTRA_LINK_FLAGS)
-    set_target_properties(pioc PROPERTIES
+    set_target_properties(pioc PROPERTIES 
         LINK_FLAGS ${PIO_C_EXTRA_LINK_FLAGS})
 endif ()
 
@@ -172,7 +178,7 @@ if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_SOURCES_FROM_TEMPLATES)
                                              pio_c_put_template.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_get_template.c
                                              pio_c_get_template.c
-            COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncputgetparser.pl
+            COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncputgetparser.pl 
                                        ${NetCDF_C_INCLUDE_DIR} ${PnetCDF_C_INCLUDE_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_template.c
                                              pio_c_template.c
@@ -186,7 +192,7 @@ if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_SOURCES_FROM_TEMPLATES)
     else ()
         message (FATAL_ERROR "Need Perl to create PIO C source files from templates")
     endif ()
-
+    
 # If both NetCDF and PnetCDF are NOT found, then just copy existing source files
 else ()
         add_custom_command (OUTPUT ${PIO_GENNC_SRCS}
@@ -196,12 +202,9 @@ else ()
                                              pio_get_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
                                              pio_nc.c
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc4.c
-                                             pio_nc4.c
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pio_put_nc.c
                     ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
-                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
-                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc4.c)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c)
 endif ()
 
 
