@@ -330,6 +330,8 @@ class EnvBatch(EnvBase):
             if name is None:
                 submitargs+=" %s"%flag
             else:
+                if name.startswith("$"):
+                    name = name[:1]
                 val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
@@ -479,7 +481,7 @@ class EnvBatch(EnvBase):
                         return queue.text
                 # if the fullsum is between the min and max # jobs, then use this queue.
                 elif jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
-                        return queue.text
+                    return queue.text
         return None
 
     def get_max_walltime(self, queue):
