@@ -121,7 +121,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         self._do_teardown = []
 
     def test_createnewcase(self):
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase')
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase.%s'% CIME.utils.get_utc_timestamp())
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         self._testdirs.append(testdir)
@@ -137,7 +137,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         self._do_teardown.append(testdir)
 
     def test_user_mods(self):
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testusermods')
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testusermods.%s'% CIME.utils.get_utc_timestamp())
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         self._testdirs.append(testdir)
@@ -169,10 +169,10 @@ class M_TestWaitForTests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
-        self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
-        self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
-        self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2')
+        self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass.%s'% CIME.utils.get_utc_timestamp())
+        self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail.%s'% CIME.utils.get_utc_timestamp())
+        self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished.%s'% CIME.utils.get_utc_timestamp())
+        self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2.%s'% CIME.utils.get_utc_timestamp())
         testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2]
         for testdir in testdirs:
             if os.path.exists(testdir):
@@ -964,7 +964,7 @@ class C_TestXMLQuery(unittest.TestCase):
         self._testdirs = []
         self._do_teardown = []
 
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts')
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts.%s'% CIME.utils.get_utc_timestamp())
         machine = 'melvin'
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
