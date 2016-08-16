@@ -929,7 +929,7 @@ contains
           landIcePressure(:) = 0.0_RKIND
           do iCell = 1, nCells
 
-             if(landIceFracObserved(iCell) > 0.5) then
+             if(landIceFracObserved(iCell) > 0.5_RKIND) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
                 landIceMask(iCell) = 1
              end if
