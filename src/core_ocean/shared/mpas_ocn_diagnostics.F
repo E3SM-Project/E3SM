@@ -586,21 +586,26 @@ contains
          ! only compute EOS derivatives if needed.
          call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
          call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'relative', density, err, &
-              inSituThermalExpansionCoeff, inSituSalineContractionCoeff, timeLevelIn=timeLevel)
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                            nCells, 0, 'relative', density, err, &
+                                            inSituThermalExpansionCoeff, inSituSalineContractionCoeff, &
+                                            timeLevelIn=timeLevel)
       else
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'relative', density, err, &
-              timeLevelIn=timeLevel)
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                            nCells, 0, 'relative', density, err, &
+                                            timeLevelIn=timeLevel)
       endif
       call mpas_threading_barrier()
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'absolute', potentialDensity, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                         nCells, 1, 'absolute', potentialDensity, &
                                          err, timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'relative', displacedDensity, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                         nCells, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
       call mpas_threading_barrier()
 
@@ -1690,14 +1695,14 @@ contains
       end if
 
       ! compute landIceMask from landIceFraction
-      !$omp do schedule(runtime) 
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          if (landIceFraction(iCell) >= 0.5_RKIND) then
             landIceMask(iCell) = 1
          else
             landIceMask(iCell) = 0
             ! don't allow land-ice fluxes if land ice is masked out
-            landIceFraction(iCell) = 0.0
+            landIceFraction(iCell) = 0.0_RKIND
          end if
       end do
       !$omp end do
