@@ -162,8 +162,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
-      integer, pointer :: nCells
+      integer :: iCell, k, nCells
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
 
@@ -173,9 +173,12 @@ contains
 
       call mpas_timer_start("frazil thickness tendency")
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
+
+      ! frazil fields are needed only over 0 and 1 halos
+      nCells = nCellsArray( 2 )
 
       ! Build surface fluxes at cell centers
       !$omp do schedule(runtime) private(k)
@@ -236,10 +239,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
-      integer, pointer :: nCells
+      integer :: iCell, k, nCells
       integer, pointer :: indexTemperature
       integer, pointer :: indexSalinity
+      integer, pointer, dimension(:) :: nCellsArray
       integer, pointer, dimension(:) :: maxLevelCell
 
       real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
@@ -249,13 +252,16 @@ contains
 
       if ( .not. frazilFormationOn ) return
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(forcingPool, 'frazilTemperatureTendency', frazilTemperatureTendency)
       call mpas_pool_get_array(forcingPool, 'frazilSalinityTendency', frazilSalinityTendency)
+
+      ! frazil fields are needed only over 0 and 1 halos
+      nCells = nCellsArray( 2 )
 
       ! add to surface fluxes at cell centers
       !$omp do schedule(runtime) private(k)
@@ -332,8 +338,9 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
       real (kind=RKIND),   dimension(:), pointer :: frazilSurfacePressure
 
-      integer :: iCell, k
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, nCells
+      integer, dimension(:), pointer :: nCellsArray
+      integer, pointer :: nVertLevels
       real (kind=RKIND) :: dt, columnTemperatureMin
 
       type (MPAS_timeInterval_type) :: timeStep
@@ -378,7 +385,7 @@ contains
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       ! get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -420,6 +427,9 @@ contains
       frazilTemperatureTendency = 0.0_RKIND
       frazilSalinityTendency = 0.0_RKIND
       frazilLayerThicknessTendency = 0.0_RKIND
+
+      ! frazil fields are needed only over 0 and 1 halos
+      nCells = nCellsArray( 2 )
 
       ! loop over all columns
       !$omp do schedule(runtime) private(kBottomFrazil, k, columnTemperatureMin, sumNewFrazilIceThickness, &
