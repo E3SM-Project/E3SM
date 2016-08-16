@@ -4,6 +4,7 @@
 
 from netCDF4 import Dataset as NetCDFFile
 import numpy as np
+import sys
 
 # Parse options
 from optparse import OptionParser
@@ -36,6 +37,7 @@ SMB = gridfile.variables['sfcMassBal']
 
 
 if options.test in ('A','B','C','D'):  # set up sqrt geometry
+   print "Setting up experiment:", options.test
    unique_xs=np.array(sorted(list(set(xCell[:]))))
    if min(unique_xs) >= 0.0:
       shiftx = unique_xs[3]  # put origin in a few cells to the right of the left edge of mesh
@@ -51,11 +53,16 @@ if options.test in ('A','B','C','D'):  # set up sqrt geometry
 
    # flat bed
    bedTopography[:] = 0.0
+else:
+   sys.exit('Invalid test letter specified:'+options.test)
+
+print "Setting up test number:", options.number
 
 # Setup layerThicknessFractions
 layerThicknessFractions[:] = 1.0 / nVertLevels
 
 if options.test == 'A':
+  print "Using water input value (m/s) of:", a_params[options.number]
   gridfile.variables['externalWaterInput'][:] = a_params[options.number] * 1000.0  # Convert from m/s to kg/m2/s
 
 # melt

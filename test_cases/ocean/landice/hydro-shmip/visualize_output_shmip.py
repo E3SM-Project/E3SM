@@ -96,10 +96,10 @@ ax1 = fig.add_subplot(311)
 ax2 = fig.add_subplot(312, sharex=ax1)
 ax3 = fig.add_subplot(313, sharex=ax1)
 
-if options.A5:
-   G_x, G_Nmean, G_Nmin, G_Nmax, G_qmean, G_qmin, G_qmax, G_Qmax = np.loadtxt('tuning_A5.txt', skiprows=1, unpack=True, delimiter=",")
-
 if options.A3:
+   G_x, G_Nmean, G_Nmin, G_Nmax, G_qmean, G_qmin, G_qmax, G_Qmax = np.loadtxt('tuning_A3.txt', skiprows=1, unpack=True, delimiter=",")
+
+if options.A5:
    G_x, G_Nmean, G_Nmin, G_Nmax, G_qmean, G_qmin, G_qmax, G_Qmax = np.loadtxt('tuning_A5.txt', skiprows=1, unpack=True, delimiter=",")
 
 if options.A3 or options.A5:
@@ -121,6 +121,11 @@ plt.sca(ax1)
 plt.plot(allx/1000.0, N_mean / 1.0e6, '-b', label='MPAS mean/range')
 plt.plot(allx/1000.0, N_min / 1.0e6, '--b')
 plt.plot(allx/1000.0, N_max / 1.0e6, '--b')
+
+allx2 = 100000.0 - (allx - 100000.0)
+plt.plot(allx2/1000.0, N_mean / 1.0e6, '-c', label='MPAS mean/range, 2')
+plt.plot(allx2/1000.0, N_min / 1.0e6, '--c')
+plt.plot(allx2/1000.0, N_max / 1.0e6, '--c')
 plt.xlabel('X-position (km)')
 plt.ylabel('effecive pressure (MPa)')
 plt.xlim( (0, 100.0) )
@@ -133,6 +138,10 @@ plt.sca(ax2)
 plt.plot(allx/1000.0, np.absolute(q_mean), '-b', label='MPAS mean/range')
 plt.plot(allx/1000.0, np.absolute(q_min), '--b')
 plt.plot(allx/1000.0, np.absolute(q_max), '--b')
+
+plt.plot(allx2/1000.0, np.absolute(q_mean), '-c', label='MPAS mean/range, 2')
+plt.plot(allx2/1000.0, np.absolute(q_min), '--c')
+plt.plot(allx2/1000.0, np.absolute(q_max), '--c')
 plt.xlabel('X-position (km)')
 plt.ylabel('sheet water flux (m^2/s)')
 plt.grid(True)
@@ -143,14 +152,18 @@ plt.sca(ax3)
 try:
    channelDischarge = f.variables['channelDischarge'][time_slice,:]
    allxEdge=np.unique(xEdge[:])
+   allxEdge2=100000.0 - (allxEdge - 100000.0)
    Q_max = np.zeros(allxEdge.shape)
    Q_sum = np.zeros(allxEdge.shape)
    for i in range(len(allxEdge)):
      Q_max[i] = np.absolute(channelDischarge[ xEdge == allxEdge[i] ]).max()
      Q_sum[i] = np.absolute(channelDischarge[ xEdge == allxEdge[i] ]).sum()
 
-   plt.plot(allxEdge/1000.0, np.absolute(Q_max), 'bx', label='MPAS max')
-   plt.plot(allxEdge/1000.0, np.absolute(Q_sum), 'bo', label='MPAS sum')
+   plt.plot(allxEdge/1000.0, np.absolute(Q_max), 'bo', label='MPAS max')
+   plt.plot(allxEdge/1000.0, np.absolute(Q_sum), 'bx', label='MPAS sum')
+
+   plt.plot(allxEdge2/1000.0, np.absolute(Q_max), 'co', label='MPAS max, 2')
+   plt.plot(allxEdge2/1000.0, np.absolute(Q_sum), 'cx', label='MPAS sum, 2')
 except:
    print "Skipping plotting of channel output."
 
@@ -180,6 +193,22 @@ plt.ylabel('effective pressure (MPa)')
 plt.grid(True)
 
 
+# plot time steps for various
+try:
+   dtA=f.variables['deltatSGHadvec'][:]
+   dtD=f.variables['deltatSGHdiffu'][:]
+   dtP=f.variables['deltatSGHpressure'][:]
+   dtC=f.variables['deltatSGHchannel'][:]
+   fig = plt.figure(3, facecolor='w')
+   plt.plot(days/365.0, dtA, label='A')
+   plt.plot(days/365.0, dtD, label='D')
+   plt.plot(days/365.0, dtP, label='P')
+   plt.plot(days/365.0, dtC, label='C')
+   plt.legend()
+   plt.xlabel('Time (yr)')
+   plt.ylabel('Allowable time step (s)')
+except:
+   pass
 
 print "plotting complete"
 

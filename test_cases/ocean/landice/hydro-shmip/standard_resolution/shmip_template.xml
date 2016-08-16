@@ -12,6 +12,7 @@
                 <option name="config_SGH_adaptive_timestep">.true.</option>
                 <option name="config_SGH_adaptive_timestep_fraction">0.5</option>
                 <option name="config_SGH_max_adaptive_timestep">864000.0</option>
+                <option name="config_SGH_tangent_slope_calculation">'from_vertex_barycentric_kiteareas'</option>
                 <option name="config_SGH_alpha">1.25</option>
                 <option name="config_SGH_beta">1.5</option>
                 <option name="config_SGH_conduc_coeff">0.005</option>
@@ -19,7 +20,7 @@
                 <option name="config_SGH_till_max">0.0</option>
                 <option name="config_SGH_bed_roughness_max">0.1</option>
                 <option name="config_SGH_bed_roughness">0.5</option>
-                <option name="config_SGH_englacial_porosity">0.01</option>
+                <option name="config_SGH_englacial_porosity">0.05</option>
                 <option name="config_SGH_creep_coefficient">1.0</option>
                 <option name="config_SGH_chnl_active">.true.</option>
                 <option name="config_SGH_chnl_alpha">1.25</option>
@@ -63,6 +64,12 @@
                                 <member name="channelArea" type="var"/>
                                 <member name="waterFlux" type="var"/>
                                 <member name="waterPressure" type="var"/>
+                                <member name="deltat" type="var"/>
+                                <member name="deltatSGH" type="var"/>
+                                <member name="deltatSGHadvec" type="var"/>
+                                <member name="deltatSGHdiffu" type="var"/>
+                                <member name="deltatSGHpressure" type="var"/>
+                                <member name="deltatSGHchannel" type="var"/>
                         </add_contents>
                 </stream>
 
