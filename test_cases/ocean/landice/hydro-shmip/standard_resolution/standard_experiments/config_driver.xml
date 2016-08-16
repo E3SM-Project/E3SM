@@ -1,8 +1,0 @@
-<driver_script name="setup_shmip_experiments.py">
-        <case name="setup_sqrt_mesh">
-                <step executable="./setup_sqrt_mesh.py" quiet="false" pre_message=" * Running setup_mesh step" post_message="     Complete"/>
-        </case>
-        <case name="experiment_A">
-        </case>
-</driver_script>
-

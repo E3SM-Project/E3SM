@@ -16,6 +16,7 @@ options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
    print 'No file specified.  Attempting to use landice_grid.nc'
+options.test = options.test.upper()
 
 # Setup dictionaries of parameter values for each experiment
 a_params = {1:7.93e-11,  2:1.59e-09, 3:5.79e-09, 4:2.5e-8, 5:4.5e-8, 6:5.79e-7}

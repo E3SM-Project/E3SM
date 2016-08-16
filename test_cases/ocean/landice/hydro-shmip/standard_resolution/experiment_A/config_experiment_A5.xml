@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<config case="experiment_A5">
+        <!-- add needed files/executables -->
+        <add_link source="../setup_sqrt_mesh/graph.info" dest="."/>
+        <add_link source="../setup_sqrt_mesh/graph.info.part.4" dest="."/>
+        <add_executable source="model" dest="landice_model"/>
+        <!-- link in scripts that the user will need -->
+        <add_link source_path="script_configuration_dir" source="setup_hydro-shmip_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="visualize_output_shmip.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="tuning_A3.txt" dest="."/>
+        <add_link source_path="script_configuration_dir" source="tuning_A5.txt" dest="."/>
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+        </streams>
+
+        <run_script name="setup_test.py">
+
+                <!-- Set up needed graph file -->
+                <!--
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">4</argument>
+                </step>
+                -->
+                <!-- create a copy of the empty mesh file -->
+                <step executable="cp" pre_message="\n\n### Copy mesh file\n\n" post_message="\n\n### Copy complete\n\n">
+                        <argument flag="../setup_sqrt_mesh/landice_grid.nc">.</argument>
+                </step>
+
+                <!-- Setup IC for this test -->
+                <step executable="./setup_hydro-shmip_initial_conditions.py" pre_message="\n\n### Setup IC\n\n" post_message="\n\n### Setup IC complete\n\n">
+                        <argument flag="-t">a</argument>
+                        <argument flag="-n">5</argument>
+                </step>
+
+
+        </run_script>
+
+</config>
+
