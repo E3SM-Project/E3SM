@@ -116,7 +116,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: &
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure, frazilSurfacePressure, &
-        pressureAdjustedSSH, gradSSH
+        pressureAdjustedSSH, gradSSH, landIcePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, &
         normalGMBolusVelocity, tangentialVelocity, pressure, circulation, kineticEnergyCell, montgomeryPotential, &
@@ -231,6 +231,7 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -585,21 +586,26 @@ contains
          ! only compute EOS derivatives if needed.
          call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
          call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'relative', density, err, &
-              inSituThermalExpansionCoeff, inSituSalineContractionCoeff, timeLevelIn=timeLevel)
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                            nCells, 0, 'relative', density, err, &
+                                            inSituThermalExpansionCoeff, inSituSalineContractionCoeff, &
+                                            timeLevelIn=timeLevel)
       else
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'relative', density, err, &
-              timeLevelIn=timeLevel)
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                            nCells, 0, 'relative', density, err, &
+                                            timeLevelIn=timeLevel)
       endif
       call mpas_threading_barrier()
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'absolute', potentialDensity, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                         nCells, 1, 'absolute', potentialDensity, &
                                          err, timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'relative', displacedDensity, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+                                         nCells, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
       call mpas_threading_barrier()
 
@@ -648,6 +654,7 @@ contains
            ! or an ice-shelf depression.
            pressure(1,iCell) = 0.0_RKIND
            if ( associated(frazilSurfacePressure) ) pressure(1,iCell) = pressure(1,iCell) + frazilSurfacePressure(iCell)
+           if ( associated(landIcePressure) ) pressure(1,iCell) = pressure(1,iCell) + landIcePressure(iCell)
            pressure(1,iCell) = pressure(1,iCell) + seaSurfacePressure(iCell)
            pressure(1,iCell) = pressure(1,iCell) + density(1,iCell)*gravity*0.5_RKIND*layerThickness(1,iCell)
 
@@ -842,6 +849,16 @@ contains
          pressureAdjustedSSH(iCell) = ssh(iCell) + ( seaSurfacePressure(iCell) / ( gravity * rho_sw ) )
       end do
       !$omp end do
+
+      if(associated(landIcePressure)) then
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            ! Note: rho_sw may differ from the effective density of seawater displaced by land ice,
+            ! leading to sea ice still feeling a small sea-surface tilt toward (or away from) land ice
+            pressureAdjustedSSH(iCell) = pressureAdjustedSSH(iCell) + ( landIcePressure(iCell) / ( gravity * rho_sw ) )
+         end do
+         !$omp end do
+      end if
 
       nEdges = nEdgesArray( 2 )
 
@@ -1579,6 +1596,8 @@ contains
                                                   blTempScratch, blSaltScratch, &
                                                   surfaceFluxAttenuationCoefficient
 
+      integer, dimension(:), pointer :: landIceMask
+
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, layerThickness, normalVelocity, &
                                                     landIceBoundaryLayerTracers, landIceTracerTransferVelocities
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
@@ -1596,7 +1615,7 @@ contains
 
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      if ( trim(config_land_ice_flux_mode) == 'off') then
+      if ( trim(config_land_ice_flux_mode) .ne. 'standalone' .and. trim(config_land_ice_flux_mode) .ne. 'coupled' ) then
          return
       end if
 
@@ -1644,6 +1663,7 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexS)
 
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
 
@@ -1673,6 +1693,19 @@ contains
       if(hollandJenkinsOn) then
          call mpas_pool_get_array(meshPool, 'fCell', fCell)
       end if
+
+      ! compute landIceMask from landIceFraction
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         if (landIceFraction(iCell) >= 0.5_RKIND) then
+            landIceMask(iCell) = 1
+         else
+            landIceMask(iCell) = 0
+            ! don't allow land-ice fluxes if land ice is masked out
+            landIceFraction(iCell) = 0.0_RKIND
+         end if
+      end do
+      !$omp end do
 
       ! Compute top drag
       !$omp do schedule(runtime) private(cell1, cell2, velocityMagnitude, landIceEdgeFraction)
@@ -1781,11 +1814,12 @@ contains
       call mpas_deallocate_scratch_field(boundaryLayerTemperatureField, .true.)
       call mpas_deallocate_scratch_field(boundaryLayerSalinityField, .true.)
 
-      ! recompute the spatially-varying attenuation coefficient based on landIceFraction
+      ! modify the spatially-varying attenuation coefficient where there is land ice
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         surfaceFluxAttenuationCoefficient(iCell) = landIceFraction(iCell)*config_land_ice_flux_attenuation_coefficient &
-           + (1.0_RKIND - landIceFraction(iCell))*surfaceFluxAttenuationCoefficient(iCell)
+         if(landIceMask(iCell) == 1) then
+            surfaceFluxAttenuationCoefficient(iCell) = config_land_ice_flux_attenuation_coefficient
+         end if
       end do
       !$omp end do
 

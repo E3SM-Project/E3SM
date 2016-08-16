@@ -17,6 +17,7 @@
 				<member name="landIceFraction" type="var"/>
 				<member name="landIceSurfaceTemperature" type="var"/>
 				<member name="seaSurfacePressure" type="var"/>
+				<member name="landIcePressure" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="output_ssh">

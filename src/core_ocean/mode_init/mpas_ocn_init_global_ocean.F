@@ -36,7 +36,7 @@ module ocn_init_global_ocean
    use ocn_init_cell_markers
    use ocn_init_vertical_grids
    use ocn_init_interpolation
-   use ocn_init_ssh_and_ssp
+   use ocn_init_ssh_and_landIcePressure
 
    implicit none
    private
@@ -148,10 +148,10 @@ contains
       write(stderrUnit,*) 'Initializing vertical coordinate with ssh = 0.'
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
       ! based on bottomDepth and refBottomDepth and apply PBCS if requested
-      call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
+      call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
-        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.'
         call mpas_dmpar_finalize(domain % dminfo)
       end if
 
@@ -184,12 +184,12 @@ contains
 
       if (config_global_ocean_depress_by_land_ice) then
          write(stderrUnit,*) 'Recalculating ocean layer topography due to land ice depression'
-         ! compute or update the SSP (or possibly SSH), also computing density along the way
+         ! compute or update the land-ice pressure (or possibly SSH), also computing density along the way
          ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
-         call ocn_init_ssh_and_ssp_balance(domain, iErr)
+         call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
          if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
+           write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.'
            call mpas_dmpar_finalize(domain % dminfo)
          end if
 
@@ -198,7 +198,7 @@ contains
       end if
 
       write(stderrUnit,*) 'Copying restoring fields'
-      ! this occurs after ocn_init_ssh_and_ssp_balance because activeTracers may have been remapped
+      ! this occurs after ocn_init_ssh_and_landIcePressure_balance because activeTracers may have been remapped
       ! to a new vertical coordinate
       call ocn_init_setup_global_ocean_interpolate_restoring(domain, iErr)
       write(stderrUnit,*) 'Cleaning up tracer IC fields'
@@ -832,18 +832,15 @@ contains
        real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, landIceDraftObserved, &
                                                    landIceFracObserved, landIceGroundedFracObserved
 
-       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, landIceFraction, ssh, &
+       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, ssh, &
                                                    bottomDepth
 
        integer, pointer :: nCells
-       integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
+       integer, dimension(:), pointer :: maxLevelCell, landIceMask, modifySSHMask
        real (kind=RKIND), pointer :: config_land_ice_flux_rho_ice
        character (len=StrKIND), pointer :: config_global_ocean_topography_method, config_iterative_init_variable
 
        integer :: iCell
-
-       real (kind=RKIND), parameter :: groundedThreshold = 0.5_RKIND, &
-                                       landIceFracThreshold = 0.0_RKIND
 
        iErr = 0
 
@@ -872,7 +869,8 @@ contains
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
           call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
           call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
-          call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
           if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
@@ -926,38 +924,33 @@ contains
 
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
+          landIceMask(:) = 0
           modifySSHMask(:) = 0
-           do iCell = 1, nCells
-             ! XSAD: this is now taken care of using the Antarctic land coverage mask
-             !       from the geometric_features repository
-             !if(landIceGroundedFracObserved(iCell) >= groundedThreshold) then
-                ! Land ice is grounded.  Remove the full column from the ocean.
-                ! Note: land ice data file has grounded_mask variable.  This
-                ! could also be used
-                !    as another option to choose cells for removal.
-                !maxLevelCell(iCell) = -1
-                ! Set bottom depth to be zero.  Culling of inland seas is based
-                ! on bottom depth.
-                !bottomDepth(iCell) = 0.0_RKIND
-                !cycle
-             !end if
+          landIcePressure(:) = 0.0_RKIND
+          do iCell = 1, nCells
 
-             if(landIceFracObserved(iCell) > landIceFracThreshold) then
+             if(landIceFracObserved(iCell) > 0.5_RKIND) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
+                landIceMask(iCell) = 1
              end if
 
-             ! nothing to do here if the cell is open ocean or land
-             if (landIceFraction(iCell) <= 0.0_RKIND .or. maxLevelCell(iCell) <= 0) cycle
+             ! nothing to do here if the cell is land
+             if (maxLevelCell(iCell) <= 0) cycle
 
-             modifySSHMask(iCell) = 1
              if(config_iterative_init_variable == 'ssh') then
-                ! we compute the SSP first and find out the SSH
-                seaSurfacePressure(iCell) = config_land_ice_flux_rho_ice &
-                   * gravity * landIceThkObserved(iCell)
-             else if(config_iterative_init_variable == 'ssp' &
-                .or. config_iterative_init_variable == 'ssp_from_top_density') then
-                ! we compute the SSH first and find out the SSP
+                ! we compute the land-ice pressure first and find out the SSH
+                landIcePressure(iCell) = max(0.0_RKIND, config_land_ice_flux_rho_ice &
+                   * gravity * landIceThkObserved(iCell))
+                if(landIcePressure(iCell) > 0.0_RKIND) then
+                   modifySSHMask(iCell) = 1
+                end if
+             else if(config_iterative_init_variable == 'landIcePressure' &
+                .or. config_iterative_init_variable == 'landIcePressure_from_top_density') then
+                ! we compute the SSH first and find out the land-ice pressure
                 ssh(iCell) = min(0.0_RKIND,landIceDraftObserved(iCell))
+                if(ssh(iCell) < 0.0_RKIND) then
+                   modifySSHMask(iCell) = 1
+                end if
              else
                 write(stderrUnit,*) 'ERROR: Invalid choice of config_iterative_init_variable.'
                 iErr = 1

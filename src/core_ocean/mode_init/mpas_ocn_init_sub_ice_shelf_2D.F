@@ -28,7 +28,7 @@ module ocn_init_sub_ice_shelf_2D
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
-   use ocn_init_ssh_and_ssp
+   use ocn_init_ssh_and_landIcePressure
 
    implicit none
    private
@@ -102,7 +102,7 @@ module ocn_init_sub_ice_shelf_2D
      integer, pointer :: index_temperature, index_salinity
 
      ! Define variable pointers
-     integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
+     integer, dimension(:), pointer :: maxLevelCell, modifySSHMask, landIceMask
      real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, refZMid, &
           vertCoordMovementWeights, bottomDepth, &
           fCell, fEdge, fVertex, dcEdge, refLayerThickness
@@ -215,9 +215,10 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+        call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+
         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
         call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
-
         call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
         call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
 
@@ -239,6 +240,8 @@ module ocn_init_sub_ice_shelf_2D
         if(associated(landIceFraction)) &
           landIceFraction(:) = 0.0_RKIND
         modifySSHMask(:) = 0
+        if(associated(landIceMask)) &
+          landIceMask(:) = 0
 
         do iCell = 1, nCells
            ! set up sub ice shelf thicknesses
@@ -252,13 +255,18 @@ module ocn_init_sub_ice_shelf_2D
               totalSubIceThickness = d3
            endif
            ssh(iCell) = -config_sub_ice_shelf_2D_bottom_depth + totalSubIceThickness
+
+           if(ssh(iCell) < 0.0_RKIND) then
+              modifySSHMask(iCell) = 1
+           end if
         end do
 
         do iCell = 1, nCells
            if (yCell(iCell) < y3 ) then
               if(associated(landIceFraction)) &
                 landIceFraction(iCell) = 1.0_RKIND
-              modifySSHMask(iCell) = 1
+              if(associated(landIceMask)) &
+                landIceMask(iCell) = 1
            end if
 
            ! Set bottomDepth
@@ -273,10 +281,10 @@ module ocn_init_sub_ice_shelf_2D
 
      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh,
      ! bottomDepth and refBottomDepth
-     call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
+     call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
      if(iErr .ne. 0) then
-        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.'
         call mpas_dmpar_finalize(domain % dminfo)
      end if
 
@@ -317,12 +325,12 @@ module ocn_init_sub_ice_shelf_2D
         block_ptr => block_ptr % next
      end do
 
-     ! compute or update the SSP (or possibly SSH), also computing density along the way
+     ! compute or update the land-ice pressure (or possibly SSH), also computing density along the way
      ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
-     call ocn_init_ssh_and_ssp_balance(domain, iErr)
+     call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
      if(iErr .ne. 0) then
-        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.'
         call mpas_dmpar_finalize(domain % dminfo)
      end if
 

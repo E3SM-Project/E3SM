@@ -401,7 +401,7 @@ contains
 
       real (kind=RKIND) :: freshwaterFlux, heatFlux
 
-      real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, landIceFraction, &
+      real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, &
                                                   landIceSurfaceTemperature, &
                                                   landIceFrictionVelocity, &
                                                   landIceFreshwaterFlux, &
@@ -434,7 +434,7 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
 
-      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
       call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
@@ -481,7 +481,7 @@ contains
             ! linearized equaiton for the S and p dependent potential freezing temperature
             landIceInterfaceTracers(indexIT,iCell) = Tf0 &
                                           + dTf_dS*landIceBoundaryLayerTracers(indexBLT,iCell) &
-                                          + dTf_dp*seaSurfacePressure(iCell)
+                                          + dTf_dp*landIcePressure(iCell)
 
             ! using (3) and (4) from Hunter (2006)
             ! or (7) from Jenkins et al. (2001) if gamma constant
@@ -514,7 +514,7 @@ contains
                landIceTracerTransferVelocities(indexHeatTrans,:), &
                landIceTracerTransferVelocities(indexSaltTrans,:), &
                landIceSurfaceTemperature, &
-               seaSurfacePressure, &
+               landIcePressure, &
                landIceInterfaceTracers(indexIT,:), &
                landIceInterfaceTracers(indexIS,:), &
                landIceFreshwaterFlux, &
@@ -532,7 +532,7 @@ contains
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
                landIceTracerTransferVelocities(indexSaltTrans,:), &
-               seaSurfacePressure, &
+               landIcePressure, &
                freezeInterfaceTemperature, &
                freezeInterfaceSalinity, &
                freezeFreshwaterFlux, &
@@ -557,7 +557,7 @@ contains
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
                landIceTracerTransferVelocities(indexSaltTrans,:), &
-               seaSurfacePressure, &
+               landIcePressure, &
                landIceInterfaceTracers(indexIT,:), &
                landIceInterfaceTracers(indexIS,:), &
                landIceFreshwaterFlux, &

@@ -11,6 +11,7 @@
 		<option name="config_check_ssh_consistency">.false.</option>
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_run_duration">'0000_06:00:00'</option>
+		<option name="config_land_ice_flux_mode">'pressure_only'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

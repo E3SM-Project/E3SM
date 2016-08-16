@@ -15,6 +15,7 @@
 		<option name="config_write_output_on_startup">.false.</option>
 		<option name="config_pio_num_iotasks">1</option>
 		<option name="config_pio_stride">16</option>
+		<option name="config_land_ice_flux_mode">'pressure_only'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

@@ -31,7 +31,7 @@ module ocn_init_isomip
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
-   use ocn_init_ssh_and_ssp
+   use ocn_init_ssh_and_landIcePressure
 
    implicit none
    private
@@ -83,8 +83,7 @@ contains
 
       ! Define config variable pointers
       character (len=StrKIND), pointer :: config_init_configuration, &
-        config_isomip_vertical_level_distribution, &
-        config_land_ice_flux_mode
+        config_isomip_vertical_level_distribution
 
       real (kind=RKIND), pointer :: config_isomip_bottom_depth, &
         config_isomip_temperature, &
@@ -128,7 +127,7 @@ contains
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
-      integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
+      integer, dimension(:), pointer :: maxLevelCell, modifySSHMask, landIceMask
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, &
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge, &
@@ -158,8 +157,6 @@ contains
       if(trim(config_init_configuration) .ne. trim('isomip')) return
 
       ! Setup configuration
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-
       call mpas_pool_get_config(ocnConfigs, 'config_isomip_vertical_level_distribution', config_isomip_vertical_level_distribution)
       call mpas_pool_get_config(ocnConfigs, 'config_isomip_bottom_depth', config_isomip_bottom_depth)
       call mpas_pool_get_config(ocnConfigs, 'config_isomip_temperature', config_isomip_temperature)
@@ -277,8 +274,9 @@ contains
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
         call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
-        call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction, 1)
-        call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature, 1)
+        call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+        call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
+        call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
         call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
@@ -328,6 +326,7 @@ contains
         landIceFraction(:) = 0.0_RKIND
         landIceSurfaceTemperature(:) = -25.0_RKIND !doesn't matter because ice is insulating
         modifySSHMask(:) = 0
+        landIceMask(:) = 0
 
 
         do iCell = 1, nCells
@@ -345,10 +344,15 @@ contains
               exit
             end if
           end do
-          if(landIceFraction(iCell) > 0.0_RKIND) then
-            modifySSHMask(iCell) = 1
+          if(landIceFraction(iCell) > 0.5_RKIND) then
+            landIceMask(iCell) = 1
+          else
+            landIceFraction(iCell) = 0.0_RKIND
           end if
 
+          if(ssh(iCell) < 0.0_RKIND) then
+            modifySSHMask(iCell) = 1
+          end if
 
           if(.not. associated(activeTracers)) then
             write(stderrUnit,*) 'ERROR: isomip test case needs activeTracers package to be active.'
@@ -393,19 +397,19 @@ contains
 
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
       !  based on ssh, bottomDepth and refBottomDepth
-      call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
+      call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
-        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.'
         return
       end if
 
-      ! compute or update the SSP (or possibly SSH), also computing density along the way
+      ! compute or update the land-ice pressure (or possibly SSH), also computing density along the way
       ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
-      call ocn_init_ssh_and_ssp_balance(domain, iErr)
+      call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
       if(iErr .ne. 0) then
-         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
+         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.'
          return
       end if
 
