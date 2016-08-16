@@ -8,7 +8,7 @@
 
    type dm_info
      integer :: nprocs, my_proc_id, comm, info
-     logical :: using_external_comm
+     logical :: initialized_mpi
 
      ! Add variables specific to block decomposition. {{{
      ! These are used in mpas_block_decomp.F

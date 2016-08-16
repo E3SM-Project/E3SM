@@ -233,10 +233,11 @@ include 'mpif.h'
       integer :: desiredThreadLevel, threadLevel
 #endif
 
-      if (present(mpi_comm)) then
-         dminfo % comm = mpi_comm
-         dminfo % using_external_comm = .true.
+      if ( present(mpi_comm) ) then
+         dminfo % initialized_mpi = .false.
+         call MPI_Comm_dup(mpi_comm, dminfo % comm, mpi_ierr)
       else
+         dminfo % initialized_mpi = .true.
 #ifdef MPAS_OPENMP
          desiredThreadLevel = MPI_THREAD_MULTIPLE
          call MPI_Init_thread(desiredThreadLevel, threadLevel, mpi_ierr)
@@ -246,8 +247,7 @@ include 'mpif.h'
 #else
          call MPI_Init(mpi_ierr)
 #endif
-         dminfo % comm = MPI_COMM_WORLD
-         dminfo % using_external_comm = .false.
+         call MPI_Comm_dup(MPI_COMM_WORLD, dminfo % comm, mpi_ierr)
       end if
 
       ! Find out our rank and the total number of processors
@@ -257,17 +257,19 @@ include 'mpif.h'
       dminfo % nprocs = mpi_size
       dminfo % my_proc_id = mpi_rank
 
-      write(stderrUnit,'(a,i5,a,i5,a)') 'task ', mpi_rank, ' of ', mpi_size, &
-        ' is running'
+      if ( dminfo % initialized_mpi ) then
+         write(stderrUnit,'(a,i5,a,i5,a)') 'task ', mpi_rank, ' of ', mpi_size, &
+           ' is running'
 
-      call open_streams(dminfo % my_proc_id)
+         call open_streams(dminfo % my_proc_id)
+      end if
 
       dminfo % info = MPI_INFO_NULL
 #else
       dminfo % comm = 0
       dminfo % my_proc_id = IO_NODE
       dminfo % nprocs = 1
-      dminfo % using_external_comm = .false.
+      dminfo % initialized_mpi = .false.
 #endif
 
    end subroutine mpas_dmpar_init!}}}
@@ -290,8 +292,11 @@ include 'mpif.h'
 
 #ifdef _MPI
       integer :: mpi_ierr
+#endif
 
-      if (.not. dminfo % using_external_comm) then
+#ifdef _MPI
+      call MPI_Comm_free(dminfo % comm, mpi_ierr)
+      if (dminfo % initialized_mpi) then
          call MPI_Finalize(mpi_ierr)
       end if
 #endif
