@@ -331,7 +331,7 @@ class EnvBatch(EnvBase):
                 submitargs+=" %s"%flag
             else:
                 if name.startswith("$"):
-                    name = name[:1]
+                    name = name[1:]
                 val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
