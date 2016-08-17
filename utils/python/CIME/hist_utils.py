@@ -38,8 +38,6 @@ def move(case, suffix):
     for model in _iter_model_file_substrs(case):
         comments += "  Moving hist files for model '%s'\n" % model
         test_hists = _get_all_hist_files(testcase, model, from_dir=rundir)
-        if test_hists is  None:
-            continue
         num_moved += len(test_hists)
         for test_hist in test_hists:
             new_file = "%s.%s" % (test_hist, suffix)
@@ -65,8 +63,8 @@ def _compare_hists(case, suffix1="", suffix2="", from_dir1=os.getcwd(), from_dir
         comments += "  comparing model '%s'\n" % model
         hists1 = _get_all_hist_files(testcase, model, suffix1, from_dir1)
         hists2 = _get_all_hist_files(testcase, model, suffix2, from_dir2)
-        len_hist1 = 0 if hist1 is None else len(hists1)
-        len_hist2 = 0 if hist2 is None else len(hists2)
+        len_hist1 = len(hists1)
+        len_hist2 = len(hists2)
         if len_hist1 == 0:
             comments += " no hist files found for model %s\n"%model
             continue
@@ -163,8 +161,6 @@ def generate_baseline(case, baseline_dir=None):
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '%s'\n" % model
         hists = _get_all_hist_files(testcase, model, from_dir=rundir)
-        if hists is None:
-            continue
         num_gen += len(hists)
         for hist in hists:
             ext = get_extension(model, hist)
