@@ -147,6 +147,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # builds.
         self._activate_case1()
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+        # The following is needed when _case_two_setup has a case_setup call
+        # despite sharing the build (e.g., to change NTHRDS)
+        self._case2.set_value("BUILD_COMPLETE",True)
 
     def run_phase(self):
         """
