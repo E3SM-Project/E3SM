@@ -3,16 +3,14 @@ Functions for actions pertaining to history files.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.XML.component import Component
 
 import logging, glob, os, shutil, re
 
-def _iter_model_file_substrs():
-    drv_comp = Component()
-    models = drv_comp.get_valid_model_components()
+def _iter_model_file_substrs(case):
 
+    models = case.get_compset_components()
+    models.append('cpl')
     for model in models:
-        model = "cpl" if model == "DRV" else model.lower()
         yield model
 
 def _get_all_hist_files(testcase, model, suffix="", from_dir=os.getcwd()):
@@ -37,9 +35,11 @@ def move(case, suffix):
     # Loop over models
     comments = "Moving hist files to suffix '%s'\n" % suffix
     num_moved = 0
-    for model in _iter_model_file_substrs():
+    for model in _iter_model_file_substrs(case):
         comments += "  Moving hist files for model '%s'\n" % model
         test_hists = _get_all_hist_files(testcase, model, from_dir=rundir)
+        if test_hists is  None:
+            continue
         num_moved += len(test_hists)
         for test_hist in test_hists:
             new_file = "%s.%s" % (test_hist, suffix)
@@ -61,12 +61,17 @@ def _compare_hists(case, suffix1="", suffix2="", from_dir1=os.getcwd(), from_dir
     comments = "Comparing hists for case '%s' dir1='%s', suffix1='%s',  dir2='%s' suffix2='%s'\n" % \
         (testcase, from_dir1, suffix1, from_dir2, suffix2)
 
-    for model in _iter_model_file_substrs():
+    for model in _iter_model_file_substrs(case):
         comments += "  comparing model '%s'\n" % model
         hists1 = _get_all_hist_files(testcase, model, suffix1, from_dir1)
         hists2 = _get_all_hist_files(testcase, model, suffix2, from_dir2)
-        if len(hists1) != len(hists2):
-            comments += "    num hists does not match %d != %d\n" % (len(hists1), len(hists2))
+        len_hist1 = 0 if hist1 is None else len(hists1)
+        len_hist2 = 0 if hist2 is None else len(hists2)
+        if len_hist1 == 0:
+            comments += " no hist files found for model %s\n"%model
+            continue
+        if len_hist1 != len_hist2:
+            comments += "    num hists does not match %d != %d\n" % (len_hist1, len_hist2)
             all_success = False
             continue
 
@@ -97,8 +102,8 @@ def compare_test(case, suffix1, suffix2):
 def cprnc(file1, file2, case, rundir):
     cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
-    stat, out, _ = run_cmd("%s %s %s 2>&1 | tee %s/%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename))
-    return (stat == 0 and "IDENTICAL" in out, out)
+    stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename))
+    return (stat == 0 and "files seem to be IDENTICAL" in out, out)
 
 def compare_baseline(case, baseline_dir=None):
     """
@@ -155,9 +160,11 @@ def generate_baseline(case, baseline_dir=None):
 
     comments = "Generating baselines into '%s'\n" % basegen_dir
     num_gen = 0
-    for model in _iter_model_file_substrs():
+    for model in _iter_model_file_substrs(case):
         comments += "  generating for model '%s'\n" % model
         hists = _get_all_hist_files(testcase, model, from_dir=rundir)
+        if hists is None:
+            continue
         num_gen += len(hists)
         for hist in hists:
             ext = get_extension(model, hist)
