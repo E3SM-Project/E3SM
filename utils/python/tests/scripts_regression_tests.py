@@ -741,6 +741,17 @@ class TestBlessTestResults(TestCreateTestCommon):
         test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
         self.simple_test(False, "-c -b %s -t %s" % (self._baseline_name, test_id))
 
+        # compare_test_results should detect the fail
+        cpr_cmd = "%s/compare_test_results -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        stat, out, _ = run_cmd(cpr_cmd)
+        self.assertNotEqual(stat, 0, msg="COMMAND '%s' should not have worked. Out:\n%s" % (cpr_cmd, out))
+
+        # use regex
+        expected_pattern = re.compile(r'COMPARE FAILED FOR TEST: %s[^\s]* reason Diff' % self._test_name)
+        the_match = expected_pattern.search(out)
+        self.assertNotEqual(the_match, None,
+                            msg="Failed to display failed test in output:\n%s" % out)
+
         # Bless
         run_cmd_no_fail("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
 
