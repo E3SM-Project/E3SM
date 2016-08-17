@@ -67,8 +67,10 @@ module shr_pio_mod
 contains
 !>
 !! @public
-!! @brief should be the first routine called after mpi_init. It reads the pio default settings from file drv_in, namelist pio_default_inparm
-!! and, if pio_async_interface is true, splits the IO tasks away from the Compute tasks.  It then returns the new compute comm in
+!! @brief should be the first routine called after mpi_init. 
+!! It reads the pio default settings from file drv_in, namelist pio_default_inparm
+!! and, if pio_async_interface is true, splits the IO tasks away from the 
+!! Compute tasks.  It then returns the new compute comm in
 !! Global_Comm and sets module variable io_comm.
 !!
 !<
@@ -759,8 +761,10 @@ contains
         ! very large process count runs. Can improve this by
         ! communicating between iotasks first, and then non-iotasks
         ! to iotasks (TO DO)
-        write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (comp2io), ", pio_rearr_comm_max_pend_req_comp2io
-        write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (comp2io) to ", max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
+        write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (comp2io), ",&
+             pio_rearr_comm_max_pend_req_comp2io
+        write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (comp2io) to ", &
+             max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
         buf(3) = max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
       else
         buf(3) = pio_rearr_comm_max_pend_req_comp2io
