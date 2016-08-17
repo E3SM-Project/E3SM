@@ -828,8 +828,6 @@ class Case(object):
         # create clone from self to case
         clone_cimeroot = self.get_value("CIMEROOT")
         if newcase_cimeroot != clone_cimeroot:
-            case_branch = get_current_branch(clone_cimeroot)
-            clone_branch =  get_current_branch(newcase_cimeroot)
             logger.warning(" case  CIMEROOT is %s " %newcase_cimeroot)
             logger.warning(" clone CIMEROOT is %s " %clone_cimeroot)
             logger.warning(" It is NOT recommended to clone cases from different versions of CIME.")
