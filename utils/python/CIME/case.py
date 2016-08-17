@@ -261,7 +261,13 @@ class Case(object):
                 self.get_resolved_value(item,recurse=recurse+1)
 
         if(recurse >= recurse_limit):
-            logging.warning("Not able to fully resolve item '%s'" % item)
+            #try env_batch first
+            env_batch = self.get_env("batch")
+            result = env_batch.get_resolved_value(item)
+            if result is not None:
+                item = result
+            else:
+                logging.warning("Not able to fully resolve item '%s'" % item)
 
         return item
 
@@ -514,6 +520,14 @@ class Case(object):
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
 
+        # Set project id
+        if project is None:
+            project = get_project(machobj)
+        if project is not None:
+            self.set_value("PROJECT", project)
+        elif machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+
         # Overwriting an existing exeroot or rundir can cause problems
         exeroot = self.get_value("EXEROOT")
         rundir = self.get_value("RUNDIR")
@@ -627,14 +641,6 @@ class Case(object):
         # miscellaneous settings
         if self.get_value("RUN_TYPE") == 'hybrid':
             self.set_value("GET_REFCASE", True)
-
-        # Set project id
-        if project is None:
-            project = get_project(machobj)
-        if project is not None:
-            self.set_value("PROJECT", project)
-        elif machobj.get_value("PROJECT_REQUIRED"):
-            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
