@@ -1146,14 +1146,6 @@
     <desc>number of wav cells in j direction - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="MASK_GRID">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>build_grid</group>
-    <file>env_build.xml</file>
-    <desc>grid mask - DO NOT EDIT (for experts only)</desc>
-  </entry>
-
   <entry id="PTS_MODE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -1764,14 +1756,6 @@
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>Machine name</desc>
-  </entry>
-
-  <entry id="MACHINES_FILE">
-    <type>char</type>
-    <default_value></default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>full pathname of file specifying supported machines location</desc>
   </entry>
 
   <entry id="MACHDIR">
