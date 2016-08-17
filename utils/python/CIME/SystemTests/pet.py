@@ -32,8 +32,7 @@ class PET(SystemTestsCompareTwo):
             if self._case.get_value("NTHRDS_%s"%comp) <= 1:
                 self._case.set_value("NTHRDS_%s"%comp, 2)
 
-        # TODO(wjs, 2016-08-16) Is this needed? I'm thinking it may be because
-        # we changed the number of threads, but I'm not sure
+        # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
 
     def _case_two_setup(self):
@@ -41,6 +40,5 @@ class PET(SystemTestsCompareTwo):
         for comp in self._COMPONENT_LIST:
             self._case.set_value("NTHRDS_%s"%comp, 1)
 
-        # TODO(wjs, 2016-08-16) Is this needed? I'm thinking it may be because
-        # we changed the number of threads, but I'm not sure
+        # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
