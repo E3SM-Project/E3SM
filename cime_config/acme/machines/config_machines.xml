@@ -1079,7 +1079,7 @@
 	   <modules mpilib="mpi-serial">
 	     <command name="load">cray-netcdf/4.3.2</command>
 	   </modules>
-	   <modules milib="!mpi-serial">
+	   <modules mpilib="!mpi-serial">
 	     <command name="load">cray-netcdf-hdf5parallel</command>
 	     <command name="load">cray-parallel-netcdf</command>
 	   </modules>
