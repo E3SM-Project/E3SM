@@ -13,6 +13,10 @@ _MACHINE = Machines()
 ###############################################################################
 def bless_namelists(test_name, report_only, force, baseline_name):
 ###############################################################################
+    # Be aware that restart test will overwrite the original namelist files
+    # with versions of the files that should not be blessed. This forces us to
+    # re-run create_test.
+
     # Update namelist files
     print "Test '%s' had a namelist diff" % test_name
     if (not report_only and
@@ -52,11 +56,6 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
     test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
     test_status_files = glob.glob("%s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
     expect(test_status_files, "No matching test cases found in for %s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
-
-    # The env_mach_specific script may need these to be defined
-    compiler = _MACHINE.get_default_compiler() # this MUST match compiler that cprnc was built with
-    os.environ["COMPILER"]  = compiler
-    os.environ["MPILIB"] = _MACHINE.get_default_MPIlib(attributes={"compiler":compiler})
 
     broken_blesses = []
     for test_status_file in test_status_files:
@@ -106,7 +105,8 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
                 print "###############################################################################"
                 print "Blessing results for test:", test_name, "most recent result:", overall_result
                 print "###############################################################################"
-                time.sleep(2)
+                if not force:
+                    time.sleep(2)
 
                 # Get testcase dir for this test
                 if (test_id is None):
@@ -135,5 +135,9 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
                         broken_blesses.append((test_name, reason))
 
     # Make sure user knows that some tests were not blessed
+    success = True
     for broken_bless, reason in broken_blesses:
         logging.warning("FAILED TO BLESS TEST: %s, reason %s" % (broken_bless, reason))
+        success = False
+
+    return success
