@@ -12,4 +12,5 @@
 #include "Registry_ecosys_column.xml"
 #include "Registry_sea_mount.xml"
 #include "Registry_isomip.xml"
+#include "Registry_isomip_plus.xml"
 // #include "Registry_TEMPLATE.xml"
