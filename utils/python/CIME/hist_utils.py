@@ -5,6 +5,7 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 
 import logging, glob, os, shutil, re
+logger = logging.getLogger(__name__)
 
 def _iter_model_file_substrs(case):
 
@@ -32,6 +33,34 @@ def _get_all_hist_files(testcase, model, from_dir, suffix=""):
     test_hists.sort()
     return test_hists
 
+def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
+    test_hists = _get_all_hist_files(testcase, model, from_dir, suffix)
+    latest_files = {}
+    histlist = []
+    date_match = re.compile(r"(\d\d\d\d)-(\d\d)-(\d\d)-(\d\d\d\d\d).nc")
+    for hist in test_hists:
+        ext = get_extension(model, hist)
+        if ext in latest_files:
+            s1 = date_match.search(hist)
+            if s1 is None:
+                latest_files[ext] = hist
+                continue
+            (yr,month,day,time) = s1.group(1,2,3,4)
+            s2 = date_match.search(latest_files[ext])
+            (pyr,pmonth,pday,ptime) = s2.group(1,2,3,4)
+            if yr > pyr or (yr == pyr and month > pmonth) or \
+                    (yr == pyr and month == pmonth and day > pday) or \
+                    (yr == pyr and month == pmonth and day == pday and time > ptime):
+                latest_files[ext] = hist
+                logger.debug("ext %s hist %s %s"%(ext,hist,latest_files))
+        else:
+            latest_files[ext] = hist
+
+    for key in latest_files.keys():
+        histlist.append(latest_files[key])
+    return histlist
+
+
 def move(case, suffix):
     """
     Change the suffix for the most recent batch of hist files in a case. This can
@@ -49,7 +78,7 @@ def move(case, suffix):
     num_moved = 0
     for model in _iter_model_file_substrs(case):
         comments += "  Moving hist files for model '%s'\n" % model
-        test_hists = _get_all_hist_files(testcase, model, rundir)
+        test_hists = _get_latest_hist_files(testcase, model, rundir)
         num_moved += len(test_hists)
         for test_hist in test_hists:
             new_file = "%s.%s" % (test_hist, suffix)
@@ -75,8 +104,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
 
     for model in _iter_model_file_substrs(case):
         comments += "  comparing model '%s'\n" % model
-        hists1 = _get_all_hist_files(testcase, model, from_dir1, suffix1)
-        hists2 = _get_all_hist_files(testcase, model, from_dir2, suffix2)
+        hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
+        hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
         len_hist1 = len(hists1)
         len_hist2 = len(hists2)
         if len_hist1 == 0:
@@ -152,7 +181,7 @@ def compare_baseline(case, baseline_dir=None):
 
     for bdir in dirs_to_check:
         if not os.path.isdir(bdir):
-            return False, "ERROR %s does not exist" % bdir
+            return False, "ERROR baseline directory %s not found" % bdir
 
     return _compare_hists(case, rundir, basecmp_dir)
 
@@ -177,6 +206,9 @@ def get_extension(model, filepath):
     basename = os.path.basename(filepath)
     ext_regex = re.compile(r'.*%s.*[.](h.?)([.][^.]+)?[.]nc' % model)
     m = ext_regex.match(basename)
+    if m is None:
+        import pdb
+        pdb.set_trace()
     expect(m is not None, "Failed to get extension for file '%s'" % filepath)
     return m.groups()[0]
 
@@ -204,7 +236,8 @@ def generate_baseline(case, baseline_dir=None):
     num_gen = 0
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '%s'\n" % model
-        hists = _get_all_hist_files(testcase, model, rundir)
+        hists =  _get_latest_hist_files(testcase, model, rundir)
+        logger.debug("latest_files: %s"%hists)
         num_gen += len(hists)
         for hist in hists:
             ext = get_extension(model, hist)
@@ -214,6 +247,6 @@ def generate_baseline(case, baseline_dir=None):
                 os.remove(baseline)
 
             shutil.copy(hist, baseline)
-            comments += "    generating baseline '%s'\n" % baseline
+            comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
 
     return True, comments
