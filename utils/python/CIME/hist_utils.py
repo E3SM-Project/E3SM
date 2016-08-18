@@ -181,7 +181,7 @@ def compare_baseline(case, baseline_dir=None):
 
     for bdir in dirs_to_check:
         if not os.path.isdir(bdir):
-            return False, "ERROR baseline directory %s not found" % bdir
+            return False, "ERROR baseline directory '%s' does not exist" % bdir
 
     return _compare_hists(case, rundir, basecmp_dir)
 
@@ -248,5 +248,7 @@ def generate_baseline(case, baseline_dir=None):
 
             shutil.copy(hist, baseline)
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
+
+    expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
 
     return True, comments
