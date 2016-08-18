@@ -13,21 +13,33 @@ def _iter_model_file_substrs(case):
     for model in models:
         yield model
 
-def _get_all_hist_files(testcase, model, suffix="", from_dir=os.getcwd()):
+def _get_all_hist_files(testcase, model, from_dir, suffix=""):
     suffix = (".%s" % suffix) if suffix else ""
+
+    # Match hist files produced by run
     test_hists = glob.glob("%s/%s.%s*.h?.nc%s" % (from_dir, testcase, model, suffix))
     test_hists.extend(glob.glob("%s/%s.%s*.h.nc%s" % (from_dir, testcase, model, suffix)))
+
+    # Match multi-instance files produced by run
     test_hists.extend(glob.glob("%s/%s.%s*.h?.*.nc%s" % (from_dir, testcase, model, suffix)))
     test_hists.extend(glob.glob("%s/%s.%s*.h.*.nc%s" % (from_dir, testcase, model, suffix)))
+
+    # suffix == "" implies baseline comparison, baseline hist files have simpler names
     if suffix == "":
         test_hists.extend(glob.glob("%s/%s.h.nc" % (from_dir, model)))
         test_hists.extend(glob.glob("%s/%s.h?.nc" % (from_dir, model)))
+
     test_hists.sort()
     return test_hists
 
 def move(case, suffix):
     """
-    Change the suffix for the most recent batch of hist files
+    Change the suffix for the most recent batch of hist files in a case. This can
+    allow you to temporarily "save" these files so they won't be blown away if you
+    re-run the case.
+
+    case - The case containing the files you want to save
+    suffix - The string suffix you want to add to saved files, this can be used to find them later.
     """
     rundir   = case.get_value("RUNDIR")
     testcase = case.get_value("CASE")
@@ -37,7 +49,7 @@ def move(case, suffix):
     num_moved = 0
     for model in _iter_model_file_substrs(case):
         comments += "  Moving hist files for model '%s'\n" % model
-        test_hists = _get_all_hist_files(testcase, model, from_dir=rundir)
+        test_hists = _get_all_hist_files(testcase, model, rundir)
         num_moved += len(test_hists)
         for test_hist in test_hists:
             new_file = "%s.%s" % (test_hist, suffix)
@@ -61,8 +73,8 @@ def _compare_hists(case, suffix1="", suffix2="", from_dir1=os.getcwd(), from_dir
 
     for model in _iter_model_file_substrs(case):
         comments += "  comparing model '%s'\n" % model
-        hists1 = _get_all_hist_files(testcase, model, suffix1, from_dir1)
-        hists2 = _get_all_hist_files(testcase, model, suffix2, from_dir2)
+        hists1 = _get_all_hist_files(testcase, model, from_dir1, suffix1)
+        hists2 = _get_all_hist_files(testcase, model, from_dir2, suffix2)
         len_hist1 = len(hists1)
         len_hist2 = len(hists2)
         if len_hist1 == 0:
@@ -89,7 +101,11 @@ def _compare_hists(case, suffix1="", suffix2="", from_dir1=os.getcwd(), from_dir
 
 def compare_test(case, suffix1, suffix2):
     """
-    Compares two component history files in the testcase directory
+    Compares two sets of component history files in the testcase directory
+
+    case - The case containing the hist files to compare
+    suffix1 - The suffix that identifies the first batch of hist files
+    suffix1 - The suffix that identifies the second batch of hist files
 
     returns (SUCCESS, comments)
     """
@@ -98,6 +114,16 @@ def compare_test(case, suffix1, suffix2):
     return _compare_hists(case, suffix1, suffix2, rundir, rundir)
 
 def cprnc(file1, file2, case, rundir):
+    """
+    Run cprnc to compare two individual nc files
+
+    file1 - the full or relative path of the first file
+    file2 - the full or relative path of the second file
+    case - the case containing the files
+    rundir - the rundir for the case
+
+    returns True if the files matched
+    """
     cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
     stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename))
@@ -106,6 +132,12 @@ def cprnc(file1, file2, case, rundir):
 def compare_baseline(case, baseline_dir=None):
     """
     compare the current test output to a baseline result
+
+    case - The case containing the hist files to be compared against baselines
+    baseline_dir - Optionally, specify a specific baseline dir, otherwise it will be computed from case config
+
+    returns (SUCCESS, comments)
+    SUCCESS means all hist files matched their corresponding baseline
     """
     rundir   = case.get_value("RUNDIR")
     if baseline_dir is None:
@@ -124,6 +156,11 @@ def compare_baseline(case, baseline_dir=None):
 
 def get_extension(model, filepath):
     """
+    For a hist file for the given model, return what we call the "extension"
+
+    model - The component model
+    filepath - The path of the hist file
+
     >>> get_extension("cpl", "cpl.hi.nc")
     'hi'
     >>> get_extension("cpl", "cpl.h.nc")
@@ -144,6 +181,11 @@ def get_extension(model, filepath):
 def generate_baseline(case, baseline_dir=None):
     """
     copy the current test output to baseline result
+
+    case - The case containing the hist files to be copied into baselines
+    baseline_dir - Optionally, specify a specific baseline dir, otherwise it will be computed from case config
+
+    returns (SUCCESS, comments)
     """
     rundir   = case.get_value("RUNDIR")
     if baseline_dir is None:
@@ -160,7 +202,7 @@ def generate_baseline(case, baseline_dir=None):
     num_gen = 0
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '%s'\n" % model
-        hists = _get_all_hist_files(testcase, model, from_dir=rundir)
+        hists = _get_all_hist_files(testcase, model, rundir)
         num_gen += len(hists)
         for hist in hists:
             ext = get_extension(model, hist)

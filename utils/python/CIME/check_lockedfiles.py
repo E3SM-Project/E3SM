@@ -9,10 +9,11 @@ from CIME.XML.env_mach_pes import EnvMachPes
 
 import glob
 
-def check_lockedfiles(caseroot=os.getcwd()):
+def check_lockedfiles(caseroot=None):
     """
     Check that all lockedfiles match what's in case
     """
+    caseroot = os.getcwd() if caseroot is None else caseroot
     lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
