@@ -218,9 +218,13 @@ contains
          write(stderrUnit,*) 'Reading ecosys IC.'
 
          fieldName = 'PO4'
+print *, 'PO4 1'
          call mpas_pool_get_dimension(tracersPool, 'index_PO4',      index_dummy)
+print *, 'PO4 2'
          call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+print *, 'PO4 3'
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
+print *, 'PO4 4'
          fieldName = 'NO3'
          call mpas_pool_get_dimension(tracersPool, 'index_NO3',      index_dummy)
          call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
@@ -3041,15 +3045,31 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        ecosysIC % isActive = .true.
        ecosysIC % hasTimeDimension = .false.
        ecosysIC % block => domain % blocklist
+       allocate(ecosysIC % attLists(1))
        allocate(ecosysIC % array(nLonTracer, nLatTracer, nDepth))
+ 
+print *, '       ecosysIC % fieldName', trim(fieldName)
+     print *, '  ecosysIC % dimSizes(1)', nLonTracer
+     print *, '  ecosysIC % dimSizes(2)', nLatTracer
+     print *, '  ecosysIC % dimSizes(3)', nDepth
+     print *, '  ecosysIC % dimNames(1)', trim(config_global_ocean_tracer_nlon_dimname)
+     print *, '  ecosysIC % dimNames(2)', trim(config_global_ocean_tracer_nlat_dimname)
+     print *, '  ecosysIC % dimNames(3)', trim(config_global_ocean_depth_dimname)
+     print *, '  ecosysIC % isVarArray', .false.
+     print *, '  ecosysIC % isPersistent', .true.
+     print *, '  ecosysIC % isActive', .true.
+     print *, '  ecosysIC % hasTimeDimension', .false.
 
        ! Add ecosys field to stream
+print *, ' call MPAS_streamAddField(ecosysStream, ecosysIC, iErr)'
        call MPAS_streamAddField(ecosysStream, ecosysIC, iErr)
 
        ! Read stream
+print *, '       call MPAS_readStream(ecosysStream, 1, iErr)'
        call MPAS_readStream(ecosysStream, 1, iErr)
 
        ! Close stream
+print *, '       call MPAS_closeStream(ecosysStream)'
        call MPAS_closeStream(ecosysStream)
 
     end subroutine ocn_init_setup_global_ocean_read_ecosys!}}}
@@ -3353,6 +3373,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        ecosysForcing % isActive = .true.
        ecosysForcing % hasTimeDimension = .false.
        ecosysForcing % block => domain % blocklist
+       allocate(ecosysForcing % attLists(1))
        allocate(ecosysForcing % array(nLonTracer, nLatTracer, nTimes))
 
        ! Add ecosys field to stream
