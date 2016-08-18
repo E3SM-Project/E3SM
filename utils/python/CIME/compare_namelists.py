@@ -88,7 +88,7 @@ def parse_namelists(namelist_lines, filename):
             expect(multiline_variable is None,
                    "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
 
-            # Unfornately, other tools were using the old compare_namelists.pl script
+            # Unfortunately, other tools were using the old compare_namelists.pl script
             # to compare files that are not namelist files. We need a special error
             # to signify this event
             if (namelist_re.match(line) is None):
@@ -192,7 +192,7 @@ def normalize_string_value(name, value, case):
     """
     # Any occurance of case must be normalized because test-ids might not match
     if (case is not None):
-        case_re = re.compile(r'%s[.]([GC])[.]([^./\s]+)' % case)
+        case_re = re.compile(r'%s[.]([GC]+)[.]([^./\s]+)' % case)
         value = case_re.sub("%s.ACTION.TESTID" % case, value)
 
     if (name in ["runid", "model_version", "username"]):
