@@ -1155,6 +1155,7 @@ module ocn_time_integration_split
                call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, 'sshSubcycle', timeLevel=newBtrSubcycleTime)
                call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
 
+               call mpas_threading_barrier()
                call mpas_dmpar_exch_group_full_halo_exch(domain, subcycleGroupName)
 
                call mpas_dmpar_exch_group_destroy(domain, subcycleGroupName)
@@ -1254,6 +1255,7 @@ module ocn_time_integration_split
             call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'barotropicThicknessFlux')
             call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'normalBarotropicVelocity', timeLevel=2)
 
+            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, finalBtrGroupName)
 
             call mpas_dmpar_exch_group_destroy(domain, finalBtrGroupName)

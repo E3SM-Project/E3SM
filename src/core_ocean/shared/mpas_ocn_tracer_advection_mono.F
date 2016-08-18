@@ -346,7 +346,7 @@ module ocn_tracer_advection_mono
         ! Need one halo of cells around owned cells
         nCells = nCellsArray( 2 )
         !$omp do schedule(runtime) private(k, tracer_max_new, tracer_min_new, tracer_upwind_new, scale_factor, invAreaCell1, i, &
-        !$omp                              iEdge, cell1, cell2, k, flux_upwind, signedFactor)
+        !$omp                              iEdge, cell1, cell2, flux_upwind, signedFactor)
         do iCell = 1, nCells
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
