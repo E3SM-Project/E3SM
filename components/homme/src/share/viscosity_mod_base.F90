@@ -708,7 +708,6 @@ integer :: nt
 ! local
 type (hybrid_t)              :: hybrid
 integer :: k,i,j,ie,ic
-type (derivative_t)          :: deriv
 
 ! single thread
 hybrid = hybrid_create(par,0,1)

@@ -209,7 +209,6 @@ contains
     !
     ! Note: this routine is now thread safe.  but 'edge' should be shared by 
     ! all threads and should be instantiated outside the threaded region
-    !
     ! edge buffer must be intialized for the number of threads that will be
     ! active when calling bndry_exchange.  
     ! default is 'nthreadshoriz', which can be overriden with the optional
@@ -217,11 +216,9 @@ contains
     !
     ! 
     ! Local variables
-    integer :: nbuf,ith
+    integer :: nbuf
     integer :: nSendCycles, nRecvCycles
-    integer :: icycle, ierr
     integer :: iam,ie, i 
-    integer :: edgeid,elemid
     integer :: ptr,llen,moveLength, mLen, tlen 
     integer :: numthreads
     type (Cycle_t), pointer :: pCycle
@@ -601,7 +598,7 @@ endif
 !    type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,ll,llval,iptr
+    integer :: i,k,ll,llval,iptr
 
     integer :: is,ie,in,iw
 
@@ -732,12 +729,10 @@ endif
 !    type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,ll,llval,iptr
+    integer :: k,ll,llval
 
     integer :: is,ie,in,iw
-    real (kind=real_kind) :: tmp
 
-!pw call t_adj_detailf(+2)
 !pw call t_startf('edgeSpack')
 
     is = edge%putmap(south,ielem)
@@ -821,7 +816,7 @@ endif
     type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,l
+    integer :: i,k,l
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
@@ -946,8 +941,6 @@ endif
     ! Local
     integer :: i,k,ll,iptr
     integer :: is,ie,in,iw
-    integer :: ks,ke,kblock
-    logical :: done
 
     !call t_adj_detailf(+2)
     !call t_startf('edgeVunpack')
@@ -1025,7 +1018,7 @@ endif
 
     ! Local
     logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,k,l, nce
+    integer :: i,l,nce
     integer :: is,ie,in,iw,ine,inw,isw,ise
 
     threadsafe=.false.
@@ -1411,7 +1404,7 @@ endif
     integer,               intent(in)  :: ielem
 
     ! Local
-    integer :: i,k,l,iptr
+    integer :: k,l,iptr
     integer :: is,ie,in,iw
 
 !pw call t_startf('edgeSunpack')
@@ -3604,8 +3597,8 @@ end subroutine ghostVunpackR
       type (EdgeDescriptor_t),intent(in)    :: desc
 
       ! Local variables
-      integer :: i,j,ir,l,e
-      integer :: itr,k
+      integer :: i,j,ir,l
+      integer :: k
       integer :: is,ie,in,iw
 
 
@@ -3775,7 +3768,7 @@ end subroutine ghostVunpackR
 
     ! Local
     logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,j,l, itr, k
+    integer :: i,j,l,k
     integer :: is,ie,in,iw,ic
     logical :: reverse
     
@@ -3970,8 +3963,7 @@ end subroutine ghostVunpackR
       type (EdgeDescriptor_t),intent(in)    :: desc
 
       ! Local variables
-      integer :: i,j,ir,l,e
-      integer :: itr,k
+      integer :: i,j,ir,l
       integer :: is,ie,in,iw
 
 
@@ -4124,7 +4116,7 @@ end subroutine ghostVunpackR
 
     ! Local
     logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,j,l, itr, k
+    integer :: i,j,l
     integer :: is,ie,in,iw,ic
     logical :: reverse
     
@@ -4282,7 +4274,7 @@ end subroutine ghostVunpackR
 
     ! Local variables
 
-    integer :: nbuf,nhc,i
+    integer :: nbuf,nhc
 
     ! sanity check for threading
     if (omp_get_num_threads()>1) then
@@ -4347,7 +4339,7 @@ end subroutine ghostVunpackR
     integer                               :: nhc, np
 
     ! Local variables
-    integer :: i,j,k,ir,l,e
+    integer :: i,j,k,ir,l
 
     integer :: is,ie,in,iw
 

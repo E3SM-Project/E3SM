@@ -351,7 +351,7 @@ contains
  
     type (spherical_polar_t)             :: sphere
 
-    integer i,j
+!    integer i,j
     real(kind=real_kind) :: r!, l_inf
 
 ! MNL: removing check that points are on the unit cube because we allow
@@ -447,7 +447,7 @@ contains
  
     type (spherical_polar_t)             :: sphere
 
-    integer i,j
+!    integer i,j
     real(kind=real_kind) :: r!, l_inf
 
 ! MNL: removing check that points are on the unit cube because we allow

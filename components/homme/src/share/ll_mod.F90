@@ -60,7 +60,7 @@ contains
     implicit none
     type(root_t) :: List
     type(node_t), pointer :: temp_node
-    integer :: nlist,i
+!    integer :: nlist,i
 
 
     temp_node => List%first
