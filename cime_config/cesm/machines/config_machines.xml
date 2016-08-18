@@ -629,9 +629,9 @@
       <modules compiler="nag">
 	<command name="load">compiler/nag/6.1</command>
       </modules>
-      <modules compiler="nag" mpilib="mvapich2">
+<!--      <modules compiler="nag" mpilib="mvapich2">
 	  <command name="load">  tool/parallel-netcdf/1.7.0/nag/mvapich2 </command>
-      </modules>
+      </modules> -->
       <modules compiler="gnu">
 	<command name="load">compiler/gnu/4.8.5</command>
       </modules>

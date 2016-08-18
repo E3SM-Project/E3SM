@@ -143,7 +143,7 @@ def setup_proxy():
     return False
 
 ###############################################################################
-class B_TestCreateNewcase(unittest.TestCase):
+class J_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     def setUp(self):
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
@@ -151,7 +151,7 @@ class B_TestCreateNewcase(unittest.TestCase):
         self._do_teardown = []
 
     def test_createnewcase(self):
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase')
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase.%s'% CIME.utils.get_utc_timestamp())
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         self._testdirs.append(testdir)
@@ -167,7 +167,7 @@ class B_TestCreateNewcase(unittest.TestCase):
         self._do_teardown.append(testdir)
 
     def test_user_mods(self):
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testusermods')
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testusermods.%s'% CIME.utils.get_utc_timestamp())
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         self._testdirs.append(testdir)
@@ -192,17 +192,17 @@ class B_TestCreateNewcase(unittest.TestCase):
             elif do_teardown:
                 shutil.rmtree(tfile)
 ###############################################################################
-class D_TestWaitForTests(unittest.TestCase):
+class M_TestWaitForTests(unittest.TestCase):
 ###############################################################################
 
     ###########################################################################
     def setUp(self):
     ###########################################################################
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
-        self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
-        self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
-        self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2')
+        self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass.%s'% CIME.utils.get_utc_timestamp())
+        self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail.%s'% CIME.utils.get_utc_timestamp())
+        self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished.%s'% CIME.utils.get_utc_timestamp())
+        self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2.%s'% CIME.utils.get_utc_timestamp())
         testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2]
         for testdir in testdirs:
             if os.path.exists(testdir):
@@ -447,7 +447,7 @@ class TestCreateTestCommon(unittest.TestCase):
                     os.remove(file_to_clean)
 
 ###############################################################################
-class C_TestCreateTest(TestCreateTestCommon):
+class N_TestCreateTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -502,7 +502,7 @@ class C_TestCreateTest(TestCreateTestCommon):
         self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
-class E_TestTestScheduler(TestCreateTestCommon):
+class O_TestTestScheduler(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -639,7 +639,7 @@ class E_TestTestScheduler(TestCreateTestCommon):
                     self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_PASS_STATUS)
 
 ###############################################################################
-class TestJenkinsGenericJob(TestCreateTestCommon):
+class P_TestJenkinsGenericJob(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -735,7 +735,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         assert_dashboard_has_build(self, build_name)
 
 ###############################################################################
-class TestBlessTestResults(TestCreateTestCommon):
+class Q_TestBlessTestResults(TestCreateTestCommon):
 ###############################################################################
 
     _test_name = "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A"
@@ -791,7 +791,7 @@ class TestBlessTestResults(TestCreateTestCommon):
 
 ###############################################################################
 @unittest.skip("Disabling this test until we figure out how to integrate ACME tests and CIME xml files.")
-class TestUpdateACMETests(unittest.TestCase):
+class R_TestUpdateACMETests(unittest.TestCase):
 ###############################################################################
 
     ###########################################################################
@@ -898,7 +898,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
             self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
 ###############################################################################
-class TestCimeCase(TestCreateTestCommon):
+class K_TestCimeCase(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -940,7 +940,7 @@ class TestCimeCase(TestCreateTestCommon):
             self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
 
 ###############################################################################
-class TestSingleSubmit(TestCreateTestCommon):
+class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -963,7 +963,7 @@ class TestSingleSubmit(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
-class TestSaveTimings(TestCreateTestCommon):
+class L_TestSaveTimings(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -984,7 +984,7 @@ class TestSaveTimings(TestCreateTestCommon):
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
-class TestXMLQuery(unittest.TestCase):
+class C_TestXMLQuery(unittest.TestCase):
 # Testing command line scripts
 ###############################################################################
 
@@ -994,7 +994,7 @@ class TestXMLQuery(unittest.TestCase):
         self._testdirs = []
         self._do_teardown = []
 
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts')
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts.%s'% CIME.utils.get_utc_timestamp())
         machine = 'melvin'
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
@@ -1067,7 +1067,7 @@ class TestXMLQuery(unittest.TestCase):
         self.assertEqual(searchObj.group() , group_out)
 
 ###############################################################################
-class CheckCode(unittest.TestCase):
+class B_CheckCode(unittest.TestCase):
 ###############################################################################
 
     ###########################################################################
@@ -1313,7 +1313,7 @@ file(WRITE query.out "${{{}}}")
 
 
 ###############################################################################
-class TestMacrosBasic(unittest.TestCase):
+class G_TestMacrosBasic(unittest.TestCase):
 ###############################################################################
 
     """Basic infrastructure tests.
@@ -1347,7 +1347,7 @@ class TestMacrosBasic(unittest.TestCase):
 
 
 ###############################################################################
-class TestMakeMacros(unittest.TestCase):
+class H_TestMakeMacros(unittest.TestCase):
 ###############################################################################
 
     """Makefile macros tests.
@@ -1622,7 +1622,7 @@ class TestMakeMacros(unittest.TestCase):
 
 ###############################################################################
 @unittest.skipIf(FAST_ONLY, "Skipping slow CMake tests.")
-class TestCMakeMacros(TestMakeMacros):
+class I_TestCMakeMacros(H_TestMakeMacros):
 ###############################################################################
 
     """CMake macros tests.

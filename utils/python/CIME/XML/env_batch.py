@@ -276,7 +276,7 @@ class EnvBatch(EnvBase):
             else:
                 task_count = int(task_count)
 
-            queue = force_queue if force_queue is not None else self.select_best_queue(task_count)
+            queue = force_queue if force_queue is not None else self.select_best_queue(task_count, job)
             self.set_value("JOB_QUEUE", queue, subgroup=job)
 
             walltime = self.get_max_walltime(queue) if walltime is None else walltime
@@ -330,6 +330,8 @@ class EnvBatch(EnvBase):
             if name is None:
                 submitargs+=" %s"%flag
             else:
+                if name.startswith("$"):
+                    name = name[1:]
                 val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
@@ -464,7 +466,7 @@ class EnvBatch(EnvBase):
         jobid = re.search(jobid_pattern, output).group(1)
         return jobid
 
-    def select_best_queue(self, num_pes):
+    def select_best_queue(self, num_pes, job=None):
         # Make sure to check default queue first.
         all_queues = []
         all_queues.append( self.get_default_queue())
@@ -473,8 +475,12 @@ class EnvBatch(EnvBase):
             if queue is not None:
                 jobmin = queue.get("jobmin")
                 jobmax = queue.get("jobmax")
+                jobname = queue.get("jobname")
+                if jobname is not None:
+                    if job == jobname:
+                        return queue.text
                 # if the fullsum is between the min and max # jobs, then use this queue.
-                if jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
+                elif jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
                     return queue.text
         return None
 

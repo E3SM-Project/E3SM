@@ -10,7 +10,7 @@ module pioExample
     use pio, only : PIO_nowrite, PIO_openfile
 
     implicit none
-    save
+
     private
 
     include 'mpif.h'
@@ -20,7 +20,7 @@ module pioExample
     integer, parameter :: LEN = 16
 
     !> @brief Value used for array that will be written to netcdf file.
-    integer, parameter :: VAL = 42
+    integer, parameter :: VAL = 42  
 
     !> @brief Error code if anything goes wrong.
     integer, parameter :: ERR_CODE = 99
@@ -40,7 +40,7 @@ module pioExample
         integer :: niotasks
 
         !> @brief Stride in the mpi rank between io tasks.
-        integer :: stride
+        integer :: stride        
 
         !> @brief Number of aggregator.
         integer :: numAggregator
@@ -181,7 +181,7 @@ contains
             this%pioIoSystem,           & ! iosystem
             base=this%optBase)            ! base (optional argument)
 
-        !
+        ! 
         ! set up some data that we will write to a netcdf file
         !
 
@@ -353,7 +353,7 @@ end module pioExample
 !! - read the sample data with @ref PIO_read_darray.
 !!
 !! - close the netCDF file with @ref PIO_closefile.
-!!
+!! 
 !! - clean up local memory, ParallelIO library resources with @ref
 !!   PIO_freedecomp and @ref PIO_finalize, and MPI library resources.
 !!
