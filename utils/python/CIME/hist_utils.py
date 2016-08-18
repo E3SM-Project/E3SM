@@ -63,7 +63,9 @@ def move(case, suffix):
 
     return comments
 
-def _compare_hists(case, suffix1="", suffix2="", from_dir1=os.getcwd(), from_dir2=os.getcwd()):
+def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
+    if from_dir1 == from_dir2:
+        expect(suffix1 != suffix2, "Comparing files to themselves?")
 
     testcase = case.get_value("CASE")
     all_success = True
@@ -111,7 +113,7 @@ def compare_test(case, suffix1, suffix2):
     """
     rundir   = case.get_value("RUNDIR")
 
-    return _compare_hists(case, suffix1, suffix2, rundir, rundir)
+    return _compare_hists(case, rundir, rundir, suffix1, suffix2)
 
 def cprnc(file1, file2, case, rundir):
     """
@@ -152,7 +154,7 @@ def compare_baseline(case, baseline_dir=None):
         if not os.path.isdir(bdir):
             return False, "ERROR %s does not exist" % bdir
 
-    return _compare_hists(case, from_dir1=rundir, from_dir2=basecmp_dir)
+    return _compare_hists(case, rundir, basecmp_dir)
 
 def get_extension(model, filepath):
     """
