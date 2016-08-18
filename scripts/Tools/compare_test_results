@@ -43,6 +43,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
     default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
+    default_baseline_root = _MACHINE.get_value("CCSM_BASELINE")
     default_compiler      = _MACHINE.get_default_compiler()
     scratch_root          = _MACHINE.get_value("CESMSCRATCHROOT")
     default_testroot      = os.path.join(scratch_root)
@@ -51,6 +52,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
                         help="Name of baselines to use, corresponds to branch used.")
+
+    parser.add_argument("--baseline-root", default=default_baseline_root,
+                        help="Root of baselines.")
 
     parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="Compiler of run you want to compare")
@@ -68,7 +72,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.baseline_name, args.test_root, args.compiler, args.test_id, args.compare_tests
+    return args.baseline_name, args.baseline_root, args.test_root, args.compiler, args.test_id, args.compare_tests
 
 ###############################################################################
 def _main_func(description):
@@ -77,10 +81,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    baseline_name, test_root, compiler, test_id, compare_tests = \
+    baseline_name, baseline_root, test_root, compiler, test_id, compare_tests = \
         parse_command_line(sys.argv, description)
 
-    success = CIME.compare_test_results.compare_test_results(baseline_name, test_root, compiler, test_id, compare_tests)
+    success = CIME.compare_test_results.compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id, compare_tests)
     sys.exit(0 if success else 1)
 
 ###############################################################################

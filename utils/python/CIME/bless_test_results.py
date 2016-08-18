@@ -11,7 +11,7 @@ import os, glob, time
 _MACHINE = Machines()
 
 ###############################################################################
-def bless_namelists(test_name, report_only, force, baseline_name):
+def bless_namelists(test_name, report_only, force, baseline_name, baseline_root):
 ###############################################################################
     # Be aware that restart test will overwrite the original namelist files
     # with versions of the files that should not be blessed. This forces us to
@@ -21,21 +21,20 @@ def bless_namelists(test_name, report_only, force, baseline_name):
     print "Test '%s' had a namelist diff" % test_name
     if (not report_only and
         (force or raw_input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
-        stat, _, err = run_cmd("create_test -n -g %s -b %s" % (test_name, baseline_name))
+        stat, _, err = run_cmd("create_test -n -g %s -b %s --baseline-root %s" % (test_name, baseline_name, baseline_root))
         if stat != 0:
             return False, "Namelist regen failed: '%s'" % err
         else:
             return True, None
 
 ###############################################################################
-def bless_history(test_name, testcase_dir_for_test, baseline_name, report_only, force):
+def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, report_only, force):
 ###############################################################################
     with Case(testcase_dir_for_test) as case:
-        baseline_full_dir = os.path.join(case.get_value("BASELINE_ROOT"), case.get_value("COMPILER"), baseline_name, case.get_value("CASEBASEID"))
+        baseline_full_dir = os.path.join(baseline_root, case.get_value("COMPILER"), baseline_name, case.get_value("CASEBASEID"))
         result, comments = compare_baseline(case, baseline_dir=baseline_full_dir)
         if result:
-            logging.warning("Test '%s' was marked as DIFF but compare_baseline did not find diff?" % test_name)
-            return False, "No diff found"
+            return True, None
         else:
             print comments
             if (not report_only and
@@ -51,7 +50,7 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, report_only, 
                 return True, None
 
 ###############################################################################
-def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
+def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
 ###############################################################################
     test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
     test_status_files = glob.glob("%s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
@@ -78,22 +77,17 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
             # Compute hist status, False implies it diffed
             if (not namelists_only):
                 run_result = ts.get_status(RUN_PHASE)
-                baseline_comp_result = ts.get_status("%s_baseline" % COMPARE_PHASE)
                 if (run_result is None):
                     broken_blesses.append((test_name, "no run phase"))
                     logging.warning("Test '%s' did not make it to run phase" % test_name)
                     hist_no_bless = True
-                elif (run_result == TEST_PASS_STATUS):
-                    if (baseline_comp_result is None):
-                        broken_blesses.append((test_name, "no history compare performed"))
-                        logging.warning("Test '%s' had no history compare phase" % test_name)
-                        hist_no_bless = True
-                    else:
-                        hist_no_bless = baseline_comp_result == TEST_PASS_STATUS
-                else:
+                elif (run_result != TEST_PASS_STATUS):
                     broken_blesses.append((test_name, "test did not pass"))
                     logging.warning("Test '%s' did not pass, not safe to bless" % test_name)
                     hist_no_bless = True
+                else:
+                    hist_no_bless = False
+
             else:
                 hist_no_bless = True
 
@@ -124,13 +118,13 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
 
                 # Bless namelists
                 if (not nl_no_bless):
-                    success, reason = bless_namelists(test_name, report_only, force, baseline_name)
+                    success, reason = bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
                     if not success:
                         broken_blesses.append(test_name, reason)
 
                 # Bless hist files
                 if (not hist_no_bless):
-                    success, reason = bless_history(test_name, testcase_dir_for_test, baseline_name, report_only, force)
+                    success, reason = bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, report_only, force)
                     if (not success):
                         broken_blesses.append((test_name, reason))
 

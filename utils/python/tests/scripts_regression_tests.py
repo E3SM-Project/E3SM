@@ -750,7 +750,7 @@ class TestBlessTestResults(TestCreateTestCommon):
         expected_pattern = re.compile(r'COMPARE FAILED FOR TEST: %s[^\s]* reason Diff' % self._test_name)
         the_match = expected_pattern.search(out)
         self.assertNotEqual(the_match, None,
-                            msg="Failed to display failed test in output:\n%s" % out)
+                            msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, out))
 
         # Bless
         run_cmd_no_fail("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
