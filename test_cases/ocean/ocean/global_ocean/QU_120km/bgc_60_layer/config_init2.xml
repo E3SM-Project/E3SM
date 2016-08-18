@@ -44,7 +44,10 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
+		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
 		<option name="config_use_ecosysTracers">.true.</option>
+		<option name="config_use_DMSTracers">.true.</option>
+		<option name="config_use_MacroMoleculesTracers">.true.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
