@@ -206,9 +206,6 @@ def get_extension(model, filepath):
     basename = os.path.basename(filepath)
     ext_regex = re.compile(r'.*%s.*[.](h.?)([.][^.]+)?[.]nc' % model)
     m = ext_regex.match(basename)
-    if m is None:
-        import pdb
-        pdb.set_trace()
     expect(m is not None, "Failed to get extension for file '%s'" % filepath)
     return m.groups()[0]
 
