@@ -49,6 +49,7 @@
      integer, dimension(:), pointer :: ibuffer => null()
      integer :: reqID
      type (mpas_communication_list), pointer :: next => null()
+     logical :: received
    end type mpas_communication_list
 
    type mpas_exchange_field_list

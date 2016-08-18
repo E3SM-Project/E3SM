@@ -7841,6 +7841,83 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       integer, optional, intent(out) :: iErr
 
+      type (mpas_exchange_field_list), pointer :: exchFieldListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      logical :: allReceived
+      integer :: mpi_ierr, iErr_tmp
+      integer :: threadNum
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      threadNum = mpas_threading_get_thread_num()
+
+      !$omp master
+      commListPtr => exchangeGroup % recvList
+      do while ( associated(commListPtr) )
+         DMPAR_DEBUG_WRITE(' -- Marking receive lists as not received, and not unpacked')
+         commListPtr % received = .false.
+
+         commListPtr => commListPtr % next
+      end do
+      !$omp end master
+      call mpas_threading_barrier()
+
+      allReceived = .false.
+      do while ( .not. allReceived )
+
+         allReceived = .true.
+
+         DMPAR_DEBUG_WRITE(' -- Test receive messages, and unpack buffers as they receive')
+         ! Loop over receive lists to check if they have been received yet.
+         commListPtr => exchangeGroup % recvList
+         do while ( associated(commListPtr) )
+
+            ! Poll receive list messages, and unpack as they are received.
+            if ( .not. commListPtr % received ) then
+               allReceived = .false.
+               call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
+
+               if ( commListPtr % received ) then
+                  call mpas_dmpar_exch_group_unpack_single_buffer(allFieldsPool, exchangeGroup, commListPtr, iErr_tmp)
+                  if ( iErr_tmp /= MPAS_DMPAR_NOERR ) then
+                     if ( present(iErr) ) then
+                        iErr = iErr_tmp
+                     end if
+                     DMPAR_ERROR_WRITE('Halo exchange unpacking encountered an error.')
+                  end if
+               end if
+            end if
+
+            commListPtr => commListPtr % next 
+         end do
+
+      end do
+      DMPAR_DEBUG_WRITE(' -- All buffers have been unpacked. Exiting buffer unpack routine.')
+
+   end subroutine mpas_dmpar_exch_group_unpack_buffers!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_unpack_single_buffer
+!
+!> \brief MPAS dmpar exchange group single buffer unpack routine
+!> \author Doug Jacobsen
+!> \date   08/11/2016
+!> \details
+!>  This private routine unpacks a single receive buffer. It assumes the
+!>  message has been received already, and so does not include an MPI_Wait.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_unpack_single_buffer(allFieldsPool, exchangeGroup, recvList, iErr)!{{{
+      type (mpas_pool_type), intent(in) :: allFieldsPool
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (mpas_communication_list), intent(inout) :: recvList
+
+      integer, optional, intent(out) :: iErr
+
       type (field1DInteger), pointer :: intField1D
       type (field2DInteger), pointer :: intField2D
       type (field3DInteger), pointer :: intField3D
@@ -7851,7 +7928,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (field5DReal), pointer :: realField5D
 
       type (mpas_exchange_field_list), pointer :: exchFieldListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: mpi_ierr
       integer :: threadNum
@@ -7874,7 +7950,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( realField1D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField1D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField1D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7883,7 +7959,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( realField2D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField2D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField2D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7892,7 +7968,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( realField3D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField3D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField3D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7901,7 +7977,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( realField4D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField4D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField4D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7910,7 +7986,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( realField5D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField5D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, realField5D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7921,7 +7997,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( intField1D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, intField1D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, intField1D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7930,7 +8006,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( intField2D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, intField2D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, intField2D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7939,7 +8015,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                      if ( intField3D % isActive ) then
                         do iHalo = 1, size(exchFieldListPtr % haloLayers)
                            if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, intField3D, iHalo)
+                              call mpas_dmpar_exch_group_unpack_buffer_field(exchangeGroup, intField3D, iHalo, recvList)
                            end if
                         end do
                      end if
@@ -7948,13 +8024,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             end if
          end do
 
-
          exchFieldListPtr => exchFieldListPtr % next
       end do
 
       call mpas_threading_barrier()
 
-   end subroutine mpas_dmpar_exch_group_unpack_buffers!}}}
+   end subroutine mpas_dmpar_exch_group_unpack_single_buffer!}}}
+
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_exch_group_destroy_buffers
@@ -9009,16 +9085,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_integer(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_integer(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field1DInteger), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field1DInteger), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9030,40 +9106,31 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     iBuffer = exchListPtr % srcList(iExch) + bufferOffset
-                     fieldCursor % array(exchListPtr % destList(iExch)) = transfer(commListPtr % rbuffer(iBuffer), &
-                                                                                   fieldCursor % array(1))
-                  end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  iBuffer = exchListPtr % srcList(iExch) + bufferOffset
+                  fieldCursor % array(exchListPtr % destList(iExch)) = transfer(recvList % rbuffer(iBuffer), &
+                                                                                fieldCursor % array(1))
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
+      call mpas_threading_barrier()
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_integer!}}}
 
@@ -9079,16 +9146,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_integer(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_integer(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field2DInteger), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field2DInteger), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9101,42 +9168,32 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(1)
-                        iBuffer = (exchListPtr % srcList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
-                        fieldCursor % array(j, exchListPtr % destList(iExch)) = transfer(commListPtr % rbuffer(iBuffer), &
-                                                                                         fieldCursor % array(1,1))
-                     end do
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(j, iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  do j = 1, fieldCursor % dimSizes(1)
+                     iBuffer = (exchListPtr % srcList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
+                     fieldCursor % array(j, exchListPtr % destList(iExch)) = transfer(recvList % rbuffer(iBuffer), &
+                                                                                      fieldCursor % array(1,1))
                   end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_integer!}}}
 
@@ -9152,16 +9209,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_integer(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_integer(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field3DInteger), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field3DInteger), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9174,45 +9231,35 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(2)
-                        do k = 1, fieldCursor % dimSizes(1)
-                           iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                   + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
-                           fieldCursor % array(k, j, exchListPtr % destList(iExch)) = transfer(commListPtr % rbuffer(iBuffer), &
-                                                                                               fieldCursor % array(1,1,1))
-                        end do
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(j, k, iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  do j = 1, fieldCursor % dimSizes(2)
+                     do k = 1, fieldCursor % dimSizes(1)
+                        iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                        fieldCursor % array(k, j, exchListPtr % destList(iExch)) = transfer(recvList % rbuffer(iBuffer), &
+                                                                                            fieldCursor % array(1,1,1))
                      end do
                   end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_integer!}}}
 
@@ -9228,16 +9275,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_real(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field1DReal), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field1DReal), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9249,39 +9296,29 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     iBuffer = exchListPtr % srcList(iExch) + bufferOffset
-                     fieldCursor % array(exchListPtr % destList(iExch)) = commListPtr % rbuffer(iBuffer)
-                  end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  iBuffer = exchListPtr % srcList(iExch) + bufferOffset
+                  fieldCursor % array(exchListPtr % destList(iExch)) = recvList % rbuffer(iBuffer)
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_real!}}}
 
@@ -9297,16 +9334,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_real(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field2DReal), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field2DReal), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9319,41 +9356,31 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(1)
-                        iBuffer = (exchListPtr % srcList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
-                        fieldCursor % array(j, exchListPtr % destList(iExch)) = commListPtr % rbuffer(iBuffer)
-                     end do
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(j, iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  do j = 1, fieldCursor % dimSizes(1)
+                     iBuffer = (exchListPtr % srcList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
+                     fieldCursor % array(j, exchListPtr % destList(iExch)) = recvList % rbuffer(iBuffer)
                   end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_real!}}}
 
@@ -9369,16 +9396,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_real(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field3DReal), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field3DReal), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9391,44 +9418,34 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(2)
-                        do k = 1, fieldCursor % dimSizes(1)
-                           iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                   + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
-                           fieldCursor % array(k, j, exchListPtr % destList(iExch)) = commListPtr % rbuffer(iBuffer)
-                        end do
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(j, k, iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  do j = 1, fieldCursor % dimSizes(2)
+                     do k = 1, fieldCursor % dimSizes(1)
+                        iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                        fieldCursor % array(k, j, exchListPtr % destList(iExch)) = recvList % rbuffer(iBuffer)
                      end do
                   end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_real!}}}
 
@@ -9444,16 +9461,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field4d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field4d_real(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field4DReal), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field4DReal), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9466,49 +9483,39 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, l, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(3)
-                        do k = 1, fieldCursor % dimSizes(2)
-                           do l = 1, fieldCursor % dimSizes(1)
-                              iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) &
-                                      * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) &
-                                      + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                      + (k - 1) * fieldCursor % dimSizes(1) + l + bufferOffset
-                              fieldCursor % array(l, k, j, exchListPtr % destList(iExch)) = commListPtr % rbuffer(iBuffer)
-                           end do
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(j, k, l, iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  do j = 1, fieldCursor % dimSizes(3)
+                     do k = 1, fieldCursor % dimSizes(2)
+                        do l = 1, fieldCursor % dimSizes(1)
+                           iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) &
+                                   * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) &
+                                   + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                   + (k - 1) * fieldCursor % dimSizes(1) + l + bufferOffset
+                           fieldCursor % array(l, k, j, exchListPtr % destList(iExch)) = recvList % rbuffer(iBuffer)
                         end do
                      end do
                   end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) &
-                         * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) &
+                      * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field4d_real!}}}
 
@@ -9524,16 +9531,16 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  It unpacks a specific halo layer, as defined by the haloLayer input argument.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_exch_group_unpack_buffer_field5d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+   subroutine mpas_dmpar_exch_group_unpack_buffer_field5d_real(exchangeGroup, field, haloLayer, recvList, iErr)!{{{
       type (mpas_exchange_group), intent(inout) :: exchangeGroup
       type (field5DReal), pointer :: field
       integer, intent(in) :: haloLayer
+      type (mpas_communication_list), intent(inout) :: recvList
       integer, optional, intent(out) :: iErr
 
       type (field5DReal), pointer :: fieldCursor
 
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded, mpi_ierr
@@ -9546,53 +9553,43 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         if ( threadNum == 0 ) then
-            call MPI_Wait(commListPtr % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-         end if
-         call mpas_threading_barrier()
-
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, l, m, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(4)
-                        do k = 1, fieldCursor % dimSizes(3)
-                           do l = 1, fieldCursor % dimSizes(2)
-                              do m = 1, fieldCursor % dimSizes(1)
-                                 iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) &
-                                         * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)&
-                                         + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                                   * fieldCursor % dimSizes(3) &
-                                         + (k - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                         + (l - 1) * fieldCursor % dimSizes(1) + m + bufferOffset
-                                 fieldCursor % array(m, l, k, j, exchListPtr % destList(iExch)) = commListPtr % rbuffer(iBuffer)
-                              end do
+      bufferOffset = recvList % bufferOffset
+      nAdded = 0
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % recvList % halos(haloLayer) % exchList
+         do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == recvList % procID ) then
+               !$omp do schedule(runtime) private(j, k, l, m, iBuffer)
+               do iExch = 1, exchListPtr % nList
+                  do j = 1, fieldCursor % dimSizes(4)
+                     do k = 1, fieldCursor % dimSizes(3)
+                        do l = 1, fieldCursor % dimSizes(2)
+                           do m = 1, fieldCursor % dimSizes(1)
+                              iBuffer = (exchListPtr % srcList(iExch) - 1) * fieldCursor % dimSizes(1) &
+                                      * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)&
+                                      + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                                * fieldCursor % dimSizes(3) &
+                                      + (k - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                      + (l - 1) * fieldCursor % dimSizes(1) + m + bufferOffset
+                              fieldCursor % array(m, l, k, j, exchListPtr % destList(iExch)) = recvList % rbuffer(iBuffer)
                            end do
                         end do
                      end do
                   end do
-                  !$omp end do
-                  nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                         * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4))
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
+               end do
+               !$omp end do
+               nAdded = max(nAdded, maxval(exchListPtr % srcList) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                      * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4))
+            end if
+            exchListPtr => exchListPtr % next
          end do
-         bufferOffset = bufferOffset + nAdded
-         if ( threadNum == 0 ) then
-            commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         end if
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+         fieldCursor => fieldCursor % next
       end do
+      bufferOffset = bufferOffset + nAdded
+      if ( threadNum == 0 ) then
+         recvList % bufferOffset = recvList % bufferOffset + nAdded
+      end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field5d_real!}}}
 
