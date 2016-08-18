@@ -7868,6 +7868,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       allReceived = .false.
       do while ( .not. allReceived )
 
+         allReceived = .true.
+
          DMPAR_DEBUG_WRITE(' -- Test receive messages, and unpack buffers as they receive')
          ! Loop over receive lists to check if they have been received yet.
          commListPtr => exchangeGroup % recvList
@@ -7875,6 +7877,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
             ! Poll receive list messages, and unpack as they are received.
             if ( .not. commListPtr % received ) then
+               allReceived = .false.
                call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
 
                if ( commListPtr % received ) then
@@ -7891,15 +7894,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             commListPtr => commListPtr % next 
          end do
 
-         DMPAR_DEBUG_WRITE(' -- Check to see if all messages have been received')
-         ! Check if all buffers have been unpacked.
-         allReceived = .true.
-         commListPtr => exchangeGroup % recvList
-         do while ( associated(commListPtr) )
-            allReceived = allReceived .and. commListPtr % received
-
-            commListPtr => commListPtr % next
-         end do
       end do
       DMPAR_DEBUG_WRITE(' -- All buffers have been unpacked. Exiting buffer unpack routine.')
 
