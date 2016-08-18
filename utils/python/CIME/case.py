@@ -253,19 +253,22 @@ class Case(object):
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
-                result = env_file.get_resolved_value(item)
-                item = result
+                item = env_file.get_resolved_value(item)
             if ("$" not in item):
                 return item
             else:
-                self.get_resolved_value(item,recurse=recurse+1)
+                item = self.get_resolved_value(item,recurse=recurse+1)
 
         if(recurse >= recurse_limit):
             #try env_batch first
             env_batch = self.get_env("batch")
-            result = env_batch.get_resolved_value(item)
-            if result is not None:
-                item = result
+            item = env_batch.get_resolved_value(item)
+            logger.debug("item is %s, checking env_batch"%item)
+            if item is not None:
+                if ("$" not in item):
+                    return item
+                else:
+                    item = self.get_resolved_value(item,recurse=recurse+1)
             else:
                 logging.warning("Not able to fully resolve item '%s'" % item)
 
@@ -520,26 +523,6 @@ class Case(object):
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
 
-        # Set project id
-        if project is None:
-            project = get_project(machobj)
-        if project is not None:
-            self.set_value("PROJECT", project)
-        elif machobj.get_value("PROJECT_REQUIRED"):
-            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
-
-        # Overwriting an existing exeroot or rundir can cause problems
-        exeroot = self.get_value("EXEROOT")
-        rundir = self.get_value("RUNDIR")
-        for wdir in (exeroot, rundir):
-            if os.path.exists(wdir):
-                expect(not test, "Directory %s already exists, aborting test"% wdir)
-                response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
-                if response.startswith("r"):
-                    shutil.rmtree(wdir)
-                else:
-                    expect(response.startswith("u"), "Aborting by user request")
-
         # the following go into the env_mach_specific file
         items = ("module_system", "environment_variables", "mpirun")
         env_mach_specific_obj = self.get_env("mach_specific")
@@ -637,6 +620,27 @@ class Case(object):
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
+
+        # Set project id
+        if project is None:
+            project = get_project(machobj)
+        if project is not None:
+            self.set_value("PROJECT", project)
+        elif machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+
+        # Overwriting an existing exeroot or rundir can cause problems
+        exeroot = self.get_value("EXEROOT")
+        rundir = self.get_value("RUNDIR")
+        for wdir in (exeroot, rundir):
+            logging.debug("wdir is %s"%wdir)
+            if os.path.exists(wdir):
+                expect(not test, "Directory %s already exists, aborting test"% wdir)
+                response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
+                if response.startswith("r"):
+                    shutil.rmtree(wdir)
+                else:
+                    expect(response.startswith("u"), "Aborting by user request")
 
         # miscellaneous settings
         if self.get_value("RUN_TYPE") == 'hybrid':
