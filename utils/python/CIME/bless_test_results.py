@@ -1,14 +1,11 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.test_scheduler import NAMELIST_PHASE
 from CIME.utils import run_cmd, expect
-from CIME.XML.machines import Machines
 from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
 
 import os, glob, time
-
-_MACHINE = Machines()
 
 ###############################################################################
 def bless_namelists(test_name, report_only, force, baseline_name, baseline_root):

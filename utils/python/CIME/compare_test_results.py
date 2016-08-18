@@ -1,13 +1,10 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.utils import expect
-from CIME.XML.machines import Machines
 from CIME.test_status import *
 from CIME.hist_utils import compare_baseline
 from CIME.case import Case
 
 import os, glob
-
-_MACHINE = Machines()
 
 ###############################################################################
 def compare_history(testcase_dir_for_test, baseline_name, baseline_root):
