@@ -41,13 +41,43 @@ class A_RunUnitTests(unittest.TestCase):
         self.assertTrue(os.path.isfile(machinefile),
                         msg="Path did not resolve to existing file %s" % machinefile)
 
-    def test_CIME_unit_tests(self):
-        # Find and run all the unit tests in the CIME directory tree
+    def test_unittests(self):
+        # Finds all files contained in CIME/tests or its subdirectories that
+        # match the pattern 'test*.py', and runs the unit tests found there
+        # (i.e., tests defined using python's unittest module).
+        #
+        # This is analogous to running:
+        #     python -m unittest discover -s CIME/tests -t .
+        # from cime/utils/python
+        #
+        # Yes, that means we have a bunch of unit tests run from this one unit
+        # test.
+
+        testsuite = unittest.defaultTestLoader.discover(
+            start_dir = os.path.join(LIB_DIR,"CIME","tests"),
+            pattern = 'test*.py',
+            top_level_dir = LIB_DIR)
+
+        testrunner = unittest.TextTestRunner(buffer=False)
+
+        # Disable logging; otherwise log messages written by code under test
+        # clutter the unit test output
+        log_lvl = logging.getLogger().getEffectiveLevel()
+        logging.disable(logging.CRITICAL)
+        try:
+            results = testrunner.run(testsuite)
+        finally:
+            logging.getLogger().setLevel(log_lvl)
+
+        self.assertTrue(results.wasSuccessful())
+
+    def test_CIME_doctests(self):
+        # Find and run all the doctests in the CIME directory tree
         stat, output, _ = run_cmd("PYTHONPATH=%s:$PYTHONPATH python -m doctest *.py 2>&1" % LIB_DIR, from_dir=os.path.join(LIB_DIR,"CIME"))
         self.assertEqual(stat, 0, msg=output)
 
-    def test_CIMEXML_unit_tests(self):
-        # Find and run all the unit tests in the XML directory tree
+    def test_CIMEXML_doctests(self):
+        # Find and run all the doctests in the XML directory tree
         stat, output, _ = run_cmd("PYTHONPATH=%s:$PYTHONPATH python -m doctest *.py 2>&1" % LIB_DIR, from_dir=os.path.join(LIB_DIR,"CIME","XML"))
         self.assertEqual(stat, 0, msg=output)
 
@@ -1635,7 +1665,7 @@ def _main_func():
 
     CIME.utils.handle_standard_logging_options(args)
 
-    unittest.main(verbosity=2)
+    unittest.main(verbosity=2, catchbreak=True)
 
 if (__name__ == "__main__"):
     _main_func()
