@@ -50,6 +50,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added the option bl_mynn for the calculation of the tendency for the cloud ice number concentration.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
+! * added the option cu_tiedtke_wrf38 in the calculation of tend_u when we run the Tiedtke parameterization of
+!   convection from WRF version 3.8.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-08-18. 
 
 
  contains
@@ -232,7 +235,7 @@
 
     convection_select: select case(convection_scheme)
     
-       case('cu_grell_freitas','cu_grell_freitas_momentum','cu_tiedtke')
+       case('cu_grell_freitas','cu_grell_freitas_momentum','cu_tiedtke','cu_tiedtke_wrf38')
           allocate(rucuten_Edge(nVertLevels,nEdges))
           rucuten_Edge(:,:) = 0.
           call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)

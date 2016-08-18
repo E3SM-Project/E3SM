@@ -20,6 +20,7 @@
  use module_cu_gf_momentum
  use module_cu_kfeta
  use module_cu_tiedtke
+ use module_cu_tiedtke_wrf38
 
  implicit none
  private
@@ -84,6 +85,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 ! * in the call to subroutine cu_grell_freitas, removed the argument ktop_deep.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-20.
+! * added the call to the Tiedtke parameterization of convection from WRF version 3.8. This option is triggered
+!   using the option cu_tiedtke_wrf38.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-08-18.
 
 
  contains
@@ -179,7 +183,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke")
+    case ("cu_tiedtke","cu_tiedtke_wrf38")
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
@@ -268,7 +272,7 @@
        if(allocated(rqrcuten_p)   ) deallocate(rqrcuten_p   )
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
-    case ("cu_tiedtke")
+    case ("cu_tiedtke","cu_tiedtke_wrf38")
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
@@ -371,8 +375,8 @@
  real(kind=RKIND):: min_rthcuten
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
+!write(0,*)
+!write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
 
  call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
  call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
@@ -530,6 +534,30 @@
              rqvcuten    = rqvcuten_p    , rqccuten        = rqccuten_p  ,           &
              rqicuten    = rqicuten_p    , rucuten         = rucuten_p   ,           &
              rvcuten     = rvcuten_p     ,                                           &
+             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
+             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
+             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
+                    )
+
+    case("cu_tiedtke_wrf38")
+       call cu_tiedtke_wrf38 ( &
+             pcps        = pres_hyd_p    , p8w       = pres2_hyd_p   ,               &
+             znu         = znu_hyd_p     , t3d       = t_p           ,               &
+             dt          = dt_dyn        , itimestep = itimestep     ,               &
+             stepcu      = n_cu          , raincv    = raincv_p      ,               &
+             pratec      = pratec_p      , qfx       = qfx_p         ,               &
+             u3d         = u_p           , v3d       = v_p           ,               &
+             w           = w_p           , qv3d      = qv_p          ,               &
+             qc3d        = qc_p          , qi3d      = qi_p          ,               &
+             pi3d        = pi_p          , rho3d     = rho_p         ,               &
+             qvften      = rqvdynten_p   , qvpblten  = rqvdynblten_p ,               &
+             dz8w        = dz_p          , xland     = xland_p       ,               &
+             cu_act_flag = cu_act_flag   , f_qv      = f_qv          ,               &
+             f_qc        = f_qc          , f_qr      = f_qr          ,               &
+             f_qi        = f_qi          , f_qs      = f_qs          ,               &
+             rthcuten    = rthcuten_p    , rqvcuten  = rqvcuten_p    ,               &
+             rqccuten    = rqccuten_p    , rqicuten  = rqicuten_p    ,               &
+             rucuten     = rucuten_p     , rvcuten   = rvcuten_p     ,               &
              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
@@ -707,7 +735,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke")
+    case ("cu_tiedtke","cu_tiedtke_wrf38")
        call mpas_pool_get_array(sfc_input,'xland',xland)
        call mpas_pool_get_array(diag_physics,'hfx',hfx)
        call mpas_pool_get_array(diag_physics,'qfx',qfx)
@@ -838,7 +866,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke")
+    case ("cu_tiedtke","cu_tiedtke_wrf38")
        call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
        call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
 

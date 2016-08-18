@@ -58,8 +58,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
 ! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF versions 3.6.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
-! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF versions 3.8.
+! * added the options sf_mynn_wrf38 and bl_mynn_wrf38 for the MYNN parameterization from WRF version 3.8.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
+! * added the options cu_tiedtke_wrf38 for the Tiedtke parameterization of convection from WRF version 3.8.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-08-18.
 
 
  contains
@@ -153,7 +155,8 @@
            config_convection_scheme .eq. 'cu_grell_freitas'          .or. &
            config_convection_scheme .eq. 'cu_grell_freitas_momentum' .or. &
            config_convection_scheme .eq. 'cu_kain_fritsch'           .or. &
-           config_convection_scheme .eq. 'cu_tiedtke'                )) then
+           config_convection_scheme .eq. 'cu_tiedtke'                .or. &
+           config_convection_scheme .eq. 'cu_tiedtke_wrf38'          )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
           trim(config_convection_scheme)
@@ -165,7 +168,7 @@
  if(.not. (config_pbl_scheme .eq. 'off'           .or. &
            config_pbl_scheme .eq. 'bl_mynn'       .or. &
            config_pbl_scheme .eq. 'bl_mynn_wrf38' .or. &
-           config_pbl_scheme .eq. 'bl_ysu' )) then
+           config_pbl_scheme .eq. 'bl_ysu'        )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for pbl_scheme: ', &
           trim(config_pbl_scheme)
