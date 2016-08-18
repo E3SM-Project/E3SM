@@ -3,7 +3,7 @@
 """
 Analyze results from a test root area, comparing non-BFB
 changes. Purpose is, instead of re-running tests
-in generate mode, which is very slow, allow for very fast analsis of diffs.
+in compare mode, which is very slow, allow for very fast analsis of diffs.
 
 You may need to load modules for cprnc to work.
 """
