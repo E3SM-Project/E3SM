@@ -55,7 +55,8 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
     broken_blesses = []
     for test_status_file in test_status_files:
-        ts = TestStatus(test_dir=os.path.dirname(test_status_file))
+        test_dir = os.path.dirname(test_status_file)
+        ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
         if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
             overall_result = ts.get_overall_test_status()
@@ -99,20 +100,6 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
                 if not force:
                     time.sleep(2)
 
-                # Get testcase dir for this test
-                if (test_id is None):
-                    # The full name already contains the compiler, so we just need to glob for the branch name
-                    globs = glob.glob("%s/%s*%s*" % (test_root, test_name, baseline_name))
-                else:
-                    globs = glob.glob("%s/%s%s" % (test_root, test_name, test_id_glob))
-
-                if (len(globs) != 1):
-                    logging.warning("Expected exactly one match for testcase area for test '%s', found '%s'" % (test_name, globs))
-                    broken_blesses.append((test_name, "multiple matching testcase dirs"))
-                    continue
-
-                testcase_dir_for_test = globs[0]
-
                 # Bless namelists
                 if (not nl_no_bless):
                     success, reason = bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
@@ -121,7 +108,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
                 # Bless hist files
                 if (not hist_no_bless):
-                    success, reason = bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, report_only, force)
+                    success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, report_only, force)
                     if (not success):
                         broken_blesses.append((test_name, reason))
 
