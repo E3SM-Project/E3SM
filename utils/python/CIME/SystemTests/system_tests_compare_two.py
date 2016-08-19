@@ -21,8 +21,6 @@ In addition, they MAY require the following method:
     that's needed in both cases. This is called before _case_one_setup or
     _case_two_setup.
 
-NOTE: Currently assumes that only one build is needed - i.e., there are no
-build-time settings that need to be changed between the two cases.
 """
 
 from CIME.XML.standard_module_setup import *
@@ -145,11 +143,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def build_phase(self, sharedlib_only=False, model_only=False):
-        # TODO(wjs, 2016-08-05) This currently assumes that the two cases use
-        # the same build. Once we relax that assumption, we'll need a
-        # conditional here: If the two cases use the same build (based on
-        # self._separate_builds), then use the below logic; otherwise, do two
-        # builds.
         if self._separate_builds:
             self._case_one_build(sharedlib_only, model_only)
             self._case_two_build(sharedlib_only, model_only)

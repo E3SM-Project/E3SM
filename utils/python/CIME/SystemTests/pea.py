@@ -1,8 +1,6 @@
 """
 Implementation of the CIME PEA test.
 
-Verifies that interpolation of initial conditions onto an identical
-configuration gives identical results:
 Builds runs and compares a single processor mpi model to a model built using mpi-serial
 (1) do a run with default mpi library (suffix base)
 (2) do a run with mpi-serial (suffix mpi-serial)
