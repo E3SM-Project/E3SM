@@ -65,7 +65,7 @@
 		<option name="config_global_ocean_windstress_meridional_varname">'TAUY'</option>
 		<option name="config_global_ocean_windstress_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_windstress_conversion_factor">1</option>
-		<option name="config_global_ecosys_filename">'ecosys.nc'</option>
+		<option name="config_global_ocean_ecosys_file">'ecosys.nc'</option>
 		<option name="config_global_ecosys_forcing_filename">'ecosys_forcing.nc'</option>
 		<option name="config_global_ecosys_forcing_time_dimname">'record'</option>
 
