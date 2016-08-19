@@ -1,4 +1,3 @@
-
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.files                 import Files
@@ -158,6 +157,7 @@ def save_timing_setup_acme(case, lid):
         return
     logger.info("timing dir is %s" % timing_dir)
     rundir = case.get_value("RUNDIR")
+    blddir = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
     cimeroot = case.get_value("CIMEROOT")
     base_case = case.get_value("CASE")
@@ -217,6 +217,15 @@ def save_timing_setup_acme(case, lid):
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
             shutil.copy(item, os.path.join(case_docs, os.path.basename(item) + "." + lid))
 
+    # Copy some items from build provenance
+    blddir_globs_to_copy = [
+        "GIT_LOGS_HEAD"
+        ]
+    for blddir_glob_to_copy in blddir_globs_to_copy:
+        for item in glob.glob(os.path.join(blddir, blddir_glob_to_copy)):
+            shutil.copy(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
+
+    # What this block does is mysterious to me (JGF)
     if job_id is not None:
         sample_interval = case.get_value("SYSLOG_N")
         if sample_interval > 0:
