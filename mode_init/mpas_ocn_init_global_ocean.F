@@ -107,8 +107,8 @@ contains
       integer, intent(out) :: iErr
 
       character (len=StrKIND), pointer :: config_init_configuration, config_sw_absorption_type, &
-                                          config_global_ecosys_filename, &
-                                          config_global_ecosys_forcing_filename
+                                          config_global_ocean_ecosys_file, &
+                                          config_global_ocean_ecosys_forcing_file
       type (block_type), pointer :: block_ptr
 
       logical, pointer :: config_global_ocean_cull_inland_seas
@@ -135,9 +135,9 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       call mpas_pool_get_config(domain % configs, 'config_sw_absorption_type', config_sw_absorption_type)
-      call mpas_pool_get_config(domain % configs, 'config_global_ecosys_filename', config_global_ecosys_filename)
-      call mpas_pool_get_config(domain % configs, 'config_global_ecosys_forcing_filename', &
-                                                   config_global_ecosys_forcing_filename)
+      call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_file', config_global_ocean_ecosys_file)
+      call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_forcing_file', &
+                                                   config_global_ocean_ecosys_forcing_file)
 
       if (trim(config_init_configuration) /= "global_ocean") return
 
@@ -221,125 +221,125 @@ contains
 print *, 'PO4 1'
          call mpas_pool_get_dimension(tracersPool, 'index_PO4',      index_dummy)
 print *, 'PO4 2'
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
 print *, 'PO4 3'
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
 print *, 'PO4 4'
          fieldName = 'NO3'
          call mpas_pool_get_dimension(tracersPool, 'index_NO3',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'SiO3'
          call mpas_pool_get_dimension(tracersPool, 'index_SiO3',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'NH4'
          call mpas_pool_get_dimension(tracersPool, 'index_NH4',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'Fe'
          call mpas_pool_get_dimension(tracersPool, 'index_Fe',       index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'O2'
          call mpas_pool_get_dimension(tracersPool, 'index_O2',       index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DIC'
          call mpas_pool_get_dimension(tracersPool, 'index_DIC',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DIC_ALT_CO2'
          call mpas_pool_get_dimension(tracersPool, 'index_DIC_ALT_CO2', index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'ALK'
          call mpas_pool_get_dimension(tracersPool, 'index_ALK',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DOC'
          call mpas_pool_get_dimension(tracersPool, 'index_DOC',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DON'
          call mpas_pool_get_dimension(tracersPool, 'index_DON',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DOFe'
          call mpas_pool_get_dimension(tracersPool, 'index_DOFe',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DOP'
          call mpas_pool_get_dimension(tracersPool, 'index_DOP',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DOPr'
          call mpas_pool_get_dimension(tracersPool, 'index_DOPr',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'DONr'
          call mpas_pool_get_dimension(tracersPool, 'index_DONr',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'zooC'
          call mpas_pool_get_dimension(tracersPool, 'index_zooC',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'spChl'
          call mpas_pool_get_dimension(tracersPool, 'index_spChl',    index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'spC'
          call mpas_pool_get_dimension(tracersPool, 'index_spC',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'spFe'
          call mpas_pool_get_dimension(tracersPool, 'index_spFe',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'spCaCO3'
          call mpas_pool_get_dimension(tracersPool, 'index_spCaCO3',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'diatChl'
          call mpas_pool_get_dimension(tracersPool, 'index_diatChl',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'diatC'
          call mpas_pool_get_dimension(tracersPool, 'index_diatC',    index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'diatFe'
          call mpas_pool_get_dimension(tracersPool, 'index_diatFe',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'diatSi'
          call mpas_pool_get_dimension(tracersPool, 'index_diatSi',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'diazChl'
          call mpas_pool_get_dimension(tracersPool, 'index_diazChl',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'diazC'
          call mpas_pool_get_dimension(tracersPool, 'index_diazC',    index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'diazFe'
          call mpas_pool_get_dimension(tracersPool, 'index_diazFe',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'phaeoChl'
          call mpas_pool_get_dimension(tracersPool, 'index_phaeoChl', index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'phaeoC'
          call mpas_pool_get_dimension(tracersPool, 'index_phaeoC',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
          fieldName = 'phaeoFe'
          call mpas_pool_get_dimension(tracersPool, 'index_phaeoFe',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ecosys_filename, iErr)
+         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
 
          deallocate(ecosysIC % array)
@@ -348,83 +348,83 @@ print *, 'PO4 4'
 
          fieldName = 'dust_FLUX_IN'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'IRON_FLUX_IN'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'depositionFluxNO3'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'depositionFluxNH4'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'pocToSed'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxNO3'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxPO4'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxSiO3'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxFe'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxDOC'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxDON'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxDOP'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxDIC'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'riverFluxALK'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'atmosphericCO2'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'atmosphericCO2_ALT_CO2'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'windSpeedSquared10m'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'iceFraction'; poolName = 'forcing'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'seaSurfacePressure'; poolName = 'forcing'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'shortWaveHeatFlux'; poolName = 'forcing'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ecosys_forcing_filename, iErr)
+              config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
 
          deallocate(ecosysForcing % array)
@@ -3017,7 +3017,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
        character (len=StrKIND), pointer :: config_global_ocean_tracer_nlon_dimname,  &
                                            config_global_ocean_tracer_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
+                                           config_global_ocean_ecosys_forcing_time_dimname
 
        integer :: k
 
@@ -3027,7 +3027,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
             config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', &
             config_global_ocean_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_forcing_time_dimname', config_global_ocean_ecosys_forcing_time_dimname)
 
        ! Define stream for ecosys IC
        call MPAS_createStream(ecosysStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
@@ -3039,7 +3039,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        ecosysIC % dimSizes(3) = nDepth
        ecosysIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
        ecosysIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       ecosysIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       ecosysIC % dimNames(3) = trim(config_global_ocean_ecosys_forcing_time_dimname)
        ecosysIC % isVarArray = .false.
        ecosysIC % isPersistent = .true.
        ecosysIC % isActive = .true.
@@ -3054,7 +3054,7 @@ print *, '       ecosysIC % fieldName', trim(fieldName)
      print *, '  ecosysIC % dimSizes(3)', nDepth
      print *, '  ecosysIC % dimNames(1)', trim(config_global_ocean_tracer_nlon_dimname)
      print *, '  ecosysIC % dimNames(2)', trim(config_global_ocean_tracer_nlat_dimname)
-     print *, '  ecosysIC % dimNames(3)', trim(config_global_ocean_depth_dimname)
+     print *, '  ecosysIC % dimNames(3)', trim(config_global_ocean_ecosys_forcing_time_dimname)
      print *, '  ecosysIC % isVarArray', .false.
      print *, '  ecosysIC % isPersistent', .true.
      print *, '  ecosysIC % isActive', .true.
@@ -3328,8 +3328,7 @@ print *, '       call MPAS_closeStream(ecosysStream)'
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName, fileName, &
-               iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName, fileName, iErr)!{{{
 
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
@@ -3342,7 +3341,7 @@ print *, '       call MPAS_closeStream(ecosysStream)'
 
        character (len=StrKIND), pointer :: config_global_ocean_tracer_nlon_dimname,  &
                                            config_global_ocean_tracer_nlat_dimname, &
-                                           config_global_ecosys_forcing_time_dimname
+                                           config_global_ocean_ecosys_forcing_time_dimname
 
        integer :: k
 
@@ -3352,8 +3351,8 @@ print *, '       call MPAS_closeStream(ecosysStream)'
             config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', &
             config_global_ocean_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ecosys_forcing_time_dimname', &
-            config_global_ecosys_forcing_time_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_forcing_time_dimname', &
+            config_global_ocean_ecosys_forcing_time_dimname)
 
        ! Define stream for ecosys forcing
        call MPAS_createStream(ecosysForcingStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
@@ -3362,12 +3361,11 @@ print *, '       call MPAS_closeStream(ecosysStream)'
        ecosysForcing % fieldName = trim(fieldName)
        ecosysForcing % dimSizes(1) = nLonTracer
        ecosysForcing % dimSizes(2) = nLatTracer
-!maltrud
        nTimes = 1
        ecosysForcing % dimSizes(3) = nTimes
        ecosysForcing % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
        ecosysForcing % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       ecosysForcing % dimNames(3) = trim(config_global_ecosys_forcing_time_dimname)
+       ecosysForcing % dimNames(3) = trim(config_global_ocean_ecosys_forcing_time_dimname)
        ecosysForcing % isVarArray = .false.
        ecosysForcing % isPersistent = .true.
        ecosysForcing % isActive = .true.

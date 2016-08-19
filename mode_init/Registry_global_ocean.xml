@@ -247,6 +247,18 @@
 					description="Factor to convert input windstress to N m^{-1}"
 					possible_values="Any positive real number."
 		/>
+		<nml_option name="config_global_ocean_ecosys_file" type="character" default_value="unknown" units="unitless"
+					description="Name of file containing global values of ecosys variables"
+					possible_values="ecosys.nc"
+		/>
+		<nml_option name="config_global_ocean_ecosys_forcing_file" type="character" default_value="unknown" units="unitless"
+					description="Name of file containing global values of ecosys forcing fields"
+					possible_values="ecosys_forcing.nc"
+		/>
+		<nml_option name="config_global_ocean_ecosys_forcing_time_dimname" type="character" default_value="none" units="unitless"
+					description="Name of the dimension that determines the times in ecosys forcing files."
+					possible_values="Dim name from input files."
+		/>
 	</nml_record>
 	<var_struct name="scratch" time_levs="1">
 		<var name="smoothedLevels" type="integer" dimensions="nCells" persistence="scratch"
