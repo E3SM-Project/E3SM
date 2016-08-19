@@ -111,20 +111,29 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
         if len_hist1 == 0:
             comments += " no hist files found for model %s\n"%model
             continue
-        if len_hist1 != len_hist2:
+        if len_hist1 > len_hist2:
             comments += "    num hists does not match %d != %d\n" % (len_hist1, len_hist2)
             all_success = False
-            continue
+            hists2 += ['MISSING'] * (len_hist1 - len_hist2)
+        if len_hist1 < len_hist2:
+            comments += "    num hists does not match %d != %d\n" % (len_hist1, len_hist2)
+            all_success = False
+            hists1 += ['MISSING'] * (len_hist2 - len_hist1)
 
         num_compared += len(hists1)
         for hist1, hist2 in zip(hists1, hists2):
-            success, cprnc_comments = cprnc(hist1, hist2, case, from_dir1)
-            if success:
-                comments += "    %s matched %s\n" % (hist1, hist2)
+            if hist1 == "MISSING":
+                comments += "     No match for file %s found in %s\n"%(hist2, from_dir1)
+            elif hist2 == "MISSING":
+                comments += "     No match for file %s found in %s\n"%(hist1, from_dir2)
             else:
-                comments += "    %s did NOT match %s\n" % (hist1, hist2)
-                comments += cprnc_comments + "\n"
-                all_success = False
+                success, cprnc_comments = cprnc(hist1, hist2, case, from_dir1)
+                if success:
+                    comments += "    %s matched %s\n" % (hist1, hist2)
+                else:
+                    comments += "    %s did NOT match %s\n" % (hist1, hist2)
+                    comments += cprnc_comments + "\n"
+                    all_success = False
 
     expect(num_compared > 0, "Did not compare any hist files for suffix1='%s' suffix2='%s', dir1='%s', dir2='%s'\nComments=%s" %
            (suffix1, suffix2, from_dir1, from_dir2, comments))
