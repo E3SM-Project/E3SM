@@ -61,8 +61,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
 
         self._separate_builds = separate_builds
-        expect(not self._separate_builds,
-               "ERROR: separate builds not yet implemented")
 
         # run_one_suffix is just used as the suffix for the netcdf files
         # produced by the first case; we may eventually remove this, but for now
@@ -138,6 +136,13 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     # ========================================================================
     # Main public methods
     # ========================================================================
+    def _case_one_build(self, sharedlib_only=False, model_only=False):
+        self._activate_case1()
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+
+    def _case_two_build(self, sharedlib_only=False, model_only=False):
+        self._activate_case2()
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         # TODO(wjs, 2016-08-05) This currently assumes that the two cases use
@@ -145,13 +150,16 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # conditional here: If the two cases use the same build (based on
         # self._separate_builds), then use the below logic; otherwise, do two
         # builds.
-        self._activate_case1()
-        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-
-        # The following is needed when _case_two_setup has a case_setup call
-        # despite sharing the build (e.g., to change NTHRDS)
-        self._case2.set_value("BUILD_COMPLETE",True)
-        self._case2.flush()
+        if self._separate_builds:
+            self._case_one_build(sharedlib_only, model_only)
+            self._case_two_build(sharedlib_only, model_only)
+        else:
+            self._activate_case1()
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+            # The following is needed when _case_two_setup has a case_setup call
+            # despite sharing the build (e.g., to change NTHRDS)
+            self._case2.set_value("BUILD_COMPLETE",True)
+            self._case2.flush()
 
     def run_phase(self):
         """
@@ -227,11 +235,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._case2 = self._case_from_existing_caseroot(self._caseroot2)
         else:
             try:
-                # TODO(wjs, 2016-08-05) For now, we're hard-coding keepexe=True; in
-                # the future, make this based on self._separate_builds.
                 self._case2 = self._case1.create_clone(
                     newcase = self._caseroot2,
-                    keepexe = True)
+                    keepexe = self._separate_builds==False)
                 self._setup_cases()
             except:
                 # If a problem occurred in setting up the test cases, it's
