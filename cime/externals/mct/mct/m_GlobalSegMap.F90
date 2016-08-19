@@ -1742,9 +1742,6 @@
 ! !USES:
 !
       use m_die ,          only : die
-      use m_SortingTools , only : IndexSet
-      use m_SortingTools , only : IndexSort
-      use m_SortingTools , only : Permute
 
       implicit none
 
@@ -1764,22 +1761,25 @@
   character(len=*),parameter :: myname_=myname//'::active_pes_'
 
   integer :: count, i, n, ngseg, ierr
-  logical :: new
-  integer, dimension(:), allocatable :: temp_list
-  integer, dimension(:), allocatable :: perm
+  integer :: max_activepe, p
+  logical, dimension(:), allocatable :: process_list
 
         ! retrieve total number of segments in the map:
 
   ngseg = ngseg_(GSMap)
 
+        ! retrieve maximum active process id in the map:
+
+  max_activepe = maxval(GSMap%pe_loc(:))
+
         ! allocate workspace to tally process id list:
 
-  allocate(temp_list(ngseg), stat=ierr)
-  if(ierr /= 0) call die(myname_,'allocate(temp_list...',ierr)
+  allocate(process_list(0:max_activepe), stat=ierr)
+  if(ierr /= 0) call die(myname_,'allocate(process_list)',ierr)
  
-        ! initialize temp_list to -1 (which can never be a process id)
+        ! initialize process_list to false (i.e. no active pes)
 
-  temp_list = -1
+  process_list = .false.
 
         ! initialize the distinct active process count:
 
@@ -1790,25 +1790,10 @@
   do n=1,ngseg
      if(GSMap%pe_loc(n) >= 0) then ! a legitimate pe_location
 
-	! assume initially that GSMap%pe_loc(n) is a process id previously
-        ! not encountered
-
-	new = .true.
-
-	! test this proposition against the growing list of distinct
-        ! process ids stored in temp_list(:)
-
-	do i=1, count
-	   if(GSMap%pe_loc(n) == temp_list(i)) new = .false.
-	end do
-
-        ! If GSMap%pe_loc(n) represents a previously unencountered 
-        ! process id, increment the count, and add this id to the list
-
-	if(new) then
-	   count = count + 1
-	   temp_list(count) = GSMap%pe_loc(n)
-	endif
+        if (.not. process_list(GSMap%pe_loc(n))) then 
+           process_list(GSMap%pe_loc(n)) = .true.
+           count = count + 1
+        endif
 
      else  ! a negative entry in GSMap%pe_loc(n)
 	ierr = 2
@@ -1817,41 +1802,37 @@
   end do
 
         ! If the argument pe_list is present, we must allocate this
-        ! array, fill it, and sort it
+        ! array and fill it
 
   if(present(pe_list)) then
 
-        ! allocate pe_list and permutation array perm
+        ! allocate pe_list 
 
-     allocate(pe_list(count), perm(count), stat=ierr)
+     allocate(pe_list(count), stat=ierr)
      if (ierr /= 0) then
-	call die(myname_,'allocate(pe_list...',ierr)
+	call die(myname_,'allocate(pe_list)',ierr)
      endif
 
-     do n=1,count
-	pe_list(n) = temp_list(n)
-     end do
+     i = 0
+     do p=0,max_activepe
+        if (process_list(p)) then
+           i = i+1
+           if (i > count) exit
+           pe_list(i) = p
+        endif
+     enddo
 
-        ! sorting and permutation...
-
-     call IndexSet(perm)
-     call IndexSort(count, perm, pe_list, descend=.false.)
-     call Permute(pe_list, perm, count)
-
-        ! deallocate permutation array...
-
-     deallocate(perm, stat=ierr)
-     if (ierr /= 0) then
-	call die(myname_,'deallocate(perm)',ierr)
+     if (i > count) then
+       call die(myname_,'pe_list fill error',count)
      endif
 
   endif ! if(present(pe_list))...
 
-        ! deallocate work array temp_list...
+        ! deallocate work array process_list...
 
-  deallocate(temp_list, stat=ierr)
+  deallocate(process_list, stat=ierr)
   if (ierr /= 0) then
-     call die(myname_,'deallocate(temp_list)',ierr)
+     call die(myname_,'deallocate(process_list)',ierr)
   endif
 
         ! finally, store the active process count in output variable
