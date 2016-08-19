@@ -63,25 +63,30 @@ module ocn_init_global_ocean
    !
    !--------------------------------------------------------------------
 
-   integer :: nDepth
-   integer :: nLatTracer, nLonTracer, nLonSW, nLatSW, nLonEcosys, nLatEcosys
-   integer :: nTimes
+   ! 2D input variables.
+   ! Note Tracer and ecosys variables may have different original grids.
+   integer :: nLatTracer, nLonTracer, nDepthTracer
+   integer :: nLonEcosys, nLatEcosys, nDepthEcosys
+   integer :: nDepthOutput, nTimes
+
+   ! 3D input variables
    integer :: nLatWind, nLonWind
    integer :: nLatTopo, nLonTopo
+   integer :: nLonSW, nLatSW
    integer :: nLatLandIceThk, nLonLandIceThk
-   type (field1DReal) :: depthIC
+
+   type (field1DReal) :: depthOutput
+   type (field1DReal) :: tracerLat, tracerLon, tracerDepth
    type (field1DReal) :: windLat, windLon
    type (field1DReal) :: topoLat, topoLon
-   type (field1DReal) :: landIceThkLat, landIceThkLon
-   type (field1DReal) :: tracerLat, tracerLon
    type (field1DReal) :: swDataLat, swDataLon
-   type (field1DReal) :: ecosysLat, ecosysLon
+   type (field1DReal) :: landIceThkLat, landIceThkLon
+
    type (field2DReal) :: topoIC, zonalWindIC, meridionalWindIC, chlorophyllIC, zenithAngleIC, clearSkyIC
    type (field2DReal) :: landIceThkIC, landIceDraftIC
    type (field2DReal) :: oceanFracIC, landIceFracIC, groundedFracIC
-   type (field3DReal) :: temperatureIC, salinityIC
-   type (field3DReal) :: ecosysForcing
-   type (field3DReal) :: ecosysIC
+
+   type (field3DReal) :: tracerIC, ecosysForcingIC
 
 !***********************************************************************
 
@@ -92,8 +97,8 @@ contains
 !  routine ocn_init_setup_global_ocean
 !
 !> \brief   Setup for global ocean test case
-!> \author  Doug Jacobsen
-!> \date    03/04/2014
+!> \author  Mark Petersen, Doug Jacobsen
+!> \date    08/23/2016
 !> \details
 !>  This routine sets up the initial conditions for the global ocean test case.
 !
@@ -104,12 +109,14 @@ contains
    !--------------------------------------------------------------------
 
       type (domain_type), intent(inout) :: domain
-      type (mpas_pool_type), pointer :: meshPool, forcingPool, statePool, tracersPool
+      type (mpas_pool_type), pointer :: meshPool, forcingPool, statePool, tracersPool, scratchPool
       integer, intent(out) :: iErr
 
       character (len=StrKIND), pointer :: config_init_configuration, config_sw_absorption_type, &
-                                          config_global_ocean_ecosys_file, &
-                                          config_global_ocean_ecosys_forcing_file
+                                          config_global_ocean_ecosys_file, config_global_ocean_ecosys_forcing_file
+
+      character (len=StrKIND) :: interpTracerName
+
       type (block_type), pointer :: block_ptr
 
       logical, pointer :: config_global_ocean_cull_inland_seas
@@ -125,10 +132,16 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND), dimension(:, :, :), pointer :: ecosysTracers, DMSTracers, MacroMoleculesTracers
-      integer, pointer :: nVertLevels, nCellsSolve, index_dummy
-      integer :: iCell, k
+      real (kind=RKIND), dimension(:, :, :), pointer :: ecosysTracers, activeTracers, debugTracers, &
+           DMSTracers, MacroMoleculesTracers
+      integer, pointer :: nVertLevels, nCellsSolve, tracerIndex
+      integer :: iCell, k, iTracer
       integer, dimension(3) :: indexField
+
+      type (field2DReal), pointer :: interpActiveTracerField, interpEcosysTracerField, &
+           interpActiveTracerSmoothField, interpEcosysTracerSmoothField
+
+      type (field3DReal), pointer :: ecosysTracersField
 
       character (len=StrKIND) :: fieldName, poolName
 
@@ -144,20 +157,21 @@ contains
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
       ! the following are to test if each is associated before calling init routines
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+      call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
       call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
       call mpas_pool_get_array(tracersPool, 'DMSTracers', DMSTracers, 1)
       call mpas_pool_get_array(tracersPool, 'MacroMoleculesTracers', MacroMoleculesTracers, 1)
-
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
-      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
       if ( .not. on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The global ocean configuration can ' &
                                                          // 'only be applied to a spherical mesh. Exiting...')
@@ -166,6 +180,12 @@ contains
             config_global_ocean_cull_inland_seas)
       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depress_by_land_ice', &
             config_global_ocean_depress_by_land_ice)
+
+      !***********************************************************************
+      !
+      !  Topography
+      !
+      !***********************************************************************
 
       write(stderrUnit,*) 'Reading depth levels.'
       call ocn_init_setup_global_ocean_read_depth_levels(domain, iErr)
@@ -176,6 +196,12 @@ contains
       call ocn_init_setup_global_ocean_create_model_topo(domain, iErr)
       write(stderrUnit,*) 'Cleaning up topography IC fields'
       call ocn_init_global_ocean_destroy_topo_fields()
+
+      !***********************************************************************
+      !
+      !  Land ice depression
+      !
+      !***********************************************************************
 
       if (config_global_ocean_depress_by_land_ice) then
          write(stderrUnit,*) 'Reading land ice topography data.'
@@ -194,6 +220,12 @@ contains
         call mpas_dmpar_finalize(domain % dminfo)
       end if
 
+      !***********************************************************************
+      !
+      !  Shortwave data
+      !
+      !***********************************************************************
+
       if(trim(config_sw_absorption_type) == 'ohlmann00') then
 
          write(stderrUnit,*) 'Reading penetrating shortwave lat/lon data'
@@ -205,14 +237,57 @@ contains
 
       endif
 
-      write(stderrUnit,*) 'Reading temperature IC.'
-      call ocn_init_setup_global_ocean_read_temperature(domain, iErr)
-      write(stderrUnit,*) 'Reading salinity IC.'
-      call ocn_init_setup_global_ocean_read_salinity(domain, iErr)
-      write(stderrUnit,*) 'Reading Lat/Lon tracer coordinates'
+      !***********************************************************************
+      !
+      !  Active tracers (temperature and salinity)
+      !
+      !***********************************************************************
+
+      write(stderrUnit,*) 'Reading tracer Lat/Lon coordinates'
       call ocn_init_setup_global_ocean_read_tracer_lat_lon(domain, iErr)
-      write(stderrUnit,*) 'Interpolating tracers'
-      call ocn_init_setup_global_ocean_interpolate_tracers(domain, iErr)
+
+      allocate(tracerIC % attLists(1))
+      allocate(tracerIC % array(nLonTracer, nLatTracer, nDepthTracer))
+
+      call mpas_pool_get_field(scratchPool, 'interpActiveTracer', interpActiveTracerField)
+      call mpas_allocate_scratch_field(interpActiveTracerField, .false.)
+      call mpas_pool_get_field(scratchPool, 'interpActiveTracerSmooth', interpActiveTracerSmoothField)
+      call mpas_allocate_scratch_field(interpActiveTracerSmoothField, .false.)
+
+      interpTracerName = 'interpActiveTracer'
+
+      fieldName = 'temperature'
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', tracerIndex)
+      call ocn_init_setup_global_ocean_read_temperature(domain, iErr)
+      call ocn_init_setup_global_ocean_interpolate_tracers(domain, activeTracers, tracerIndex, interpTracerName, iErr)
+
+      fieldName = 'salinity'
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', tracerIndex)
+      call ocn_init_setup_global_ocean_read_salinity(domain, iErr)
+      call ocn_init_setup_global_ocean_interpolate_tracers(domain, activeTracers, tracerIndex,  interpTracerName, iErr)
+
+      deallocate(tracerIC % array)
+      deallocate(tracerIC % attLists)
+      call mpas_deallocate_scratch_field(interpActiveTracerField, .false.)
+      call mpas_deallocate_scratch_field(interpActiveTracerSmoothField, .false.)
+      call ocn_init_global_ocean_destroy_tracer_fields()
+
+      !***********************************************************************
+      !
+      !  Debug tracers
+      !
+      !***********************************************************************
+
+      call mpas_pool_get_dimension(tracersPool, 'index_tracer1', tracerIndex)
+      if(associated(debugTracers)) then
+         debugTracers(tracerIndex,:,:) = 1.0_RKIND
+      end if
+
+      !***********************************************************************
+      !
+      !  Ecosystem tracers
+      !
+      !***********************************************************************
 
       if ( associated(ecosysTracers) ) then
 
@@ -220,133 +295,36 @@ contains
          call ocn_init_setup_global_ocean_read_ecosys_lat_lon(domain,iErr)
 
          write(stderrUnit,*) 'Reading ecosys IC.'
-         allocate(ecosysIC % attLists(1))
-         allocate(ecosysIC % array(nLonEcosys, nLatEcosys, nDepth))
+         allocate(tracerIC % attLists(1))
+         allocate(tracerIC % array(nLonEcosys, nLatEcosys, nDepthEcosys))
 
-         fieldName = 'PO4'
-         call mpas_pool_get_dimension(tracersPool, 'index_PO4',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'NO3'
-         call mpas_pool_get_dimension(tracersPool, 'index_NO3',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'SiO3'
-         call mpas_pool_get_dimension(tracersPool, 'index_SiO3',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'NH4'
-         call mpas_pool_get_dimension(tracersPool, 'index_NH4',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'Fe'
-         call mpas_pool_get_dimension(tracersPool, 'index_Fe',       index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'O2'
-         call mpas_pool_get_dimension(tracersPool, 'index_O2',       index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DIC'
-         call mpas_pool_get_dimension(tracersPool, 'index_DIC',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DIC_ALT_CO2'
-         call mpas_pool_get_dimension(tracersPool, 'index_DIC_ALT_CO2', index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'ALK'
-         call mpas_pool_get_dimension(tracersPool, 'index_ALK',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DOC'
-         call mpas_pool_get_dimension(tracersPool, 'index_DOC',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DON'
-         call mpas_pool_get_dimension(tracersPool, 'index_DON',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DOFe'
-         call mpas_pool_get_dimension(tracersPool, 'index_DOFe',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DOP'
-         call mpas_pool_get_dimension(tracersPool, 'index_DOP',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DOPr'
-         call mpas_pool_get_dimension(tracersPool, 'index_DOPr',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'DONr'
-         call mpas_pool_get_dimension(tracersPool, 'index_DONr',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'zooC'
-         call mpas_pool_get_dimension(tracersPool, 'index_zooC',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'spChl'
-         call mpas_pool_get_dimension(tracersPool, 'index_spChl',    index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'spC'
-         call mpas_pool_get_dimension(tracersPool, 'index_spC',      index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'spFe'
-         call mpas_pool_get_dimension(tracersPool, 'index_spFe',     index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'spCaCO3'
-         call mpas_pool_get_dimension(tracersPool, 'index_spCaCO3',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'diatChl'
-         call mpas_pool_get_dimension(tracersPool, 'index_diatChl',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'diatC'
-         call mpas_pool_get_dimension(tracersPool, 'index_diatC',    index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'diatFe'
-         call mpas_pool_get_dimension(tracersPool, 'index_diatFe',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'diatSi'
-         call mpas_pool_get_dimension(tracersPool, 'index_diatSi',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'diazChl'
-         call mpas_pool_get_dimension(tracersPool, 'index_diazChl',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'diazC'
-         call mpas_pool_get_dimension(tracersPool, 'index_diazC',    index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'diazFe'
-         call mpas_pool_get_dimension(tracersPool, 'index_diazFe',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'phaeoChl'
-         call mpas_pool_get_dimension(tracersPool, 'index_phaeoChl', index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'phaeoC'
-         call mpas_pool_get_dimension(tracersPool, 'index_phaeoC',   index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
-         fieldName = 'phaeoFe'
-         call mpas_pool_get_dimension(tracersPool, 'index_phaeoFe',  index_dummy)
-         call ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, config_global_ocean_ecosys_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_dummy, iErr)
+         call mpas_pool_get_field(scratchPool, 'interpEcosysTracer', interpEcosysTracerField)
+         call mpas_allocate_scratch_field(interpEcosysTracerField, .false.)
+         call mpas_pool_get_field(scratchPool, 'interpEcosysTracerSmooth', interpEcosysTracerSmoothField)
+         call mpas_allocate_scratch_field(interpEcosysTracerSmoothField, .false.)
+
+         interpTracerName = 'interpEcosysTracer'
+
+         call mpas_pool_get_field(tracersPool, 'ecosysTracers', ecosysTracersField, 1)
+         do iTracer = 1, size( ecosysTracersField % constituentNames)
+            call ocn_init_setup_global_ocean_read_ecosys(domain, ecosysTracersField % constituentNames(iTracer), &
+                 config_global_ocean_ecosys_file, iErr)
+            call ocn_init_setup_global_ocean_interpolate_tracers(domain, ecosysTracers, iTracer, interpTracerName, iErr)
+         end do
+
+         deallocate(tracerIC % array)
+         call mpas_deallocate_scratch_field(interpEcosysTracerField, .false.)
+         call mpas_deallocate_scratch_field(interpEcosysTracerSmoothField, .false.)
+
+         !***********************************************************************
+         !
+         !  Ecosystem forcing tracers
+         !
+         !***********************************************************************
 
          write(stderrUnit,*) 'Reading ecosys forcing.'
-         allocate(ecosysForcing % attLists(1))
-         allocate(ecosysForcing % array(nLonEcosys, nLatEcosys, 1))
+         allocate(ecosysForcingIC % attLists(1))
+         allocate(ecosysForcingIC % array(nLonEcosys, nLatEcosys, 1))
 
          fieldName = 'dust_FLUX_IN'; poolName = 'ecosysAuxiliary'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
@@ -416,6 +394,7 @@ contains
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
               config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
+
          fieldName = 'iceFraction'; poolName = 'forcing'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
               config_global_ocean_ecosys_forcing_file, iErr)
@@ -430,83 +409,87 @@ contains
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
 
          write(stderrUnit,*) 'Cleaning up ecosys IC fields'
+         deallocate(ecosysForcingIC % array)
          call ocn_init_global_ocean_destroy_ecosys_fields()
 
+         !***********************************************************************
+         !
+         !  Ecosystem pH arrays
+         !
+         !***********************************************************************
+         block_ptr => domain % blocklist
+         do while(associated(block_ptr))
+            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+            call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
-!  now set pH arrays
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
-         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-         call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+            call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV', PH_PREV)
+            call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_ALT_CO2', PH_PREV_ALT_CO2)
+            call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_3D', PH_PREV_3D)
+            call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_ALT_CO2_3D', PH_PREV_ALT_CO2_3D)
+            call mpas_pool_get_array(ecosysAuxiliary, 'FESEDFLUX', FESEDFLUX)
+            call mpas_pool_get_array(ecosysAuxiliary, 'pocToSed', pocToSed)
 
-         call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV', PH_PREV)
-         call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_ALT_CO2', PH_PREV_ALT_CO2)
-         call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_3D', PH_PREV_3D)
-         call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_ALT_CO2_3D', PH_PREV_ALT_CO2_3D)
-         call mpas_pool_get_array(ecosysAuxiliary, 'FESEDFLUX', FESEDFLUX)
-         call mpas_pool_get_array(ecosysAuxiliary, 'pocToSed', pocToSed)
+            do iCell = 1, nCellsSolve
+               PH_PREV(iCell) = 8.0_RKIND
+               PH_PREV_ALT_CO2(iCell) = 8.0_RKIND
+               do k = 1, nVertLevels
+                  PH_PREV_3D(k, iCell) = 8.0_RKIND
+                  PH_PREV_ALT_CO2_3D(k, iCell) = 8.0_RKIND
 
-         do iCell = 1, nCellsSolve
-            PH_PREV(iCell) = 8.0_RKIND
-            PH_PREV_ALT_CO2(iCell) = 8.0_RKIND
-            do k = 1, nVertLevels
-               PH_PREV_3D(k, iCell) = 8.0_RKIND
-               PH_PREV_ALT_CO2_3D(k, iCell) = 8.0_RKIND
-
-               if(maxLevelCell(iCell) == k) then
-                  FESEDFLUX(k, iCell) = pocToSed(iCell)*6.8e-4_RKIND
-               else
-                  FESEDFLUX(k, iCell) = 0.0_RKIND
-               end if
+                  if(maxLevelCell(iCell) == k) then
+                     FESEDFLUX(k, iCell) = pocToSed(iCell)*6.8e-4_RKIND
+                  else
+                     FESEDFLUX(k, iCell) = 0.0_RKIND
+                  end if
+               end do
             end do
-         end do
 
-         block_ptr => block_ptr % next
-      end do
+            block_ptr => block_ptr % next
+         end do
 
       end if
 
       if ( associated(DMSTracers) ) then
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
-          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+         block_ptr => domain % blocklist
+         do while(associated(block_ptr))
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-           call mpas_pool_get_dimension(tracersPool, 'index_DMS', index_dummy)
-           indexField(1) = index_dummy
-           call mpas_pool_get_dimension(tracersPool, 'index_DMSP', index_dummy)
-           indexField(2) = index_dummy
-           do iCell = 1, nCellsSolve
-              do k = 1, nVertLevels
-                 DMSTracers(indexField(1), k, iCell) = 0.0_RKIND
-                 DMSTracers(indexField(2), k, iCell) = 0.0_RKIND
-              end do
-           end do
-           block_ptr => block_ptr % next
-       end do
+            call mpas_pool_get_dimension(tracersPool, 'index_DMS', tracerIndex)
+            indexField(1) = tracerIndex
+            call mpas_pool_get_dimension(tracersPool, 'index_DMSP', tracerIndex)
+            indexField(2) = tracerIndex
+            do iCell = 1, nCellsSolve
+               do k = 1, nVertLevels
+                  DMSTracers(indexField(1), k, iCell) = 0.0_RKIND
+                  DMSTracers(indexField(2), k, iCell) = 0.0_RKIND
+               end do
+            end do
+            block_ptr => block_ptr % next
+         end do
       end if
 
       if ( associated(MacroMoleculesTracers) ) then
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
-          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+         block_ptr => domain % blocklist
+         do while(associated(block_ptr))
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-           call mpas_pool_get_dimension(tracersPool, 'index_PROT', index_dummy)
-           indexField(1) = index_dummy
-           call mpas_pool_get_dimension(tracersPool, 'index_POLY', index_dummy)
-           indexField(2) = index_dummy
-           call mpas_pool_get_dimension(tracersPool, 'index_LIP', index_dummy)
-           indexField(3) = index_dummy
-           do iCell = 1, nCellsSolve
-              do k = 1, nVertLevels
-                 MacroMoleculesTracers(indexField(1), k, iCell) = 0.0_RKIND
-                 MacroMoleculesTracers(indexField(2), k, iCell) = 0.0_RKIND
-                 MacroMoleculesTracers(indexField(3), k, iCell) = 0.0_RKIND
-              end do
-           end do
-           block_ptr => block_ptr % next
-       end do
+            call mpas_pool_get_dimension(tracersPool, 'index_PROT', tracerIndex)
+            indexField(1) = tracerIndex
+            call mpas_pool_get_dimension(tracersPool, 'index_POLY', tracerIndex)
+            indexField(2) = tracerIndex
+            call mpas_pool_get_dimension(tracersPool, 'index_LIP', tracerIndex)
+            indexField(3) = tracerIndex
+            do iCell = 1, nCellsSolve
+               do k = 1, nVertLevels
+                  MacroMoleculesTracers(indexField(1), k, iCell) = 0.0_RKIND
+                  MacroMoleculesTracers(indexField(2), k, iCell) = 0.0_RKIND
+                  MacroMoleculesTracers(indexField(3), k, iCell) = 0.0_RKIND
+               end do
+            end do
+            block_ptr => block_ptr % next
+         end do
       end if
 
       write(stderrUnit,*) 'Reading windstress IC.'
@@ -523,8 +506,8 @@ contains
          call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
          if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.'
-           call mpas_dmpar_finalize(domain % dminfo)
+            write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.'
+            call mpas_dmpar_finalize(domain % dminfo)
          end if
 
          write(stderrUnit,*) 'Cleaning up land ice topography IC fields'
@@ -535,14 +518,12 @@ contains
       ! this occurs after ocn_init_ssh_and_landIcePressure_balance because activeTracers may have been remapped
       ! to a new vertical coordinate
       call ocn_init_setup_global_ocean_interpolate_restoring(domain, iErr)
-      write(stderrUnit,*) 'Cleaning up tracer IC fields'
-      call ocn_init_global_ocean_destroy_tracer_fields()
 
       write(stderrUnit,*) 'Compute Haney number'
       call ocn_compute_Haney_number(domain, iErr)
       if(iErr .ne. 0) then
-        write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
-        call mpas_dmpar_finalize(domain % dminfo)
+         write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
+         call mpas_dmpar_finalize(domain % dminfo)
       end if
 
       if (config_global_ocean_cull_inland_seas) then
@@ -550,17 +531,17 @@ contains
          call ocn_init_setup_global_ocean_cull_inland_seas(domain, iErr)
       end if
 
-       block_ptr => domain % blocklist
-       do while (associated(block_ptr))
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+      block_ptr => domain % blocklist
+      do while (associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
-          call ocn_mark_maxlevelcell(meshPool, iErr)
-          block_ptr => block_ptr % next
-       end do
+         call ocn_mark_maxlevelcell(meshPool, iErr)
+         block_ptr => block_ptr % next
+      end do
 
-   !--------------------------------------------------------------------
+      !--------------------------------------------------------------------
 
-   end subroutine ocn_init_setup_global_ocean!}}}
+    end subroutine ocn_init_setup_global_ocean!}}}
 
 !***********************************************************************
 !
@@ -579,8 +560,6 @@ contains
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
-       type (block_type), pointer :: block_ptr
-
        type (MPAS_Stream_type) :: topographyStream
 
        character (len=StrKIND), pointer :: config_global_ocean_topography_file, &
@@ -592,8 +571,6 @@ contains
                                            config_global_ocean_topography_ocean_frac_varname
 
        logical, pointer :: config_global_ocean_topography_latlon_degrees, config_global_ocean_topography_has_ocean_frac
-
-       integer :: iLat, iLon
 
        iErr = 0
 
@@ -708,8 +685,6 @@ contains
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
-       type (block_type), pointer :: block_ptr
-
        type (MPAS_Stream_type) :: landIceThicknessStream
 
        character (len=StrKIND), pointer :: config_global_ocean_land_ice_topo_file, config_global_ocean_land_ice_topo_lat_varname, &
@@ -720,8 +695,6 @@ contains
             config_global_ocean_land_ice_topo_nlon_dimname, config_global_ocean_land_ice_topo_thickness_varname
 
        logical, pointer :: config_global_ocean_land_ice_topo_latlon_degrees
-
-       integer :: iLat, iLon
 
        iErr = 0
 
@@ -864,14 +837,10 @@ contains
 
        type (block_type), pointer :: block_ptr
 
-       type (mpas_pool_type), pointer :: meshPool, scratchPool, statePool, verticalMeshPool, diagnosticsPool, &
-                                         criticalPassagesPool
-
-       real (kind=RKIND) :: alpha, beta, depthLat1, depthLat2, proposedDepth
+       type (mpas_pool_type), pointer :: meshPool, scratchPool, verticalMeshPool, criticalPassagesPool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, bottomDepthObserved, &
             refBottomDepth, refLayerThickness, refZMid, oceanFracObserved
-       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
 
        integer, pointer :: nCells, nCellsSolve, nVertLevels
 
@@ -892,7 +861,6 @@ contains
        integer, dimension(:), pointer :: scratchMaxLevelCell
        type (field1DInteger), pointer :: scratchMaxLevelCellField
 
-
        iErr = 0
 
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_method', config_global_ocean_topography_method)
@@ -906,7 +874,6 @@ contains
        call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
        call mpas_pool_get_field(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCellField)
        call mpas_allocate_scratch_field(scratchMaxLevelCellField, .false.)
-
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -1059,6 +1026,7 @@ contains
 
           call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
           call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+
           call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
 
           ! Compute refLayerThickness and refZMid
@@ -1089,8 +1057,6 @@ contains
     subroutine ocn_init_setup_global_ocean_deepen_critical_passages(meshPool, criticalPassagesPool, iErr)!{{{
        type (mpas_pool_type), intent(inout) :: meshPool, criticalPassagesPool
        integer, intent(out) :: iErr
-
-       type (block_type), pointer :: block_ptr
 
        integer, pointer :: nCells, nTransects, nVertLevels
 
@@ -1485,14 +1451,6 @@ contains
        call mpas_deallocate_scratch_field(touchedCellField, .false.)
        call mpas_deallocate_scratch_field(oceanCellField, .false.)
 
-       !block_ptr => domain % blocklist
-       !do while (associated(block_ptr))
-       !   call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-
-       !   call ocn_mark_maxlevelcell(meshPool, iErr)
-       !   block_ptr => block_ptr % next
-       !end do
-
     end subroutine ocn_init_setup_global_ocean_cull_inland_seas!}}}
 
 !***********************************************************************
@@ -1521,9 +1479,9 @@ contains
        character (len=StrKIND), pointer :: config_global_ocean_depth_file, config_global_ocean_depth_varname, &
                                            config_global_ocean_depth_dimname
 
-       real (kind=RKIND), pointer :: config_global_ocean_depth_conversion_factor
+       integer :: k
 
-       integer :: k, iCell
+       real (kind=RKIND), pointer :: config_global_ocean_depth_conversion_factor
 
        real (kind=RKIND), dimension(:), pointer :: refBottomDepth
 
@@ -1540,26 +1498,26 @@ contains
                               MPAS_IO_READ, ierr=iErr)
 
        ! Setup depth field for stream to be read in
-       depthIC % fieldName = trim(config_global_ocean_depth_varname)
-       depthIC % dimSizes(1) = nDepth
-       depthIC % dimNames(1) = trim(config_global_ocean_depth_dimname)
-       depthIC % isVarArray = .false.
-       depthIC % isPersistent = .true.
-       depthIC % isActive = .true.
-       depthIC % hasTimeDimension = .false.
-       depthIC % block => domain % blocklist
-       allocate(depthIC % attLists(1))
-       allocate(depthIC % array(nDepth))
+       depthOutput % fieldName = trim(config_global_ocean_depth_varname)
+       depthOutput % dimSizes(1) = nDepthOutput
+       depthOutput % dimNames(1) = trim(config_global_ocean_depth_dimname)
+       depthOutput % isVarArray = .false.
+       depthOutput % isPersistent = .true.
+       depthOutput % isActive = .true.
+       depthOutput % hasTimeDimension = .false.
+       depthOutput % block => domain % blocklist
+       allocate(depthOutput % attLists(1))
+       allocate(depthOutput % array(nDepthOutput))
 
        ! Add depth field to stream
-       call MPAS_streamAddField(depthStream, depthIC, iErr)
+       call MPAS_streamAddField(depthStream, depthOutput, iErr)
 
        ! Read stream
        call MPAS_readStream(depthStream, 1, iErr)
 
        ! Close stream
        call MPAS_closeStream(depthStream)
-       depthIC % array(:) = depthIC % array(:) * config_global_ocean_depth_conversion_factor
+       depthOutput % array(:) = depthOutput % array(:) * config_global_ocean_depth_conversion_factor
 
        ! Set refBottomDepth depending on depth levels. And convert appropriately
        block_ptr => domain % blocklist
@@ -1567,10 +1525,10 @@ contains
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
          call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-         ! depthIC is the mid-depth of each layer.  Convert to bottom depth.
-         refBottomDepth(1) = 2.0_RKIND * depthIC % array(1)
-         do k=2,nDepth
-            refBottomDepth(k) = refBottomDepth(k-1) + 2*(depthIC % array(k) - refBottomDepth(k-1))
+         ! depthOutput is the mid-depth of each layer.  Convert to bottom depth.
+         refBottomDepth(1) = 2.0_RKIND * depthOutput % array(1)
+         do k=2,nDepthOutput
+            refBottomDepth(k) = refBottomDepth(k-1) + 2*(depthOutput % array(k) - refBottomDepth(k-1))
          enddo
 
          block_ptr => block_ptr % next
@@ -1594,13 +1552,14 @@ contains
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
-       type (block_type), pointer :: block_ptr
-
        type (MPAS_Stream_type) :: tracerStream
 
-       character (len=StrKIND), pointer :: config_global_ocean_temperature_file, config_global_ocean_tracer_lat_varname, &
-                                           config_global_ocean_tracer_nlat_dimname, config_global_ocean_tracer_lon_varname, &
-                                           config_global_ocean_tracer_nlon_dimname
+       character (len=StrKIND), pointer :: config_global_ocean_temperature_file, &
+            config_global_ocean_tracer_lat_varname, config_global_ocean_tracer_nlat_dimname, &
+            config_global_ocean_tracer_lon_varname, config_global_ocean_tracer_nlon_dimname, &
+            config_global_ocean_tracer_depth_varname, config_global_ocean_tracer_ndepth_dimname
+
+       real (kind=RKIND), pointer :: config_global_ocean_tracer_depth_conversion_factor
 
        logical, pointer :: config_global_ocean_tracer_latlon_degrees
 
@@ -1617,8 +1576,14 @@ contains
                                  config_global_ocean_tracer_lon_varname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', &
                                  config_global_ocean_tracer_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_depth_varname', &
+                                 config_global_ocean_tracer_depth_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_ndepth_dimname', &
+                                 config_global_ocean_tracer_ndepth_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_latlon_degrees', &
                                  config_global_ocean_tracer_latlon_degrees)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_depth_conversion_factor', &
+                                 config_global_ocean_tracer_depth_conversion_factor)
 
        ! Define stream for depth levels
        call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_temperature_file, MPAS_IO_NETCDF, &
@@ -1647,15 +1612,30 @@ contains
        allocate(tracerLon % attLists(1))
        allocate(tracerLon % array(nLonTracer))
 
+       tracerDepth % fieldName = trim(config_global_ocean_tracer_depth_varname)
+       tracerDepth % dimSizes(1) = nDepthTracer
+       tracerDepth % dimNames(1) = trim(config_global_ocean_tracer_ndepth_dimname)
+       tracerDepth % isVarArray = .false.
+       tracerDepth % isPersistent = .true.
+       tracerDepth % isActive = .true.
+       tracerDepth % hasTimeDimension = .false.
+       tracerDepth % block => domain % blocklist
+       allocate(tracerDepth % attLists(1))
+       allocate(tracerDepth % array(nDepthTracer))
+
        ! Add tracerLat and tracerLon fields to stream
        call MPAS_streamAddField(tracerStream, tracerLat, iErr)
        call MPAS_streamAddField(tracerStream, tracerLon, iErr)
+       call MPAS_streamAddField(tracerStream, tracerDepth, iErr)
 
        ! Read stream
        call MPAS_readStream(tracerStream, 1, iErr)
 
        ! Close stream
        call MPAS_closeStream(tracerStream)
+
+       ! note IC tracer depth is in z coordinates, so negative
+       tracerDepth % array(:) = - tracerDepth % array(:) * config_global_ocean_tracer_depth_conversion_factor
 
        if (config_global_ocean_tracer_latlon_degrees) then
           do iLat = 1, nLatTracer
@@ -1685,8 +1665,6 @@ contains
     subroutine ocn_init_setup_global_ocean_read_swData_lat_lon(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
-
-       type (block_type), pointer :: block_ptr
 
        type (MPAS_Stream_type) :: SWStream
 
@@ -1778,13 +1756,14 @@ contains
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
-       type (block_type), pointer :: block_ptr
+       type (MPAS_Stream_type) :: tracerStream
 
-       type (MPAS_Stream_type) :: EcosysLLStream
+       character (len=StrKIND), pointer :: config_global_ocean_ecosys_file, &
+            config_global_ocean_ecosys_lat_varname, config_global_ocean_ecosys_nlat_dimname, &
+            config_global_ocean_ecosys_lon_varname, config_global_ocean_ecosys_nlon_dimname, &
+            config_global_ocean_ecosys_depth_varname, config_global_ocean_ecosys_ndepth_dimname
 
-       character (len=StrKIND), pointer :: config_global_ocean_ecosys_file, config_global_ocean_ecosys_lat_varname, &
-                                           config_global_ocean_ecosys_nlat_dimname, config_global_ocean_ecosys_lon_varname, &
-                                           config_global_ocean_ecosys_nlon_dimname
+       real (kind=RKIND), pointer :: config_global_ocean_ecosys_depth_conversion_factor
 
        logical, pointer :: config_global_ocean_ecosys_latlon_degrees
 
@@ -1801,53 +1780,74 @@ contains
                                  config_global_ocean_ecosys_lon_varname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlon_dimname', &
                                  config_global_ocean_ecosys_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_depth_varname', &
+                                 config_global_ocean_ecosys_depth_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_ndepth_dimname', &
+                                 config_global_ocean_ecosys_ndepth_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_latlon_degrees', &
                                  config_global_ocean_ecosys_latlon_degrees)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_depth_conversion_factor', &
+                                 config_global_ocean_ecosys_depth_conversion_factor)
 
        ! Define stream for depth levels
-       call MPAS_createStream(EcosysLLStream, domain % iocontext, config_global_ocean_ecosys_file, MPAS_IO_NETCDF, &
+       call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_ecosys_file, MPAS_IO_NETCDF, &
                               MPAS_IO_READ, ierr=iErr)
 
-       ! Setup ecosysLat and ecosysLon fields for stream to be read in
-       ecosysLat % fieldName = trim(config_global_ocean_ecosys_lat_varname)
-       ecosysLat % dimSizes(1) = nLatEcosys
-       ecosysLat % dimNames(1) = trim(config_global_ocean_ecosys_nlat_dimname)
-       ecosysLat % isVarArray = .false.
-       ecosysLat % isPersistent = .true.
-       ecosysLat % isActive = .true.
-       ecosysLat % hasTimeDimension = .false.
-       ecosysLat % block => domain % blocklist
-       allocate(ecosysLat % attLists(1))
-       allocate(ecosysLat % array(nLatEcosys))
+       ! Setup tracerLat and tracerLon fields for stream to be read in
+       tracerLat % fieldName = trim(config_global_ocean_ecosys_lat_varname)
+       tracerLat % dimSizes(1) = nLatEcosys
+       tracerLat % dimNames(1) = trim(config_global_ocean_ecosys_nlat_dimname)
+       tracerLat % isVarArray = .false.
+       tracerLat % isPersistent = .true.
+       tracerLat % isActive = .true.
+       tracerLat % hasTimeDimension = .false.
+       tracerLat % block => domain % blocklist
+       allocate(tracerLat % attLists(1))
+       allocate(tracerLat % array(nLatEcosys))
 
-       ecosysLon % fieldName = trim(config_global_ocean_ecosys_lon_varname)
-       ecosysLon % dimSizes(1) = nLonEcosys
-       ecosysLon % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
-       ecosysLon % isVarArray = .false.
-       ecosysLon % isPersistent = .true.
-       ecosysLon % isActive = .true.
-       ecosysLon % hasTimeDimension = .false.
-       ecosysLon % block => domain % blocklist
-       allocate(ecosysLon % attLists(1))
-       allocate(ecosysLon % array(nLonEcosys))
+       tracerLon % fieldName = trim(config_global_ocean_ecosys_lon_varname)
+       tracerLon % dimSizes(1) = nLonEcosys
+       tracerLon % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
+       tracerLon % isVarArray = .false.
+       tracerLon % isPersistent = .true.
+       tracerLon % isActive = .true.
+       tracerLon % hasTimeDimension = .false.
+       tracerLon % block => domain % blocklist
+       allocate(tracerLon % attLists(1))
+       allocate(tracerLon % array(nLonEcosys))
 
-       ! Add ecosysLat and ecosysLon fields to stream
-       call MPAS_streamAddField(EcosysLLStream, ecosysLat, iErr)
-       call MPAS_streamAddField(EcosysLLStream, ecosysLon, iErr)
+       tracerDepth % fieldName = trim(config_global_ocean_ecosys_depth_varname)
+       tracerDepth % dimSizes(1) = nDepthEcosys
+       tracerDepth % dimNames(1) = trim(config_global_ocean_ecosys_ndepth_dimname)
+       tracerDepth % isVarArray = .false.
+       tracerDepth % isPersistent = .true.
+       tracerDepth % isActive = .true.
+       tracerDepth % hasTimeDimension = .false.
+       tracerDepth % block => domain % blocklist
+       allocate(tracerDepth % attLists(1))
+       allocate(tracerDepth % array(nDepthEcosys))
+
+       ! Add ecosys Lat, Lon and Depth fields to stream
+       call MPAS_streamAddField(tracerStream, tracerLat, iErr)
+       call MPAS_streamAddField(tracerStream, tracerLon, iErr)
+       call MPAS_streamAddField(tracerStream, tracerDepth, iErr)
 
        ! Read stream
-       call MPAS_readStream(EcosysLLStream, 1, iErr)
+       call MPAS_readStream(tracerStream, 1, iErr)
 
        ! Close stream
-       call MPAS_closeStream(EcosysLLStream)
+       call MPAS_closeStream(tracerStream)
+
+       ! note IC tracer depth is in z coordinates, so negative
+       tracerDepth % array(:) = - tracerDepth % array(:) * config_global_ocean_ecosys_depth_conversion_factor
 
        if (config_global_ocean_ecosys_latlon_degrees) then
           do iLat = 1, nLatEcosys
-             ecosysLat % array(iLat) = ecosysLat % array(iLat) * pii / 180.0_RKIND
+             tracerLat % array(iLat) = tracerLat % array(iLat) * pii / 180.0_RKIND
           end do
 
           do iLon = 1, nLonEcosys
-             ecosysLon % array(iLon) = ecosysLon % array(iLon) * pii / 180.0_RKIND
+             tracerLon % array(iLon) = tracerLon % array(iLon) * pii / 180.0_RKIND
           end do
        end if
 
@@ -1869,15 +1869,11 @@ contains
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
-       type (block_type), pointer :: block_ptr
-
-       type (MPAS_Stream_type) :: temperatureStream
+       type (MPAS_Stream_type) :: tracerStream
 
        character (len=StrKIND), pointer :: config_global_ocean_temperature_file, config_global_ocean_temperature_varname, &
                                            config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
                                            config_global_ocean_depth_dimname
-
-       integer :: k
 
        iErr = 0
 
@@ -1891,33 +1887,31 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for temperature IC
-       call MPAS_createStream(temperatureStream, domain % iocontext, config_global_ocean_temperature_file, MPAS_IO_NETCDF, &
+       call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_temperature_file, MPAS_IO_NETCDF, &
                               MPAS_IO_READ, ierr=iErr)
 
        ! Setup temperature field for stream to be read in
-       temperatureIC % fieldName = trim(config_global_ocean_temperature_varname)
-       temperatureIC % dimSizes(1) = nLonTracer
-       temperatureIC % dimSizes(2) = nLatTracer
-       temperatureIC % dimSizes(3) = nDepth
-       temperatureIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
-       temperatureIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       temperatureIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
-       temperatureIC % isVarArray = .false.
-       temperatureIC % isPersistent = .true.
-       temperatureIC % isActive = .true.
-       temperatureIC % hasTimeDimension = .false.
-       temperatureIC % block => domain % blocklist
-       allocate(temperatureIC % attLists(1))
-       allocate(temperatureIC % array(nLonTracer, nLatTracer, nDepth))
+       tracerIC % fieldName = trim(config_global_ocean_temperature_varname)
+       tracerIC % dimSizes(1) = nLonTracer
+       tracerIC % dimSizes(2) = nLatTracer
+       tracerIC % dimSizes(3) = nDepthTracer
+       tracerIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
+       tracerIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % isVarArray = .false.
+       tracerIC % isPersistent = .true.
+       tracerIC % isActive = .true.
+       tracerIC % hasTimeDimension = .false.
+       tracerIC % block => domain % blocklist
 
        ! Add temperature field to stream
-       call MPAS_streamAddField(temperatureStream, temperatureIC, iErr)
+       call MPAS_streamAddField(tracerStream, tracerIC, iErr)
 
        ! Read stream
-       call MPAS_readStream(temperatureStream, 1, iErr)
+       call MPAS_readStream(tracerStream, 1, iErr)
 
        ! Close stream
-       call MPAS_closeStream(temperatureStream)
+       call MPAS_closeStream(tracerStream)
 
     end subroutine ocn_init_setup_global_ocean_read_temperature!}}}
 
@@ -1937,15 +1931,11 @@ contains
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
-       type (block_type), pointer :: block_ptr
-
-       type (MPAS_Stream_type) :: salinityStream
+       type (MPAS_Stream_type) :: tracerStream
 
        character (len=StrKIND), pointer :: config_global_ocean_salinity_file, config_global_ocean_salinity_varname, &
                                            config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
                                            config_global_ocean_depth_dimname
-
-       integer :: k
 
        iErr = 0
 
@@ -1958,103 +1948,397 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for salinity IC
-       call MPAS_createStream(salinityStream, domain % iocontext, config_global_ocean_salinity_file, MPAS_IO_NETCDF, &
+       call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_salinity_file, MPAS_IO_NETCDF, &
                               MPAS_IO_READ, ierr=iErr)
 
        ! Setup salinity field for stream to be read in
-       salinityIC % fieldName = trim(config_global_ocean_salinity_varname)
-       salinityIC % dimSizes(1) = nLonTracer
-       salinityIC % dimSizes(2) = nLatTracer
-       salinityIC % dimSizes(3) = nDepth
-       salinityIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
-       salinityIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       salinityIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
-       salinityIC % isVarArray = .false.
-       salinityIC % isPersistent = .true.
-       salinityIC % isActive = .true.
-       salinityIC % hasTimeDimension = .false.
-       salinityIC % block => domain % blocklist
-       allocate(salinityIC % attLists(1))
-       allocate(salinityIC % array(nLonTracer, nLatTracer, nDepth))
+       tracerIC % fieldName = trim(config_global_ocean_salinity_varname)
+       tracerIC % dimSizes(1) = nLonTracer
+       tracerIC % dimSizes(2) = nLatTracer
+       tracerIC % dimSizes(3) = nDepthTracer
+       tracerIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
+       tracerIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % isVarArray = .false.
+       tracerIC % isPersistent = .true.
+       tracerIC % isActive = .true.
+       tracerIC % hasTimeDimension = .false.
+       tracerIC % block => domain % blocklist
+       allocate(tracerIC % attLists(1))
+       allocate(tracerIC % array(nLonTracer, nLatTracer, nDepthTracer))
 
        ! Add salinity field to stream
-       call MPAS_streamAddField(salinityStream, salinityIC, iErr)
+       call MPAS_streamAddField(tracerStream, tracerIC, iErr)
 
        ! Read stream
-       call MPAS_readStream(salinityStream, 1, iErr)
+       call MPAS_readStream(tracerStream, 1, iErr)
 
        ! Close stream
-       call MPAS_closeStream(salinityStream)
+       call MPAS_closeStream(tracerStream)
 
     end subroutine ocn_init_setup_global_ocean_read_salinity!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_setup_global_ocean_read_ecosys
+!
+!> \brief   Read ecosys ICs for global ocean test case
+!> \author  Doug Jacobsen
+!> \date    03/04/2014
+!> \details
+!>  This routine reads the ecosys fields from the ecosys IC file.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, fileName, iErr)!{{{
+
+       type (domain_type), intent(inout) :: domain
+       integer, intent(out) :: iErr
+
+       character (len=StrKIND), intent(in) :: fieldName, fileName
+
+       type (MPAS_Stream_type) :: tracerStream
+
+       character (len=StrKIND), pointer :: config_global_ocean_ecosys_nlon_dimname,  &
+                                           config_global_ocean_ecosys_nlat_dimname, &
+                                           config_global_ocean_depth_dimname
+
+       iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlon_dimname', &
+            config_global_ocean_ecosys_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlat_dimname', &
+            config_global_ocean_ecosys_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', &
+            config_global_ocean_depth_dimname)
+
+       ! Define stream for ecosys IC
+       call MPAS_createStream(tracerStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+
+       ! Setup ecosys field for stream to be read in
+       tracerIC % fieldName = trim(fieldName)
+       tracerIC % dimSizes(1) = nLonEcosys
+       tracerIC % dimSizes(2) = nLatEcosys
+       tracerIC % dimSizes(3) = nDepthEcosys
+       tracerIC % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
+       tracerIC % dimNames(2) = trim(config_global_ocean_ecosys_nlat_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % isVarArray = .false.
+       tracerIC % isPersistent = .true.
+       tracerIC % isActive = .true.
+       tracerIC % hasTimeDimension = .false.
+       tracerIC % block => domain % blocklist
+
+       ! Add ecosys field to stream
+       call MPAS_streamAddField(tracerStream, tracerIC, iErr)
+
+       ! Read stream
+       call MPAS_readStream(tracerStream, 1, iErr)
+
+       ! Close stream
+       call MPAS_closeStream(tracerStream)
+
+    end subroutine ocn_init_setup_global_ocean_read_ecosys!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_setup_global_ocean_read_ecosys_forcing
+!
+!> \brief   Read ecosys forcing for global ocean test case
+!> \author  Doug Jacobsen
+!> \date    03/04/2014
+!> \details
+!>  This routine reads the ecosys forcing fields from the ecosys forcing file.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName, fileName, iErr)!{{{
+
+       type (domain_type), intent(inout) :: domain
+       integer, intent(out) :: iErr
+
+       character (len=StrKIND), intent(in) :: fieldName, fileName
+
+       type (MPAS_Stream_type) :: ecosysForcingStream
+
+       character (len=StrKIND), pointer :: config_global_ocean_ecosys_nlon_dimname,  &
+                                           config_global_ocean_ecosys_nlat_dimname, &
+                                           config_global_ocean_ecosys_forcing_time_dimname
+
+       iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlon_dimname', &
+            config_global_ocean_ecosys_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlat_dimname', &
+            config_global_ocean_ecosys_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_forcing_time_dimname', &
+            config_global_ocean_ecosys_forcing_time_dimname)
+
+       ! Define stream for ecosys forcing
+       call MPAS_createStream(ecosysForcingStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+
+       ! Setup ecosys field for stream to be read in
+       ecosysForcingIC % fieldName = trim(fieldName)
+       ecosysForcingIC % dimSizes(1) = nLonEcosys
+       ecosysForcingIC % dimSizes(2) = nLatEcosys
+       nTimes = 1
+       ecosysForcingIC % dimSizes(3) = nTimes
+       ecosysForcingIC % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
+       ecosysForcingIC % dimNames(2) = trim(config_global_ocean_ecosys_nlat_dimname)
+       ecosysForcingIC % dimNames(3) = trim(config_global_ocean_ecosys_forcing_time_dimname)
+       ecosysForcingIC % isVarArray = .false.
+       ecosysForcingIC % isPersistent = .true.
+       ecosysForcingIC % isActive = .true.
+       ecosysForcingIC % hasTimeDimension = .false.
+       ecosysForcingIC % block => domain % blocklist
+
+       ! Add ecosys field to stream
+       call MPAS_streamAddField(ecosysForcingStream, ecosysForcingIC, iErr)
+
+       ! Read stream
+       call MPAS_readStream(ecosysForcingStream, 1, iErr)
+
+       ! Close stream
+       call MPAS_closeStream(ecosysForcingStream)
+
+    end subroutine ocn_init_setup_global_ocean_read_ecosys_forcing!}}}
 
 !***********************************************************************
 !
 !  routine ocn_init_setup_global_ocean_interpolate_tracers
 !
 !> \brief   Interpolate tracer quantities to MPAS grid
-!> \author  Doug Jacobsen, Xylar Asay-Davis
-!> \date    03/05/2014
+!> \author  Mark Petersen, Doug Jacobsen, Xylar Asay-Davis
+!> \date    08/23/2016
 !> \details
 !>  This routine interpolates the temperature/salinity data read in from the
 !>  initial condition file to the MPAS grid.
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_ocean_interpolate_tracers(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_interpolate_tracers(domain, tracerArray, tracerIndex, interpTracerName, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      real (kind=RKIND), dimension(:, :, :), intent(inout) :: tracerArray
+      integer, intent(in) :: tracerIndex
+      integer, intent(out) :: iErr
+      character (len=StrKIND), intent(in) :: interpTracerName
+
+      type (block_type), pointer :: block_ptr
+      type (mpas_pool_type), pointer :: meshPool, scratchPool, diagnosticsPool
+
+      real (kind=RKIND) :: counter
+      integer :: iSmooth, j, coc, iCell, k
+      integer, pointer :: nCells, nVertLevels
+
+      integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
+      integer, dimension(:, :), pointer :: cellsOnCell
+
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+      real (kind=RKIND), dimension(:, :), pointer :: smoothedTracer
+
+      character (len=StrKIND), pointer :: config_global_ocean_tracer_method
+      integer, pointer ::  config_global_ocean_smooth_TS_iterations
+
+      real (kind=RKIND), dimension(:), pointer :: outTracerColumn
+      real (kind=RKIND), dimension(:,:), pointer :: zMid
+      integer :: inKMax, outKMax
+
+      type (field2DReal), pointer :: interpTracerField
+      real (kind=RKIND), dimension(:,:), pointer :: interpTracer
+
+       integer, dimension(:), pointer :: scratchMaxLevelCell
+
+      iErr = 0
+
+      call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_method', &
+           config_global_ocean_tracer_method)
+      call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_TS_iterations', &
+           config_global_ocean_smooth_TS_iterations)
+
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+         call mpas_pool_get_array(meshPool, 'latCell', latCell)
+         call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
+         call mpas_pool_get_array(scratchPool, trim(interpTracerName), interpTracer)
+
+         if (config_global_ocean_tracer_method .eq. "nearest_neighbor") then
+            call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
+                 tracerIC % array, nLonTracer, nLatTracer, &
+                 lonCell, latCell, interpTracer, nCells, &
+                 inXPeriod = 2.0_RKIND * pii)
+
+         elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
+
+            call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
+                 tracerIC % array, nLonTracer, nLatTracer, &
+                 lonCell, latCell, interpTracer, nCells, &
+                 inXPeriod = 2.0_RKIND * pii)
+
+         else
+            write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_tracer_method.'
+            iErr = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         endif
+
+         block_ptr => block_ptr % next
+      end do
+
+      ! Smooth the tracer
+      if (config_global_ocean_smooth_TS_iterations .gt. 0) then
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+
+
+         do iSmooth = 1,config_global_ocean_smooth_TS_iterations
+
+            block_ptr => domain % blocklist
+            do while(associated(block_ptr))
+               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+               call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+
+               call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+               call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+               call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+               call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+
+               call mpas_pool_get_array(scratchPool, trim(interpTracerName)//'Smooth', smoothedTracer)
+               call mpas_pool_get_array(scratchPool, trim(interpTracerName), interpTracer)
+               call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
+
+               maxLevelCell(nCells+1) = -1
+
+               ! initialize smoothed tracer with original values
+               smoothedTracer = interpTracer
+
+               do iCell = 1, nCells
+                  if(maxLevelCell(iCell) <= 0) cycle
+                  if(scratchMaxLevelCell(iCell) <= 0) cycle
+
+                  do k = 1, scratchMaxLevelCell(iCell)
+                     ! Initialize counter to 1 because of central cell in stencil.
+                     counter = 1
+
+                     do j = 1, nEdgesOnCell(iCell)
+                        coc = cellsOnCell(j, iCell)
+                        ! check if coc not 0 (or nCells+1)?
+                        if (k > scratchMaxLevelCell(coc)) cycle
+
+                        smoothedTracer(k, iCell) = smoothedTracer(k, iCell) + interpTracer (k, coc)
+                        counter = counter + 1
+
+                     end do ! edgesOnCell
+
+                     smoothedTracer(k, iCell) = smoothedTracer(k, iCell) / counter
+
+                  end do ! k level
+
+               end do ! iCell
+
+               interpTracer = smoothedTracer
+
+               block_ptr => block_ptr % next
+            end do
+
+            call mpas_pool_get_field(scratchPool, trim(interpTracerName), interpTracerField)
+            call mpas_dmpar_exch_halo_field(interpTracerField)
+
+         end do ! iSmooth
+
+      endif
+
+      ! reinterpolate tracers from original depths to zMid for PBCs or other modified vertical coordinates
+
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+         call mpas_pool_get_array(scratchPool, trim(interpTracerName), interpTracer)
+
+         allocate(outTracerColumn(nVertLevels))
+
+         inKMax = size(interpTracer, 1)
+         do iCell = 1, nCells
+            outKMax = maxLevelCell(iCell)
+            if(outKMax < 1) cycle ! nothing to interpolate
+
+            outTracerColumn(:) = -9.969209968386869e+36_RKIND
+            call ocn_init_interpolation_linear_vert(tracerDepth % array(1:inKMax), &
+                 interpTracer(1:inKMax,iCell), &
+                 inKMax, &
+                 zMid(1:outKMax,iCell), &
+                 outTracerColumn(1:outKMax), &
+                 outKMax, &
+                 extrapolate=.false.)
+            tracerArray(tracerIndex,1:outKMax,iCell) = outTracerColumn(1:outKMax)
+
+         end do
+
+         deallocate(outTracerColumn)
+
+         block_ptr => block_ptr % next
+      end do
+
+    end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_setup_global_ocean_interpolate_ecosys_forcing
+!
+!> \brief   Interpolate ecosys forcing quantities to MPAS grid
+!> \author  Doug Jacobsen
+!> \date    03/05/2014
+!> \details
+!>  This routine interpolates the ecosys forcing data read in from the
+!>  forcing file to the MPAS grid.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)!{{{
+
        type (domain_type), intent(inout) :: domain
+       character (len=StrKIND), intent(in) :: fieldName, poolName
        integer, intent(out) :: iErr
 
        type (block_type), pointer :: block_ptr
-       type (mpas_pool_type), pointer :: meshPool, statePool, scratchPool, tracersPool, forcingPool, &
-                                         diagnosticsPool, verticalMeshPool
+       type (mpas_pool_type), pointer :: meshPool, forcingPool, ecosysAuxiliary
 
-       real (kind=RKIND) :: counter
-       real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
-       real (kind=RKIND) :: zMidPBC
-       integer :: iLat, iLon, iSmooth, j, coc
-       integer :: iCell, k, km1
-       integer :: xInd1, xInd2, yInd1, yInd2
-       integer, pointer :: idxSalinity, idxTemperature, nCells, nVertLevels, nCellsSolve, idxTracer1
-
-       type (field2DReal), pointer :: smoothedTemperatureField, smoothedSalinityField, interpTracerField
-       type (field3DReal), pointer :: activeTracersField
-
-       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
-       integer, dimension(:, :), pointer :: cellsOnCell
+       integer :: timeCounter
+       integer, pointer :: nCells, nCellsSolve
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-       real (kind=RKIND), dimension(:, :), pointer :: smoothedTemperature, smoothedSalinity
-       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
+       real (kind=RKIND), dimension(:), pointer :: ecosysForcingField
 
-       character (len=StrKIND), pointer :: config_global_ocean_tracer_method
-       integer, pointer ::  config_global_ocean_smooth_TS_iterations
-
-       real (kind=RKIND), dimension(:), pointer :: refZMid, inTracerColumn, outTracerColumn
-       real (kind=RKIND), dimension(:,:), pointer :: zMid
-       type (mpas_pool_iterator_type) :: groupItr
-       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
-       integer :: inKMax, outKMax, iTracer, nTracers
-
-       integer, dimension(:), pointer :: scratchMaxLevelCell
-       type (field1DInteger), pointer :: scratchMaxLevelCellField
+       character (len=StrKIND), pointer :: config_global_ocean_ecosys_method
+       integer, pointer ::  config_global_ocean_smooth_ecosys_iterations
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_method', &
-                                 config_global_ocean_tracer_method)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_TS_iterations', &
-                                 config_global_ocean_smooth_TS_iterations)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_method', &
+            config_global_ocean_ecosys_method)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_ecosys_iterations', &
+            config_global_ocean_smooth_ecosys_iterations)
+
+       timeCounter = 1
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-
-          call mpas_pool_get_dimension(tracersPool, 'index_temperature', idxTemperature)
-          call mpas_pool_get_dimension(tracersPool, 'index_salinity', idxSalinity)
-          call mpas_pool_get_dimension(tracersPool, 'index_tracer1', idxTracer1)
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
@@ -2062,207 +2346,33 @@ contains
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
-          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-          call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
-
-          if(associated(debugTracers)) then
-             debugTracers(idxTracer1,:,:) = 1.0_RKIND
+          if (trim(poolName) == 'ecosysAuxiliary') then
+             call mpas_pool_get_array(ecosysAuxiliary, trim(fieldName), ecosysForcingField, 1)
+          else if (trim(poolName) == 'forcing') then
+             call mpas_pool_get_array(forcingPool, trim(fieldName), ecosysForcingField, 1)
           end if
 
-          if ( associated(activeTracers) ) then
-             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-             call mpas_pool_get_field(scratchPool, 'interpTracer', interpTracerField)
-             call mpas_allocate_scratch_field(interpTracerField, .true.)
-             if (config_global_ocean_tracer_method .eq. "nearest_neighbor") then
-                call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
-                                                          temperatureIC % array, nLonTracer, nLatTracer, &
-                                                          lonCell, latCell, interpTracerField % array, nCells, &
-                                                          inXPeriod = 2.0_RKIND * pii)
-                activeTracers(idxTemperature,:,:) = interpTracerField % array(:,:)
+          if (config_global_ocean_ecosys_method .eq. "nearest_neighbor") then
+             call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
+                  ecosysForcingIC % array(:,:,timeCounter), nLonEcosys, nLatEcosys, &
+                  lonCell, latCell, ecosysForcingField, nCells, &
+                  inXPeriod = 2.0_RKIND * pii)
 
-                call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
-                                                          salinityIC % array, nLonTracer, nLatTracer, &
-                                                          lonCell, latCell, interpTracerField % array, nCells, &
-                                                          inXPeriod = 2.0_RKIND * pii)
-                activeTracers(idxSalinity,:,:) = interpTracerField % array(:,:)
-
-             elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
-                call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
-                                                          temperatureIC % array, nLonTracer, nLatTracer, &
-                                                          lonCell, latCell, interpTracerField % array, nCells, &
-                                                          inXPeriod = 2.0_RKIND * pii)
-                activeTracers(idxTemperature,:,:) = interpTracerField % array(:,:)
-
-                call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
-                                                          salinityIC % array, nLonTracer, nLatTracer, &
-                                                          lonCell, latCell, interpTracerField % array, nCells, &
-                                                          inXPeriod = 2.0_RKIND * pii)
-                activeTracers(idxSalinity,:,:) = interpTracerField % array(:,:)
-
-             else
-                write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_tracer_method.'
-                iErr = 1
-                call mpas_dmpar_finalize(domain % dminfo)
-             endif
-             call mpas_deallocate_scratch_field(interpTracerField, .true.)
-          end if
+          elseif (config_global_ocean_ecosys_method .eq. "bilinear_interpolation") then
+             call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
+                  ecosysForcingIC % array(:,:,timeCounter), nLonEcosys, nLatEcosys, &
+                  lonCell, latCell, ecosysForcingField, nCells, &
+                  inXPeriod = 2.0_RKIND * pii)
+          else
+             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_ecosys_method.'
+             iErr = 1
+             call mpas_dmpar_finalize(domain % dminfo)
+          endif
 
           block_ptr => block_ptr % next
        end do
 
-       ! Smooth temperature and salinity.
-       if (config_global_ocean_smooth_TS_iterations .gt. 0) then
-          call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-
-          call mpas_pool_get_field(scratchPool, 'smoothedTemperature', smoothedTemperatureField)
-          call mpas_pool_get_field(scratchPool, 'smoothedSalinity', smoothedSalinityField)
-
-          call mpas_allocate_scratch_field(smoothedTemperatureField, .false.)
-          call mpas_allocate_scratch_field(smoothedSalinityField, .false.)
-
-          do iSmooth = 1,config_global_ocean_smooth_TS_iterations
-
-             block_ptr => domain % blocklist
-             do while(associated(block_ptr))
-                call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-                call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-                call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-                call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-
-                call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-                call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-                call mpas_pool_get_dimension(tracersPool, 'index_temperature', idxTemperature)
-                call mpas_pool_get_dimension(tracersPool, 'index_salinity', idxSalinity)
-
-                call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-                call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-                call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-
-                call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-
-                call mpas_pool_get_array(scratchPool, 'smoothedTemperature', smoothedTemperature)
-                call mpas_pool_get_array(scratchPool, 'smoothedSalinity', smoothedSalinity)
-                call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
-
-                maxLevelCell(nCells+1) = -1
-
-                do iCell = 1, nCells
-                   if(maxLevelCell(iCell) <= 0) cycle
-                   if(scratchMaxLevelCell(iCell) <= 0) cycle
-
-                   do k = 1, scratchMaxLevelCell(iCell)
-                      if ( associated(activeTracers) ) then
-                         smoothedTemperature(k, iCell) = activeTracers(idxTemperature, k, iCell)
-                         smoothedSalinity(k, iCell) = activeTracers(idxSalinity, k, iCell)
-                      end if
-                      counter = 1
-
-                      do j = 1, nEdgesOnCell(iCell)
-                         coc = cellsOnCell(j, iCell)
-                         ! check if coc not 0 (or nCells+1)?
-                         if (k > scratchMaxLevelCell(coc)) cycle
-
-                         if (.not. associated(activeTracers) ) cycle
-
-                         smoothedTemperature(k, iCell) = smoothedTemperature(k, iCell) &
-                                                       + activeTracers (idxTemperature, k, coc)
-                         smoothedSalinity(k, iCell) = smoothedSalinity(k, iCell) + activeTracers(idxSalinity, k, coc)
-                         counter = counter + 1
-
-                      end do ! edgesOnCell
-
-                      smoothedTemperature(k, iCell) = smoothedTemperature(k, iCell) / counter
-                      smoothedSalinity(k, iCell) = smoothedSalinity(k, iCell) / counter
-
-                   end do ! k level
-
-                end do ! iCell
-
-                if ( associated(activeTracers) ) then
-                   activeTracers(idxTemperature, :, :) = smoothedTemperature(:,:)
-                   activeTracers(idxSalinity, :, :) = smoothedSalinity(:,:)
-                end if
-
-                block_ptr => block_ptr % next
-             end do
-
-             call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-             call mpas_pool_get_field(tracersPool, 'activeTracers', activeTracersField,1)
-
-             if ( activeTracersField % isActive ) then
-                call mpas_dmpar_exch_halo_field(activeTracersField)
-             end if
-
-          end do ! iSmooth
-
-          call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-          call mpas_pool_get_field(scratchPool, 'smoothedTemperature', smoothedTemperatureField)
-          call mpas_pool_get_field(scratchPool, 'smoothedSalinity', smoothedSalinityField)
-          call mpas_deallocate_scratch_field(smoothedTemperatureField, .false.)
-          call mpas_deallocate_scratch_field(smoothedSalinityField, .false.)
-       endif
-
-       ! reinterpolate tracers from refZMid to zMid for PBCs or other modified vertical coordinates
-
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
-          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-
-          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
-          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-          call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-          call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
-
-          allocate(inTracerColumn(nVertLevels),outTracerColumn(nVertLevels))
-
-          call mpas_pool_begin_iteration(tracersPool)
-          do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
-             if ( groupItr % memberType .ne. MPAS_POOL_FIELD ) cycle
-
-             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 1)
-
-             if ( .not. associated(tracersGroup) ) cycle
-
-             nTracers = size(tracersGroup, dim=1)
-             do iCell = 1, nCells
-                outKMax = maxLevelCell(iCell)
-                if(outKMax < 1) cycle ! nothing to interpolate
-
-                inKMax = scratchMaxLevelCell(iCell)
-
-                do iTracer = 1, nTracers
-                   inTracerColumn(:) = tracersGroup(iTracer,:,iCell)
-                   outTracerColumn(:) = 9.969209968386869e+36_RKIND
-                   call ocn_init_interpolation_linear_vert(refZMid(1:inKMax), &
-                                                           inTracerColumn(1:inKMax), &
-                                                           inKMax, &
-                                                           zMid(1:outKMax,iCell), &
-                                                           outTracerColumn(1:outKMax), &
-                                                           outKMax, &
-                                                           extrapolate=.false.)
-                   tracersGroup(iTracer,:,iCell) = outTracerColumn(:)
-                end do
-             end do
-          end do
-
-          deallocate(inTracerColumn,outTracerColumn)
-
-          block_ptr => block_ptr % next
-       end do
-
-       call mpas_pool_get_field(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCellField)
-       call mpas_deallocate_scratch_field(scratchMaxLevelCellField, .false.)
-
-    end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
+    end subroutine ocn_init_setup_global_ocean_interpolate_ecosys_forcing!}}}
 
 !***********************************************************************
 !
@@ -2288,8 +2398,6 @@ contains
        real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
        real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
 
-       character (len=StrKIND), pointer :: config_global_ocean_tracer_method
-       integer, pointer ::  config_global_ocean_smooth_TS_iterations
        real (kind=RKIND), pointer :: config_global_ocean_piston_velocity
        real (kind=RKIND), pointer :: config_global_ocean_interior_restore_rate
 
@@ -2368,18 +2476,10 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
    type(MPAS_Time_Type) :: currentTime
    character(len=STRKIND) :: currentTimeStamp
 
-   real (kind=RKIND) :: counter
-   real (kind=RKIND) :: dt
-   real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
-
-   integer :: iLat, iLon, j, coc
-   integer :: iCell, monIndex
-   integer :: xInd1, xInd2, yInd1, yInd2
+   integer :: monIndex
    integer, pointer :: nCells, nCellsSolve, maxLevelCell
 
    integer, dimension(12), parameter :: daysInMonth     = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-   integer, dimension(:), pointer :: nEdgesOnCell
-   integer, dimension(:, :), pointer :: cellsOnCell
 
    real (kind=RKIND), dimension(:), pointer :: chlorophyllData, zenithAngle, clearSkyRadiation
    real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
@@ -2537,13 +2637,12 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
 
    enddo  !ends loop over months
 
-
    ! Close stream
    call MPAS_closeStream(zenithStream)
    call MPAS_closeStream(chlorophyllStream)
    call MPAS_closeStream(clearSkyStream)
 
-! reset mpas clock for other streams and final write
+   ! reset mpas clock for other streams and final write
 
    currentTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, iErr)
    call mpas_set_clock_time(domain%clock, currentTime  , MPAS_NOW,iErr)
@@ -2573,11 +2672,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
-       type (block_type), pointer :: block_ptr
-
        type (MPAS_Stream_type) :: windstressStream
-
-       integer :: iLat, iLon
 
        character (len=StrKIND), pointer :: config_global_ocean_windstress_file, config_global_ocean_windstress_lat_varname, &
                                            config_global_ocean_windstress_nlat_dimname, &
@@ -2781,8 +2876,6 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 !-----------------------------------------------------------------------
 
     subroutine ocn_init_global_ocean_destroy_tracer_fields()!{{{
-        deallocate(temperatureIC % array)
-        deallocate(salinityIC % array)
         deallocate(tracerLat % array)
         deallocate(tracerLon % array)
     end subroutine ocn_init_global_ocean_destroy_tracer_fields!}}}
@@ -2880,10 +2973,8 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 !-----------------------------------------------------------------------
 
     subroutine ocn_init_global_ocean_destroy_ecosys_fields()!{{{
-        deallocate(ecosysIC % array)
-        deallocate(ecosysForcing % array)
-        deallocate(ecosysLat % array)
-        deallocate(ecosysLon % array)
+        deallocate(tracerLat % array)
+        deallocate(tracerLon % array)
     end subroutine ocn_init_global_ocean_destroy_ecosys_fields!}}}
 
 !***********************************************************************
@@ -2915,6 +3006,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
                                           config_global_ocean_salinity_file, &
                                           config_global_ocean_tracer_nlat_dimname, &
                                           config_global_ocean_tracer_nlon_dimname, &
+                                          config_global_ocean_tracer_ndepth_dimname, &
                                           config_global_ocean_topography_file, &
                                           config_global_ocean_topography_nlat_dimname, &
                                           config_global_ocean_topography_nlon_dimname, &
@@ -2928,10 +3020,12 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
                                           config_global_ocean_swData_nlon_dimname, &
                                           config_global_ocean_swData_nlat_dimname, &
                                           config_global_ocean_ecosys_file, &
+                                          config_global_ocean_ecosys_nlat_dimname, &
                                           config_global_ocean_ecosys_nlon_dimname, &
-                                          config_global_ocean_ecosys_nlat_dimname
+                                          config_global_ocean_ecosys_ndepth_dimname
 
-      integer, pointer :: config_vert_levels
+      integer, pointer :: config_vert_levels, config_global_ocean_tracer_vert_levels, &
+                                          config_global_ocean_ecosys_vert_levels
       logical, pointer :: config_use_ecosysTracers
       logical, pointer :: landIceInitActive, config_global_ocean_depress_by_land_ice
       logical, pointer :: criticalPassagesActive, config_global_ocean_deepen_critical_passages
@@ -2957,6 +3051,10 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
                                 config_global_ocean_tracer_nlat_dimname)
       call mpas_pool_get_config(configPool, 'config_global_ocean_tracer_nlon_dimname', &
                                 config_global_ocean_tracer_nlon_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_tracer_ndepth_dimname', &
+                                config_global_ocean_tracer_ndepth_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_tracer_vert_levels', &
+                                config_global_ocean_tracer_vert_levels)
       call mpas_pool_get_config(configPool, 'config_global_ocean_topography_file', &
                                 config_global_ocean_topography_file)
       call mpas_pool_get_config(configPool, 'config_global_ocean_topography_nlat_dimname', &
@@ -2993,7 +3091,10 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
                                 config_global_ocean_ecosys_nlat_dimname)
       call mpas_pool_get_config(configPool, 'config_global_ocean_ecosys_nlon_dimname', &
                                 config_global_ocean_ecosys_nlon_dimname)
-
+      call mpas_pool_get_config(configPool, 'config_global_ocean_ecosys_ndepth_dimname', &
+                                config_global_ocean_ecosys_ndepth_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_ecosys_vert_levels', &
+                                config_global_ocean_ecosys_vert_levels)
 
       call mpas_pool_get_package(packagePool, 'landIceInitActive', landIceInitActive)
       if ( config_global_ocean_depress_by_land_ice) then
@@ -3017,7 +3118,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
          return
       end if
 
-      call MPAS_io_inq_dim(inputFile, config_global_ocean_depth_dimname, nDepth, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_depth_dimname, nDepthOutput, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
@@ -3041,8 +3142,17 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlat_dimname, nLatTracer, iErr)
       call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlon_dimname, nLonTracer, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_ndepth_dimname, nDepthTracer, iErr)
 
       call MPAS_io_close(inputFile, iErr)
+
+      if (config_global_ocean_tracer_vert_levels <= 0 .and. nDepthTracer > 0) then
+         config_global_ocean_tracer_vert_levels = nDepthTracer
+      else if(config_global_ocean_tracer_vert_levels <= 0) then
+         write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Value of config_global_ocean_tracer_vert_levels=-1, ',&
+              'but nDepthTracer was not correctly read from input file.'
+         iErr = 1
+      end if
 
       if (trim(config_global_ocean_windstress_file) == 'none') then
          write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_windstress_file'
@@ -3085,8 +3195,8 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       call MPAS_io_close(inputFile, iErr)
 
-      if (config_vert_levels <= 0 .and. nDepth > 0) then
-         config_vert_levels = nDepth
+      if (config_vert_levels <= 0 .and. nDepthOutput > 0) then
+         config_vert_levels = nDepthOutput
       else if(config_vert_levels <= 0) then
          write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Not given a usable value for vertical levels.'
          iErr = 1
@@ -3104,10 +3214,19 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
          call MPAS_io_inq_dim(inputFile, config_global_ocean_ecosys_nlat_dimname, nLatEcosys, iErr)
          call MPAS_io_inq_dim(inputFile, config_global_ocean_ecosys_nlon_dimname, nLonEcosys, iErr)
+         call MPAS_io_inq_dim(inputFile, config_global_ocean_ecosys_ndepth_dimname, nDepthEcosys, iErr)
 
          call MPAS_io_close(inputFile, iErr)
-      end if
 
+         if (config_global_ocean_ecosys_vert_levels <= 0 .and. nDepthEcosys > 0) then
+            config_global_ocean_ecosys_vert_levels = nDepthEcosys
+         else if(config_global_ocean_ecosys_vert_levels <= 0) then
+            write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Value of config_global_ocean_ecosys_vert_levels=-1, ',&
+                 'but nDepthEcosys was not correctly read from input file.'
+            iErr = 1
+         end if
+
+      end if
 
       if ( config_global_ocean_depress_by_land_ice) then
          if (trim(config_global_ocean_land_ice_topo_file) == 'none') then
@@ -3132,378 +3251,6 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_validate_global_ocean!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_setup_global_ocean_read_ecosys
-!
-!> \brief   Read ecosys ICs for global ocean test case
-!> \author  Doug Jacobsen
-!> \date    03/04/2014
-!> \details
-!>  This routine reads the ecosys fields from the ecosys IC file.
-!
-!-----------------------------------------------------------------------
-
-    subroutine ocn_init_setup_global_ocean_read_ecosys(domain, fieldName, fileName, iErr)!{{{
-
-       type (domain_type), intent(inout) :: domain
-       integer, intent(out) :: iErr
-
-       character (len=StrKIND), intent(in) :: fieldName, fileName
-
-       type (block_type), pointer :: block_ptr
-
-       type (MPAS_Stream_type) :: ecosysStream
-
-       character (len=StrKIND), pointer :: config_global_ocean_ecosys_nlon_dimname,  &
-                                           config_global_ocean_ecosys_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
-
-       integer :: k
-
-       iErr = 0
-
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlon_dimname', &
-            config_global_ocean_ecosys_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlat_dimname', &
-            config_global_ocean_ecosys_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', &
-            config_global_ocean_depth_dimname)
-
-       ! Define stream for ecosys IC
-       call MPAS_createStream(ecosysStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
-
-       ! Setup ecosys field for stream to be read in
-       ecosysIC % fieldName = trim(fieldName)
-       ecosysIC % dimSizes(1) = nLonEcosys
-       ecosysIC % dimSizes(2) = nLatEcosys
-       ecosysIC % dimSizes(3) = nDepth
-       ecosysIC % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
-       ecosysIC % dimNames(2) = trim(config_global_ocean_ecosys_nlat_dimname)
-       ecosysIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
-       ecosysIC % isVarArray = .false.
-       ecosysIC % isPersistent = .true.
-       ecosysIC % isActive = .true.
-       ecosysIC % hasTimeDimension = .false.
-       ecosysIC % block => domain % blocklist
-
-       ! Add ecosys field to stream
-       call MPAS_streamAddField(ecosysStream, ecosysIC, iErr)
-
-       ! Read stream
-       call MPAS_readStream(ecosysStream, 1, iErr)
-
-       ! Close stream
-       call MPAS_closeStream(ecosysStream)
-
-    end subroutine ocn_init_setup_global_ocean_read_ecosys!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_setup_global_ocean_interpolate_ecosys_tracers
-!
-!> \brief   Interpolate tracer quantities to MPAS grid
-!> \author  Doug Jacobsen
-!> \date    03/05/2014
-!> \details
-!>  This routine interpolates the ecosystem tracer data read in from the
-!>  initial condition file to the MPAS grid.
-!
-!-----------------------------------------------------------------------
-
-    subroutine ocn_init_setup_global_ocean_interpolate_ecosys_tracers(domain, index_ecosysField, iErr)!{{{
-
-       type (domain_type), intent(inout) :: domain
-       integer, intent(inout) :: index_ecosysField
-       integer, intent(out) :: iErr
-
-       type (block_type), pointer :: block_ptr
-       type (mpas_pool_type), pointer :: meshPool, statePool, tracersPool, scratchPool
-
-       real (kind=RKIND) :: currentLat, currentLon, counter
-       real (kind=RKIND) :: minDist, dist
-       real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
-       real (kind=RKIND) :: zMidPBC
-       integer :: iLat, iLon, iSmooth, j, coc
-       integer :: latSearch, lonSearch
-       integer :: iCell, k, km1
-       integer :: xInd1, xInd2, yInd1, yInd2
-       integer, pointer :: nCells, nVertLevels, nCellsSolve
-
-       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
-       integer, dimension(:, :), pointer :: cellsOnCell
-
-       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-       real (kind=RKIND), dimension(:,:,:), pointer :: ecosysTracers
-       type (field2DReal), pointer :: interpTracerField
-
-       character (len=StrKIND), pointer :: config_global_ocean_ecosys_method
-       integer, pointer ::  config_global_ocean_smooth_ecosys_iterations
-
-       ! These variables needed to interpolate tracers for partial bottom cells.
-       ! Might remove once we interpolate to an arbitrary vertical grid.
-       logical, pointer :: config_alter_ICs_for_pbcs
-       character (len=StrKIND), pointer :: config_pbc_alteration_type
-       type (mpas_pool_iterator_type) :: groupItr
-       real (kind=RKIND), dimension(:), pointer :: bottomDepth, refBottomDepth
-       real (kind=RKIND), dimension(:), allocatable :: zMidZLevel
-
-       iErr = 0
-
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_method', &
-            config_global_ocean_ecosys_method)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_ecosys_iterations', &
-            config_global_ocean_smooth_ecosys_iterations)
-
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-
-          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
-          call mpas_pool_get_array(meshPool, 'latCell', latCell)
-          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
-          call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
-
-          if ( associated(ecosysTracers) ) then
-             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-             call mpas_pool_get_field(scratchPool, 'interpTracer', interpTracerField)
-             call mpas_allocate_scratch_field(interpTracerField, .true.)
-             if (config_global_ocean_ecosys_method .eq. "nearest_neighbor") then
-                call ocn_init_interpolation_nearest_horiz(ecosysLon % array, ecosysLat % array, &
-                                                          ecosysIC % array, nLonEcosys, nLatEcosys, &
-                                                          lonCell, latCell, interpTracerField % array, nCells, &
-                                                          inXPeriod = 2.0_RKIND * pii)
-                ecosysTracers(index_ecosysField,:,:) = interpTracerField % array(:,:)
-
-             elseif (config_global_ocean_ecosys_method .eq. "bilinear_interpolation") then
-                call ocn_init_interpolation_bilinear_horiz(ecosysLon % array, ecosysLat % array, &
-                                                          ecosysIC % array, nLonEcosys, nLatEcosys, &
-                                                          lonCell, latCell, interpTracerField % array, nCells, &
-                                                          inXPeriod = 2.0_RKIND * pii)
-                ecosysTracers(index_ecosysField,:,:) = interpTracerField % array(:,:)
-             else
-                write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_ecosys_method.'
-                iErr = 1
-                call mpas_dmpar_finalize(domain % dminfo)
-             endif
-             call mpas_deallocate_scratch_field(interpTracerField, .true.)
-          end if
-
-          block_ptr => block_ptr % next
-       end do
-
-       ! Interpolate tracers for partial bottom cells.
-       ! This can be removed once we interpolate to an arbitrary vertical grid.
-       call mpas_pool_get_config(domain % configs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
-       call mpas_pool_get_config(domain % configs, 'config_pbc_alteration_type', config_pbc_alteration_type)
-       if (config_alter_ICs_for_pbcs.and.config_pbc_alteration_type .eq. 'partial_cell') then
-
-          block_ptr => domain % blocklist
-          do while(associated(block_ptr))
-             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-             call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-
-             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-             call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
-             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-             call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-             call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-
-             call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
-
-             allocate(zMidZLevel(nVertLevels))
-             zMidZLevel(1) = - 0.5_RKIND*(refBottomDepth(1)) ! could add SSH here
-             do k = 2, nVertLevels
-                zMidZLevel(k) = - 0.5_RKIND*(refBottomDepth(k) + refBottomDepth(k-1))
-             end do
-
-             do iCell = 1, nCells
-                ! Linearly interpolate the initial tracers for new location of bottom cell for PBCs
-                k = maxLevelCell(iCell)
-                if (k>1) then
-                   zMidPBC = -0.5_RKIND * (bottomDepth(iCell) + refBottomDepth(k-1))
-                   km1 = max(k-1,1)
-                   ecosysTracers(index_ecosysField, k, iCell) = ecosysTracers(index_ecosysField, k, iCell) &
-                        + (ecosysTracers(index_ecosysField, km1, iCell) - ecosysTracers(index_ecosysField, k, iCell)) &
-                        /(zMidZLevel(km1) - zMidZLevel(k) + 1.0e-16_RKIND) &
-                        *(zMidPBC - zMidZLevel(k))
-                endif
-             end do
-
-             deallocate(zMidZLevel)
-             block_ptr => block_ptr % next
-          end do
-       endif
-       ! end: Interpolate tracers for partial bottom cells.
-
-    end subroutine ocn_init_setup_global_ocean_interpolate_ecosys_tracers!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_setup_global_ocean_read_ecosys_forcing
-!
-!> \brief   Read ecosys forcing for global ocean test case
-!> \author  Doug Jacobsen
-!> \date    03/04/2014
-!> \details
-!>  This routine reads the ecosys forcing fields from the ecosys forcing file.
-!
-!-----------------------------------------------------------------------
-
-    subroutine ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName, fileName, iErr)!{{{
-
-       type (domain_type), intent(inout) :: domain
-       integer, intent(out) :: iErr
-
-       character (len=StrKIND), intent(in) :: fieldName, fileName
-
-       type (block_type), pointer :: block_ptr
-
-       type (MPAS_Stream_type) :: ecosysForcingStream
-
-       character (len=StrKIND), pointer :: config_global_ocean_ecosys_nlon_dimname,  &
-                                           config_global_ocean_ecosys_nlat_dimname, &
-                                           config_global_ocean_ecosys_forcing_time_dimname
-
-       integer :: k
-
-       iErr = 0
-
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlon_dimname', &
-            config_global_ocean_ecosys_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlat_dimname', &
-            config_global_ocean_ecosys_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_forcing_time_dimname', &
-            config_global_ocean_ecosys_forcing_time_dimname)
-
-       ! Define stream for ecosys forcing
-       call MPAS_createStream(ecosysForcingStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
-
-       ! Setup ecosys field for stream to be read in
-       ecosysForcing % fieldName = trim(fieldName)
-       ecosysForcing % dimSizes(1) = nLonEcosys
-       ecosysForcing % dimSizes(2) = nLatEcosys
-       nTimes = 1
-       ecosysForcing % dimSizes(3) = nTimes
-       ecosysForcing % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
-       ecosysForcing % dimNames(2) = trim(config_global_ocean_ecosys_nlat_dimname)
-       ecosysForcing % dimNames(3) = trim(config_global_ocean_ecosys_forcing_time_dimname)
-       ecosysForcing % isVarArray = .false.
-       ecosysForcing % isPersistent = .true.
-       ecosysForcing % isActive = .true.
-       ecosysForcing % hasTimeDimension = .false.
-       ecosysForcing % block => domain % blocklist
-
-       ! Add ecosys field to stream
-       call MPAS_streamAddField(ecosysForcingStream, ecosysForcing, iErr)
-
-       ! Read stream
-       call MPAS_readStream(ecosysForcingStream, 1, iErr)
-
-       ! Close stream
-       call MPAS_closeStream(ecosysForcingStream)
-
-    end subroutine ocn_init_setup_global_ocean_read_ecosys_forcing!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_setup_global_ocean_interpolate_ecosys_forcing
-!
-!> \brief   Interpolate ecosys forcing quantities to MPAS grid
-!> \author  Doug Jacobsen
-!> \date    03/05/2014
-!> \details
-!>  This routine interpolates the ecosys forcing data read in from the
-!>  forcing file to the MPAS grid.
-!
-!-----------------------------------------------------------------------
-
-    subroutine ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)!{{{
-
-       type (domain_type), intent(inout) :: domain
-       character (len=StrKIND), intent(in) :: fieldName, poolName
-       integer, intent(out) :: iErr
-
-       type (block_type), pointer :: block_ptr
-       type (mpas_pool_type), pointer :: meshPool, forcingPool, ecosysAuxiliary
-
-       real (kind=RKIND) :: currentLat, currentLon, counter
-       real (kind=RKIND) :: minDist, dist
-       real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
-       integer :: iLat, iLon, iSmooth, j, coc
-       integer :: latSearch, lonSearch
-       integer :: iCell, k, km1, timeCounter
-       integer :: xInd1, xInd2, yInd1, yInd2
-       integer, pointer :: nCells, nCellsSolve
-
-       integer, dimension(:), pointer :: nEdgesOnCell
-       integer, dimension(:, :), pointer :: cellsOnCell
-
-       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-       real (kind=RKIND), dimension(:), pointer :: ecosysForcingField
-
-       character (len=StrKIND), pointer :: config_global_ocean_ecosys_method
-       integer, pointer ::  config_global_ocean_smooth_ecosys_iterations
-
-       type (mpas_pool_iterator_type) :: groupItr
-
-       iErr = 0
-
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_method', &
-            config_global_ocean_ecosys_method)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_ecosys_iterations', &
-            config_global_ocean_smooth_ecosys_iterations)
-
-       timeCounter = 1
-
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-          call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
-
-          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
-          call mpas_pool_get_array(meshPool, 'latCell', latCell)
-          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-
-          if (trim(poolName) == 'ecosysAuxiliary') then
-             call mpas_pool_get_array(ecosysAuxiliary, trim(fieldName), ecosysForcingField, 1)
-          else if (trim(poolName) == 'forcing') then
-             call mpas_pool_get_array(forcingPool, trim(fieldName), ecosysForcingField, 1)
-          end if
-
-          if (config_global_ocean_ecosys_method .eq. "nearest_neighbor") then
-             call ocn_init_interpolation_nearest_horiz(ecosysLon % array, ecosysLat % array, &
-                  ecosysForcing % array(:,:,timeCounter), nLonEcosys, nLatEcosys, &
-                  lonCell, latCell, ecosysForcingField, nCells, &
-                  inXPeriod = 2.0_RKIND * pii)
-
-          elseif (config_global_ocean_ecosys_method .eq. "bilinear_interpolation") then
-             call ocn_init_interpolation_bilinear_horiz(ecosysLon % array, ecosysLat % array, &
-                  ecosysForcing % array(:,:,timeCounter), nLonEcosys, nLatEcosys, &
-                  lonCell, latCell, ecosysForcingField, nCells, &
-                  inXPeriod = 2.0_RKIND * pii)
-          else
-             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_ecosys_method.'
-             iErr = 1
-             call mpas_dmpar_finalize(domain % dminfo)
-          endif
-
-          block_ptr => block_ptr % next
-       end do
-
-    end subroutine ocn_init_setup_global_ocean_interpolate_ecosys_forcing!}}}
 
 !***********************************************************************
 
