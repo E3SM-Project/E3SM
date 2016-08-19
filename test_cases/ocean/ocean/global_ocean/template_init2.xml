@@ -16,16 +16,6 @@
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
 
-		<option name="config_global_ocean_swData_file">'swData.nc'</option>
-		<option name="config_global_ocean_swData_nlat_dimname">'t_lat'</option>
-		<option name="config_global_ocean_swData_nlon_dimname">'t_lon'</option>
-		<option name="config_global_ocean_swData_lat_varname">'t_lat'</option>
-		<option name="config_global_ocean_swData_lon_varname">'t_lon'</option>
-		<option name="config_global_ocean_swData_latlon_degrees">.true.</option>
-		<option name="config_global_ocean_swData_method">'bilinear_interpolation'</option>
-		<option name="config_global_ocean_chlorophyll_varname">'Chlorophyll'</option>
-		<option name="config_global_ocean_zenithAngle_varname">'zenithAngle'</option>
-		<option name="config_global_ocean_clearSky_varname">'clearSky'</option>
 		<option name="config_global_ocean_minimum_depth">15</option>
 		<option name="config_global_ocean_depth_file">'temperature.nc'</option>
 		<option name="config_global_ocean_depth_dimname">'depth_t'</option>
@@ -43,6 +33,16 @@
 		<option name="config_global_ocean_tracer_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_smooth_TS_iterations">5</option>
 		<option name="config_global_ocean_piston_velocity">5.0e-5</option>
+		<option name="config_global_ocean_swData_file">'swData.nc'</option>
+		<option name="config_global_ocean_swData_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_swData_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_swData_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_swData_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_swData_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_swData_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_chlorophyll_varname">'Chlorophyll'</option>
+		<option name="config_global_ocean_zenithAngle_varname">'zenithAngle'</option>
+		<option name="config_global_ocean_clearSky_varname">'clearSky'</option>
 		<option name="config_global_ocean_interior_restore_rate">1.0e-7</option>
 		<option name="config_global_ocean_topography_file">'topography.nc'</option>
 		<option name="config_global_ocean_topography_nlat_dimname">'y'</option>
@@ -65,6 +65,16 @@
 		<option name="config_global_ocean_windstress_meridional_varname">'TAUY'</option>
 		<option name="config_global_ocean_windstress_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_windstress_conversion_factor">1</option>
+		<option name="config_global_ocean_ecosys_file">'ecosys.nc'</option>
+		<option name="config_global_ocean_ecosys_forcing_file">'ecosys_forcing.nc'</option>
+		<option name="config_global_ocean_ecosys_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_ecosys_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_ecosys_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_ecosys_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_ecosys_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_ecosys_method">'bilinear_interpolation'</option>
+		<option name="config_global_ecosys_forcing_time_dimname">'record'</option>
+
 	</namelist>
 	<streams>
 		<stream name="input_init">
