@@ -323,6 +323,7 @@ module mpas_stream_manager
            !
            ! Check that the stream does not already exist
            !
+           nullify(new_stream)
            if (MPAS_stream_list_query(manager % streams, streamID, new_stream, ierr=err_local)) then
                STREAM_DEBUG_WRITE('-- Stream '//trim(streamID)//' already exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -598,6 +599,7 @@ module mpas_stream_manager
            !
            ! Check that stream exists
            !
+           nullify(stream)
            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
                STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -724,6 +726,7 @@ module mpas_stream_manager
            !
            ! Check that stream exists
            !
+           nullify(stream)
            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
                STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -836,6 +839,7 @@ module mpas_stream_manager
         !
         ! Check that reference stream exists
         !
+        nullify(refStream)
         if (.not. MPAS_stream_list_query(manager % streams, refStreamID, refStream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested reference stream '//trim(refStreamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -845,6 +849,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -957,6 +962,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1035,6 +1041,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1068,6 +1075,7 @@ module mpas_stream_manager
         ! Check that the alarm does not already exist for the stream in the specified direction
         !
         if (direction == MPAS_STREAM_INPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
+            nullify(new_alarm)
             if (MPAS_stream_list_query(stream % alarmList_in, alarmID, new_alarm, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Requested input alarm '//trim(alarmID)//' already on stream '//trim(streamID))
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1075,6 +1083,7 @@ module mpas_stream_manager
             end if
         end if
         if (direction == MPAS_STREAM_OUTPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
+            nullify(new_alarm)
             if (MPAS_stream_list_query(stream % alarmList_out, alarmID, new_alarm, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Requested output alarm '//trim(alarmID)//' already on stream '//trim(streamID))
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1091,6 +1100,7 @@ module mpas_stream_manager
            if (direction == MPAS_STREAM_INPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
    
                ! If alarm is not already defined, we need to create a new alarm node
+               nullify(new_alarm)
                if (.not. MPAS_stream_list_query(manager % alarms_in, alarmID, new_alarm, ierr=err_local)) then
                    allocate(new_alarm)
                    new_alarm % name = alarmID
@@ -1136,6 +1146,7 @@ module mpas_stream_manager
            if (direction == MPAS_STREAM_OUTPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
    
                ! If alarm is not already defined, we need to create a new alarm node
+               nullify(new_alarm)
                if (.not. MPAS_stream_list_query(manager % alarms_out, alarmID, new_alarm, ierr=err_local)) then
                    allocate(new_alarm)
                    new_alarm % name = alarmID
@@ -1219,6 +1230,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1498,6 +1510,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1564,6 +1577,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1640,6 +1654,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1701,6 +1716,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1766,6 +1782,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1871,6 +1888,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1942,6 +1960,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_pkg().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1990,6 +2009,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_remove_pkg().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -2042,6 +2062,7 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
+            nullify(stream_cursor)
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -2114,6 +2135,7 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
+            nullify(stream_cursor)
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -2186,6 +2208,7 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
+            nullify(stream_cursor)
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -2258,6 +2281,7 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
+            nullify(stream_cursor)
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -3384,6 +3408,7 @@ module mpas_stream_manager
 
         ierr = 0
 
+        nullify(streamCursor)
         if ( mpas_stream_list_query(manager % streams, streamID, streamCursor, err_local) ) then
            if ( present(when) ) then
               call mpas_set_time(now_time, dateTimeString=when, ierr=err_local)
@@ -4869,6 +4894,7 @@ module mpas_stream_manager
            !
            ! Check that stream exists
            !
+           nullify(stream)
            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
                STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -5024,6 +5050,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             return
@@ -5080,6 +5107,7 @@ module mpas_stream_manager
 
        type (mpas_stream_list_type), pointer :: streamPtr
 
+       nullify(streamPtr)
        validStream = mpas_stream_list_query(manager % streams, streamID, streamPtr)
 
        return
