@@ -34,6 +34,8 @@ class PEA(SystemTestsCommon):
             logging.warn("Starting bld for %s"%mpilib)
             self._case.set_value("MPILIB",mpilib)
             self._case.flush()
+            # We need to explicitly remove the Macros file for this test
+            os.remove("Macros")
             case_setup(self._case, reset=True)
             self.clean_build()
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)

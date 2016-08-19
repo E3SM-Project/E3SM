@@ -99,8 +99,7 @@ class ERI(SystemTestsCommon):
                 with open("user_nl_cam", "a") as fd:
                     fd.write("inithist = 'ENDOFRUN'\n")
 
-        self.run_indv(coupler_log_path=os.path.join(dout_sr1, "logs"),
-                      st_archive=True)
+        self.run_indv(st_archive=True, suffix=None)
 
         #
         # (2) Test run:
@@ -146,9 +145,7 @@ class ERI(SystemTestsCommon):
 
         # run ref2 case (all component history files will go to short term archiving)
 
-        self.run_indv(suffix="hybrid",
-                      coupler_log_path=os.path.join(dout_sr2, "logs"),
-                      st_archive=True)
+        self.run_indv(suffix="hybrid", st_archive=True)
 
         #
         # (3a) Test run:

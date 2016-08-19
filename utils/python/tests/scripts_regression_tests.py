@@ -191,6 +191,7 @@ class J_TestCreateNewcase(unittest.TestCase):
                 print "Leaving case directory : %s"%tfile
             elif do_teardown:
                 shutil.rmtree(tfile)
+
 ###############################################################################
 class M_TestWaitForTests(unittest.TestCase):
 ###############################################################################
@@ -613,7 +614,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
             ts = TestStatus(test_dir=os.path.dirname(test_status))
             test_name = ts.get_name()
             log_files = glob.glob("%s/%s*%s/TestStatus.log" % (self._testroot, test_name, test_id))
-            self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, foudn %d" % len(log_files))
+            self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, found %d" % len(log_files))
             log_file = log_files[0]
             if (test_name == build_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
@@ -782,6 +783,17 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         # Hist compare should now fail
         test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
         self.simple_test(False, "-c -b %s -t %s" % (self._baseline_name, test_id))
+
+        # compare_test_results should detect the fail
+        cpr_cmd = "%s/compare_test_results -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        stat, out, _ = run_cmd(cpr_cmd)
+        self.assertNotEqual(stat, 0, msg="COMMAND '%s' should not have worked. Out:\n%s" % (cpr_cmd, out))
+
+        # use regex
+        expected_pattern = re.compile(r'COMPARE FAILED FOR TEST: %s[^\s]* reason Diff' % self._test_name)
+        the_match = expected_pattern.search(out)
+        self.assertNotEqual(the_match, None,
+                            msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, out))
 
         # Bless
         run_cmd_no_fail("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))

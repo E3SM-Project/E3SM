@@ -15,8 +15,7 @@ def check_lockedfiles(caseroot=None):
 
     If caseroot is not specified, it is set to the current working directory
     """
-    if caseroot is None:
-        caseroot = os.getcwd()
+    caseroot = os.getcwd() if caseroot is None else caseroot
     lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)

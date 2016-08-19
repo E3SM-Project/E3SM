@@ -541,8 +541,10 @@ def get_project(machobj=None):
     return None
 
 def setup_standard_logging_options(parser):
+    helpfile = "%s.log"%sys.argv[0]
+    helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
     parser.add_argument("-d", "--debug", action="store_true",
-                        help="Print debug information (very verbose) to file %s.log" % sys.argv[0])
+                        help="Print debug information (very verbose) to file %s" % helpfile)
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Add additional context (time and file) to log messages")
     parser.add_argument("-s", "--silent", action="store_true",
