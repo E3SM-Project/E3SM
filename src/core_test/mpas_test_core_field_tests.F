@@ -98,6 +98,10 @@ module test_core_field_tests
          allocate(srcList)
          nullify(destList)
 
+         nullify(srcList % next)
+         srcList % attName = ''
+         srcList % attType = -1
+
          allocate(srcIntA(3))
          allocate(srcRealA(5))
 
@@ -151,6 +155,9 @@ module test_core_field_tests
 
          call mpas_deallocate_attlist(srcList)
          call mpas_deallocate_attlist(destList)
+
+         deallocate(srcIntA)
+         deallocate(srcRealA)
       end if
 
       call mpas_threading_barrier()

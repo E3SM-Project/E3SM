@@ -129,7 +129,8 @@ module test_core
          write(stderrUnit, *) ' * Field Tests: SUCCESS'
       else
          write(stderrUnit, *) ' * Field Tests: FAILURE'
-      end if     !$omp end parallel
+      end if
+      !$omp end parallel
 
       call test_core_streams_test(domain, threadErrs, iErr)
       if ( iErr == 0 ) then
