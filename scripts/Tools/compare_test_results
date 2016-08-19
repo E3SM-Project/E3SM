@@ -35,7 +35,9 @@ OR
     > %s -n foo bar
     \033[1;32m# From most recent run of jenkins, compare history changes for next \033[0m
     > %s -r /home/jenkins/acme/scratch/jenkins -b next
-""" % ((os.path.basename(args[0]), ) * 6),
+    \033[1;32m# For typical CESM workflow, where baselines are named with tags \033[0m
+    > %s -t TESTID -b BASELINE_TAG
+""" % ((os.path.basename(args[0]), ) * 7),
 
 description=description,
 
