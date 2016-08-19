@@ -7875,10 +7875,18 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          commListPtr => exchangeGroup % recvList
          do while ( associated(commListPtr) )
 
+            call mpas_threading_barrier()
+
             ! Poll receive list messages, and unpack as they are received.
             if ( .not. commListPtr % received ) then
+               call mpas_threading_barrier()
+
                allReceived = .false.
-               call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
+               if ( threadNum == 0 ) then
+                  call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
+               end if
+
+               call mpas_threading_barrier()
 
                if ( commListPtr % received ) then
                   call mpas_dmpar_exch_group_unpack_single_buffer(allFieldsPool, exchangeGroup, commListPtr, iErr_tmp)
@@ -7891,6 +7899,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                end if
             end if
 
+            call mpas_threading_barrier()
             commListPtr => commListPtr % next 
          end do
 
@@ -9106,6 +9115,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
@@ -9168,6 +9178,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
@@ -9231,6 +9242,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
@@ -9296,6 +9308,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
@@ -9356,6 +9369,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
@@ -9418,6 +9432,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
@@ -9483,6 +9498,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
@@ -9553,6 +9569,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      call mpas_threading_barrier()
       bufferOffset = recvList % bufferOffset
       nAdded = 0
       fieldCursor => field
