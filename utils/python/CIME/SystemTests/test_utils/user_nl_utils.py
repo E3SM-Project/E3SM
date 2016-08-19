@@ -2,7 +2,6 @@
 This module contains functions for working with user_nl files in system tests.
 """
 
-import shutil
 import os
 import glob
 

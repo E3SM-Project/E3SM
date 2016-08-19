@@ -22,7 +22,7 @@ class CaseFake(object):
         casename = os.path.basename(case_root)
         self.set_value('CASE', casename)
         self.set_value('CASEBASEID', casename)
-        self._set_rundir()
+        self.set_rundir()
 
     def get_value(self, item):
         """
@@ -58,11 +58,15 @@ class CaseFake(object):
         newcase.set_value('CASE', newcasename)
         newcase.set_value('CASEBASEID', newcasename)
         newcase.set_value('CASEROOT', newcaseroot)
-        newcase._set_rundir()
+        newcase.set_rundir()
 
         return newcase
 
     def create_clone(self, newcase, keepexe=False):
+        # Need to disable unused-argument checking: keepexe is needed to match
+        # the interface of Case, but is not used in this fake implementation
+        #
+        # pylint: disable=unused-argument
         """
         Create a clone of the current case. Also creates the CASEROOT directory
         for the clone case (given by newcase).
@@ -90,7 +94,7 @@ class CaseFake(object):
         """
         os.makedirs(self.get_value('RUNDIR'))
 
-    def _set_rundir(self):
+    def set_rundir(self):
         """
         Assumes CASEROOT is already set; sets an appropriate RUNDIR (nested
         inside CASEROOT)
