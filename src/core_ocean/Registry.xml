@@ -1181,6 +1181,7 @@
 			<var name="edgeMask"/>
 			<var name="cullCell"/>
 			<var name="effectiveDensityInLandIce"/>
+			<var_struct name="ecosysAuxiliary"/>
 		</stream>
 
 		<stream name="forcing_data_init"
@@ -1195,6 +1196,7 @@
 			<var name="seaSurfacePressure"/>
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
+			<var_struct name="forcing"/>
 			<var_struct name="tracersSurfaceRestoringFields"/>
 			<var_struct name="tracersInteriorRestoringFields"/>
 			<var_struct name="tracersExponentialDecayFields"/>
@@ -1430,6 +1432,7 @@
 			<var_struct name="tracersExponentialDecayFields"/>
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
+			<var_struct name="forcing"/>
 			<var name="landIceFraction"/>
 			<var name="landIcePressure"/>
 			<var name="landIceSurfaceTemperature"/>
