@@ -79,14 +79,12 @@ module pio_types
 !! @defgroup PIO_rearr_comm_fc_options PIO_rearr_comm_fc_options
 !! @brief Type that defines the PIO rearranger options
 !! @details
-!!  - fcd : @copydoc PIO_rearr_comm_dir
 !!  - enable_hs : Enable handshake (true/false) 
 !!  - enable_isend : Enable Isends (true/false)
 !!  - max_pend_req : Maximum pending requests (To indicated unlimited
 !!                    number of requests use PIO_REARR_COMM_UNLIMITED_PEND_REQ)
 !>
     type, public :: PIO_rearr_comm_fc_opt_t
-      integer :: fcd                  ! Flow control direction
       logical :: enable_hs            ! Enable handshake?
       logical :: enable_isend         ! Enable isends?
       integer :: max_pend_req         ! Maximum pending requests
@@ -98,11 +96,14 @@ module pio_types
 !! @brief Type that defines the PIO rearranger options
 !! @details
 !!  - comm_type : @copydoc PIO_rearr_comm_t
+!!  - fcd : @copydoc PIO_rearr_comm_dir
 !!  - comm_fc_opts : @copydoc PIO_rearr_comm_fc_options
 !>
     type, public :: PIO_rearr_opt_t
       integer                         :: comm_type
-      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts
+      integer                         :: fcd       ! Flow control direction
+      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts_comp2io
+      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts_io2comp
     end type PIO_rearr_opt_t
 
     public :: PIO_rearr_comm_p2p, PIO_rearr_comm_coll,&
