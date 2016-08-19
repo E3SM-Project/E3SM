@@ -8,7 +8,6 @@ import logging, glob, os, shutil, re
 logger = logging.getLogger(__name__)
 
 def _iter_model_file_substrs(case):
-
     models = case.get_compset_components()
     models.append('cpl')
     for model in models:
@@ -29,6 +28,8 @@ def _get_all_hist_files(testcase, model, from_dir, suffix=""):
     if suffix == "":
         test_hists.extend(glob.glob("%s/%s.h.nc" % (from_dir, model)))
         test_hists.extend(glob.glob("%s/%s.h?.nc" % (from_dir, model)))
+        test_hists.extend(glob.glob("%s/%s.h.*.nc" % (from_dir, model)))
+        test_hists.extend(glob.glob("%s/%s.h?.*.nc" % (from_dir, model)))
 
     test_hists.sort()
     return test_hists
@@ -92,6 +93,42 @@ def move(case, suffix):
 
     return comments
 
+def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
+    """
+    return (num in set 1 but not 2 , num in set 2 but not 1, matchups)
+
+    >>> hists1 = ['FOO.G.cpl.h1.nc', 'FOO.G.cpl.h2.nc', 'FOO.G.cpl.h3.nc']
+    >>> hists2 = ['cpl.h2.nc', 'cpl.h3.nc', 'cpl.h4.nc']
+    >>> _hists_match('cpl', hists1, hists2)
+    (['FOO.G.cpl.h1.nc'], ['cpl.h4.nc'], [('FOO.G.cpl.h2.nc', 'cpl.h2.nc'), ('FOO.G.cpl.h3.nc', 'cpl.h3.nc')])
+    >>> hists1 = ['FOO.G.cpl.h1.nc.SUF1', 'FOO.G.cpl.h2.nc.SUF1', 'FOO.G.cpl.h3.nc.SUF1']
+    >>> hists2 = ['cpl.h2.nc.SUF2', 'cpl.h3.nc.SUF2', 'cpl.h4.nc.SUF2']
+    >>> _hists_match('cpl', hists1, hists2, 'SUF1', 'SUF2')
+    (['FOO.G.cpl.h1.nc.SUF1'], ['cpl.h4.nc.SUF2'], [('FOO.G.cpl.h2.nc.SUF1', 'cpl.h2.nc.SUF2'), ('FOO.G.cpl.h3.nc.SUF1', 'cpl.h3.nc.SUF2')])
+    """
+    normalized1, normalized2 = [], []
+    for hists, suffix, normalized in [(hists1, suffix1, normalized1), (hists2, suffix2, normalized2)]:
+        for hist in hists:
+            normalized_name = hist[hist.rfind(model):]
+            if suffix1 != "":
+                expect(normalized_name.endswith(suffix), "How did '%s' hot have suffix '%s'" % (hist, suffix))
+                normalized_name = normalized_name[:len(normalized_name) - len(suffix)]
+
+            normalized.append(normalized_name)
+
+    set_of_1_not_2 = set(normalized1) - set(normalized2)
+    set_of_2_not_1 = set(normalized2) - set(normalized1)
+
+    one_not_two = sorted([hists1[normalized1.index(item)] for item in set_of_1_not_2])
+    two_not_one = sorted([hists2[normalized2.index(item)] for item in set_of_2_not_1])
+
+    both = set(normalized1) & set(normalized2)
+    match_ups = sorted([ (hists1[normalized1.index(item)], hists2[normalized2.index(item)]) for item in both])
+    expect(len(match_ups) + len(set_of_1_not_2) == len(hists1), "Programming error1")
+    expect(len(match_ups) + len(set_of_2_not_1) == len(hists2), "Programming error2")
+
+    return one_not_two, two_not_one, match_ups
+
 def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
@@ -106,34 +143,28 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
         comments += "  comparing model '%s'\n" % model
         hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
         hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
-        len_hist1 = len(hists1)
-        len_hist2 = len(hists2)
-        if len_hist1 == 0:
-            comments += " no hist files found for model %s\n"%model
-            continue
-        if len_hist1 > len_hist2:
-            comments += "    num hists does not match %d != %d\n" % (len_hist1, len_hist2)
-            all_success = False
-            hists2 += ['MISSING'] * (len_hist1 - len_hist2)
-        if len_hist1 < len_hist2:
-            comments += "    num hists does not match %d != %d\n" % (len_hist1, len_hist2)
-            all_success = False
-            hists1 += ['MISSING'] * (len_hist2 - len_hist1)
 
-        num_compared += len(hists1)
-        for hist1, hist2 in zip(hists1, hists2):
-            if hist1 == "MISSING":
-                comments += "     No match for file %s found in %s\n"%(hist2, from_dir1)
-            elif hist2 == "MISSING":
-                comments += "     No match for file %s found in %s\n"%(hist1, from_dir2)
+        if len(hists1) == 0 and len(hists2) == 0:
+            comments += "    no hist files found for model %s\n" % model
+            continue
+
+        one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
+        for item in one_not_two:
+            comments += "    File '%s' had no counterpart in '%s' with suffix '%s'\n" % (item, from_dir2, suffix2)
+            all_success = False
+        for item in two_not_one:
+            comments += "    File '%s' had no counterpart in '%s' with suffix '%s'\n" % (item, from_dir1, suffix1)
+            all_success = False
+
+        num_compared += len(match_ups)
+        for hist1, hist2 in match_ups:
+            success, cprnc_comments = cprnc(hist1, hist2, case, from_dir1)
+            if success:
+                comments += "    %s matched %s\n" % (hist1, hist2)
             else:
-                success, cprnc_comments = cprnc(hist1, hist2, case, from_dir1)
-                if success:
-                    comments += "    %s matched %s\n" % (hist1, hist2)
-                else:
-                    comments += "    %s did NOT match %s\n" % (hist1, hist2)
-                    comments += cprnc_comments + "\n"
-                    all_success = False
+                comments += "    %s did NOT match %s\n" % (hist1, hist2)
+                comments += cprnc_comments + "\n"
+                all_success = False
 
     expect(num_compared > 0, "Did not compare any hist files for suffix1='%s' suffix2='%s', dir1='%s', dir2='%s'\nComments=%s" %
            (suffix1, suffix2, from_dir1, from_dir2, comments))
@@ -243,11 +274,11 @@ def generate_baseline(case, baseline_dir=None):
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '%s'\n" % model
         hists =  _get_latest_hist_files(testcase, model, rundir)
-        logger.debug("latest_files: %s"%hists)
+        logger.debug("latest_files: %s" % hists)
         num_gen += len(hists)
         for hist in hists:
-            ext = get_extension(model, hist)
-            baseline = os.path.join(basegen_dir, os.path.basename(hist))
+            basename = hist[hist.rfind(model):]
+            baseline = os.path.join(basegen_dir, basename)
             if os.path.exists(baseline):
                 os.remove(baseline)
 

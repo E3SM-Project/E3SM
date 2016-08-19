@@ -1,7 +1,6 @@
 """
 Base class for CIME system tests
 """
-import shutil, glob, gzip, time
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
 from CIME.utils import append_status
@@ -12,6 +11,8 @@ from CIME.test_status import *
 from CIME.hist_utils import *
 
 import CIME.build as build
+
+import shutil, glob, gzip, time, traceback
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ class SystemTestsCommon(object):
                 except:
                     success = False
                     logger.warning("Exception during build:\n%s" % (sys.exc_info()[1]))
+                    logger.warning(traceback.format_exc())
 
                 time_taken = time.time() - start_time
                 with self._test_status:
@@ -128,6 +130,7 @@ class SystemTestsCommon(object):
         except:
             success = False
             logger.warning("Exception during run:\n%s" % (sys.exc_info()[1]))
+            logger.warning(traceback.format_exc())
 
         # Always try to report, should NOT throw an exception
         self.report()
