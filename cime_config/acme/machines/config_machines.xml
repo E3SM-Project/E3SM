@@ -979,32 +979,170 @@
 </machine>
 
 <machine MACH="titan">
-         <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
-         <NODENAME_REGEX>titan</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
-	 <COMPILERS>pgi,pgi_acc,intel,cray</COMPILERS>
-	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
-         <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$ENV{MEMBERWORK}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
-         <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
-         <OS>CNL</OS>
-	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-         <SUPPORTED_BY>acme</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>cli115</PROJECT>
-         <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
-         <mpirun mpilib="default">
-           <executable args="default">aprun</executable>
-         </mpirun>
+<DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>titan</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
+    <COMPILERS>pgi,pgi_acc,intel,cray</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
+    <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{MEMBERWORK}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
+    <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
+    <OS>CNL</OS>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <PES_PER_NODE>16</PES_PER_NODE>
+    <!-- difference to MAX_TASKS_PER_NODE-->
+    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <PROJECT>cli115</PROJECT>
+    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+    <mpirun mpilib="default">
+      <executable args="default">aprun</executable>
+      <arguments>
+        <!-- pes per node -N -->
+        <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
+        <arg name="pes">-n {{ num_tasks }}</arg >
+        <arg name="cpus_per_pe">-d 1</arg>
+               <!-- Total MPI Tasks -->
+               <!-- arg name="num_tasks"> -n {{ num_tasks }}</arg -->
+      </arguments>
+
+    </mpirun>
+
+    <module_system type="module">
+      <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <!-- List of modules elements, executing commands
+                         if compiler and mpilib condition applies -->
+      <!-- Always execute -->
+      <modules>
+        <command name="purge"></command>
+        <command name="load">python/2.7.9</command>
+        <command name="load">eswrap</command>
+        <command name="load">PrgEnv-pgi cray-mpich</command>
+        <!-- command name="load">xpmem/0.1-2.0502.64982.5.3.gem</command -->
+        <command name="add">craype-interlagos</command>
+        <command name="load">eswrap</command> <!-- why loading twice? -->
+        <command name="add">DefApps site-aprun</command>
+        <command name="add">aprun-usage altd</command>
+        <command name="load">cmake/2.8.10.2</command>
+        <!-- remove old section
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">pgi</command>
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-pathscale</command>
+        <command name="rm">intel</command>
+        <command name="rm">pgi</command>
+        <command name="rm">cray</command>
+        <command name="rm">pathscale</command>
+        <command name="rm">parallel-netcdf</command>
+        <command name="rm">netcdf</command>
+        <command name="rm">cmake</command>
+        <command name="rm">cray-mpich2</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">xt-libsci</command>
+        <command name="rm">cray-netcdf</command>
+        <command name="rm">cray-netcdf-hdf5parallel</command>
+        <command name="rm">cray-parallel-netcdf</command>
+
+        <command name="load">subversion</command>
+        <command name="load">cmake/2.8.11.2</command>
+        -->
+      </modules>
+
+      <modules compiler="pgi_acc">
+        <command name="switch">pgi pgi/15.9.lustre</command>
+        <command name="switch">cray-mpich cray-mpich/7.2.5</command>
+        <command name="switch">cray-libsci cray-libsci/13.2.0</command>
+        <command name="load">esmf/5.2.0rp2</command>
+        <command name="switch">atp atp/1.8.3</command>
+        <command name="add">cudatoolkit</command>
+      </modules>
+      <modules compiler="pgi">
+        <command name="load">PrgEnv-pgi</command>
+        <command name="switch">pgi pgi/15.3.0</command>
+        <command name="switch">cray-mpich cray-mpich/7.2.5</command>
+        <command name="switch">cray-libsci cray-libsci/13.2.0</command>
+        <command name="load">esmf/5.2.0rp2</command>
+        <command name="switch">atp atp/1.8.3</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="load">PrgEnv-intel</command>
+        <!-- command name="switch">intel intel/15.0.2.164</command -->
+        <command name="load">intel/15.0.2.164</command>
+        <command name="switch">cray-libsci cray-libsci/13.2.0</command>
+        <command name="switch">cray-mpich cray-mpich/7.2.5</command>
+        <command name="switch">atp atp/1.8.3</command>
+      </modules>
+      <modules compiler="cray">
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="load">PrgEnv-cray</command>
+        <command name="switch">cce cce/8.4.0</command>
+        <command name="swap">cray-mpich cray-mpich/7.2.5</command>
+      </modules>
+      <!-- mpi lib settings -->
+      <modules mpilib="mpi-serial">
+        <command name="load">cray-netcdf/4.3.3.1</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+        <command name="load">cray-parallel-netcdf/1.6.1</command>
+      </modules>
+         <modules>
+        <command name="load">subversion/1.8.3</command>
+        <command name="load">cmake/2.8.10.2</command>
+        <command name="list">&gt;&amp; software_environment.txt</command>
+      </modules>
+      <!-- Default -->
+      <!--
+                                         set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+                                         if($status == 0) then
+                                -->
+       <environment_variables>
+        <env name="COMPILER">$COMPILER</env>
+        <env name="MPILIB">$MPILIB</env>
+        <env name="CESM_REPO">$CESM_REPO</env>
+        <env name="MPICH_ENV_DISPLAY">1</env>
+        <env name="MPICH_VERSION_DISPLAY">1</env>
+        <env name="MPICH_CPUMASK_DISPLAY">1</env>
+        <env name="MPSTKZ">128M</env>
+        <env name="OMP_STACKSIZE">128M</env>
+      </environment_variables>
+
+      <!-- Set if compiler and mpilib  -->
+      <environment_variables compiler="pgi_acc">
+        <env name="MODULEPATH">${MODULEPATH}:/ccs/home/norton/.modules</env>
+        <!-- NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility -->
+        <env name="CRAY_CPU_TARGET">istanbul</env>
+        <env name="CRAY_CUDA_MPS">1</env>
+      </environment_variables>
+      <environment_variables compiler="pgi">
+        <!-- NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility -->
+        <env name="CRAY_CPU_TARGET">istanbul</env>
+      </environment_variables>
+      <environment_variables compiler="intel">
+        <env name="XTPE_LINK_TYPE">dynamic</env>
+      </environment_variables>
+    </module_system>
 </machine>
 
 <machine MACH="eos">
