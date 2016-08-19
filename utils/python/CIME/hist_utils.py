@@ -238,8 +238,7 @@ def generate_baseline(case, baseline_dir=None):
         num_gen += len(hists)
         for hist in hists:
             ext = get_extension(model, hist)
-            basename = "%s.%s.nc" % (model, ext)
-            baseline = os.path.join(basegen_dir, basename)
+            baseline = os.path.join(basegen_dir, os.path.basename(hist))
             if os.path.exists(baseline):
                 os.remove(baseline)
 
