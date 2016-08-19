@@ -62,8 +62,8 @@
 		<nml_option name="config_global_ocean_smooth_TS_iterations" type="integer" default_value="0" units="unitless"
 					description="Number of smoothing iterations on temperature and salinity."
 					possible_values="Any positive integer value greater or equal to 0."
-	/>
-	<nml_option name="config_global_ocean_swData_file" type="character" default_value="none" units="unitless"
+		/>
+		<nml_option name="config_global_ocean_swData_file" type="character" default_value="none" units="unitless"
 					description="Name of the file containing shortwaveData (chlA, zenith Angle, clear sky radiation)"
 					possible_values="path/to/swData/file.nc"
 		/>
@@ -106,10 +106,10 @@
 		<nml_option name="config_global_ocean_piston_velocity" type="real" default_value="5.0e-5" units="m s^{-1}"
 					description="Parameter controlling rate to which SST and SST are restored."
 					possible_values="Any real positive number."
-	/>
-	<nml_option name="config_global_ocean_interior_restore_rate" type="real" default_value="1.0e-7" units="s^{-1}"
-			description="Parameter controlling rate to which interior temperature and salinity are restored."
-			possible_values="Any real positive number."
+		/>
+		<nml_option name="config_global_ocean_interior_restore_rate" type="real" default_value="1.0e-7" units="s^{-1}"
+					description="Parameter controlling rate to which interior temperature and salinity are restored."
+					possible_values="Any real positive number."
 		/>
 		<nml_option name="config_global_ocean_topography_file" type="character" default_value="none" units="unitless"
 					description="Path to the topography initial condition file."
@@ -255,9 +255,37 @@
 					description="Name of file containing global values of ecosys forcing fields"
 					possible_values="ecosys_forcing.nc"
 		/>
+		<nml_option name="config_global_ocean_ecosys_nlat_dimname" type="character" default_value="none" units="unitless"
+					description="Name of the dimension that determines number of latitude lines in ecosys initial condition files."
+					possible_values="Dim name from input files."
+		/>
+		<nml_option name="config_global_ocean_ecosys_nlon_dimname" type="character" default_value="none" units="unitless"
+					description="Name of the dimension that determines number of longitude lines in ecosys initial condition files."
+					possible_values="Dim name from input files."
+		/>
+		<nml_option name="config_global_ocean_ecosys_lat_varname" type="character" default_value="none" units="unitless"
+					description="Name of the variable containing latitude coordinates for ecosys values in ecosys initial condition file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_global_ocean_ecosys_lon_varname" type="character" default_value="none" units="unitless"
+					description="Name of the variable containing longitude coordinates for ecosys values in ecosys initial condition file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_global_ocean_ecosys_latlon_degrees" type="logical" default_value=".true." units="unitless"
+					description="Logical flag that controls if the Lat/Lon fields for ecosys should be converted to radians. True means input is degrees, false means input is radians."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_global_ocean_ecosys_method" type="character" default_value="bilinear_interpolation" units="unitless"
+					description="Method to interpolate shortwave data to MPAS mesh."
+					possible_values="bilinear_interpolation, nearest_neighbor"
+		/>
 		<nml_option name="config_global_ocean_ecosys_forcing_time_dimname" type="character" default_value="none" units="unitless"
 					description="Name of the dimension that determines the times in ecosys forcing files."
 					possible_values="Dim name from input files."
+		/>
+		<nml_option name="config_global_ocean_smooth_ecosys_iterations" type="integer" default_value="0" units="unitless"
+					description="Number of smoothing iterations on ecosystem variables."
+					possible_values="Any positive integer value greater or equal to 0."
 		/>
 	</nml_record>
 	<var_struct name="scratch" time_levs="1">
