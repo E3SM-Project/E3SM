@@ -1,0 +1,36 @@
+<template>
+	<validation>
+		<compare_fields>
+			<field name="PO4" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="NO3" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="SiO3" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="NH4" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/> 
+			<field name="Fe" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="O2" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="DIC" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="DIC_ALT_CO2" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="ALK" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="DOC" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/> 
+			<field name="DON" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="DOFe" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="DOP" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="DOPr" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="DONr" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="zooC" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="spChl" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="spC" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/> 
+			<field name="spFe" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="spCaCO3" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="diatChl" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="diatC" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/> 
+			<field name="diatFe" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="diatSi" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="diazChl" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="diazC" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="diazFe" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="phaeoChl" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="phaeoC" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="phaeoFe" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+	</validation>
+</template>
