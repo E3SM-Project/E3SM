@@ -5,6 +5,15 @@
 	<test name="ISOMIP 2.01 - Smoke Test" core="ocean" configuration="isomip" resolution="10km" test="expt2.01">
 		<script name="run_test.py"/>
 	</test>
+	<test name="ISOMIP+ Ocean0 - Smoke Test" core="ocean" configuration="isomip_plus" resolution="2km" test="Ocean0">
+		<script name="run_test.py"/>
+	</test>
+	<test name="ISOMIP+ Ocean1 - Smoke Test" core="ocean" configuration="isomip_plus" resolution="2km" test="Ocean1">
+		<script name="run_test.py"/>
+	</test>
+	<test name="ISOMIP+ Ocean2 - Smoke Test" core="ocean" configuration="isomip_plus" resolution="2km" test="Ocean2">
+		<script name="run_test.py"/>
+	</test>
 	<test name="sub-ice-shelf 2D - default - Smoke Test" core="ocean" configuration="sub_ice_shelf_2D" resolution="5km" test="default">
 		<script name="run_test.py"/>
 	</test>

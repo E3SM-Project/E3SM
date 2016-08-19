@@ -1,0 +1,80 @@
+<template>
+	<namelist>
+		<option name="config_init_configuration">'isomip_plus'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_use_bulk_thickness_flux">.true.</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_eos_type">'linear'</option>
+		<option name="config_eos_linear_alpha">0.03836</option>
+		<option name="config_eos_linear_beta">0.8059</option>
+		<option name="config_eos_linear_Tref">-1.0</option>
+		<option name="config_eos_linear_Sref">34.2</option>
+		<option name="config_eos_linear_densityref">1027.51</option>
+		<option name="config_iterative_init_variable">'landIcePressure_from_top_density'</option>
+		<option name="config_use_rx1_constraint">.true.</option>
+		<option name="config_rx1_max">5.0</option>
+		<option name="config_isomip_plus_min_column_thickness">10.0</option>
+		<option name="config_isomip_plus_topography_file">'input_geometry_processed.nc'</option>
+		<option name="config_use_activeTracers_interior_restoring">.true.</option>
+		<option name="config_use_activeTracers_surface_bulk_forcing">.true.</option>
+	</namelist>
+
+	<streams>
+		<stream name="input_init">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="refZMid" type="var"/>
+				<member name="zMid" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="restingThickness" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+				<member name="bottomDepth" type="var"/>
+				<member name="bottomDepthObserved" type="var"/>
+				<member name="oceanFracObserved" type="var"/>
+				<member name="maxLevelCell" type="var"/>
+				<member name="vertCoordMovementWeights" type="var"/>
+				<member name="edgeMask" type="var"/>
+				<member name="cullCell" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="rx1Cell" type="var"/>
+				<member name="rx1Edge" type="var"/>
+				<member name="rx1MaxCell" type="var"/>
+				<member name="rx1MaxEdge" type="var"/>
+				<member name="globalRx1Max" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceMask" type="var"/>
+				<member name="landIcePressure" type="var"/>
+				<member name="landIceDraft" type="var"/>
+				<member name="modifySSHMask" type="var"/>
+				<member name="rx1InitSmoothingMask" type="var"/>
+				<member name="verticalStretch" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="forcing_data_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">init_mode_forcing_data.nc</attribute>
+			<add_contents>
+				<member name="tracersInteriorRestoringFields" type="var_struct"/>
+				<member name="evaporationFlux" type="var"/>
+				<member name="seaIceHeatFlux" type="var"/>
+				<member name="seaIceSalinityFlux" type="var"/>
+				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
+
