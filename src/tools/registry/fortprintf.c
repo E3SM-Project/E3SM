@@ -32,6 +32,8 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 
 #ifdef FORTPRINTF_DEBUG
 	printf("call to fortprintf\n");
+	printf("Format string is: %s\n", str);
+	printf("\n");
 #endif
 
 	/* Assume no errors */
@@ -40,6 +42,10 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 	/* Add formatted string to the buffer of fortran code to be written */
 	va_start(ap, str);
 	i = vsnprintf(fbuffer+nbuf, 1024-nbuf, str, ap);
+#ifdef FORTPRINTF_DEBUG
+	printf("Full buffer is:\n");
+	printf("%s\n", fbuffer);
+#endif
 	va_end(ap);
 
 	/* Set the next free position in the fortran buffer */
@@ -55,9 +61,13 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 		/* Scan through the max line length - 1 (since we may have to add an & character) or the end of the buffer, whichever comes first */
 		for (i=0; i<MAX_LINE_LEN-1 && i<nbuf; i++) {
 			lastchar = (i == nbuf-1) ? 1 : 0;
-			if (fbuffer[i] == '\'' && (fbuffer[i+1] != '\'' || lastchar)) {                               /* Whether we are inside a quoted string */
-				inquotes = (inquotes + 1) % 2;
-				q = inquotes ? i : -1;
+			if (fbuffer[i] == '\'') {
+				if ( fbuffer[i+1] != '\'' || lastchar ) {
+					inquotes = (inquotes + 1) % 2;
+					q = inquotes ? i : -1;
+				} else if ( !lastchar && fbuffer[i+1] == '\'' ) {
+					i++;
+				}
 			}
 			if (fbuffer[i] == '\n') nl = i;                                                               /* The last occurrence of a newline */
 			if (fbuffer[i] == ' ' && !lastchar && fbuffer[i+1] != '&') {                             /* The last occurrence of a space */
@@ -67,7 +77,7 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 		}
 
 #ifdef FORTPRINTF_DEBUG
-		printf("1: i = %d, nl = %d, sp = %d, fbuffer[i] = %c\n", i, nl, sp, fbuffer[i]);
+		printf("1: i = %d, nl = %d, sp = %d, fbuffer[i] = %c, inquotes = %d\n", i, nl, sp, fbuffer[i], inquotes);
 #endif
 
 		/* If we haven't reached the column limit, don't consider breaking the line yet */
@@ -158,12 +168,14 @@ int main()/*{{{*/
 	foo = fopen("test01.inc","w");
 	err = fortprintf(foo, "123456789\n");
 	print_result(1, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests writing a line with space that is below the column limit */
 	foo = fopen("test02.inc","w");
 	err = fortprintf(foo, "12345 789\n");
 	print_result(2, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/*** Test lines that are less than 20 chars long ***/
@@ -172,12 +184,14 @@ int main()/*{{{*/
 	foo = fopen("test03.inc","w");
 	err = fortprintf(foo, "123456789 12345678\n");
 	print_result(3, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests the case where we write a newline at the last column with NO chances to break the line earlier */
 	foo = fopen("test04.inc","w");
 	err = fortprintf(foo, "123456789012345678\n");
 	print_result(4, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with a space occurring in the NEXT-TO-LAST column plus another line */
@@ -185,6 +199,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789 1234567 0");
 	err += fortprintf(foo, "1234\n");
 	print_result(5, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with a space occurring in the LAST column plus another line */
@@ -192,6 +207,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789 12345678 ");
 	err += fortprintf(foo, "1234\n");
 	print_result(6, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with the first space occurring in the NEXT-TO-LAST column plus another line */
@@ -199,6 +215,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "12345678901234567 0");
 	err += fortprintf(foo, "1234\n");
 	print_result(7, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with the first space occurring in the LAST column plus another line */
@@ -206,6 +223,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789012345678 ");
 	err += fortprintf(foo, "1234\n");
 	print_result(8, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/*** Test lines that are exactly 20 chars long ***/
@@ -214,12 +232,14 @@ int main()/*{{{*/
 	foo = fopen("test09.inc","w");
 	err = fortprintf(foo, "123456789 123456789\n");
 	print_result(9, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests the case where we write a newline at the last column with NO chances to break the line earlier */
 	foo = fopen("test10.inc","w");
 	err = fortprintf(foo, "1234567890123456789\n");
 	print_result(10, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with a space occurring in the NEXT-TO-LAST column plus another line */
@@ -227,6 +247,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789 12345678 0");
 	err += fortprintf(foo, "1234\n");
 	print_result(11, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with a space occurring in the LAST column plus another line */
@@ -234,6 +255,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789 123456780 ");
 	err += fortprintf(foo, "1234\n");
 	print_result(12, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with the first space occurring in the NEXT-TO-LAST column plus another line */
@@ -241,6 +263,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789012345678 0");
 	err += fortprintf(foo, "1234\n");
 	print_result(13, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with the first space occurring in the LAST column plus another line */
@@ -248,6 +271,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "1234567890123456780 ");
 	err += fortprintf(foo, "1234\n");
 	print_result(14, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/*** Test lines that are more than 21 chars long ***/
@@ -256,12 +280,14 @@ int main()/*{{{*/
 	foo = fopen("test15.inc","w");
 	err = fortprintf(foo, "123456789 1234567890\n");
 	print_result(15, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests the case where we write a newline at the last column with NO chances to break the line earlier */
 	foo = fopen("test16.inc","w");
 	err = fortprintf(foo, "1234567890123456789\n");
 	print_result(16, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with a space occurring in the NEXT-TO-LAST column plus another line */
@@ -269,6 +295,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789 123456789 0");
 	err = fortprintf(foo, "1234\n");
 	print_result(17, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with a space occurring in the LAST column plus another line */
@@ -276,6 +303,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "123456789 1234567890 ");
 	err += fortprintf(foo, "1234\n");
 	print_result(18, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with the first space occurring in the NEXT-TO-LAST column plus another line */
@@ -283,6 +311,7 @@ int main()/*{{{*/
 	err = fortprintf(foo, "1234567890123456789 0");
 	err += fortprintf(foo, "1234\n");
 	print_result(19, err);
+	fortprint_flush(foo);
 	fclose(foo);
 
 	/* Tests a line with the first space occurring in the LAST column plus another line */
@@ -290,7 +319,30 @@ int main()/*{{{*/
 	err = fortprintf(foo, "12345678901234567890 ");
 	err += fortprintf(foo, "1234\n");
 	print_result(20, err);
+	fortprint_flush(foo);
 	fclose(foo);
+
+	/* Tests a line with single quotes */
+	foo = fopen("test21.inc", "w");
+	err = fortprintf(foo, "\'1234567890\'");
+	print_result(21, err);
+	fortprint_flush(foo);
+	fclose(foo);
+
+	/* Tests a line with double quotes */
+	foo = fopen("test22.inc", "w");
+	err = fortprintf(foo, "\'1234\'\'56789\'");
+	print_result(22, err);
+	fortprint_flush(foo);
+	fclose(foo);
+
+	/* Tests a line with double quotes and a line break after the double quotes */
+	foo = fopen("test22.inc", "w");
+	err = fortprintf(foo, "\'1234567\'\'890 1234567890\'");
+	print_result(22, err);
+	fortprint_flush(foo);
+	fclose(foo);
+
 
 	return 0;
 }/*}}}*/
