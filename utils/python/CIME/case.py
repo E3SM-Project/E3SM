@@ -259,7 +259,9 @@ class Case(object):
             else:
                 item = self.get_resolved_value(item,recurse=recurse+1)
 
-        if(recurse >= recurse_limit):
+        if recurse >= 2*recurse_limit:
+            logging.warning("Not able to fully resolve item '%s'" % item)
+        elif recurse >= recurse_limit:
             #try env_batch first
             env_batch = self.get_env("batch")
             item = env_batch.get_resolved_value(item)
