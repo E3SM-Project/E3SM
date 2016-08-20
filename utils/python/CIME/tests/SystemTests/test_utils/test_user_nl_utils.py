@@ -105,7 +105,7 @@ class TestUserNLCopier(unittest.TestCase):
 
         # Setup
         # Create file in caseroot for component_exists, but not for component_for_append
-        filename = self.write_user_nl_file(component_exists, 'irrelevant contents')
+        self.write_user_nl_file(component_exists, 'irrelevant contents')
 
         # Exercise & verify
         self.assertRaisesRegexp(RuntimeError, "No user_nl files found",

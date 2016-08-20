@@ -5,6 +5,11 @@ This module contains unit tests of the method
 SystemTestsCompareTwo._link_to_case2_output
 """
 
+# Ignore privacy concerns for unit tests, so that unit tests can access
+# protected members of the system under test
+#
+# pylint:disable=protected-access
+
 import unittest
 import os
 import shutil
@@ -132,7 +137,7 @@ class TestLinkToCase2Output(unittest.TestCase):
         run2_suffix = 'run2'
 
         mytest = self.setup_test_and_directories(casename1, run2_suffix)
-        filepath1 = self.create_file_in_rundir2(mytest, 'clm2.h0', run2_suffix)
+        self.create_file_in_rundir2(mytest, 'clm2.h0', run2_suffix)
 
         # Create initial link via a call to _link_to_case2_output
         mytest._link_to_case2_output()
