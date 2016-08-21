@@ -618,18 +618,21 @@ class O_TestTestScheduler(TestCreateTestCommon):
             log_file = log_files[0]
             if (test_name == build_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
-                self.assertTrue("Intentional fail for testing infrastructure" in open(log_file, "r").read(),
-                                "Broken test did not report build error")
+                data = open(log_file, "r").read()
+                self.assertTrue("Intentional fail for testing infrastructure" in data,
+                                "Broken test did not report build error:\n%s" % data)
             elif (test_name == build_fail_exc_test):
+                data = open(log_file, "r").read()
                 self.assertEqual(ts.get_status(CIME.test_scheduler.SHAREDLIB_BUILD_PHASE), TEST_FAIL_STATUS)
-                self.assertTrue("Exception from init" in open(log_file, "r").read(),
-                                "Broken test did not report build error")
+                self.assertTrue("Exception from init" in data,
+                                "Broken test did not report build error:\n%s" % data)
             elif (test_name == run_fail_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
             elif (test_name == run_fail_exc_test):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
-                self.assertTrue("Exception from run_phase" in open(log_file, "r").read(),
-                                "Broken test did not report build error")
+                data = open(log_file, "r").read()
+                self.assertTrue("Exception from run_phase" in data,
+                                "Broken test did not report run error:\n%s" % data)
             elif (test_name == mem_fail_test):
                 self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)

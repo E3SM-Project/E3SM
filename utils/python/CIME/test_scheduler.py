@@ -348,9 +348,12 @@ class TestScheduler(object):
                 else:
                     break
             else:
-                self._log_output(test,
-                                 "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
-                                 (phase, test, cmd, output, errput))
+                # We don't want "RUN PASSED" in the TestStatus.log if the only thing that
+                # succeeded was the submission.
+                if phase != RUN_PHASE or self._no_batch:
+                    self._log_output(test,
+                                     "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
+                                     (phase, test, cmd, output, errput))
                 break
 
         return rc == 0
