@@ -1007,12 +1007,12 @@
     <mpirun mpilib="default">
       <executable args="default">aprun</executable>
       <arguments>
-        <!-- pes per node -N -->
-        <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
-        <arg name="pes">-n {{ num_tasks }}</arg >
-        <arg name="cpus_per_pe">-d 1</arg>
-               <!-- Total MPI Tasks -->
-               <!-- arg name="num_tasks"> -n {{ num_tasks }}</arg -->
+	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
+        <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
+        <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+        <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
+        <arg name="thread_count" > -d {{ thread_count }}</arg>
+        <arg name="numa_node" > -cc {{ numa_node }}</arg>
       </arguments>
 
     </mpirun>
