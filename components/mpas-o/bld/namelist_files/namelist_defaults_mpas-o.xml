@@ -41,10 +41,8 @@
 <config_1dCVTgenerator_stretch2>1.0275</config_1dCVTgenerator_stretch2>
 <config_1dCVTgenerator_dzSeed>1.2</config_1dCVTgenerator_dzSeed>
 
-<!-- init_ssh_and_ssp -->
-<config_read_ssh_and_ssp_from_stream>.false.</config_read_ssh_and_ssp_from_stream>
-<config_iterative_init_variable>'ssp'</config_iterative_init_variable>
-<config_modify_open_ocean_ssh>.false.</config_modify_open_ocean_ssh>
+<!-- init_ssh_and_landIcePressure -->
+<config_iterative_init_variable>'landIcePressure'</config_iterative_init_variable>
 
 <!-- time_integration -->
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
@@ -210,11 +208,12 @@
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
 <config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
-<config_frazil_sea_ice_density>0.917e3</config_frazil_sea_ice_density>
+<config_frazil_ice_density>1000.0</config_frazil_ice_density>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
 <config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
-<config_frazil_ice_reference_salinity>4.0</config_frazil_ice_reference_salinity>
+<config_frazil_sea_ice_reference_salinity>4.0</config_frazil_sea_ice_reference_salinity>
+<config_frazil_land_ice_reference_salinity>0.0</config_frazil_land_ice_reference_salinity>
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
@@ -225,9 +224,6 @@
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
 <config_land_ice_flux_boundaryLayerThickness>10.0</config_land_ice_flux_boundaryLayerThickness>
 <config_land_ice_flux_boundaryLayerNeighborWeight>0.0</config_land_ice_flux_boundaryLayerNeighborWeight>
-<config_land_ice_flux_Tf0>9.39e-2</config_land_ice_flux_Tf0>
-<config_land_ice_flux_dTf_dS>-5.73e-2</config_land_ice_flux_dTf_dS>
-<config_land_ice_flux_dTf_dp>-7.53e-8</config_land_ice_flux_dTf_dp>
 <config_land_ice_flux_cp_ice>2.009e3</config_land_ice_flux_cp_ice>
 <config_land_ice_flux_rho_ice>918</config_land_ice_flux_rho_ice>
 <config_land_ice_flux_topDragCoeff>2.5e-3</config_land_ice_flux_topDragCoeff>
@@ -255,6 +251,11 @@
 
 <!-- eos -->
 <config_eos_type>'jm'</config_eos_type>
+<config_freezing_temperature_coeff_0>-1.8</config_freezing_temperature_coeff_0>
+<config_freezing_temperature_coeff_S>0.0</config_freezing_temperature_coeff_S>
+<config_freezing_temperature_coeff_p>6.64670038e-08</config_freezing_temperature_coeff_p>
+<config_freezing_temperature_coeff_pS>-4.44655526e-09</config_freezing_temperature_coeff_pS>
+<config_freezing_temperature_reference_pressure>1e5</config_freezing_temperature_reference_pressure>
 
 <!-- eos_linear -->
 <config_eos_linear_alpha>0.2</config_eos_linear_alpha>
@@ -447,6 +448,16 @@
 <config_global_ocean_windstress_meridional_varname>'none'</config_global_ocean_windstress_meridional_varname>
 <config_global_ocean_windstress_method>'bilinear_interpolation'</config_global_ocean_windstress_method>
 <config_global_ocean_windstress_conversion_factor>1</config_global_ocean_windstress_conversion_factor>
+<config_global_ocean_ecosys_file>'unknown'</config_global_ocean_ecosys_file>
+<config_global_ocean_ecosys_forcing_file>'unknown'</config_global_ocean_ecosys_forcing_file>
+<config_global_ocean_ecosys_nlat_dimname>'none'</config_global_ocean_ecosys_nlat_dimname>
+<config_global_ocean_ecosys_nlon_dimname>'none'</config_global_ocean_ecosys_nlon_dimname>
+<config_global_ocean_ecosys_lat_varname>'none'</config_global_ocean_ecosys_lat_varname>
+<config_global_ocean_ecosys_lon_varname>'none'</config_global_ocean_ecosys_lon_varname>
+<config_global_ocean_ecosys_latlon_degrees>.true.</config_global_ocean_ecosys_latlon_degrees>
+<config_global_ocean_ecosys_method>'bilinear_interpolation'</config_global_ocean_ecosys_method>
+<config_global_ocean_ecosys_forcing_time_dimname>'none'</config_global_ocean_ecosys_forcing_time_dimname>
+<config_global_ocean_smooth_ecosys_iterations>0</config_global_ocean_smooth_ecosys_iterations>
 
 <!-- cvmix_WSwSBF -->
 <config_cvmix_WSwSBF_vert_levels>100</config_cvmix_WSwSBF_vert_levels>
@@ -662,7 +673,6 @@
 <config_isomip_restoring_salinity>34.4</config_isomip_restoring_salinity>
 <config_isomip_salinity_piston_velocity>1.157e-5</config_isomip_salinity_piston_velocity>
 <config_isomip_coriolis_parameter>-1.4e-4</config_isomip_coriolis_parameter>
-<config_isomip_effective_density>1026.0</config_isomip_effective_density>
 <config_isomip_southern_boundary>0.0</config_isomip_southern_boundary>
 <config_isomip_northern_boundary>1000e3</config_isomip_northern_boundary>
 <config_isomip_western_boundary>0.0</config_isomip_western_boundary>

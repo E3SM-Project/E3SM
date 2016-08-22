@@ -9,4 +9,5 @@ my @groups = qw(velocity_solver
                 decomposition
                 debug
                 am_globalstats
+                am_regionalstats
                 );

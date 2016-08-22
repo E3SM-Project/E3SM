@@ -127,3 +127,13 @@ add_default($nl, 'config_AM_globalStats_stream_name');
 add_default($nl, 'config_AM_globalStats_compute_on_startup');
 add_default($nl, 'config_AM_globalStats_write_on_startup');
 
+####################################
+# Namelist group: AM_regionalStats #
+####################################
+
+add_default($nl, 'config_AM_regionalStats_enable');
+add_default($nl, 'config_AM_regionalStats_compute_interval');
+add_default($nl, 'config_AM_regionalStats_stream_name');
+add_default($nl, 'config_AM_regionalStats_compute_on_startup');
+add_default($nl, 'config_AM_regionalStats_write_on_startup');
+
