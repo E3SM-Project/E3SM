@@ -257,6 +257,8 @@ module ocn_forward_mode
                                        'the MPAS-Ocean forward mode')
       endif
 
+      call ocn_init_metadata(domain)
+
       call ocn_init_routines_vert_coord(domain)
 
       call ocn_init_routines_compute_max_level(domain)
