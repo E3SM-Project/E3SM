@@ -79,7 +79,7 @@
     <batch_query args="-u $USER" >qselect</batch_query>
     <batch_submit>qsub </batch_submit>
     <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <jobid_pattern>^(\d+)</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
     <submit_args>
@@ -164,10 +164,8 @@
 
     <!-- eos is PBS -->
     <batch_system MACH="eos" type="pbs" version="x.y">
-    <jobid_pattern>^(\d+)</jobid_pattern>
     <directives>
       <directive>-A {{ project }}</directive>
-      <directive>-l mppwidth={{ mppwidth }}</directive>
       <directive>-l  nodes={{ num_nodes }}</directive>
     </directives>
     <queues>
