@@ -490,6 +490,11 @@ contains
             ! limit the frazil formed appropriately
             newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
 
+
+            ! Determine new salt in frazil
+            newThicknessWeightedSaltContent = newFrazilIceThickness * min(config_frazil_ice_reference_salinity, &
+                                              activeTracers(indexSalinity, k, iCell))
+
             ! compute tendency to thickness, temperature and salinity
             ! layerTendency is scaled so that mass of ice created == mass of ocean water removed
 
@@ -498,16 +503,13 @@ contains
             frazilLayerThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_sea_ice_density / density(k,iCell) / dt
 
             ! salt is extracted with the frazil
-            frazilSalinityTendency(k,iCell) = - newFrazilIceThickness &
-                                            * min( config_frazil_ice_reference_salinity, activeTracers(indexSalinity, k, iCell) ) &
-                                            / dt
+            frazilSalinityTendency(k,iCell) = - newThicknessWeightedSaltContent / dt
 
             ! ocean fluid temperature is warmed due to creation of frazil
             frazilTemperatureTendency(k,iCell) =  + ( newFrazilIceThickness * config_frazil_heat_of_fusion &
                                                * config_frazil_sea_ice_density ) / (config_specific_heat_sea_water * rho_sw) / dt
 
             ! keep track of sum of frazil ice
-            newThicknessWeightedSaltContent = frazilSalinityTendency(k, iCell) * dt
             sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
             sumNewThicknessWeightedSaltContent = sumNewThicknessWeightedSaltContent + newThicknessWeightedSaltContent
 
