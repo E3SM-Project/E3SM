@@ -28,9 +28,11 @@ class PEA(SystemTestsCompareTwo):
             self._case.set_value("NTASKS_%s"%comp, 1)
             self._case.set_value("NTHRDS_%s"%comp, 1)
             self._case.set_value("ROOTPE_%s"%comp, 0)
+            
 
     def _case_one_setup(self):
-        pass
+        case_setup(self._case, reset=True, test_mode=True)
+
     def _case_two_setup(self):
         self._case.set_value("MPILIB","mpi-serial")
         if os.path.isfile("Macros"):
