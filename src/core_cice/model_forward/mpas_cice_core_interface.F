@@ -627,15 +627,19 @@ module cice_core_interface
       integer :: ierr
 
       logical, pointer :: config_do_restart
+      character(len=strKIND), pointer :: config_initial_condition_type
 
       ierr = 0
 
+      call mpas_pool_get_config(configs, 'config_initial_condition_type', config_initial_condition_type)
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 
       if (.not. associated(config_do_restart)) then
          write(stream,'(a)') ''
          ierr = 1
-      else if (config_do_restart) then
+      else if (trim(config_initial_condition_type) == "restart") then
+         write(stream,'(a)') 'restart_ic'
+      else if (trim(config_initial_condition_type) /= "restart" .and. config_do_restart) then
          write(stream,'(a)') 'restart'
       else
          write(stream,'(a)') 'input'

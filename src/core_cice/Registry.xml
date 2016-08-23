@@ -95,7 +95,7 @@
 		<nml_option name="config_nSnowLayers"                 type="integer"       default_value="1"/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
-		<nml_option name="config_initial_condition_type"     type="character"     default_value="cice_default"    possible_values="'uniform', 'circle', 'square' or 'uniform_interior'"/>
+		<nml_option name="config_initial_condition_type"     type="character"     default_value="cice_default"    possible_values="'restart', 'uniform', 'circle', 'square' or 'uniform_interior'"/>
 		<nml_option name="config_initial_ice_area"           type="real"          default_value="1.0"/>
 		<nml_option name="config_initial_ice_volume"         type="real"          default_value="1.0"/>
 		<nml_option name="config_initial_snow_volume"        type="real"          default_value="0.0"/>
@@ -318,7 +318,7 @@
 	    <var name="kiteAreasOnVertex"/>
 	  </stream>
 
-	  <stream name="input" 
+	  <stream name="input"
 		  type="input"
 		  filename_template="grid.nc"
 		  filename_interval="none"
@@ -338,14 +338,10 @@
 	    <var name="regionNames"/>
 	  </stream>
 
-	  <stream name="restart" 
-		  type="input;output"
-		  filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
-		  filename_interval="00_00:00:01"
-		  input_interval="initial_only"
-		  output_interval="00-03-00_00:00:00"
-		  immutable="true">    
-	    <stream name="mesh"/>
+	  <stream name="restart_contents"
+	          type="none"
+		  filename_template="restart_variables.nc"
+		  immutable="true">
 	    <var name="xtime"/>
 	    <var name="simulationStartTime"/>
 	    <var name="fVertex"/>
@@ -427,7 +423,29 @@
 	    <var name="maximumIcePresence"/>
 	  </stream>
 
-	  <stream name="output" 				
+	  <stream name="restart"
+		  type="input;output"
+		  filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
+		  filename_interval="00_00:00:01"
+		  input_interval="initial_only"
+		  output_interval="00-03-00_00:00:00"
+		  immutable="true">
+	    <stream name="mesh"/>
+	    <stream name="restart_contents"/>
+	  </stream>
+
+	  <stream name="restart_ic"
+		  type="input"
+		  filename_template="seaice_ic.nc"
+		  filename_interval="none"
+		  input_interval="initial_only"
+		  output_interval="none"
+		  immutable="true">
+	    <stream name="mesh"/>
+	    <stream name="restart_contents"/>
+	  </stream>
+
+	  <stream name="output"
 		  type="output"
 		  filename_template="output/output.$Y.nc"
 		  filename_interval="01-00-00_00:00:00"
