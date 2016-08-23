@@ -225,6 +225,7 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: forcingPool
 
       integer :: err_tmp
       integer :: nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
@@ -240,17 +241,24 @@ contains
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_TimeInterval_type) :: timeStep
 
-      real (kind=RKIND) :: localCFL, localSum, dt
+      real (kind=RKIND) :: localCFL, localSum, dt, currentVolume
       real (kind=RKIND), pointer :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, areaCellGlobal, &
-                                    areaEdgeGlobal, areaTriangleGlobal
+                                    areaEdgeGlobal, areaTriangleGlobal, totalVolumeChange, netFreshwaterInput, &
+                                    absoluteFreshWaterConservation, relativeFreshWaterConservation
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, &
                                                     relativeVorticity, kineticEnergyCell, normalizedRelativeVorticityEdge, &
                                                     normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, &
                                                     vertAleTransportTop, vertVelocityTop, lowFreqDivergence, highFreqThickness, &
-                                                    density
+                                                    density, layerThicknessPreviousTimestep
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
+      real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: rainFlux
+
+      real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
 
       real (kind=RKIND), pointer :: daysSinceStartOfSim
       real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, &
@@ -287,6 +295,11 @@ contains
       call mpas_pool_get_array(globalStatsAMPool, 'volumeEdgeGlobal', volumeEdgeGlobal)
       call mpas_pool_get_array(globalStatsAMPool, 'CFLNumberGlobal', CFLNumberGlobal)
 
+      call mpas_pool_get_array(globalStatsAMPool, 'totalVolumeChange', totalVolumeChange)
+      call mpas_pool_get_array(globalStatsAMPool, 'netFreshwaterInput', netFreshwaterInput)
+      call mpas_pool_get_array(globalStatsAMPool, 'absoluteFreshWaterConservation', absoluteFreshWaterConservation)
+      call mpas_pool_get_array(globalStatsAMPool, 'relativeFreshWaterConservation', relativeFreshWaterConservation)
+
       sums = 0.0_RKIND
       sumSquares = 0.0_RKIND
       mins = 1.0e34_RKIND
@@ -312,6 +325,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
          call mpas_pool_get_dimension(tracersPool, 'num_activeTracers', num_activeTracers)
 
@@ -324,6 +338,7 @@ contains
          call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessPreviousTimestep, 2)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          if(thicknessFilterActive) then
@@ -345,6 +360,14 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
          call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime',simulationStartTime)
          call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim',daysSinceStartOfSim)
+
+         call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
+         call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
+         call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+         call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+         call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
+         call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+         call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
 
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
@@ -639,6 +662,178 @@ contains
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
          enddo
+
+         ! layerThickness from previous timestep
+         variableIndex = variableIndex + 1
+         call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, &
+                                                                    maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), &
+                                                                    layerThicknessPreviousTimestep(:,1:nCellsSolve), &
+                                                                    sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
+                                                                    mins_tmp(variableIndex), maxes_tmp(variableIndex), &
+                                                                    verticalSumMins_tmp(variableIndex), &
+                                                                    verticalSumMaxes_tmp(variableIndex))
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
+         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+
+         ! frazilLayerThicknessTendency
+         variableIndex = variableIndex + 1
+         if ( associated(frazilLayerThicknessTendency) ) then
+            call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, &
+                                                                       maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), &
+                                                                       frazilLayerThicknessTendency(:,1:nCellsSolve), &
+                                                                       sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
+                                                                       mins_tmp(variableIndex), maxes_tmp(variableIndex), &
+                                                                       verticalSumMins_tmp(variableIndex), &
+                                                                       verticalSumMaxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
+         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+
+         ! evaporationFlux
+         variableIndex = variableIndex + 1
+         if ( associated(evaporationFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 evaporationFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+
+         ! rainFlux
+         variableIndex = variableIndex + 1
+         if ( associated(rainFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 rainFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+
+         ! snowFlux
+         variableIndex = variableIndex + 1
+         if ( associated(snowFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 snowFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+
+         ! seaIceFreshWaterFlux
+         variableIndex = variableIndex + 1
+         if ( associated(seaIceFreshWaterFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 seaIceFreshWaterFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+
+         ! riverRunoffFlux
+         variableIndex = variableIndex + 1
+         if ( associated(riverRunoffFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 riverRunoffFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+
+         ! iceRunoffFlux
+         variableIndex = variableIndex + 1
+         if ( associated(iceRunoffFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 iceRunoffFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
          deallocate(workArray)
 
          nVariables = variableIndex
@@ -714,6 +909,9 @@ contains
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/(areaCellGlobal*nVertLevels)
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal*nVertLevels))
+
+      ! set current ocean volume to be used for volume change diagnostic
+      currentVolume = sums(variableIndex)
 
       ! normalVelocity
       variableIndex = variableIndex + 1
@@ -798,6 +996,78 @@ contains
         averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
         rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
       enddo
+
+      ! layerThickness from previous timestep
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal*nVertLevels)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal*nVertLevels))
+
+      ! calculate change in ocean volume
+      totalVolumeChange = currentVolume - sums(variableIndex)
+
+      ! frazilLayerThicknessTendency
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal*nVertLevels)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal*nVertLevels))
+
+      ! start accumulating fresh water inputs
+      netFreshwaterInput = sums(variableIndex)
+
+      ! evaporationFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! rainFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! snowFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! seaIceFreshWaterFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! riverRunoffFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! iceRunoffFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! calculate fresh water conservation check quantities
+      absoluteFreshWaterConservation = totalVolumeChange - netFreshwaterInput
+      if (totalVolumeChange == 0.0_RKIND) then
+         relativeFreshWaterConservation = 0.0_RKIND
+      else
+         relativeFreshWaterConservation = (totalVolumeChange - netFreshwaterInput)/totalVolumeChange
+      endif
 
       minGlobalStats(1:nVariables) =  mins(1:nVariables)
       maxGlobalStats(1:nVariables) =  maxes(1:nVariables)
@@ -1013,6 +1283,32 @@ contains
       end do
 
    end subroutine ocn_compute_field_volume_weighted_local_stats_max_level!}}}
+
+   subroutine ocn_compute_field_area_weighted_local_stats_surface(dminfo, nElements, areas, field, &!{{{
+      localSum, localRMS, localMin, localMax)
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      integer, intent(in) :: nElements
+      real (kind=RKIND), dimension(nElements), intent(in) :: areas, field
+      real (kind=RKIND), intent(out) :: localSum, localRMS, localMin, localMax
+
+      integer :: elementIndex
+
+      localSum = 0.0_RKIND
+      localRMS = 0.0_RKIND
+      localMin =  1.0e34_RKIND
+      localMax = -1.0e34_RKIND
+
+      do elementIndex = 1, nElements
+        localSum = localSum + areas(elementIndex) * field(elementIndex)
+        localRMS = localRMS + areas(elementIndex) * field(elementIndex)**2
+        localMin = min(localMin,field(elementIndex))
+        localMax = max(localMax,field(elementIndex))
+      end do
+
+   end subroutine ocn_compute_field_area_weighted_local_stats_surface!}}}
 
 end module ocn_global_stats
 
