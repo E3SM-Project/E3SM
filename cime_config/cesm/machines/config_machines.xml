@@ -554,16 +554,16 @@
       </modules>
       <modules mpilib="mpi-serial">
 	<command name="load">cray-hdf5/1.8.16</command>
-	<command name="load">cray-netcdf/4.3.3.1</command>
+	<command name="load">cray-netcdf/4.4.0</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
 	<command name="load">cray-hdf5-parallel/1.8.16</command>
-	<command name="load">cray-parallel-netcdf/1.6.1</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
 	<command name="load">perl/5.20.0</command>
-	<command name="load">cmake/3.0.0</command>
+	<command name="load">cmake/3.3.2</command>
       </modules>
     </module_system>
 
