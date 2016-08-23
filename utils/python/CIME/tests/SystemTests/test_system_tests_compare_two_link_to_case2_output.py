@@ -82,8 +82,8 @@ class TestLinkToCase2Output(unittest.TestCase):
         case1root = os.path.join(self.tempdir, casename1)
         case1 = CaseFake(case1root)
         mytest = SystemTestsCompareTwoFake(case1, run_two_suffix = run2_suffix)
-        mytest._case1.make_rundir()
-        mytest._case2.make_rundir()
+        mytest._case1.make_rundir()  #pylint: disable=maybe-no-member
+        mytest._case2.make_rundir()  #pylint: disable=maybe-no-member
 
         return mytest
 
