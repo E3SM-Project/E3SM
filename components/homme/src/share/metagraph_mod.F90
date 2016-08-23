@@ -250,11 +250,12 @@ contains
     integer                          :: nelem,nelem_edge, nedges  
     integer,allocatable              :: icount(:)
     integer                          :: ic,i,j,ii
+    integer                          :: npart
     integer                          :: head_processor_number
     integer                          :: tail_processor_number
-    integer :: enum
+    integer :: nedge_active,enum
     logical :: found
-    integer :: wgtP,wgtS
+    integer iTail, iHead, wgtP,wgtS
 
     type (root_t) :: mEdgeList ! root_t = C++ std::set<std::pair<int,int> >
 

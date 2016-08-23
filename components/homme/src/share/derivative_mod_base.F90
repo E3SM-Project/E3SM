@@ -124,8 +124,14 @@ contains
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
     
+    real (kind=longdouble_kind) :: dmat(np,np)
+    real (kind=longdouble_kind) :: dpv(np,np)
+    real (kind=longdouble_kind) :: v2p(np,np)
+    real (kind=longdouble_kind) :: p2v(np,np)
     real (kind=longdouble_kind) :: dvv(np,np)
+    real (kind=longdouble_kind) :: dvv_diag(np,np)
     real (kind=longdouble_kind) :: v2v(np,np)
+    real (kind=longdouble_kind) :: xnorm
     integer i,j
 
     ! ============================================
@@ -606,8 +612,8 @@ end do
     integer j
     integer l
 
-    real(kind=real_kind)  sumx00
-    real(kind=real_kind)  sumy00
+    real(kind=real_kind)  sumx00,sumx01
+    real(kind=real_kind)  sumy00,sumy01
 
     real(kind=real_kind)  :: vtempt(np,np,2)
 
@@ -786,8 +792,8 @@ end do
     integer i
     integer j
     integer l
-    real(kind=real_kind) ::  dsdx00
-    real(kind=real_kind) ::  dsdy00
+    real(kind=real_kind) ::  dsdx00,dsdx01
+    real(kind=real_kind) ::  dsdy00,dsdy01
 #ifdef DEBUG
     print *, "gradient_str_nonstag"
 !   write(17) np,s,deriv
@@ -825,8 +831,8 @@ end do
     integer j
     integer l
     
-    real(kind=real_kind) ::  dvdx00
-    real(kind=real_kind) ::  dudy00
+    real(kind=real_kind) ::  dvdx00,dvdx01
+    real(kind=real_kind) ::  dudy00,dudy01
 
     real(kind=real_kind)  :: vvtemp(np,np)
     do j=1,np
@@ -870,7 +876,8 @@ end do
     integer j
     integer l
 
-    real(kind=real_kind)  sumx00
+    real(kind=real_kind)  sumx00,sumx01
+    real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  vtemp(np,nc)
 
     do j=1,np
@@ -912,7 +919,8 @@ end do
     integer j
     integer l
 
-    real(kind=real_kind)  sumx00
+    real(kind=real_kind)  sumx00,sumx01
+    real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  vtemp(np,nc+1)
 
     do j=1,np
@@ -1089,7 +1097,7 @@ end do
     real(kind=real_kind),save,pointer :: dcell(:)  ! departure cell index of i'th intersection
     real(kind=real_kind),save,pointer :: delta(:)  ! length of i'th intersection
     real(kind=real_kind),save,pointer :: delta_a(:)  ! length of arrival cells
-    integer in_i,in_j,ia,ja,id,jd,count,i
+    integer in_i,in_j,ia,ja,id,jd,count,i,j
     logical :: found
 
     real(kind=real_kind) :: tol=1e-13
@@ -1311,7 +1319,7 @@ end do
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i,j,m,n
+    integer i,j,l,m,n
     real(kind=real_kind) ::  dscontra(np,np,2)
 
     dscontra=0
@@ -1372,7 +1380,7 @@ end do
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i,j,m,n
+    integer i,j,l,m,n
     real(kind=real_kind) ::  dscontra(np,np,2)
 
 
@@ -1428,7 +1436,7 @@ end do
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i,j,m,n
+    integer i,j,l,m,n
     real(kind=real_kind) ::  dscov(np,np,2)
 
     ! debug: 
@@ -1900,6 +1908,8 @@ end do
       real(kind=real_kind) :: dvdx00,dudy00
       real(kind=real_kind) :: vco(np,np,2)
       real(kind=real_kind) :: vtemp(np,np)
+      real(kind=real_kind) :: rdx
+      real(kind=real_kind) :: rdy
 
       ! convert to covariant form
                                                                     
@@ -1997,6 +2007,7 @@ end do
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
     real(kind=real_kind)             :: laplace(np,np)
+    real(kind=real_kind)             :: laplace2(np,np)
     integer i,j
 
     ! Local
@@ -2135,8 +2146,9 @@ end do
     real(kind=real_kind), optional :: nu_ratio
     ! Local
 
-    integer m,n
+    integer i,j,l,m,n
     real(kind=real_kind) :: vor(np,np),div(np,np)
+    real(kind=real_kind) :: v1,v2,div1,div2,vor1,vor2,phi_x,phi_y
 
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)
@@ -2263,6 +2275,8 @@ end do
     real (kind=real_kind)              :: flux_r(n,n)
     real (kind=real_kind)              :: flux_b(n,n)
     real (kind=real_kind)              :: flux_t(n,n)
+    
+    integer i,j
 
     if (.not.ALLOCATED(integration_matrix)      .or. &
         SIZE(integration_matrix,1).ne.n .or. &
@@ -2366,6 +2380,8 @@ end do
     real (kind=real_kind)              :: val(np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
 
+    integer i,j
+
     if (.not.ALLOCATED(integration_matrix)      .or. &
         SIZE(integration_matrix,1).ne.intervals .or. &
         SIZE(integration_matrix,2).ne.np) then
@@ -2402,6 +2418,8 @@ end do
 
     integer              , intent(in)  :: np
     integer              , intent(in)  :: intervals
+    real (kind=real_kind)              :: values(intervals,intervals)
+
 
     real(kind=real_kind), parameter :: zero = 0.0D0, one=1.0D0, two=2.0D0
 
@@ -2413,6 +2431,7 @@ end do
 
     real (kind=real_kind) :: legrange_div(np)
     real (kind=real_kind) :: a,b,x,y, x_j, x_i 
+    real (kind=real_kind) :: r(1) 
     integer i,j,n,m
 
     if (ALLOCATED(integration_matrix)) deallocate(integration_matrix)
@@ -2518,7 +2537,8 @@ end do
     real (kind=real_kind), dimension(np,np,nlev), intent(in), optional  :: dpmass
     real (kind=real_kind), dimension(np,np), intent(in)   :: sphweights
 
-    integer  k1, k, i, j, iter
+    real (kind=real_kind), dimension(np,np) :: ptens_mass
+    integer  k1, k, i, j, iter, weightsnum
     real (kind=real_kind) :: addmass, weightssum, mass, sumc
     real (kind=real_kind) :: x(np*np),c(np*np)
     integer :: maxiter = np*np-1
