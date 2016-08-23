@@ -21,14 +21,6 @@ In addition, they MAY require the following method:
     that's needed in both cases. This is called before _case_one_setup or
     _case_two_setup.
 
-(2) _case_one_build
-    This method will be called to build case one when separate_builds is True
-
-(2) _case_two_build
-    This method will be called to build case two when separate_builds is True
-
-
-
 """
 
 from CIME.XML.standard_module_setup import *
@@ -142,18 +134,13 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     # ========================================================================
     # Main public methods
     # ========================================================================
-    def _case_one_build(self, sharedlib_only=False, model_only=False):
-        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-
-    def _case_two_build(self, sharedlib_only=False, model_only=False):
-        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         if self._separate_builds:
             self._activate_case1()
-            self._case_one_build(sharedlib_only, model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             self._activate_case2()
-            self._case_two_build(sharedlib_only, model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)

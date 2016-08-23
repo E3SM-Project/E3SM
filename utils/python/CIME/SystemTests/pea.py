@@ -33,5 +33,6 @@ class PEA(SystemTestsCompareTwo):
         pass
     def _case_two_setup(self):
         self._case.set_value("MPILIB","mpi-serial")
-        os.remove("Macros")
+        if os.path.isfile("Macros"):
+            os.remove("Macros")
         case_setup(self._case, reset=True, test_mode=True)
