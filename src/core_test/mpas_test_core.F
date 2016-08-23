@@ -12,6 +12,7 @@ module test_core
 
    use test_core_halo_exch
    use test_core_field_tests
+   use test_core_timekeeping_tests
    use mpas_stream_manager
 
    type (MPAS_Clock_type), pointer :: clock
@@ -138,6 +139,8 @@ module test_core
       else
          write(stderrUnit, *) 'Stream I/O tests: FAILURE'
       end if
+
+      call test_core_test_intervals(domain, threadErrs, iErr)
 
       call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true.)
 
