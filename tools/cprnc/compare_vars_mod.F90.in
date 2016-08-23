@@ -270,7 +270,7 @@ contains
        s2 = vdimsize(file(2)%dim, file(2)%var(vid(2))%dimids)
 
        if(s1 /= s2) then
-          write(6,*), 'WARNING: Variable ',trim(file(1)%var(vid(1))%name),' sizes differ'
+          write(6,*) 'WARNING: Variable ',trim(file(1)%var(vid(1))%name),' sizes differ'
           write(6,'(a,a32)') ' DIMSIZEDIFF ', file(1)%var(vid(1))%name
           ifail = 1
           return
