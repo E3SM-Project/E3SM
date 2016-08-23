@@ -641,9 +641,10 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, &
                                                                     maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), &
-                                                                    layerThicknessPreviousTimestep(:,1:nCellsSolve), sums_tmp(variableIndex), &
-                                                                    sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                                    maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+                                                                    layerThicknessPreviousTimestep(:,1:nCellsSolve), &
+                                                                    sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
+                                                                    mins_tmp(variableIndex), maxes_tmp(variableIndex), &
+                                                                    verticalSumMins_tmp(variableIndex), &
                                                                     verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
@@ -656,9 +657,10 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, &
                                                                     maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), &
-                                                                    frazilLayerThicknessTendency(:,1:nCellsSolve), sums_tmp(variableIndex), &
-                                                                    sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                                    maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+                                                                    frazilLayerThicknessTendency(:,1:nCellsSolve), &
+                                                                    sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
+                                                                    mins_tmp(variableIndex), maxes_tmp(variableIndex), &
+                                                                    verticalSumMins_tmp(variableIndex), &
                                                                     verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
