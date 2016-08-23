@@ -655,13 +655,20 @@ contains
 
          ! frazilLayerThicknessTendency
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, &
-                                                                    maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), &
-                                                                    frazilLayerThicknessTendency(:,1:nCellsSolve), &
-                                                                    sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
-                                                                    mins_tmp(variableIndex), maxes_tmp(variableIndex), &
-                                                                    verticalSumMins_tmp(variableIndex), &
-                                                                    verticalSumMaxes_tmp(variableIndex))
+         if ( associated(frazilLayerThicknessTendency) ) then
+            call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, &
+                                                                       maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), &
+                                                                       frazilLayerThicknessTendency(:,1:nCellsSolve), &
+                                                                       sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
+                                                                       mins_tmp(variableIndex), maxes_tmp(variableIndex), &
+                                                                       verticalSumMins_tmp(variableIndex), &
+                                                                       verticalSumMaxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -671,11 +678,18 @@ contains
 
          ! evaporationFlux
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
-                                                              areaCell(1:nCellsSolve), &
-                                                              evaporationFlux(1:nCellsSolve), sums_tmp(variableIndex), &
-                                                              sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                              maxes_tmp(variableIndex))
+         if ( associated(evaporationFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 evaporationFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -686,11 +700,18 @@ contains
 
          ! rainFlux
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
-                                                              areaCell(1:nCellsSolve), &
-                                                              rainFlux(1:nCellsSolve), sums_tmp(variableIndex), &
-                                                              sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                              maxes_tmp(variableIndex))
+         if ( associated(rainFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 rainFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -701,11 +722,18 @@ contains
 
          ! snowFlux
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
-                                                              areaCell(1:nCellsSolve), &
-                                                              snowFlux(1:nCellsSolve), sums_tmp(variableIndex), &
-                                                              sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                              maxes_tmp(variableIndex))
+         if ( associated(snowFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 snowFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -716,11 +744,18 @@ contains
 
          ! seaIceFreshWaterFlux
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
-                                                              areaCell(1:nCellsSolve), &
-                                                              seaIceFreshWaterFlux(1:nCellsSolve), sums_tmp(variableIndex), &
-                                                              sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                              maxes_tmp(variableIndex))
+         if ( associated(seaIceFreshWaterFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 seaIceFreshWaterFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -731,11 +766,18 @@ contains
 
          ! riverRunoffFlux
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
-                                                              areaCell(1:nCellsSolve), &
-                                                              riverRunoffFlux(1:nCellsSolve), sums_tmp(variableIndex), &
-                                                              sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                              maxes_tmp(variableIndex))
+         if ( associated(riverRunoffFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 riverRunoffFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -746,11 +788,19 @@ contains
 
          ! iceRunoffFlux
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
-                                                              areaCell(1:nCellsSolve), &
-                                                              iceRunoffFlux(1:nCellsSolve), sums_tmp(variableIndex), &
-                                                              sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
-                                                              maxes_tmp(variableIndex))
+         if ( associated(iceRunoffFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 iceRunoffFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
