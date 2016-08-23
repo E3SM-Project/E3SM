@@ -198,7 +198,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '				  type="input;output"' . "\n";
 	print $stream_file '				  filename_template="rst.mpas-o.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
 	print $stream_file '				  filename_interval="output_interval"' . "\n";
-	print $stream_file '				  reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '				  clobber_mode="truncate"' . "\n";
 	print $stream_file '				  input_interval="initial_only"' . "\n";
 	print $stream_file '				  output_interval="00-00-00_00:00:01"/>' . "\n";
@@ -212,7 +211,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '		type="output"' . "\n";
 	print $stream_file '		filename_template="hist.mpas-o.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
 	print $stream_file '		filename_interval="01-00-00_00:00:00"' . "\n";
-	print $stream_file '		reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '		clobber_mode="truncate"' . "\n";
 	print $stream_file '		output_interval="00-01-00_00:00:00">' . "\n";
 	print $stream_file '' . "\n";
@@ -397,7 +395,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-o.meridionalHeatTransport.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="meridionalHeatTransportAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -427,7 +424,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-o.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="highFrequencyOutputAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -444,7 +440,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-o.timeFilters.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeFiltersAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -475,7 +470,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-o.eliassenPalm.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="eliassenPalmAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -543,7 +537,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-o.mixedLayerDepths.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="mixedLayerDepthsAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -602,7 +595,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '        type="input;output"' . "\n";
 	print $stream_file '        filename_template="am.rst.mpas-o.timeSeriesStats.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        input_interval="initial_only"' . "\n";
 	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
@@ -619,7 +611,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '		type="none"' . "\n";
 	print $stream_file '		filename_template="mpas-o.forcing_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
 	print $stream_file '		filename_interval="01-00-00_00:00:00"' . "\n";
-	print $stream_file '		reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '		clobber_mode="truncate">' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '	<stream name="mesh"/>' . "\n";
