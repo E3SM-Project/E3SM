@@ -1093,12 +1093,13 @@ class B_CheckCode(unittest.TestCase):
         if pylint is not None:
             stat, output, _ = run_cmd("pylint --version")
             pylintver = re.search(r"pylint\s+(\d+)\.(\d+).(\d+)", output)
-            major = pylintver.group(1)
-            minor = pylintver.group(2)
-        if pylint is None or (major <= 1 and minor <= 5):
+            major = int(pylintver.group(1))
+            minor = int(pylintver.group(2))
+        if pylint is None or (major <= 1 and minor < 5):
             self.skipTest("pylint version 1.5 or newer not found")
-        stat, output, _ = run_cmd(os.path.join(TOOLS_DIR, "code_checker -d 2>&1"))
-        self.assertEqual(stat, 0, msg=output)
+        else:
+            stat, output, _ = run_cmd(os.path.join(TOOLS_DIR, "code_checker -d 2>&1"))
+            self.assertEqual(stat, 0, msg=output)
 
 # Machinery for Macros generation tests.
 
