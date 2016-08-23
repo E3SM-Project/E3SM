@@ -23,7 +23,7 @@ contains
     use namelist_mod, only : readnl
     ! --------------------------------
     use dimensions_mod, only : np, nelem, nlev, nelemd, nelemdmax,  &
-	GlobalUniqueCols
+        GlobalUniqueCols
     ! -------------------------------- 
     use time_mod, only : time_at, nmax
     ! --------------------------------
@@ -90,8 +90,7 @@ contains
     use fvm_control_volume_mod, only : fvm_struct
     use dimensions_mod, only : nc, ntrac
     ! --------------------------------
-    use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
-         repro_sum_setopts
+    use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
     ! --------------------------------
     use physical_constants, only : dd_pi
     ! -------------------------------
@@ -326,7 +325,7 @@ contains
           call rotation_init_atomic(elem(ie),rot_type)
        enddo
 
-       ! Apply area correction.
+       ! Apply area correction based on epsilon bubble.
        if( cubed_sphere_map == 2 ) then
           allocate(aratio(nelemd,1))
           do ie=1,nelemd
@@ -354,14 +353,14 @@ contains
                   sum_w = sum_w + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
                enddo
              enddo
-             ! OG Which tolerance is to use here?
+             ! Which tolerance is to use here?
              if(sum_w > 1e-15) then
                 ! Calling correction routine
                 delta = (area_sphere - area_num)/sum_w
                 call cube_init_atomic(elem(ie),gp%points,1.0 + delta)
              else
                 ! Abort since the denominator in correction is too small.
-                call abortmp('Area correction based on eps bubble cannot be done, sum of inner integration weights is too small.')
+    call abortmp('Area correction based on eps bubble cannot be done, sum_w is too small.')
              endif
              call rotation_init_atomic(elem(ie),rot_type)
           enddo

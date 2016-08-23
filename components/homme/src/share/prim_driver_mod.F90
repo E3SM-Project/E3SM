@@ -52,7 +52,7 @@ module prim_driver_mod
   public :: smooth_topo_datasets
 
   type (cg_t), allocatable  :: cg(:)              ! conjugate gradient struct (nthreads)
-  !type (quadrature_t)   :: gp                     ! element GLL points
+  
   real(kind=longdouble_kind)  :: fvm_corners(nc+1)     ! fvm cell corners on reference element
   real(kind=longdouble_kind)  :: fvm_points(nc)     ! fvm cell centers on reference element
 
@@ -92,8 +92,8 @@ contains
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount
-! OG rotation_init_atomic is not used in this mod.
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
+    ! --------------------------------
+    use cube_mod, only : cube_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
@@ -167,8 +167,6 @@ contains
     real(kind=real_kind), allocatable :: aratio(:,:)
     ! xtmp var is used only for fvm_...
     real(kind=real_kind) :: area(1), xtmp, area_sphere, area_num, area_dummy, sum_w, delta
-! OG Set but not used.
-!    character(len=80) rot_type   ! cube edge rotation type
 
     integer  :: i
     integer,allocatable :: TailPartition(:)
@@ -421,21 +419,21 @@ contains
     ! =================================================================
     ! Initialize mass_matrix
     ! =================================================================
-    ! Let's not run mass matrix just yet?
+    
     if(par%masterproc) write(iulog,*) 'running mass_matrix'
-    ! expensive
+    ! Running this line is 2 communications worth. Below is code that can
+    ! replace this call, but it introduces non-BFB changes in tests.
     call mass_matrix(par,elem)
     allocate(aratio(nelemd,1))
 
-    ! OG What is this? Find out!
     if ( topology == "cube" ) then 
        ! Alpha correction of area, works with uniform meshes.
        if( cubed_sphere_map == 0 ) then
           area = 0
           do ie=1,nelemd
-             ! old
+             ! Code that is bound with mass_matrix() call above
              aratio(ie,1) = sum(elem(ie)%mp(:,:)*elem(ie)%metdet(:,:))
-             ! new
+             ! New code that can replace mass_matrix call and the line above.
              !aratio(ie,1) = 0.0d0
              !do j = 1,np
              !   do i = 1,np
@@ -450,19 +448,19 @@ contains
 
           do ie=1,nelemd
              call cube_init_atomic(elem(ie),gp%points,area(1))
-             !call rotation_init_atomic(elem(ie),rot_type) ! why is this disabled?
+             !call rotation_init_atomic(elem(ie),rot_type) 
           enddo
        ! Epsilon bubble correction for RRM meshes.
        ! Note that this code is identical to the one in init_mod for SW
        ! equations. 
        elseif ( cubed_sphere_map == 2 ) then
           do ie=1,nelemd
-             ! Obtain area of element = sum of areas of 2 triangles
+             ! Obtain area of element = sum of areas of 2 triangles.
              call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(2), &
                                   elem(ie)%corners3D(3), area_sphere)
              call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(3), &
                                   elem(ie)%corners3D(4), area_dummy)
-             ! Store element's area in area_sphere
+             ! Store element's area in area_sphere.
              area_sphere = area_sphere + area_dummy
 
              ! Compute 'numerical area' of the element as sum of integration
@@ -481,23 +479,23 @@ contains
                    sum_w = sum_w + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
                 enddo
              enddo
-             !Which tol is to use here?
+             ! Which tol is to use here?
              if ( sum_w > 1e-15 ) then
                 delta = (area_sphere - area_num)/sum_w
                 call cube_init_atomic(elem(ie),gp%points,1.0 + delta)
              else
                 ! Abort since the denominator in correction is too small.
-             call abortmp('Area correction based on eps. bubble cannot be done, sum of inner integration weights is too small.') 
+                call abortmp('Area correction based on eps. bubble cannot be done, sum_w is too small.') 
              endif
              !call rotation_init_atomic(elem(ie),rot_type)
           enddo ! loop over elements
 
           ! Temporary code for verification.
           area = 0
-          do ie=1,nelemd
+          do ie = 1,nelemd
              aratio(ie,1) = 0.0
-             do i = 1,np
-                do j=1,np
+             do j = 1,np
+                do i = 1,np
                    aratio(ie,1) = aratio(ie,1) + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
                 enddo
              enddo

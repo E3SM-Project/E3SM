@@ -463,7 +463,7 @@ contains
     if( cubed_sphere_map == 0 ) then
        ! alpha correction for cases (1) and (2).
        ! It would be better to disable this code when alpha == 1 by using some
-       ! flag in control_mod.
+       ! logical flag in control_mod.
        elem%D = elem%D * sqrt(alpha) 
        elem%Dinv = elem%Dinv / sqrt(alpha) 
        elem%metdet = elem%metdet * alpha
