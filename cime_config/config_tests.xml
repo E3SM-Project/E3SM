@@ -348,9 +348,12 @@ LII    CLM initial condition interpolation test
   <test NAME="PEA">
     <DESC>single pe bfb test (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
-    <REST_OPTION>never</REST_OPTION>
     <CCSM_TCOST>1</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="PEM">
