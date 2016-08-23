@@ -111,6 +111,9 @@
         integer MPI_ERR_LASTCODE
         parameter (MPI_ERR_LASTCODE= -1)
 
+        integer MPI_ERRORS_RETURN 
+        parameter (MPI_ERRORS_RETURN= -1) 
+
 !
 !
 
