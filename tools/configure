@@ -32,9 +32,8 @@ The pieces of information that will be written include:
     parser = argparse.ArgumentParser(description=description)
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--machine", required=True,
-                        help="(required) The machine to create build "
-                        "information for.")
+    parser.add_argument("--machine",
+                        help="The machine to create build information for.")
     parser.add_argument("--machines-dir",
                         help="The machines directory to take build information "
                         "from. Overrides the CIME_MODEL environment variable, "
