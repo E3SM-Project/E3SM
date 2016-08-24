@@ -170,7 +170,7 @@ OR
     parser.add_argument("--testfile",
                         help="A file containing an ascii list of tests to run")
 
-    parser.add_argument("--allow-baseline-overwrite", action="store_true",
+    parser.add_argument("-o", "--allow-baseline-overwrite", action="store_true",
                         help="If the generate baseline option is specified with a baseline directory option "
                         "existing tests in that directory will not be overwritten unless this flag is provided.")
 
