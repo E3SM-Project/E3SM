@@ -453,7 +453,7 @@ contains
        ! Epsilon bubble correction for RRM meshes.
        ! Note that this code is identical to the one in init_mod for SW
        ! equations. 
-       elseif ( cubed_sphere_map == 2 ) then
+       elseif(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
           do ie=1,nelemd
              ! Obtain area of element = sum of areas of 2 triangles.
              call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(2), &
@@ -505,7 +505,7 @@ contains
           if (par%masterproc) &
              write(iulog,'(a,f20.17)') "Epsilon bubble correction: Corrected area - 4\pi ",area(1) - 4.0d0*dd_pi
 
-       endif ! end of cubed_sphere_map==2
+       endif ! end of cubed_sphere_map==0 or (..._map=2 and np > 2)
     endif ! end of topology == 'cube'
 
     deallocate(aratio)

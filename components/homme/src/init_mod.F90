@@ -326,7 +326,7 @@ contains
        enddo
 
        ! Apply area correction based on epsilon bubble.
-       if( cubed_sphere_map == 2 ) then
+       if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
           allocate(aratio(nelemd,1))
           do ie=1,nelemd
           ! Computing area of element = sum of areas of 2 triangles.
@@ -380,7 +380,7 @@ contains
           if (par%masterproc) &
           write(6,*)" <--- corrected area, 4\pi, their diff ", area(1), 4.0d0*dd_pi, area(1)-4.0d0*dd_pi
           deallocate(aratio)
-       endif ! end if cubed_sphere_map == 2
+       endif ! end if cubed_sphere_map == 2 and np > 2
 
        if(par%masterproc) write(6,*)"...done."
     end if ! topology == 'cube'
