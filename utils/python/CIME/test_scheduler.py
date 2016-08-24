@@ -44,7 +44,7 @@ class TestScheduler(object):
                  project=None, parallel_jobs=None,
                  xml_machine=None, xml_compiler=None, xml_category=None,
                  xml_testlist=None, walltime=None, proc_pool=None,
-                 use_existing=False, save_timing=False, queue=None):
+                 use_existing=False, save_timing=False, queue=None, allow_baseline_overwrite=False):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
@@ -137,6 +137,8 @@ class TestScheduler(object):
         self._baseline_gen_name = None
         self._compare = False
         self._generate = False
+        # the following is to assure that in the cesm testing workflow existing generate directory is not overwritten
+        self._overwrite_baselines = True
         if compare or generate:
             # Figure out what baseline name to use
             if baseline_name is None:
@@ -146,7 +148,7 @@ class TestScheduler(object):
                 if generate is not None and isinstance(generate, str):
                     self._baseline_gen_name = generate
                     self._generate = True
-
+                    self._overwrite_baselines = allow_baseline_overwrite
                 if self._compare and self._baseline_cmp_name is None:
                     branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
                     expect(branch_name is not None,
@@ -432,6 +434,10 @@ class TestScheduler(object):
         test_argv = "-testname %s -testroot %s" % (test, self._test_root)
         if self._generate:
             test_argv += " -generate %s" % self._baseline_gen_name
+            basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
+            logger.warn("basegen_case is %s"%basegen_case_fullpath)
+            expect(self._overwrite_baselines or not os.path.isdir(basegen_case_fullpath),
+                   "Refusing to overwrite existing baseline directory %s"%basegen_case_fullpath)
             envtest.set_value("BASELINE_NAME_GEN", self._baseline_gen_name)
             envtest.set_value("BASEGEN_CASE", os.path.join(self._baseline_gen_name, test))
         if self._compare:

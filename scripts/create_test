@@ -170,6 +170,10 @@ OR
     parser.add_argument("--testfile",
                         help="A file containing an ascii list of tests to run")
 
+    parser.add_argument("-o", "--allow-baseline-overwrite", action="store_true",
+                        help="If the generate baseline option is specified with a baseline directory option "
+                        "existing tests in that directory will not be overwritten unless this flag is provided.")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -228,7 +232,7 @@ OR
         args.test_root, args.baseline_root, args.clean, args.compare, args.generate, \
         args.baseline_name, args.namelists_only, args.project, args.test_id, args.parallel_jobs, \
         args.xml_machine, args.xml_compiler, args.xml_category, args.xml_testlist, args.walltime, \
-        args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue
+        args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, args.allow_baseline_overwrite
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
@@ -334,7 +338,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_setup, no
                 baseline_root, clean, compare, generate,
                 baseline_name, namelists_only, project, test_id, parallel_jobs,
                 xml_machine, xml_compiler, xml_category, xml_testlist, walltime,
-                single_submit, proc_pool, use_existing, save_timing, queue):
+                single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite):
 ###############################################################################
     if testargs and machine_name is None and compiler is None:
         for test in testargs:
@@ -356,7 +360,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_setup, no
                       xml_machine=xml_machine, xml_compiler=xml_compiler,
                       xml_category=xml_category, xml_testlist=xml_testlist, walltime=walltime,
                       proc_pool=proc_pool, use_existing=use_existing, save_timing=save_timing,
-                      queue=queue)
+                      queue=queue, allow_baseline_overwrite=allow_baseline_overwrite)
 
     success = impl.run_tests()
 
@@ -395,13 +399,14 @@ def _main_func(description):
     testargs, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, parallel_jobs, \
         xml_machine, xml_compiler, xml_category, xml_testlist, walltime, single_submit, proc_pool, \
-        use_existing, save_timing, queue \
+        use_existing, save_timing, queue, allow_baseline_overwrite \
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                          baseline_root, clean, compare, generate, baseline_name, namelists_only,
                          project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category,
-                         xml_testlist, walltime, single_submit, proc_pool, use_existing, save_timing, queue))
+                         xml_testlist, walltime, single_submit, proc_pool, use_existing, save_timing,
+                         queue, allow_baseline_overwrite))
 
 ###############################################################################
 
