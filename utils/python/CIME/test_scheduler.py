@@ -44,7 +44,7 @@ class TestScheduler(object):
                  project=None, parallel_jobs=None,
                  xml_machine=None, xml_compiler=None, xml_category=None,
                  xml_testlist=None, walltime=None, proc_pool=None,
-                 use_existing=False, save_timing=False, queue=None):
+                 use_existing=False, save_timing=False, queue=None, allow_baseline_overwrite=False):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
@@ -148,7 +148,7 @@ class TestScheduler(object):
                 if generate is not None and isinstance(generate, str):
                     self._baseline_gen_name = generate
                     self._generate = True
-                    self._overwrite_baselines = False
+                    self._overwrite_baselines = allow_baseline_overwrite
                 if self._compare and self._baseline_cmp_name is None:
                     branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
                     expect(branch_name is not None,
