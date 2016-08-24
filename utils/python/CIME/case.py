@@ -10,6 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
+from CIME.XML.build                 import Build
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -30,7 +31,6 @@ from CIME.XML.env_batch             import EnvBatch
 
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
-from CIME.macros import MacroMaker
 
 logger = logging.getLogger(__name__)
 
@@ -714,7 +714,7 @@ class Case(object):
             files = Files()
             build_file = files.get_value("BUILD_SPEC_FILE")
             machobj = Machines(machine=machine, files=files)
-            macro_maker = MacroMaker(machobj)
+            macro_maker = Build(machobj)
             macros_path = os.path.join(self._caseroot, "Macros")
             with open(macros_path, "w") as macros_file:
                 macro_maker.write_macros('Makefile', build_file, macros_file)

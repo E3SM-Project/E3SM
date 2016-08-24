@@ -12,8 +12,8 @@ _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
 
 from standard_script_setup import *
-from CIME.macros import MacroMaker
 from CIME.utils import expect
+from CIME.XML.build import Build
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from CIME.XML.machines import Machines
 
@@ -126,7 +126,7 @@ def _main():
 
     # Macros generation.
     suffixes = {'Makefile': '.make', 'CMake': '.cmake'}
-    macro_maker = MacroMaker(machobj)
+    macro_maker = Build(machobj)
     build_file_name = os.path.join(machobj.machines_dir, "config_build.xml")
     for form in opts['macros_format']:
         out_file_name = os.path.join(output_dir,

@@ -15,10 +15,10 @@ from CIME.utils import run_cmd, run_cmd_no_fail
 import update_acme_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
+from  CIME.XML.build import Build
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
-from  CIME.macros import MacroMaker
 from CIME.test_status import *
 
 SCRIPT_DIR  = CIME.utils.get_scripts_root()
@@ -1118,7 +1118,7 @@ class MockMachines(object):
 
     def get_value(self, var_name):
         """Allow the operating system to be queried."""
-        assert var_name == "OS", "MacrosMaker asked for a value not " \
+        assert var_name == "OS", "Build asked for a value not " \
             "implemented in the testing infrastructure."
         return self.os
 
@@ -1135,13 +1135,13 @@ def get_macros(macro_maker, build_xml, build_system):
     """Generate build system ("Macros" file) output from config_build XML.
 
     Arguments:
-    macro_maker - The underlying MacroMaker object.
+    macro_maker - The underlying Build object.
     build_xml - A string containing the XML to operate on.
     build_system - Either "Makefile" or "CMake", depending on desired output.
 
     The return value is a string containing the build system output.
     """
-    # MacroMaker.write_macros expects file-like objects as input, so
+    # Build.write_macros expects file-like objects as input, so
     # we need to wrap the strings in StringIO objects.
     xml = io.StringIO(unicode(build_xml))
     output = io.StringIO()
@@ -1358,19 +1358,19 @@ class G_TestMacrosBasic(unittest.TestCase):
     def test_script_is_callable(self):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
-        maker = MacroMaker(MockMachines("mymachine", "SomeOS"))
+        maker = Build(MockMachines("mymachine", "SomeOS"))
         test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
         """The macro writer rejects input that's not valid XML."""
-        maker = MacroMaker(MockMachines("mymachine", "SomeOS"))
+        maker = Build(MockMachines("mymachine", "SomeOS"))
         with self.assertRaises(ParseError):
             get_macros(maker, "This is not valid XML.", "Makefile")
 
     def test_script_rejects_bad_build_system(self):
         """The macro writer rejects a bad build system string."""
-        maker = MacroMaker(MockMachines("mymachine", "SomeOS"))
+        maker = Build(MockMachines("mymachine", "SomeOS"))
         bad_string = "argle-bargle."
         with self.assertRaisesRegexp(
                 SystemExit,
@@ -1384,7 +1384,7 @@ class H_TestMakeMacros(unittest.TestCase):
 
     """Makefile macros tests.
 
-    This class contains tests of the Makefile output of MacrosMaker.
+    This class contains tests of the Makefile output of Build.
 
     Aside from the usual setUp and test methods, this class has a utility method
     (xml_to_tester) that converts XML input directly to a MakefileTester object.
@@ -1394,7 +1394,7 @@ class H_TestMakeMacros(unittest.TestCase):
     test_machine = "mymachine"
 
     def setUp(self):
-        self._maker = MacroMaker(MockMachines(self.test_machine, self.test_os))
+        self._maker = Build(MockMachines(self.test_machine, self.test_os))
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
@@ -1653,13 +1653,12 @@ class H_TestMakeMacros(unittest.TestCase):
 
 
 ###############################################################################
-@unittest.skipIf(FAST_ONLY, "Skipping slow CMake tests.")
 class I_TestCMakeMacros(H_TestMakeMacros):
 ###############################################################################
 
     """CMake macros tests.
 
-    This class contains tests of the CMake output of MacrosMaker.
+    This class contains tests of the CMake output of Build.
 
     This class simply inherits all of the methods of TestMakeOutput, but changes
     the definition of xml_to_tester to create a CMakeTester instead.
