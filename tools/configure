@@ -156,6 +156,11 @@ def _main():
     for shell in ('sh', 'csh'):
         ems_file.make_env_mach_specific_file(opts['compiler'], opts['debug'],
                                              opts['mpilib'], shell)
+        shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
+        with open(shell_path, 'a') as shell_file:
+            shell_file.write("\nexport COMPILER=%s\n" % opts['compiler'])
+            shell_file.write("export MPILIB=%s\n" % opts['mpilib'])
+            shell_file.write("export DEBUG=%s\n" % repr(opts['debug']).upper())
 
 
 if __name__ == "__main__":
