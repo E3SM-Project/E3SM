@@ -128,7 +128,7 @@ mpas_ocn_tracer_surface_flux.o: mpas_ocn_forcing.o mpas_ocn_constants.o
 
 mpas_ocn_tracer_short_wave_absorption.o: mpas_ocn_tracer_short_wave_absorption_jerlov.o mpas_ocn_tracer_short_wave_absorption_variable.o mpas_ocn_constants.o
 
-mpas_ocn_tracer_short_wave_absorption_variable.o: mpas_ocn_constants.o 
+mpas_ocn_tracer_short_wave_absorption_variable.o: mpas_ocn_constants.o
 
 mpas_ocn_tracer_short_wave_absorption_jerlov.o: mpas_ocn_constants.o
 
@@ -156,17 +156,17 @@ mpas_ocn_constants.o:
 
 mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_forcing_restoring.o
 
-mpas_ocn_surface_bulk_forcing.o:
+mpas_ocn_surface_bulk_forcing.o: mpas_ocn_constants.o mpas_ocn_equation_of_state.o
 
-mpas_ocn_surface_land_ice_fluxes.o: mpas_ocn_constants.o
- 
-mpas_ocn_frazil_forcing.o: mpas_ocn_constants.o
+mpas_ocn_surface_land_ice_fluxes.o: mpas_ocn_constants.o mpas_ocn_equation_of_state.o
+
+mpas_ocn_frazil_forcing.o: mpas_ocn_constants.o mpas_ocn_equation_of_state.o
 
 mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o
 
 mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o
 
-mpas_ocn_sea_ice.o: mpas_ocn_constants.o
+mpas_ocn_sea_ice.o: mpas_ocn_constants.o mpas_ocn_equation_of_state.o
 
 mpas_ocn_tracer_surface_restoring.o: mpas_ocn_constants.o
 

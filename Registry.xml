@@ -689,7 +689,7 @@
 					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_frazil_sea_ice_density" type="real" default_value="1000.0" units="kg m^{-3}"
+		<nml_option name="config_frazil_ice_density" type="real" default_value="1000.0" units="kg m^{-3}"
 					description="Assumed density of frazil. NOTE: test and make consistent with ACME."
 					possible_values="Any positive real number."
 		/>
@@ -705,11 +705,15 @@
 					description="maximum depth for the formation of frazil"
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_frazil_ice_reference_salinity" type="real" default_value="4.0" units="PSU"
-					description="assumed salinity of frazil ice."
+		<nml_option name="config_frazil_sea_ice_reference_salinity" type="real" default_value="4.0" units="PSU"
+					description="assumed salinity of frazil ice in the open ocean."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="PSU"
+		<nml_option name="config_frazil_land_ice_reference_salinity" type="real" default_value="0.0" units="PSU"
+					description="assumed salinity of frazil ice under land ice."
+					possible_values="Any non-negative real number."
+		/>
+		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="C"
 			description="Maximum freezing temperature for the creation of frazil"
 			possible_values="Any positive real number."
 		/>
@@ -742,18 +746,6 @@
 		<nml_option name="config_land_ice_flux_boundaryLayerNeighborWeight" type="real" default_value="0.0" units="unitless"
 					description="The for horizontal neighbors used to horizontally smooth boundary layer T and S."
 					possible_values="Most likely a value between 0 (no smoothing) and 1 (neighbors get same weight as this cell)."
-		/>
-		<nml_option name="config_land_ice_flux_Tf0" type="real" default_value="9.39e-2" units="C"
-					description="The constant term in the linearization of the freezing temperature."
-					possible_values="Any real number"
-		/>
-		<nml_option name="config_land_ice_flux_dTf_dS" type="real" default_value="-5.73e-2" units="C PSU^{-1}"
-					description="The salinity coefficient in the linearization of the freezing temperature."
-					possible_values="Any real number"
-		/>
-		<nml_option name="config_land_ice_flux_dTf_dp" type="real" default_value="-7.53e-8" units="C Pa^{-1}"
-					description="The pressure coefficient in the linearization of the freezing temperature."
-					possible_values="Any real number"
 		/>
 		<nml_option name="config_land_ice_flux_cp_ice" type="real" default_value="2.009e3" units="J C^{-1} kg^{-1}"
 					description="The specific heat capacity for ice."
@@ -833,6 +825,26 @@
 		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"
 					description="Character string to choose EOS formulation"
 					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
+		/>
+		<nml_option name="config_freezing_temperature_coeff_0" type="real" default_value="-1.8" units="C"
+					description="The freezing temperature at zero pressure."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_freezing_temperature_coeff_S" type="real" default_value="0.0" units="C PSU^{-1}"
+					description="The coefficient for the term proportional to salinity in the freezing temperature."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_freezing_temperature_coeff_p" type="real" default_value="6.64670038e-08" units="C Pa^{-1}"
+					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_freezing_temperature_coeff_pS" type="real" default_value="-4.44655526e-09" units="C PSU^{-1} Pa^{-1}"
+					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_freezing_temperature_reference_pressure" type="real" default_value="1e5" units="Pa"
+					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0."
+					possible_values="Any positive real number"
 		/>
 	</nml_record>
 	<nml_record name="eos_linear">
