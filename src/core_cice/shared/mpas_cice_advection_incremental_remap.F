@@ -130,6 +130,9 @@ module cice_advection_incremental_remap
 !!   integer, parameter :: etestGlobal = 3473       ! test edge for spherical hex test case
 !!   integer, parameter :: vtestGlobal = 2585       ! test vertex for spherical hex test case
 
+   integer, parameter :: iCatTest = 1
+   integer, parameter :: iLayerTest = 1
+
    ! verbose options; set to true for extensive diagnostic output      
    ! WHL: I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
 !   logical, parameter :: verboseInit = .true.
@@ -391,7 +394,7 @@ contains
              if (ctestOnProc) then
                 write(stderrUnit,*) 'ctestGlobal, local ctest, block:', ctestGlobal, ctest, ctestBlockID
              else
-                write(stderrUnit,*) 'Not on this proc: ctestGlobal =', cTestGlobal
+                write(stderrUnit,*) 'Not on this proc: ctestGlobal =', ctestGlobal
              endif
           endif
 
@@ -412,7 +415,7 @@ contains
              if (etestOnProc) then
                 write(stderrUnit,*) 'etestGlobal, local etest, block:', etestGlobal, etest, etestBlockID
              else
-                write(stderrUnit,*) 'Not on this proc: etestGlobal =', eTestGlobal
+                write(stderrUnit,*) 'Not on this proc: etestGlobal =', etestGlobal
              endif
           endif
 
@@ -433,7 +436,7 @@ contains
              if (vtestOnProc) then
                 write(stderrUnit,*) 'vtestGlobal, local vtest, block:', vtestGlobal, vtest, vtestBlockID
              else
-                write(stderrUnit,*) 'Not on this proc: vtestGlobal =', vTestGlobal
+                write(stderrUnit,*) 'Not on this proc: vtestGlobal =', vtestGlobal
              endif
           endif
 
@@ -2343,10 +2346,17 @@ contains
          updateHaloFinal     ! if true, do final halo updates for mass and tracer fields
 
     type (mpas_pool_type), pointer :: velocitySolverPool
+    type (mpas_pool_type), pointer :: incrementalRemapPool
+    type (mpas_pool_type), pointer :: tracerPool
 
     type(block_type), pointer :: block
 
     type (dm_info), pointer :: dminfo
+
+    type(tracer_type), pointer :: thisTracer
+
+    real(kind=RKIND), dimension(:,:), pointer ::  &
+         workCategoryCell        ! work array with dimension(nCategories,nCells)
 
     logical, pointer :: &
          configConservationCheck, & ! namelist configuration whether perform conservation check
@@ -2355,6 +2365,9 @@ contains
     ! dynamics time step
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
+
+    ! assign pointers
+    dminfo => domain % dminfo
 
     ! Set time level
     if (present(timeLevelIn)) then
@@ -2391,9 +2404,7 @@ contains
 
     if (updateHaloInit) then
 
-       if (verboseRun) then
-          write(stderrUnit,*) 'Doing initial halo updates for velocity, mass and tracers'
-       endif
+       if (verboseRun) write(stderrUnit,*) 'Doing initial halo updates for velocity, mass and tracers'
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
@@ -2407,18 +2418,71 @@ contains
 
     endif  ! halo update
 
-    ! assign pointers
-    dminfo => domain % dminfo
-    block => domain % blocklist
+    ! Convert the ice and snow volume to thickness.
+    ! The IR code assumes that all tracers except the first (fractional ice area,
+    !  which is a mass-like field) are true tracers, and not the product of area*tracer.
+    ! Note: The volume_to_thickness calls could go inside subroutine incremental_remap_block,
+    !       saving some subpool calls. But the thickness_to_volume calls have to go after
+    !       the monotonicity check, which is outside incremental_remap_block.
+    !       For symmetry, I've put both the volume_to_thickness and thickness_to_volume calls
+    !       outside incremental_remap_block.
+    ! TODO: Switch iceVolume and snowVolume to iceThickness and snowThickness?
+    !       This would require some code rewrites outside the IR.
 
     ! loop over blocks
+
+    block => domain % blocklist
+
+    do while (associated(block))
+
+       if (verboseRun) write(stderrUnit,*) 'Convert volume to thickness'
+
+       ! get tracer pool and work array
+       call mpas_pool_get_subpool(block % structs, 'tracers', tracerPool)       
+       call mpas_pool_get_subpool(block % structs, 'incremental_remap', incrementalRemapPool)       
+       call mpas_pool_get_array(incrementalRemapPool, 'workCategoryCell', workCategoryCell)
+
+       ! set pointers to tracer arrays
+       call cice_set_tracer_array_pointers(tracersHead, block, timeLevel)
+
+       ! loop over tracers
+       thisTracer => tracersHead
+
+       do while (associated(thisTracer))
+
+          if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+
+             ! copy the ice area (assumed to be 2D) to a scratch array
+             ! Note: iceArea always precedes iceVolume and snowVolume in the tracer list
+
+             workCategoryCell(:,:) = thisTracer % array2D(:,:)
+
+          elseif (trim(thisTracer % tracerName) == 'iceVolumeCategory' .or. &
+                  trim(thisTracer % tracerName) == 'snowVolumeCategory') then
+
+             ! convert volume to thickness
+             call volume_to_thickness(&
+                  workCategoryCell(:,:),  &
+                  thisTracer % array2D(:,:))
+
+          endif
+
+          thisTracer => thisTracer % next
+
+       enddo   ! associated(thisTracer)
+
+       block => block % next
+
+    enddo  ! associated(block)
+
+    ! Call the main IR algorithm for each block
+
+    block => domain % blocklist
 
     call mpas_timer_start("incr remap blocks")
     do while (associated(block))
 
-       if (verboseRun) then
-          write(stderrUnit,*) 'Call incremental_remap_block: block =', block % localBlockID
-       endif
+       if (verboseRun) write(stderrUnit,*) 'Call incremental_remap_block: block =', block % localBlockID
 
        ! get dynamics time step
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
@@ -2433,7 +2497,7 @@ contains
 
        block  => block % next
 
-    end do  ! associated(block)
+    enddo  ! associated(block)
     call mpas_timer_stop("incr remap blocks")
 
     ! Optional check for conservation of mass and mass*tracer
@@ -2441,6 +2505,8 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_conservation_check", configConservationCheck)
     if (configConservationCheck) then
+
+       if (verboseRun) write(stderrUnit,*) 'Check conservation'
 
        call mpas_timer_start("incr remap tracer cons check")
        call check_tracer_conservation(dminfo, tracersHead)
@@ -2455,17 +2521,69 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_monotonicity_check", configMonotonicityCheck)
     if (configMonotonicityCheck) then
 
+       if (verboseRun) write(stderrUnit,*) 'Check monotonicity'
+
        call mpas_timer_start("incr remap tracer mono check")
        call check_tracer_monotonicity(domain, tracersHead)
        call mpas_timer_stop("incr remap tracer mono check")
 
     endif
 
+    ! Convert the ice and snow thickness back to volume.
+    ! Note: This conversion must be done after the monotonicity check, which assumes
+    !       that iceVolumeCategory and snowVolumeCategory are actually thicknesses.
+
+    ! loop over blocks
+
+    block => domain % blocklist
+
+    do while (associated(block))
+
+       if (verboseRun) write(stderrUnit,*) 'Convert thickness to volume'
+
+       ! get tracer pool and work array
+       call mpas_pool_get_subpool(block % structs, 'tracers', tracerPool)       
+       call mpas_pool_get_subpool(block % structs, 'incremental_remap', incrementalRemapPool)       
+       call mpas_pool_get_array(incrementalRemapPool, 'workCategoryCell', workCategoryCell)
+
+       ! set pointers to tracer arrays
+       call cice_set_tracer_array_pointers(tracersHead, block, timeLevel)
+
+       ! loop over tracers
+       thisTracer => tracersHead
+
+       do while (associated(thisTracer))
+
+          if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+
+             ! copy the ice area (assumed to be 2D) to a scratch array
+             ! Note: iceArea always precedes iceVolume and snowVolume in the tracer list
+
+             workCategoryCell(:,:) = thisTracer % array2D(:,:)
+
+          elseif (trim(thisTracer % tracerName) == 'iceVolumeCategory' .or. &
+                  trim(thisTracer % tracerName) == 'snowVolumeCategory') then
+
+             ! convert thickness to volume
+             call thickness_to_volume(&
+                  workCategoryCell(:,:),  &
+                  thisTracer % array2D(:,:))
+
+          endif
+
+          thisTracer => thisTracer % next
+
+       enddo   ! associated(thisTracer)
+
+       block  => block % next
+
+    enddo  ! associated(block)
+
+    ! final halo updates
+
     if (updateHaloFinal) then
 
-       if (verboseRun) then
-          write(stderrUnit,*) 'Doing final halo updates for mass and tracers'
-       endif
+       if (verboseRun) write(stderrUnit,*) 'Doing final halo updates for mass and tracers'
 
        ! mass and tracers
        call mpas_timer_start("incr remap final halo")
@@ -2687,8 +2805,6 @@ contains
     integer :: n, m, iEdge, iCat, iLayer, iCell
     integer :: nCategories, nLayers, count
 
-    integer, parameter :: iCatTest = 1   ! category for which diagnostics are written
-
     logical, pointer :: &
          configConservationCheck, & ! namelist configuration whether perform conservation check
          configMonotonicityCheck, & ! namelist configuration whether perform monotonicity check
@@ -2790,63 +2906,34 @@ contains
     endif   ! first_call
 
     !------------------------------------------------------------------- 
-    ! Convert the ice and snow volume to thickness.
-    ! The IR code assumes that all tracers except the first (fractional ice area,
-    !  which is a mass-like field) are true tracers, and not the product of area*tracer.
-    !
-    ! TODO: Switch iceVolume and snowVolume to iceThickness and snowThickness?
-    !       This would require some code rewrites outside the IR.
-    !------------------------------------------------------------------- 
-
-    if (verboseRun) write(stderrUnit,*) 'Convert volume to thickness'
-
-    thisTracer => tracersHead
-
-    do while (associated(thisTracer))
-
-       if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
-
-          ! copy the ice area (assumed to be 2D) to a scratch array
-          ! Note: iceArea always precedes iceVolume and snowVolume in the tracer list
-
-          workCategoryCell(:,:) = thisTracer % array2D(:,:)
-
-       elseif (trim(thisTracer % tracerName) == 'iceVolumeCategory' .or. &
-               trim(thisTracer % tracerName) == 'snowVolumeCategory') then
-
-          ! convert volume to thickness
-          call volume_to_thickness(&
-               nCells,                 &
-               workCategoryCell(:,:),  &
-               thisTracer % array2D(:,:))
-
-       endif
-
-       thisTracer => thisTracer % next
-
-    enddo   ! associated(thisTracer)
-
-    !------------------------------------------------------------------- 
     ! Compute masks.
     ! The tracer mask identifies cells whose values are physically meaningful.
     ! For example, the ice thickness is meaningful if and only if the area is nonzero,
     !  and the ice enthalpy is meaningful if and only if the area and thickness are nonzero.
+    ! Note: There are two calls to the mask routine:
+    !   (1) The first mask is used in computing local maxes and mins for an optional monotonicity check.
+    !       It counts any positive ice area or thickness, however small, as physically meaningful.
+    !       Once the local maxes and mins are computed, this mask is no longer needed.
+    !   (2) The second mask is used below in gradient calculations. It masks out area and thickness
+    !       values that are very small but nonzero, to ensure that junk tracer values are
+    !       not used in computations.
     !------------------------------------------------------------------- 
 
     if (verboseRun) write(stderrUnit,*) 'Make masks'
-
-    call mpas_timer_start("incr remap masks")
-    call make_masks(&
-         nCells,    &
-         maskCell,  &
-         tracersHead)
-    call mpas_timer_stop("incr remap masks")
 
     call MPAS_pool_get_config(block % configs, "config_monotonicity_check", configMonotonicityCheck)
     if (configMonotonicityCheck) then
 
        if (verboseRun) write(stderrUnit,*) 'Compute local mins and maxes'
 
+       call mpas_timer_start("incr remap masks")
+       call make_masks(&
+            nCells,      &
+            maskCell,    &
+            tracersHead, &
+            threshold_in = 0.0_RKIND)
+       call mpas_timer_stop("incr remap masks")
+       
        call mpas_timer_start("incr remap monotonicity check")
        call tracer_local_min_max(&
             tracersHead,   &
@@ -2857,6 +2944,14 @@ contains
        call mpas_timer_stop("incr remap monotonicity check")
 
     endif
+
+    call mpas_timer_start("incr remap masks")
+    call make_masks(&
+         nCells,      &
+         maskCell,    &
+         tracersHead, &
+         threshold_in = eps11)
+    call mpas_timer_stop("incr remap masks")
 
     !------------------------------------------------------------------- 
     ! Construct each tracer field as a linear function of x and y in each cell
@@ -3206,40 +3301,6 @@ contains
        endif  ! ndims
     endif   ! verbose and iceAreaCategory
 
-    !------------------------------------------------------------------- 
-    ! Convert the ice and snow thickness back to volume.
-    ! The IR code assumes that all tracers except the first (fractional ice area,
-    !  which is a mass-like field) are true tracers, and not the product of area*tracer.
-    !------------------------------------------------------------------- 
-
-    if (verboseRun) write(stderrUnit,*) 'Convert thickness to volume'
-
-    thisTracer => tracersHead
-
-    do while (associated(thisTracer))
-
-       if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
-
-          ! copy the ice area (assumed to be 2D) to a scratch array
-          ! Note: iceArea always precedes iceVolume and snowVolume in the tracer list
-
-          workCategoryCell(:,:) = thisTracer % array2D(:,:)
-
-       elseif (trim(thisTracer % tracerName) == 'iceVolumeCategory' .or. &
-               trim(thisTracer % tracerName) == 'snowVolumeCategory') then
-
-          ! convert volume to thickness
-          call thickness_to_volume(&
-               nCells,                 &
-               workCategoryCell(:,:),  &
-               thisTracer % array2D(:,:))
-
-       endif
-
-       thisTracer => thisTracer % next
-
-    enddo   ! associated(thisTracer)
-
   end subroutine incremental_remap_block
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -3258,7 +3319,8 @@ contains
   subroutine make_masks(&
        nCells,          &
        maskCell,        &
-       tracersHead)
+       tracersHead,     &
+       threshold_in)
 
     integer, intent(in) ::  &
          nCells       ! number of cells on block
@@ -3270,21 +3332,40 @@ contains
          tracersHead  !< Input/output: pointer to first element of linked list of tracers
                       ! The 'arrayMask' variable of the tracer derived type is set here
 
+    real(kind=RKIND), intent(in), optional :: &
+         threshold_in ! threshold for deciding whether a small value is physically meaningful
+
     type(tracer_type), pointer :: &
          thisTracer   ! pointer that loops through linked list of tracers
 
     type(tracer_type), pointer :: &
          parentTracer ! pointer to parent of this tracer
 
-    real(kind = RKIND) :: massSumCell
+    real(kind=RKIND) :: massSumCell
+
+    real(kind=RKIND) :: &
+         threshold    ! threshold for deciding whether a small value is physically meaningful
 
     integer :: nCategories, nLayers
     integer :: iCat, iCell, iLayer
 
+    if (present(threshold_in)) then
+       threshold = threshold_in
+    else
+       threshold = 0.0_RKIND
+    endif
+
     ! Set tracer masks.
     ! The mask is set to 1 where tracer values are physically meaningful, else the mask = 0.
     ! For the mass-like field (fractional ice concentration for CICE), the value is deemed physically meaningful everywhere.
-    ! For tracers with parents, the value is deemed physically meaningful wherever the parent tracer is > 0.
+    ! For tracers with parents, the value is deemed physically meaningful wherever the parent tracer is > 0 
+    !  or some small threshold value.
+    ! The reason for the optional threshold is as follows:
+    ! - For some applications, such as monotonicity checks, we want the mask to be inclusive, and (for instance) 
+    !   to count very small ice area or ice/snow thickness as real. So the best threshold is 0.
+    ! - For other applications, such as gradient computations, we want the mask to be exclusive, and
+    !   to definitely ignore tracer values if the area or thickness is within roundoff level of zero
+    !   (in which case the tracer values could be junk). So a good threshold is a small finite number like 1.e-11.
     !
     ! Note: This is different from the convention in standard CICE, where tracer values are deemed meaningful
     !       wherever the *parent* tracer mask = 1.
@@ -3356,7 +3437,7 @@ contains
 
              do iCell = 1, nCells
                 do iCat = 1, nCategories
-                   if (parentTracer % array2D(iCat,iCell) > eps11) then
+                   if (parentTracer % array2D(iCat,iCell) > threshold) then
                       thisTracer % arrayMask2D(iCat,iCell) = 1
                    endif
                 enddo
@@ -3368,7 +3449,7 @@ contains
 
                 do iCell = 1, nCells
                    do iCat = 1, nCategories
-                      if (parentTracer % array2D(iCat,iCell) > eps11) then
+                      if (parentTracer % array2D(iCat,iCell) > threshold) then
                          thisTracer % arrayMask3D(:,iCat,iCell) = 1
                       endif
                    enddo
@@ -3379,7 +3460,7 @@ contains
                 do iCell = 1, nCells
                    do iCat = 1, nCategories
                       do iLayer = 1, nLayers
-                         if (parentTracer % array3D(iLayer,iCat,iCell) > eps11) then
+                         if (parentTracer % array3D(iLayer,iCat,iCell) > threshold) then
                             thisTracer % arrayMask3D(iLayer,iCat,iCell) = 1
                          endif
                       enddo
@@ -3625,10 +3706,9 @@ contains
 
           if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
-             iCat = 1
-             write(stderrUnit,*) '  Limited center gradient:', thisTracer % xGrad2D(iCat,iCell), &
-                                                               thisTracer % yGrad2D(iCat,iCell)
-             write(stderrUnit,*) 'Center value:', thisTracer % center2D(iCat,iCell)
+             write(stderrUnit,*) '  Limited center gradient:', thisTracer % xGrad2D(iCatTest,iCell), &
+                                                               thisTracer % yGrad2D(iCatTest,iCell)
+             write(stderrUnit,*) 'Center value:', thisTracer % center2D(iCatTest,iCell)
           endif
              
           ! if this tracer has children, then compute its barycenter, as required for reconstruction of the child tracer
@@ -3804,9 +3884,8 @@ contains
 
           if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
-             iCat = 1; iLayer = 1
-             write(stderrUnit,*) '  Limited center gradient:', thisTracer % xGrad3D(iLayer,iCat,iCell), &
-                                                               thisTracer % yGrad3D(iLayer,iCat,iCell)
+             write(stderrUnit,*) '  Limited center gradient:', thisTracer % xGrad3D(iLayerTest,iCatTest,iCell), &
+                                                               thisTracer % yGrad3D(iLayerTest,iCatTest,iCell)
              write(stderrUnit,*) 'Center value:', thisTracer % center3D(iLayer,iCat,iCell)
           endif
              
@@ -4224,18 +4303,17 @@ contains
 
        if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           if (iCell == ctest) then
-             iCat = 1
              write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'iCell =', indexToCellID(iCell)
-             write(stderrUnit,*) 'field value =', field(iCat,iCell)
+             write(stderrUnit,*) 'iCat, iCell =', iCatTest, indexToCellID(iCell)
+             write(stderrUnit,*) 'field value =', field(iCatTest,iCell)
              write(stderrUnit,*) 'neighbor values and edge gradients:'
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
                 iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iCat,iCellNeighbor), normalGrad(iCat,iEdgeOnCell)
+                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iCatTest,iCellNeighbor), normalGrad(iCatTest,iEdgeOnCell)
              enddo
              write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iCat,iCell), yGrad(iCat,iCell), zGrad(iCat)
+             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iCatTest,iCell), yGrad(iCatTest,iCell), zGrad(iCatTest)
           endif
        endif
 
@@ -4457,18 +4535,17 @@ contains
 
        if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           if (iCell == ctest) then
-             iCat = 1; iLayer = 1
              write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'iCell =', indexToCellID(iCell)
-             write(stderrUnit,*) 'field value =', field(iLayer,iCat,iCell)
+             write(stderrUnit,*) 'iLayer, iCat, iCell =', iLayerTest, iCatTest, indexToCellID(iCell)
+             write(stderrUnit,*) 'field value =', field(iLayerTest,iCatTest,iCell)
              write(stderrUnit,*) 'neighbor values and edge gradients:'
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
                 iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iLayer,iCat,iCellNeighbor), normalGrad(iLayer,iCat,iEdgeOnCell)
+                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iLayerTest,iCatTest,iCellNeighbor), normalGrad(iLayerTest,iCatTest,iEdgeOnCell)
              enddo
              write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iLayer,iCat,iCell), yGrad(iLayer,iCat,iCell), zGrad(iLayer,iCat)
+             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell), zGrad(iLayerTest,iCatTest)
           endif
        endif
 
@@ -4598,8 +4675,8 @@ contains
              + center0 * yGrad1  * xGrad2   + xGrad0  * center1 * yGrad2  + yGrad0  * xGrad1  * center2
        cyy   = center0 * yGrad1  * yGrad2   + yGrad0  * center1 * yGrad2  + yGrad0  * yGrad1  * center2
        cxxx  = xGrad0  * xGrad1  * xGrad2
-       cxxy  = xGrad0  * xGrad1  * yGrad2   + xGrad0  * yGrad1  * xGrad2  + yGrad0  * xGrad1  * xGrad1
-       cxyy  = yGrad0  * yGrad1  * xGrad2   + yGrad0  * xGrad1  * yGrad2  + xGrad0  * yGrad1  * yGrad1
+       cxxy  = xGrad0  * xGrad1  * yGrad2   + xGrad0  * yGrad1  * xGrad2  + yGrad0  * xGrad1  * xGrad2
+       cxyy  = yGrad0  * yGrad1  * xGrad2   + yGrad0  * xGrad1  * yGrad2  + xGrad0  * yGrad1  * yGrad2
        cyyy  = yGrad0  * yGrad1  * yGrad2
 
        massTracerProd = mean0 * mean1 * mean2
@@ -4718,7 +4795,6 @@ contains
           ! compute max and min values of this tracer in the cell and its nearest neighbors
 
           ! initialize neighbor max and min to the value in iCell
-          !TODO - Do we need to worry about tracer mask here?
           maxNeighbor(:) = field(:,iCell)
           minNeighbor(:) = field(:,iCell)
 
@@ -4931,7 +5007,6 @@ contains
           ! compute max and min values of this tracer in the cell and its nearest neighbors
 
           ! initialize neighbor max and min for each category
-          !TODO - Do we need to worry about tracer mask here?
           maxNeighbor(:,:) = field(:,:,iCell)
           minNeighbor(:,:) = field(:,:,iCell)
 
@@ -7028,9 +7103,6 @@ contains
     real(kind=RKIND), dimension(:,:), allocatable :: &
          fluxFromCell3D      ! net flux*dt out of a grid cell ('3D' suffix refers to tracer array dimension) 
 
-    integer, parameter :: iLayerTest = 1
-    integer, parameter :: iCatTest = 1
-
     character(len=strKIND) :: &
          errorMessage ! error message for abort
 
@@ -7144,7 +7216,7 @@ contains
                    endif
                 endif
 
-             enddo
+             enddo   ! nEdgesOnCell
 
              ! update the tracer
              ! Note: This expression uses the old value of massTracerProduct for this tracer, but the new value for the parent tracer
@@ -7160,7 +7232,9 @@ contains
              if (verboseFluxes .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
                 if (iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
                    write(stderrUnit,*) 'cell area:', areaCell(iCell)
-                   write(stderrUnit,*) 'massTracerProduct:', thisTracer % massTracerProduct2D(iCatTest,iCell)
+                   write(stderrUnit,*) 'iceAreaCategory, massTracerProduct:', thisTracer % massTracerProduct2D(iCatTest,iCell)
+                   write(stderrUnit,*) 'flux/area:', fluxFromCell2D(iCatTest) / areaCell(iCell)
+                   write(stderrUnit,*) 'difference:', (thisTracer % massTracerProduct2D(iCatTest,iCell) - (fluxFromCell2D(iCatTest) / areaCell(iCell)))
                    write(stderrUnit,*) 'parent massTracerProduct:', parentTracer % massTracerProduct2D(iCatTest,iCell)
                    write(stderrUnit,*) 'new value:', thisTracer % array2D(iCatTest,iCell)
                 endif
@@ -7419,8 +7493,6 @@ contains
          wQP               ! weight assigned to each quadrature point
  
     integer :: iCell, iEdge, iCat, iLayer, iEdgeOnCell, iVertexOnCell, iqp, nLayers, nCategories
-
-    integer, parameter :: iCatTest = 1, iLayerTest = 1
 
     ! loop over tracers, allocating some local arrays
 
@@ -8043,7 +8115,7 @@ contains
 
        thisTracer => thisTracer % next
 
-    end do    ! while(associated)
+    enddo     ! while(associated)
 
   end subroutine check_tracer_conservation
 
@@ -8088,6 +8160,13 @@ contains
 
     integer :: iCell, iCellOnCell, iCellNeighbor, iCat, iLayer
 
+    ! This routine is called to support a monotonicity check following advection. If the code is working,
+    !  the tracer values in a given cell at the new time should always lie within the range of the tracer
+    !  values in that cell's neighborhood at the old time. This routines finds the max and min within
+    !  the local neighborhood (a cell plus its nearest neighbors).
+    ! If a tracer has a parent tracer with a value of zero (e.g., enthalpy in a category with zero
+    !  ice/snow thickness), the tracer value is masked as unmeaningful and is not included in min/max.
+
     thisTracer => tracersHead
 
     do while (associated(thisTracer))
@@ -8108,7 +8187,7 @@ contains
                    thisTracer % localMin2D(iCat,iCell) = thisTracer % array2D(iCat,iCell)
                    thisTracer % localMax2D(iCat,iCell) = thisTracer % array2D(iCat,iCell)
                 endif
-
+                
                 do iCellOnCell = 1, nEdgesOnCell(iCell)
                    
                    iCellNeighbor = cellsOnCell(iCellOnCell, iCell)
@@ -8255,10 +8334,6 @@ contains
     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
     call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
-    ! assign pointer
-    dminfo => domain % dminfo
-    block => domain % blocklist
-
     ! loop over tracers
 
     thisTracer => tracersHead
@@ -8283,6 +8358,8 @@ contains
                 call mpas_timer_stop("tracer mono check 2D halo")
 
                 ! loop over blocks
+
+                block => domain % blocklist
 
                 do while(associated(block))
 
@@ -8324,6 +8401,8 @@ contains
                 
              ! loop over blocks
 
+             block => domain % blocklist
+
              do while(associated(block))
 
                 ! check for monotonicity; compare the new value in each cell with the max/min of the old values in the cell neighborhood
@@ -8342,7 +8421,7 @@ contains
                             write(stderrUnit,*) 'IR advection, monotonicity violation!'
                             write(stderrUnit,*) 'Tracer, iCat, iCell =', trim(thisTracer % tracerName), iCat, iCell
                             write(stderrUnit,*) 'Old min value in neighborhood =', thisTracer % localMin2D(iCat,iCell)
-                            write(stderrUnit,*) 'New value in cell =', thisTracer % array2d(iCat,iCell)
+                            write(stderrUnit,*) 'New value in cell =', thisTracer % array2D(iCat,iCell)
                             write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
                                  thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)
                             call mpas_dmpar_global_abort('MPAS-seaice: IR advection, monotonicity violation (min, nDims == 2)')
@@ -8353,7 +8432,7 @@ contains
                             write(stderrUnit,*) 'IR advection, monotonicity violation!'
                             write(stderrUnit,*) 'Tracer, iCat, iCell =', trim(thisTracer % tracerName), iCat, iCell
                             write(stderrUnit,*) 'Old max value in neighborhood =', thisTracer % localMax2D(iCat,iCell) 
-                            write(stderrUnit,*) 'New value in cell =', thisTracer % array2d(iCat,iCell)
+                            write(stderrUnit,*) 'New value in cell =', thisTracer % array2D(iCat,iCell)
                             write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &
                                  thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)
                             call mpas_dmpar_global_abort('MPAS-seaice: IR advection, monotonicity violation (max, nDims == 2)')
@@ -8386,6 +8465,8 @@ contains
                 call mpas_timer_stop("tracer mono check 3D halo")
                 
                 ! loop over blocks
+
+                block => domain % blocklist
 
                 do while(associated(block))
 
@@ -8429,6 +8510,8 @@ contains
 
              ! loop over blocks
              
+             block => domain % blocklist
+
              do while(associated(block))
 
                 ! check for monotonicity; compare the new value in each cell with the max/min of the old values in the cell neighborhood
@@ -8982,17 +9065,12 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine volume_to_thickness(&
-       nCells,  &
        area,    &
        volumeToThickness)
 
-
     !Note: For the current version of CICE (as of Sept. 2015), ice and snow volume are in the tracer list.
-    !      However, volume is not actually a tracer, but the product of area and thickness, where thickness is a tracer. 
+    !      However, volume is not a tracer, but the product of area and thickness, where thickness is a tracer. 
     !      This subroutine converts volume to thickness for purposes of IR.
-
-    integer, intent(in) :: &
-         nCells             !< Input: number of cells on block 
 
     real(kind=RKIND), dimension(:,:), intent(in) ::  &
          area               !< Input: fractional area; first index is nCategories, second index is nCells
@@ -9000,11 +9078,12 @@ contains
     real(kind=RKIND), dimension(:,:), intent(inout) ::  &
          volumeToThickness  !< Input/output: volume = area*thickness on input; thickness on output
 
-    integer :: nCategories
+    integer :: nCategories, nCells
 
     integer :: iCat, iCell
 
     nCategories = size(area,1)
+    nCells = size(area,2)
 
     do iCell = 1, nCells
        do iCat = 1, nCategories
@@ -9033,16 +9112,12 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine thickness_to_volume(&
-       nCells,     &
        area,       &
        thicknessToVolume)
 
     !Note: For the current version of CICE (as of Sept. 2015), ice and snow volume are in the tracer list.
-    !      However, volume is not actually a tracer, but the product of area and thickness, where thickness is a tracer. 
+    !      However, volume is not a tracer, but the product of area and thickness, where thickness is a tracer. 
     !      This subroutine converts thickness back to volume for purposes of IR.
-
-    integer, intent(in) :: &
-         nCells           !< Input: number of cells on block 
 
     real(kind=RKIND), dimension(:,:), intent(in) ::  &
          area             !< Input: fractional area; first index is nCategories, second index is nCells
@@ -9050,11 +9125,12 @@ contains
     real(kind=RKIND), dimension(:,:), intent(inout) ::  &
          thicknessToVolume   !< Input/output: thickness on input; volume = area*thickness on output
 
-    integer :: nCategories
+    integer :: nCategories, nCells
 
     integer :: iCat, iCell
 
     nCategories = size(area,1)
+    nCells = size(area,2)
 
     do iCell = 1, nCells
        do iCat = 1, nCategories
