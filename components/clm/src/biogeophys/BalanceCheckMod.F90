@@ -9,7 +9,7 @@ module BalanceCheckMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
-  use clm_varctl         , only : iulog
+  use clm_varctl         , only : iulog, do_varsoil
   use clm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
@@ -92,7 +92,11 @@ contains
       do f = 1, num_hydrologyc
          c = filter_hydrologyc(f)
          if(zwt(c) <= zi(c,nlevsoi)) then
-            wa(c) = 5000._r8
+           if(do_varsoil) then
+	      wa(c) = 0._r8                  ! Made 0 by MAB, 5/12/16
+	   else
+              wa(c) = 5000._r8
+	   end if
          end if
       end do
 

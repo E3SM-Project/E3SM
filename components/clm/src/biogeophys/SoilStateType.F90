@@ -16,7 +16,7 @@ module SoilStateType
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
   use clm_varcon      , only : zsoi, dzsoi, zisoi, spval
   use clm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
-  use clm_varctl      , only : use_cn, use_lch4,use_dynroot
+  use clm_varctl      , only : use_cn, use_lch4,use_dynroot, do_varsoil
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use ch4varcon       , only : allowlakeprod
   use LandunitType    , only : lun                
@@ -345,6 +345,7 @@ contains
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
+    integer            :: nlevbed                       ! # of layers above bedrock, added by MAB 5/24/16
     integer            :: ipedof  
     integer            :: begc, endc
     integer            :: begg, endg
@@ -389,6 +390,7 @@ contains
    ! Initialize root fraction 
    
    call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
+        col%nlev2bed(bounds%begc:bounds%endc), &
         this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
 
     ! --------------------------------------------------------------------
@@ -567,7 +569,9 @@ contains
        else
 
           do lev = 1,nlevgrnd
-
+         ! Number of soil layers in hydrologically active columns = NLEV2BED
+         ! MAB 5/24/16
+	     nlevbed = col%nlev2bed(c)
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 
                 if (lev .eq. 1) then
@@ -592,10 +596,18 @@ contains
                    clay = clay3d(g,lev)
                    sand = sand3d(g,lev)
                    om_frac = (organic3d(g,lev)/organic_max)**2._r8
+		   if(do_varsoil .and. lev > nlevsoi) then
+		     clay = clay3d(g,nlevbed)
+		     sand = sand3d(g,nlevbed)
+		     om_frac = 0._r8
+		   end if
                 else
                    clay = clay3d(g,nlevsoi)
                    sand = sand3d(g,nlevsoi)
                    om_frac = 0._r8
+		   if(do_varsoil .and. lev <= nlevbed) then
+		     om_frac = (organic3d(g,nlevbed)/organic_max)**2._r8
+                   end if
                 endif
              end if
 
@@ -613,7 +625,7 @@ contains
                    om_frac = 0._r8 ! No organic matter for urban
                 end if
 
-                if (lev <= nlevsoi) then
+                if (lev <= nlevbed) then
                    this%cellsand_col(c,lev) = sand
                    this%cellclay_col(c,lev) = clay
                    this%cellorg_col(c,lev)  = om_frac*organic_max
@@ -672,7 +684,7 @@ contains
                 this%csol_col(c,lev)   = ((1._r8-om_frac)*(2.128_r8*sand+2.385_r8*clay) / (sand+clay) + &
                      om_csol*om_frac)*1.e6_r8  ! J/(m3 K)
 
-                if (lev > nlevsoi) then
+                if (lev > nlevbed) then
                    this%csol_col(c,lev) = csol_bedrock
                 endif
 
@@ -835,6 +847,7 @@ if(use_dynroot) then
           write(iulog,*) "Initialize rootfr to default"
        end if
        call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
+        col%nlev2bed(bounds%begc:bounds%endc), &
        this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
     end if
 end if

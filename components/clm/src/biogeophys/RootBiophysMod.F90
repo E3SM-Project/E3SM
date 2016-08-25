@@ -30,7 +30,7 @@ contains
   end subroutine init_rootprof
 
   !-------------------------------------------------------------------------------------- 
-  subroutine init_vegrootfr(bounds, nlevsoi, nlevgrnd, rootfr)
+  subroutine init_vegrootfr(bounds, nlevsoi, nlevgrnd, nlev2bed, rootfr)
     !
     !DESCRIPTION
     !initialize plant root profiles
@@ -47,6 +47,7 @@ contains
     type(bounds_type), intent(in) :: bounds                     ! bounds
     integer,           intent(in) :: nlevsoi                    ! number of hydactive layers
     integer,           intent(in) :: nlevgrnd                   ! number of soil layers
+    integer,           intent(in) :: nlev2bed(bounds%begc: )    ! number of layers to bedrock
     real(r8),          intent(out):: rootfr(bounds%begp: , 1: ) !
     !
     ! !LOCAL VARIABLES:
@@ -57,7 +58,7 @@ contains
 
     select case (root_prof_method)
     case (zeng_2001_root)
-       rootfr(bounds%begp:bounds%endp, 1 : nlevsoi) = zeng2001_rootfr(bounds, nlevsoi)
+       rootfr(bounds%begp:bounds%endp, 1 : nlevsoi) = zeng2001_rootfr(bounds, nlevsoi, nlev2bed)
 
        !case (jackson_1996_root)
        !jackson root, 1996, to be defined later
@@ -73,7 +74,7 @@ contains
   end subroutine init_vegrootfr
 
   !--------------------------------------------------------------------------------------   
-  function zeng2001_rootfr(bounds, ubj) result(rootfr)
+  function zeng2001_rootfr(bounds, ubj, njbed) result(rootfr)
     !
     ! DESCRIPTION
     ! compute root profile for soil water uptake
@@ -85,6 +86,7 @@ contains
     use shr_log_mod    , only : errMsg => shr_log_errMsg   
     use decompMod      , only : bounds_type
     use pftvarcon      , only : noveg, roota_par, rootb_par  !these pars shall be moved to here and set as private in the future
+    use clm_varctl     , only : do_varsoil
     use PatchType      , only : pft
     use ColumnType     , only : col
     !
@@ -92,12 +94,14 @@ contains
     implicit none
     type(bounds_type) , intent(in)    :: bounds                  ! bounds
     integer           , intent(in)    :: ubj                     ! ubnd
+    integer           , intent(in)    :: njbed(bounds%begc: )    ! nlev2bed
     !
     ! !RESULT
     real(r8) :: rootfr(bounds%begp:bounds%endp , 1:ubj ) !
     !
     ! !LOCAL VARIABLES:
-    integer :: p, lev, c
+    integer :: p, lev, c, nlevbed
+    real    :: totrootfr
     !------------------------------------------------------------------------
 
     !(computing from surface, d is depth in meter):
@@ -109,15 +113,27 @@ contains
 
        if (pft%itype(p) /= noveg) then
           c = pft%column(p)
+	  nlevbed = njbed(c)
+	  totrootfr = 0._r8
           do lev = 1, ubj-1
              rootfr(p,lev) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,lev-1))  &
                   + exp(-rootb_par(pft%itype(p)) * col%zi(c,lev-1))  &
                   - exp(-roota_par(pft%itype(p)) * col%zi(c,lev  ))  &
                   - exp(-rootb_par(pft%itype(p)) * col%zi(c,lev  )) )
+	     if(lev <= nlevbed) then         ! Added by MAB, 5/25/16
+	       totrootfr = totrootfr + rootfr(p,lev)
+	     end if
           end do
           rootfr(p,ubj) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,ubj-1))  &
                + exp(-rootb_par(pft%itype(p)) * col%zi(c,ubj-1)) )
 
+       ! Adjust layer root fractions if nlev2bed < nlevsoi, added by MAB 5/25/16
+         if(do_varsoil .and. nlevbed < ubj) then
+           do lev = 1, nlevbed
+             rootfr(p,lev) = rootfr(p,lev) / totrootfr
+           end do
+	   rootfr(p,nlevbed+1:ubj) = 0.0_r8
+         endif
        else
           rootfr(p,1:ubj) = 0._r8
        endif

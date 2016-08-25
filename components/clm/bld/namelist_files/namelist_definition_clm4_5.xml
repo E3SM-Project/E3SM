@@ -1122,7 +1122,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*10" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep">
 Land mask description
 </entry> 
 
@@ -1599,6 +1599,15 @@ Type of saturation function used in VSFM.
     smooth_brooks_corey_bz2  = use the smooth approximation of Brooks Corey Model with no quadratic term
     smooth_brooks_corey_bz3  = use the smooth approximation of Brooks Corey Model with no cubic term
     van_genuchten            = use the van Genuchten model
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options for variable soil thickness                                              -->
+<!-- ========================================================================================  -->
+
+<entry id="do_varsoil" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off variable soil thickness.
 </entry>
 
 </namelist_definition>

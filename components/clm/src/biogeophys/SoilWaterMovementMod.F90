@@ -36,7 +36,7 @@ contains
     !DESCRIPTION
     !specify method for doing soil&root water interactions
     !
-    use clm_varctl, only : use_vsfm
+    use clm_varctl, only : use_vsfm, do_varsoil
     use spmdMod,    only : mpicom, MPI_LOGICAL
     ! !ARGUMENTS:
     implicit none
@@ -58,6 +58,12 @@ contains
     call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_vsfm) soilroot_water_method = vsfm
 
+    ! Added by MAB, 6/9/16
+    if(do_varsoil .and. soilroot_water_method .ne. zengdecker_2009) then
+      do_varsoil = .false.
+    end if
+    call mpi_bcast (do_varsoil, 1, MPI_LOGICAL, 0, mpicom, ier)
+
   end subroutine init_soilwater_movement
 
   !-----------------------------------------------------------------------
@@ -69,7 +75,7 @@ contains
     ! select one subroutine to do the soil and root water coupling
     !
     !USES
-    use clm_varctl        , only : use_betr
+    use clm_varctl        , only : use_betr, do_varsoil
     use shr_kind_mod      , only : r8 => shr_kind_r8
     use clm_varpar        , only : nlevsoi    
     use decompMod         , only : bounds_type   
@@ -100,6 +106,7 @@ contains
     ! !LOCAL VARIABLES:
     character(len=32)                        :: subname = 'SoilWater'       ! subroutine name
     real(r8)                                 :: xs(bounds%begc:bounds%endc) !excess soil water above urban ponding limit
+    integer                                  :: nlevbed                     ! number of layers to bedrock, added by MAB 6/7/16
 
     integer  :: fc, c, j
     
@@ -108,6 +115,7 @@ contains
     associate(                                                         &
       wa                 =>    soilhydrology_vars%wa_col             , & ! Input:  [real(r8) (:)   ] water in the unconfined aquifer (mm)
       dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)    
+      nlev2bed           =>    col%nlev2bed                          , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
       h2osoi_ice         =>    waterstate_vars%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
       h2osoi_vol         =>    waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
       h2osoi_liq         =>    waterstate_vars%h2osoi_liq_col          & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
@@ -135,9 +143,14 @@ contains
     !a work around of the negative liquid water embarrassment, which is
     !critical for a meaningufl tracer transport in betr. Jinyun Tang, Jan 14, 2015
 
-    do j = 1, nlevsoi-1
-       do fc = 1, num_hydrologyc
-          c = filter_hydrologyc(fc)
+    do fc = 1, num_hydrologyc
+     c = filter_hydrologyc(fc)
+     if(soilroot_water_method .eq. zengdecker_2009 .and. do_varsoil) then
+       nlevbed = nlev2bed(c)			! Added by MAB, 6/7/16
+     else
+       nlevbed = nlevsoi
+     end if
+       do j = 1, nlevbed-1
           if (h2osoi_liq(c,j) < 0._r8) then
              xs(c) = watmin - h2osoi_liq(c,j)
           else
@@ -148,9 +161,13 @@ contains
        end do
     end do
 
-    j = nlevsoi
     do fc = 1, num_hydrologyc
        c = filter_hydrologyc(fc)
+     if(soilroot_water_method .eq. zengdecker_2009 .and. do_varsoil) then
+       j = nlev2bed(c)	      	   		  ! Added by MAB, 6/7/16
+     else
+       j = nlevsoi
+     end if
        if (h2osoi_liq(c,j) < watmin) then
           xs(c) = watmin-h2osoi_liq(c,j)
         else
@@ -161,9 +178,14 @@ contains
     end do
     
     !update volumetric soil moisture for bgc calculation
-    do j = 1, nlevsoi
-       do fc = 1, num_hydrologyc
-          c = filter_hydrologyc(fc)
+    do fc = 1, num_hydrologyc
+       c = filter_hydrologyc(fc)
+       if(soilroot_water_method .eq. zengdecker_2009 .and. do_varsoil) then
+         nlevbed = nlev2bed(c)			! Added by MAB, 6/7/16
+       else
+         nlevbed = nlevsoi
+       end if
+       do j = 1, nlevbed
           h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) &
                             + h2osoi_ice(c,j)/(dz(c,j)*denice)
        enddo
@@ -241,6 +263,7 @@ contains
     ! r_j = a_j [d wat_j-1] + b_j [d wat_j] + c_j [d wat_j+1]
     !
     ! !USES:
+    use clm_varctl           , only : do_varsoil
     use shr_kind_mod         , only : r8 => shr_kind_r8     
     use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
     use decompMod            , only : bounds_type        
@@ -249,7 +272,7 @@ contains
     use clm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager     , only : get_step_size
     use column_varcon        , only : icol_roof, icol_road_imperv
-    use TridiagonalMod       , only : Tridiagonal
+    use TridiagonalMod       , only : Tridiagonal2
     use abortutils           , only : endrun     
     use SoilStateType        , only : soilstate_type
     use SoilHydrologyType    , only : soilhydrology_type
@@ -276,49 +299,51 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: p,c,fc,j                                     ! do loop indices
+    integer  :: nlevbed                                      ! number of layers to bedrock, added by MAB 7/26/16
     integer  :: jtop(bounds%begc:bounds%endc)                ! top level at each column
+    integer  :: jbot(bounds%begc:bounds%endc)                ! bottom level at each column
     real(r8) :: dtime                                        ! land model time step (sec)
-    real(r8) :: hk(bounds%begc:bounds%endc,1:nlevsoi)        ! hydraulic conductivity [mm h2o/s]
-    real(r8) :: dhkdw(bounds%begc:bounds%endc,1:nlevsoi)     ! d(hk)/d(vol_liq)
-    real(r8) :: amx(bounds%begc:bounds%endc,1:nlevsoi+1)     ! "a" left off diagonal of tridiagonal matrix
-    real(r8) :: bmx(bounds%begc:bounds%endc,1:nlevsoi+1)     ! "b" diagonal column for tridiagonal matrix
-    real(r8) :: cmx(bounds%begc:bounds%endc,1:nlevsoi+1)     ! "c" right off diagonal tridiagonal matrix
-    real(r8) :: rmx(bounds%begc:bounds%endc,1:nlevsoi+1)     ! "r" forcing term of tridiagonal matrix
-    real(r8) :: zmm(bounds%begc:bounds%endc,1:nlevsoi+1)     ! layer depth [mm]
-    real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi+1)    ! layer thickness [mm]
+    real(r8) :: hk(bounds%begc:bounds%endc,1:nlevgrnd)        ! hydraulic conductivity [mm h2o/s]
+    real(r8) :: dhkdw(bounds%begc:bounds%endc,1:nlevgrnd)     ! d(hk)/d(vol_liq)
+    real(r8) :: amx(bounds%begc:bounds%endc,1:nlevgrnd+1)     ! "a" left off diagonal of tridiagonal matrix
+    real(r8) :: bmx(bounds%begc:bounds%endc,1:nlevgrnd+1)     ! "b" diagonal column for tridiagonal matrix
+    real(r8) :: cmx(bounds%begc:bounds%endc,1:nlevgrnd+1)     ! "c" right off diagonal tridiagonal matrix
+    real(r8) :: rmx(bounds%begc:bounds%endc,1:nlevgrnd+1)     ! "r" forcing term of tridiagonal matrix
+    real(r8) :: zmm(bounds%begc:bounds%endc,1:nlevgrnd+1)     ! layer depth [mm]
+    real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevgrnd+1)    ! layer thickness [mm]
     real(r8) :: den                                          ! used in calculating qin, qout
-    real(r8) :: dqidw0(bounds%begc:bounds%endc,1:nlevsoi+1)  ! d(qin)/d(vol_liq(i-1))
-    real(r8) :: dqidw1(bounds%begc:bounds%endc,1:nlevsoi+1)  ! d(qin)/d(vol_liq(i))
-    real(r8) :: dqodw1(bounds%begc:bounds%endc,1:nlevsoi+1)  ! d(qout)/d(vol_liq(i))
-    real(r8) :: dqodw2(bounds%begc:bounds%endc,1:nlevsoi+1)  ! d(qout)/d(vol_liq(i+1))
-    real(r8) :: dsmpdw(bounds%begc:bounds%endc,1:nlevsoi+1)  ! d(smp)/d(vol_liq)
+    real(r8) :: dqidw0(bounds%begc:bounds%endc,1:nlevgrnd+1)  ! d(qin)/d(vol_liq(i-1))
+    real(r8) :: dqidw1(bounds%begc:bounds%endc,1:nlevgrnd+1)  ! d(qin)/d(vol_liq(i))
+    real(r8) :: dqodw1(bounds%begc:bounds%endc,1:nlevgrnd+1)  ! d(qout)/d(vol_liq(i))
+    real(r8) :: dqodw2(bounds%begc:bounds%endc,1:nlevgrnd+1)  ! d(qout)/d(vol_liq(i+1))
+    real(r8) :: dsmpdw(bounds%begc:bounds%endc,1:nlevgrnd+1)  ! d(smp)/d(vol_liq)
     real(r8) :: num                                          ! used in calculating qin, qout
-    real(r8) :: qin(bounds%begc:bounds%endc,1:nlevsoi+1)     ! flux of water into soil layer [mm h2o/s]
-    real(r8) :: qout(bounds%begc:bounds%endc,1:nlevsoi+1)    ! flux of water out of soil layer [mm h2o/s]
+    real(r8) :: qin(bounds%begc:bounds%endc,1:nlevgrnd+1)     ! flux of water into soil layer [mm h2o/s]
+    real(r8) :: qout(bounds%begc:bounds%endc,1:nlevgrnd+1)    ! flux of water out of soil layer [mm h2o/s]
     real(r8) :: s_node                                       ! soil wetness
     real(r8) :: s1                                           ! "s" at interface of layer
     real(r8) :: s2                                           ! k*s**(2b+2)
-    real(r8) :: smp(bounds%begc:bounds%endc,1:nlevsoi)       ! soil matrix potential [mm]
+    real(r8) :: smp(bounds%begc:bounds%endc,1:nlevgrnd)       ! soil matrix potential [mm]
     real(r8) :: sdamp                                        ! extrapolates soiwat dependence of evaporation
     integer  :: pi                                           ! pft index
     real(r8) :: temp(bounds%begc:bounds%endc)                ! accumulator for rootr weighting
     integer  :: jwt(bounds%begc:bounds%endc)                 ! index of the soil layer right above the water table (-)
     real(r8) :: smp1,dsmpdw1,wh,wh_zwt,ka
-    real(r8) :: dwat2(bounds%begc:bounds%endc,1:nlevsoi+1)
+    real(r8) :: dwat2(bounds%begc:bounds%endc,1:nlevgrnd+1)
     real(r8) :: dzq                                          ! used in calculating qin, qout (difference in equilbirium matric potential)
-    real(r8) :: zimm(bounds%begc:bounds%endc,0:nlevsoi)      ! layer interface depth [mm]
-    real(r8) :: zq(bounds%begc:bounds%endc,1:nlevsoi+1)      ! equilibrium matric potential for each layer [mm]
-    real(r8) :: vol_eq(bounds%begc:bounds%endc,1:nlevsoi+1)  ! equilibrium volumetric water content
+    real(r8) :: zimm(bounds%begc:bounds%endc,0:nlevgrnd)      ! layer interface depth [mm]
+    real(r8) :: zq(bounds%begc:bounds%endc,1:nlevgrnd+1)      ! equilibrium matric potential for each layer [mm]
+    real(r8) :: vol_eq(bounds%begc:bounds%endc,1:nlevgrnd+1)  ! equilibrium volumetric water content
     real(r8) :: tempi                                        ! temp variable for calculating vol_eq
     real(r8) :: temp0                                        ! temp variable for calculating vol_eq
     real(r8) :: voleq1                                       ! temp variable for calculating vol_eq
     real(r8) :: zwtmm(bounds%begc:bounds%endc)               ! water table depth [mm]
-    real(r8) :: imped(bounds%begc:bounds%endc,1:nlevsoi)             
-    real(r8) :: vol_ice(bounds%begc:bounds%endc,1:nlevsoi)
+    real(r8) :: imped(bounds%begc:bounds%endc,1:nlevgrnd)             
+    real(r8) :: vol_ice(bounds%begc:bounds%endc,1:nlevgrnd)
     real(r8) :: z_mid
     real(r8) :: vwc_zwt(bounds%begc:bounds%endc)
-    real(r8) :: vwc_liq(bounds%begc:bounds%endc,1:nlevsoi+1) ! liquid volumetric water content
-    real(r8) :: smp_grad(bounds%begc:bounds%endc,1:nlevsoi+1)
+    real(r8) :: vwc_liq(bounds%begc:bounds%endc,1:nlevgrnd+1) ! liquid volumetric water content
+    real(r8) :: smp_grad(bounds%begc:bounds%endc,1:nlevgrnd+1)
     real(r8) :: dsmpds                                       !temporary variable
     real(r8) :: dhkds                                        !temporary variable
     real(r8) :: hktmp                                        !temporary variable
@@ -328,6 +353,7 @@ contains
          z                 =>    col%z                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
          zi                =>    col%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
          dz                =>    col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
+         nlev2bed          =>    col%nlev2bed                       , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
          origflag          =>    soilhydrology_vars%origflag        , & ! Input:  constant
          qcharge           =>    soilhydrology_vars%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)                      
@@ -367,9 +393,14 @@ contains
       ! Because the depths in this routine are in mm, use local
       ! variable arrays instead of pointers
 
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
+      do fc = 1, num_hydrologyc
+        c = filter_hydrologyc(fc)
+        if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+        else
+          nlevbed = nlevsoi
+        end if
+        do j = 1, nlevbed
             zmm(c,j) = z(c,j)*1.e3_r8
             dzmm(c,j) = dz(c,j)*1.e3_r8
             zimm(c,j) = zi(c,j)*1.e3_r8
@@ -396,17 +427,27 @@ contains
 
       temp(bounds%begc : bounds%endc) = 0._r8
 
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
+      do fc = 1, num_hydrologyc
+        c = filter_hydrologyc(fc)
+        if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+        else
+          nlevbed = nlevsoi
+        end if
+        do j = 1, nlevbed
             rootr_col(c,j) = 0._r8
          end do
       end do
 
       do pi = 1,max_patch_per_col
-         do j = 1,nlevsoi
-            do fc = 1, num_hydrologyc
-               c = filter_hydrologyc(fc)
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            if(do_varsoil) then
+              nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+            else
+              nlevbed = nlevsoi
+            end if
+            do j = 1,nlevbed
                if (pi <= col%npfts(c)) then
                   p = col%pfti(c) + pi - 1
                   if (pft%active(p)) then
@@ -426,9 +467,14 @@ contains
          end do
       end do
 
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         do j = 1, nlevbed
             if (temp(c) /= 0._r8) then
                rootr_col(c,j) = rootr_col(c,j)/temp(c)
             end if
@@ -441,9 +487,14 @@ contains
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
-         jwt(c) = nlevsoi
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         jwt(c) = nlevbed
          ! allow jwt to equal zero when zwt is in top layer
-         do j = 1,nlevsoi
+         do j = 1,nlevbed
             if(zwt(c) <= zi(c,j)) then
                jwt(c) = j-1
                exit
@@ -452,17 +503,17 @@ contains
 
          ! compute vwc at water table depth (mainly for case when t < tfrz)
          !     this will only be used when zwt is below the soil column
-         vwc_zwt(c) = watsat(c,nlevsoi)
+         vwc_zwt(c) = watsat(c,nlevbed)
          if(t_soisno(c,jwt(c)+1) < tfrz) then
-            vwc_zwt(c) = vwc_liq(c,nlevsoi)
-            do j = nlevsoi,nlevgrnd
+            vwc_zwt(c) = vwc_liq(c,nlevbed)
+            do j = nlevbed,nlevgrnd
                if(zwt(c) <= zi(c,j)) then
                   smp1 = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
                   !smp1 = max(0._r8,smp1)
                   smp1 = max(sucsat(c,nlevsoi),smp1)
-                  vwc_zwt(c) = watsat(c,nlevsoi)*(smp1/sucsat(c,nlevsoi))**(-1._r8/bsw(c,nlevsoi))
+                  vwc_zwt(c) = watsat(c,nlevsoi)*(smp1/sucsat(c,nlevbed))**(-1._r8/bsw(c,nlevsoi))
                   ! for temperatures close to tfrz, limit vwc to total water content 
-                  vwc_zwt(c) = min(vwc_zwt(c), 0.5*(watsat(c,nlevsoi) + h2osoi_vol(c,nlevsoi)) )
+                  vwc_zwt(c) = min(vwc_zwt(c), 0.5*(watsat(c,nlevbed) + h2osoi_vol(c,nlevbed)) )
                   exit
                endif
             enddo
@@ -471,9 +522,14 @@ contains
 
       ! calculate the equilibrium water content based on the water table depth
 
-      do j=1,nlevsoi 
-         do fc=1, num_hydrologyc
-            c = filter_hydrologyc(fc)
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         do j = 1, nlevbed
             if ((zwtmm(c) <= zimm(c,j-1))) then 
                vol_eq(c,j) = watsat(c,j)
 
@@ -501,10 +557,15 @@ contains
       end do
 
       ! If water table is below soil column calculate zq for the 11th layer
-      j = nlevsoi
       do fc=1, num_hydrologyc
          c = filter_hydrologyc(fc)
-         if(jwt(c) == nlevsoi) then 
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         j = nlevbed
+         if(jwt(c) == nlevbed) then 
             tempi = 1._r8
             temp0 = (((sucsat(c,j)+zwtmm(c)-zimm(c,j))/sucsat(c,j)))**(1._r8-1._r8/bsw(c,j))
             vol_eq(c,j+1) = -sucsat(c,j)*watsat(c,j)/(1._r8-1._r8/bsw(c,j))/(zwtmm(c)-zimm(c,j))*(tempi-temp0)
@@ -518,9 +579,14 @@ contains
       ! Hydraulic conductivity and soil matric potential and their derivatives
 
       sdamp = 0._r8
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         do j = 1, nlevbed
             ! compute hydraulic conductivity based on liquid water content only
 
             if (origflag == 1) then
@@ -583,11 +649,16 @@ contains
       ! aquifer (11th) layer
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
-         zmm(c,nlevsoi+1) = 0.5*(1.e3_r8*zwt(c) + zmm(c,nlevsoi))
-         if(jwt(c) < nlevsoi) then
-            dzmm(c,nlevsoi+1) = dzmm(c,nlevsoi)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
          else
-            dzmm(c,nlevsoi+1) = (1.e3_r8*zwt(c) - zmm(c,nlevsoi))
+          nlevbed = nlevsoi
+         end if
+         zmm(c,nlevbed+1) = 0.5*(1.e3_r8*zwt(c) + zmm(c,nlevsoi))
+         if(jwt(c) < nlevbed) then
+            dzmm(c,nlevbed+1) = dzmm(c,nlevbed)
+         else
+            dzmm(c,nlevbed+1) = (1.e3_r8*zwt(c) - zmm(c,nlevbed))
          end if
       end do
 
@@ -613,9 +684,14 @@ contains
 
       ! Nodes j=2 to j=nlevsoi-1
 
-      do j = 2, nlevsoi - 1
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         do j = 2, nlevbed - 1
             den    = (zmm(c,j) - zmm(c,j-1))
             dzq    = (zq(c,j)-zq(c,j-1))
             num    = (smp(c,j)-smp(c,j-1)) - dzq
@@ -637,9 +713,14 @@ contains
 
       ! Node j=nlevsoi (bottom)
 
-      j = nlevsoi
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         j = nlevbed
          if(j > jwt(c)) then !water table is in soil column
             den    = (zmm(c,j) - zmm(c,j-1))
             dzq    = (zq(c,j)-zq(c,j-1))
@@ -713,8 +794,19 @@ contains
       ! Solve for dwat
 
       jtop(bounds%begc : bounds%endc) = 1
-      call Tridiagonal(bounds, 1, nlevsoi+1, &
-           jtop(bounds%begc:bounds%endc), &
+      ! Determination of how many layers (nlev2bed) to do for the tridiagonal
+      ! at each column, MAB 5/14/14
+      do fc = 1,num_hydrologyc
+         c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+	 jbot(c) = nlevbed
+      end do
+      call Tridiagonal2(bounds, 1, nlevgrnd+1, &
+           jtop(bounds%begc:bounds%endc), jbot(bounds%begc:bounds%endc), &
            num_hydrologyc, filter_hydrologyc, &
            amx(bounds%begc:bounds%endc, :), &
            bmx(bounds%begc:bounds%endc, :), &
@@ -728,12 +820,17 @@ contains
 
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
-         do j = 1, nlevsoi
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         do j = 1, nlevbed
             h2osoi_liq(c,j) = h2osoi_liq(c,j) + dwat2(c,j)*dzmm(c,j)
          end do
 
          ! calculate qcharge for case jwt < nlevsoi
-         if(jwt(c) < nlevsoi) then
+         if(jwt(c) < nlevbed) then
             wh_zwt = 0._r8   !since wh_zwt = -sucsat - zq_zwt, where zq_zwt = -sucsat
 
             ! Recharge rate qcharge to groundwater (positive to aquifer)
@@ -775,16 +872,27 @@ contains
       !  Jinyun Tang
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
          qflx_deficit(c) = 0._r8
-         do j = 1, nlevsoi
+         do j = 1, nlevbed
             if(h2osoi_liq(c,j)<0._r8)then
                qflx_deficit(c) = qflx_deficit(c) - h2osoi_liq(c,j)
             endif
          enddo
       enddo
 
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+         else
+          nlevbed = nlevsoi
+         end if
+         do j = 1, nlevbed
             c = filter_hydrologyc(fc)
             qflx_rootsoi(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8       ![m H2O/s]
          enddo

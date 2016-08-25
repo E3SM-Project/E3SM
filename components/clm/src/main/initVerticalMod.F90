@@ -53,6 +53,10 @@ contains
     character(len=256)    :: locfn             ! local filename
     real(r8) ,pointer     :: std (:)           ! read in - topo_std 
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
+    real(r8) ,pointer     :: dtb (:)           ! read in - DTB
+    real(r8)              :: beddep            ! temporary
+    integer               :: nlevbed           ! temporary
+    real(r8)              :: zimid             ! temporary
     real(r8)              :: slope0            ! temporary
     real(r8)              :: slopebeta         ! temporary
     real(r8)              :: slopemax          ! temporary
@@ -562,6 +566,34 @@ contains
          col%topo_std(c) = std(g)
       end do
       deallocate(std)
+
+      !-----------------------------------------------
+      ! Read in depth to bedrock, added by MAB 5/20/16
+      !-----------------------------------------------
+
+      allocate(dtb(bounds%begg:bounds%endg))
+      call ncd_io(ncid=ncid, varname='DTB', flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+         call shr_sys_abort(' ERROR: NLEV to BEDROCK NOT on surfdata file'//&
+              errMsg(__FILE__, __LINE__)) 
+      end if
+      do c = begc,endc
+         g = col%gridcell(c)
+         ! check for near zero DTBs, set minimum value
+	 beddep = max(dtb(g), 0.2_r8)
+	 j = 0
+	 zimid = 0._r8
+         do while(zimid < beddep .and. j < nlevgrnd)
+	   zimid = 0.5_r8*(zisoi(j)+zisoi(j+1))
+	   if(beddep > zimid) then
+	     nlevbed = j + 1
+	   else
+	     nlevbed = j
+           end if
+         enddo
+         col%nlev2bed(c) = max(nlevbed, 5)
+      end do
+      deallocate(dtb)
 
       !-----------------------------------------------
       ! SCA shape function defined

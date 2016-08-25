@@ -11,6 +11,7 @@ module TridiagonalMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: Tridiagonal
   public :: trisim
+  public :: Tridiagonal2
   interface Tridiagonal
     module procedure Tridiagonal_sr
     module procedure Tridiagonal_mr
@@ -321,4 +322,86 @@ contains
      enddo
 
    end subroutine trisim
+
+  !-----------------------------------------------------------------------
+  subroutine Tridiagonal2 (bounds, lbj, ubj, jtop, jbot, numf, filter, a, b, c, r, u, is_col_active)
+    !
+    ! !DESCRIPTION:
+    ! Tridiagonal matrix solution
+    ! A x = r
+    ! where x and r are vectors
+    ! !USES:
+    use shr_kind_mod   , only: r8 => shr_kind_r8
+    use clm_varctl     , only : iulog
+    use decompMod      , only : bounds_type
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(bounds_type) , intent(in)    :: bounds                                   ! bounds
+    integer           , intent(in)    :: lbj, ubj                                 ! lbinning and ubing level indices
+    integer           , intent(in)    :: jtop( bounds%begc: bounds%endc)          ! top level for each column [col]
+    integer           , intent(in)    :: jbot( bounds%begc: bounds%endc)          ! top level for each column [col]
+    integer           , intent(in)    :: numf                                     ! filter dimension
+    integer           , intent(in)    :: filter(:)                                ! filter
+    real(r8)          , intent(in)    :: a( bounds%begc:bounds%endc , lbj:ubj)    ! "a" left off diagonal of tridiagonal matrix [col , j]
+    real(r8)          , intent(in)    :: b( bounds%begc:bounds%endc , lbj:ubj)    ! "b" diagonal column for tridiagonal matrix [col  , j]
+    real(r8)          , intent(in)    :: c( bounds%begc:bounds%endc , lbj:ubj)    ! "c" right off diagonal tridiagonal matrix [col   , j]
+    real(r8)          , intent(in)    :: r( bounds%begc:bounds%endc , lbj:ubj)    ! "r" forcing term of tridiagonal matrix [col      , j]
+    real(r8)          , intent(inout) :: u( bounds%begc:bounds%endc , lbj:ubj)    ! solution [col                                    , j]
+                                                                                  !
+    integer                           :: j,ci,fc                                  ! indices
+    logical, optional, intent(in)     :: is_col_active(bounds%begc:bounds%endc)   !
+    logical                           :: l_is_col_active(bounds%begc:bounds%endc) !
+    real(r8)                          :: gam(bounds%begc:bounds%endc,lbj:ubj)     ! temporary
+    real(r8)                          :: bet(bounds%begc:bounds%endc)             ! temporary
+
+    character(len=255)                :: subname ='Tridiagonal_sr'
+    !-----------------------------------------------------------------------
+
+
+    ! Solve the matrix
+    if(present(is_col_active))then
+       l_is_col_active(:) = is_col_active(:)
+    else
+       l_is_col_active(:) = .true.
+    endif
+
+    do fc = 1,numf
+        ci = filter(fc)
+        if(l_is_col_active(ci))then
+            bet(ci) = b(ci,jtop(ci))
+        endif
+    end do
+
+    do j = lbj, ubj
+       do fc = 1,numf
+           ci = filter(fc)
+           if(l_is_col_active(ci))then
+             if (j >= jtop(ci) .and. j <= jbot(ci)) then
+               if (j == jtop(ci)) then
+                 u(ci,j) = r(ci,j) / bet(ci)
+               else
+                 gam(ci,j) = c(ci,j-1) / bet(ci)
+                 bet(ci) = b(ci,j) - a(ci,j) * gam(ci,j)
+                 u(ci,j) = (r(ci,j) - a(ci,j)*u(ci,j-1)) / bet(ci)
+               end if
+             end if
+           endif
+        end do
+    end do
+
+    do j = ubj-1,lbj,-1
+        do fc = 1,numf
+           ci = filter(fc)
+           if(l_is_col_active(ci))then
+             if (j >= jtop(ci) .and. j <= jbot(ci)-1) then
+               u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
+             end if
+           endif
+        end do
+    end do
+
+
+  end subroutine Tridiagonal2
+
 end module TridiagonalMod
