@@ -35,7 +35,7 @@
                 <dim name="nMonths"            definition="namelist:months"
                      description="The number of months in a year"/>
                 <dim name="nSoilLevels"        definition="namelist:num_soil_layers"
-                     description="The number of layers used by the land-surface scheme"/>
+                     description="The number of soil layers used by the land-surface scheme"/>
                 <dim name="nLags"              definition="namelist:input_soil_temperature_lag"
                      description="The number of days affecting the deep soil temperature"/>
                 <dim name="nOznLevels"         definition="namelist:noznlev"
@@ -1811,7 +1811,7 @@
                 <var name="i_rainc" type="integer" dimensions="nCells Time" units="unitless"
                      description="incidence of accumulated convective precipitation greater than config_bucket_rainc"/>
 
-                <var name="cuprec" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="cuprec" type="real" dimensions="nCells Time" units="mm s^{-1}"
                      description="convective precipitation rate"/>
 
                 <var name="rainc" type="real" dimensions="nCells Time" units="mm"
@@ -1984,8 +1984,8 @@
                 <var name="regime" type="real" dimensions="nCells Time" units="unitless"
                      description="flag indicating the PBL regime (stable,unstable,...)"/>
 
-                <var name="rmol" type="real" dimensions="nCells Time" units="?"
-                     description="?"/>
+                <var name="rmol" type="real" dimensions="nCells Time" units="unitless"
+                     description="1./L Monin Obukhov length"/>
 
                 <var name="wspd" type="real" dimensions="nCells Time" units="m s^{-1}"
                      description="wind speed at lowest model level"/>
