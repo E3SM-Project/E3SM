@@ -180,11 +180,16 @@
 <pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
 <pio_rearr_comm_type  >$PIO_REARR_COMM_TYPE</pio_rearr_comm_type>
 <pio_rearr_comm_fcd   >$PIO_REARR_COMM_FCD</pio_rearr_comm_fcd>
-<pio_rearr_comm_max_pend_req>$PIO_REARR_COMM_MAX_PEND_REQ</pio_rearr_comm_max_pend_req>
-<pio_rearr_comm_enable_hs PIO_REARR_COMM_ENABLE_HS="TRUE">.true.</pio_rearr_comm_enable_hs>
-<pio_rearr_comm_enable_hs PIO_REARR_COMM_ENABLE_HS="FALSE">.false.</pio_rearr_comm_enable_hs>
-<pio_rearr_comm_enable_isend PIO_REARR_COMM_ENABLE_ISEND="TRUE">.true.</pio_rearr_comm_enable_isend>
-<pio_rearr_comm_enable_isend PIO_REARR_COMM_ENABLE_ISEND="FALSE">.false.</pio_rearr_comm_enable_isend>
+<pio_rearr_comm_max_pend_req_comp2io>$PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO</pio_rearr_comm_max_pend_req_comp2io>
+<pio_rearr_comm_enable_hs_comp2io PIO_REARR_COMM_ENABLE_HS_COMP2IO="TRUE">.true.</pio_rearr_comm_enable_hs_comp2io>
+<pio_rearr_comm_enable_hs_comp2io PIO_REARR_COMM_ENABLE_HS_COMP2IO="FALSE">.false.</pio_rearr_comm_enable_hs_comp2io>
+<pio_rearr_comm_enable_isend_comp2io PIO_REARR_COMM_ENABLE_ISEND_COMP2IO="TRUE">.true.</pio_rearr_comm_enable_isend_comp2io>
+<pio_rearr_comm_enable_isend_comp2io PIO_REARR_COMM_ENABLE_ISEND_COMP2IO="FALSE">.false.</pio_rearr_comm_enable_isend_comp2io>
+<pio_rearr_comm_max_pend_req_io2comp>$PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP</pio_rearr_comm_max_pend_req_io2comp>
+<pio_rearr_comm_enable_hs_io2comp PIO_REARR_COMM_ENABLE_HS_IO2COMP="TRUE">.true.</pio_rearr_comm_enable_hs_io2comp>
+<pio_rearr_comm_enable_hs_io2comp PIO_REARR_COMM_ENABLE_HS_IO2COMP="FALSE">.false.</pio_rearr_comm_enable_hs_io2comp>
+<pio_rearr_comm_enable_isend_io2comp PIO_REARR_COMM_ENABLE_ISEND_IO2COMP="TRUE">.true.</pio_rearr_comm_enable_isend_io2comp>
+<pio_rearr_comm_enable_isend_io2comp PIO_REARR_COMM_ENABLE_ISEND_IO2COMP="FALSE">.false.</pio_rearr_comm_enable_isend_io2comp>
 
 <!-- =========================================  -->
 <!--- seq_maps.rc                               -->

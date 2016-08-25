@@ -1191,8 +1191,8 @@ contains
 
        call seq_map_map(mapper_Rr2o, r2x_rx, r2x_ox(eri), &
             fldlist='Forr_rofl:Forr_rofi:                       &
-                     Forr_rofl_16O:Forr_rofi_16O:Forr_rofl_18O: &
-                     Forr_rofi_18O:Forr_rofl_HDO:Forr_rofi_HDO', norm=.false.)
+                    & Forr_rofl_16O:Forr_rofi_16O:Forr_rofl_18O: &
+                    & Forr_rofi_18O:Forr_rofl_HDO:Forr_rofi_HDO', norm=.false.)
        if (flood_present) then
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
                fldlist='Flrr_flood', norm=.true.)
