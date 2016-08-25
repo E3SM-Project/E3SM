@@ -166,7 +166,7 @@ sub getTestDirs
     # open the testroot, find the test directories.  If no test directories ending in
     # the testid exist, then abort.
     opendir(my $DIR, $testd) or die "can't open $testd, error was $!";
-    my @testdirs = grep { $_ =~ /($tid)$/ } readdir($DIR);
+    my @testdirs = grep { $_ =~ /($tid)$/ } grep { !/sharedlibroot/} grep { !/cs.status/} readdir($DIR);
     closedir $DIR;
     &Debug("in gettestdirs: test directories: \n");
     &Debug( eval { Dumper \@testdirs} );
@@ -210,7 +210,7 @@ sub getTestSuiteInfo
 
     # SetupTools needs a case to work, so why not just cd to the
     # first test directory, and run SetupTools there?? :)
-    my $firsttestdir = $testroot . "/" . $$testlist[1];
+    my $firsttestdir = $testroot . "/" . $$testlist[0];
     Debug("first test dir: $firsttestdir");
     chdir $firsttestdir;
     my $cimeroot = `./xmlquery CIMEROOT --value`;
@@ -287,46 +287,38 @@ sub getTestStatus
         # test functionality summary as the teststatus field.
 
         # Namelist compare
-        my @testsummarylines = grep { /nlcomp/ } @statuslines;
+        my @testsummarylines = grep { /NLCOMP/ } @statuslines;
         $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        if ($testsummary =~ "NLFAIL") {$testsummary = "FAIL";} 
         $teststatushash{$testcase}{'nlcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
 
         # Memory leak
-        my @testsummarylines = grep { /memleak/ } grep { !/^COMMENT/} @statuslines;
-        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        $teststatushash{$testcase}{'memleak'} = (length($testsummary) > 0) ? $testsummary : "----";
+        my @testsummarylines = grep { /MEMLEAK/ } grep { !/insuffiencient/} @statuslines;
+        my @testsummary_arr = (split(/\s+/, $testsummarylines[0]));
+        $teststatushash{$testcase}{'memleak'} = ($#testsummarylines > -1) ? @testsummary_arr[0] : "----";
+        $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";
+
 
         # Compare memory usage to baseline
-        my @testsummarylines = grep { /Memory/} grep { /baseline/} @statuslines;
-        my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        $teststatushash{$testcase}{'memcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
-        if (length($testsummary) == 0){
-          my @testsummarylines = grep { /memcomp/}  @statuslines;
-          my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-          $teststatushash{$testcase}{'memcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
-        }
+        my @testsummarylines = grep { /MEMCOMP/} @statuslines;
+        my @testsummary_arr = (split(/\s+/, $testsummarylines[0]));
+        $teststatushash{$testcase}{'memcomp'} = ($#testsummarylines > -1) ? @testsummary_arr[0] : "----";
+        $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";
 
         #Compare to baseline
-        my ( $index ) = grep { $statuslines[$_] =~ /baseline compare summary/ } 0..$#statuslines;
-        my @testsummarylines = $statuslines[$index-1];
-        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        $teststatushash{$testcase}{'compare'} = (length($index) > 0) ? $testsummary : "----";
+        my @testsummarylines = grep { /COMPARE_baseline/} @statuslines;
+        my @testsummary_arr = (split(/\s+/, $testsummarylines[0]));
+        $teststatushash{$testcase}{'compare'} = ($#testsummarylines > -1) ? @testsummary_arr[0] : "----";
+        $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";
 
         # Compare through put to baseline
-        my @testsummarylines = grep { /Throughput/} grep { /baseline/} @statuslines;
-        my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        $teststatushash{$testcase}{'tputcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
-        if (length($testsummary) == 0){
-          my @testsummarylines = grep { /tputcomp/}  @statuslines;
-          my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-          $teststatushash{$testcase}{'tputcomp'} = (length($testsummary) > 0) ? $testsummary : "----";
-           if ($testcase =~ "PFS" && $testsummary =~ "FAIL")
-          {
-	    $teststatushash{$testcase}{'status'} = "FAIL";
-	    $teststatushash{$testcase}{'comment'} = "Performance failure!";
-            next;
-          }
+        my @testsummarylines = grep { /TPUTCOMP/} @statuslines;
+        my @testsummary_arr = (split(/\s+/, $testsummarylines[0]));
+        $teststatushash{$testcase}{'tputcomp'} = ($#testsummarylines > -1) ? @testsummary_arr[0] : "----";
+        $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";
+        if ($testcase =~ "PFS" && @testsummary_arr[0] =~ "FAIL")
+        {
+          $teststatushash{$testcase}{'status'} = "FAIL";
+          next;
         }
 
         # Check for INIT failure
@@ -335,7 +327,7 @@ sub getTestStatus
         if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "SFAIL";
-            $teststatushash{$testcase}{'comment'} = "Failed during INIT!";
+            $teststatushash{$testcase}{'comment'} .= "Failed during INIT!";
             next;
         }
 
@@ -345,7 +337,7 @@ sub getTestStatus
         if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "SFAIL";
-            $teststatushash{$testcase}{'comment'} = "Failed in CREATE_NEWCASE!";
+            $teststatushash{$testcase}{'comment'} .= "Failed in CREATE_NEWCASE!";
             next;
         }
 
@@ -355,7 +347,7 @@ sub getTestStatus
         if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "SFAIL";
-            $teststatushash{$testcase}{'comment'} = "Failed in XML!";
+            $teststatushash{$testcase}{'comment'} .= "Failed in XML!";
             next;
         }
 
@@ -365,7 +357,7 @@ sub getTestStatus
         if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "SFAIL";
-            $teststatushash{$testcase}{'comment'} = "Failed during SETUP!";
+            $teststatushash{$testcase}{'comment'} .= "Failed during SETUP!";
             next;
         }
 
@@ -375,7 +367,7 @@ sub getTestStatus
         if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "CFAIL";
-            $teststatushash{$testcase}{'comment'} = "Failed during SHAREDLIB_BUILD!";
+            $teststatushash{$testcase}{'comment'} .= "Failed during SHAREDLIB_BUILD!";
             next;
         }
 
@@ -385,7 +377,7 @@ sub getTestStatus
         if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "CFAIL";
-            $teststatushash{$testcase}{'comment'} = "Failed during MODEL_BUILD!";
+            $teststatushash{$testcase}{'comment'} .= "Failed during MODEL_BUILD!";
             next;
         }
 
@@ -399,33 +391,21 @@ sub getTestStatus
         }
 
         #Compare for functionality
-        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary \(Compare base and rest/ } 0..$#statuslines;
-        my @testsummarylines = $statuslines[$index-1];
+        my @testsummarylines = grep { /COMPARE_base_rest/ } @statuslines;
         $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        if(length($index) > 0 &&defined $testsummary && $testsummary !~ /PASS/)
+        if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "FAIL";
-            $teststatushash{$testcase}{'comment'} = "Functionality failed with restart!";
+            $teststatushash{$testcase}{'comment'} .= "Functionality failed with restart!";
             next;
         }
 
-        my ( $index ) = grep { $statuslines[$_] =~ /unctionality summary \(Compare base and hybrid/ } 0..$#statuslines;
-        my @testsummarylines = $statuslines[$index-1];
+        my @testsummarylines = grep { /COMPARE_base_hybrid/ } @statuslines;
         $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        if(length($index) > 0 && defined $testsummary && $testsummary !~ /PASS/)
+        if(defined $testsummary && $testsummary !~ /PASS/)
         {
 	    $teststatushash{$testcase}{'status'} = "FAIL";
-            $teststatushash{$testcase}{'comment'} = "Functionality failed with hybrid!";
-            next;
-        }
-
-        my ( $index ) = grep { $statuslines[$_] =~ /functionality summary/ } 0..$#statuslines;
-        my @testsummarylines = $statuslines[$index-1];
-        $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-        if(length($index) > 0 && defined $testsummary && $testsummary !~ /PASS/)
-        {
-	    $teststatushash{$testcase}{'status'} = "FAIL";
-            $teststatushash{$testcase}{'comment'} = "Functionality failed!";
+            $teststatushash{$testcase}{'comment'} .= "Functionality failed with hybrid!";
             next;
         }
 
