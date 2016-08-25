@@ -3194,6 +3194,7 @@ module mpas_io_streams
       integer, intent(in) :: frame
       integer, intent(out), optional :: ierr
 
+      character (len=StrKIND) :: dimensionSuffix
       integer :: io_err
       integer :: i, j
       integer :: ncons
@@ -3255,6 +3256,12 @@ module mpas_io_streams
          end if
       end if
 
+      if ( stream % blockWrite ) then
+         dimensionSuffix = ''
+      else
+         dimensionSuffix = 'Solve'
+      end if
+
       !
       ! Loop over fields in the stream
       !
@@ -3291,11 +3298,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_1dint_ptr))
                      if (trim(field_1dint_ptr % dimNames(1)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, trim(field_1dint_ptr % dimNames(1)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, trim(field_1dint_ptr % dimNames(1)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, trim(field_1dint_ptr % dimNames(1)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, field_1dint_ptr % dimNames(1), ownedSize)
                      end if
@@ -3307,7 +3317,11 @@ module mpas_io_streams
                         int1d_temp(i:i+ownedSize-1) = field_1dint_ptr % array(1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_1dint_ptr => field_1dint_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_1dint_ptr => field_1dint_ptr % next
+                     else
+                        nullify(field_1dint_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % int1dField % isVarArray) then
@@ -3348,11 +3362,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_2dint_ptr))
                      if (trim(field_2dint_ptr % dimNames(2)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, trim(field_2dint_ptr % dimNames(2)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, trim(field_2dint_ptr % dimNames(2)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, trim(field_2dint_ptr % dimNames(2)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, field_2dint_ptr % dimNames(2), ownedSize)
                      end if
@@ -3363,7 +3380,11 @@ module mpas_io_streams
                         int2d_temp(:,i:i+ownedSize-1) = field_2dint_ptr % array(:,1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_2dint_ptr => field_2dint_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_2dint_ptr => field_2dint_ptr % next
+                     else
+                        nullify(field_2dint_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % int2dField % isVarArray) then
@@ -3408,11 +3429,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_3dint_ptr))
                      if (trim(field_3dint_ptr % dimNames(3)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, trim(field_3dint_ptr % dimNames(3)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, trim(field_3dint_ptr % dimNames(3)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, trim(field_3dint_ptr % dimNames(3)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, field_3dint_ptr % dimNames(3), ownedSize)
                      end if
@@ -3423,7 +3447,11 @@ module mpas_io_streams
                         int3d_temp(:,:,i:i+ownedSize-1) = field_3dint_ptr % array(:,:,1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_3dint_ptr => field_3dint_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_3dint_ptr => field_3dint_ptr % next
+                     else
+                        nullify(field_3dint_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % int3dField % isVarArray) then
@@ -3478,11 +3506,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_1dreal_ptr))
                      if (trim(field_1dreal_ptr % dimNames(1)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, trim(field_1dreal_ptr % dimNames(1)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, trim(field_1dreal_ptr % dimNames(1)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, trim(field_1dreal_ptr % dimNames(1)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, field_1dreal_ptr % dimNames(1), ownedSize)
                      end if
@@ -3494,7 +3525,11 @@ module mpas_io_streams
                         real1d_temp(i:i+ownedSize-1) = field_1dreal_ptr % array(1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_1dreal_ptr => field_1dreal_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_1dreal_ptr => field_1dreal_ptr % next
+                     else
+                        nullify(field_1dreal_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % real1dField % isVarArray) then
@@ -3535,11 +3570,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_2dreal_ptr))
                      if (trim(field_2dreal_ptr % dimNames(2)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, trim(field_2dreal_ptr % dimNames(2)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, trim(field_2dreal_ptr % dimNames(2)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, trim(field_2dreal_ptr % dimNames(2)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, field_2dreal_ptr % dimNames(2), ownedSize)
                      end if
@@ -3550,7 +3588,11 @@ module mpas_io_streams
                         real2d_temp(:,i:i+ownedSize-1) = field_2dreal_ptr % array(:,1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_2dreal_ptr => field_2dreal_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_2dreal_ptr => field_2dreal_ptr % next
+                     else
+                        nullify(field_2dreal_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % real2dField % isVarArray) then
@@ -3595,11 +3637,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_3dreal_ptr))
                      if (trim(field_3dreal_ptr % dimNames(3)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, trim(field_3dreal_ptr % dimNames(3)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, trim(field_3dreal_ptr % dimNames(3)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, trim(field_3dreal_ptr % dimNames(3)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, field_3dreal_ptr % dimNames(3), ownedSize)
                      end if
@@ -3610,7 +3655,11 @@ module mpas_io_streams
                         real3d_temp(:,:,i:i+ownedSize-1) = field_3dreal_ptr % array(:,:,1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_3dreal_ptr => field_3dreal_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_3dreal_ptr => field_3dreal_ptr % next
+                     else
+                        nullify(field_3dreal_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % real3dField % isVarArray) then
@@ -3657,11 +3706,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_4dreal_ptr))
                      if (trim(field_4dreal_ptr % dimNames(4)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, trim(field_4dreal_ptr % dimNames(4)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, trim(field_4dreal_ptr % dimNames(4)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, trim(field_4dreal_ptr % dimNames(4)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, field_4dreal_ptr % dimNames(4), ownedSize)
                      end if
@@ -3672,7 +3724,11 @@ module mpas_io_streams
                         real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_4dreal_ptr => field_4dreal_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_4dreal_ptr => field_4dreal_ptr % next
+                     else
+                        nullify(field_4dreal_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % real4dField % isVarArray) then
@@ -3721,11 +3777,14 @@ module mpas_io_streams
                   i = 1
                   do while (associated(field_5dreal_ptr))
                      if (trim(field_5dreal_ptr % dimNames(5)) == 'nCells') then
-                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, trim(field_5dreal_ptr % dimNames(5)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nEdges') then
-                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, trim(field_5dreal_ptr % dimNames(5)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nVertices') then
-                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, trim(field_5dreal_ptr % dimNames(5)) &
+                                                     // trim(dimensionSuffix), ownedSize)
                      else
                         call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, field_5dreal_ptr % dimNames(5), ownedSize)
                      end if
@@ -3736,7 +3795,11 @@ module mpas_io_streams
                         real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
                      end if
                      i = i + ownedSize
-                     field_5dreal_ptr => field_5dreal_ptr % next
+                     if ( .not. stream % blockWrite ) then
+                        field_5dreal_ptr => field_5dreal_ptr % next
+                     else
+                        nullify(field_5dreal_ptr)
+                     end if
                   end do
                else
                   if (field_cursor % real5dField % isVarArray) then
