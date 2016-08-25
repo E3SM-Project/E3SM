@@ -352,6 +352,7 @@ contains
        endif
 
        ! get IR arrays
+       allocate(geomAvgCell)
        call get_incremental_remap_geometry_pointers(geomAvgCell, block)
 
        call mpas_pool_get_array(incrementalRemapPool, 'transCellToGlobal', transCellToGlobal)
@@ -732,6 +733,9 @@ contains
           enddo
        endif   ! ctestOnProc & ctestBlockID
           
+       ! clean up 
+       deallocate(geomAvgCell)
+
        block => block % next
 
     enddo  ! associated(block)
@@ -2037,8 +2041,6 @@ contains
 
     ! get arrays and assign pointers
 
-    allocate(geomAvgCell)
-
     call MPAS_pool_get_array(incrementalRemapPool, 'xAvgCell',     geomAvgCell % x)
     call MPAS_pool_get_array(incrementalRemapPool, 'yAvgCell',     geomAvgCell % y)
     call MPAS_pool_get_array(incrementalRemapPool, 'xxAvgCell',    geomAvgCell % xx)
@@ -2745,6 +2747,7 @@ contains
     call mpas_pool_get_array(meshPool, 'zCell', zCell)
 
     ! get IR geometry arrays
+    allocate(geomAvgCell)
     call get_incremental_remap_geometry_pointers(geomAvgCell, block)
 
     call mpas_pool_get_array(incrementalRemapPool, 'xVertexOnCell', xVertexOnCell)
@@ -3149,6 +3152,9 @@ contains
             maskCategoryCell)
 
     endif
+
+    ! clean up
+    deallocate(geomAvgCell)
 
     ! More optional diagnostics
     if (verboseRun .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
