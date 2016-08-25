@@ -227,10 +227,15 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
 class TestSystemTestsCompareTwo(unittest.TestCase):
 
     def setUp(self):
+        self.original_wd = os.getcwd()
         # create a sandbox in which case directories can be created
         self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):
+        # Some tests trigger a chdir call in the SUT; make sure we return to the
+        # original directory at the end of the test
+        os.chdir(self.original_wd)
+
         shutil.rmtree(self.tempdir, ignore_errors=True)
 
     def test_setup(self):
