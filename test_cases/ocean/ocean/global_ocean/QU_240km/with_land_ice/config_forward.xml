@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config case="forward">
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
-	<add_link source="../forward_iter/init.nc" dest="init.nc"/>
-	<add_link source="../forward_iter/forcing_data.nc" dest="forcing_data.nc"/>
+	<add_link source="../adjust_ssh/init.nc" dest="init.nc"/>
+	<add_link source="../adjust_ssh/forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="metis" dest="metis"/>
 

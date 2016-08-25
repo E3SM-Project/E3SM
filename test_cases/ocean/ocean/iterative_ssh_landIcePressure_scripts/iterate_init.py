@@ -18,31 +18,31 @@ base_path = os.getcwd()
 dev_null = open('/dev/null', 'w')
 error = False
 
-subprocess.check_call(['ln', '-sfn', '../init_step2/graph.info', 'forward_iter/graph.info'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+subprocess.check_call(['ln', '-sfn', '../init_step2/graph.info', 'adjust_ssh/graph.info'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
 if args.variable_to_modify == 'ssh':
-  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'forward_iter/init0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'forward_iter/forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'adjust_ssh/init0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'adjust_ssh/forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 elif args.variable_to_modify == 'landIcePressure':
-  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'forward_iter/init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'forward_iter/forcing_data0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'adjust_ssh/init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'adjust_ssh/forcing_data0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 else:
   print "Error: unknown variable to modify", args.variable_to_modify
 
 if args.plot_globalStats:
-  subprocess.check_call(['mkdir', '-p', 'forward_iter/statsPlots'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['mkdir', '-p', 'adjust_ssh/statsPlots'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
 for iterIndex in range(args.first_iteration,args.iteration_count):
     print " * Iteration %i/%i"%(iterIndex+1,args.iteration_count)
     os.chdir(base_path)
-    os.chdir('forward_iter')
+    os.chdir('adjust_ssh')
 
     if args.variable_to_modify == 'ssh':
       subprocess.check_call(['ln', '-sfn', 'init%i.nc'%iterIndex, 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
     else:
       subprocess.check_call(['ln', '-sfn', 'forcing_data%i.nc'%iterIndex, 'forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
-    print "   * Running forward_iter"
+    print "   * Running adjust_ssh"
     # ./run.py
     subprocess.check_call(['./run.py'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
     print "   - Complete"

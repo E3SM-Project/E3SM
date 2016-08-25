@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="forward_iter">
+<config case="adjust_ssh">
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
 	<add_executable source="model" dest="ocean_model"/>
@@ -12,7 +12,7 @@
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
-		<template file="template_forward_iter.xml" path_base="script_resolution_dir"/>
+		<template file="template_adjust_ssh.xml" path_base="script_resolution_dir"/>
 	</streams>
 
 	<run_script name="run.py">
