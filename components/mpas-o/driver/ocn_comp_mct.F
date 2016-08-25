@@ -1822,6 +1822,8 @@ contains
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling
 
+   integer, dimension(:), pointer :: landIceMask
+
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                CO2Flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                oceanSurfaceDIC, &
@@ -1843,6 +1845,8 @@ contains
                        config_use_ecosysTracers, &
                        config_use_DMSTracers,    &
                        config_use_MacroMoleculesTracers
+
+   logical :: keepFrazil
 
    errorcode = 0
 
@@ -1872,6 +1876,7 @@ contains
 
      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
+     call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
      call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
@@ -1922,12 +1927,24 @@ contains
        o2x_o % rAttr(index_o2x_So_dhdy, n) = avgSSHGradient(index_avgMeridionalSSHGradient, i)
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
-          seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND + T0_Kelvin &
-                          - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
-           if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0
+          keepFrazil = .true.
+          if ( associated(landIceMask) ) then
+             if ( landIceMask(i) == 1 ) then
+                keepFrazil = .false.
+             end if
+          end if
 
-          o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = seaIceEnergy(i) / ocn_cpl_dt
-          o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+          if ( keepFrazil ) then
+             seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND + T0_Kelvin &
+                             - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
+             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0
+
+             o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = seaIceEnergy(i) / ocn_cpl_dt
+             o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+          else
+             o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = 0.0_RKIND
+             o2x_o % rAttr(index_o2x_Fioo_frazil, n) = 0.0_RKIND
+          end if
 
           ! Reset SeaIce Energy and Accumulated Frazil Ice
           seaIceEnergy(i) = 0.0_RKIND

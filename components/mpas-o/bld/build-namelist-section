@@ -59,13 +59,11 @@ add_default($nl, 'config_1dCVTgenerator_stretch1');
 add_default($nl, 'config_1dCVTgenerator_stretch2');
 add_default($nl, 'config_1dCVTgenerator_dzSeed');
 
-####################################
-# Namelist group: init_ssh_and_ssp #
-####################################
+################################################
+# Namelist group: init_ssh_and_landIcePressure #
+################################################
 
-add_default($nl, 'config_read_ssh_and_ssp_from_stream');
 add_default($nl, 'config_iterative_init_variable');
-add_default($nl, 'config_modify_open_ocean_ssh');
 
 ####################################
 # Namelist group: time_integration #
@@ -555,6 +553,16 @@ add_default($nl, 'config_global_ocean_windstress_zonal_varname');
 add_default($nl, 'config_global_ocean_windstress_meridional_varname');
 add_default($nl, 'config_global_ocean_windstress_method');
 add_default($nl, 'config_global_ocean_windstress_conversion_factor');
+add_default($nl, 'config_global_ocean_ecosys_file');
+add_default($nl, 'config_global_ocean_ecosys_forcing_file');
+add_default($nl, 'config_global_ocean_ecosys_nlat_dimname');
+add_default($nl, 'config_global_ocean_ecosys_nlon_dimname');
+add_default($nl, 'config_global_ocean_ecosys_lat_varname');
+add_default($nl, 'config_global_ocean_ecosys_lon_varname');
+add_default($nl, 'config_global_ocean_ecosys_latlon_degrees');
+add_default($nl, 'config_global_ocean_ecosys_method');
+add_default($nl, 'config_global_ocean_ecosys_forcing_time_dimname');
+add_default($nl, 'config_global_ocean_smooth_ecosys_iterations');
 
 ################################
 # Namelist group: cvmix_WSwSBF #
@@ -797,7 +805,6 @@ add_default($nl, 'config_isomip_temperature_piston_velocity');
 add_default($nl, 'config_isomip_restoring_salinity');
 add_default($nl, 'config_isomip_salinity_piston_velocity');
 add_default($nl, 'config_isomip_coriolis_parameter');
-add_default($nl, 'config_isomip_effective_density');
 add_default($nl, 'config_isomip_southern_boundary');
 add_default($nl, 'config_isomip_northern_boundary');
 add_default($nl, 'config_isomip_western_boundary');
