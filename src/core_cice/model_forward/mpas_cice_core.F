@@ -50,6 +50,7 @@ module cice_core
    
       real (kind=RKIND) :: dt
 
+      character(len=strKIND), pointer :: config_initial_condition_type
       logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: config_dt
       type (MPAS_Time_Type) :: startTime
@@ -64,9 +65,9 @@ module cice_core
       call mpas_pool_print_summary(domain % configs, MPAS_POOL_CONFIG)
       write(stderrUnit,*) ; write(stderrUnit,*) " ----- done listing namelist options used -----" ; write(stderrUnit,*)
 
+      call mpas_pool_get_config(domain % configs, 'config_initial_condition_type', config_initial_condition_type)
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
-
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -85,8 +86,10 @@ module cice_core
       ! Regardless of which stream we read for initial conditions, reset the
       ! input alarms for both input and restart before reading any remaining input streams.
       !
-      if (config_do_restart) then
+      if (config_do_restart .and. trim(config_initial_condition_type) /= "restart") then
          call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=ierr)
+      else if (trim(config_initial_condition_type) == "restart") then
+         call MPAS_stream_mgr_read(domain % streamManager, streamID='restart_ic', ierr=ierr)
       else
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
       end if
@@ -110,6 +113,9 @@ module cice_core
 
       ! initialize analysis members
       call cice_analysis_init(domain, ierr)
+
+      ! bootstrap analysis has used config_do_restart: now modify for rest of code
+      if (trim(config_initial_condition_type) == "restart") config_do_restart = .true.
 
       call mpas_init_block(domain, dt)
 
