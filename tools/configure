@@ -1,291 +1,176 @@
-#!/usr/bin/env perl
-#-----------------------------------------------------------------------------------------------
-#
-# configure
-#
-# This utility allows the CIME utilities user to specify configuration
-# options via a commandline interface.
-#
-#-----------------------------------------------------------------------------------------------
+#!/usr/bin/env python
 
-use strict;
-#use warnings;
-#use diagnostics;
+"""This script writes CIME build information to a directory.
 
-use Cwd qw( getcwd abs_path chdir);
-use English;
-use Getopt::Long;
-use IO::File;
-use IO::Handle;
-use File::Copy;
+The pieces of information that will be written include:
 
+1. Machine-specific build settings (i.e. the "Macros" file).
+2. File-specific build settings (i.e. "Depends" files).
+3. Environment variable loads (i.e. the env_mach_specific files).
 
-# Check for manditory case input if not just listing valid values
-my $model;
-my $mach;
-my $compiler;
-my $mpilib;
-my $output_format='make';
-my $cimeroot;
-my $machdir;
-my $eol="\n";
-my $layout = '%m%n';
+The .env_mach_specific.sh and .env_mach_specific.csh files are specific to a
+given compiler, MPI library, and DEBUG setting. By default, these will be the
+machine's default compiler, the machine's default MPI library, and FALSE,
+respectively. These can be changed by setting the environment variables
+COMPILER, MPILIB, and DEBUG, respectively.
+"""
 
+import os
+import shutil
+import sys
 
-#-----------------------------------------------------------------------------------------------
-# Set the directory that contains the CCSM configuration scripts.  If the create_newcase command was
-# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
-# command was issued from the current working directory.
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
 
-(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
-my $ProgDir = $1;                      # name of directory containing this script -- may be a
-                                       # relative or absolute path, or null if the script is in
-                                       # the user's PATH
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
 
+from standard_script_setup import *
+from CIME.utils import expect
+from CIME.XML.build import Build
+from CIME.XML.env_mach_specific import EnvMachSpecific
+from CIME.XML.machines import Machines
 
-#-----------------------------------------------------------------------------------------------
-if ($#ARGV == -1) {
-    usage();
-}
+logger = logging.getLogger(__name__)
 
-#-----------------------------------------------------------------------------------------------
+def parse_command_line(args):
+    """Command line argument parser for configure."""
+    description = __doc__
+    parser = argparse.ArgumentParser(description=description)
+    CIME.utils.setup_standard_logging_options(parser)
 
-sub usage {
-	die <<EOF;
-SYNOPSIS
-     configure [options]
-OPTIONS
-     User supplied values are denoted in angle brackets (<>).  Any value that contains
-     white-space must be quoted.  Long option names may be supplied with either single
-     or double leading dashes.  A consequence of this is that single letter options may
-     NOT be bundled.
+    parser.add_argument("--machine",
+                        help="The machine to create build information for.")
+    parser.add_argument("--machines-dir",
+                        help="The machines directory to take build information "
+                        "from. Overrides the CIME_MODEL environment variable, "
+                        "and must be specified if that variable is not set.")
+    parser.add_argument("--macros-format", action='append',
+                        choices=['Makefile', 'CMake'],
+                        help="The format of Macros file to generate. If "
+                        "'Makefile' is passed in, a file called 'Macros.make' "
+                        "is generated. If 'CMake' is passed in, a file called "
+                        "'Macros.cmake' is generated. This option can be "
+                        "specified multiple times to generate multiple files. "
+                        "If not used at all, Macros generation is skipped. "
+                        "Note that Depends files are currently always in "
+                        "Makefile format, regardless of this option.")
+    parser.add_argument("--output-dir", default=os.getcwd(),
+                        help="The directory to write files to. If not "
+                        "specified, defaults to the current working directory.")
 
-     -cimeroot            Specify the toplevel cime directory.
-                          default: use CIMEROOT environment variable
-     -model <name>        Specify the CIME component model to test.
-                          default: cesm
-     -mach <name>         Specify a machine (required).
-     -compiler <name>     Specify a compiler for the target machine (optional)
-                          default: default compiler for the target machine
-     -mpilib <name>       Specify a mpi library for the target machine (optional)
-                          default:  mpi-serial
-     -mach_dir <path>     Specify the locations of the Machines directory (optional).
+    args = parser.parse_args()
+    CIME.utils.handle_standard_logging_options(args)
 
-     -output_dir <path>   default: current working directory
-     -output_format <value> Output format can be make or cmake.
-                          default: make
-     -help [or -h]        Print usage to STDOUT (optional).
-     -loglevel <level>    Set the message level for perl
-                          valid: FATAL ERROR WARN INFO DEBUG
-			  default: INFO
+    opts = {}
+    if args.machines_dir is not None:
+        machines_file = os.path.join(args.machines_dir, "config_machines.xml")
+        machobj = Machines(infile=machines_file, machine=args.machine)
+    else:
+        if os.environ.get('CIME_MODEL') is not None:
+            machobj = Machines(machine=args.machine)
+        else:
+            expect(False, "Either --mach-dir or the CIME_MODEL environment "
+                   "variable must be specified!")
 
-EXAMPLES
+    opts['machobj'] = machobj
 
-  ./configure -mach bluefire -compiler ibm
-  ./configure -mach generic_CNL -compiler cray
+    if args.macros_format is None:
+        opts['macros_format'] = []
+    else:
+        opts['macros_format'] = args.macros_format
 
-EOF
-}
+    expect(os.path.isdir(args.output_dir),
+           "Output directory '%s' does not exist." % args.output_dir)
 
-#-----------------------------------------------------------------------------------------------
-# Save commandline
-my $commandline = "configure @ARGV";
+    opts['output_dir'] = args.output_dir
 
-#-----------------------------------------------------------------------------------------------
-# Parse command-line options.
-my %opts = (
-    mpilib => "mpi-serial",
-    model => "cesm",
-    loglevel => "INFO",
-    max_tasks_per_node => 1,
-    );
-GetOptions(
-    "cimeroot=s"                => \$opts{'cimeroot'},
-    "compiler=s"                => \$opts{'compiler'},
-    "model=s"                   => \$opts{'model'},
-    "mpilib=s"                  => \$opts{'mpilib'},
-    "h|help"                    => \$opts{'help'},
-    "list"                      => \$opts{'list'},
-    "mach=s"                    => \$opts{'mach'},
-    "mach_dir=s"                => \$opts{'mach_dir'},
-    "output_dir=s"              => \$opts{'output_dir'},
-    "output_format=s"           => \$opts{'output_format'},
-    "loglevel=s"                => \$opts{'loglevel'},
-    "scratchroot=s"             => \$opts{'scratchroot'},
-    "din_loc_root=s"            => \$opts{'din_loc_root'},
-    "max_tasks_per_node=i"      => \$opts{'max_tasks_per_node'},
-    )  or usage();
+    # Set compiler.
+    if "COMPILER" in os.environ:
+        compiler = os.environ["COMPILER"]
+    else:
+        compiler = machobj.get_default_compiler()
+        os.environ["COMPILER"] = compiler
+    expect(opts['machobj'].is_valid_compiler(compiler),
+           "Invalid compiler vendor given in COMPILER environment variable: %s"
+           % compiler)
+    opts['compiler'] = compiler
 
-# Give usage message.
-usage() if $opts{'help'};
+    # Set MPI library.
+    if "MPILIB" in os.environ:
+        mpilib = os.environ["MPILIB"]
+    else:
+        mpilib = machobj.get_default_MPIlib()
+        os.environ["MPILIB"] = mpilib
+    expect(opts['machobj'].is_valid_MPIlib(mpilib),
+           "Invalid MPI library name given in MPILIB environment variable: %s" %
+           mpilib)
+    opts['mpilib'] = mpilib
 
+    # Set DEBUG flag.
+    if "DEBUG" in os.environ:
+        expect(os.environ["DEBUG"].lower() in ('true', 'false'),
+               "Invalid DEBUG environment variable value (must be 'TRUE' or "
+               "'FALSE'): %s" % os.environ["DEBUG"])
+        debug = os.environ["DEBUG"].lower() == "true"
+    else:
+        debug = False
+        os.environ["DEBUG"] = "FALSE"
+    opts['debug'] = debug
 
-# Check for unparsed argumentss
-if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    usage();
-}
+    return opts
 
+def configure(machobj, output_dir, macros_format, compiler, mpilib, debug):
+    """Add Macros, Depends, and env_mach_specific files to a directory.
 
-if($opts{'cimeroot'}) {
-    $cimeroot = $opts{'cimeroot'};
-}else{
-    $cimeroot = abs_path($ENV{CIMEROOT}) if(defined $ENV{CIMEROOT});
-}
-if(! -d "$cimeroot"){
-    #use die here because Log needs cimeroot
-    die("Cannot find cimeroot directory \"$cimeroot\" \n") ;
-}
+    Arguments:
+    machobj - Machines argument for this machine.
+    output_dir - Directory in which to place output.
+    macros_format - Container containing the string 'Makefile' to produce
+                    Makefile Macros output, and/or 'CMake' for CMake output.
+    compiler - String containing the compiler vendor to configure for.
+    mpilib - String containing the MPI implementation to configure for.
+    debug - Boolean specifying whether debugging options are enabled.
+    """
+    # Macros generation.
+    suffixes = {'Makefile': '.make', 'CMake': '.cmake'}
+    macro_maker = Build(machobj)
+    build_file_name = os.path.join(machobj.machines_dir, "config_build.xml")
+    for form in macros_format:
+        out_file_name = os.path.join(output_dir,
+                                     "Macros"+suffixes[form])
+        with open(out_file_name, "w") as macros_file:
+            macro_maker.write_macros(form, build_file_name, macros_file)
 
+    # Depends file copy.
+    mach_depends = os.path.join(machobj.machines_dir,
+                                "Depends."+machobj.get_machine_name())
+    if os.path.isfile(mach_depends):
+        shutil.copy(mach_depends, output_dir)
+    compiler_depends = os.path.join(machobj.machines_dir, "Depends."+compiler)
+    if os.path.isfile(compiler_depends):
+        shutil.copy(compiler_depends, output_dir)
 
-#-----------------------------------------------------------------------------------------------
-my @dirs = ("$cimeroot/utils/perl5lib","$cimeroot/utils/perl5lib/Config" );
+    # env_mach_specific generation.
+    ems_path = os.path.join(output_dir, "env_mach_specific.xml")
+    if os.path.exists(ems_path):
+        os.remove(ems_path)
+    ems_file = EnvMachSpecific(output_dir)
+    ems_file.populate(machobj)
+    ems_file.write()
+    for shell in ('sh', 'csh'):
+        ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
+        shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
+        with open(shell_path, 'a') as shell_file:
+            shell_file.write("\nexport COMPILER=%s\n" % compiler)
+            shell_file.write("export MPILIB=%s\n" % mpilib)
+            shell_file.write("export DEBUG=%s\n" % repr(debug).upper())
 
-unshift @INC, @dirs;
-require SetupTools;
-require Module::ModuleLoader;
-require ConfigMachine;
-require ConfigCase;
-require Log::Log4perl;
+def _main():
+    opts = parse_command_line(sys.argv)
+    configure(opts['machobj'], opts['output_dir'], opts['macros_format'],
+              opts['compiler'], opts['mpilib'], opts['debug'])
 
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>$layout});
-
-
-my $logger = Log::Log4perl::get_logger();
-
-
-if (!$opts{'list'}) {
-    # Check for manditory machine input
-    if ($opts{'mach'}) {
-	$mach = $opts{'mach'};
-    } else {
-	$logger->fatal("ERROR: configure must include the input argument, -mach \n");
-	exit();
-    }
-    if ($opts{'compiler'}) {
-	$compiler = $opts{'compiler'};
-    }
-    if ($opts{'model'}) {
-	$model = $opts{'model'};
-    }
-    if ($opts{'mpilib'}) {
-	$mpilib = $opts{'mpilib'};
-    }
-    if($opts{'output_format'}){
-	$output_format = $opts{'output_format'};
-    }
-
-    if($opts{'mach_dir'}){
-	$machdir = $opts{'mach_dir'};
-    } else {
-	$machdir  = "$cimeroot/cime_config/${model}/machines" unless defined($machdir);
-    }
-    if (! -d "$machdir") {
-	$logger->fatal(" Cannot find machines directory \"$machdir\"  ");
-    }
-}
-
-
-my $output_dir = ".";
-$output_dir = $opts{output_dir} if defined( $opts{output_dir} );
-#
-# Make sure the output_dir exists or can be created
-#
-if(! -d "$output_dir") {
-  unless( mkpath $output_dir, "0755"){
-      $logger->fatal("Could not find or create $output_dir");
-  }
-}
-
-#-----------------------------------------------------------------------------------------------
-# Make sure we can find required perl modules and configuration files.
-# Look for them in the directory that contains the configure script.
-
-# Machines definition file.
-my $machine_file = 'config_machines.xml';
-if(! -f "$machdir/$machine_file"){
-    $logger->fatal("Cannot find machine parameters file \"$machine_file\" in directory \"$machdir\"");
-    exit;
-}
-
-# Compiler definition file.
-my $compiler_file = 'config_compilers.xml';
-if(! -f "$machdir/$compiler_file"){
-    $logger->fatal("Cannot find compiler parameters file \"$compiler_file\" in directory \"$machdir\"");
-    exit;
-}
-
-
-#-----------------------------------------------------------------------------------------------
-# If just listing valid values then exit after completion of lists
-if ($opts{'list'}) {
-    #TODO add this correctly - since there is no longer a print_machines in ConfigCase
-    #    ConfigCase::print_machines("$machdir/$machine_file");
-    # to do - add print_compilers
-    $logger->info( "finished listing valid values, now exiting $eol");
-    exit;
-}
-
-#-----------------------------------------------------------------------------------------------
-# Create new config object if not just listing valid values
-my $config = ConfigCase->new("");
-my $files_spec_file = "$cimeroot/cime_config/${model}/config_files.xml";
-# srcroot is not used here
-my $srcroot = "";
-$config->add_config_variables($files_spec_file, $srcroot, $cimeroot, $model);
-# todo:
-#$config->set('MACHDIR', "$machdir");
-my $file = $config->get('CONFIG_DRV_FILE');
-
-$config->add_config_variables($file, $srcroot, $cimeroot, $model);
-
-ConfigMachine::setMachineValues($file, "", $mach, $config);
-
-
-# This will be the compiler argument passed in or the default if not provided
-$compiler = $config->get('COMPILER');
-
-$logger->info( "Machine specifier: $mach.$eol");
-
-# Copy Depends files if they exist
-if( -e "$machdir/Depends.$mach" ) {
-    unless(copy("$machdir/Depends.$mach",$output_dir)){
-	$logger->logdie( "ERROR:  copy $machdir/Depends.$mach $output_dir failed$eol");
-	exit;
-    }
-}
-if( -e "$machdir/Depends.$compiler" ) {
-    unless(copy("$machdir/Depends.$compiler",$output_dir)){
-	$logger->logdie( "ERROR:  copy $machdir/Depends.$compiler $output_dir failed$eol");
-    }
-}
-
-my $dbug = $config->get("DEBUG");
-
-my $moduleloader = Module::ModuleLoader->new(machine  => $mach,
-					     compiler => $compiler,
-					     mpilib   => $mpilib,
-					     caseroot => $output_dir,
-					     debug    => $dbug,
-					     cimeroot => $cimeroot,
-					     model    => $model);
-
-$moduleloader->moduleInit();
-$moduleloader->writeXMLFileForCase();
-
-
-
-$moduleloader->writeCshModuleFile();
-$moduleloader->writeShModuleFile();
-
-
-SetupTools::set_compiler($config->get('OS'),"$machdir/$compiler_file",$compiler,
-			 $mach, $mpilib, "$output_dir/Macros.$output_format", $output_format);
-
-$logger->info("Successfully created auxilary build files for $mach $eol");
-
-exit 0;
-
-
+if __name__ == "__main__":
+    _main()

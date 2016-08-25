@@ -1,9 +1,9 @@
 """
 Classes used to build the CIME Macros file.
 
-The main "public" class here is MacroMaker. It is initialized with machine-
-specific information, and its write_macros method is the driver for translating
-the config_build.xml file into a Makefile or CMake-format Macros file.
+The main "public" class here is Build. It is initialized with machine-specific
+information, and its write_macros method is the driver for translating the
+config_build.xml file into a Makefile or CMake-format Macros file.
 
 For developers, here's the role of the other classes in the process:
 
@@ -20,14 +20,14 @@ For developers, here's the role of the other classes in the process:
 
 In more detail:
 
-- MacroMaker.write_macros immediately creates a MakeMacroWriter or
-  CMakeMacroWriter to translate strings for the build system.
+- Build.write_macros immediately creates a MakeMacroWriter or CMakeMacroWriter
+  to translate strings for the build system.
 
 - It also creates value_lists, a dictionary of PossibleValues objects, with
   variable names as the keys. Each variable has a single PossibleValues object
   associated with it.
 
-- For each <compiler> element, MacroMaker.write_macros creates a CompilerBlock
+- For each <compiler> element, Build.write_macros creates a CompilerBlock
   instance. This object is responsible for translating the XML in its block, in
   order to populate the PossibleValues instances. This includes handling the
   <var>/<env>/<shell> tags, and keeping track of dependencies induced by one
@@ -47,11 +47,11 @@ In more detail:
   translated to. The lists in the PossibleValues class contain these objects.
 
 - Once the XML has all been read in and the PossibleValues objects are
-  populated, the dependencies among variables are checked in
-  MacroMaker.write_macros. For each variable, if all its dependencies have been
-  handled, it is converted to a MacroConditionTree merged with all other trees
-  for variables that are ready, and written out. Then we loop through the
-  variable list again to check for variables whose dependencies are all handled.
+  populated, the dependencies among variables are checked in Build.write_macros.
+  For each variable, if all its dependencies have been handled, it is converted
+  to a MacroConditionTree merged with all other trees for variables that are
+  ready, and written out. Then we loop through the variable list again to check
+  for variables whose dependencies are all handled.
 
 - The MacroConditionTree acts as a primitive syntax tree. Its __init__ method
   reorganizes the data into conditional blocks, and its write_out method writes
@@ -68,7 +68,7 @@ from CIME.utils import get_cime_root
 from CIME.XML.machines import Machines # pylint: disable=unused-import
 from CIME.XML.standard_module_setup import *
 
-__all__ = ["MacroMaker"]
+__all__ = ["Build"]
 
 logger = logging.getLogger(__name__)
 
@@ -623,14 +623,11 @@ class CompilerBlock(object):
             else:
                 self._add_elem_to_lists(elem.tag, elem, value_lists)
 
-    def matches_machine(self, os_):
+    def matches_machine(self):
         """Check whether this block matches a machine/os.
 
         This also sets the specificity of the block, so this must be called
         before add_settings_to_lists if machine-specific output is needed.
-
-        Arguments:
-        os_ - Operating system to match.
         """
         self._specificity = 0
         if "MACH" in self._compiler_elem.keys():
@@ -640,7 +637,7 @@ class CompilerBlock(object):
             else:
                 return False
         if "OS" in self._compiler_elem.keys():
-            if os_ == self._compiler_elem.get("OS"):
+            if self._machobj.get_value("OS") == self._compiler_elem.get("OS"):
                 self._specificity += 1
             else:
                 return False
@@ -651,7 +648,7 @@ class CompilerBlock(object):
             return True
 
 
-class MacroMaker(object):
+class Build(object):
 
     """Class to convert config_build.xml input into a macros file.
 
@@ -665,23 +662,21 @@ class MacroMaker(object):
     write_macros
     """
 
-    def __init__(self, os_, machobj, schema_path=None):
-        """Construct a MacroMaker given machine-specific information.
+    def __init__(self, machobj, schema_path=None):
+        """Construct a Build given machine-specific information.
 
         In the process some information about possible variables is read in
         from the schema file.
 
         Arguments:
-        os_ - Name of a machine's operating system.
         machobj - A Machines object for this machine.
         schema_path (optional) - Path to config_build.xsd within CIME.
 
-        >>> "CFLAGS" in MacroMaker('FakeOS', 'MyMach').flag_vars
+        >>> "CFLAGS" in Build('MyMach').flag_vars
         True
-        >>> "MPICC" in MacroMaker('FakeOS', 'MyMach').flag_vars
+        >>> "MPICC" in Build('MyMach').flag_vars
         False
         """
-        self.os = os_
         self.machobj = machobj
 
         # The schema is used to figure out which variables contain
@@ -724,7 +719,7 @@ class MacroMaker(object):
         for compiler_elem in ET.parse(xml_file).findall("compiler"):
             block = CompilerBlock(writer, compiler_elem, self.machobj)
             # If this block matches machine settings, use it.
-            if block.matches_machine(self.os):
+            if block.matches_machine():
                 block.add_settings_to_lists(self.flag_vars, value_lists)
 
         # Now that we've scanned through the input, output the variable

@@ -10,6 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
+from CIME.XML.build                 import Build
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -30,7 +31,6 @@ from CIME.XML.env_batch             import EnvBatch
 
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
-from CIME.macros import MacroMaker
 
 logger = logging.getLogger(__name__)
 
@@ -525,13 +525,9 @@ class Case(object):
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
 
-        # the following go into the env_mach_specific file
-        items = ("module_system", "environment_variables", "mpirun")
+        # Create env_mach_specific settings from machine info.
         env_mach_specific_obj = self.get_env("mach_specific")
-        for item in items:
-            nodes = machobj.get_first_child_nodes(item)
-            for node in nodes:
-                env_mach_specific_obj.add_child(node)
+        env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
         #--------------------------------------------
@@ -715,12 +711,12 @@ class Case(object):
         # Create Macros file.
         machine = self.get_value("MACH")
         if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE":
-            os_ = self.get_value("OS")
             files = Files()
             build_file = files.get_value("BUILD_SPEC_FILE")
             machobj = Machines(machine=machine, files=files)
-            macro_maker = MacroMaker(os_, machobj)
-            with open(os.path.join(self._caseroot, "Macros"), "w") as macros_file:
+            macro_maker = Build(machobj)
+            macros_path = os.path.join(self._caseroot, "Macros")
+            with open(macros_path, "w") as macros_file:
                 macro_maker.write_macros('Makefile', build_file, macros_file)
 
         # Copy any system or compiler Depends files to the case.

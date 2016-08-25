@@ -28,8 +28,10 @@ class Machines(GenericXML):
             if files is None:
                 files = Files()
             infile = files.get_value("MACHINES_SPEC_FILE", resolved=False)
-            self.machines_dir = os.path.dirname(infile)
             infile = files.get_resolved_value(infile)
+
+        self.machines_dir = os.path.dirname(infile)
+
         GenericXML.__init__(self, infile)
 
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
