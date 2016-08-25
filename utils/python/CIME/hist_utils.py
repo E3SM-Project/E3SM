@@ -249,12 +249,14 @@ def get_extension(model, filepath):
     expect(m is not None, "Failed to get extension for file '%s'" % filepath)
     return m.groups()[0]
 
-def generate_baseline(case, baseline_dir=None):
+def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     """
     copy the current test output to baseline result
 
     case - The case containing the hist files to be copied into baselines
     baseline_dir - Optionally, specify a specific baseline dir, otherwise it will be computed from case config
+    allow_baseline_overwrite is only used in the CESM model workflow and must be true
+    to generate baselines to an existing directory.
 
     returns (SUCCESS, comments)
     """
@@ -268,6 +270,11 @@ def generate_baseline(case, baseline_dir=None):
 
     if not os.path.isdir(basegen_dir):
         os.makedirs(basegen_dir)
+
+    if (os.path.isdir(os.path.join(basegen_dir,testcase)) and
+        case.get_value("MODEL") == "CESM"  and not allow_baseline_overwrite):
+        expect(False, " Cowardly refusing to overwrite existing baseline directory")
+
 
     comments = "Generating baselines into '%s'\n" % basegen_dir
     num_gen = 0

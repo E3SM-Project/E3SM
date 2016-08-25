@@ -35,18 +35,25 @@ OR
     parser.add_argument("-b", "--baseline-dir",
                         help="Use custom baseline dir")
 
+    parser.add_argument("-o", "--allow-baseline-overwrite", action="store_true",
+                        help="In the CESM workflow existing baseline directories are not"
+                        " overwritten by default, this flag allows overwrite")
+
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.baseline_dir
+    return args.caseroot, args.baseline_dir, args.allow_baseline_overwrite
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, baseline_dir = parse_command_line(sys.argv, description)
+    caseroot, baseline_dir, allow_baseline_overwrite = \
+        parse_command_line(sys.argv, description)
     with Case(caseroot) as case:
-        success, comments = generate_baseline(case, baseline_dir)
+        success, comments = generate_baseline(case, baseline_dir,
+                                              allow_baseline_overwrite)
         print comments
 
     sys.exit(0 if success else 1)

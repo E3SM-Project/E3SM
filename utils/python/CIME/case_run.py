@@ -2,7 +2,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.files                 import Files
-from CIME.XML.component             import Component
 from CIME.XML.machines              import Machines
 from CIME.utils                     import append_status, touch, gzip_existing_file
 from CIME.check_lockedfiles         import check_lockedfiles
@@ -329,19 +328,8 @@ def save_logs(case, lid):
 
         caseroot = case.get_value("CASEROOT")
         rundir = case.get_value("RUNDIR")
-
-        # get components
-        files = Files()
-        config_file = files.get_value("CONFIG_DRV_FILE")
-        component = Component(config_file)
-        comps = [x.lower() for x in component.get_valid_model_components()]
-        comps = [x.replace('drv', 'cpl') for x in comps]
-        model = [case.get_value("MODEL")]
-        comps = comps + model
-
-        # for each component, compress log files and copy to logdir
-        for comp in comps:
-            logfile = os.path.join(rundir, comp + '.log.' + lid)
+        logfiles = glob.glob(os.path.join(rundir,"*.log.%s"%(lid)))
+        for logfile in logfiles:
             if os.path.isfile(logfile):
                 logfile_gz = gzip_existing_file(logfile)
                 shutil.copy(logfile_gz,
