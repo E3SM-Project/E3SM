@@ -40,6 +40,12 @@
 		<step executable="./metis">
 			<argument flag="graph.info">120</argument>
 		</step>
+		<step executable="./iterate_init.py">
+			<argument flag="">--iteration_count=15</argument>
+			<argument flag="">--variable_to_modify=landIcePressure</argument>
+		</step>
+	</run_script>
+	<run_script name="run_model.py">
 		<model_run procs="120" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>

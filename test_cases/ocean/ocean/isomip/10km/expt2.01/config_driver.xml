@@ -5,10 +5,9 @@
 	<case name="init_step2">
 		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message="     Complete"/>
 	</case>
-	<step executable="./adjust_ssh/iterate_init.py">
-		<argument flag="">--iteration_count=5</argument>
-		<argument flag="">--variable_to_modify=landIcePressure</argument>
-	</step>
+	<case name="adjust_ssh">
+		<step executable="./run.py" quiet="true" pre_message=" * Running adjust_ssh" post_message="     Complete"/>
+	</case>
 	<case name="forward">
 		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message="     Complete"/>
 	</case>
