@@ -121,16 +121,23 @@ def parse_command_line(args):
 
     return opts
 
-def _main():
-    opts = parse_command_line(sys.argv)
-    machobj = opts['machobj']
-    output_dir = opts['output_dir']
+def configure(machobj, output_dir, macros_format, compiler, mpilib, debug):
+    """Add Macros, Depends, and env_mach_specific files to a directory.
 
+    Arguments:
+    machobj - Machines argument for this machine.
+    output_dir - Directory in which to place output.
+    macros_format - Container containing the string 'Makefile' to produce
+                    Makefile Macros output, and/or 'CMake' for CMake output.
+    compiler - String containing the compiler vendor to configure for.
+    mpilib - String containing the MPI implementation to configure for.
+    debug - Boolean specifying whether debugging options are enabled.
+    """
     # Macros generation.
     suffixes = {'Makefile': '.make', 'CMake': '.cmake'}
     macro_maker = Build(machobj)
     build_file_name = os.path.join(machobj.machines_dir, "config_build.xml")
-    for form in opts['macros_format']:
+    for form in macros_format:
         out_file_name = os.path.join(output_dir,
                                      "Macros"+suffixes[form])
         with open(out_file_name, "w") as macros_file:
@@ -141,12 +148,9 @@ def _main():
                                 "Depends."+machobj.get_machine_name())
     if os.path.isfile(mach_depends):
         shutil.copy(mach_depends, output_dir)
-    compilers = machobj.get_value("COMPILERS").split(",")
-    for compiler in compilers:
-        compiler_depends = os.path.join(machobj.machines_dir,
-                                        "Depends."+compiler)
-        if os.path.isfile(compiler_depends):
-            shutil.copy(compiler_depends, output_dir)
+    compiler_depends = os.path.join(machobj.machines_dir, "Depends."+compiler)
+    if os.path.isfile(compiler_depends):
+        shutil.copy(compiler_depends, output_dir)
 
     # env_mach_specific generation.
     ems_path = os.path.join(output_dir, "env_mach_specific.xml")
@@ -156,14 +160,17 @@ def _main():
     ems_file.populate(machobj)
     ems_file.write()
     for shell in ('sh', 'csh'):
-        ems_file.make_env_mach_specific_file(opts['compiler'], opts['debug'],
-                                             opts['mpilib'], shell)
+        ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
         with open(shell_path, 'a') as shell_file:
-            shell_file.write("\nexport COMPILER=%s\n" % opts['compiler'])
-            shell_file.write("export MPILIB=%s\n" % opts['mpilib'])
-            shell_file.write("export DEBUG=%s\n" % repr(opts['debug']).upper())
+            shell_file.write("\nexport COMPILER=%s\n" % compiler)
+            shell_file.write("export MPILIB=%s\n" % mpilib)
+            shell_file.write("export DEBUG=%s\n" % repr(debug).upper())
 
+def _main():
+    opts = parse_command_line(sys.argv)
+    configure(opts['machobj'], opts['output_dir'], opts['macros_format'],
+              opts['compiler'], opts['mpilib'], opts['debug'])
 
 if __name__ == "__main__":
     _main()
