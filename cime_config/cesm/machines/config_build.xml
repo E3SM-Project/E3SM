@@ -1337,6 +1337,8 @@ for mct, etc.
   <PAPI_LIB MPILIB="mpich2">/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
   <PFUNIT_PATH><env>CESMDATAROOT</env>/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
   <!-- Needed due to the way that netcdf is loaded on yellowstone -->
+  <SCC MPILIB="mpi-serial">icc</SCC>
+  <SFC MPILIB="mpi-serial">ifort</SFC>
   <SCC MPILIB="mpich2"><var>MPICC</var></SCC>
   <SFC MPILIB="mpich2"><var>MPIFC</var></SFC>
   <SLIBS>
