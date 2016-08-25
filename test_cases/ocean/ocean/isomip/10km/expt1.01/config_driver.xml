@@ -6,9 +6,8 @@
 		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message="     Complete"/>
 	</case>
 	<step executable="./scripts/iterate_init.py">
- 		<argument flag="">--iteration_count=5</argument>
- 		<argument flag="">--plot_globalStats</argument>
- 		<argument flag="">--variable_to_modify=landIcePressure</argument>
+		<argument flag="">--iteration_count=5</argument>
+		<argument flag="">--variable_to_modify=landIcePressure</argument>
 	</step>
 	<case name="forward">
 		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message="     Complete"/>
