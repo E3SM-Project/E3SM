@@ -3,7 +3,6 @@ Interface to the env_mach_specific.xml file.  This class inherits from EnvBase
 """
 from CIME.XML.standard_module_setup import *
 
-from CIME.XML.generic_xml import GenericXML
 from CIME.XML.env_base import EnvBase
 
 import string
@@ -20,8 +19,6 @@ class EnvMachSpecific(EnvBase):
         """
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
         EnvBase.__init__(self, caseroot, fullpath)
-        self._cshscript = []
-        self._shscript = []
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
@@ -60,31 +57,32 @@ class EnvMachSpecific(EnvBase):
 
         return results
 
-    def load_env_for_case(self, compiler, debug, mpilib):
-        self._compiler = compiler
-        self._debug = debug
-        self._mpilib = mpilib
-
+    def _get_env_for_case(self, compiler, debug, mpilib):
         module_nodes = self.get_nodes("modules")
         env_nodes    = self.get_nodes("environment_variables")
 
-        if (module_nodes is not None):
-            modules_to_load = self._compute_module_actions(module_nodes)
+        modules_to_load = None
+        if module_nodes is not None:
+            modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
+
+        envs_to_set = None
+        if env_nodes is not None:
+            envs_to_set = self._compute_env_actions(env_nodes, compiler, debug, mpilib)
+
+        return modules_to_load, envs_to_set
+
+    def load_env_for_case(self, compiler, debug, mpilib):
+        modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
+
+        if (modules_to_load is not None):
             self.load_modules(modules_to_load)
-        if (env_nodes is not None):
-            envs_to_set = self._compute_env_actions(env_nodes)
+        if (envs_to_set is not None):
             self.load_envs(envs_to_set)
-        with open(".env_mach_specific.csh",'w') as f:
-            f.write("\n".join(self._cshscript))
-        with open(".env_mach_specific.sh",'w') as f:
-            f.write("\n".join(self._shscript))
 
     def load_modules(self, modules_to_load):
         module_system = self.get_module_system_type()
         if (module_system == "module"):
             self._load_module_modules(modules_to_load)
-            self._cshscript += self._get_module_module_commands(modules_to_load,"csh")
-            self._shscript += self._get_module_module_commands(modules_to_load,"sh")
         elif (module_system == "soft"):
             self._load_soft_modules(modules_to_load)
         elif (module_system == "dotkit"):
@@ -94,42 +92,84 @@ class EnvMachSpecific(EnvBase):
         else:
             expect(False, "Unhandled module system '%s'" % module_system)
 
+    def list_modules(self):
+        module_system = self.get_module_system_type()
+
+        # If the user's login shell is not sh, it's possible that modules
+        # won't be configured so we need to be sure to source the module
+        # setup script if it exists.
+        init_path = self.get_module_system_init_path("sh")
+        if init_path:
+            source_cmd = "source %s && " % init_path
+        else:
+            source_cmd = ""
+
+        if (module_system == "module"):
+            return run_cmd_no_fail("%smodule list 2>&1" % source_cmd)
+        elif (module_system == "soft"):
+            return run_cmd_no_fail("%ssoftenv" % source_cmd)
+        elif (module_system == "dotkit"):
+            return run_cmd_no_fail("%suse -lv" % source_cmd)
+        elif (module_system == "none"):
+            return ""
+        else:
+            expect(False, "Unhandled module system '%s'" % module_system)
+
+    def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
+        modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
+
+        filename = ".env_mach_specific.%s" % shell
+        lines = []
+        if modules_to_load is not None:
+            lines.extend(self._get_module_commands(modules_to_load, shell))
+
+        if envs_to_set is not None:
+            for env_name, env_value in envs_to_set:
+                # Let bash do the work on evaluating and resolving env_value
+                if shell == "sh":
+                    lines.append("export %s=%s" % (env_name, env_value))
+                elif shell == "csh":
+                    lines.append("setenv %s %s" % (env_name, env_value))
+                else:
+                    expect(False, "Unknown shell type: '%s'" % shell)
+
+        with open(filename, "w") as fd:
+            fd.write("\n".join(lines))
+
     def load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
             # Let bash do the work on evaluating and resolving env_value
-            os.environ[env_name] = run_cmd("echo %s" % env_value)
-            self._cshscript.append("setenv %s %s"%(env_name,env_value))
-            self._shscript.append("export %s=%s"%(env_name,env_value))
+            os.environ[env_name] = run_cmd_no_fail("echo %s" % env_value)
 
     # Private API
 
-    def _compute_module_actions(self, module_nodes):
-        return self._compute_actions(module_nodes, "command")
+    def _compute_module_actions(self, module_nodes, compiler, debug, mpilib):
+        return self._compute_actions(module_nodes, "command", compiler, debug, mpilib)
 
-    def _compute_env_actions(self, env_nodes):
-        return self._compute_actions(env_nodes, "env")
+    def _compute_env_actions(self, env_nodes, compiler, debug, mpilib):
+        return self._compute_actions(env_nodes, "env", compiler, debug, mpilib)
 
-    def _compute_actions(self, nodes, child_tag):
+    def _compute_actions(self, nodes, child_tag, compiler, debug, mpilib):
         result = [] # list of tuples ("name", "argument")
 
         for node in nodes:
-            if (self._match_attribs(node.attrib)):
+            if (self._match_attribs(node.attrib, compiler, debug, mpilib)):
                 for child in node:
                     expect(child.tag == child_tag, "Expected %s element" % child_tag)
-                    if (self._match_attribs(child.attrib)):
+                    if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
                         result.append( (child.get("name"), child.text) )
 
         return result
 
-    def _match_attribs(self, attribs):
+    def _match_attribs(self, attribs, compiler, debug, mpilib):
         if ("compiler" in attribs and
-            not self._match(self._compiler, attribs["compiler"])):
+            not self._match(compiler, attribs["compiler"])):
             return False
         elif ("mpilib" in attribs and
-            not self._match(self._mpilib, attribs["mpilib"])):
+            not self._match(mpilib, attribs["mpilib"])):
             return False
         elif ("debug" in attribs and
-            not self._match("TRUE" if self._debug else "FALSE", attribs["debug"].upper())):
+            not self._match("TRUE" if debug else "FALSE", attribs["debug"].upper())):
             return False
 
         return True
@@ -140,7 +180,8 @@ class EnvMachSpecific(EnvBase):
         else:
             return my_value == xml_value
 
-    def _get_module_module_commands(self, modules_to_load, shell):
+    def _get_module_commands(self, modules_to_load, shell):
+        # Note this is independent of module system type
         mod_cmd = self.get_module_system_cmd_path(shell)
         cmds = []
         for action, argument in modules_to_load:
@@ -150,8 +191,8 @@ class EnvMachSpecific(EnvBase):
         return cmds
 
     def _load_module_modules(self, modules_to_load):
-        for cmd in self._get_module_module_commands(modules_to_load, "python"):
-            py_module_code = run_cmd(cmd)
+        for cmd in self._get_module_commands(modules_to_load, "python"):
+            py_module_code = run_cmd_no_fail(cmd)
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
@@ -178,7 +219,7 @@ class EnvMachSpecific(EnvBase):
             cmd += " && %s %s %s" % (sh_mod_cmd, action, argument)
 
         cmd += " && env"
-        output=run_cmd(cmd)
+        output = run_cmd_no_fail(cmd)
 
         ###################################################
         # Parse the output to set the os.environ dictionary
@@ -214,14 +255,15 @@ class EnvMachSpecific(EnvBase):
             else:
                 os.environ[key] = newenv[key]
 
-    def _load_dotkit_modules(self, modules_to_load):
+    def _load_dotkit_modules(self, _):
         expect(False, "Not yet implemented")
 
     def _load_none_modules(self, modules_to_load):
         """
         No Action required
         """
-        pass
+        expect(not modules_to_load,
+               "Module system was specified as 'none' yet there are modules that need to be loaded?")
 
     def _mach_specific_header(self, shell):
         '''
@@ -246,10 +288,10 @@ class EnvMachSpecific(EnvBase):
         return module_system.get("type")
 
     def get_module_system_init_path(self, lang):
-        init_nodes = self.get_node("init_path", attributes={"lang":lang})
-        return init_nodes.text
+        init_nodes = self.get_optional_node("init_path", attributes={"lang":lang})
+        return init_nodes.text if init_nodes is not None else None
 
     def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang})
-        return cmd_nodes.text
+        cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
+        return cmd_nodes.text if cmd_nodes is not None else None
 

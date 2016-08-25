@@ -5,25 +5,21 @@ case.submit - Submit a cesm workflow to the queueing system or run it
 if there is no queueing system.  A cesm workflow may include multiple
 jobs.
 """
-
+import socket
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.utils import expect
 from CIME.preview_namelists        import preview_namelists
 from CIME.check_lockedfiles        import check_lockedfiles
-from CIME.XML.batch                 import Batch
-from CIME.XML.env_mach_specific  import EnvMachSpecific
 
 logger = logging.getLogger(__name__)
 
-def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
+def submit(case, job=None, resubmit=False, no_batch=False):
     caseroot = case.get_value("CASEROOT")
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"
         else:
             job = "case.run"
-
 
     if resubmit:
         resub = case.get_value("RESUBMIT")
@@ -35,13 +31,16 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
         if job in ("case.test","case.run"):
             check_case(case, caseroot)
             check_DA_settings(case)
+            if case.get_value("MACH") == "mira":
+                with open(".original_host","w") as fd:
+                    fd.write( socket.gethostname())
 
     cimeroot = case.get_value("CIMEROOT")
     os.environ["CIMEROOT"] = cimeroot
 
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
-    env_batch = case._get_env("batch")
+    env_batch = case.get_env("batch")
     if not resubmit:
         case.set_value("IS_FIRST_RUN", True)
         if no_batch:
@@ -57,7 +56,7 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
         case.set_value("IS_FIRST_RUN", False)
 
     #Load Modules
-    env_module = case._get_env("mach_specific")
+    env_module = case.get_env("mach_specific")
 
 
     env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
@@ -66,6 +65,8 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
 
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
+
+    logger.warn("submit_jobs %s"%job)
     case.submit_jobs(no_batch=no_batch, job=job)
 
 def check_case(case, caseroot):

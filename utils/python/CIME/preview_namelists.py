@@ -3,13 +3,11 @@ API for preview namelist
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd
-from CIME.XML.env_mach_specific import EnvMachSpecific
 
 import glob, shutil
 logger = logging.getLogger(__name__)
 
-def preview_namelists(case, dryrun=False, casedir=None):
+def preview_namelists(case, dryrun=False):
     # refresh case xml files from object
     case.flush()
 
@@ -47,7 +45,7 @@ def preview_namelists(case, dryrun=False, casedir=None):
     else:
 
         # Load modules
-        env_module = case._get_env("mach_specific")
+        env_module = case.get_env("mach_specific")
         env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
                                      debug=case.get_value("DEBUG"),
                                      mpilib=case.get_value("MPILIB"))
@@ -70,16 +68,17 @@ def preview_namelists(case, dryrun=False, casedir=None):
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
         cmd = os.path.join(config_dir, "buildnml")
-        logger.info("Running %s"%cmd)
+        logger.info("Running %s:"%cmd)
         if (logger.level == logging.DEBUG):
-            rc, out, err = run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot), ok_to_fail=True)
+            rc, out, err = run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot))
             expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
         else:
-            rc, out, err = run_cmd("%s %s" % (cmd, caseroot), ok_to_fail=True)
+            rc, out, err = run_cmd("%s %s" % (cmd, caseroot))
             expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
-
+        if out is not None:
+            logger.info("     %s"%out)
     # refresh case xml object from file
-    case.read_xml(caseroot)
+    case.read_xml()
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
         os.makedirs(docdir)

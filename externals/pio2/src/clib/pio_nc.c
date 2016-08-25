@@ -122,7 +122,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_DIMNAME;
+  msg = PIO_MSG_INQ_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -961,7 +961,7 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_VARTYPE;
+  msg = PIO_MSG_INQ_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1108,7 +1108,7 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_VARDIMID;
+  msg = PIO_MSG_INQ_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1340,7 +1340,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_ATTLEN;
+  msg = PIO_MSG_INQ_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1415,7 +1415,7 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_ATTTYPE;
+  msg = PIO_MSG_INQ_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1561,7 +1561,7 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_NATTS;
+  msg = PIO_MSG_INQ;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2322,7 +2322,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_ATTNAME;
+  msg = PIO_MSG_INQ_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2551,7 +2551,7 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_UNLIMDIM;
+  msg = PIO_MSG_INQ;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2702,7 +2702,7 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_NDIMS;
+  msg = PIO_MSG_INQ;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2848,7 +2848,7 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_NVARS;
+  msg = PIO_MSG_INQ;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3141,7 +3141,7 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_VARNATTS;
+  msg = PIO_MSG_INQ_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3444,7 +3444,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_DIMLEN;
+  msg = PIO_MSG_INQ_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3674,7 +3674,7 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_VARNDIMS;
+  msg = PIO_MSG_INQ_VAR;
   if(file->varlist[varid].ndims > 0){
     (*ndimsp) = file->varlist[varid].ndims;
     return PIO_NOERR;
@@ -3753,7 +3753,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
-  msg = PIO_MSG_INQ_VARNAME;
+  msg = PIO_MSG_INQ_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 

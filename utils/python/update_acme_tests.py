@@ -1,6 +1,6 @@
 import os, tempfile, logging
 import CIME.utils
-from CIME.utils import expect
+from CIME.utils import expect, run_cmd_no_fail
 from CIME.XML.machines import Machines
 
 # Here are the tests belonging to acme suites. Format is
@@ -10,30 +10,46 @@ from CIME.XML.machines import Machines
 #   If testmods are needed, a 2-ple must be provided  (test, mods)
 #   If you want to restrict the test mods to certain machines, than a 3-ple is needed (test, mods, [machines])
 _TEST_SUITES = {
-    "acme_tiny" : (None,
+    "cime_tiny" : (None,
                    ("ERS.f19_g16_rx1.A",
                     "NCK.f19_g16_rx1.A")
                    ),
 
-    "acme_test_only_pass" : (None,
+    "cime_test_only_pass" : (None,
                    ("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.ne30_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
-    "acme_test_only_slow_pass" : (None,
+    "cime_test_only_slow_pass" : (None,
                    ("TESTRUNSLOWPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNSLOWPASS_Mmpi-serial.ne30_g16_rx1.A",
                     "TESTRUNSLOWPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
-    "acme_test_only" : (None,
+    "cime_test_only" : (None,
                    ("TESTBUILDFAIL.f19_g16_rx1.A",
+                    "TESTBUILDFAILEXC.f19_g16_rx1.A",
                     "TESTRUNFAIL_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
                     "TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X")
                    ),
+
+    "cime_developer" : (None,
+                            ("NCK_Ld3.f45_g37_rx1.A",
+                             "ERI.f45_g37.X",
+                             "SEQ_Ln9.f19_g16_rx1.A",
+                             "ERS_Ld3.ne30_g16_rx1.A",
+                             "ERS_N2_Ld3.f19_g16_rx1.A",
+                             "ERR_Ld3.f45_g37_rx1.A",
+                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A")
+                            ),
+
+    #
+    # ACME tests below
+    #
 
     "acme_runoff_developer" : (None,
                              ("SMS.f19_f19.IM1850CLM45CN",
@@ -63,16 +79,6 @@ _TEST_SUITES = {
                              "SMS_D.f19_g16.FC5ATMMODCOSP")
                             ),
 
-    "cime_developer" : (None,
-                            ("NCK_Ld3.f45_g37_rx1.A",
-                             "ERI.f45_g37.X",
-                             "SEQ_Ln9.f19_g16_rx1.A",
-                             "ERS_Ld3.ne30_g16_rx1.A",
-                             "ERS_N2_Ld3.f19_g16_rx1.A",
-                             "ERR_Ld3.f45_g37_rx1.A",
-                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A")
-                            ),
-
     "acme_developer" : ("acme_land_developer",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.f45_g37_rx1.DTEST",
@@ -88,7 +94,7 @@ _TEST_SUITES = {
                          "HOMME_P24.f19_g16_rx1.A",
                          "NCK.f19_g16_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",
-                         "ERS_Ld5.T62_oQU120.C_MPAS_NORMAL_YEAR",
+                         "ERS_Ld5.T62_oQU120.CMPASO-NYF",
                          "ERS.f09_g16_g.MPASLI_ONLY",
                          "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
@@ -194,16 +200,16 @@ def get_full_test_names(testargs, machine, compiler):
 
     Testargs can be categories or test names and support the NOT symbol '^'
 
-    >>> get_full_test_names(["acme_tiny"], "melvin", "gnu")
+    >>> get_full_test_names(["cime_tiny"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu']
 
-    >>> get_full_test_names(["acme_tiny", "PEA_P1_M.f45_g37_rx1.A"], "melvin", "gnu")
+    >>> get_full_test_names(["cime_tiny", "PEA_P1_M.f45_g37_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'PEA_P1_M.f45_g37_rx1.A.melvin_gnu']
 
     >>> get_full_test_names(['ERS.f19_g16_rx1.A', 'NCK.f19_g16_rx1.A', 'PEA_P1_M.f45_g37_rx1.A'], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'PEA_P1_M.f45_g37_rx1.A.melvin_gnu']
 
-    >>> get_full_test_names(["acme_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
+    >>> get_full_test_names(["cime_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
     """
     expect(machine is not None, "Must define a machine")
@@ -214,6 +220,8 @@ def get_full_test_names(testargs, machine, compiler):
     negations = set()
 
     for testarg in testargs:
+        # remove any whitespace in name
+        testarg = testarg.strip()
         if (testarg.startswith("^")):
             negations.add(testarg[1:])
         elif (testarg in acme_test_suites):
@@ -243,18 +251,20 @@ def find_all_supported_platforms():
     tree. A platform is defined by a triple (machine name, compiler,
     mpi library).
     """
-    machines = CIME.utils.get_machines()
-    machobj = Machines(machine=machine)
-    platform_set = set()
+    # TODO - Fix
+    pass
+    # machines = CIME.utils.get_machines()
+    # machobj = Machines(machine=machines)
+    # platform_set = set()
 
-    for machine in machines:
-        machobj.set_machine(machine)
-        compilers, mpilibs = machobj.get_value("COMPILERS"), machobj.get_value("MPILIBS")
-        for compiler in compilers:
-            for mpilib in mpilibs:
-                platform_set.add((machine, compiler, mpilib))
+    # for machine in machines:
+    #     machobj.set_machine(machine)
+    #     compilers, mpilibs = machobj.get_value("COMPILERS"), machobj.get_value("MPILIBS")
+    #     for compiler in compilers:
+    #         for mpilib in mpilibs:
+    #             platform_set.add((machine, compiler, mpilib))
 
-    return list(platform_set)
+    # return list(platform_set)
 
 ###############################################################################
 def find_all_platforms(xml_file):
@@ -315,16 +325,16 @@ def update_acme_tests(xml_file, categories, platform=None):
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            CIME.utils.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
+            run_cmd_no_fail("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
         else:
-            CIME.utils.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
-                              % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
+            run_cmd_no_fail("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
+                            % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
-        CIME.utils.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
-                          (manage_xml_entries, new_test_file, category))
+        run_cmd_no_fail("%s -model acme -component allactive -addlist -file %s -category %s" %
+                        (manage_xml_entries, new_test_file, category))
         os.unlink(new_test_file)
 
     print "SUCCESS"

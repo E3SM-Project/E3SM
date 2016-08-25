@@ -68,12 +68,14 @@ def _main_func():
     cmd = cmd + " -grid %s -atm_grid %s -lnd_grid %s -rof_grid %s -ocn_grid %s -wav_grid %s" \
         % (grid, atm_grid, lnd_grid, rof_grid, ocn_grid, wav_grid)
 
-    rc, out, err = run_cmd(cmd, from_dir=confdir, ok_to_fail=True)
+    rc, out, err = run_cmd(cmd, from_dir=confdir)
     expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
 
-    # copy drv_in, seq_maps.rc and all *modio* files to rundir
+    # copy drv_in, drv_flds_in, seq_maps.rc and all *modio* files to rundir
 
     shutil.copy(os.path.join(confdir,"drv_in"), rundir)
+
+    shutil.copy(os.path.join(confdir,"drv_flds_in"), rundir)
 
     shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
 

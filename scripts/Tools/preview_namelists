@@ -17,7 +17,9 @@ import argparse, doctest
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--verbose]
+        usage="""\n%s [--debug]
+OR
+%s --verbose
 OR
 %s --help
 OR
@@ -26,7 +28,7 @@ OR
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run \033[0m
     > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+""" % ((os.path.basename(args[0]), ) * 5),
 
 description=description,
 

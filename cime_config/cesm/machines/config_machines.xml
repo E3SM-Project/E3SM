@@ -95,28 +95,28 @@
       </modules>
       <modules compiler="pgi">
 	<command name="load">PrgEnv-pgi</command>
-	<command name="switch">pgi pgi/15.10.0</command>
+	<command name="switch">pgi pgi/16.3.0</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu/4.2.84</command>
 	<command name="switch">gcc gcc/4.8.2</command>
       </modules>
       <modules compiler="cray">
-	<command name="load">PrgEnv-cray/4.2.34</command>
-	<command name="switch">cce cce/8.2.6</command>
+	<command name="load">PrgEnv-cray</command>
+	<command name="switch">cce cce/8.4.6</command>
       </modules>
       <modules>
 	<command name="load">papi/5.3.2</command>
-	<command name="switch">cray-mpich cray-mpich/7.3.0</command>
-	<command name="switch">cray-libsci cray-libsci/13.3.0</command>
-	<command name="load">torque/5.0.1</command>
+	<command name="switch">cray-mpich cray-mpich/7.3.3</command>
+	<command name="switch">cray-libsci cray-libsci/16.03.1</command>
+	<command name="load">torque/6.0.2</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
-	<command name="load">cray-parallel-netcdf/1.6.1</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-netcdf/4.3.3.1</command>
+	<command name="load">cray-netcdf/4.4.0</command>
       </modules>
       <modules>
 	<command name="load">cmake/3.1.3</command>
@@ -369,7 +369,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.0</command>
+	<command name="switch">cce cce/8.5.1</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -466,8 +466,9 @@
   <machine MACH="edison">
     <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
     <COMPILERS>intel,gnu,cray</COMPILERS>
+    <NODENAME_REGEX>edison</NODENAME_REGEX>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
+    <CESMSCRATCHROOT>$ENV{CSCRATCH}</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
@@ -533,7 +534,7 @@
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.3</command>
+	<command name="switch">cce cce/8.5.1</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -553,16 +554,16 @@
       </modules>
       <modules mpilib="mpi-serial">
 	<command name="load">cray-hdf5/1.8.16</command>
-	<command name="load">cray-netcdf/4.3.3.1</command>
+	<command name="load">cray-netcdf/4.4.0</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
 	<command name="load">cray-hdf5-parallel/1.8.16</command>
-	<command name="load">cray-parallel-netcdf/1.6.1</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
 	<command name="load">perl/5.20.0</command>
-	<command name="load">cmake/3.0.0</command>
+	<command name="load">cmake/3.3.2</command>
       </modules>
     </module_system>
 
@@ -574,12 +575,9 @@
 
   <machine MACH="hobart">
     <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
-    <NODENAME_REGEX>hobart</NODENAME_REGEX>
+    <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
-    <MPILIBS compiler="nag">openmpi</MPILIBS>
-    <MPILIBS compiler="intel">mvapich2</MPILIBS>
-    <MPILIBS compiler="pgi">mvapich2</MPILIBS>
-    <MPILIBS compiler="gnu">mvapich2</MPILIBS>
+    <MPILIBS>mvapich2</MPILIBS>
     <RUNDIR>/scratch/cluster/$USER/$CASE/run</RUNDIR>
     <EXEROOT>/scratch/cluster/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
@@ -620,26 +618,27 @@
 	<command name="load">compiler/intel/15.0.2.164</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
-	<command name="load">  tool/parallel-netcdf/1.6.1/intel/mvapich2  </command>
+	<command name="load">  tool/parallel-netcdf/1.7.0/intel/mvapich2  </command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">compiler/pgi/15.1</command>
       </modules>
       <modules  compiler="pgi" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
+	  <command name="load">  tool/parallel-netcdf/1.7.0/pgi/mvapich2  </command>
       </modules>
       <modules compiler="nag">
-	<command name="load">compiler/nag/6.0</command>
+	<command name="load">compiler/nag/6.1</command>
       </modules>
-      <modules compiler="nag" mpilib="openmpi">
-	  <command name="load">  tool/parallel-netcdf/1.6.1/nag/openmpi </command>
-      </modules>
+<!--      <modules compiler="nag" mpilib="mvapich2">
+	  <command name="load">  tool/parallel-netcdf/1.7.0/nag/mvapich2 </command>
+      </modules> -->
       <modules compiler="gnu">
-	<command name="load">compiler/gnu/4.8.3</command>
+	<command name="load">compiler/gnu/4.8.5</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <env name="PATH">$PATH:/usr/local/bin</env>
     </environment_variables>
   </machine>
 
@@ -789,18 +788,17 @@
     <PES_PER_NODE>8</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>/usr/bin/runjob</executable>
+       <executable>/usr/bin/runjob</executable>
       <arguments>
 	<arg name="label"> --label short</arg>
 	<!-- Ranks per node!! -->
-	<arg name="tasks_per_node"> -p {{ tasks_per_node }}</arg>
+	<arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
 	<!-- Total MPI Tasks -->
-	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
-	<arg name="locargs">  $LOCARGS</arg>
+	<arg name="num_tasks"> --np $TOTALPES</arg>
+	<arg name="locargs">--block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
 	<arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	<arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
 	<arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
-	<arg name="colon">:</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">

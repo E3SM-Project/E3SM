@@ -3,7 +3,6 @@ CIME ERI test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.utils import run_cmd
 
 import shutil, glob, os
 
@@ -27,7 +26,7 @@ class ERI(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
         self._testname = "ERI"
 
-    def run(self):
+    def run_phase(self):
         caseroot = self._case.get_value("CASEROOT")
         clone1_path = "%s.ref1" % caseroot
         clone2_path = "%s.ref2" % caseroot
@@ -36,14 +35,11 @@ class ERI(SystemTestsCommon):
         #
         # clone the main case to create ref1 and ref2 cases
         #
-        clones = []
         for clone_path in [clone1_path, clone2_path]:
             if os.path.exists(clone_path):
                 shutil.rmtree(clone_path)
 
-            clones.append(self._case.create_clone(clone_path, keepexe=True))
-
-        clone1, clone2 = clones
+        clone1, clone2 = [self._case.create_clone(clone_path, keepexe=True) for clone_path in [clone1_path, clone2_path]]
         orig_case = self._case
         orig_casevar = orig_case.get_value("CASE")
 
@@ -103,11 +99,7 @@ class ERI(SystemTestsCommon):
                 with open("user_nl_cam", "a") as fd:
                     fd.write("inithist = 'ENDOFRUN'\n")
 
-        success = self._run(suffix=None,
-                            coupler_log_path=os.path.join(dout_sr1, "logs"),
-                            st_archive=True)
-        if not success:
-            return False
+        self.run_indv(st_archive=True, suffix=None)
 
         #
         # (2) Test run:
@@ -120,7 +112,7 @@ class ERI(SystemTestsCommon):
         self._set_active_case(clone2)
 
         # Set startdate to start2, set ref date based on ref1 restart
-        refdate_2 = run_cmd(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr1)
+        refdate_2 = run_cmd_no_fail(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr1)
         refsec_2 = "00000"
 
         logger.info("ref2 hybrid: doing a %s %s startup hybrid run" % (stop_n2, stop_option))
@@ -153,11 +145,7 @@ class ERI(SystemTestsCommon):
 
         # run ref2 case (all component history files will go to short term archiving)
 
-        success = self._run(suffix=None,
-                            coupler_log_path=os.path.join(dout_sr2, "logs"),
-                            st_archive=True)
-        if not success:
-            return False
+        self.run_indv(suffix="hybrid", st_archive=True)
 
         #
         # (3a) Test run:
@@ -167,7 +155,7 @@ class ERI(SystemTestsCommon):
         os.chdir(caseroot)
         self._set_active_case(orig_case)
 
-        refdate_3 = run_cmd(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr2)
+        refdate_3 = run_cmd_no_fail(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr2)
         refsec_3 = "00000"
 
         logger.info("branch: doing a %s %s branch" % (stop_n3, stop_option))
@@ -204,9 +192,8 @@ class ERI(SystemTestsCommon):
         self._component_compare_move("hybrid")
 
         # run branch case (short term archiving is off)
-        success = self._run()
-        if not success:
-            return False
+        self.run_indv()
+
         #
         # (3b) Test run:
         # do a restart continue from (3a) (short term archiving off)
@@ -223,9 +210,7 @@ class ERI(SystemTestsCommon):
         self._case.flush()
 
         # do the restart run (short term archiving is off)
-        success = self._run(suffix="rest")
-        if not success:
-            return False
+        self.run_indv(suffix="rest")
 
-        return self._component_compare_test("base", "hybrid") and \
-               self._component_compare_test("base", "rest")
+        self._component_compare_test("base", "hybrid")
+        self._component_compare_test("base", "rest")

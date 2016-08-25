@@ -7,11 +7,9 @@ batch directives. Use case.submit from the command line to run your case.
 """
 
 import sys, os, time
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+os.chdir( '{{ caseroot }}')
 
-_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+_LIBDIR = os.path.join("{{ cimeroot }}", "scripts", "Tools")
 sys.path.append(_LIBDIR)
 
 from standard_script_setup          import *
@@ -61,7 +59,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)

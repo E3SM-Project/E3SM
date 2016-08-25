@@ -7,7 +7,6 @@ Lay all of the components out sequentially
 """
 import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
 import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
@@ -22,7 +21,7 @@ class NCK(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         '''
         build can be called once (sharedlib_only and model_only both False)
         or twice (once with each true)
@@ -47,7 +46,7 @@ class NCK(SystemTestsCommon):
             if model_only:
                 # This file should have been created in the sharedlib_only phase
                 shutil.copy(machpes,"env_mach_pes.xml")
-                self._case.read_xml(self._caseroot)
+                self._case.read_xml()
             else:
                 for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                     self._case.set_value("NINST_%s"%comp, bld)
@@ -63,7 +62,7 @@ class NCK(SystemTestsCommon):
             if not sharedlib_only:
                 self.clean_build()
 
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             if not model_only:
                 shutil.copy("env_mach_pes.xml", machpes)
             if not sharedlib_only:
@@ -76,7 +75,7 @@ class NCK(SystemTestsCommon):
 #        shutil.copy("env_mach_pes.xml",
 #                    os.path.join("LockedFiles","env_mach_pes.xml"))
 
-    def run(self):
+    def run_phase(self):
         os.chdir(self._caseroot)
 
         exeroot = self._case.get_value("EXEROOT")
@@ -107,30 +106,21 @@ class NCK(SystemTestsCommon):
         # do an initial run test with NINST 1
         #======================================================================
         logger.info("default: doing a %s %s with NINST1" % (stop_n, stop_option))
-        success = SystemTestsCommon.run(self)
+        self.run_indv()
 
         #======================================================================
         # do an initial run test with NINST 2
         # want to run on same pe counts per instance and same cpl pe count
         #======================================================================
 
-        if success:
-            os.remove("%s/%s.exe" % (exeroot, cime_model))
-            shutil.copy("%s/%s.exe.NCK2" % (exeroot, cime_model),
-                        "%s/%s.exe" % (exeroot, cime_model))
-            shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")
-            shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
-            shutil.copy("LockedFiles/env_mach_pes.NCK2.xml", "env_mach_pes.xml")
-            shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
+        os.remove("%s/%s.exe" % (exeroot, cime_model))
+        shutil.copy("%s/%s.exe.NCK2" % (exeroot, cime_model),
+                    "%s/%s.exe" % (exeroot, cime_model))
+        shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")
+        shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+        shutil.copy("LockedFiles/env_mach_pes.NCK2.xml", "env_mach_pes.xml")
+        shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
 
-            logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
-            success = SystemTestsCommon._run(self, "multiinst")
-
-        # Compare
-        if success:
-            return self._component_compare_test("base", "multiinst")
-        else:
-            return False
-
-    def report(self):
-        SystemTestsCommon.report(self)
+        logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
+        self.run_indv(suffix="multiinst")
+        self._component_compare_test("base", "multiinst")

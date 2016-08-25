@@ -9,10 +9,13 @@ from CIME.XML.env_mach_pes import EnvMachPes
 
 import glob
 
-def check_lockedfiles(caseroot=os.getcwd()):
+def check_lockedfiles(caseroot=None):
     """
     Check that all lockedfiles match what's in case
+
+    If caseroot is not specified, it is set to the current working directory
     """
+    caseroot = os.getcwd() if caseroot is None else caseroot
     lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
@@ -37,7 +40,7 @@ def check_lockedfiles(caseroot=os.getcwd()):
                     print("  found difference in %s : case %s locked %s" %
                           (key, repr(diffs[key][0]), repr(diffs[key][1])))
                 if objname == "env_mach_pes":
-                    expect(False, "Invoke case.setup --clean followed by case.setup")
+                    expect(False, "Invoke case.setup --reset ")
                 elif objname == "env_case":
                     expect(False, "Cannot change file env_case.xml, please"
                            " recover the original copy from LockedFiles")

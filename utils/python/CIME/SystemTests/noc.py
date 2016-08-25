@@ -2,7 +2,7 @@
 CIME NOC? test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 
@@ -12,5 +12,5 @@ class NOC(SystemTestsCommon):
         """
         initialize an object interface to the NOC system test
         """
-        expectedrunvars = ["CONTINUE_RUN", "REST_OPTION", "HIST_OPTION", "HIST_N"]
+        #expectedrunvars = ["CONTINUE_RUN", "REST_OPTION", "HIST_OPTION", "HIST_N"]
         SystemTestsCommon.__init__(self, case)

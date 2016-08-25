@@ -425,7 +425,9 @@ sub GetDataFilenames {
   #
   # Get path
   #
+
   my $filepath = $self->GetDataFilepath( $type );
+
   my $key = "fileNames";
   my $info;
   if (      $type eq "data" ) {
@@ -463,8 +465,8 @@ sub GetDataFilepath {
   if ( ! defined($self->{'template'}) ) {
      die "${nm}:: a template has NOT been read in yet -- abort.\n";
   }
-  my $defaults_ref = $self->{'defaults'};
-  my %defaults     = %$defaults_ref;
+  my %defaults = %{$self->{'defaults'}};
+
   my $key;
   if (      $type eq "data" ) {
      $key = "fieldInfo";
@@ -473,13 +475,14 @@ sub GetDataFilepath {
   } else {
      die "${nm}:: bad input type to method: $type should be data or domain\n";
   }
+
   my $Info_ref = $defaults{$key};
+
   if ( ref($Info_ref) ne "HASH" ) {
      die "${nm}:: $key is NOT a hash -- something must have went wrong in the Read\n";
   }
-  my %Info = %$Info_ref;
-  my $filepath = $self->__Sub__( $Info_ref, 'filePath');
 
+  my $filepath = $self->__Sub__( $Info_ref, 'filePath');
   return( $filepath );
 }
 
@@ -490,7 +493,6 @@ sub expandXMLVar {
     my $value        = shift;
     my $varhash_ref  = shift;
     my $nm = "expandXMLVar";
-
     if ( ! defined($value) ) {
        die "${nm}:: a value was NOT input\n";
     }
@@ -559,6 +561,7 @@ sub __Sub__ {
    my $lastmonth = $opts{'lastmonth'};
 
    my $value = $$Info_ref{$name};
+
    $value =~  s/^[ \n]+//;          # remove leading spaces
    $value =~  s/[ \n]+$//;          # remove ending spaces
 

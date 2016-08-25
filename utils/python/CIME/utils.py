@@ -79,13 +79,14 @@ def get_cime_root():
     if(cime_config.has_option('main','CIMEROOT')):
         cimeroot = cime_config.get('main','CIMEROOT')
     else:
-        try:
+        if "CIMEROOT" in os.environ:
             cimeroot = os.environ["CIMEROOT"]
-        except KeyError:
+        else:
             script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
             cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
         cime_config.set('main','CIMEROOT',cimeroot)
+
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
 
@@ -140,24 +141,13 @@ def get_model():
     expect(False, msg)
 
 _hack=object()
-def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
+def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
-    >>> run_cmd('echo foo')
-    'foo'
-
-    >>> run_cmd('ls file_i_hope_doesnt_exist')
-    Traceback (most recent call last):
-        ...
-    SystemExit: ERROR: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
-
-    >>> run_cmd('ls file_i_hope_doesnt_exist', ok_to_fail=True)[0] != 0
+    >>> run_cmd('ls file_i_hope_doesnt_exist')[0] != 0
     True
-
-    >>> run_cmd('grep foo', input_str='foo')
-    'foo'
     """
     import subprocess # Not safe to do globally, module not available in older pythons
 
@@ -167,7 +157,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-    if (verbose or logger.level == logging.DEBUG):
+    if (verbose or logger.isEnabledFor(logging.DEBUG)):
         logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
@@ -187,7 +177,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    if (verbose or logger.level == logging.DEBUG):
+    if (verbose or logger.isEnabledFor(logging.DEBUG)):
         if stat != 0:
             logger.info("  stat: %d\n" % stat)
         if output:
@@ -195,17 +185,29 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
         if errput:
             logger.info("  errput: %s\n" % errput)
 
-    if (ok_to_fail):
-        return stat, output, errput
-    else:
-        if (arg_stderr is not None):
-            errput = errput if errput is not None else open(arg_stderr.name, "r").read()
-            expect(stat == 0, "Command: '%s' failed with error '%s'%s" %
-                   (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
-        else:
-            expect(stat == 0, "Command: '%s' failed%s. See terminal output" %
-                   (cmd, "" if from_dir is None else " from dir '%s'" % from_dir))
-        return output
+    return stat, output, errput
+
+def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
+                    arg_stdout=_hack, arg_stderr=_hack):
+    """
+    Wrapper around subprocess to make it much more convenient to run shell commands.
+    Expects command to work. Just returns output string.
+
+    >>> run_cmd_no_fail('echo foo')
+    'foo'
+
+    >>> run_cmd_no_fail('echo THE ERROR >&2; false')
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR'
+
+    >>> run_cmd_no_fail('grep foo', input_str='foo')
+    'foo'
+    """
+    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr)
+    expect(stat == 0, "Command: '%s' failed with error '%s'%s" %
+           (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
+    return output
 
 def check_minimum_python_version(major, minor):
     """
@@ -215,7 +217,7 @@ def check_minimum_python_version(major, minor):
     >>>
     """
     expect(sys.version_info[0] == major and sys.version_info[1] >= minor,
-           "Python %d, minor verion %d+ is required, you have %d.%d" %
+           "Python %d, minor version %d+ is required, you have %d.%d" %
            (major, minor, sys.version_info[0], sys.version_info[1]))
 
 def normalize_case_id(case_id):
@@ -261,7 +263,7 @@ def parse_test_name(test_name):
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
     """
-    rv = [None] * 6
+    rv = [None] * 7
     num_dots = test_name.count(".")
     expect(num_dots <= 4,
            "'%s' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
@@ -269,6 +271,7 @@ def parse_test_name(test_name):
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
     rv.insert(1, None) # Make room for caseopts
+    rv.pop()
     if (testcase_field_underscores > 0):
         full_str = rv[0]
         rv[0]    = full_str.split("_")[0]
@@ -318,7 +321,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
             expect(arg_val is not None,
                    "Could not fill-out test name, partial string '%s' had no %s information and you did not provide any" % (partial_test, name))
             result = "%s%s%s" % (result, "_" if name == "compiler" else ".", arg_val)
-        elif (arg_val is not None):
+        elif (arg_val is not None and partial_val != partial_compiler):
             expect(arg_val == partial_val,
                    "Mismatch in field %s, partial string '%s' indicated it should be '%s' but you provided '%s'" % (name, partial_test, partial_val, arg_val))
 
@@ -329,7 +332,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
         else:
             result += ".%s" % testmod.replace("/", "-")
     elif (testmod is not None):
-        expect(arg_val == partial_val,
+        expect(arg_val == partial_val, # pylint: disable=undefined-loop-variable
                "Mismatch in field testmod, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_testmod, testmod))
 
     return result
@@ -350,7 +353,7 @@ def get_current_branch(repo=None):
             branch = branch.replace("origin/", "", 1)
         return branch
     else:
-        stat, output, _ = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
+        stat, output, _ = run_cmd("git symbolic-ref HEAD", from_dir=repo)
         if (stat != 0):
             return None
         else:
@@ -363,7 +366,7 @@ def get_current_commit(short=False, repo=None):
     >>> get_current_commit() is not None
     True
     """
-    output = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
+    output = run_cmd_no_fail("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
     return output
 
 def get_scripts_location_within_cime():
@@ -472,13 +475,13 @@ def find_proc_id(proc_name=None,
 
     pgrep_cmd = "pgrep %s %s" % (proc_name if proc_name is not None else "",
                                  "-P %d" % parent if children_only else "")
-    stat, output, errput = run_cmd(pgrep_cmd, ok_to_fail=True)
+    stat, output, errput = run_cmd(pgrep_cmd)
     expect(stat in [0, 1], "pgrep failed with error: '%s'" % errput)
 
     rv = set([int(item.strip()) for item in output.splitlines()])
     if (children_only):
         pgrep_cmd = "pgrep -P %s" % parent
-        stat, output, errput = run_cmd(pgrep_cmd, ok_to_fail=True)
+        stat, output, errput = run_cmd(pgrep_cmd)
         expect(stat in [0, 1], "pgrep failed with error: '%s'" % errput)
 
         for child in output.splitlines():
@@ -538,8 +541,12 @@ def get_project(machobj=None):
     return None
 
 def setup_standard_logging_options(parser):
+    helpfile = "%s.log"%sys.argv[0]
+    helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
     parser.add_argument("-d", "--debug", action="store_true",
-                        help="Print debug information (very verbose)")
+                        help="Print debug information (very verbose) to file %s" % helpfile)
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Add additional context (time and file) to log messages")
     parser.add_argument("-s", "--silent", action="store_true",
                         help="Print only warnings and error messages")
 
@@ -563,15 +570,24 @@ def handle_standard_logging_options(args):
     """
     root_logger = logging.getLogger()
 
+    verbose_formatter   = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                                            datefmt='%m-%d %H:%M')
+
     # Change info to go to stdout. This handle applies to INFO exclusively
     stdout_stream_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_stream_handler.setLevel(logging.INFO)
     stdout_stream_handler.addFilter(_LessThanFilter(logging.WARNING))
-    root_logger.addHandler(stdout_stream_handler)
 
     # Change warnings and above to go to stderr
     stderr_stream_handler = logging.StreamHandler(stream=sys.stderr)
     stderr_stream_handler.setLevel(logging.WARNING)
+
+    # --verbose adds to the message format but does not impact the log level
+    if args.verbose:
+        stdout_stream_handler.setFormatter(verbose_formatter)
+        stderr_stream_handler.setFormatter(verbose_formatter)
+
+    root_logger.addHandler(stdout_stream_handler)
     root_logger.addHandler(stderr_stream_handler)
 
     if args.debug:
@@ -579,9 +595,7 @@ def handle_standard_logging_options(args):
         log_file = "%s.log" % os.path.basename(sys.argv[0])
 
         debug_log_handler = logging.FileHandler(log_file, mode='w')
-        debug_formatter   = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                                              datefmt='%m-%d %H:%M')
-        debug_log_handler.setFormatter(debug_formatter)
+        debug_log_handler.setFormatter(verbose_formatter)
         debug_log_handler.setLevel(logging.DEBUG)
         root_logger.addHandler(debug_log_handler)
 
@@ -798,6 +812,10 @@ def get_my_queued_jobs():
     # TODO
     return []
 
+def delete_jobs(_):
+    # TODO
+    return True
+
 def wait_for_unlocked(filepath):
     locked = True
     file_object = None
@@ -859,3 +877,45 @@ def touch(fname):
         os.utime(fname, None)
     else:
         open(fname, 'a').close()
+
+def find_system_test(testname, case):
+    """
+    Find and import the test matching testname
+    Look through the paths set in config_files.xml variable SYSTEM_TESTS_DIR
+    for components used in this case to find a test matching testname.  Add the
+    path to that directory to sys.path if its not there and return the test object
+    Fail if the test is not found in any of the paths.
+    """
+    from importlib import import_module
+
+    system_test_path = None
+    if testname.startswith("TEST"):
+        system_test_path =  "CIME.SystemTests.system_tests_common.%s"%(testname)
+    else:
+        components = ["any"]
+        components.extend( case.get_compset_components())
+        env_test = case.get_env("test")
+        for component in components:
+            tdir = env_test.get_value("SYSTEM_TESTS_DIR",
+                                      attribute={"component":component})
+
+            if tdir is not None:
+                tdir = os.path.abspath(tdir)
+                system_test_file = os.path.join(tdir  ,"%s.py"%testname.lower())
+                if os.path.isfile(system_test_file):
+                    logger.debug( "found "+system_test_file)
+                    if component == "any":
+                        system_test_path = "CIME.SystemTests.%s.%s"%(testname.lower(),testname)
+                    else:
+                        system_test_dir = os.path.dirname(system_test_file)
+                        if system_test_dir not in sys.path:
+                            sys.path.append(system_test_dir)
+                        system_test_path = "%s.%s"%(testname.lower(),testname)
+                    break
+
+    expect(system_test_path is not None, "No test %s found"%testname)
+
+    path, m = system_test_path.rsplit('.',1)
+    mod = import_module(path)
+    return getattr(mod, m)
+

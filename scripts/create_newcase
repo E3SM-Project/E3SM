@@ -52,8 +52,9 @@ def parse_command_line(args, cimeroot):
     parser.add_argument("--project", "-project",
                         help="Specify a project id")
 
-    parser.add_argument("--pecount", "-pecount", choices=('S','M','L','X1','X2'), default="M",
-                        help="Specify a target size description for the number of cores")
+    parser.add_argument("--pecount", "-pecount",  default="M",
+                        help="Specify a target size description for the number of cores"
+                         "Allowed options are   ('S','M','L','X1','X2','[0-9]x[0-9]','[0-9]')")
 
     parser.add_argument("--mach-dir", "-mach_dir",
                         help="Specify the locations of the Machines directory, other than the default"
@@ -99,6 +100,9 @@ def parse_command_line(args, cimeroot):
                         help="Set the wallclock limit for this case. "
                         "Can use env var CIME_GLOBAL_WALLTIME to set this.")
 
+    parser.add_argument("-q", "--queue", default=None,
+                        help="Force batch system to use a certain queue")
+
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
@@ -128,7 +132,7 @@ def parse_command_line(args, cimeroot):
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime
+        args.walltime, args.queue
 
 ###############################################################################
 def _main_func():
@@ -138,7 +142,7 @@ def _main_func():
     caseroot, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, user_mods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test, ninst, walltime \
+        user_grid, gridfile, srcroot, test, ninst, walltime, queue \
         = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(caseroot)
@@ -150,16 +154,16 @@ def _main_func():
 
     with Case(caseroot, read_only=False) as case:
         # Set values for env_case.xml
-        case.set_value("CASE", os.path.basename(caseroot))
-        case.set_value("CASEROOT", caseroot)
-        case.set_value("SRCROOT", srcroot)
+        case.set_lookup_value("CASE", os.path.basename(caseroot))
+        case.set_lookup_value("CASEROOT", caseroot)
+        case.set_lookup_value("SRCROOT", srcroot)
 
         # Configure the Case
         case.configure(compset, grid, machine_name=machine, project=project,
                           pecount=pecount, compiler=compiler, mpilib=mpilib,
                           user_compset=user_compset, pesfile=pesfile,
                           user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                          walltime=walltime)
+                          walltime=walltime, queue=queue)
 
         case.create_caseroot()
 

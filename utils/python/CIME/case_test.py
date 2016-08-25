@@ -2,25 +2,11 @@
 Run a testcase.
 """
 
-from CIME.utils import expect
-from CIME.case import Case
-
-from CIME.SystemTests.eri import ERI
-from CIME.SystemTests.err import ERR
-from CIME.SystemTests.erp import ERP
-from CIME.SystemTests.ers import ERS
-from CIME.SystemTests.ert import ERT
-from CIME.SystemTests.lii import LII
-from CIME.SystemTests.nck import NCK
-from CIME.SystemTests.pea import PEA
-from CIME.SystemTests.pem import PEM
-from CIME.SystemTests.pet import PET
-from CIME.SystemTests.pfs import PFS
-from CIME.SystemTests.sms import SMS
-from CIME.SystemTests.seq import SEQ
-from CIME.SystemTests.ssp import SSP
-
+from CIME.XML.standard_module_setup import *
+from CIME.utils import expect, find_system_test, append_status
 from CIME.SystemTests.system_tests_common import *
+
+import sys
 
 def case_test(case, testname=None):
     if testname is None:
@@ -30,20 +16,18 @@ def case_test(case, testname=None):
     logging.warn("Running test for %s" % testname)
 
     try:
-        test = globals()[testname](case)
-
-        success = test.run()
-
-        test.report()
-
-        if case.get_value("GENERATE_BASELINE"):
-            test.generate_baseline()
-
-        if case.get_value("COMPARE_BASELINE"):
-            test.compare_baseline()
+        # The following line can throw exceptions if the testname is
+        # not found or the test constructor throws. We need to be
+        # sure to leave TestStatus in the appropriate state if that
+        # happens.
+        test = find_system_test(testname, case)(case)
     except:
-        # An uncaught except MUST cause the test to report FAIL
-        test._runstatus = "FAIL"
+        caseroot = case.get_value("CASEROOT")
+        with TestStatus(test_dir=caseroot) as ts:
+            ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
+        append_status(sys.exc_info()[1], sfile="TestStatus.log")
         raise
+
+    success = test.run()
 
     return success

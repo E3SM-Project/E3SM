@@ -8,13 +8,11 @@ count are modified on retart.
 (2) Do a restart test with half the number of tasks and threads (suffix rest)
 """
 
-import shutil, filecmp
+import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.case_setup import case_setup
-from CIME.preview_namelists import preview_namelists
 import CIME.utils
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +24,14 @@ class ERP(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         """
         Build two cases.  Case one uses defaults, case2 uses half the number of threads
         and tasks. This test will fail for components (e.g. pop) that do not reproduce exactly
         with different numbers of mpi tasks.
         """
         if sharedlib_only:
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             return
 
         exeroot = self._case.get_value("EXEROOT")
@@ -83,7 +81,7 @@ class ERP(SystemTestsCommon):
 
             # Now rebuild the system, given updated information in env_build.xml
 
-            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))
 
@@ -94,10 +92,10 @@ class ERP(SystemTestsCommon):
         #
         #
 
-    def run(self):
+    def run_phase(self):
         # run will have values 1,2
         for run in range(1,3):
-            
+
             expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP%d.xml"%run)),
                    "ERROR: LockedFiles/env_mach_pes.ERP%d.xml does not exist, run case.build"%run )
 
@@ -108,7 +106,7 @@ class ERP(SystemTestsCommon):
             shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
 
             # update the case to use the new values
-            self._case.read_xml(self._caseroot)
+            self._case.read_xml()
 
             # Use the second executable that was created
             exeroot = self._case.get_value("EXEROOT")
@@ -130,7 +128,7 @@ class ERP(SystemTestsCommon):
                 self._case.set_value("REST_OPTION", stop_option)
                 self._case.set_value("HIST_N", stop_n)
                 self._case.set_value("HIST_OPTION", stop_option)
-                self._case.set_value("CONTINUE_RUN", False) 
+                self._case.set_value("CONTINUE_RUN", False)
                 suffix = "base"
             else:
                 rest_n = stop_n/2 + 1
@@ -140,12 +138,6 @@ class ERP(SystemTestsCommon):
                 self._case.set_value("CONTINUE_RUN", True)
                 self._case.set_value("REST_OPTION","never")
                 suffix = "rest"
-            success = SystemTestsCommon._run(self, suffix=suffix)
-            if not success:
-                break
+            self.run_indv(suffix=suffix)
 
-        return success
-
-
-    def report(self):
-        SystemTestsCommon.report(self)
+        self._component_compare_test("base", "rest")

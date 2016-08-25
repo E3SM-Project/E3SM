@@ -47,7 +47,7 @@ OPTIONS
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. values read from the file specified by -infile,
-      2. values from the namelist defaults file 
+      2. values from the namelist defaults file
 EOF
 }
 
@@ -192,7 +192,7 @@ EOF
 (-f "$perl5lib_dir/Build/Namelist.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib_dir\" **
 EOF
-my @nl_definition_filenames = ( "namelist_definition_drv.xml", 
+my @nl_definition_filenames = ( "namelist_definition_drv.xml",
                                 "namelist_definition_drv_flds.xml",
                                 "namelist_definition_modio.xml" );
 my @nl_definition_paths;
@@ -236,8 +236,13 @@ my $cfg = Build::Config->new("$CASEROOT/Buildconf/cplconf/config_cache.xml");
 # output namelist variables are in the definition file, and are output in the correct
 # namelist groups.
 my $definition = Build::NamelistDefinition->new( shift(@nl_definition_paths) );
+my $modelio_definition;
 foreach my $nl_defin_file ( @nl_definition_paths ) {
-  $definition->add( "$nl_defin_file" );
+  if ( $nl_defin_file =~ /modio/ ) {
+    $modelio_definition = Build::NamelistDefinition->new( $nl_defin_file );
+  } else {
+    $definition->add( "$nl_defin_file" );
+  }
 }
 
 # Create a namelist defaults object.  This object provides default values for variables
@@ -271,33 +276,21 @@ if (defined $opts{'infile'}) {
     $nl->merge_nl($nl_infile_valid);
 }
 
+unshift @INC, "${CIMEROOT}/utils/perl5lib";
+require Config::SetupTools;
+
 #-----------------------------------------------------------------------------------------------
 # Determine xml variables
 #-----------------------------------------------------------------------------------------------
-
-my %xmlvars = ();
-my @files = <${CASEROOT}/*xml>;
-foreach my $file (@files) {
-    my $xml = XML::Lite->new( "$file" );
-    my @e = $xml->elements_by_name('entry');
-    while ( my $e = shift @e ) {
-	my %a = $e->get_attributes();
-	$xmlvars{$a{'id'}} = $a{'value'};
-    }
-}
-my $DIN_LOC_ROOT = $xmlvars{'DIN_LOC_ROOT'};
-if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
-
-# Note - $USER is not in the config_defintion.xml file - it is only in the environment
-$xmlvars{'USER'} = $ENV{'USER'};
-unshift @INC, "${CIMEROOT}/utils/perl5lib";
-require Config::SetupTools;
 
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
     $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
+
+my $DIN_LOC_ROOT = $xmlvars{'DIN_LOC_ROOT'};
+if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Read in versions fo the drv_flds_in file from different components and merge them together
@@ -319,14 +312,14 @@ foreach my $fldsin ( @fldsinfiles ) {
        if ($@) {
           die "$ProgName - ERROR: Invalid namelist variable in '-infile' $opts{'infile'}.\n $@";
        }
-   
+
        # Merge input values into namelist.  Die if a conflict is found.
        $nl->merge_nl($nl_infile_valid, die_on_conflict=>1);
    }
 }
 
 #-----------------------------------------------------------------------------------------------
-# Determine drv namelist 
+# Determine drv namelist
 #-----------------------------------------------------------------------------------------------
 
 #############################################
@@ -753,9 +746,12 @@ add_default($nl, 'pio_buffer_size_limit');
 if($opts{pio_version} == 1){
     add_default($nl, 'pio_rearr_comm_type', 'PIO_REARR_COMM_TYPE'=>"$xmlvars{'PIO_REARR_COMM_TYPE'}");
     add_default($nl, 'pio_rearr_comm_fcd', 'PIO_REARR_COMM_FCD'=>"$xmlvars{'PIO_REARR_COMM_FCD'}");
-    add_default($nl, 'pio_rearr_comm_max_pend_req', 'PIO_REARR_COMM_MAX_PEND_REQ'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ'}");
-    add_default($nl, 'pio_rearr_comm_enable_hs', 'PIO_REARR_COMM_ENABLE_HS'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS'}");
-    add_default($nl, 'pio_rearr_comm_enable_isend', 'PIO_REARR_COMM_ENABLE_ISEND'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND'}");
+    add_default($nl, 'pio_rearr_comm_max_pend_req_comp2io', 'PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO'}");
+    add_default($nl, 'pio_rearr_comm_enable_hs_comp2io', 'PIO_REARR_COMM_ENABLE_HS_COMP2IO'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS_COMP2IO'}");
+    add_default($nl, 'pio_rearr_comm_enable_isend_comp2io', 'PIO_REARR_COMM_ENABLE_ISEND_COMP2IO'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND_COMP2IO'}");
+    add_default($nl, 'pio_rearr_comm_max_pend_req_io2comp', 'PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP'}");
+    add_default($nl, 'pio_rearr_comm_enable_hs_io2comp', 'PIO_REARR_COMM_ENABLE_HS_IO2COMP'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS_IO2COMP'}");
+    add_default($nl, 'pio_rearr_comm_enable_isend_io2comp', 'PIO_REARR_COMM_ENABLE_ISEND_IO2COMP'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND_IO2COMP'}");
 }
 # Note: pio_async_interface=.true. is not yet supported
 # If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99
@@ -877,7 +873,7 @@ $definition->validate($nl);
 # (1) Write output namelist files (drv_in, and drv_flds_in)
 #-----------------------------------------------------------------------------------------------
 
-# Write out drv_in namelist groups 
+# Write out drv_in namelist groups
 my @groups = qw(seq_cplflds_inparm
 		seq_cplflds_userspec
 		seq_infodata_inparm
@@ -896,7 +892,7 @@ if ($print>=2) { print "Writing driver namelist to $outfile $eol"; }
 my $outfile = "./drv_flds_in";
 $nl->write($outfile, 'groups'=>\@groups);
 if ($print>=2) { print "Writing driver fields namelist to $outfile $eol"; }
-               
+
 #-----------------------------------------------------------------------------------------------
 # (2) Write out seq_map.rc file
 #-----------------------------------------------------------------------------------------------
@@ -920,7 +916,7 @@ print $fh <<"EOF";
 #                   if necessary
 #
 # NOTE:  For bfb on different processor counts, set all maptypes to "X".
-################################################################## 
+##################################################################
 EOF
 $fh->close();
 
@@ -939,6 +935,8 @@ check_input_files($nl, $DIN_LOC_ROOT, "../cpl.input_data_list");
 #-----------------------------------------------------------------------------------------------
 # (4) Write out model_modelio.nml files
 #-----------------------------------------------------------------------------------------------
+
+$definition = $modelio_definition;
 
 foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 
@@ -1042,6 +1040,9 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'GLC_PIO_TYPENAME'}");
 	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'GLC_PIO_REARRANGER'}");
 	}
+        # Validate that the namelist is correct
+        $definition->validate($nlio);
+
 	$nlio->write($modeliofile, 'groups'=>\@iogroup);
 	if ($print>=2) { print "Writing io namelist to $modeliofile $eol"; }
 	$inst_index = $inst_index + 1;

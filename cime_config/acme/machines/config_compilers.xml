@@ -640,16 +640,12 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <MPI_PATH MPILIB="openmpi">/opt/openmpi-1.8-intel</MPI_PATH>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
@@ -663,12 +659,7 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
@@ -928,6 +919,7 @@ for mct, etc.
   <MPI_PATH MPILIB="mvapich">/blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/mvapich2-2.2b-sdh7nhddicl4sh5mgxjyzxtxox3ajqey</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
@@ -1182,5 +1174,24 @@ for mct, etc.
 	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
 	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
+
+<compiler MACH="mustang">
+    <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
+    <PNETCDF_PATH>$(PARALLEL_NETCDF)</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="wolf">
+    <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
+    <PNETCDF_PATH>$(PARALLEL_NETCDF)</PNETCDF_PATH>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="mustang">
+	<ADD_CFLAGS>  -std=c99 </ADD_CFLAGS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="wolf">
+	<ADD_CFLAGS>  -std=c99 </ADD_CFLAGS>
+</compiler>
+
 
 </config_compilers>

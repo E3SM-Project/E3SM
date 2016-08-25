@@ -6,11 +6,13 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
+from CIME.task_maker        import TaskMaker
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
-from CIME.utils             import expect, run_cmd, append_status, parse_test_name
+from CIME.utils             import append_status, parse_test_name
 from CIME.user_mod_support  import apply_user_mods
+from CIME.test_status       import *
 
 import shutil, time, glob
 
@@ -42,7 +44,7 @@ def _check_pelayouts_require_rebuild(case, models):
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logger.warn("%s pe change requires clean build" % comp)
                     cleanflag = comp.lower()
-                    run_cmd("./case.build --clean %s" % cleanflag)
+                    run_cmd_no_fail("./case.build --clean %s" % cleanflag)
 
         os.remove(locked_pes)
 
@@ -77,9 +79,8 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False):
+def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, reset=False):
 ###############################################################################
-    caseroot = case.get_value("CASEROOT")
     os.chdir(caseroot)
     msg = "case.setup starting"
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
@@ -141,19 +142,20 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         models = drv_comp.get_valid_model_components()
         models.remove("DRV")
 
-        mach = case.get_value("MACH")
+        mach, compiler, debug, mpilib = \
+            case.get_value("MACH"), case.get_value("COMPILER"), case.get_value("DEBUG"), case.get_value("MPILIB")
         expect(mach is not None, "xml variable MACH is not set")
 
         # Create Macros file only if it does not exist
         if not os.path.exists("Macros"):
             logger.debug("Creating Macros file for %s" % mach)
-            compilers = Compilers(compiler=case.get_value("COMPILER"), machine=mach, os_=case.get_value("OS"), mpilib=case.get_value("MPILIB"))
+            compilers = Compilers(compiler=compiler, machine=mach, os_=case.get_value("OS"), mpilib=mpilib)
             compilers.write_macros_file()
         else:
             logger.debug("Macros script already created ...skipping")
 
         # Set tasks to 1 if mpi-serial library
-        if case.get_value("MPILIB") == "mpi-serial":
+        if mpilib == "mpi-serial":
             for vid, value in case:
                 if vid.startswith("NTASKS_") and value != 1:
                     case.set_value(vid, 1)
@@ -172,7 +174,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst[comp_model], comp, ntasks))
 
-        expect(not (case.get_value("BUILD_THREADED") and case.get_value("COMPILER") == "nag"),
+        expect(not (case.get_value("BUILD_THREADED") and compiler == "nag"),
                "it is not possible to run with OpenMP if using the NAG Fortran compiler")
 
         if os.path.exists("case.run"):
@@ -186,7 +188,8 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             case.flush()
             check_lockedfiles()
 
-            pestot = int(run_cmd("Tools/taskmaker.pl -sumonly"))
+            tm = TaskMaker(case)
+            pestot = tm.fullsum
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
@@ -198,7 +201,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             pcost = 3 - pcnt / 10 # (3 is 64 with 6)
 
             # Compute cost based on DEBUG
-            dcost = 3 if case.get_value("DEBUG") else 0
+            dcost = 3 if debug else 0
 
             # Compute cost based on run length
             # For simplicity, we use a heuristic just based on STOP_OPTION (not considering
@@ -223,7 +226,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
 
             # Use BatchFactory to get the appropriate instance of a BatchMaker,
             # use it to create our batch scripts
-            env_batch = case._get_env("batch")
+            env_batch = case.get_env("batch")
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
@@ -251,12 +254,12 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             logger.info("Building %s usernl files"%model)
             _build_usernl_files(case, model, comp)
             if comp == "cism":
-                run_cmd("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
+                run_cmd_no_fail("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
 
         _build_usernl_files(case, "drv", "cpl")
 
         if case.get_value("TEST"):
-            test_mods = parse_test_name(case.get_value("CASEBASEID"))[6]
+            test_mods = parse_test_name(casebaseid)[6]
             if test_mods is not None:
                 user_mods_path = os.path.join(case.get_value("TESTS_MODS_DIR"), test_mods)
                 apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
@@ -273,9 +276,34 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         if os.path.exists("env_test.xml"):
             if not os.path.exists("case.test"):
                 logger.info("Starting testcase.setup")
-                run_cmd("./testcase.setup -caseroot %s" % caseroot)
+                run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
         msg = "case.setup complete"
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
+        # Record env information
+        env_module = case.get_env("mach_specific")
+        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
+        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
+        with open("software_environment.txt", "w") as f:
+            f.write(env_module.list_modules())
+        run_cmd_no_fail("echo -e '\n' >> software_environment.txt && \
+                         env >> software_environment.txt")
+
+###############################################################################
+def case_setup(case, clean=False, test_mode=False, reset=False):
+###############################################################################
+    caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
+    if case.get_value("TEST"):
+        test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
+        with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
+            try:
+                _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
+            except:
+                ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
+                raise
+            else:
+                ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
+    else:
+        _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)

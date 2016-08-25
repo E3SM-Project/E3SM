@@ -1,5 +1,5 @@
 """
-Utility functions used in system_test.py
+Utility functions used in test_scheduler.py
 """
 
 from CIME.XML.standard_module_setup import *

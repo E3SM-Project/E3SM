@@ -11,8 +11,8 @@ If this tool is missing any feature that you need, please notify jgfouca@sandia.
 from Tools.standard_script_setup import *
 
 import update_acme_tests
-from CIME.system_test import SystemTest, RUN_PHASE
-from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd
+from CIME.test_scheduler import TestScheduler, RUN_PHASE
+from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd_no_fail
 from CIME.XML.machines import Machines
 from CIME.case import Case
 
@@ -26,7 +26,7 @@ def parse_command_line(args, description):
     parser = argparse.ArgumentParser(
         usage="""\n%s <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
 OR
-%s xml --category [CATEGORY] [--machine ...] [--compiler ...] [ --testlist ...]
+%s --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
 OR
 %s --help
 OR
@@ -72,6 +72,9 @@ OR
 
     parser.add_argument("--no-build", action="store_true",
                         help="Do not build generated tests, implies --no-run")
+
+    parser.add_argument("--no-setup", action="store_true",
+                        help="Do not setup generated tests, implies --no-build and --no-run")
 
     parser.add_argument("-u", "--use-existing", action="store_true",
                         help="Use pre-existing case directories. Requires test-id")
@@ -153,14 +156,23 @@ OR
                         help="Set the wallclock limit for all tests in the suite. "
                         "Can use env var CIME_GLOBAL_WALLTIME to set this for all test.")
 
+    parser.add_argument("-q", "--queue", default=None,
+                        help="Force batch system to use a certain queue")
+
     parser.add_argument("--xml-machine",
-                        help="Use this machine key in the lookup in testlist.xml")
+                        help="Use this machine key in the lookup in testlist.xml, default is all if any --xml- argument is used")
     parser.add_argument("--xml-compiler",
-                        help="Use this compiler key in the lookup in testlist.xml")
+                        help="Use this compiler key in the lookup in testlist.xml, default is all if any --xml- argument is used")
     parser.add_argument("--xml-category",
-                        help="Use this category key in the lookup in testlist.xml")
+                        help="Use this category key in the lookup in testlist.xml, default is all if any --xml- argument is used")
     parser.add_argument("--xml-testlist",
-                        help="Use this testlist to lookup tests")
+                        help="Use this testlist to lookup tests, default specified in config_files.xml")
+    parser.add_argument("--testfile",
+                        help="A file containing an ascii list of tests to run")
+
+    parser.add_argument("-o", "--allow-baseline-overwrite", action="store_true",
+                        help="If the generate baseline option is specified with a baseline directory option "
+                        "existing tests in that directory will not be overwritten unless this flag is provided.")
 
     args = parser.parse_args(args[1:])
 
@@ -188,11 +200,15 @@ OR
     if args.use_existing:
         expect(args.test_id is not None, "Must provide test-id of pre-existing cases")
 
+    if args.no_setup:
+        args.no_build = True
+
     if args.no_build:
         args.no_run = True
 
     # Namelist-only forces some other options:
     if args.namelists_only:
+        expect(not args.no_setup, "Cannot compare namelists without setup")
         args.no_build = True
         args.no_run   = True
         args.no_batch = True
@@ -206,11 +222,17 @@ OR
     if args.test_id is None:
         args.test_id = CIME.utils.get_utc_timestamp()
 
-    return args.testargs, args.compiler, args.machine, args.no_run, args.no_build, args.no_batch,\
+    if args.testfile is not None:
+        with open(args.testfile[0], "r") as fd:
+            args.testargs.extend( fd.read().splitlines() )
+    # Remove empty items if any
+    args.testargs = filter(None, args.testargs)
+
+    return args.testargs, args.compiler, args.machine, args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, args.compare, args.generate, \
         args.baseline_name, args.namelists_only, args.project, args.test_id, args.parallel_jobs, \
         args.xml_machine, args.xml_compiler, args.xml_category, args.xml_testlist, args.walltime, \
-        args.single_submit, args.proc_pool, args.use_existing, args.save_timing
+        args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, args.allow_baseline_overwrite
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
@@ -259,7 +281,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     expect(testcase_dirs, "No test case dirs found!?")
     first_case = os.path.abspath(os.path.dirname(testcase_dirs[0]))
     with Case(first_case, read_only=False) as case:
-        env_batch = case._get_env("batch")
+        env_batch = case.get_env("batch")
 
         directives = env_batch.get_batch_directives(case, "case.run", raw=True)
         submit_cmd  = env_batch.get_value("batch_submit", subgroup=None)
@@ -309,14 +331,14 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     submit_cmd = "%s %s" % (submit_cmd, submit_args)
     logger.info("Script:\n%s" % script)
 
-    run_cmd(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None, verbose=True)
+    run_cmd_no_fail(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None, verbose=True)
 
 ###############################################################################
-def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
+def create_test(testargs, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                 baseline_root, clean, compare, generate,
                 baseline_name, namelists_only, project, test_id, parallel_jobs,
                 xml_machine, xml_compiler, xml_category, xml_testlist, walltime,
-                single_submit, proc_pool, use_existing, save_timing):
+                single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite):
 ###############################################################################
     if testargs and machine_name is None and compiler is None:
         for test in testargs:
@@ -327,15 +349,9 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 else:
                     expect(machine_name == testsplit[4],
                            "ambiguity in machine, please use the --machine option")
-            if testsplit[5] is not None:
-                if compiler is None:
-                    compiler = testsplit[5]
-                else:
-                    expect(compiler == testsplit[5],
-                           "ambiguity in compiler, please use the --compiler option")
 
-    impl = SystemTest(testargs,
-                      no_run=no_run, no_build=no_build, no_batch=no_batch,
+    impl = TestScheduler(testargs,
+                      no_run=no_run, no_build=no_build, no_setup=no_setup, no_batch=no_batch,
                       test_root=test_root, test_id=test_id,
                       baseline_root=baseline_root, baseline_name=baseline_name,
                       clean=clean, machine_name=machine_name, compiler=compiler,
@@ -343,9 +359,10 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                       project=project, parallel_jobs=parallel_jobs,
                       xml_machine=xml_machine, xml_compiler=xml_compiler,
                       xml_category=xml_category, xml_testlist=xml_testlist, walltime=walltime,
-                      proc_pool=proc_pool, use_existing=use_existing, save_timing=save_timing)
+                      proc_pool=proc_pool, use_existing=use_existing, save_timing=save_timing,
+                      queue=queue, allow_baseline_overwrite=allow_baseline_overwrite)
 
-    success = impl.system_test()
+    success = impl.run_tests()
 
     if single_submit:
         # Get real test root
@@ -356,7 +373,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
         for test in impl._tests:
             test_dir = impl._get_test_dir(test)
             procs_needed = impl._get_procs_needed(test, RUN_PHASE)
-            time_needed = convert_to_seconds(run_cmd("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
+            time_needed = convert_to_seconds(run_cmd_no_fail("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
             job_cost_map[test] = (procs_needed, time_needed)
             if procs_needed > largest_case:
                 largest_case = procs_needed
@@ -375,20 +392,21 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
 def _main_func(description):
 ###############################################################################
     if "--test" in sys.argv:
-        CIME.utils.run_cmd("python -m doctest %s/CIME/system_test.py -v" %
-                           CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        CIME.utils.run_cmd_no_fail("python -m doctest %s/CIME/test_scheduler.py -v" %
+                                   CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
-    testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \
+    testargs, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, parallel_jobs, \
         xml_machine, xml_compiler, xml_category, xml_testlist, walltime, single_submit, proc_pool, \
-        use_existing, save_timing \
+        use_existing, save_timing, queue, allow_baseline_overwrite \
         = parse_command_line(sys.argv, description)
 
-    sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
+    sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                          baseline_root, clean, compare, generate, baseline_name, namelists_only,
                          project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category,
-                         xml_testlist, walltime, single_submit, proc_pool, use_existing, save_timing))
+                         xml_testlist, walltime, single_submit, proc_pool, use_existing, save_timing,
+                         queue, allow_baseline_overwrite))
 
 ###############################################################################
 

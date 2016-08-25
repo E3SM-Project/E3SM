@@ -5,7 +5,7 @@ CIME performance test  This class inherits from SystemTestsCommon
 """
 
 from CIME.XML.standard_module_setup import *
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class PFS(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def run(self):
+    def run_phase(self):
         self._case.set_value("STOP_OPTION", "ndays")
         self._case.set_value("STOP_N", 20)
         self._case.set_value("REST_OPTION","none")
@@ -25,7 +25,4 @@ class PFS(SystemTestsCommon):
         self._case.flush()
 
         logger.info("doing an 20 day initial test, no restarts written")
-        return SystemTestsCommon._run(self)
-
-    def report(self):
-        SystemTestsCommon.report(self)
+        self.run_indv()

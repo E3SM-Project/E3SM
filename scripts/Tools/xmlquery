@@ -19,7 +19,7 @@ If this tool is missing any feature that you need, please go to github and creat
 
 from standard_script_setup import *
 
-from CIME.utils import expect, run_cmd
+from CIME.utils import expect
 from CIME.case import Case
 
 import argparse, doctest, shutil, glob
@@ -42,9 +42,9 @@ def parse_command_line(args, description):
     parser.add_argument("-file" , "--file",
                         help="env*.xml file")
 
-    parser.add_argument("-attribute", "--attribute", 
+    parser.add_argument("-attribute", "--attribute",
                         nargs="*" , help="list of attribute/option names" , default=[])
-    
+
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
 
@@ -69,7 +69,7 @@ def parse_command_line(args, description):
                         help="Resolve variable names")
 
     args = parser.parse_args(args[1:])
-    
+
     CIME.utils.handle_standard_logging_options(args)
 
     if (len(sys.argv) == 1) :
@@ -128,13 +128,13 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False,
 
     # Formatting of return strings
     if ( len(results) > 0) :
-       
+
         for node in results :
 
             val = ""
 
             # attribute formatting - add group if present
-       
+
             attr = node['attribute']
             if node['group'] :
                 attr = "%s:%s" % (node['group'] , node['attribute'])
@@ -167,22 +167,22 @@ def _main_func(description):
     # Initialize command line parser and get command line options
     args = parse_command_line(sys.argv, description)
 
-    # Debug statement - obvious 
+    # Debug statement - obvious
     logger.debug("CLI arguments: %s" , args)
     logger.debug("Searching for attributes '%s'" , args.attribute)
 
     # querry for attributes and print results
     results = xmlquery(args.caseroot , args, args.attribute , args.subgroup)
-   
+
     # if called with value option omit newline and return only one value
     if args.value == True :
         # l = list( set (results) )
         if len(results) > 0 :
             sys.stdout.write(results[0])
-    else :    
+    else :
         for res in xmlquery(args.caseroot , args, args.attribute ) :
             print res
 
-	
+
 if (__name__ == "__main__"):
     _main_func(__doc__)

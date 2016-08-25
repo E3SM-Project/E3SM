@@ -6,7 +6,7 @@ to not be sensitive to order or whitespace.
 """
 
 from standard_script_setup import *
-import compare_namelists
+import CIME.compare_namelists
 from CIME.utils import expect
 
 import argparse, sys, os
@@ -54,7 +54,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        CIME.utils.run_cmd("python -m doctest %s/compare_namelists.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        CIME.utils.run_cmd_no_fail("python -m doctest %s/compare_namelists.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
     gold_file, compare_file, case = \
@@ -65,7 +65,7 @@ def _main_func(description):
     else:
         logging.info("Using case: '%s'" % case)
 
-    expect(compare_namelists.compare_namelist_files(gold_file, compare_file, case),
+    expect(CIME.compare_namelists.compare_namelist_files(gold_file, compare_file, case),
            "Namelist diff between files %s and %s" % (gold_file, compare_file))
 
     print "Files %s and %s MATCH" % (gold_file, compare_file)

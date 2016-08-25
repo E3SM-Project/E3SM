@@ -36,7 +36,7 @@ class EntryID(GenericXML):
 
         return value
 
-    def set_default_value(self, vid, val, attributes=None):
+    def set_default_value(self, vid, val):
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
             default_node = self.get_optional_node("default_value", root=node)
@@ -156,6 +156,7 @@ class EntryID(GenericXML):
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
+        expect(subgroup is None, "Subgroup not supported")
         if ignore_type:
             expect(type(value) is str, "Value must be type string if ignore_type is true")
             node.set("value",value)
@@ -182,7 +183,7 @@ class EntryID(GenericXML):
         or from the values field if the attribute argument is provided
         and matches
         """
-        logger.debug("Get Value")
+        logger.debug("Get Value (%s, %s, %s, %s)" % (vid, attribute, resolved, subgroup))
         val = None
         node = self.get_optional_node("entry", {"id":vid})
 

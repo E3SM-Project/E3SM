@@ -4,10 +4,7 @@ from CIME.case_submit               import submit
 from CIME.XML.files                 import Files
 from CIME.XML.component             import Component
 from CIME.XML.machines              import Machines
-from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd, append_status, touch
-from CIME.XML.env_mach_specific import EnvMachSpecific
-from CIME.utils                     import expect, gzip_existing_file
+from CIME.utils                     import append_status, touch, gzip_existing_file
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.preview_namelists         import preview_namelists
 from CIME.task_maker                import TaskMaker
@@ -38,7 +35,7 @@ def pre_run_check(case):
     logger.debug("build complete is %s " %build_complete)
 
     # load the module environment...
-    env_module = case._get_env("mach_specific")
+    env_module = case.get_env("mach_specific")
     env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
                                  debug=case.get_value("DEBUG"),
                                  mpilib=case.get_value("MPILIB"))
@@ -99,7 +96,7 @@ def run_model(case):
 
     logger.info("run command is %s " %cmd)
     rundir = case.get_value("RUNDIR")
-    run_cmd(cmd, from_dir=rundir)
+    run_cmd_no_fail(cmd, from_dir=rundir)
     logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
 ###############################################################################
@@ -156,10 +153,10 @@ def save_timing_setup_acme(case, lid):
         return
 
     timing_dir = case.get_value("SAVE_TIMING_DIR")
-    if timing_dir is None:
+    if timing_dir is None or timing_dir == 'UNSET':
         logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
         return
-
+    logger.warn("timing dir is %s"%timing_dir)
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
     cimeroot = case.get_value("CIMEROOT")
@@ -175,11 +172,11 @@ def save_timing_setup_acme(case, lid):
     job_id = _get_batch_job_id(case)
     if mach == "mira":
         for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
-            run_cmd("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
+            run_cmd_no_fail("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == ["corip1", "edison"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
-            run_cmd("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
+            run_cmd_no_fail("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
         for cmd, filename in [("xtdb2proc -f xtdb2proc", "xtdb2procf"),
@@ -187,11 +184,11 @@ def save_timing_setup_acme(case, lid):
                               ("qstat -f %s > qstatf_jobid" % job_id, "qstatf_jobid"),
                               ("xtnodestat > xtnodestat", "xtnodestatf"),
                               ("showq > showqf", "showqf")]:
-            run_cmd(cmd + "." + lid, from_dir=full_timing_dir)
+            run_cmd_no_fail(cmd + "." + lid, from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
         mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce." + lid)
-        run_cmd("./mdiag_reduce.csh > %s" % mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
+        run_cmd_no_fail("./mdiag_reduce.csh > %s" % mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
         gzip_existing_file(mdiag_reduce)
 
     # copy/tar SourceModes
@@ -226,12 +223,14 @@ def save_timing_setup_acme(case, lid):
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints")
             os.mkdir(archive_checkpoints)
             touch("%s/acme.log.%s" % (rundir, lid))
-            syslog_jobid = run_cmd("./mach_syslog %d %s %s %s %s/timing/checkpoints %s/checkpoints >& /dev/null & echo $!" % (sample_interval, job_id, lid, rundir, rundir, archive_checkpoints), from_dir=os.path.join(caseroot, "Tools"))
+            syslog_jobid = run_cmd_no_fail("./mach_syslog %d %s %s %s %s/timing/checkpoints %s/checkpoints >& /dev/null & echo $!" %
+                                           (sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
+                                           from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid", ".%s" % job_id), "w") as fd:
                 fd.write("%s\n" % syslog_jobid)
 
     # Save state of repo
-    run_cmd("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE"), from_dir=cimeroot)
+    run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE"), from_dir=cimeroot)
 
 ###############################################################################
 def save_timing_cesm(case, lid):
@@ -302,8 +301,7 @@ def get_timings(case, lid):
             os.makedirs(timingDir)
 
         logger.info("Running timing script %s " %(os.path.join(caseroot, "Tools", "getTiming")))
-        cmd = "%s -lid %s " %(os.path.join(caseroot,"Tools","getTiming"), lid)
-        run_cmd(cmd)
+        run_cmd_no_fail("%s -lid %s " % (os.path.join(caseroot, "Tools", "getTiming"), lid))
 
         # save the timing files if desired. Some of the details here are
         # model dependent.
@@ -357,17 +355,22 @@ def resubmit_check(case):
     # Note that Mira requires special logic
 
     dout_s = case.get_value("DOUT_S")
+    logger.warn("dout_s %s "%(dout_s))
     mach = case.get_value("MACH")
+    logger.warn("mach %s "%(mach))
     testcase = case.get_value("TESTCASE")
     resubmit_num = case.get_value("RESUBMIT")
-
+    logger.warn("resubmit_num %s"%(resubmit_num))
     # If dout_s is True than short-term archiving handles the resubmit
-    # that is not the case on Mira
+    # If dout_s is True and machine is mira submit the st_archive script
     resubmit = False
     if not dout_s and resubmit_num > 0:
         resubmit = True
     elif dout_s and mach == 'mira':
-        resubmit = True
+        caseroot = case.get_value("CASEROOT")
+        cimeroot = case.get_value("CIMEROOT")
+        cmd = "ssh cooleylogin1 'cd %s; CIMEROOT=%s ./case.submit %s --job case.st_archive' "%(caseroot, cimeroot, caseroot)
+        run_cmd(cmd, verbose=True)
 
     if resubmit:
         if testcase is not None and testcase in ['ERR']:
@@ -377,11 +380,11 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_data_assimilation(case, da_script, lid):
+def do_data_assimilation(da_script, lid):
 ###############################################################################
     cmd = da_script + "1> da.log.%s 2>&1" %(lid)
     logger.debug("running %s" %da_script)
-    run_cmd(cmd)
+    run_cmd_no_fail(cmd)
     # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
 
 ###############################################################################
@@ -412,8 +415,9 @@ def case_run(case):
         save_logs(case, lid)       # Copy log files back to caseroot
         get_timings(case, lid)     # Run the getTiming script
         if data_assimilation:
-            do_data_assimilation(case, data_assimilation_script, lid)
+            do_data_assimilation(data_assimilation_script, lid)
 
+    logger.warn("check for resubmit")
     resubmit_check(case)
 
     return True

@@ -1,9 +1,8 @@
 """
-CIME ERR test  This class inherits from SystemTestsCommon
+CIME ERR test  This class inherits from ERS
 ERR tests short term archiving and restart capabilities
 """
 from CIME.XML.standard_module_setup import *
-from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.SystemTests.ers import ERS
 
 import shutil, glob
@@ -18,18 +17,18 @@ class ERR(ERS):
         """
         ERS.__init__(self, case)
 
-    def run(self):
+    def run_phase(self):
         first_phase = self._case.get_value("RESUBMIT") == 1
 
         if first_phase:
             self._case.set_value("DOUT_S", True)
             self._case.flush()
-            return self._ers_first_phase()
+            self._ers_first_phase()
         else:
             dout_s_root = self._case.get_value("DOUT_S_ROOT")
             rundir = self._case.get_value("RUNDIR")
             logger.info("staging files from archive %s" % dout_s_root)
-            for item in glob.glob(os.path.join(dout_s_root, "rest", "*", "*")):
+            for item in glob.glob(os.path.join(dout_s_root, "*", "hist", "*base")):
                 shutil.copy(item, rundir)
 
-            return self._ers_second_phase()
+            self._ers_second_phase()

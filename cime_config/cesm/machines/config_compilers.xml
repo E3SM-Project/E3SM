@@ -393,13 +393,9 @@ for mct, etc.
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS -DNO_SHR_VMATH </ADD_CPPDEFS>
 
-  <!-- Yes, you really do need this huge -wmismatch flag for NAG to work.    -->
-  <!-- More specifically, it exempts MPI functions without explicit          -->
-  <!-- interfaces from certain argument checks. Should not be necessary in   -->
-  <!-- libraries that only use the F90 module interface. mpibcast and        -->
-  <!-- mpiscatterv are actually CAM wrappers for MPI.                        -->
- <!--  <FFLAGS      > -Wp,-macro=no_com -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>-->
-  <FFLAGS>  -Wp,-macro=no_com -convert=BIG_ENDIAN -mismatch_all </FFLAGS>
+  <!-- The indirect flag below is to deal with MPI functions that violate    -->
+  <!-- the Fortran standard, by adding a large set of arguments from a file. -->
+  <FFLAGS>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $(CIMEROOT)/cime_config/cesm/machines/nag_mpi_argument.txt</FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
   <CFLAGS> -std=gnu99 </CFLAGS>
 
@@ -422,6 +418,12 @@ for mct, etc.
   <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+
+  <!-- The SLAP library (which is part of the CISM build) has many instances of
+       arguments being passed to different types. So disable argument type
+       checking when building CISM. This can be removed once we remove SLAP from
+       CISM. -->
+  <ADD_FFLAGS MODEL="cism"> -mismatch_all </ADD_FFLAGS>
 
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
   <FIXEDFLAGS> -fixed </FIXEDFLAGS>
@@ -847,7 +849,6 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="hobart">
- <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
  <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
  <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
@@ -861,6 +862,9 @@ for mct, etc.
  <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/mkl/lib/intel64 </ADD_LDFLAGS>
  <ADD_LDFLAGS> -Wl,-rpath,$(MPI_PATH)/lib</ADD_LDFLAGS>
  <ADD_SLIBS MPILIB="mvapich2"> -mkl=cluster </ADD_SLIBS>
+ <ADD_LDFLAGS> -lifcore</ADD_LDFLAGS>
+ <ADD_CFLAGS> -lifcore</ADD_CFLAGS>
+ <ADD_FFLAGS> -lifcore</ADD_FFLAGS>
  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
   <ADD_FFLAGS MPILIB="mpi-serial"> -mcmodel medium </ADD_FFLAGS>
 </compiler>
@@ -897,17 +901,11 @@ for mct, etc.
 <compiler MACH="stampede">
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <NETCDF_PATH>$(TACC_NETCDF_DIR)</NETCDF_PATH>
-  <!--PNETCDF_PATH>$(TACC_NETCDF_DIR)</PNETCDF_PATH-->
+  <PNETCDF_PATH>$(TACC_PNETCDF_DIR)</PNETCDF_PATH>
   <ADD_CPPDEFS> -DHAVE_NANOTIME </ADD_CPPDEFS>
 </compiler>
 
 <compiler MACH="stampede" COMPILER="intel">
-  <MPICC>mpicc</MPICC>
-  <MPIFC>mpif90</MPIFC>
-  <MPICXX>mpicxx</MPICXX>
-  <SFC>ifort</SFC>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
   <ADD_FFLAGS> -xHost </ADD_FFLAGS>
   <ADD_CFLAGS> -xHost </ADD_CFLAGS>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L$(TACC_HDF5_LIB) -lhdf5</ADD_SLIBS>
