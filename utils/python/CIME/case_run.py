@@ -220,6 +220,7 @@ def save_timing_setup_acme(case, lid):
     # Copy some items from build provenance
     blddir_globs_to_copy = [
         "GIT_LOGS_HEAD"
+        "build_environment.txt"
         ]
     for blddir_glob_to_copy in blddir_globs_to_copy:
         for item in glob.glob(os.path.join(blddir, blddir_glob_to_copy)):
