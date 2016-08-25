@@ -88,32 +88,6 @@
 	</nml_record>
 
 	<streams>
-		<stream name="timeSeriesStatsDailyOutput"
-				type="output"
-				mode="forward;analysis"
-				filename_template="analysis_members/timeSeriesStatsDaily.$Y-$M.nc"
-				filename_interval="00-01-00_00:00:00"
-				output_interval="00-00-01_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				packages="timeSeriesStatsDailyAMPKG"
-				clobber_mode="truncate"
-				runtime_format="single_file">
-
-			<var name="xtime"/>
-			<var_array name="tracersSurfaceValue"/>
-			<var_array name="surfaceVelocity"/>
-			<var_array name="SSHGradient"/>
-			<var name="ssh"/>
-			<var name="normalVelocity"/>
-			<var name="velocityZonal"/>
-			<var name="velocityMeridional"/>
-			<var name="vertVelocityTop"/>
-			<var name="normalTransportVelocity"/>
-			<var name="transportVelocityZonal"/>
-			<var name="transportVelocityMeridional"/>
-			<var name="vertTransportVelocityTop"/>
-		</stream>
-
 		<stream name="timeSeriesStatsDailyRestart"
 				runtime_format="single_file"
 				type="input;output"
@@ -125,16 +99,16 @@
 				packages="timeSeriesStatsDailyAMPKG"
 				output_interval="stream:restart:output_interval"
 				immutable="false"
-				mode="forward;analysis" />
+        mode="forward;analysis" />
 
-		<stream name="timeSeriesStatsMonthlyOutput"
+		<stream name="timeSeriesStatsDailyOutput"
 				type="output"
 				mode="forward;analysis"
-				filename_template="analysis_members/timeSeriesStatsMonthly.$Y.nc"
-				filename_interval="01-00-00_00:00:00"
-				output_interval="00-01-00_00:00:00"
+				filename_template="analysis_members/timeSeriesStatsDaily.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
 				reference_time="0000-01-01_00:00:00"
-				packages="timeSeriesStatsMonthlyAMPKG"
+				packages="timeSeriesStatsDailyAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
