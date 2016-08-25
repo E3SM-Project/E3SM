@@ -69,8 +69,6 @@ module cice_core
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
-      if (trim(config_initial_condition_type) == "restart") config_do_restart = .true.
-
       !
       ! Set "local" clock to point to the clock contained in the domain type
       !
@@ -90,7 +88,7 @@ module cice_core
       !
       if (config_do_restart .and. trim(config_initial_condition_type) /= "restart") then
          call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=ierr)
-      else if (config_do_restart .and. trim(config_initial_condition_type) == "restart") then
+      else if (trim(config_initial_condition_type) == "restart") then
          call MPAS_stream_mgr_read(domain % streamManager, streamID='restart_ic', ierr=ierr)
       else
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
@@ -115,6 +113,9 @@ module cice_core
 
       ! initialize analysis members
       call cice_analysis_init(domain, ierr)
+
+      ! bootstrap analysis has used config_do_restart: now modify for rest of code
+      if (trim(config_initial_condition_type) == "restart") config_do_restart = .true.
 
       call mpas_init_block(domain, dt)
 

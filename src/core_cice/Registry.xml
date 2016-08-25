@@ -342,8 +342,6 @@
 	          type="none"
 		  filename_template="restart_variables.nc"
 		  immutable="true">
-	    <var name="xtime"/>
-	    <var name="simulationStartTime"/>
 	    <var name="fVertex"/>
 	    <var name="iceAreaCategory"/>
 	    <var name="iceVolumeCategory"/>
@@ -431,6 +429,8 @@
 		  output_interval="00-03-00_00:00:00"
 		  immutable="true">
 	    <stream name="mesh"/>
+	    <var name="xtime"/>
+	    <var name="simulationStartTime"/>
 	    <stream name="restart_contents"/>
 	  </stream>
 
