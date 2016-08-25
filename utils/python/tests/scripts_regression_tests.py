@@ -480,7 +480,6 @@ class N_TestCreateTest(TestCreateTestCommon):
    fake = .true.
 /"""
         baseline_area = self._baseline_area
-        compiler      = self._compiler
         baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "TEST*"))
         self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
 
@@ -1091,8 +1090,8 @@ class B_CheckCode(unittest.TestCase):
         from distutils.spawn import find_executable
         pylint = find_executable("pylint")
         if pylint is not None:
-            stat, output, _ = run_cmd("pylint --version")
-            pylintver = re.search(r"pylint\s+(\d+)\.(\d+).(\d+)", output)
+            output = run_cmd_no_fail("pylint --version")
+            pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
             major = int(pylintver.group(1))
             minor = int(pylintver.group(2))
         if pylint is None or (major <= 1 and minor < 5):
