@@ -426,7 +426,7 @@ class TestCreateTestCommon(unittest.TestCase):
 
         files_to_clean = []
 
-        baselines = os.path.join(self._baseline_area, self._baseline_name)
+        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
         if (os.path.isdir(baselines)):
             files_to_clean.append(baselines)
 
@@ -481,7 +481,7 @@ class N_TestCreateTest(TestCreateTestCommon):
 /"""
         baseline_area = self._baseline_area
         compiler      = self._compiler
-        baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "TEST*"))
+        baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "TEST*"))
         self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
 
         baseline_dir = baseline_glob[0]
