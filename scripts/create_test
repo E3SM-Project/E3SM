@@ -278,14 +278,17 @@ OR
         mach_obj = Machines(machine=machine_name)
         args.compiler = args.xml_compiler if args.compiler is None else args.compiler
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
+        if args.testargs:
+            test_names = args.testargs
+        else:
+            test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
+                                                           args.xml_compiler, args.xml_testlist,
+                                                           machine_name, args.compiler)
+            test_names = [item["name"] for item in test_data]
+            for test_datum in test_data:
+                test_extra_data[test_datum["name"]] = test_datum
 
-        test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
-                                                       args.xml_compiler, args.xml_testlist,
-                                                       machine_name, args.compiler)
-        test_names = [item["name"] for item in test_data]
         logger.info("Testnames: %s" % test_names)
-        for test_datum in test_data:
-            test_extra_data[test_datum["name"]] = test_datum
     else:
         mach_obj = Machines()
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
@@ -311,7 +314,7 @@ OR
             if args.compare:
                 baseline_cmp_name = baseline_name
             elif args.generate:
-                baseline_gen_name = baseline_name
+                baseline_gen_name = baseline_nam
 
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
