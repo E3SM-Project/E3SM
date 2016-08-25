@@ -49,9 +49,9 @@ int ice_present_bit_value;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
     verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge,
     trianglesProcIds,  reduced_ranks;
-std::vector<int> indexToVertexID, vertexToFCell, indexToEdgeID, edgeToFEdge,
+std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
-std::vector<double> temperatureOnTetra, velocityOnVertices, velocityOnCells,
+std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
     elevationData, thicknessData, betaData, bedTopographyData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 ;
@@ -311,10 +311,12 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
-    double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat) {
+    double* u_normal_F, /*double* dissipation_heat_F,*/ double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat) {
+
+  std::vector<double> dissipationHeat_F( nVertices_F * (nLayers));
+  double* dissipation_heat_F = &dissipationHeat_F[0];
 
   std::fill(u_normal_F, u_normal_F + nEdges_F * (nLayers+1), 0.);
-
   //import velocity from initial guess and from dirichlet values.
   int sizeVelOnCell = nCells_F * (nLayers + 1);
   for(int iCell=0; iCell<nCells_F; ++iCell) {
@@ -361,13 +363,17 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
     importP0Temperature(temperature_F);
 
+    dissipationHeatOnTetra.resize(3 * nLayers * indexToTriangleID.size());
+
     std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
 
     double dt = (*deltat)/secondsInAYear;
     velocity_solver_solve_fo__(nLayers, nGlobalVertices, nGlobalTriangles,
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
-        betaData, bedTopographyData, smbData, temperatureOnTetra, velocityOnVertices, dt);
+        betaData, bedTopographyData, smbData, temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, dt);
+
+    exportDissipationHeat(dissipation_heat_F);
 
     std::vector<int> mpasIndexToVertexID(nVertices);
     for (int i = 0; i < nVertices; i++) {
@@ -509,7 +515,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
       numProcs + 1), globalOffsetVertices(numProcs + 1), globalOffsetEdge(
       numProcs + 1);
 
-  std::vector<int> triangleToFVertex;
+
   triangleToFVertex.reserve(nVertices_F);
   std::vector<int> fVertexToTriangle(nVertices_F, NotAnId);
   bool changed = false;
@@ -1412,6 +1418,25 @@ void importP0Temperature(double const * temperature_F) {
     }
   }
 
+}
+
+void exportDissipationHeat(double * dissipationHeat_F) {
+  std::fill(dissipationHeat_F, dissipationHeat_F + nVertices_F * (nLayers), 0.);
+  int lElemColumnShift = (Ordering == 1) ? 3 : 3 * indexToTriangleID.size();
+  int elemLayerShift = (Ordering == 0) ? 3 : 3 * nLayers;
+  for (int index = 0; index < nTriangles; index++) {
+    for (int il = 0; il < nLayers; il++) {
+      int ilReversed = nLayers - il - 1;
+      int fVertex = triangleToFVertex[index];
+      double dissipationHeat = 0;
+      for (int k = 0; k < 3; k++)
+        dissipationHeat += dissipationHeatOnTetra[index * elemLayerShift + il * lElemColumnShift + k]/3; //TODO: should be weighted average based on tets volumes
+      dissipationHeat_F[fVertex * nLayers + ilReversed] = dissipationHeat;
+
+    }
+  }
+  //allToAll (dissipationHeat_F,  &sendVerticesListReversed, &recvEdgesListReversed, nLayers+1);
+  allToAll (dissipationHeat_F,  sendVerticesList_F, recvVerticesList_F, nLayers);
 }
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {

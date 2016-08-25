@@ -100,7 +100,7 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
-    double* u_normal_F = 0,
+    double* u_normal_F = 0, /*double* dissipation_heat_F = 0,*/
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0);
 
 
@@ -164,6 +164,7 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& bedTopographyData,
     const std::vector<double>& smbData,
     const std::vector<double>& temperatureOnTetra,
+    std::vector<double>& dissipationHeatOnTetra,
     std::vector<double>& velocityOnVertices,
     const double& deltat = 0.0);
 
@@ -241,6 +242,8 @@ void extendMaskByOneLayer(int const* verticesMask_F,
     std::vector<int>& extendedFVerticesMask);
 
 void importP0Temperature(double const* temperature_F);
+
+void exportDissipationHeat(double * dissipationHeat_F);
 
 void get_prism_velocity_on_FEdges(double* uNormal,
     const std::vector<double>& velocityOnCells,
