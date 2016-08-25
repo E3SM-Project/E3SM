@@ -36,6 +36,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_ringing_alarms, &
               MPAS_stream_mgr_add_att, &
               MPAS_stream_mgr_write, &
+              MPAS_stream_mgr_block_write, &
               MPAS_stream_mgr_read, &
               MPAS_stream_mgr_begin_iteration, &
               MPAS_stream_mgr_get_next_stream, &
@@ -2592,6 +2593,7 @@ module mpas_stream_manager
                        stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
                       wroteStreams = .true.
+                      stream_cursor % blockWrite = .false.
                       call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
                    end if
                end do
@@ -2611,6 +2613,7 @@ module mpas_stream_manager
                    if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
                        stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
+                       stream_cursor % blockWrite = .false.
                        call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
@@ -2625,6 +2628,204 @@ module mpas_stream_manager
         if (present(ierr)) ierr = local_ierr
 
     end subroutine MPAS_stream_mgr_write !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_block_write
+    !
+    !> \brief Write streams that are managed by an MPAS stream manager, using blockWrite = .true.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   08/25/2016
+    !> \details
+    !>  This routine performs block writes of any streams requested within an
+    !>  MPAS stream manger. Block writes imply each processor should write
+    !>  their own file(s). Additionally, block writes disable global reindexing
+    !>  before and after writing the stream.
+    !>
+    !>  With no optional arguments, writes all streams whose alarms are ringing.
+    !>  The "streamID" argument optionally specifies a regular expression of streams
+    !>  to be written; if no other optional arguments are given, the specified
+    !>  stream is only written if any of its alarms are ringing.
+    !>  The "timeLevel" argument optionally specifies, for fields with multiple
+    !>  time levels, the time level from which fields should be written.
+    !>  The "mgLevel" argument optionally specifies, for fields that exist for 
+    !>  multiple grid levels, the grid level from which fields should be written.
+    !>  The "forceWriteNow" argument optionally specifies that all streams -- or 
+    !>  the stream specified by the "streamID" argument -- should be written by 
+    !>  the call regardless of whether any alarms associated with the stream(s) 
+    !>  are ringing. The "writeTime" argument optionally specifies a time stamp
+    !>  to be used for expanding a filename template, when it is not passed in,
+    !>  the current time of the streamManager's clock is used to expand filename
+    !>  templates.
+    !>
+    !>  Swapping write types on a stream can cause unexpected behavior. For example:
+    !>    - Writing a stream using the normal write routine, followed by the
+    !>          block write routine, and again by the normal write routine will cause any
+    !>          data in the files prior to the last normal write to be lost.
+    !>
+    !>  Additionally, this routine is only valid for writing out a single file
+    !>  at a time.  If the block write stream is required at multiple time
+    !>  levels, the filename template and filename intervals need to be setup to
+    !>  give unique files for each record.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_block_write(manager, writeBlock, streamID, timeLevel, mgLevel, forceWriteNow, writeTime, ierr) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        type (block_type), intent(in) :: writeBlock
+        character (len=*), intent(in), optional :: streamID
+        integer, intent(in), optional :: timeLevel
+        integer, intent(in), optional :: mgLevel
+        logical, intent(in), optional :: forceWriteNow
+        character (len=*), intent(in), optional :: writeTime
+        integer, intent(out), optional :: ierr
+
+        type (mpas_pool_type), pointer :: backupAllFields, backupAllStructs
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: local_timeLevel
+        integer :: local_mgLevel
+        logical :: local_forceWrite
+        integer :: local_ierr
+        type (MPAS_Time_type) :: local_writeTime
+        integer :: temp_ierr
+        integer :: threadNum
+        logical :: wroteStreams
+
+        type (mpas_io_context_type), pointer :: debugContext, backupContext
+
+        threadNum = mpas_threading_get_thread_num()
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_block_write()')
+        local_ierr = MPAS_STREAM_MGR_NOERR
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Use optional arguments or set defaults
+        !
+        if (present(timeLevel)) then
+            local_timeLevel = timeLevel
+        else
+            local_timeLevel = 1
+        end if
+
+        if (present(mgLevel)) then
+            local_mgLevel = mgLevel
+        else
+            local_mgLevel = 1
+        end if
+
+        if (present(forceWriteNow)) then
+            local_forceWrite = forceWriteNow
+        else
+            local_forceWrite = .false.
+        end if
+
+
+        if ( present(writeTime) ) then
+            call mpas_set_time(local_writeTime, dateTimeString=writeTime, ierr=ierr)
+        else
+            local_writeTime = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+        end if
+
+
+        if ( threadNum == 0 ) then
+           ! Setup the debugging ioContext
+           allocate(debugContext)
+           allocate(debugContext % dminfo)
+           call mpas_dmpar_init(debugContext % dminfo, MPI_COMM_SELF)
+
+           backupContext => manager % ioContext
+           manager % ioContext => debugContext
+
+           call mpas_io_init(debugContext, 1, 1)
+
+           ! Setup the backup pools, and swap the manager's allFields / allStructs pools
+           backupAllFields => manager % allFields
+           backupAllStructs => manager % allStructs
+           manager % allFields => writeBlock % allFields
+           manager % allStructs => writeBlock % allStructs
+
+           !
+           ! If a stream is specified, we process just that stream; otherwise,
+           !    process all streams
+           !
+           if (present(streamID)) then
+               wroteStreams = .false.
+               nullify(stream_cursor)
+               do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr))
+                   STREAM_DEBUG_WRITE('-- Handling local write of stream '//trim(stream_cursor % name))
+
+                   ! Verify that the stream is an output stream
+                   if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+
+                      wroteStreams = .true.
+                      stream_cursor % blockWrite = .true.
+                      call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
+                      stream_cursor % blockWrite = .false.
+                      if ( associated(stream_cursor % stream) ) then
+                         stream_cursor % valid = .false.
+                         call MPAS_closeStream(stream_cursor % stream, ierr=local_ierr)
+                         deallocate(stream_cursor % stream)
+                      end if
+                   end if
+               end do
+
+               if ( .not. wroteStreams ) then
+                   STREAM_ERROR_WRITE('No output stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_block_write().')
+                   if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                   return 
+               end if
+           else
+               nullify(stream_cursor)
+               stream_cursor => manager % streams % head
+               do while (associated(stream_cursor))
+                   STREAM_DEBUG_WRITE('-- Handling local write of stream '//trim(stream_cursor % name))
+
+                   ! Verify that the stream is an output stream
+                   if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+
+                       stream_cursor % blockWrite = .true.
+                       call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
+                       stream_cursor % blockWrite = .false.
+                       if ( associated(stream_cursor % stream) ) then
+                          stream_cursor % valid = .false.
+                          call MPAS_closeStream(stream_cursor % stream, ierr=local_ierr)
+                          deallocate(stream_cursor % stream)
+                       end if
+                       if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
+                           local_ierr = temp_ierr
+                       end if
+
+                   end if
+                   stream_cursor => stream_cursor % next
+               end do
+           end if
+           ! Swap the allFields / allStructs back to the backups.
+           manager % allFields => backupAllFields
+           manager % allStructs => backupAllStructs
+
+           ! Destroy the IO context, and dminfo that was created
+           call MPAS_io_finalize(debugContext, .true.)
+
+           manager % ioContext => backupContext
+
+           call mpas_dmpar_finalize(debugContext % dminfo)
+
+           deallocate(debugContext % dminfo)
+           deallocate(debugContext) 
+        end if
+
+        call mpas_threading_barrier()
+
+        if (present(ierr)) ierr = local_ierr
+
+    end subroutine MPAS_stream_mgr_block_write !}}}
 
 
     !-----------------------------------------------------------------------
@@ -2752,6 +2953,7 @@ module mpas_stream_manager
                ! Build stream from pools of fields and attributes
                !
                allocate(stream % stream)
+               stream % stream % blockWrite = stream % blockWrite
                call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE,  &
                                       precision=stream % precision, clobberRecords=clobberRecords, &
                                       clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
@@ -2836,6 +3038,7 @@ module mpas_stream_manager
                    !
                    ! Build new stream from pools of fields and attributes
                    !
+                   stream % stream % blockWrite = stream % blockWrite
                    call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE, &
                                           precision=stream % precision, clobberRecords=clobberRecords, &
                                           clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
@@ -2924,8 +3127,11 @@ module mpas_stream_manager
 
            !
            ! For any connectivity arrays in the stream, temporarily convert local indices to global indices
+           ! unless this stream is using blockWrite
            !
-           call prewrite_reindex(manager % allFields, stream % field_pool)
+           if ( .not. stream % blockWrite ) then
+              call prewrite_reindex(manager % allFields, stream % field_pool)
+           end if
 
            ! 
            ! Write the stream
@@ -2935,8 +3141,11 @@ module mpas_stream_manager
 
            !
            ! Regardless of the error code from MPAS_writeStream, we need to reset global indices in the stream back to local indices
+           ! unless this stream is using blockWrite
            !
-           call postwrite_reindex(manager % allFields, stream % field_pool)
+           if ( .not. stream % blockWrite ) then
+              call postwrite_reindex(manager % allFields, stream % field_pool)
+           end if
 
            if (local_ierr /= MPAS_STREAM_NOERR) then
                if (local_ierr == MPAS_STREAM_CLOBBER_RECORD) then
