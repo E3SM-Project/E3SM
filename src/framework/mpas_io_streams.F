@@ -423,6 +423,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -529,6 +531,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
@@ -636,6 +640,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
@@ -831,6 +837,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
@@ -947,6 +955,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
@@ -1063,6 +1073,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
@@ -1181,6 +1193,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
@@ -1299,6 +1313,8 @@ module mpas_io_streams
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
       integer, pointer :: indexDimension
+      character (len=StrKIND) :: elementName, elementNamePlural
+      logical :: meshFieldDim
 
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
