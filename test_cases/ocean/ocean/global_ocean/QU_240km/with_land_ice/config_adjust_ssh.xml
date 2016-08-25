@@ -3,6 +3,7 @@
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
 	<add_executable source="metis" dest="metis"/>
+	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/iterate_init.py" dest="iterate_init.py"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
