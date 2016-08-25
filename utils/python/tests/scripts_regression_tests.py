@@ -426,7 +426,7 @@ class TestCreateTestCommon(unittest.TestCase):
 
         files_to_clean = []
 
-        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
+        baselines = os.path.join(self._baseline_area, self._baseline_name)
         if (os.path.isdir(baselines)):
             files_to_clean.append(baselines)
 
@@ -480,8 +480,7 @@ class N_TestCreateTest(TestCreateTestCommon):
    fake = .true.
 /"""
         baseline_area = self._baseline_area
-        compiler      = self._compiler
-        baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "TEST*"))
+        baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "TEST*"))
         self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
 
         baseline_dir = baseline_glob[0]
@@ -497,7 +496,7 @@ class N_TestCreateTest(TestCreateTestCommon):
         self.simple_test(False, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Regen
-        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        self.simple_test(True, "-g -o -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Basic namelist compare should now pass again
         self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
@@ -1091,8 +1090,8 @@ class B_CheckCode(unittest.TestCase):
         from distutils.spawn import find_executable
         pylint = find_executable("pylint")
         if pylint is not None:
-            stat, output, _ = run_cmd("pylint --version")
-            pylintver = re.search(r"pylint\s+(\d+)\.(\d+).(\d+)", output)
+            output = run_cmd_no_fail("pylint --version")
+            pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
             major = int(pylintver.group(1))
             minor = int(pylintver.group(2))
         if pylint is None or (major <= 1 and minor < 5):
