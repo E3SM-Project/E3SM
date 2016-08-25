@@ -4,6 +4,9 @@
 	<add_link source="../forward_iter/init.nc" dest="init.nc"/>
 	<add_link source="../forward_iter/forcing_data.nc" dest="forcing_data.nc"/>
 
+	<add_link source="../spin_up1/Restart_timestamp" dest="Restart_timestamp"/>
+	<add_link source="../spin_up1/restarts" dest="restarts"/>
+
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
@@ -11,8 +14,11 @@
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_check_ssh_consistency">.false.</option>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_run_duration">'00-00-10_00:00:00'</option>
+		<option name="config_do_restart">.true.</option>
+		<option name="config_start_time">'file'</option>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -25,10 +31,13 @@
 		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="output">
-			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+			<attribute name="output_interval">00-00-10_00:00:00</attribute>
 		</stream>
 		<stream name="restart">
-			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+			<attribute name="output_interval">00-00-10_00:00:00</attribute>
+		</stream>
+		<stream name="land_ice_fluxes">
+			<attribute name="output_interval">00-00-10_00:00:00</attribute>
 		</stream>
 
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
