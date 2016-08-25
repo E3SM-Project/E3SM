@@ -210,7 +210,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '                  type="input"' . "\n";
 	print $stream_file '                  filename_template="forcing/atmosphere_forcing_six_hourly.$Y.nc"' . "\n";
 	print $stream_file '                  filename_interval="0001-00-00_00:00:00"' . "\n";
-	print $stream_file '		  reference_time="2000-01-01_03:00:00"' . "\n";
+	print $stream_file '                  reference_time="2000-01-01_03:00:00"' . "\n";
 	print $stream_file '                  input_interval="none" />' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="LYqMonthlyForcing"' . "\n";
@@ -237,7 +237,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-cice.highFrequencyOutput.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="none"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="highFrequencyOutputAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -303,7 +302,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-cice.cice_loadBalance.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-00_01:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="loadBalanceAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -317,7 +315,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-cice.cice_maximumIcePresence.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="01-00-00_00:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="maximumIcePresenceAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -331,7 +328,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-cice.timeSeriesStatsDaily.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
-	print $stream_file '        reference_time="00-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsDailyAMPKG">' . "\n";
 	print $stream_file '</stream>' . "\n";
@@ -351,7 +347,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="am.mpas-cice.timeSeriesStatsMonthly.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
-	print $stream_file '        reference_time="00-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG">' . "\n";
 	print $stream_file '' . "\n";

@@ -92,4 +92,11 @@
 <config_AM_globalStats_compute_on_startup>.true.</config_AM_globalStats_compute_on_startup>
 <config_AM_globalStats_write_on_startup>.true.</config_AM_globalStats_write_on_startup>
 
+<!-- AM_regionalStats -->
+<config_AM_regionalStats_enable>.false.</config_AM_regionalStats_enable>
+<config_AM_regionalStats_compute_interval>'output_interval'</config_AM_regionalStats_compute_interval>
+<config_AM_regionalStats_stream_name>'regionalStatsOutput'</config_AM_regionalStats_stream_name>
+<config_AM_regionalStats_compute_on_startup>.true.</config_AM_regionalStats_compute_on_startup>
+<config_AM_regionalStats_write_on_startup>.true.</config_AM_regionalStats_write_on_startup>
+
 </namelist_defaults>
