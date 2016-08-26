@@ -239,7 +239,7 @@ def save_timing_setup_acme(case, lid):
             syslog_jobid = run_cmd_no_fail("./mach_syslog %d %s %s %s %s/timing/checkpoints %s/checkpoints >& /dev/null & echo $!" %
                                            (sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
-            with open(os.path.join(rundir, "syslog_jobid", ".%s" % job_id), "w") as fd:
+            with open(os.path.join(rundir, "syslog_jobid.%s" % job_id), "w") as fd:
                 fd.write("%s\n" % syslog_jobid)
 
     # Save state of repo
