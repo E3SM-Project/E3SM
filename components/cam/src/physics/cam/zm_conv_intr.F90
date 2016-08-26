@@ -162,6 +162,8 @@ subroutine zm_conv_init(pref_edge)
 
     call addfld ('CAPE',       horiz_only, 'A',   'J/kg', 'Convectively available potential energy')
     call addfld ('FREQZM',horiz_only  ,'A','fraction', 'Fractional occurance of ZM convection') 
+    ! To keep track of when ZM is suppressed due to Drizzle issue
+    call addfld ('FREQZMSUP',horiz_only  ,'A','fraction', 'Fractional occurrence of suppressed ZM convection')
 
     call addfld ('ZMMTT',     (/ 'lev' /), 'A', 'K/s', 'T tendency - ZM convective momentum transport')
     call addfld ('ZMMTU',    (/ 'lev' /), 'A',  'm/s2', 'U tendency - ZM convective momentum transport')
@@ -343,8 +345,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    real(r8) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
    real(r8) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
-
-   real(r8) :: pcont(pcols), pconb(pcols), freqzm(pcols)
+   ! Added freqzmsup as a local variable
+   real(r8) :: pcont(pcols), pconb(pcols), freqzm(pcols), freqzmsup(pcols) 
 
    ! history output fields
    real(r8) :: cape(pcols)        ! w  convective available potential energy.
@@ -437,7 +439,77 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
       freqzm(ideep(i)) = 1.0_r8
    end do
    call outfld('FREQZM  ',freqzm          ,pcols   ,lchnk   )
+
+  ! ---------------------------------------------------------
+  ! Huge chunk moved to after zm_conv_evap
+  ! ---------------------------------------------------------
+
+  call physics_ptend_init(ptend_all, state%psetcols, 'zm_conv_tend')
+
+  ! add tendency from this process to tendencies from other processes
+  call physics_ptend_sum(ptend_loc,ptend_all, ncol)
+
+  ! update physics state type state1 with ptend_loc 
+  call physics_update(state1, ptend_loc, ztodt)
+
+  ! initialize ptend for next process
+  lq(:) = .FALSE.
+  lq(1) = .TRUE.
+  call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conv_evap', ls=.true., lq=lq)
+
 !
+! Determine the phase of the precipitation produced and add latent heat of fusion
+! Evaporate some of the precip directly into the environment (Sundqvist)
+! Allow this to use the updated state1 and the fresh ptend_loc type
+! heating and specific humidity tendencies produced
+!
+
+    call pbuf_get_field(pbuf, dp_flxprc_idx, flxprec    )
+    call pbuf_get_field(pbuf, dp_flxsnw_idx, flxsnow    )
+    call pbuf_get_field(pbuf, dp_cldliq_idx, dp_cldliq  )
+    call pbuf_get_field(pbuf, dp_cldice_idx, dp_cldice  )
+    dp_cldliq(:ncol,:) = 0._r8
+    dp_cldice(:ncol,:) = 0._r8
+
+    call t_startf ('zm_conv_evap')
+    call zm_conv_evap(state1%ncol,state1%lchnk, &
+         state1%t,state1%pmid,state1%pdel,state1%q(:pcols,:pver,1), &
+         ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
+         rprd, cld, ztodt, &
+         prec, snow, ntprprd, ntsnprd , flxprec, flxsnow)
+    call t_stopf ('zm_conv_evap')
+    evapcdp(:ncol,:pver) = ptend_loc%q(:ncol,:pver,1)
+    ! Loop that zeroes tendencies if precipitation rate is too low
+    freqzmsup(:) = 0._r8
+    do i =1, lengath
+       ii = ideep(i)
+       if (prec(ii).lt.0.0000578_r8) then
+          freqzmsup(ii) = 1.0_r8
+          ! Change all tendencies to zero
+          ptend_loc%s(ii,:pver)=0._r8
+          ptend_loc%q(ii,:pver,1)=0._r8
+          tend_s_snwprd(ii,:pver)=0._r8
+          tend_s_snwevmlt(ii,:pver)=0._r8
+          prec(ii)=0._r8
+          snow(ii)=0._r8
+          mcon(ii,:)=0._r8
+          ntsnprd(ii,:)=0._r8
+          ntprprd(ii,:)=0._r8
+          flxprec(ii,:)=0._r8
+          flxsnow(ii,:)=0._r8
+          ptend_all(ii,:)=0._r8
+          ptend_loc(ii,:)=0._r8
+          mu(ii,:)=0._r8
+          md(ii,:)=0._r8
+          evapcdp(ii,:)=0._r8
+       endif
+    end do
+    ! End of loop
+    
+
+   
+   
+   !---- Moved chunk from before zm_conv_evap  --------
 ! Convert mass flux from reported mb/s to kg/m^2/s
 !
    mcon(:ncol,:pver) = mcon(:ncol,:pver) * 100._r8/gravit
@@ -478,43 +550,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     end do
     call outfld('PCONVT  ',pcont          ,pcols   ,lchnk   )
     call outfld('PCONVB  ',pconb          ,pcols   ,lchnk   )
+    ! ---------- end of chunk that was moved ----------------
 
-  call physics_ptend_init(ptend_all, state%psetcols, 'zm_conv_tend')
-
-  ! add tendency from this process to tendencies from other processes
-  call physics_ptend_sum(ptend_loc,ptend_all, ncol)
-
-  ! update physics state type state1 with ptend_loc 
-  call physics_update(state1, ptend_loc, ztodt)
-
-  ! initialize ptend for next process
-  lq(:) = .FALSE.
-  lq(1) = .TRUE.
-  call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conv_evap', ls=.true., lq=lq)
-
-!
-! Determine the phase of the precipitation produced and add latent heat of fusion
-! Evaporate some of the precip directly into the environment (Sundqvist)
-! Allow this to use the updated state1 and the fresh ptend_loc type
-! heating and specific humidity tendencies produced
-!
-
-    call pbuf_get_field(pbuf, dp_flxprc_idx, flxprec    )
-    call pbuf_get_field(pbuf, dp_flxsnw_idx, flxsnow    )
-    call pbuf_get_field(pbuf, dp_cldliq_idx, dp_cldliq  )
-    call pbuf_get_field(pbuf, dp_cldice_idx, dp_cldice  )
-    dp_cldliq(:ncol,:) = 0._r8
-    dp_cldice(:ncol,:) = 0._r8
-
-    call t_startf ('zm_conv_evap')
-    call zm_conv_evap(state1%ncol,state1%lchnk, &
-         state1%t,state1%pmid,state1%pdel,state1%q(:pcols,:pver,1), &
-         ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
-         rprd, cld, ztodt, &
-         prec, snow, ntprprd, ntsnprd , flxprec, flxsnow)
-    call t_stopf ('zm_conv_evap')
-
-    evapcdp(:ncol,:pver) = ptend_loc%q(:ncol,:pver,1)
 !
 ! Write out variables from zm_conv_evap
 !
