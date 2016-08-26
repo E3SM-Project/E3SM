@@ -1108,7 +1108,7 @@
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
-		<package name="landIcePressurePKG" description="This package includes only land ice pressure."/>
+		<package name="landIcePressurePKG" description="This package includes land ice pressure, fraction and mask."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
@@ -1356,8 +1356,9 @@
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
 			<var name="boundaryLayerDepth"/>
-			<var name="seaSurfacePressure" packages="restartForcingFields"/>
 			<var name="landIcePressure" packages="restartForcingFields"/>
+			<var name="landIceFraction" packages="restartForcingFields"/>
+			<var name="landIceMask" packages="restartForcingFields"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -2636,11 +2637,11 @@
 		<!-- Input fields from coupler or initial condition for forcing under land ice -->
 		<var name="landIceFraction" type="real" dimensions="nCells Time" units="unitless"
 			description="The fraction of each cell covered by land ice"
-			packages="landIceFluxesPKG"
+			packages="landIcePressurePKG"
 		/>
 		<var name="landIceMask" type="integer" dimensions="nCells Time" units="unitless"
 			description="Mask indicating where land-ice is present (1) or absent (0)"
-			packages="landIceFluxesPKG"
+			packages="landIcePressurePKG"
 		/>
 		<var name="landIcePressure" type="real" dimensions="nCells Time" units="Pa"
 			description="Pressure defined at the sea surface due to land ice."
