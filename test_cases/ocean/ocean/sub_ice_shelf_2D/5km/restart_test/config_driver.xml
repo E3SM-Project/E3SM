@@ -8,14 +8,17 @@
 	<case name="adjust_ssh">
 		<step executable="./run.py" quiet="true" pre_message=" * Running adjust_ssh" post_message="     Complete"/>
 	</case>
-	<case name="forward">
-		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message="     Complete"/>
+	<case name="full_run">
+		<step executable="./run.py" quiet="true" pre_message=" * Running full_run" post_message="     Complete"/>
+	</case>
+	<case name="restart_run">
+		<step executable="./run.py" quiet="true" pre_message=" * Running restart_run" post_message="     Complete"/>
 	</case>
 	<validation>
-		<compare_fields file1="forward/output.nc">
+		<compare_fields file1="full_run/output.nc" file2="restart_run/output.nc">
 			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
 		</compare_fields>
-		<compare_fields file1="forward/land_ice_fluxes.nc">
+		<compare_fields file1="full_run/land_ice_fluxes.nc" file2="restart_run/land_ice_fluxes.nc">
 			<template file="land_ice_flux_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
 		</compare_fields>
 	</validation>

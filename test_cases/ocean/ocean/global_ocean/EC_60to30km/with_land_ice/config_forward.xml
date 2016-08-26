@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config case="forward">
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
-	<add_link source="../forward_iter/init.nc" dest="init.nc"/>
-	<add_link source="../forward_iter/forcing_data.nc" dest="forcing_data.nc"/>
+	<add_link source="../adjust_ssh/init.nc" dest="init.nc"/>
+	<add_link source="../adjust_ssh/forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_link source="../spin_up1/Restart_timestamp" dest="Restart_timestamp"/>
 	<add_link source="../spin_up1/restarts" dest="restarts"/>
@@ -18,6 +18,8 @@
 		<option name="config_run_duration">'00-00-10_00:00:00'</option>
 		<option name="config_do_restart">.true.</option>
 		<option name="config_start_time">'file'</option>
+		<option name="config_pio_num_iotasks">8</option>
+		<option name="config_pio_stride">16</option>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 	</namelist>
 
@@ -48,9 +50,9 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="graph.info">120</argument>
+			<argument flag="graph.info">128</argument>
 		</step>
 
-		<model_run procs="120" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="128" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>

@@ -14,47 +14,45 @@ parser.add_argument("--plot_globalStats", dest="plot_globalStats", action='store
 parser.add_argument("--variable_to_modify", dest="variable_to_modify", default='ssh', help="Which variable, either ssh or landIcePressure, to modify at each iteration.")
 
 args = parser.parse_args()
-base_path = os.getcwd()
 dev_null = open('/dev/null', 'w')
 error = False
 
-subprocess.check_call(['ln', '-sfn', '../init_step2/graph.info', 'forward_iter/graph.info'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-
 if args.variable_to_modify == 'ssh':
-  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'forward_iter/init0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'forward_iter/forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  initFileName = 'init0.nc'
+  forcingFileName = 'forcing_data.nc'
 elif args.variable_to_modify == 'landIcePressure':
-  subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'forward_iter/init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-  subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', 'forward_iter/forcing_data0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  initFileName = 'init.nc'
+  forcingFileName = 'forcing_data0.nc'
 else:
   print "Error: unknown variable to modify", args.variable_to_modify
 
+subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', initFileName], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', forcingFileName], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+
 if args.plot_globalStats:
-  subprocess.check_call(['mkdir', '-p', 'forward_iter/statsPlots'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+  subprocess.check_call(['mkdir', '-p', 'statsPlots'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
 for iterIndex in range(args.first_iteration,args.iteration_count):
     print " * Iteration %i/%i"%(iterIndex+1,args.iteration_count)
-    os.chdir(base_path)
-    os.chdir('forward_iter')
 
     if args.variable_to_modify == 'ssh':
       subprocess.check_call(['ln', '-sfn', 'init%i.nc'%iterIndex, 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
     else:
       subprocess.check_call(['ln', '-sfn', 'forcing_data%i.nc'%iterIndex, 'forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
-    print "   * Running forward_iter"
-    # ./run.py
-    subprocess.check_call(['./run.py'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+    print "   * Running forward model"
+    # ./run_model.py
+    subprocess.check_call(['./run_model.py'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
     print "   - Complete"
 
     if args.plot_globalStats:
         print "   * Plotting stats"
-        subprocess.check_call(['../scripts/plot_globalStats.py', '--out_dir=statsPlots','--iteration=%i'%iterIndex, 'kineticEnergyCellMax',
+        subprocess.check_call(['./plot_globalStats.py', '--out_dir=statsPlots','--iteration=%i'%iterIndex, 'kineticEnergyCellMax',
                                'kineticEnergyCellAvg', 'layerThicknessMin'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
         print "   - Complete"
 
 
-    print "   * Updating SSH and land-ice pressure"
+    print "   * Updating SSH or land-ice pressure"
 
     # copy the init file first
 
@@ -126,8 +124,6 @@ for iterIndex in range(args.first_iteration,args.iteration_count):
     logFile.close()
 
     print "   - Complete"
-
-os.chdir(base_path)
 
 if error:
     sys.exit(1)
