@@ -468,10 +468,16 @@ class N_TestCreateTest(TestCreateTestCommon):
     def test_create_test_rebless_namelist(self):
     ###############################################################################
         # Generate some namelist baselines
-        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        if CIME.utils.get_model() == "acme":
+            genarg = "-g -o -b %s"%self._baseline_name
+            comparg = "-c -b %s"%self._baseline_name
+        else:
+            genarg = "-g %s -o"%self._baseline_name
+            comparg = "-c %s"%self._baseline_name
+        self.simple_test(True, "%s -n -t %s-%s" % (genarg,self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Basic namelist compare
-        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Modify namelist
         fake_nl = """
@@ -493,13 +499,13 @@ class N_TestCreateTest(TestCreateTestCommon):
             nl_file.write(fake_nl)
 
         # Basic namelist compare should now fail
-        self.simple_test(False, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        self.simple_test(False, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Regen
-        self.simple_test(True, "-g -o -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Basic namelist compare should now pass again
-        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
 class O_TestTestScheduler(TestCreateTestCommon):
@@ -774,17 +780,24 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     def test_bless_test_results(self):
     ###############################################################################
         # Generate some namelist baselines
-        self.simple_test(True, "-g -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        if CIME.utils.get_model() == "acme":
+            genarg = "-g -o -b %s"%self._baseline_name
+            comparg = "-c -b %s"%self._baseline_name
+        else:
+            genarg = "-g %s -o"%self._baseline_name
+            comparg = "-c %s"%self._baseline_name
+
+        self.simple_test(True, "%s -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Hist compare should pass
-        self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        self.simple_test(True, "%s -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Change behavior
         os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
 
         # Hist compare should now fail
         test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        self.simple_test(False, "-c -b %s -t %s" % (self._baseline_name, test_id))
+        self.simple_test(False, "%s -t %s" % (comparg, test_id))
 
         # compare_test_results should detect the fail
         cpr_cmd = "%s/compare_test_results -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
@@ -801,7 +814,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         run_cmd_no_fail("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
 
         # Hist compare should now pass again
-        self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        self.simple_test(True, "%s -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
 @unittest.skip("Disabling this test until we figure out how to integrate ACME tests and CIME xml files.")
