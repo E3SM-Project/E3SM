@@ -1032,7 +1032,7 @@
                          if compiler and mpilib condition applies -->
       <!-- Always execute -->
       <modules>
-        <command name="purge"></command>
+<!--        <command name="purge"></command>
         <command name="load">python/2.7.9</command>
         <command name="load">eswrap</command>
         <command name="load">PrgEnv-pgi cray-mpich</command>
@@ -1042,7 +1042,8 @@
         <command name="add">DefApps site-aprun</command>
         <command name="add">aprun-usage altd</command>
         <command name="load">cmake/2.8.10.2</command>
-        <!-- remove old section
+-->
+        <!-- remove old section -->
         <command name="rm">PrgEnv-intel</command>
         <command name="rm">pgi</command>
         <command name="rm">PrgEnv-pgi</command>
@@ -1064,7 +1065,7 @@
         <command name="rm">cray-parallel-netcdf</command>
 
         <command name="load">subversion</command>
-        <command name="load">cmake/2.8.11.2</command>
+        <command name="load">cmake/2.8.10.2</command>
         -->
       </modules>
 
@@ -1078,11 +1079,11 @@
       </modules>
       <modules compiler="pgi">
         <command name="load">PrgEnv-pgi</command>
-        <command name="switch">pgi pgi/15.3.0</command>
-        <command name="switch">cray-mpich cray-mpich/7.2.5</command>
-        <command name="switch">cray-libsci cray-libsci/13.2.0</command>
+        <command name="switch">pgi pgi/15.7.0</command>
+        <command name="switch">cray-mpich cray-mpich/7.4.9</command>
+        <command name="switch">cray-libsci cray-libsci/16.06.1</command>
         <command name="load">esmf/5.2.0rp2</command>
-        <command name="switch">atp atp/1.8.3</command>
+        <command name="switch">atp atp/2.0.2</command>
       </modules>
       <modules compiler="intel">
         <command name="rm">PrgEnv-pgi</command>
