@@ -318,7 +318,7 @@ OR
             if args.compare:
                 baseline_cmp_name = baseline_name
             elif args.generate:
-                baseline_gen_name = baseline_nam
+                baseline_gen_name = baseline_name
 
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
