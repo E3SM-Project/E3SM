@@ -27,6 +27,7 @@
 			<attribute name="filename_template">init.nc</attribute>
 		</stream>
 		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="output">
 			<attribute name="output_interval">00-00-10_00:00:00</attribute>
 		</stream>
