@@ -3482,6 +3482,8 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_liq_sh');
    add_default($nl, 'clubb_ice_deep');
    add_default($nl, 'clubb_ice_sh');
+   add_default($nl, 'clubb_tk1');
+   add_default($nl, 'clubb_tk2');
 }
 
 #in-cloud scav tuning for cloud-borne aerosol

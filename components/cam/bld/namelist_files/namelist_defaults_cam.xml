@@ -804,6 +804,10 @@
 <clubb_liq_sh                                     > 10.e-6  </clubb_liq_sh>
 <clubb_ice_deep                                   > 25.e-6  </clubb_ice_deep>
 <clubb_ice_sh                                     > 50.e-6  </clubb_ice_sh>
+<clubb_tk1                                        > 268.15D0  </clubb_tk1>
+<clubb_tk2                                        > 238.15D0  </clubb_tk2>
+
+
 
 <!-- CLUBB_history -->
 <clubb_history               > .false. </clubb_history>

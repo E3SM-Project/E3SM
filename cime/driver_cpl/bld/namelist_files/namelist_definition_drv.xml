@@ -451,6 +451,16 @@ If true, turn on diurnal cycle in computing atm/ocn fluxes
 default: false
 </entry>
 
+<entry
+id="gust_fac"
+type="real"
+category="control"
+group="seq_infodata_inparm">
+wind gustiness factor
+default: 0.0D0
+</entry>
+
+
 <entry 
 id="atm_gnam"
 type="char*64"

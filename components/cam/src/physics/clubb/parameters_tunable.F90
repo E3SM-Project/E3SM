@@ -111,7 +111,7 @@ module parameters_tunable
     C6rt_Lscale0  = 14.0_core_rknd,      & ! Damp C6rt as a fnct. of Lscale  [-]
     C6thl_Lscale0 = 14.0_core_rknd,      & ! Damp C6thl as a fnct. of Lscale [-]
     C7_Lscale0    = 0.8500000_core_rknd, & ! Damp C7 as a fnct. of Lscale    [-]
-    wpxp_L_thresh = 60.0_core_rknd         ! Lscale threshold: damp C6 & C7  [m]
+    wpxp_L_thresh = 60.0_core_rknd !huge(1.0_core_rknd)         ! Lscale threshold: damp C6 & C7  [m]
 !$omp threadprivate(C6rt_Lscale0, C6thl_Lscale0, C7_Lscale0, wpxp_L_thresh)
 
   ! Note: DD 1987 is Duynkerke & Driedonks (1987).
@@ -474,7 +474,7 @@ module parameters_tunable
       err_code ! Error condition
 
     !-------------------- Begin code --------------------
-
+    call endrun ('BALLI You shouldnt be here-3')
     call unpack_parameters( params, & 
                             C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
                             C4, C5, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
@@ -803,6 +803,7 @@ module parameters_tunable
     ! If the filename is empty, assume we're using a `working' set of
     ! parameters that are set statically here (handy for host models).
     ! Read the namelist
+    call endrun ('BALLI You shouldnt be here-2')
     if ( filename /= "" ) then
       ! Read the namelist
       open(unit=iunit, file=filename, status='old', action='read')
@@ -852,6 +853,7 @@ module parameters_tunable
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
 
     ! Put the variables in the output array
+    call endrun ('BALLI You shouldnt be here-4')
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
                           C4, C5, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
                           C7, C7b, C7c, C8, C8b, C10, &
@@ -935,6 +937,8 @@ module parameters_tunable
       Lscale_mu_coef, Lscale_pert_coef, alpha_corr, Skw_denom_coef, c_K10, &
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh
 
+    call endrun ('BALLI You shouldnt be here-1')
+
     ! Initialize values to -999.
     call init_parameters_999( )
 
@@ -946,6 +950,7 @@ module parameters_tunable
     close(unit=iunit)
 
     ! Put the variables in the output array
+    call endrun ('BALLI You shouldnt be here-5')
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
                           C4, C5, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
                           C7, C7b, C7c, C8, C8b, C10, &
@@ -1105,7 +1110,7 @@ module parameters_tunable
 
     ! Output variables
     real( kind = core_rknd ), intent(out), dimension(nparams) :: params
-
+    call endrun ('BALLI You shouldnt be here-6')
     params(iC1)      = C1
     params(iC1b)     = C1b
     params(iC1c)     = C1c
@@ -1304,7 +1309,7 @@ module parameters_tunable
       mu, beta, lmin_coef, coef_hm_1_hm_2_corr_adj, mult_coef, taumin, taumax, &
       Lscale_mu_coef, Lscale_pert_coef, alpha_corr, Skw_denom_coef, c_K10, &
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh
-
+    call endrun ('BALLI You shouldnt be here-7')
     C1      = params(iC1)
     C1b     = params(iC1b)
     C1c     = params(iC1c)
@@ -1401,7 +1406,7 @@ module parameters_tunable
 
     ! Input Variables
     real( kind = core_rknd ), intent(out), dimension(nparams) :: params
-
+    call endrun ('BALLI You shouldnt be here-8')
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
                           C4, C5, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
                           C7, C7b, C7c, C8, C8b, C10, &
@@ -1432,7 +1437,7 @@ module parameters_tunable
     implicit none
 
     ! --- Begin Code ---
-
+    call endrun ('BALLI You shouldnt be here-9')
     C1                          = init_value
     C1b                         = init_value
     C1c                         = init_value
