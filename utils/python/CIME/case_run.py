@@ -133,8 +133,11 @@ def post_run_check(case, lid):
                 expect (False, msg)
 
 ###############################################################################
-def _get_batch_job_id(case):
+def _get_batch_job_id_for_syslog(case):
 ###############################################################################
+    """
+    mach_syslog only works on certain machines
+    """
     mach = case.get_value("MACH")
     if mach == 'titan':
         return os.environ["PBS_JOBID"]
@@ -169,7 +172,7 @@ def save_timing_setup_acme(case, lid):
     compiler = case.get_value("COMPILER")
 
     # For some batch machines save queue info
-    job_id = _get_batch_job_id(case)
+    job_id = _get_batch_job_id_for_syslog(case)
     if mach == "mira":
         for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
             run_cmd_no_fail("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
@@ -262,7 +265,7 @@ def save_timing_acme(case, lid):
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
 
     # Kill mach_syslog
-    job_id = _get_batch_job_id(case)
+    job_id = _get_batch_job_id_for_syslog(case)
     if job_id is not None:
         syslog_jobid_path = os.path.join(rundir, "syslog_jobid", ".%s" % job_id)
         if os.path.exists(syslog_jobid_path):
