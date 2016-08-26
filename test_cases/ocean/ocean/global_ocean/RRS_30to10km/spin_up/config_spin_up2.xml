@@ -35,6 +35,7 @@
 		</stream>
 		<stream name="restart">
 			<attribute name="output_interval">00-00-00_20:00:00</attribute>
+			<attribute name="filename_interval">00-00-00_04:00:00</attribute>
 		</stream>
 
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
