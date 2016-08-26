@@ -2532,6 +2532,7 @@ module mpas_stream_manager
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: blockID
         integer :: local_timeLevel
         integer :: local_mgLevel
         logical :: local_forceWrite
@@ -2576,6 +2577,8 @@ module mpas_stream_manager
             local_writeTime = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
         end if
 
+        ! This routine assumes global writes, so set blockID = -1
+        blockID = -1
 
         if ( threadNum == 0 ) then
            !
@@ -2594,7 +2597,7 @@ module mpas_stream_manager
 
                       wroteStreams = .true.
                       stream_cursor % blockWrite = .false.
-                      call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
+                      call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
                    end if
                end do
 
@@ -2614,7 +2617,7 @@ module mpas_stream_manager
                        stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
                        stream_cursor % blockWrite = .false.
-                       call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
+                       call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
                        end if
@@ -2765,7 +2768,8 @@ module mpas_stream_manager
 
                       wroteStreams = .true.
                       stream_cursor % blockWrite = .true.
-                      call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
+                      call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
+                                        local_forceWrite, local_writeTime, local_ierr)
                       stream_cursor % blockWrite = .false.
                       if ( associated(stream_cursor % stream) ) then
                          stream_cursor % valid = .false.
@@ -2791,7 +2795,8 @@ module mpas_stream_manager
                        stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
                        stream_cursor % blockWrite = .true.
-                       call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
+                       call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
+                                         local_forceWrite, local_writeTime, temp_ierr)
                        stream_cursor % blockWrite = .false.
                        if ( associated(stream_cursor % stream) ) then
                           stream_cursor % valid = .false.
@@ -2838,12 +2843,13 @@ module mpas_stream_manager
     !>  Private subroutine to handle the details of actually writing a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine write_stream(manager, stream, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
+    subroutine write_stream(manager, stream, blockID, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
 
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
         type (MPAS_stream_list_type), intent(inout) :: stream
+        integer, intent(in) :: blockID
         integer, intent(in) :: timeLevel
         integer, intent(in) :: mgLevel
         logical, intent(in) :: forceWriteNow
@@ -2932,10 +2938,10 @@ module mpas_stream_manager
            if (.not. stream % valid) then
                if ( stream % filename_interval /= 'none' ) then
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
-                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
+                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, blockID, stream % filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
-                   call mpas_expand_string(time_string, stream % filename_template, stream % filename)
+                   call mpas_expand_string(time_string, blockID, stream % filename_template, stream % filename)
                end if
 
                stream % nRecords = 1
@@ -2953,10 +2959,10 @@ module mpas_stream_manager
                ! Build stream from pools of fields and attributes
                !
                allocate(stream % stream)
-               stream % stream % blockWrite = stream % blockWrite
                call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE,  &
                                       precision=stream % precision, clobberRecords=clobberRecords, &
                                       clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
+               stream % stream % blockWrite = stream % blockWrite
                if (local_ierr /= MPAS_STREAM_NOERR) then
                    if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
                        !
@@ -3005,10 +3011,10 @@ module mpas_stream_manager
                if ( stream % filename_interval /= 'none' ) then
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
     
-                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, blockID, temp_filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
-                   call mpas_expand_string(time_string, stream % filename_template, temp_filename)
+                   call mpas_expand_string(time_string, blockID, stream % filename_template, temp_filename)
                end if
 
                if (temp_filename /= stream % filename) then
@@ -3038,10 +3044,10 @@ module mpas_stream_manager
                    !
                    ! Build new stream from pools of fields and attributes
                    !
-                   stream % stream % blockWrite = stream % blockWrite
                    call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE, &
                                           precision=stream % precision, clobberRecords=clobberRecords, &
                                           clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
+                   stream % stream % blockWrite = stream % blockWrite
                    if (local_ierr /= MPAS_STREAM_NOERR) then
                        if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
                            !
@@ -3130,6 +3136,7 @@ module mpas_stream_manager
            ! unless this stream is using blockWrite
            !
            if ( .not. stream % blockWrite ) then
+              STREAM_DEBUG_WRITE(' -- Prewrite reindex for stream ' COMMA trim(stream % name))
               call prewrite_reindex(manager % allFields, stream % field_pool)
            end if
 
@@ -3144,6 +3151,7 @@ module mpas_stream_manager
            ! unless this stream is using blockWrite
            !
            if ( .not. stream % blockWrite ) then
+              STREAM_DEBUG_WRITE(' -- Postwrite reindex for stream ' COMMA trim(stream % name))
               call postwrite_reindex(manager % allFields, stream % field_pool)
            end if
 
@@ -3351,6 +3359,7 @@ module mpas_stream_manager
         character (len=*), intent(out), optional :: actualWhen
         integer, intent(out) :: ierr
 
+        integer :: blockID_local
         character (len=StrKIND) :: err_string
 
         type (MPAS_stream_list_type), pointer :: alarm_cursor
@@ -3377,6 +3386,12 @@ module mpas_stream_manager
         integer :: threadNum
 
         threadNum = mpas_threading_get_thread_num()
+
+        ! For now, reading only supports global reads.
+        ! In the future, if reading is supposed to support local reads as well,
+        ! blockID can become an input argument and then blockID_local can be
+        ! set to blockID
+        blockID_local = -1
 
         ierr = MPAS_STREAM_MGR_NOERR
 
@@ -3424,9 +3439,9 @@ module mpas_stream_manager
                call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
                call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
                
-               call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+               call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, blockID_local, temp_filename, ierr=local_ierr)
            else
-               call mpas_expand_string(when, stream % filename_template, temp_filename)
+               call mpas_expand_string(when, blockID_local, stream % filename_template, temp_filename)
            end if
 
            STREAM_DEBUG_WRITE(' -- Stream filename is: ' COMMA trim(temp_filename) )
@@ -3593,7 +3608,7 @@ module mpas_stream_manager
 
               call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
               
-              call mpas_build_stream_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, test_filename, ierr=local_ierr)
+              call mpas_build_stream_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, blockID_local, test_filename, ierr=local_ierr)
 
               STREAM_DEBUG_WRITE(' --- Retesting filename is ' COMMA trim(test_filename))
 
@@ -3780,25 +3795,32 @@ module mpas_stream_manager
     !>
     !>  NOTE: This routine does not support streamID regular expressions
     !-----------------------------------------------------------------------
-    subroutine mpas_get_stream_filename(manager, streamID, when, filename, ierr) !{{{
+    subroutine mpas_get_stream_filename(manager, streamID, when, blockID, filename, ierr) !{{{
 
         implicit none
 
         type (MPAS_streamManager_type), intent(in) :: manager !< Input: Stream manager to get stream from
         character (len=*), intent(in) :: streamID !< Input: Stream name to use for building the filename
         character (len=*), intent(in), optional :: when !< Optional Input: Time file should contain
+        integer, intent(in), optional :: blockID !< Input: ID of the block that will be written
         character (len=StrKIND), intent(out) :: filename !< Output: Name of file containing time
         integer, intent(out), optional :: ierr !< Optional Output: Error code
 
         type (mpas_stream_list_type), pointer :: streamCursor
 
-        integer :: err_local
+        integer :: err_local, blockID_local
 
         character(len=StrKIND) :: when_string
         type (MPAS_TimeInterval_type) :: filename_interval
         type (MPAS_Time_type) :: now_time
 
         ierr = 0
+
+        if ( present(blockID) ) then
+           blockID_local = blockID
+        else
+           blockID_local = -1
+        end if
 
         nullify(streamCursor)
         if ( mpas_stream_list_query(manager % streams, streamID, streamCursor, err_local) ) then
@@ -3813,10 +3835,10 @@ module mpas_stream_manager
            !
            if ( streamCursor % filename_interval /= 'none' ) then
                call mpas_set_timeInterval(filename_interval, timeString=streamCursor % filename_interval)
-               call mpas_build_stream_filename(streamCursor % referenceTime, now_time, filename_interval, streamCursor % filename_template, filename, ierr=err_local)
+               call mpas_build_stream_filename(streamCursor % referenceTime, now_time, filename_interval, streamCursor % filename_template, blockID_local, filename, ierr=err_local)
            else
                call mpas_get_time(now_time, dateTimeString=when_string, ierr=err_local)
-               call mpas_expand_string(when_string, streamCursor % filename_template, filename)
+               call mpas_expand_string(when_string, blockID_local, streamCursor % filename_template, filename)
            end if
 
         else
@@ -3850,7 +3872,7 @@ module mpas_stream_manager
     !>  Return error codes:
     !>  0 no error
     !-----------------------------------------------------------------------
-    subroutine mpas_build_stream_filename(ref_time, when, filename_interval, filename_template, filename, ierr) !{{{
+    subroutine mpas_build_stream_filename(ref_time, when, filename_interval, filename_template, blockID, filename, ierr) !{{{
 
         implicit none
 
@@ -3858,6 +3880,7 @@ module mpas_stream_manager
         type (MPAS_Time_type), intent(in) :: when
         type (MPAS_TimeInterval_type), intent(in) :: filename_interval
         character(len=*), intent(in) :: filename_template
+        integer, intent(in) :: blockID
         character(len=*), intent(out) :: filename
         integer, intent(out) :: ierr
 
@@ -3911,7 +3934,7 @@ module mpas_stream_manager
         call mpas_get_time(filetime, dateTimeString=when_string)
         STREAM_DEBUG_WRITE(' ** filetime start is: ' COMMA trim(when_string))
 
-        call mpas_expand_string(when_string, filename_template, filename)
+        call mpas_expand_string(when_string, blockID, filename_template, filename)
 
     end subroutine mpas_build_stream_filename !}}}
 
