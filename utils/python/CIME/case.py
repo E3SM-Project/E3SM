@@ -710,8 +710,11 @@ class Case(object):
 
         # Create Macros file.
         machine = self.get_value("MACH")
-        if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE":
-            files = Files()
+        files = Files()
+        # Use config_build if the environment variable is set, or if there is no
+        # config_compilers file.
+        if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE" or \
+           files.get_value("COMPILERS_SPEC_FILE") is None:
             build_file = files.get_value("BUILD_SPEC_FILE")
             machobj = Machines(machine=machine, files=files)
             macro_maker = Build(machobj)
