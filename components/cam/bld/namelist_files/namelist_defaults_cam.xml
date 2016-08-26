@@ -1564,6 +1564,7 @@
 
 <!-- SST datasets used with DOM/CSIM4 and DOCN -->
 <!-- Present day SST -->
+<!-- Warning: I think bndtvs has been superseded by SSTICE* (pjc, 2016-8-5) -->
 <bndtvs hgrid="0.23x0.31"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_c061106.nc</bndtvs>
 <bndtvs hgrid="0.47x0.63"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_c061106.nc</bndtvs>
 <bndtvs hgrid="0.5x0.625"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.5x0.625_1949_2001_c040402.nc</bndtvs>
