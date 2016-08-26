@@ -664,6 +664,8 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def setUp(self):
     ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping Jenkins tests. ACME feature")
         TestCreateTestCommon.setUp(self)
 
         # Need to run in a subdir in order to not have CTest clash. Name it
