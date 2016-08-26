@@ -91,7 +91,7 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     >>> _hists_match('cpl', hists1, hists2, 'SUF1', 'SUF2')
     (['FOO.G.cpl.h1.nc.SUF1'], ['cpl.h4.nc.SUF2'], [('FOO.G.cpl.h2.nc.SUF1', 'cpl.h2.nc.SUF2'), ('FOO.G.cpl.h3.nc.SUF1', 'cpl.h3.nc.SUF2')])
     >>> hists1 = ['cam.h0.1850-01-08-00000.nc']
-    >>> hists2 = ['cam_0001.h0.1850-01-08-00000.nc']
+    >>> hists2 = ['cam_0001.h0.1850-01-08-00000.nc','cam_0002.h0.1850-01-08-00000.nc']
     >>> _hists_match('cam', hists1, hists2, '', '')
     ([], [], [('cam.h0.1850-01-08-00000.nc', 'cam_0001.h0.1850-01-08-00000.nc')])
     """
@@ -134,8 +134,10 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
     num_compared = 0
     comments = "Comparing hists for case '%s' dir1='%s', suffix1='%s',  dir2='%s' suffix2='%s'\n" % \
         (testcase, from_dir1, suffix1, from_dir2, suffix2)
-
+    multiinst_cpl_compare = False
     for model in _iter_model_file_substrs(case):
+        if model == 'cpl' and suffix2 == 'multiinst':
+            multiinst_cpl_compare = True
         comments += "  comparing model '%s'\n" % model
         hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
         hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
@@ -154,7 +156,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
 
         num_compared += len(match_ups)
         for hist1, hist2 in match_ups:
-            success, cprnc_comments = cprnc(hist1, hist2, case, from_dir1)
+            success, cprnc_comments = cprnc(hist1, hist2, case, from_dir1, multiinst_cpl_compare)
             if success:
                 comments += "    %s matched %s\n" % (hist1, hist2)
             else:
@@ -180,7 +182,7 @@ def compare_test(case, suffix1, suffix2):
 
     return _compare_hists(case, rundir, rundir, suffix1, suffix2)
 
-def cprnc(file1, file2, case, rundir):
+def cprnc(file1, file2, case, rundir, multiinst_cpl_compare=False):
     """
     Run cprnc to compare two individual nc files
 
@@ -194,7 +196,14 @@ def cprnc(file1, file2, case, rundir):
     cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
     stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename))
-    return (stat == 0 and "files seem to be IDENTICAL" in out, out)
+    if multiinst_cpl_compare:
+        #  In a multiinstance test the cpl hist file will have a different number of
+        # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
+        # in this case we only want to check that the fields we are able to compare
+        # have no differences.
+        return (stat == 0 and " 0 had non-zero differences" in out, out)
+    else:
+        return (stat == 0 and "files seem to be IDENTICAL" in out, out)
 
 def compare_baseline(case, baseline_dir=None):
     """
