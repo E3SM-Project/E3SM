@@ -288,7 +288,6 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
         case.get_value("MODEL") == "CESM"  and not allow_baseline_overwrite):
         expect(False, " Cowardly refusing to overwrite existing baseline directory")
 
-
     comments = "Generating baselines into '%s'\n" % basegen_dir
     num_gen = 0
     for model in _iter_model_file_substrs(case):
@@ -314,6 +313,10 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
                 logger.debug("Found multiinstance hist file %s"%hist)
             shutil.copy(hist, baseline)
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
+
+    # Copy namelist files from CaseDocs
+    shutil.copytree(os.path.join(case.get_value("CASEROOT"),"CaseDocs"),
+                    os.path.join(basegen_dir,"CaseDocs"))
 
     expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
 
