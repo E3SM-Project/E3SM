@@ -1,7 +1,6 @@
 
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.XML.files                 import Files
 from CIME.XML.machines              import Machines
 from CIME.utils                     import append_status, touch, gzip_existing_file
 from CIME.check_lockedfiles         import check_lockedfiles

@@ -38,7 +38,6 @@ def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
     test_hists = _get_all_hist_files(testcase, model, from_dir, suffix)
     latest_files = {}
     histlist = []
-    date_match = re.compile(r"(\d\d\d\d)-(\d\d)-(\d\d)-(\d\d\d\d\d).nc")
     for hist in test_hists:
         ext = get_extension(model, hist)
         latest_files[ext] = hist
@@ -105,10 +104,10 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
                 expect(normalized_name.endswith(suffix), "How did '%s' not have suffix '%s'" % (hist, suffix))
                 normalized_name = normalized_name[:len(normalized_name) - len(suffix)]
 
-            m = re.search("(.*%s.*)_(\d\d\d\d)(.h.*)"%model, normalized_name)
+            m = re.search(r"(.*%s.*)_[0-9]{4}(.h.*)"%model, normalized_name)
             if m is not None:
                 multiinst = True
-                normalized_name = m.group(1)+m.group(3)
+                normalized_name = m.group(1)+m.group(2)
 
             normalized.append(normalized_name)
 
@@ -293,14 +292,13 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             baseline = os.path.join(basegen_dir, basename)
             if os.path.exists(baseline):
                 os.remove(baseline)
-            '''
-            special care for multi-instance cases, only keep first instance and
-            remove instance string from filename
-            '''
-            m = re.search("(.*%s.*)_(\d\d\d\d)(.h.*)"%model, baseline)
+
+            #special care for multi-instance cases,
+            #only keep first instance and
+            #remove instance string from filename
+            m = re.search("(.*%s.*)_([0-9]{4})(.h.*)"%model, baseline)
             if m is not None:
-                inst = m.group(2)
-                if inst != '0001':
+                if m.group(2) != '0001':
                     continue
                 baseline = m.group(1)+m.group(3)
 
