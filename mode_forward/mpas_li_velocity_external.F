@@ -362,7 +362,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
+   subroutine li_velocity_external_solve(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err)
 
        use li_mask
 
@@ -380,6 +380,9 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
           thermalPool !< Input: thermal information
+
+      type (mpas_pool_type), intent(in) :: &
+          scratchPool !< Input: scratch information
 
       !-----------------------------------------------------------------
       !
@@ -418,6 +421,8 @@ contains
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, pointer :: nEdges
+      type (field2dReal), pointer :: dissipationVertexField
+      real (kind=RKIND), dimension(:,:), pointer :: heatDissipation  ! on cells
       integer :: iEdge
       real(kind=RKIND), parameter :: secondsInYear = 365.0 * 24.0 * 3600.0  !< The value of seconds in a year assumed by external dycores
 
@@ -511,13 +516,23 @@ contains
 
       case ('FO') ! ===============================================
 #ifdef USE_EXTERNAL_FIRSTORDER
+
+          ! Allocate scratch var for dissipation on vertices
+          ! (Since it is a 3d field, making it scratch)
+          call mpas_pool_get_field(scratchPool, 'workLevelVertex', dissipationVertexField)
+          call mpas_allocate_scratch_field(dissipationVertexField, .true.)
+
+
           call mpas_timer_start("velocity_solver_solve_FO")
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
-                normalVelocity, uReconstructX, uReconstructY, deltat)  ! return values
+                normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, deltat)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
           call mpas_timer_stop("velocity_solver_solve_FO")
+          ! Now interpolate from vertices to cell centers
+          ! ...
+          call mpas_deallocate_scratch_field(dissipationVertexField, .true.)
 
           if (config_output_external_velocity_solver_data) then
              call mpas_timer_start("velocity_solver export")

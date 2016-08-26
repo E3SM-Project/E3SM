@@ -251,6 +251,7 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool
+      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: velocityPool
       ! pointers to get from pools
       character (len=StrKIND), pointer :: config_velocity_solver
@@ -326,6 +327,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
@@ -362,7 +364,7 @@ contains
                 uReconstructZ = 0.0_RKIND
                 write (stderrUnit,*) "Notice: Skipping velocity solve because there is no dynamic ice in domain."
              else
-                call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err_tmp)
+                call li_velocity_external_solve(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err_tmp)
              endif
 
          case('simple')
