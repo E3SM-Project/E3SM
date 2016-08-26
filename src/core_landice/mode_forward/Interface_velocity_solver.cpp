@@ -311,10 +311,7 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
-    double* u_normal_F, /*double* dissipation_heat_F,*/ double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat) {
-
-  std::vector<double> dissipationHeat_F( nVertices_F * (nLayers));
-  double* dissipation_heat_F = &dissipationHeat_F[0];
+    double* u_normal_F, double* dissipation_heat_F, double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat) {
 
   std::fill(u_normal_F, u_normal_F + nEdges_F * (nLayers+1), 0.);
   //import velocity from initial guess and from dirichlet values.

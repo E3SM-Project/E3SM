@@ -944,6 +944,10 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nVertLevels nEdges)"
 	       persistence="scratch"
 	       />
+          <var name="workLevelVertex" type="real" dimensions="nVertLevels nVertices" units="none"
+	       description="generic work array with dimensions of (nVertLevels nVertices)"
+	       persistence="persistent"
+	       />
 	  <var name="workCell" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
@@ -971,7 +975,7 @@ is the value of that variable from the *previous* time level!
 	  <var name="workTracerLevelCell2" type="real" dimensions="maxTracersAdvect nVertLevels nCells" units="none"
 	       description="generic work array with dimensions of (maxTracersAdvect nVertLevels nCells)"
 	       persistence="scratch"
-	       />
+               />
 	  <var name="slopeCellX" type="real" dimensions="nCells" units="none"
 	       descriptiom="x-component of slope on cell centers"
 	       persistence="scratch"
