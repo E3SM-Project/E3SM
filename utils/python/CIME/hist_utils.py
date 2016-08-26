@@ -41,21 +41,7 @@ def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
     date_match = re.compile(r"(\d\d\d\d)-(\d\d)-(\d\d)-(\d\d\d\d\d).nc")
     for hist in test_hists:
         ext = get_extension(model, hist)
-        if ext in latest_files:
-            s1 = date_match.search(hist)
-            if s1 is None:
-                latest_files[ext] = hist
-                continue
-            (yr,month,day,time) = s1.group(1,2,3,4)
-            s2 = date_match.search(latest_files[ext])
-            (pyr,pmonth,pday,ptime) = s2.group(1,2,3,4)
-            if yr > pyr or (yr == pyr and month > pmonth) or \
-                    (yr == pyr and month == pmonth and day > pday) or \
-                    (yr == pyr and month == pmonth and day == pday and time > ptime):
-                latest_files[ext] = hist
-                logger.debug("ext %s hist %s %s"%(ext,hist,latest_files))
-        else:
-            latest_files[ext] = hist
+        latest_files[ext] = hist
 
     for key in latest_files.keys():
         histlist.append(latest_files[key])
@@ -105,14 +91,24 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     >>> hists2 = ['cpl.h2.nc.SUF2', 'cpl.h3.nc.SUF2', 'cpl.h4.nc.SUF2']
     >>> _hists_match('cpl', hists1, hists2, 'SUF1', 'SUF2')
     (['FOO.G.cpl.h1.nc.SUF1'], ['cpl.h4.nc.SUF2'], [('FOO.G.cpl.h2.nc.SUF1', 'cpl.h2.nc.SUF2'), ('FOO.G.cpl.h3.nc.SUF1', 'cpl.h3.nc.SUF2')])
+    >>> hists1 = ['cam.h0.1850-01-08-00000.nc']
+    >>> hists2 = ['cam_0001.h0.1850-01-08-00000.nc']
+    >>> _hists_match('cam', hists1, hists2, '', '')
+    ([], [], [('cam.h0.1850-01-08-00000.nc', 'cam_0001.h0.1850-01-08-00000.nc')])
     """
     normalized1, normalized2 = [], []
+    multiinst = False
     for hists, suffix, normalized in [(hists1, suffix1, normalized1), (hists2, suffix2, normalized2)]:
         for hist in hists:
             normalized_name = hist[hist.rfind(model):]
             if suffix1 != "":
-                expect(normalized_name.endswith(suffix), "How did '%s' hot have suffix '%s'" % (hist, suffix))
+                expect(normalized_name.endswith(suffix), "How did '%s' not have suffix '%s'" % (hist, suffix))
                 normalized_name = normalized_name[:len(normalized_name) - len(suffix)]
+
+            m = re.search("(.*%s.*)_(\d\d\d\d)(.h.*)"%model, normalized_name)
+            if m is not None:
+                multiinst = True
+                normalized_name = m.group(1)+m.group(3)
 
             normalized.append(normalized_name)
 
@@ -124,8 +120,9 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
 
     both = set(normalized1) & set(normalized2)
     match_ups = sorted([ (hists1[normalized1.index(item)], hists2[normalized2.index(item)]) for item in both])
-    expect(len(match_ups) + len(set_of_1_not_2) == len(hists1), "Programming error1")
-    expect(len(match_ups) + len(set_of_2_not_1) == len(hists2), "Programming error2")
+    if not multiinst:
+        expect(len(match_ups) + len(set_of_1_not_2) == len(hists1), "Programming error1")
+        expect(len(match_ups) + len(set_of_2_not_1) == len(hists2), "Programming error2")
 
     return one_not_two, two_not_one, match_ups
 
@@ -242,12 +239,20 @@ def get_extension(model, filepath):
     'hi'
     >>> get_extension("cpl", "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A.melvin_gnu.C.fake_testing_only_20160816_164150-20160816_164240.cpl.h.nc")
     'h'
+    >>> get_extension("clm","clm2_0002.h0.1850-01-06-00000.nc")
+    '0002.h0'
     """
     basename = os.path.basename(filepath)
-    ext_regex = re.compile(r'.*%s.*[.](h.?)([.][^.]+)?[.]nc' % model)
+    ext_regex = re.compile(r'.*%s[^_]*_?(\d{4})?[.](h.?)([.][^.]+)?[.]nc' % model)
+
     m = ext_regex.match(basename)
     expect(m is not None, "Failed to get extension for file '%s'" % filepath)
-    return m.groups()[0]
+    if m.group(1) is not None:
+        result = m.group(1)+'.'+m.group(2)
+    else:
+        result = m.group(2)
+
+    return result
 
 def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     """
@@ -288,7 +293,18 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             baseline = os.path.join(basegen_dir, basename)
             if os.path.exists(baseline):
                 os.remove(baseline)
+            '''
+            special care for multi-instance cases, only keep first instance and
+            remove instance string from filename
+            '''
+            m = re.search("(.*%s.*)_(\d\d\d\d)(.h.*)"%model, baseline)
+            if m is not None:
+                inst = m.group(2)
+                if inst != '0001':
+                    continue
+                baseline = m.group(1)+m.group(3)
 
+                logger.debug("Found multiinstance hist file %s"%hist)
             shutil.copy(hist, baseline)
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
 
