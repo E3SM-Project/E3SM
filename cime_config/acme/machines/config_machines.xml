@@ -1012,7 +1012,7 @@
         <arg name="num_tasks" > -n {{ num_tasks }}</arg>
         <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
         <arg name="thread_count" > -d {{ thread_count }}</arg>
-        <arg name="numa_node" > -cc {{ numa_node }}</arg>
+        <arg name="numa_node" > -cc numa_node </arg>
       </arguments>
 
     </mpirun>
