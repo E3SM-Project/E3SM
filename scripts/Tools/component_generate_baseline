@@ -36,9 +36,9 @@ OR
                         help="Use custom baseline dir")
 
     parser.add_argument("-o", "--allow-baseline-overwrite", action="store_true",
-                        help="In the CESM workflow existing baseline directories are not"
-                        " overwritten by default, this flag allows overwrite")
-
+                        help="If the generate baseline option is specified with a baseline directory option "
+                        "existing tests in that directory will not be overwritten unless this flag is provided."
+                        "You can use bless-test-results to bless baselines from a recent run.")
 
     args = parser.parse_args(args[1:])
 
