@@ -22,6 +22,7 @@
                                 <member name="normalVelocity" type="var"/>
                                 <member name="thickness" type="var"/>
                                 <member name="daysSinceStart" type="var"/>
+                                <member name="surfaceSpeed" type="var"/>
                         </add_contents>
                 </stream>
 
