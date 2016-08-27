@@ -117,7 +117,7 @@ end subroutine shr_flux_adjust_constants
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fac & 
+SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fac, & 
            &               qbot  ,rbot  ,tbot  ,us    ,vs    ,   &
            &               ts    ,mask  ,sen   ,lat   ,lwup  ,   &
            &               evap  ,taux  ,tauy  ,tref  ,qref  ,   &
