@@ -2812,6 +2812,20 @@ clubb ice shallow convection factor
 Default: 50.e-6
 </entry>
 
+<entry id="clubb_tk1" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 268.15D0
+</entry>
+
+<entry id="clubb_tk2" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 238.15D0
+</entry>
+
+
+
 
 
 <!-- Clubb tunable parameters -->

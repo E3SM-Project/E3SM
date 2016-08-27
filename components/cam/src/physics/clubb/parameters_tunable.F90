@@ -29,6 +29,8 @@ module parameters_tunable
   use clubb_precision, only: &
     core_rknd ! Variable(s)
 
+  use cam_abortutils,  only: endrun
+
   implicit none
 
   ! Default to private
@@ -474,7 +476,6 @@ module parameters_tunable
       err_code ! Error condition
 
     !-------------------- Begin code --------------------
-    call endrun ('BALLI You shouldnt be here-3')
     call unpack_parameters( params, & 
                             C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
                             C4, C5, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
@@ -803,9 +804,9 @@ module parameters_tunable
     ! If the filename is empty, assume we're using a `working' set of
     ! parameters that are set statically here (handy for host models).
     ! Read the namelist
-    call endrun ('BALLI You shouldnt be here-2')
     if ( filename /= "" ) then
       ! Read the namelist
+       call endrun ('BALLI You shouldnt be here-2:'//filename)
       open(unit=iunit, file=filename, status='old', action='read')
 
       read(unit=iunit, nml=initvars)
@@ -853,7 +854,6 @@ module parameters_tunable
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
 
     ! Put the variables in the output array
-    call endrun ('BALLI You shouldnt be here-4')
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
                           C4, C5, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
                           C7, C7b, C7c, C8, C8b, C10, &
@@ -1110,7 +1110,6 @@ module parameters_tunable
 
     ! Output variables
     real( kind = core_rknd ), intent(out), dimension(nparams) :: params
-    call endrun ('BALLI You shouldnt be here-6')
     params(iC1)      = C1
     params(iC1b)     = C1b
     params(iC1c)     = C1c
@@ -1309,7 +1308,6 @@ module parameters_tunable
       mu, beta, lmin_coef, coef_hm_1_hm_2_corr_adj, mult_coef, taumin, taumax, &
       Lscale_mu_coef, Lscale_pert_coef, alpha_corr, Skw_denom_coef, c_K10, &
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh
-    call endrun ('BALLI You shouldnt be here-7')
     C1      = params(iC1)
     C1b     = params(iC1b)
     C1c     = params(iC1c)
@@ -1406,7 +1404,6 @@ module parameters_tunable
 
     ! Input Variables
     real( kind = core_rknd ), intent(out), dimension(nparams) :: params
-    call endrun ('BALLI You shouldnt be here-8')
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
                           C4, C5, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
                           C7, C7b, C7c, C8, C8b, C10, &
