@@ -30,16 +30,22 @@
 		<stream name="input">
 			<attribute name="filename_template">init.nc</attribute>
 		</stream>
-		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="output">
+			<attribute name="filename_template">output/output.$Y-$M-$D_$h.$m.$s.nc</attribute>
 			<attribute name="output_interval">00-00-10_00:00:00</attribute>
+			<attribute name="clobber_mode">overwrite</attribute>
 		</stream>
 		<stream name="restart">
 			<attribute name="output_interval">00-00-10_00:00:00</attribute>
 		</stream>
 		<stream name="land_ice_fluxes">
+			<attribute name="filename_template">output/land_ice_fluxes.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
 			<attribute name="output_interval">00-00-10_00:00:00</attribute>
+			<attribute name="clobber_mode">overwrite</attribute>
 		</stream>
 
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
