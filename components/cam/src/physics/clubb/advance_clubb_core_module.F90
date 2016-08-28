@@ -767,6 +767,40 @@ module advance_clubb_core_module
 
     real( kind = core_rknd ) :: Lscale_max
 
+    ! work arrays used to improve performance of calls to pdf_closure
+    real( kind = core_rknd ), dimension(sclr_dim) :: &
+       tmp_sclrm, &
+       tmp_wpsclrp_zt, &
+       tmp_sclrp2_zt, &
+       tmp_sclrprtp_zt, &
+       tmp_sclrpthlp_zt, &
+       tmp_wphydrometp_zt, &
+       tmp_wp2hmp, &
+       tmp_rtphmp_zt, &
+       tmp_thlphmp_zt, &
+       tmp_wpsclrprtp, &
+       tmp_wpsclrp2, &
+       tmp_sclrpthvp_zt, &
+       tmp_wpsclrpthlp, &
+       tmp_sclrprcp_zt, &
+       tmp_wp2sclrp, &
+!
+       tmp_sclrm_zm, &
+       tmp_wpsclrp, &
+       tmp_sclrp2, &
+       tmp_sclrprtp, &
+       tmp_sclrpthlp, &
+       tmp_wphydrometp, &
+       tmp_wp2hmp_zm, &
+       tmp_rtphmp, &
+       tmp_thlphmp, &
+       tmp_wpsclrprtp_zm, &
+       tmp_wpsclrp2_zm, &
+       tmp_sclrpthvp, &
+       tmp_wpsclrpthlp_zm, &
+       tmp_sclrprcp, &
+       tmp_wp2sclrp_zm
+
     !----- Begin Code -----
 
     ! Determine the maximum allowable value for Lscale (in meters).
@@ -1010,19 +1044,34 @@ module advance_clubb_core_module
 
     do k = 1, gr%nz, 1
 
+      ! To avoid inefficient implicit temporary array creation and
+      ! copies in call to pdf_closure, perform copies explicitly.
+      ! Copy in for intent(in) here
+      do i = 1, sclr_dim, 1
+        tmp_sclrm(i)          = sclrm(k,i)          ! intent(in)
+        tmp_wpsclrp_zt(i)     = wpsclrp_zt(k,i)     ! intent(in)
+        tmp_sclrp2_zt(i)      = sclrp2_zt(k,i)      ! intent(in)
+        tmp_sclrprtp_zt(i)    = sclrprtp_zt(k,i)    ! intent(in)
+        tmp_sclrpthlp_zt(i)   = sclrpthlp_zt(k,i)   ! intent(in)
+        tmp_wphydrometp_zt(i) = wphydrometp_zt(k,i) ! intent(in)
+        tmp_wp2hmp(i)         = wp2hmp(k,i)         ! intent(in)
+        tmp_rtphmp_zt(i)      = rtphmp_zt(k,i)      ! intent(in)
+        tmp_thlphmp_zt(i)     = thlphmp_zt(k,i)     ! intent(in)
+      enddo
+
       call pdf_closure & 
         ( hydromet_dim, p_in_Pa(k), exner(k), thv_ds_zt(k), wm_zt(k), & ! intent(in)
           wp2_zt(k), wp3(k), sigma_sqd_w_zt(k),                       & ! intent(in)
           Skw_zt(k), rtm(k), rtp2_zt(k),                              & ! intent(in)
           zm2zt( wprtp, k ), thlm(k), thlp2_zt(k),                    & ! intent(in)
-          zm2zt( wpthlp, k ), rtpthlp_zt(k), sclrm(k,:),              & ! intent(in)
-          wpsclrp_zt(k,:), sclrp2_zt(k,:), sclrprtp_zt(k,:),          & ! intent(in)
-          sclrpthlp_zt(k,:), k,                                       & ! intent(in)
+          zm2zt( wpthlp, k ), rtpthlp_zt(k), tmp_sclrm(:),              & ! intent(in)
+          tmp_wpsclrp_zt(:), tmp_sclrp2_zt(:), tmp_sclrprtp_zt(:),          & ! intent(in)
+          tmp_sclrpthlp_zt(:), k,                                       & ! intent(in)
 #ifdef GFDL
           RH_crit(k, : , :),   do_liquid_only_in_clubb,               & ! intent(in)
 #endif
-          wphydrometp_zt(k,:), wp2hmp(k,:),                           & ! intent(in)
-          rtphmp_zt(k,:), thlphmp_zt(k,:),                            & ! intent(in)
+          tmp_wphydrometp_zt(:), tmp_wp2hmp(:),                           & ! intent(in)
+          tmp_rtphmp_zt(:), tmp_thlphmp_zt(:),                            & ! intent(in)
           wp4_zt(k), wprtp2(k), wp2rtp(k),                            & ! intent(out)
           wpthlp2(k), wp2thlp(k), wprtpthlp(k),                       & ! intent(out)
           cloud_frac(k), ice_supersat_frac(k),                        & ! intent(out)
@@ -1030,8 +1079,8 @@ module advance_clubb_core_module
           thlpthvp_zt(k), wprcp_zt(k), wp2rcp(k), rtprcp_zt(k),       & ! intent(out)
           thlprcp_zt(k), rcp2_zt(k), pdf_params(k),                   & ! intent(out)
           err_code_pdf_closure,                                       & ! intent(out)
-          wpsclrprtp(k,:), wpsclrp2(k,:), sclrpthvp_zt(k,:),          & ! intent(out)
-          wpsclrpthlp(k,:), sclrprcp_zt(k,:), wp2sclrp(k,:),          & ! intent(out)
+          tmp_wpsclrprtp(:), tmp_wpsclrp2(:), tmp_sclrpthvp_zt(:),          & ! intent(out)
+          tmp_wpsclrpthlp(:), tmp_sclrprcp_zt(:), tmp_wp2sclrp(:),          & ! intent(out)
           rc_coef_zt(k)                                               ) ! intent(out)
 
       ! Subroutine may produce NaN values, and if so, exit
@@ -1046,6 +1095,18 @@ module advance_clubb_core_module
 
         err_code = err_code_pdf_closure
       end if
+
+      ! To avoid inefficient implicit temporary array creation and
+      ! copies in call to pdf_closure, perform copies explicitly.
+      ! Copy out for intent(out) here
+      do i = 1, sclr_dim, 1
+        wpsclrprtp(k,i)    = tmp_wpsclrprtp(i)   ! intent(out)
+        wpsclrp2(k,i)      = tmp_wpsclrp2(i)     ! intent(out)
+        sclrpthvp_zt(k,i)  = tmp_sclrpthvp_zt(i) ! intent(out)
+        wpsclrpthlp(k,i)   = tmp_wpsclrpthlp(i)  ! intent(out)
+        sclrprcp_zt(k,i)   = tmp_sclrprcp_zt(i)  ! intent(out)
+        wp2sclrp(k,i)      = tmp_wp2sclrp(i)     ! intent(out)
+      enddo
 
     end do ! k = 1, gr%nz, 1
 
@@ -1158,19 +1219,34 @@ module advance_clubb_core_module
       ! Call pdf_closure to output the variables which belong on the momentum grid.
       do k = 1, gr%nz, 1
 
+        ! To avoid inefficient implicit temporary array creation and
+        ! copies in call to pdf_closure, perform copies explicitly.
+        ! Copy in for intent(in) here
+        do i = 1, sclr_dim, 1
+          tmp_sclrm_zm(i)    = sclrm_zm(k,i)    ! intent(in)
+          tmp_wpsclrp(i)     = wpsclrp(k,i)     ! intent(in)
+          tmp_sclrp2(i)      = sclrp2(k,i)      ! intent(in)
+          tmp_sclrprtp(i)    = sclrprtp(k,i)    ! intent(in)
+          tmp_sclrpthlp(i)   = sclrpthlp(k,i)   ! intent(in)
+          tmp_wphydrometp(i) = wphydrometp(k,i) ! intent(in)
+          tmp_wp2hmp_zm(i)   = wp2hmp_zm(k,i)   ! intent(in)
+          tmp_rtphmp(i)      = rtphmp(k,i)      ! intent(in)
+          tmp_thlphmp(i)     = thlphmp(k,i)     ! intent(in)
+        enddo
+
         call pdf_closure & 
           ( hydromet_dim, p_in_Pa_zm(k), exner_zm(k), thv_ds_zm(k), wm_zm(k), & ! intent(in)
             wp2(k), wp3_zm(k), sigma_sqd_w(k),                                & ! intent(in)
             Skw_zm(k), rtm_zm(k), rtp2(k),                                    & ! intent(in)
             wprtp(k),  thlm_zm(k), thlp2(k),                                  & ! intent(in)
-            wpthlp(k), rtpthlp(k), sclrm_zm(k,:),                             & ! intent(in)
-            wpsclrp(k,:), sclrp2(k,:), sclrprtp(k,:),                         & ! intent(in)
-            sclrpthlp(k,:), k,                                                & ! intent(in)
+            wpthlp(k), rtpthlp(k), tmp_sclrm_zm(:),                             & ! intent(in)
+            tmp_wpsclrp(:), tmp_sclrp2(:), tmp_sclrprtp(:),                         & ! intent(in)
+            tmp_sclrpthlp(:), k,                                                & ! intent(in)
 #ifdef GFDL
             RH_crit(k, : , :),  do_liquid_only_in_clubb,                      & ! intent(in)
 #endif
-            wphydrometp(k,:), wp2hmp_zm(k,:),                                 & ! intent(in)
-            rtphmp(k,:), thlphmp(k,:),                                        & ! intent(in)
+            tmp_wphydrometp(:), tmp_wp2hmp_zm(:),                                 & ! intent(in)
+            tmp_rtphmp(:), tmp_thlphmp(:),                                        & ! intent(in)
             wp4(k), wprtp2_zm(k), wp2rtp_zm(k),                               & ! intent(out)
             wpthlp2_zm(k), wp2thlp_zm(k), wprtpthlp_zm(k),                    & ! intent(out)
             cloud_frac_zm(k), ice_supersat_frac_zm(k),                        & ! intent(out) 
@@ -1178,8 +1254,8 @@ module advance_clubb_core_module
             thlpthvp(k), wprcp(k), wp2rcp_zm(k), rtprcp(k),                   & ! intent(out)
             thlprcp(k), rcp2(k), pdf_params_zm(k),                            & ! intent(out)
             err_code_pdf_closure,                                             & ! intent(out)
-            wpsclrprtp_zm(k,:), wpsclrp2_zm(k,:), sclrpthvp(k,:),             & ! intent(out)
-            wpsclrpthlp_zm(k,:), sclrprcp(k,:), wp2sclrp_zm(k,:),             & ! intent(out)
+            tmp_wpsclrprtp_zm(:), tmp_wpsclrp2_zm(:), tmp_sclrpthvp(:),             & ! intent(out)
+            tmp_wpsclrpthlp_zm(:), tmp_sclrprcp(:), tmp_wp2sclrp_zm(:),             & ! intent(out)
             rc_coef(k)                                                        ) ! intent(out)
 
         ! Subroutine may produce NaN values, and if so, exit
@@ -1195,6 +1271,18 @@ module advance_clubb_core_module
 
           err_code = err_code_pdf_closure
         end if
+
+        ! To avoid inefficient implicit temporary array creation and
+        ! copies in call to pdf_closure, perform copies explicitly.
+        ! Copy out for intent(out) here
+        do i = 1, sclr_dim, 1
+          wpsclrprtp_zm(k,i)  = tmp_wpsclrprtp_zm(i)  ! intent(out)
+          wpsclrp2_zm(k,i)    = tmp_wpsclrp2_zm(i)    ! intent(out)
+          sclrpthvp(k,i)      = tmp_sclrpthvp(i)      ! intent(out)
+          wpsclrpthlp_zm(k,i) = tmp_wpsclrpthlp_zm(i) ! intent(out)
+          sclrprcp(k,i)       = tmp_sclrprcp(i)       ! intent(out)
+          wp2sclrp_zm(k,i)    = tmp_wp2sclrp_zm(i)    ! intent(out)
+        enddo
 
       end do ! k = 1, gr%nz, 1
 
