@@ -1108,7 +1108,7 @@
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
-		<package name="landIcePressurePKG" description="This package includes land ice pressure, fraction and mask."/>
+		<package name="landIcePressurePKG" description="This package includes variables needed for runs with the sea surface depressed by land-ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
@@ -1215,6 +1215,7 @@
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
 			<var name="landIceFraction"/>
+			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
 			<var name="landIceSurfaceTemperature"/>
 			<var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
@@ -1447,6 +1448,7 @@
 			<var_struct name="tracersTTDFields"/>
 			<var_struct name="forcing"/>
 			<var name="landIceFraction"/>
+			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
 			<var name="landIceSurfaceTemperature"/>
 			<var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
@@ -1571,6 +1573,7 @@
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
 			<var name="landIceFraction"/>
+			<var name="landIceMask"/>
 			<var_array name="landIceInterfaceTracers"/>
 			<var_array name="landIceBoundaryLayerTracers"/>
 			<var name="landIceFrictionVelocity"/>
