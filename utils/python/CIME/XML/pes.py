@@ -66,16 +66,20 @@ class Pes(GenericXML):
 
         pes_ntasks, pes_nthrds, pes_rootpe, other_settings = {}, {}, {}, {}
         for node in pe_select:
-            vid = node.tag.upper()
+            vid = node.tag
+            logger.warn("vid is %s"%vid)
             if "ntasks" in vid:
-              pes_ntasks[vid] = node.text
+                for child in node:
+                    pes_ntasks[child.tag.upper()] = child.text
             elif "nthrds" in vid:
-              pes_nthrds[vid] = node.text
+                for child in node:
+                    pes_nthrds[child.tag.upper()] = child.text
             elif "rootpe" in vid:
-              pes_rootpe[vid] = node.text
+                for child in node:
+                    pes_rootpe[child.tag.upper()] = child.text
             # if the value is already upper case its something else we are trying to set
             elif vid == node.tag:
-               other_settings[vid] = node.text
+                other_settings[vid] = node.text
 
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)
