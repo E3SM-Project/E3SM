@@ -366,7 +366,7 @@ class TestScheduler(object):
             test_argv += " -generate %s" % self._baseline_gen_name
             basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
             expect(self._allow_baseline_overwrite or not os.path.isdir(basegen_case_fullpath), "Baseline directory already exists")
-            logger.warn("basegen_case is %s"%basegen_case_fullpath)
+            logger.debug("basegen_case is %s"%basegen_case_fullpath)
             envtest.set_value("BASELINE_NAME_GEN", self._baseline_gen_name)
             envtest.set_value("BASEGEN_CASE", os.path.join(self._baseline_gen_name, test))
         if self._baseline_cmp_name:
