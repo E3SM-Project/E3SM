@@ -40,6 +40,7 @@
 				<member name="rx1MaxEdge" type="var"/>
 				<member name="globalRx1Max" type="var"/>
 				<member name="landIceFraction" type="var"/>
+				<member name="landIceMask" type="var"/>
 				<member name="modifySSHMask" type="var"/>
 				<member name="rx1InitSmoothingMask" type="var"/>
 				<member name="verticalStretch" type="var"/>
@@ -54,6 +55,7 @@
 				<member name="windStressZonal" type="var"/>
 				<member name="windStressMeridional" type="var"/>
 				<member name="landIceFraction" type="var"/>
+				<member name="landIceMask" type="var"/>
 				<member name="landIceSurfaceTemperature" type="var"/>
 				<member name="seaSurfacePressure" type="var"/>
 				<member name="landIcePressure" type="var"/>
