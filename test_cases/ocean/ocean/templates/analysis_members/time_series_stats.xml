@@ -22,6 +22,7 @@
 			<attribute name="clobber_mode">truncate</attribute>
 			<attribute name="output_interval">00-00-01_00:00:00</attribute>
 			<attribute name="filename_template">analysis_members/timeSeriesStats.$Y-$M-$D.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
 			<attribute name="packages">timeSeriesStatsAMPKG</attribute>
 			<attribute name="type">none</attribute>
 			<add_contents>
@@ -45,7 +46,7 @@
 			<attribute name="name">timeSeriesStatsRestart</attribute>
 			<attribute name="filename_interval">output_interval</attribute>
 			<attribute name="clobber_mode">truncate</attribute>
-			<attribute name="reference_time">0000-01-01_00:00:00</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
 			<attribute name="output_interval">stream:restart:output_interval</attribute>
 			<attribute name="filename_template">restarts/restart.AM.timeSeriesStats.$Y-$M-$D_$h.$m.$s.nc</attribute>
 			<attribute name="input_interval">initial_only</attribute>
