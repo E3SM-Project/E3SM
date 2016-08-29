@@ -148,7 +148,7 @@
 				type="input;output"
 				filename_template="restarts/restart.AM.timeSeriesStats.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
-				reference_time="0000-01-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
 				clobber_mode="truncate"
 				input_interval="initial_only"
 				packages="timeSeriesStatsAMPKG"
