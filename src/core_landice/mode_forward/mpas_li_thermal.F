@@ -49,7 +49,7 @@ module li_thermal
 
    public :: li_thermal_init, li_thermal_solver, &
              li_init_linear_temperature_in_column,  &
-             li_heat_dissipation_sia, li_basal_friction_sia,  &
+             li_heat_dissipation_sia, li_basal_friction,  &
              li_temperature_to_enthalpy, li_enthalpy_to_temperature, &
              li_compute_pressure_melting_point_fields
 
@@ -1597,7 +1597,7 @@ module li_thermal
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine li_basal_friction_sia
+!  !  routine li_basal_friction
 !
 !> \brief MPAS heat flux due to basal friction for SIA dynamics
 !> \author William Lipscomb
@@ -1607,7 +1607,7 @@ module li_thermal
 !>  base of the ice, based on the shallow-ice approximation.
 !-----------------------------------------------------------------------
 
-   subroutine li_basal_friction_sia(domain, err)
+   subroutine li_basal_friction(domain, err)
 
      !-----------------------------------------------------------------
      ! input/output variables
@@ -1641,18 +1641,18 @@ module li_thermal
           indexToCellID              ! list of global cell IDs
 
      integer, pointer :: &
-          nCells                     ! number of cells
+          nCellsSolve                ! number of cells
 
      real(kind=RKIND), dimension(:), pointer :: &
           basalSpeed,              & ! basal ice speed, reconstructed at cell centers (m s^{-1})
-          beta,                    & ! basal traction parameter (Pa m^{-1} s)
+          betaSolve,               & ! basal traction parameter (Pa m^{-1} s); use betaSolve to treat floating ice correctly
           basalFrictionFlux          ! heat flux due to basal friction (W^{m-2}), computed in this subroutine
 
      integer :: iCell
 
      !----------------------------------------------------------------
      ! Compute the heat flux due to basal friction, given the basal speed
-     ! and basal traction fields.
+     ! and basal friction parameter (beta) fields.
      !
      ! Assume a sliding law of the form 
      !
@@ -1660,7 +1660,7 @@ module li_thermal
      ! 
      ! The frictional heat flux (W/m^2) is given by (e.g., Cuffey & Paterson, p. 418)
      !
-     !     basalFrictionFlux = tau_b * basalSpeed.
+     !     basalFrictionFlux = tau_b * basalSpeed = beta * basalSpeed**2
      !
      ! Note: Currently (Nov. 2015), beta is used by the HO solver only,
      !       and the SIA solver assumes no slip (basalSpeed = 0).
@@ -1679,14 +1679,14 @@ module li_thermal
         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
         
         ! get dimensions
-        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
         ! get fields from the mesh pool
         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)  ! diagnostic only
                 
         ! get fields from the velocity pool
         call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-        call mpas_pool_get_array(velocityPool, 'beta', beta)
+        call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
         
         ! get fields from the thermal pool
         call mpas_pool_get_array(thermalPool, 'basalFrictionFlux', basalFrictionFlux)
@@ -1698,22 +1698,21 @@ module li_thermal
         if (config_print_thermal_info) write(stdoutUnit,*) 'Compute basal friction flux'
 
         ! Compute basal frictional heating for each cell
+        basalFrictionFlux(:) = betaSolve(:) * basalSpeed(:)**2
 
-        do iCell = 1, nCells
-
-           basalFrictionFlux(iCell) = beta(iCell) * basalSpeed(iCell)
-
-           if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-              write(stdoutUnit,*) 'iCell, beta, basalSpeed, basalFrictionFlux:', &
-                   iCell, beta(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)
-           endif
-
-        enddo
+        if (config_print_thermal_info) then
+           do iCell = 1, nCellsSolve
+              if (indexToCellID(iCell) == config_stats_cell_ID) then
+                 write(stdoutUnit,*) 'iCell, betaSolve, basalSpeed, basalFrictionFlux:', &
+                   iCell, betaSolve(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)
+              endif
+           enddo
+        endif
 
         block => block % next
      enddo  ! associated(block) 
 
-  end subroutine li_basal_friction_sia
+  end subroutine li_basal_friction
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
