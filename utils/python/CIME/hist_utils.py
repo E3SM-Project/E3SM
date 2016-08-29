@@ -93,21 +93,27 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     >>> hists1 = ['cam.h0.1850-01-08-00000.nc']
     >>> hists2 = ['cam_0001.h0.1850-01-08-00000.nc','cam_0002.h0.1850-01-08-00000.nc']
     >>> _hists_match('cam', hists1, hists2, '', '')
-    ([], [], [('cam.h0.1850-01-08-00000.nc', 'cam_0001.h0.1850-01-08-00000.nc')])
+    ([], [], [('cam.h0.1850-01-08-00000.nc', 'cam_0001.h0.1850-01-08-00000.nc'), ('cam.h0.1850-01-08-00000.nc', 'cam_0002.h0.1850-01-08-00000.nc')])
+    >>> hists1 = ['cam_0001.h0.1850-01-08-00000.nc.base','cam_0002.h0.1850-01-08-00000.nc.base']
+    >>> hists2 = ['cam_0001.h0.1850-01-08-00000.nc.rest','cam_0002.h0.1850-01-08-00000.nc.rest']
+    >>> _hists_match('cam', hists1, hists2, 'base', 'rest')
+    ([], [], [('cam_0001.h0.1850-01-08-00000.nc.base', 'cam_0001.h0.1850-01-08-00000.nc.rest'), ('cam_0002.h0.1850-01-08-00000.nc.base', 'cam_0002.h0.1850-01-08-00000.nc.rest')])
     """
     normalized1, normalized2 = [], []
+    multi_normalized1, multi_normalized2 = [], []
     multiinst = False
-    for hists, suffix, normalized in [(hists1, suffix1, normalized1), (hists2, suffix2, normalized2)]:
+
+    for hists, suffix, normalized, multi_normalized in [(hists1, suffix1, normalized1, multi_normalized1), (hists2, suffix2, normalized2, multi_normalized2)]:
         for hist in hists:
             normalized_name = hist[hist.rfind(model):]
-            if suffix1 != "":
+            if suffix != "":
                 expect(normalized_name.endswith(suffix), "How did '%s' not have suffix '%s'" % (hist, suffix))
                 normalized_name = normalized_name[:len(normalized_name) - len(suffix)]
 
             m = re.search(r"(.*%s.*)_[0-9]{4}(.h.*)"%model, normalized_name)
             if m is not None:
                 multiinst = True
-                normalized_name = m.group(1)+m.group(2)
+                multi_normalized.append(m.group(1)+m.group(2))
 
             normalized.append(normalized_name)
 
@@ -118,8 +124,31 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     two_not_one = sorted([hists2[normalized2.index(item)] for item in set_of_2_not_1])
 
     both = set(normalized1) & set(normalized2)
+
     match_ups = sorted([ (hists1[normalized1.index(item)], hists2[normalized2.index(item)]) for item in both])
-    if not multiinst:
+    if multiinst:
+        new_two_not_one = []
+        new_one_not_two = []
+        for normalized_name in two_not_one:
+            m = re.search(r"(.*%s.*)_[0-9]{4}(.h.*)"%model, normalized_name)
+            if m is not None:
+                multi_normalized = m.group(1)+m.group(2)
+                if multi_normalized in one_not_two:
+                    match_ups.append((multi_normalized, normalized_name) )
+                else:
+                    new_two_not_one.append(normalized_name)
+        two_not_one = new_two_not_one
+        for normalized_name in one_not_two:
+            m = re.search(r"(.*%s.*)_[0-9]{4}(.h.*)"%model, normalized_name)
+            if m is not None:
+                multi_normalized = m.group(1)+m.group(2)
+                if multi_normalized in two_not_one:
+                    match_ups.append((multi_normalized, normalized_name) )
+                else:
+                    new_one_not_two.append(normalized_name)
+        one_not_two = new_one_not_two
+
+    else:
         expect(len(match_ups) + len(set_of_1_not_2) == len(hists1), "Programming error1")
         expect(len(match_ups) + len(set_of_2_not_1) == len(hists2), "Programming error2")
 
@@ -155,6 +184,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
             all_success = False
 
         num_compared += len(match_ups)
+
         for hist1, hist2 in match_ups:
             success, cprnc_comments = cprnc(hist1, hist2, case, from_dir1, multiinst_cpl_compare)
             if success:
@@ -251,7 +281,7 @@ def get_extension(model, filepath):
     '0002.h0'
     """
     basename = os.path.basename(filepath)
-    ext_regex = re.compile(r'.*%s[^_]*_?(\d{4})?[.](h.?)([.][^.]+)?[.]nc' % model)
+    ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.][^.]+)?[.]nc' % model)
 
     m = ext_regex.match(basename)
     expect(m is not None, "Failed to get extension for file '%s'" % filepath)
@@ -268,8 +298,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
 
     case - The case containing the hist files to be copied into baselines
     baseline_dir - Optionally, specify a specific baseline dir, otherwise it will be computed from case config
-    allow_baseline_overwrite is only used in the CESM model workflow and must be true
-    to generate baselines to an existing directory.
+    allow_baseline_overwrite must be true to generate baselines to an existing directory.
 
     returns (SUCCESS, comments)
     """
@@ -285,7 +314,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
         os.makedirs(basegen_dir)
 
     if (os.path.isdir(os.path.join(basegen_dir,testcase)) and
-        case.get_value("MODEL") == "CESM"  and not allow_baseline_overwrite):
+        not allow_baseline_overwrite):
         expect(False, " Cowardly refusing to overwrite existing baseline directory")
 
     comments = "Generating baselines into '%s'\n" % basegen_dir
@@ -315,8 +344,15 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
 
     # Copy namelist files from CaseDocs
-    shutil.copytree(os.path.join(case.get_value("CASEROOT"),"CaseDocs"),
-                    os.path.join(basegen_dir,"CaseDocs"))
+    base_case_docs = os.path.join(basegen_dir,"CaseDocs")
+    caseroot = case.get_value("CASEROOT")
+    if os.path.isdir(base_case_docs):
+        files = os.listdir(os.path.join(caseroot,"CaseDocs"))
+        for f in files:
+            shutil.copy2(os.path.join(caseroot, "CaseDocs", f), base_case_docs)
+    else:
+        shutil.copytree(os.path.join(case.get_value("CASEROOT"),"CaseDocs"),
+                        os.path.join(basegen_dir,"CaseDocs"))
 
     expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
 
