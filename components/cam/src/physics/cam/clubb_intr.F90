@@ -2152,7 +2152,7 @@ end subroutine clubb_init_cnst
          elseif ( state1%t(i,k) < clubb_tk2 ) then!BALLI
             dum1 = 1.0_r8
          else
-            dum1 = ( clubb_tk1 - state1%t(i,k) ) / (clubb_tk1 - clubb_tk2)!BALLI
+            dum1 = ( clubb_tk1 - state1%t(i,k) ) / 30._r8 !(clubb_tk1 - clubb_tk2)!BALLI
          endif
         
          ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
