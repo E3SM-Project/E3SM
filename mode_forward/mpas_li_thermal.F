@@ -1698,8 +1698,9 @@ module li_thermal
         if (config_print_thermal_info) write(stdoutUnit,*) 'Compute basal friction flux'
 
         ! Compute basal frictional heating for each cell
-        basalFrictionFlux(:) = betaSolve(:) * basalSpeed(:)**2
+        basalFrictionFlux(:) = betaSolve(:) * basalSpeed(:)**2 * scyr  ! TODO: If beta units are changed to be SI, remove this factor
 
+        ! Optional debugging output
         if (config_print_thermal_info) then
            do iCell = 1, nCellsSolve
               if (indexToCellID(iCell) == config_stats_cell_ID) then
