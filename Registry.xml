@@ -711,6 +711,10 @@ is the value of that variable from the *previous* time level!
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
 			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
 		/>
+		<!-- Variables only needed by HO solver -->
+		<var name="wachspressWeightVertex" type="real" dimensions="maxEdges nCells" units="unitless"
+			 description="Wachspress weights used to interpolate from vertices to cell centers." packages="higherOrderVelocity"
+		/>
 		<!-- time-related fields have to go somewhere.  "mesh" is a more general place than the other pools -->
 		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
 		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
@@ -987,7 +991,7 @@ is the value of that variable from the *previous* time level!
 	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
 	       description="local indices of each vertex"
 	       persistence="scratch"
-	       />
+               />
 	</var_struct>
 
 <!-- ================ -->

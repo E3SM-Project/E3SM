@@ -46,7 +46,10 @@ module li_setup
    !--------------------------------------------------------------------
    public :: li_setup_config_options, &
              li_setup_vertical_grid, &
-             li_setup_sign_and_index_fields
+             li_setup_sign_and_index_fields, &
+             li_setup_wachspress_vertex_to_cell_weights, &
+             li_interpolate_vertex_to_cell_2d
+
 
    !--------------------------------------------------------------------
    !
@@ -300,6 +303,143 @@ contains
 
    !--------------------------------------------------------------------
    end subroutine li_setup_sign_and_index_fields
+
+
+!***********************************************************************
+!
+!  routine li_setup_wachspress_vertex_to_cell_weights
+!
+!> \brief   Calculates weights to interpolate from vertices to cell centers
+!> \author  Matt Hoffman
+!> \date    29 Aug 2016
+!> \details
+!>  This routine determines the sign for various mesh items.
+!
+!-----------------------------------------------------------------------
+   subroutine li_setup_wachspress_vertex_to_cell_weights(meshPool)
+      use mpas_geometry_utils
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout), target :: meshPool  !< Input: mesh object
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pool pointers
+      real(kind=RKIND), dimension(:,:), pointer :: wachspressWeightVertex
+      real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: verticesOnCell
+      integer, pointer :: nCells, maxEdges
+      integer :: iCell, iVertex, v
+      integer :: nVerticesOnThisCell
+      real(kind=RKIND), dimension(:,:), allocatable :: vertexCoordsOnCell
+      type (mpas_pool_type), pointer :: meshPoolPointer
+
+      ! Get pool stuff
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+      call mpas_pool_get_array(meshPool, 'wachspressWeightVertex', wachspressWeightVertex)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+
+      meshPoolPointer => meshPool ! mpas_wachspress_coordinates expected a pointer to the mesh pool instead of just the mesh pool itself
+
+      allocate(vertexCoordsOnCell(3, maxEdges))
+
+      do iCell = 1, nCells
+         nVerticesOnThisCell = nEdgesOnCell(iCell)
+         do v = 1, nVerticesOnThisCell
+            iVertex = verticesOnCell(v, iCell)
+            vertexCoordsOnCell(:, v) = (/ xVertex(iVertex), yVertex(iVertex), zVertex(iVertex) /)
+         enddo
+         wachspressWeightVertex(1:nVerticesOnThisCell, iCell) = mpas_wachspress_coordinates( &
+               nVerticesOnThisCell, vertexCoordsOnCell(:, 1:nVerticesOnThisCell), &
+               (/ xCell(iCell), yCell(iCell), zCell(iCell) /), meshPoolPointer)
+      end do
+
+      deallocate(vertexCoordsOnCell)
+   !--------------------------------------------------------------------
+   end subroutine li_setup_wachspress_vertex_to_cell_weights
+
+
+!***********************************************************************
+!
+!  routine li_interpolate_vertex_to_cell_2d
+!
+!> \brief   Interpolates from vertices to cell centers using Wachspress functions
+!> \author  Matt Hoffman
+!> \date    29 Aug 2016
+!> \details
+!>  This routine interpolated from vertices to cell center values using
+!>  Wachspress functions in MPAS operators.
+!
+!-----------------------------------------------------------------------
+   subroutine li_interpolate_vertex_to_cell_2d(meshPool, vertexValue, cellValue)
+      use mpas_geometry_utils
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: mesh object
+
+      real(kind=RKIND), dimension(:,:), pointer, intent(in) :: vertexValue  !< value on vertices
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:,:), pointer, intent(in) :: cellValue  !< value on cells
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pool pointers
+      real(kind=RKIND), dimension(:,:), pointer :: wachspressWeightVertex
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: verticesOnCell
+      integer, pointer :: nCells, maxEdges
+      integer :: iCell, iVertex, v
+      integer :: nVerticesOnThisCell
+
+      ! Get pool stuff
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+      call mpas_pool_get_array(meshPool, 'wachspressWeightVertex', wachspressWeightVertex)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+
+      cellValue(:,:) = 0.0_RKIND
+      do iCell = 1, nCells
+         nVerticesOnThisCell = nEdgesOnCell(iCell)
+         do v = 1, nVerticesOnThisCell
+            iVertex = verticesOnCell(v, iCell)
+            cellValue(:, iCell) = cellValue(:, iCell) + wachspressWeightVertex(v, iCell) * vertexValue(:, iVertex)
+         enddo
+      end do
+
+   !--------------------------------------------------------------------
+   end subroutine li_interpolate_vertex_to_cell_2d
 
 
 
