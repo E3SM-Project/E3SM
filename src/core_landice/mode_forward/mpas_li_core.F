@@ -814,6 +814,13 @@ module li_core
       err = ior(err, err_tmp)
       call mpas_timer_stop("initialize velocity")
 
+      ! Higher-order velo solvers needs vertex-to-cell interp routine initialized
+      if ( (trim(config_velocity_solver) == 'L1L2') .or.    &
+           (trim(config_velocity_solver) == 'FO') .or.      &
+           (trim(config_velocity_solver) == 'Stokes') ) then
+         call li_setup_wachspress_vertex_to_cell_weights(meshPool)
+      endif
+
       ! Mask init identifies initial ice extent
       call li_calculate_mask_init(geometryPool, err=err_tmp)
       err = ior(err, err_tmp)
