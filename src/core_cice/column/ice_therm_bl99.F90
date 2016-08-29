@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_bl99.F90 1099 2015-12-12 18:12:30Z eclare $
+!  SVN:$Id: ice_therm_bl99.F90 1136 2016-07-29 21:10:31Z eclare $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures
@@ -65,7 +65,7 @@
                                       flwoutn,  fsurfn,   &
                                       fcondtopn,fcondbot, &
                                       einit,    l_stop,   &
-                                      nu_diag)
+                                      nu_diag,  stop_label)
 
       use ice_therm_shared, only: surface_heat_flux, dsurface_heat_flux_dTsf
 
@@ -136,7 +136,10 @@
       logical (kind=log_kind), intent(inout) :: &
          l_stop          ! if true, print diagnostics and abort model
 
-      ! local variables
+      character (len=*), intent(out) :: &
+         stop_label   ! abort error message
+ 
+     ! local variables
 
       integer (kind=int_kind), parameter :: &
          nitermax = 100  ! max number of iterations in temperature solver
@@ -754,6 +757,7 @@
          write(nu_diag,*) 'zSin'
          write(nu_diag,*) (zSin(k),k=1,nilyr)
          l_stop = .true.
+         stop_label = "temperature_changes: Thermo iteration does not converge"
          return
       endif
 

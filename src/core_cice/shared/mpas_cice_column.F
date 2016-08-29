@@ -1685,7 +1685,8 @@ contains
          biologyGrid, &
          verticalGrid, &
          interfaceBiologyGrid, &
-         zSalinityFlux
+         zSalinityFlux, &
+         frazilGrowthDiagnostic
    
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -1781,6 +1782,7 @@ contains
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMelt", lateralIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
+       call MPAS_pool_get_array(melt_growth_rates, "frazilGrowthDiagnostic", frazilGrowthDiagnostic)
 
        call MPAS_pool_get_array(ponds, "pondFreshWaterFlux", pondFreshWaterFlux)
 
@@ -1870,6 +1872,7 @@ contains
                abortFlag, &
                abortMessage, &
                stdoutUnit, &
+               frazilGrowthDiagnostic(iCell), &
                freezeOnset(iCell), &
                dayOfYear)
 
@@ -8200,7 +8203,121 @@ contains
     !     frazil_scav, &
     !     grid_oS, &
     !     l_skS, &
-    !     phi_snow
+    !     phi_snow, &
+    !     ratio_Si2N_diatoms, & 
+    !     ratio_Si2N_sp     , &
+    !     ratio_Si2N_phaeo  , &
+    !     ratio_S2N_diatoms , & 
+    !     ratio_S2N_sp      , &
+    !     ratio_S2N_phaeo   , &
+    !     ratio_Fe2C_diatoms, & 
+    !     ratio_Fe2C_sp     , &
+    !     ratio_Fe2C_phaeo  , &
+    !     ratio_Fe2N_diatoms, & 
+    !     ratio_Fe2N_sp     , &
+    !     ratio_Fe2N_phaeo  , &
+    !     ratio_Fe2DON      , & 
+    !     ratio_Fe2DOC_s    , & 
+    !     ratio_Fe2DOC_l    , & 
+    !     fr_resp           , & 
+    !     tau_min           , & 
+    !     tau_max           , & 
+    !     algal_vel         , & 
+    !     R_dFe2dust        , & 
+    !     dustFe_sol        , & 
+    !     chlabs_diatoms    , &
+    !     chlabs_sp         , &
+    !     chlabs_phaeo      , &
+    !     alpha2max_low_diatoms , & 
+    !     alpha2max_low_sp      , & 
+    !     alpha2max_low_phaeo   , & 
+    !     beta2max_diatoms , &
+    !     beta2max_sp      , & 
+    !     beta2max_phaeo   , & 
+    !     mu_max_diatoms   , &
+    !     mu_max_sp        , & 
+    !     mu_max_phaeo     , & 
+    !     grow_Tdep_diatoms, &
+    !     grow_Tdep_sp     , & 
+    !     grow_Tdep_phaeo  , & 
+    !     fr_graze_diatoms , &
+    !     fr_graze_sp      , & 
+    !     fr_graze_phaeo   , & 
+    !     mort_pre_diatoms , &
+    !     mort_pre_sp      , & 
+    !     mort_pre_phaeo   , & 
+    !     mort_Tdep_diatoms, &
+    !     mort_Tdep_sp     , &  
+    !     mort_Tdep_phaeo  , &  
+    !     k_exude_diatoms  , &
+    !     k_exude_sp       , &  
+    !     k_exude_phaeo    , &  
+    !     K_Nit_diatoms    , &
+    !     K_Nit_sp         , &  
+    !     K_Nit_phaeo      , &  
+    !     K_Am_diatoms     , &
+    !     K_Am_sp          , &   
+    !     K_Am_phaeo       , &   
+    !     K_Sil_diatoms    , &
+    !     K_Sil_sp         , &   
+    !     K_Sil_phaeo      , &   
+    !     K_Fe_diatoms     , &
+    !     K_Fe_sp          , &   
+    !     K_Fe_phaeo       , &    
+    !     f_don_protein    , &
+    !     kn_bac_protein   , &
+    !     f_don_Am_protein , &
+    !     f_doc_s            , &
+    !     f_doc_l            , &   
+    !     f_exude_s          , &
+    !     f_exude_l          , & 
+    !     k_bac_s            , &
+    !     k_bac_l            , & 
+    !     T_max              , &
+    !     fsal               , &
+    !     op_dep_min         , &
+    !     fr_graze_s         , &
+    !     fr_graze_e         , &
+    !     fr_mort2min        , &
+    !     fr_dFe             , &
+    !     k_nitrif           , &
+    !     t_iron_conv        , &
+    !     max_loss           , &
+    !     max_dfe_doc1       , &
+    !     fr_resp_s          , &
+    !     y_sk_DMS           , &
+    !     t_sk_conv          , &
+    !     t_sk_ox            , & 
+    !     algaltype_diatoms  , & 
+    !     algaltype_sp       , &
+    !     algaltype_phaeo    , &
+    !     nitratetype        , &
+    !     ammoniumtype       , &
+    !     silicatetype       , &
+    !     dmspptype          , &
+    !     dmspdtype          , &
+    !     humtype            , &
+    !     doctype_s          , &
+    !     doctype_l          , &
+    !     dontype_protein    , & 
+    !     fedtype_1          , & 
+    !     feptype_1          , & 
+    !     zaerotype_bc1      , & 
+    !     zaerotype_bc2      , & 
+    !     zaerotype_dust1    , & 
+    !     zaerotype_dust2    , & 
+    !     zaerotype_dust3    , & 
+    !     zaerotype_dust4    , & 
+    !     ratio_C2N_diatoms  , & 
+    !     ratio_C2N_sp       , & 
+    !     ratio_C2N_phaeo    , & 
+    !     ratio_chl2N_diatoms, & 
+    !     ratio_chl2N_sp     , & 
+    !     ratio_chl2N_phaeo  , & 
+    !     F_abs_chl_diatoms  , & 
+    !     F_abs_chl_sp       , & 
+    !     F_abs_chl_phaeo    , & 
+    !     ratio_C2N_proteins
 
     use ice_colpkg, only: &
          colpkg_init_parameters
@@ -8273,7 +8390,121 @@ contains
          config_fraction_biotracer_in_frazil, &
          config_zsalinity_molecular_sublayer, &
          config_zsalinity_gravity_drainage_scale, &
-         config_snow_porosity_at_ice_surface
+         config_snow_porosity_at_ice_surface, &
+         config_ratio_Si_to_N_diatoms, &
+         config_ratio_Si_to_N_small_plankton, &
+         config_ratio_Si_to_N_phaeocystis, &
+         config_ratio_S_to_N_diatoms, &
+         config_ratio_S_to_N_small_plankton, &
+         config_ratio_S_to_N_phaeocystis, &
+         config_ratio_Fe_to_C_diatoms, &
+         config_ratio_Fe_to_C_small_plankton, &
+         config_ratio_Fe_to_C_phaeocystis, &
+         config_ratio_Fe_to_N_diatoms, &
+         config_ratio_Fe_to_N_small_plankton, &
+         config_ratio_Fe_to_N_phaeocystis, &
+         config_ratio_Fe_to_DON, &
+         config_ratio_Fe_to_DOC_saccharids, &
+         config_ratio_Fe_to_DOC_lipids, &
+         config_respiration_fraction_of_growth, &
+         config_rapid_mobile_to_stationary_time, &
+         config_long_mobile_to_stationary_time, &
+         config_algal_maximum_velocity, &
+         config_ratio_Fe_to_dust, &
+         config_solubility_of_Fe_in_dust, &
+         config_chla_absorptivity_of_diatoms, &
+         config_chla_absorptivity_of_small_plankton, &
+         config_chla_absorptivity_of_phaeocystis, &
+         config_light_attenuation_diatoms, &
+         config_light_attenuation_small_plankton, &
+         config_light_attenuation_phaeocystis, &
+         config_light_inhibition_diatoms, &
+         config_light_inhibition_small_plankton, &
+         config_light_inhibition_phaeocystis, &
+         config_maximum_growth_rate_diatoms, &
+         config_maximum_growth_rate_small_plankton, &
+         config_maximum_growth_rate_phaeocystis, &
+         config_temperature_growth_diatoms, &
+         config_temperature_growth_small_plankton, &
+         config_temperature_growth_phaeocystis, &
+         config_grazed_fraction_diatoms, &
+         config_grazed_fraction_small_plankton, &
+         config_grazed_fraction_phaeocystis, &
+         config_mortality_diatoms, &
+         config_mortality_small_plankton, &
+         config_mortality_phaeocystis, &
+         config_temperature_mortality_diatoms, &
+         config_temperature_mortality_small_plankton, &
+         config_temperature_mortality_phaeocystis, &
+         config_exudation_diatoms, &
+         config_exudation_small_plankton, &
+         config_exudation_phaeocystis, &
+         config_nitrate_saturation_diatoms, &
+         config_nitrate_saturation_small_plankton, &
+         config_nitrate_saturation_phaeocystis, &
+         config_ammonium_saturation_diatoms, &
+         config_ammonium_saturation_small_plankton, &
+         config_ammonium_saturation_phaeocystis, &
+         config_silicate_saturation_diatoms, &
+         config_silicate_saturation_small_plankton, &
+         config_silicate_saturation_phaeocystis, &
+         config_iron_saturation_diatoms, &
+         config_iron_saturation_small_plankton, &
+         config_iron_saturation_phaeocystis, &
+         config_fraction_spilled_to_DON, &
+         config_degredation_of_DON, &
+         config_fraction_DON_ammonium, &
+         config_fraction_loss_to_saccharids, &
+         config_fraction_loss_to_lipids, & 
+         config_fraction_exudation_to_saccharids, &
+         config_fraction_exudation_to_lipids, &
+         config_remineralization_saccharids, &
+         config_remineralization_lipids, &
+         config_maximum_brine_temperature, &
+         config_salinity_dependence_of_growth, &
+         config_minimum_optical_depth, &
+         config_slopped_grazing_fraction, &
+         config_excreted_fraction, &
+         config_fraction_mortality_to_ammonium, &
+         config_fraction_iron_remineralized, &
+         config_nitrification_rate, &
+         config_desorption_loss_particulate_iron, &
+         config_maximum_loss_fraction, &
+         config_maximum_ratio_iron_to_saccharids, &
+         config_respiration_loss_to_DMSPd, &
+         config_DMSP_to_DMS_conversion_fraction, &
+         config_DMSP_to_DMS_conversion_time, &
+         config_DMS_oxidation_time, &
+         config_mobility_type_diatoms, &
+         config_mobility_type_small_plankton, &
+         config_mobility_type_phaeocystis, &
+         config_mobility_type_nitrate, &
+         config_mobility_type_ammonium, &
+         config_mobility_type_silicate, &
+         config_mobility_type_DMSPp, &
+         config_mobility_type_DMSPd, &
+         config_mobility_type_humics, &
+         config_mobility_type_saccharids, &
+         config_mobility_type_lipids, &
+         config_mobility_type_proteins, &
+         config_mobility_type_dissolved_iron, &
+         config_mobility_type_particulate_iron, &
+         config_mobility_type_black_carbon1, &
+         config_mobility_type_black_carbon2, &
+         config_mobility_type_dust1, &
+         config_mobility_type_dust2, &
+         config_mobility_type_dust3, &
+         config_mobility_type_dust4, &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_chla_to_N_diatoms, &
+         config_ratio_chla_to_N_small_plankton, &
+         config_ratio_chla_to_N_phaeocystis, &
+         config_scales_absorption_diatoms, &
+         config_scales_absorption_small_plankton, &
+         config_scales_absorption_phaeocystis, &
+         config_ratio_C_to_N_proteins
 
     integer, pointer :: &
          config_boundary_layer_iteration_number
@@ -8340,6 +8571,120 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_fraction_biotracer_in_frazil", config_fraction_biotracer_in_frazil)
     call MPAS_pool_get_config(domain % configs, "config_zsalinity_molecular_sublayer", config_zsalinity_molecular_sublayer)
     call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_diatoms", config_ratio_Si_to_N_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_small_plankton", config_ratio_Si_to_N_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_phaeocystis", config_ratio_Si_to_N_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_diatoms", config_ratio_S_to_N_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_small_plankton", config_ratio_S_to_N_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_phaeocystis", config_ratio_S_to_N_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_diatoms", config_ratio_Fe_to_C_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_small_plankton", config_ratio_Fe_to_C_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_phaeocystis", config_ratio_Fe_to_C_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_diatoms", config_ratio_Fe_to_N_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_small_plankton", config_ratio_Fe_to_N_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_phaeocystis", config_ratio_Fe_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DON", config_ratio_Fe_to_DON) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_saccharids", config_ratio_Fe_to_DOC_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_lipids", config_ratio_Fe_to_DOC_lipids) 
+    call MPAS_pool_get_config(domain % configs, "config_respiration_fraction_of_growth", config_respiration_fraction_of_growth) 
+    call MPAS_pool_get_config(domain % configs, "config_rapid_mobile_to_stationary_time", config_rapid_mobile_to_stationary_time) 
+    call MPAS_pool_get_config(domain % configs, "config_long_mobile_to_stationary_time", config_long_mobile_to_stationary_time) 
+    call MPAS_pool_get_config(domain % configs, "config_algal_maximum_velocity", config_algal_maximum_velocity)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_dust", config_ratio_Fe_to_dust) 
+    call MPAS_pool_get_config(domain % configs, "config_solubility_of_Fe_in_dust", config_solubility_of_Fe_in_dust) 
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_diatoms", config_chla_absorptivity_of_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_small_plankton", config_chla_absorptivity_of_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_phaeocystis", config_chla_absorptivity_of_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_diatoms", config_light_attenuation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_small_plankton", config_light_attenuation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_phaeocystis", config_light_attenuation_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_diatoms", config_light_inhibition_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_small_plankton", config_light_inhibition_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_phaeocystis", config_light_inhibition_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_diatoms", config_maximum_growth_rate_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_small_plankton", config_maximum_growth_rate_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_phaeocystis", config_maximum_growth_rate_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_diatoms", config_temperature_growth_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_small_plankton", config_temperature_growth_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_phaeocystis", config_temperature_growth_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_diatoms", config_grazed_fraction_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_small_plankton", config_grazed_fraction_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_phaeocystis", config_grazed_fraction_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_mortality_diatoms", config_mortality_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_mortality_small_plankton", config_mortality_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_mortality_phaeocystis", config_mortality_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_diatoms", config_temperature_mortality_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_small_plankton", config_temperature_mortality_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_phaeocystis", config_temperature_mortality_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_diatoms", config_exudation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_small_plankton", config_exudation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_phaeocystis", config_exudation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_diatoms", config_nitrate_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_small_plankton", config_nitrate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_phaeocystis", config_nitrate_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_diatoms", config_ammonium_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_small_plankton", config_ammonium_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_phaeocystis", config_ammonium_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_diatoms", config_silicate_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_small_plankton", config_silicate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_phaeocystis", config_silicate_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_diatoms", config_iron_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_small_plankton", config_iron_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_phaeocystis", config_iron_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_spilled_to_DON", config_fraction_spilled_to_DON)
+    call MPAS_pool_get_config(domain % configs, "config_degredation_of_DON", config_degredation_of_DON)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_DON_ammonium", config_fraction_DON_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_loss_to_saccharids", config_fraction_loss_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_loss_to_lipids",  config_fraction_loss_to_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_exudation_to_saccharids", config_fraction_exudation_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_exudation_to_lipids", config_fraction_exudation_to_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_remineralization_saccharids", config_remineralization_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_remineralization_lipids", config_remineralization_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_brine_temperature", config_maximum_brine_temperature)
+    call MPAS_pool_get_config(domain % configs, "config_salinity_dependence_of_growth", config_salinity_dependence_of_growth)
+    call MPAS_pool_get_config(domain % configs, "config_minimum_optical_depth", config_minimum_optical_depth)
+    call MPAS_pool_get_config(domain % configs, "config_slopped_grazing_fraction", config_slopped_grazing_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_excreted_fraction", config_excreted_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_mortality_to_ammonium", config_fraction_mortality_to_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_iron_remineralized", config_fraction_iron_remineralized)
+    call MPAS_pool_get_config(domain % configs, "config_nitrification_rate", config_nitrification_rate)
+    call MPAS_pool_get_config(domain % configs, "config_desorption_loss_particulate_iron", config_desorption_loss_particulate_iron)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_loss_fraction", config_maximum_loss_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_ratio_iron_to_saccharids", config_maximum_ratio_iron_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_respiration_loss_to_DMSPd", config_respiration_loss_to_DMSPd)
+    call MPAS_pool_get_config(domain % configs, "config_DMSP_to_DMS_conversion_fraction", config_DMSP_to_DMS_conversion_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_DMSP_to_DMS_conversion_time", config_DMSP_to_DMS_conversion_time)
+    call MPAS_pool_get_config(domain % configs, "config_DMS_oxidation_time", config_DMS_oxidation_time)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_diatoms", config_mobility_type_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_small_plankton", config_mobility_type_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_phaeocystis", config_mobility_type_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_nitrate", config_mobility_type_nitrate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_ammonium", config_mobility_type_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_silicate", config_mobility_type_silicate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPp", config_mobility_type_DMSPp)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPd", config_mobility_type_DMSPd)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_humics", config_mobility_type_humics)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_saccharids", config_mobility_type_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_lipids", config_mobility_type_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_proteins", config_mobility_type_proteins)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dissolved_iron", config_mobility_type_dissolved_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_particulate_iron", config_mobility_type_particulate_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon1", config_mobility_type_black_carbon1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon2", config_mobility_type_black_carbon2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust1", config_mobility_type_dust1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust2", config_mobility_type_dust2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust3", config_mobility_type_dust3)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust4", config_mobility_type_dust4)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_diatoms", config_ratio_chla_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_small_plankton", config_ratio_chla_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_phaeocystis", config_ratio_chla_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_diatoms", config_scales_absorption_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_small_plankton", config_scales_absorption_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_phaeocystis", config_scales_absorption_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
 
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
@@ -8403,7 +8748,121 @@ contains
          config_fraction_biotracer_in_frazil, &
          config_zsalinity_molecular_sublayer, &
          config_zsalinity_gravity_drainage_scale, &
-         config_snow_porosity_at_ice_surface) 
+         config_snow_porosity_at_ice_surface, &
+         config_ratio_Si_to_N_diatoms, &
+         config_ratio_Si_to_N_small_plankton, &
+         config_ratio_Si_to_N_phaeocystis, &
+         config_ratio_S_to_N_diatoms, &
+         config_ratio_S_to_N_small_plankton, &
+         config_ratio_S_to_N_phaeocystis, &
+         config_ratio_Fe_to_C_diatoms, &
+         config_ratio_Fe_to_C_small_plankton, &
+         config_ratio_Fe_to_C_phaeocystis, &
+         config_ratio_Fe_to_N_diatoms, &
+         config_ratio_Fe_to_N_small_plankton, &
+         config_ratio_Fe_to_N_phaeocystis, &
+         config_ratio_Fe_to_DON, &
+         config_ratio_Fe_to_DOC_saccharids, &
+         config_ratio_Fe_to_DOC_lipids, &
+         config_respiration_fraction_of_growth, &
+         config_rapid_mobile_to_stationary_time, &
+         config_long_mobile_to_stationary_time, &
+         config_algal_maximum_velocity, &
+         config_ratio_Fe_to_dust, &
+         config_solubility_of_Fe_in_dust, &
+         config_chla_absorptivity_of_diatoms, &
+         config_chla_absorptivity_of_small_plankton, &
+         config_chla_absorptivity_of_phaeocystis, &
+         config_light_attenuation_diatoms, &
+         config_light_attenuation_small_plankton, &
+         config_light_attenuation_phaeocystis, &
+         config_light_inhibition_diatoms, &
+         config_light_inhibition_small_plankton, &
+         config_light_inhibition_phaeocystis, &
+         config_maximum_growth_rate_diatoms, &
+         config_maximum_growth_rate_small_plankton, &
+         config_maximum_growth_rate_phaeocystis, &
+         config_temperature_growth_diatoms, &
+         config_temperature_growth_small_plankton, &
+         config_temperature_growth_phaeocystis, &
+         config_grazed_fraction_diatoms, &
+         config_grazed_fraction_small_plankton, &
+         config_grazed_fraction_phaeocystis, &
+         config_mortality_diatoms, &
+         config_mortality_small_plankton, &
+         config_mortality_phaeocystis, &
+         config_temperature_mortality_diatoms, &
+         config_temperature_mortality_small_plankton, &
+         config_temperature_mortality_phaeocystis, &
+         config_exudation_diatoms, &
+         config_exudation_small_plankton, &
+         config_exudation_phaeocystis, &
+         config_nitrate_saturation_diatoms, &
+         config_nitrate_saturation_small_plankton, &
+         config_nitrate_saturation_phaeocystis, &
+         config_ammonium_saturation_diatoms, &
+         config_ammonium_saturation_small_plankton, &
+         config_ammonium_saturation_phaeocystis, &
+         config_silicate_saturation_diatoms, &
+         config_silicate_saturation_small_plankton, &
+         config_silicate_saturation_phaeocystis, &
+         config_iron_saturation_diatoms, &
+         config_iron_saturation_small_plankton, &
+         config_iron_saturation_phaeocystis, &
+         config_fraction_spilled_to_DON, &
+         config_degredation_of_DON, &
+         config_fraction_DON_ammonium, &
+         config_fraction_loss_to_saccharids, &
+         config_fraction_loss_to_lipids, & 
+         config_fraction_exudation_to_saccharids, &
+         config_fraction_exudation_to_lipids, &
+         config_remineralization_saccharids, &
+         config_remineralization_lipids, &
+         config_maximum_brine_temperature, &
+         config_salinity_dependence_of_growth, &
+         config_minimum_optical_depth, &
+         config_slopped_grazing_fraction, &
+         config_excreted_fraction, &
+         config_fraction_mortality_to_ammonium, &
+         config_fraction_iron_remineralized, &
+         config_nitrification_rate, &
+         config_desorption_loss_particulate_iron, &
+         config_maximum_loss_fraction, &
+         config_maximum_ratio_iron_to_saccharids, &
+         config_respiration_loss_to_DMSPd, &
+         config_DMSP_to_DMS_conversion_fraction, &
+         config_DMSP_to_DMS_conversion_time, &
+         config_DMS_oxidation_time, &
+         config_mobility_type_diatoms, &
+         config_mobility_type_small_plankton, &
+         config_mobility_type_phaeocystis, &
+         config_mobility_type_nitrate, &
+         config_mobility_type_ammonium, &
+         config_mobility_type_silicate, &
+         config_mobility_type_DMSPp, &
+         config_mobility_type_DMSPd, &
+         config_mobility_type_humics, &
+         config_mobility_type_saccharids, &
+         config_mobility_type_lipids, &
+         config_mobility_type_proteins, &
+         config_mobility_type_dissolved_iron, &
+         config_mobility_type_particulate_iron, &
+         config_mobility_type_black_carbon1, &
+         config_mobility_type_black_carbon2, &
+         config_mobility_type_dust1, &
+         config_mobility_type_dust2, &
+         config_mobility_type_dust3, &
+         config_mobility_type_dust4, &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_chla_to_N_diatoms, &
+         config_ratio_chla_to_N_small_plankton, &
+         config_ratio_chla_to_N_phaeocystis, &
+         config_scales_absorption_diatoms, &
+         config_scales_absorption_small_plankton, &
+         config_scales_absorption_phaeocystis, &
+         config_ratio_C_to_N_proteins) 
 
     !-----------------------------------------------------------------------
     ! Parameters for thermodynamics
@@ -8704,6 +9163,198 @@ contains
     ! frazil_scav:
     ! multiple of ocean tracer concentration due to frazil scavenging
     !frazil_scav = config_fraction_biotracer_in_frazil
+
+    ! ratio_Si2N_diatoms:
+    ! ratio of algal Silicate to Nitrate (mol/mol)
+    ! ratio_Si2N_diatoms = config_ratio_Si_to_N_diatoms
+
+    ! ratio_Si2N_sp:
+    ! ratio of algal Silicate to Nitrogen (mol/mol)
+    ! ratio_Si2N_sp = config_ratio_Si_to_N_small_plankton
+
+    ! ratio_Si2N_phaeo:
+    ! ratio of algal Silicate to Nitrogen (mol/mol)
+    ! ratio_Si2N_phaeo = config_ratio_Si_to_N_phaeocystis
+
+    ! ratio_S2N_diatoms:
+    ! ratio of algal Sulphur to Nitrogen (mol/mol)
+    ! ratio_S2N_diatoms = config_ratio_S_to_N_diatoms
+
+    ! ratio_S2N_sp:
+    ! ratio of algal Sulphur to Nitrogen (mol/mol)
+    ! ratio_S2N_sp = config_ratio_S_to_N_small_plankton
+
+    ! ratio_S2N_phaeo:
+    ! ratio of algal Sulphur to Nitrogen (mol/mol)
+    ! ratio_S2N_phaeo = config_ratio_S_to_N_phaeocystis
+
+    ! ratio_Fe2C_diatoms:
+    ! ratio of algal iron to carbon (umol/mol)
+    ! ratio_Fe2C_diatoms = config_ratio_Fe_to_C_diatoms
+
+    ! ratio_Fe2C_sp:
+    ! ratio of algal iron to carbon (umol/mol)
+    ! ratio_Fe2C_sp = config_ratio_Fe_to_C_small_plankton
+
+    ! ratio_Fe2C_phaeo:
+    ! ratio of algal iron to carbon (umol/mol)
+    ! ratio_Fe2C_phaeo = config_ratio_Fe_to_C_phaeocystis
+
+    ! ratio_Fe2N_diatoms:
+    ! ratio of algal iron to nitrogen (umol/mol)
+    ! ratio_Fe2N_diatoms = config_ratio_Fe_to_N_diatoms
+
+    ! ratio_Fe2N_sp:
+    ! ratio of algal iron to nitrogen (umol/mol)
+    ! ratio_Fe2N_sp = config_ratio_Fe_to_N_small_plankton
+
+    ! ratio_Fe2N_phaeo:
+    ! ratio of algal iron to nitrogen (umol/mol)
+    ! ratio_Fe2N_phaeo = config_ratio_Fe_to_N_phaeocystis
+
+    ! ratio_Fe2DON:
+    ! ratio of iron to nitrogen of DON (nmol/umol)
+    ! ratio_Fe2DON = config_ratio_Fe_to_DON
+
+    ! ratio_Fe2DOC_s:
+    ! ratio of iron to carbon of DOC (nmol/umol) saccharids
+    ! ratio_Fe2DOC_s = config_ratio_Fe_to_DOC_saccharids
+
+    ! ratio_Fe2DOC_l:
+    ! ratio of iron to carbon of DOC (nmol/umol) lipids
+    ! ratio_Fe2DOC_l = config_ratio_Fe_to_DOC_lipids
+
+    ! fr_resp:
+    ! fraction of algal growth lost due to respiration
+    ! fr_resp = config_respiration_fraction_of_growth
+
+    ! tau_min:
+    ! rapid mobile to stationary exchanges (s) = 1.5 hours
+    ! tau_min = config_rapid_mobile_to_stationary_time
+
+    ! tau_max:
+    ! long time mobile to stationary exchanges (s) = 2 days
+    ! tau_max = config_long_mobile_to_stationary_time
+
+    ! algal_vel:
+    ! 0.5 cm/d(m/s) Lavoie 2005  1.5 cm/day
+    ! algal_vel = config_algal_maximum_velocity
+
+    ! R_dFe2dust:
+    !  g/g (3.5% content) Tagliabue 2009
+    ! R_dFe2dust = config_ratio_Fe_to_dust
+
+    ! dustFe_sol;
+    ! solubility fraction
+    ! dustFe_sol = config_solubility_of_Fe_in_dust
+
+    ! chlabs_diatoms:
+    ! chl absorption (1/m/(mg/m^3))
+    ! chlabs_diatoms = config_chla_absorptivity_of_diatoms
+
+    ! chlabs_sp:
+    ! chl absorption (1/m/(mg/m^3))
+    ! chlabs_sp = config_chla_absorptivity_of_small_plankton
+
+    ! chlabs_phaeo:
+    ! chl absorption (1/m/(mg/m^3))
+    ! chlabs_phaeo = config_chla_absorptivity_of_phaeocystis
+
+    ! alpha2max_low_diatoms:
+    ! light limitation (1/(W/m^2))  
+    ! alpha2max_low_diatoms = config_light_attenuation_diatoms
+
+    ! alpha2max_low_sp_in      , & 
+    ! alpha2max_low_phaeo_in   , & 
+    ! beta2max_diatoms_in , & ! light inhibition (1/(W/m^2))  
+    ! beta2max_sp_in      , & 
+    ! beta2max_phaeo_in   , & 
+    ! mu_max_diatoms_in   , & ! maximum growth rate (1/day)       
+    ! mu_max_sp_in        , & 
+    ! mu_max_phaeo_in     , & 
+    ! grow_Tdep_diatoms_in, & ! Temperature dependence of growth (1/C)
+    ! grow_Tdep_sp_in     , & 
+    ! grow_Tdep_phaeo_in  , & 
+    ! fr_graze_diatoms_in , & ! Fraction grazed
+    ! fr_graze_sp_in      , & 
+    ! fr_graze_phaeo_in   , & 
+    ! mort_pre_diatoms_in , & ! Mortality (1/day)
+    ! mort_pre_sp_in      , & 
+    ! mort_pre_phaeo_in   , & 
+    ! mort_Tdep_diatoms_in, & ! T dependence of mortality (1/C) 
+    ! mort_Tdep_sp_in     , &  
+    ! mort_Tdep_phaeo_in  , &  
+    ! k_exude_diatoms_in  , & ! algal exudation (1/d)
+    ! k_exude_sp_in       , &  
+    ! k_exude_phaeo_in    , &  
+    ! K_Nit_diatoms_in    , & ! nitrate half saturation (mmol/m^3)
+    ! K_Nit_sp_in    ! , &  
+    ! K_Nit_phaeo_in      , &  
+    ! K_Am_diatoms_in     , & ! ammonium half saturation (mmol/m^3)
+    ! K_Am_sp_in    !  , &   
+    ! K_Am_phaeo_in       , &   
+    ! K_Sil_diatoms_in    , & ! silicate half saturation (mmol/m^3)
+    ! K_Sil_sp_in    ! , &   
+    ! K_Sil_phaeo_in      , &   
+    ! K_Fe_diatoms_in     , & ! iron half saturation (nM)
+    ! K_Fe_sp_in    !  , &   
+    ! K_Fe_phaeo_in       , &    
+    ! f_don_protein_in    , & ! fraction of spilled grazing to proteins    !    
+    ! kn_bac_protein_in   , & ! Bacterial degredation of DON (1/d)    !     ! 
+    ! f_don_Am_protein_in , & ! fraction of remineralized DON to ammonium    !  
+    ! f_doc_s_in    !  , & ! fraction of mortality to DOC 
+    ! f_doc_l_in    !  , &   
+    ! f_exude_s_in        , & ! fraction of exudation to DOC
+    ! f_exude_l_in        , & 
+    ! k_bac_s_in    !  , & ! Bacterial degredation of DOC (1/d)
+    ! k_bac_l_in    !  , & 
+    ! T_max_in    !    , & ! maximum temperature (C)
+    ! fsal_in    !     , & ! Salinity limitation (ppt)
+    ! op_dep_min_in       , & ! Light attenuates for optical depths exceeding min
+    ! fr_graze_s_in       , & ! fraction of grazing spilled or slopped
+    ! fr_graze_e_in       , & ! fraction of assimilation excreted 
+    ! fr_mort2min_in      , & ! fractionation of mortality to Am
+    ! fr_dFe_in    !   , & ! fraction of remineralized nitrogen 
+    !     !     !     ! ! (in units of algal iron)
+    ! k_nitrif_in    ! , & ! nitrification rate (1/day)    !    
+    ! t_iron_conv_in      , & ! desorption loss pFe to dFe (day)
+    ! max_loss_in    ! , & ! restrict uptake to % of remaining value 
+    ! max_dfe_doc1_in     , & ! max ratio of dFe to saccharides in the ice 
+    !     !     !     ! ! (nM Fe/muM C)    
+    ! fr_resp_s_in        , & ! DMSPd fraction of respiration loss as DMSPd
+    ! y_sk_DMS_in    ! , & ! fraction conversion given high yield
+    ! t_sk_conv_in        , & ! Stefels conversion time (d)
+    ! t_sk_ox_in    !  , &   ! DMS oxidation time (d)
+    ! algaltype_diatoms_in  , & ! mobility type
+    ! algaltype_sp_in       , & !
+    ! algaltype_phaeo_in    , & !
+    ! nitratetype_in        , & !
+    ! ammoniumtype_in       , & !
+    ! silicatetype_in       , & !
+    ! dmspptype_in    !  , & !
+    ! dmspdtype_in    !  , & !
+    ! humtype_in    !    , & !
+    ! doctype_s_in    !  , & !
+    ! doctype_l_in    !  , & !
+    ! dontype_protein_in    , & !
+    ! fedtype_1_in    !  , & !
+    ! feptype_1_in    !  , & !
+    ! zaerotype_bc1_in      , & !
+    ! zaerotype_bc2_in      , & !
+    ! zaerotype_dust1_in    , & !
+    ! zaerotype_dust2_in    , & !
+    ! zaerotype_dust3_in    , & !
+    ! zaerotype_dust4_in    , & !
+    ! ratio_C2N_diatoms_in  , & ! algal C to N ratio (mol/mol)
+    ! ratio_C2N_sp_in       , & !
+    ! ratio_C2N_phaeo_in    , & !
+    ! ratio_chl2N_diatoms_in, & ! algal chlorophyll to N ratio (mg/mmol)
+    ! ratio_chl2N_sp_in     , & !
+    ! ratio_chl2N_phaeo_in  , & !
+    ! F_abs_chl_diatoms_in  , & ! scales absorbed radiation for dEdd
+    ! F_abs_chl_sp_in       , & !
+    ! F_abs_chl_phaeo_in    , & !
+    ! ratio_C2N_proteins_in     ! ratio of C to N in proteins (mol/mol)       
 
     ! grid_oS:
     ! for bottom flux (zsalinity)
@@ -9758,7 +10409,102 @@ contains
 
     real(kind=RKIND), pointer :: &
          config_new_ice_fraction_biotracer, &
-         config_fraction_biotracer_in_frazil
+         config_fraction_biotracer_in_frazil, &
+         config_ratio_Si_to_N_diatoms, &
+         config_ratio_Si_to_N_small_plankton, &
+         config_ratio_Si_to_N_phaeocystis, &
+         config_ratio_S_to_N_diatoms, &
+         config_ratio_S_to_N_small_plankton, &
+         config_ratio_S_to_N_phaeocystis, &
+         config_ratio_Fe_to_C_diatoms, &
+         config_ratio_Fe_to_C_small_plankton, &
+         config_ratio_Fe_to_C_phaeocystis, &
+         config_ratio_Fe_to_N_diatoms, &
+         config_ratio_Fe_to_N_small_plankton, &
+         config_ratio_Fe_to_N_phaeocystis, &
+         config_ratio_Fe_to_DON, &
+         config_ratio_Fe_to_DOC_saccharids, &
+         config_ratio_Fe_to_DOC_lipids, & 
+         config_chla_absorptivity_of_diatoms, &
+         config_chla_absorptivity_of_small_plankton, &
+         config_chla_absorptivity_of_phaeocystis, &
+         config_light_attenuation_diatoms, &
+         config_light_attenuation_small_plankton, &
+         config_light_attenuation_phaeocystis, &
+         config_light_inhibition_diatoms, &
+         config_light_inhibition_small_plankton, &
+         config_light_inhibition_phaeocystis, &
+         config_maximum_growth_rate_diatoms, &
+         config_maximum_growth_rate_small_plankton, &
+         config_maximum_growth_rate_phaeocystis, &
+         config_temperature_growth_diatoms, &
+         config_temperature_growth_small_plankton, &
+         config_temperature_growth_phaeocystis, &
+         config_grazed_fraction_diatoms, &
+         config_grazed_fraction_small_plankton, &
+         config_grazed_fraction_phaeocystis, &
+         config_mortality_diatoms, &
+         config_mortality_small_plankton, &
+         config_mortality_phaeocystis, &
+         config_temperature_mortality_diatoms, &
+         config_temperature_mortality_small_plankton, &
+         config_temperature_mortality_phaeocystis, &
+         config_exudation_diatoms, &
+         config_exudation_small_plankton, &
+         config_exudation_phaeocystis, &
+         config_nitrate_saturation_diatoms, &
+         config_nitrate_saturation_small_plankton, &
+         config_nitrate_saturation_phaeocystis, &
+         config_ammonium_saturation_diatoms, &
+         config_ammonium_saturation_small_plankton, &
+         config_ammonium_saturation_phaeocystis, &
+         config_silicate_saturation_diatoms, &
+         config_silicate_saturation_small_plankton, &
+         config_silicate_saturation_phaeocystis, &
+         config_iron_saturation_diatoms, &
+         config_iron_saturation_small_plankton, &
+         config_iron_saturation_phaeocystis, &
+         config_fraction_spilled_to_DON, &
+         config_degredation_of_DON, &
+         config_fraction_DON_ammonium, &
+         config_fraction_loss_to_saccharids, &
+         config_fraction_loss_to_lipids, & 
+         config_fraction_exudation_to_saccharids, &
+         config_fraction_exudation_to_lipids, &
+         config_remineralization_saccharids, &
+         config_remineralization_lipids, &
+         config_mobility_type_diatoms, &
+         config_mobility_type_small_plankton, &
+         config_mobility_type_phaeocystis, &
+         config_mobility_type_saccharids, &
+         config_mobility_type_lipids, &
+         config_mobility_type_proteins, &
+         config_mobility_type_dissolved_iron, &
+         config_mobility_type_particulate_iron, &
+         config_mobility_type_black_carbon1, &
+         config_mobility_type_black_carbon2, &
+         config_mobility_type_dust1, &
+         config_mobility_type_dust2, &
+         config_mobility_type_dust3, &
+         config_mobility_type_dust4, &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_chla_to_N_diatoms, &
+         config_ratio_chla_to_N_small_plankton, &
+         config_ratio_chla_to_N_phaeocystis, &
+         config_scales_absorption_diatoms, &
+         config_scales_absorption_small_plankton, &
+         config_scales_absorption_phaeocystis, &
+         config_ratio_C_to_N_proteins, &
+         config_mobility_type_nitrate, &
+         config_mobility_type_ammonium, &
+         config_mobility_type_DMSPp, &
+         config_mobility_type_DMSPd, &
+         config_mobility_type_silicate, &
+         config_mobility_type_humics, &
+         config_rapid_mobile_to_stationary_time, &
+         config_long_mobile_to_stationary_time
 
     integer, pointer :: &
          ONE, &
@@ -9809,6 +10555,101 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_new_ice_fraction_biotracer", config_new_ice_fraction_biotracer)
     call MPAS_pool_get_config(domain % configs, "config_fraction_biotracer_in_frazil", config_fraction_biotracer_in_frazil)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_diatoms", config_ratio_Si_to_N_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_small_plankton", config_ratio_Si_to_N_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_phaeocystis", config_ratio_Si_to_N_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_diatoms", config_ratio_S_to_N_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_small_plankton", config_ratio_S_to_N_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_phaeocystis", config_ratio_S_to_N_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_diatoms", config_ratio_Fe_to_C_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_small_plankton", config_ratio_Fe_to_C_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_phaeocystis", config_ratio_Fe_to_C_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_diatoms", config_ratio_Fe_to_N_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_small_plankton", config_ratio_Fe_to_N_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_phaeocystis", config_ratio_Fe_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DON", config_ratio_Fe_to_DON) 
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_saccharids", config_ratio_Fe_to_DOC_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_lipids", config_ratio_Fe_to_DOC_lipids)  
+    call MPAS_pool_get_config(domain % configs, "config_rapid_mobile_to_stationary_time", config_rapid_mobile_to_stationary_time) 
+    call MPAS_pool_get_config(domain % configs, "config_long_mobile_to_stationary_time", config_long_mobile_to_stationary_time) 
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_diatoms", config_chla_absorptivity_of_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_small_plankton", config_chla_absorptivity_of_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_phaeocystis", config_chla_absorptivity_of_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_diatoms", config_light_attenuation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_small_plankton", config_light_attenuation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_phaeocystis", config_light_attenuation_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_diatoms", config_light_inhibition_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_small_plankton", config_light_inhibition_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_phaeocystis", config_light_inhibition_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_diatoms", config_maximum_growth_rate_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_small_plankton", config_maximum_growth_rate_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_phaeocystis", config_maximum_growth_rate_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_diatoms", config_temperature_growth_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_small_plankton", config_temperature_growth_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_phaeocystis", config_temperature_growth_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_diatoms", config_grazed_fraction_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_small_plankton", config_grazed_fraction_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_phaeocystis", config_grazed_fraction_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_mortality_diatoms", config_mortality_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_mortality_small_plankton", config_mortality_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_mortality_phaeocystis", config_mortality_phaeocystis) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_diatoms", config_temperature_mortality_diatoms) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_small_plankton", config_temperature_mortality_small_plankton) 
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_phaeocystis", config_temperature_mortality_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_diatoms", config_exudation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_small_plankton", config_exudation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_phaeocystis", config_exudation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_diatoms", config_nitrate_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_small_plankton", config_nitrate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_phaeocystis", config_nitrate_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_diatoms", config_ammonium_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_small_plankton", config_ammonium_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_phaeocystis", config_ammonium_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_diatoms", config_silicate_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_small_plankton", config_silicate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_phaeocystis", config_silicate_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_diatoms", config_iron_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_small_plankton", config_iron_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_phaeocystis", config_iron_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_spilled_to_DON", config_fraction_spilled_to_DON)
+    call MPAS_pool_get_config(domain % configs, "config_degredation_of_DON", config_degredation_of_DON)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_DON_ammonium", config_fraction_DON_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_loss_to_saccharids", config_fraction_loss_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_loss_to_lipids",  config_fraction_loss_to_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_exudation_to_saccharids", config_fraction_exudation_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_exudation_to_lipids", config_fraction_exudation_to_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_remineralization_saccharids", config_remineralization_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_remineralization_lipids", config_remineralization_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_diatoms", config_mobility_type_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_small_plankton", config_mobility_type_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_phaeocystis", config_mobility_type_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_nitrate", config_mobility_type_nitrate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_ammonium", config_mobility_type_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_silicate", config_mobility_type_silicate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPp", config_mobility_type_DMSPp)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPd", config_mobility_type_DMSPd)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_humics", config_mobility_type_humics)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_saccharids", config_mobility_type_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_lipids", config_mobility_type_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_proteins", config_mobility_type_proteins)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dissolved_iron", config_mobility_type_dissolved_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_particulate_iron", config_mobility_type_particulate_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon1", config_mobility_type_black_carbon1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon2", config_mobility_type_black_carbon2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust1", config_mobility_type_dust1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust2", config_mobility_type_dust2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust3", config_mobility_type_dust3)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust4", config_mobility_type_dust4)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_diatoms", config_ratio_chla_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_small_plankton", config_ratio_chla_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_phaeocystis", config_ratio_chla_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_diatoms", config_scales_absorption_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_small_plankton", config_scales_absorption_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_phaeocystis", config_scales_absorption_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "ONE", ONE)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
@@ -9954,7 +10795,102 @@ contains
          maxDOCType, &
          maxDICType, &
          maxDONType, &
-         maxIronType)
+         maxIronType, &
+         config_ratio_Si_to_N_diatoms, &
+         config_ratio_Si_to_N_small_plankton, &
+         config_ratio_Si_to_N_phaeocystis, &
+         config_ratio_S_to_N_diatoms, &
+         config_ratio_S_to_N_small_plankton, &
+         config_ratio_S_to_N_phaeocystis, &
+         config_ratio_Fe_to_C_diatoms, &
+         config_ratio_Fe_to_C_small_plankton, &
+         config_ratio_Fe_to_C_phaeocystis, &
+         config_ratio_Fe_to_N_diatoms, &
+         config_ratio_Fe_to_N_small_plankton, &
+         config_ratio_Fe_to_N_phaeocystis, &
+         config_ratio_Fe_to_DON, &
+         config_ratio_Fe_to_DOC_saccharids, &
+         config_ratio_Fe_to_DOC_lipids, & 
+         config_chla_absorptivity_of_diatoms, &
+         config_chla_absorptivity_of_small_plankton, &
+         config_chla_absorptivity_of_phaeocystis, &
+         config_light_attenuation_diatoms, &
+         config_light_attenuation_small_plankton, &
+         config_light_attenuation_phaeocystis, &
+         config_light_inhibition_diatoms, &
+         config_light_inhibition_small_plankton, &
+         config_light_inhibition_phaeocystis, &
+         config_maximum_growth_rate_diatoms, &
+         config_maximum_growth_rate_small_plankton, &
+         config_maximum_growth_rate_phaeocystis, &
+         config_temperature_growth_diatoms, &
+         config_temperature_growth_small_plankton, &
+         config_temperature_growth_phaeocystis, &
+         config_grazed_fraction_diatoms, &
+         config_grazed_fraction_small_plankton, &
+         config_grazed_fraction_phaeocystis, &
+         config_mortality_diatoms, &
+         config_mortality_small_plankton, &
+         config_mortality_phaeocystis, &
+         config_temperature_mortality_diatoms, &
+         config_temperature_mortality_small_plankton, &
+         config_temperature_mortality_phaeocystis, &
+         config_exudation_diatoms, &
+         config_exudation_small_plankton, &
+         config_exudation_phaeocystis, &
+         config_nitrate_saturation_diatoms, &
+         config_nitrate_saturation_small_plankton, &
+         config_nitrate_saturation_phaeocystis, &
+         config_ammonium_saturation_diatoms, &
+         config_ammonium_saturation_small_plankton, &
+         config_ammonium_saturation_phaeocystis, &
+         config_silicate_saturation_diatoms, &
+         config_silicate_saturation_small_plankton, &
+         config_silicate_saturation_phaeocystis, &
+         config_iron_saturation_diatoms, &
+         config_iron_saturation_small_plankton, &
+         config_iron_saturation_phaeocystis, &
+         config_fraction_spilled_to_DON, &
+         config_degredation_of_DON, &
+         config_fraction_DON_ammonium, &
+         config_fraction_loss_to_saccharids, &
+         config_fraction_loss_to_lipids, & 
+         config_fraction_exudation_to_saccharids, &
+         config_fraction_exudation_to_lipids, &
+         config_remineralization_saccharids, &
+         config_remineralization_lipids, &
+         config_mobility_type_diatoms, &
+         config_mobility_type_small_plankton, &
+         config_mobility_type_phaeocystis, &
+         config_mobility_type_saccharids, &
+         config_mobility_type_lipids, &
+         config_mobility_type_proteins, &
+         config_mobility_type_dissolved_iron, &
+         config_mobility_type_particulate_iron, &
+         config_mobility_type_black_carbon1, &
+         config_mobility_type_black_carbon2, &
+         config_mobility_type_dust1, &
+         config_mobility_type_dust2, &
+         config_mobility_type_dust3, &
+         config_mobility_type_dust4, &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_chla_to_N_diatoms, &
+         config_ratio_chla_to_N_small_plankton, &
+         config_ratio_chla_to_N_phaeocystis, &
+         config_scales_absorption_diatoms, &
+         config_scales_absorption_small_plankton, &
+         config_scales_absorption_phaeocystis, &
+         config_ratio_C_to_N_proteins, &
+         config_mobility_type_nitrate, &
+         config_mobility_type_ammonium, &
+         config_mobility_type_DMSPp, &
+         config_mobility_type_DMSPd, &
+         config_mobility_type_silicate, &
+         config_mobility_type_humics, &
+         config_rapid_mobile_to_stationary_time, &
+         config_long_mobile_to_stationary_time)
 
     ! check calculated tracer array size
     if (nTracers_temp /= tracerObject % nTracers) then

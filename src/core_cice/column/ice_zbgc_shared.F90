@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc_shared.F90 1108 2016-03-07 18:42:44Z njeffery $
+!  SVN:$Id: ice_zbgc_shared.F90 1142 2016-08-27 16:07:51Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry variables
@@ -21,42 +21,22 @@
                 zap_small_bgc, regrid_stationary
 
       ! bio parameters for algal_dyn
-
-      real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
-         R_Si2N    = (/ 1.8_dbl_kind,      & ! algal C to Sil (mole/mole) 
-                        c0,                &
-                        c0/),              &
-         R_S2N     = (/ 0.03_dbl_kind,     & ! algal S to N (mole/mole)
-                        0.03_dbl_kind,     &
-                        0.03_dbl_kind/),   &
+ 
+       real (kind=dbl_kind),  dimension(max_algae), public :: &
+         R_Si2N     , & ! algal Sil to N (mole/mole) 
+         R_S2N      , & ! algal S to N (mole/mole)
          ! Marchetti et al 2006, 3 umol Fe/mol C for iron limited Pseudo-nitzschia
-         R_Fe2C    = (/ 3.3e-3_dbl_kind,   & ! algal Fe to carbon (umol/mmol)
-                        3.3e-3_dbl_kind,   &
-                        1.0e-1_dbl_kind/), &
-         R_Fe2N    = (/ 2.3e-2_dbl_kind,   & ! algal Fe to N (umol/mmol)
-                        2.3e-2_dbl_kind,   &
-                        7.0e-1_dbl_kind/)
+         R_Fe2C     , & ! algal Fe to carbon (umol/mmol)
+         R_Fe2N         ! algal Fe to N (umol/mmol)
 
       real (kind=dbl_kind), dimension(max_don), public :: & 
-         R_Fe2DON  = (/ 2.3e-2_dbl_kind/)    ! Fe to N of DON (nmol/umol)
+         R_Fe2DON       ! Fe to N of DON (nmol/umol)
 
-      real (kind=dbl_kind), dimension(max_doc), public :: &  ! increase compare to algal R_Fe2C
-         R_Fe2DOC  =  (/ 1.0e-1_dbl_kind, &  ! Fe to C of DOC (nmol/umol)
-                         3.3e-2_dbl_kind, &
-                         1.0e-1_dbl_kind/)
+      real (kind=dbl_kind), dimension(max_doc), public :: &  
+         R_Fe2DOC       ! Fe to C of DOC (nmol/umol)
 
       real (kind=dbl_kind), parameter, public :: &
-         R_gC2molC  = 12.01_dbl_kind,  & ! mg/mmol C
-         fr_resp    = 0.05_dbl_kind ,  & ! fraction of algal growth lost due to respiration
-         tau_min    = 5.2e3_dbl_kind,  & ! rapid mobile to stationary exchanges (s)
-                                         ! 3.12e4_dbl_kind = 6 hours, 1.25e5_dbl_kind s = 1 day
-         tau_max    = 1.875e6_dbl_kind   ! long time mobile to stationary exchanges (s) = 15 days
-                                         ! 6.25e5_dbl_kind = 5 days
-
-      real (kind=dbl_kind), parameter, public :: &  
-         R_dFe2dust  = 0.035_dbl_kind,  & ! g/g (3.5% content) Tagliabue 2009
-         dustFe_sol  = 0.005_dbl_kind     ! solubility fraction
-                       !(0.2-2.5% solubility of mineral; 17.8% solubility of Biomass burning)  Bowie 2009        
+         R_gC2molC  = 12.01_dbl_kind ! mg/mmol C
 
       ! scavenging coefficient for tracers in snow
       ! bottom to last 6 are from Flanner et al., 2007
@@ -96,6 +76,35 @@
          zbgc_init_frac, &   ! fraction of ocean tracer  concentration in new ice
          tau_ret,        &   ! retention timescale  (s), mobile to stationary phase
          tau_rel             ! release timescale    (s), stationary to mobile phase         
+
+      !-----------------------------------------------------------------
+      ! From algal_dyn in ice_algae.F90 but not in namelist
+      !-----------------------------------------------------------------
+
+      real (kind=dbl_kind), dimension(max_algae), public :: &
+         chlabs           , & ! chla absorption 1/m/(mg/m^3)
+         alpha2max_low    , & ! light limitation (1/(W/m^2))
+         beta2max         , & ! light inhibition (1/(W/m^2))
+         mu_max           , & ! maximum growth rate (1/d)
+         grow_Tdep        , & ! T dependence of growth (1/C)
+         fr_graze         , & ! fraction of algae grazed
+         mort_pre         , & ! mortality (1/day)
+         mort_Tdep        , & ! T dependence of mortality (1/C)
+         k_exude          , & ! algal carbon  exudation rate (1/d)
+         K_Nit            , & ! nitrate half saturation (mmol/m^3) 
+         K_Am             , & ! ammonium half saturation (mmol/m^3) 
+         K_Sil            , & ! silicon half saturation (mmol/m^3)
+         K_Fe                 ! iron half saturation  or micromol/m^3
+            
+      real (kind=dbl_kind), dimension(max_DON), public :: &
+         f_don            , & ! fraction of spilled grazing to DON
+         kn_bac           , & ! Bacterial degredation of DON (1/d)
+         f_don_Am             ! fraction of remineralized DON to Am
+
+      real (kind=dbl_kind), dimension(max_DOC), public :: &
+         f_doc            , & ! fraction of mort_N that goes to each doc pool
+         f_exude          , & ! fraction of exuded carbon to each DOC pool
+         k_bac                ! Bacterial degredation of DOC (1/d)    
 
       !-----------------------------------------------------------------
       ! brine

@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_shortwave.F90 1108 2016-03-07 18:42:44Z njeffery $
+!  SVN:$Id: ice_shortwave.F90 1136 2016-07-29 21:10:31Z eclare $
 !=======================================================================
 !
 ! The albedo and absorbed/transmitted flux parameterizations for
@@ -922,6 +922,9 @@
                   fpn = (c1 - asnow) * fpn
                   hpn = pndaspect * fpn
                endif
+               ! Zero out fraction of thin ponds for radiation only
+               if (hpn < hpmin) fpn = c0
+               fsn = min(fsn, c1-fpn)
                apeffn(n) = fpn ! for history
             elseif (tr_pond_lvl) then
                fpn = c0  ! fraction of ice covered in pond
@@ -972,7 +975,6 @@
                      hpn = hp * tmp
                      fpn = fpn * tmp
                   endif
-                  !fsn = min(fsn, c1-fpn)
                endif ! hp > puny
 
                ! Zero out fraction of thin ponds for radiation only
@@ -995,6 +997,9 @@
                   fpn = c0
                   hpn = c0
                endif
+
+               ! Zero out fraction of thin ponds for radiation only
+               if (hpn < hpmin) fpn = c0
 
                ! If ponds are present snow fraction reduced to
                ! non-ponded part dEdd scheme 
@@ -1275,7 +1280,6 @@
                vsno = hs * aice
                netsw = swvdr + swidr + swvdf + swidf
                if (netsw > puny) then ! sun above horizon
-!echmod               if (coszen > puny) then ! sun above horizon
                   aero_mp(na  ) = aero(na  )*vsno
                   aero_mp(na+1) = aero(na+1)*vsno
                   aero_mp(na+2) = aero(na+2)*vice
@@ -1291,7 +1295,6 @@
          netsw = swvdr + swidr + swvdf + swidf
          if (netsw > puny) then ! sun above horizon
             coszen = max(puny,coszen)
-!echmod            if (coszen > puny) then ! sun above horizon
             ! evaluate sea ice thickness and fraction
             hi  = vice / aice
             fi  = c1 - fs - fp
@@ -1332,7 +1335,6 @@
          netsw = swvdr + swidr + swvdf + swidf
          if (netsw > puny) then ! sun above horizon
             coszen = max(puny,coszen)
-!echmod         if (coszen > puny) then ! sun above horizon
             ! snow-covered sea ice points
             if(fs > c0) then
                ! calculate snow covered sea ice
@@ -1372,11 +1374,10 @@
          netsw = swvdr + swidr + swvdf + swidf
          if (netsw > puny) then ! sun above horizon
             coszen = max(puny,coszen)
-!echmod         if (coszen > puny) then ! sun above horizon
             hi  = vice / aice
-            ! if non-zero pond fraction and sufficient pond depth
+            ! if nonzero pond fraction and sufficient pond depth
             ! if( fp > puny .and. hp > hpmin ) then
-            if ( fp > puny) then
+            if (fp > puny) then
                
                ! calculate ponded ice
 
@@ -1409,7 +1410,16 @@
             endif
          endif
 
-      if (l_print_point .and. coszen > .01_dbl_kind) then
+         ! if no incoming shortwave, set albedos to 1
+         netsw = swvdr + swidr + swvdf + swidf
+         if (netsw <= puny) then ! sun above horizon
+            alvdr = c1
+            alvdf = c1
+            alidr = c1
+            alidf = c1
+         endif
+
+      if (l_print_point .and. netsw > puny) then
 
          write(nu_diag,*) ' printing point = ',n
          write(nu_diag,*) ' coszen = ', &

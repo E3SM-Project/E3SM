@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_mushy.F90 1099 2015-12-12 18:12:30Z eclare $
+!  SVN:$Id: ice_therm_mushy.F90 1136 2016-07-29 21:10:31Z eclare $
 !=======================================================================
 
 module ice_therm_mushy
@@ -49,7 +49,7 @@ contains
                                           fcondtop, fcondbot, &
                                           fadvheat, snoice,   &
                                           einit_old,lstop,    &
-                                          nu_diag)
+                                          nu_diag,  stop_label)
 
     ! solve the enthalpy and bulk salinity of the ice for a single column
 
@@ -124,6 +124,9 @@ contains
 
     integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
+
+    character (len=*), intent(out) :: &
+         stop_label   ! abort error message
 
     ! local variables
     real(kind=dbl_kind), dimension(1:nilyr) :: &
@@ -246,6 +249,11 @@ contains
                                   flatn,       fsurfn,     &
                                   lstop,       nu_diag)
 
+       if (lstop) then
+          stop_label = "temperature_changes_salinity: Picard solver non-convergence (snow)"
+          return
+       end if
+
        ! given the updated enthalpy and bulk salinity calculate other quantities
        do k = 1, nslyr
           zTsn(k) = temperature_snow(zqsn(k))
@@ -285,6 +293,11 @@ contains
                                     flwoutn,     fsensn,     &
                                     flatn,       fsurfn,     &
                                     lstop,       nu_diag)
+
+       if (lstop) then
+          stop_label = "temperature_changes_salinity: Picard solver non-convergence (no snow)"
+          return
+       end if
 
        ! given the updated enthalpy and bulk salinity calculate other quantities
        do k = 1, nilyr

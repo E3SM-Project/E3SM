@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_0layer.F90 1099 2015-12-12 18:12:30Z eclare $
+!  SVN:$Id: ice_therm_0layer.F90 1136 2016-07-29 21:10:31Z eclare $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures
@@ -48,8 +48,8 @@
                                        fsensn,   flatn,    &
                                        flwoutn,  fsurfn,   &
                                        fcondtopn,fcondbot, &
-                                       l_stop,   nu_diag)
-
+                                       l_stop,   nu_diag,  &
+                                       stop_label)
 
       integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
@@ -89,6 +89,9 @@
 
       logical (kind=log_kind), intent(inout) :: &
          l_stop          ! if true, print diagnostics and abort model
+
+      character (len=*), intent(out) :: &
+         stop_label   ! abort error message
 
       ! local variables
 
@@ -300,6 +303,7 @@
          write(nu_diag,*) 'fcondtopn, fcondbot', &
                           fcondtopn, fcondbot
          l_stop = .true.
+         stop_label = "zerolayer_temperature: Thermo iteration does not converge"
          return
       endif
 
@@ -316,6 +320,7 @@
             write(nu_diag,*) 'fcondtopn=',fcondtopn
             write(nu_diag,*) 'fsurfn=',fsurfn
             l_stop = .true.
+            stop_label = "zerolayer_temperature: fcondtopn /= fsurfn"
             return
          endif
       endif                     ! l_zerolayerchecks

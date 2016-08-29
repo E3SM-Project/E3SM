@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_mechred.F90 1099 2015-12-12 18:12:30Z eclare $
+!  SVN:$Id: ice_mechred.F90 1136 2016-07-29 21:10:31Z eclare $
 !=======================================================================
 
 ! Driver for ice mechanical redistribution (ridging)
@@ -148,7 +148,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop         ! if true, abort on return
 
-      character (char_len), intent(out) :: &
+      character (len=*), intent(out) :: &
          stop_label   ! diagnostic information for abort
 
       integer (kind=int_kind), intent(in) :: &
@@ -407,6 +407,7 @@
             write(nu_diag,*) 'Exceeded max number of ridging iterations'
             write(nu_diag,*) 'max =',nitermax
             l_stop = .true.
+            stop_label = "ridge_ice: Exceeded max number of ridging iterations"
             return
          endif
 
@@ -565,6 +566,7 @@
 
       if (abs(asum - c1) > puny) then
          l_stop = .true.
+         stop_label = "ridge_ice: total area > 1"
 
          write(nu_diag,*) ' '
          write(nu_diag,*) 'Ridging error: total area > 1'
@@ -1110,7 +1112,7 @@
       logical (kind=log_kind), intent(inout) :: &
          l_stop         ! if true, abort on return
 
-      character (char_len), intent(out) :: &
+      character (len=*), intent(out) :: &
          stop_label   ! diagnostic information for abort
 
       real (kind=dbl_kind), dimension (:), intent(inout), optional :: &

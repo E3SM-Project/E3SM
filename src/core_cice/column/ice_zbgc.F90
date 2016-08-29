@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_zbgc.F90 1142 2016-08-27 16:07:51Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry driver
@@ -543,7 +543,8 @@
                                grow_net)
  
       use ice_constants_colpkg, only: c1, c0, p5, secday, puny
-      use ice_colpkg_shared, only: solve_zbgc, max_nbtrcr, hs_ssl, R_C2N
+      use ice_colpkg_shared, only: solve_zbgc, max_nbtrcr, hs_ssl, R_C2N, &
+                             fr_resp
       use ice_colpkg_tracers, only: nt_bgc_N, nt_fbri
 
       real (kind=dbl_kind), intent(in) :: &          
@@ -669,7 +670,7 @@
 
       use ice_constants_colpkg, only: c1, secday, puny
       use ice_colpkg_tracers, only: nt_bgc_N
-      use ice_colpkg_shared, only: sk_l, R_C2N
+      use ice_colpkg_shared, only: sk_l, R_C2N, fr_resp
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr   , & ! number of cells with aicen > puny
