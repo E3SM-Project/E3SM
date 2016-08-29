@@ -558,8 +558,11 @@ class Case(object):
         else:
             pesobj = Pes(self._pesfile)
 
-            pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
+            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount)
+
+
+
 
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
@@ -572,6 +575,9 @@ class Case(object):
         for key, value in pes_nthrds.items():
             totaltasks[key[-3:]] *= int(value)
             mach_pes_obj.set_value(key,int(value))
+        for key, value in other.items():
+            self.set_value(key, value)
+
         maxval = 1
         pes_per_node = mach_pes_obj.get_value("PES_PER_NODE")
         for key, val in totaltasks.items():
