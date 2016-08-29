@@ -2270,12 +2270,12 @@ contains
 
          allocate(outTracerColumn(nVertLevels))
 
-         inKMax = size(interpTracer, 1)
          do iCell = 1, nCells
             outKMax = maxLevelCell(iCell)
+            inKMax = scratchMaxLevelCell(iCell)
             if(outKMax < 1) cycle ! nothing to interpolate
 
-            outTracerColumn(:) = -9.969209968386869e+36_RKIND
+            outTracerColumn(:) = 9.969209968386869e+36_RKIND
             call ocn_init_interpolation_linear_vert(tracerDepth % array(1:inKMax), &
                  interpTracer(1:inKMax,iCell), &
                  inKMax, &
@@ -2283,7 +2283,7 @@ contains
                  outTracerColumn(1:outKMax), &
                  outKMax, &
                  extrapolate=.false.)
-            tracerArray(tracerIndex,1:outKMax,iCell) = outTracerColumn(1:outKMax)
+            tracerArray(tracerIndex,:,iCell) = outTracerColumn(:)
 
          end do
 
