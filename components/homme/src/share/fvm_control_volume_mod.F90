@@ -17,7 +17,7 @@ module fvm_control_volume_mod
   ! ---------------------------------------------------------------------------------
   use element_mod, only: timelevels, element_t
   ! ---------------------------------------------------------------------------------
-  use dimensions_mod, only: nc, nhe, nlev, ntrac, ntrac_d, ne, np, nhr, ns, nhc
+  use dimensions_mod, only: nc, nhe, nlev, ne, np, nhr, ns, nhc
   ! ---------------------------------------------------------------------------------
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   ! ---------------------------------------------------------------------------------
@@ -37,9 +37,9 @@ module fvm_control_volume_mod
 
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
-    real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,2)
+  !  real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,2)
     ! fvm tracer mixing ratio tendency: (kg/kg/s)
-    real (kind=real_kind) :: fc(nc,nc,nlev,ntrac_d)
+ !   real (kind=real_kind) :: fc(nc,nc,nlev,ntrac_d)
     real (kind=real_kind) :: dp_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev        ,2)
     real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nc:nc+nhc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)

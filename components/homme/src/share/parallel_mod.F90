@@ -11,9 +11,7 @@ module parallel_mod
   implicit none
 
   public 
-#ifdef _MPI
 #include <mpif.h>
-#endif
   integer, parameter, public :: ORDERED = 1
   integer, parameter, public :: FAST = 2
   integer, parameter, public :: BNDRY_TAG_BASE = 0
@@ -110,8 +108,6 @@ contains
 #endif      
     integer, intent(in), optional ::  npes_in
     type (parallel_t) par
-
-#ifdef _MPI
 
 #include <mpif.h>
 #ifdef _AIX
@@ -285,16 +281,7 @@ contains
 
     deallocate(the_names)
  
-#else
-    par%root          =  0 
-    par%rank          =  0
-    par%nprocs        =  1
-    par%comm          = -1
-    par%intercomm     = -1
-    par%masterproc    = .TRUE.
-    nmpi_per_node     =  2
-    PartitionForNodes = .TRUE.
-#endif
+
     !===================================================
     !  Kind of lame but set this variable to be 1 based 
     !===================================================
@@ -312,9 +299,7 @@ contains
 #ifdef CAM
     use cam_abortutils, only : endrun ! _EXTENRAL
 #else
-#ifdef _MPI
     integer info,ierr
-#endif
 #endif
     character*(*) string
 #ifdef CAM
@@ -324,10 +309,8 @@ contains
 #ifdef _AIX
     call xl__trbk()
 #endif
-#ifdef _MPI
     call MPI_Abort(MPI_COMM_WORLD,info,ierr)
     call MPI_finalize(info)
-#endif
 #endif
   end subroutine abortmp
        
@@ -342,18 +325,15 @@ contains
   ! =========================================================
   subroutine haltmp(string)
          
-#ifdef _MPI
   integer info
-#endif
 
   character*(*) string
   if(iam .eq. 1) then 
     write(*,*) string
   endif
 
-#ifdef _MPI
   call MPI_finalize(info)
-#endif
+
   ! This can send a non-zero error code to the shell
   stop
 end subroutine haltmp
@@ -372,31 +352,21 @@ end subroutine haltmp
     integer            :: lcl_component
     integer            :: leader(0:ncomponents-1)
 
-#ifdef _MPI
     integer ierr
     integer info
     integer            :: key
-#endif
 
     lcl_component=ncomponents-1
     do while(leader(lcl_component) > par%rank)
       lcl_component=lcl_component-1
     end do
 
-#ifdef _MPI
     key=par%rank   ! simplest key for most cases
 
     call MPI_comm_split(par%comm, lcl_component, key, newpar%comm,ierr);
-
     call MPI_comm_rank(newpar%comm,newpar%rank,info)
     call MPI_comm_size(newpar%comm,newpar%nprocs,info)
     newpar%root=0
-#else
-    newpar%comm=-1
-    newpar%root=0
-    newpar%rank=0
-    newpar%nprocs=1
-#endif
 
   end function split
 
@@ -416,7 +386,6 @@ end subroutine haltmp
     integer           :: lcl_component
     integer           :: leader(0:ncomponents-1) ! leader rank in bridge group
 
-#ifdef _MPI
     integer tag
     integer i
     integer ierr
@@ -445,8 +414,8 @@ end subroutine haltmp
         call MPI_Intercomm_create(lcl_par%comm, lcl_par%root, gbl_par%comm, &
                                   leader(i), tag, lcl_par%intercomm(i), ierr)  
       end if
-    end do     
-#endif 
+    end do
+
   end subroutine connect
 
 ! =====================================
@@ -459,7 +428,6 @@ end subroutine haltmp
 
     type (parallel_t) par
 
-#ifdef _MPI
 #include <mpif.h>
     integer                         :: errorcode,errorlen,ierr
     character(len=MPI_MAX_ERROR_STRING)               :: errorstring
@@ -471,7 +439,7 @@ end subroutine haltmp
       call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
       call abortmp(errorstring)
     endif
-#endif
+
   end subroutine syncmp
 
 #if 0
@@ -500,7 +468,6 @@ end subroutine haltmp
     real(kind=real_kind),allocatable :: Global(:),buffer(:)
     integer                          :: ierr,i,ie,ig,disp,nelemr,ip
     
-#ifdef _MPI
 #if 0
     if(type == ORDERED) then 
       allocate(buffer(nelem))
@@ -539,19 +506,6 @@ end subroutine haltmp
 
       call MPI_Allreduce(local_sum,res,1,MPIreal_t, &
                          MPI_SUM,par%comm,ierr)
-#else
-    if(type == ORDERED) then 
-      ! ===========================
-      !  Perform the ordererd sum  
-      ! ===========================
-      res = 0.0d0
-      do i=1,nelem
-        res = res + variable(i)
-      enddo
-    else
-      res=SUM(variable)
-    endif
-#endif
   end function psum_1d
 #endif
   
@@ -566,20 +520,13 @@ end subroutine haltmp
     real(kind=real_kind),intent(in)  :: variable(:)
     type (parallel_t),intent(in)     :: par
     real(kind=real_kind)             :: res
-         
     real(kind=real_kind)             :: local_sum
-#ifdef _MPI
     integer                          :: ierr
-#endif    
 
     local_sum=MINVAL(variable)
-#ifdef _MPI
 
-    call MPI_Allreduce(local_sum,res,1,MPIreal_t, &
-                       MPI_MIN,par%comm,ierr)
-#else
-    res = local_sum
-#endif
+    call MPI_Allreduce(local_sum,res,1,MPIreal_t,MPI_MIN,par%comm,ierr)
+
   end function pmin_1d
   
   ! =============================================
@@ -594,16 +541,10 @@ end subroutine haltmp
     real(kind=real_kind)             :: res
     
     real(kind=real_kind)             :: local_sum
-#ifdef _MPI
     integer                          :: ierr
-#endif    
     local_sum=MAXVAL(variable)
-#ifdef _MPI
-    call MPI_Allreduce(local_sum,res,1,MPIreal_t, &
-                       MPI_MAX,par%comm,ierr)
-#else
-    res = local_sum
-#endif
+    call MPI_Allreduce(local_sum,res,1,MPIreal_t, MPI_MAX,par%comm,ierr)
+
   end function pmax_1d
 
   ! =============================================
@@ -616,19 +557,11 @@ end subroutine haltmp
     real(kind=real_kind),intent(in)  :: variable(:)
     type (parallel_t),intent(in)     :: par
     real(kind=real_kind)             :: res
-     
     real(kind=real_kind)             :: local_sum
-#ifdef _MPI
     integer                          :: ierr
-#endif    
 
     local_sum=SUM(variable)
-#ifdef _MPI
-    call MPI_Allreduce(local_sum,res,1,MPIreal_t, &
-                       MPI_SUM,par%comm,ierr)
-#else
-    res = local_sum
-#endif
+    call MPI_Allreduce(local_sum,res,1,MPIreal_t,MPI_SUM,par%comm,ierr)
 
   end function psum_1d
   

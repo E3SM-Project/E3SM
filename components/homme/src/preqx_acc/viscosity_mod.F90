@@ -10,7 +10,7 @@ module viscosity_mod
 #endif
   use thread_mod, only : omp_get_num_threads
   use kinds, only : real_kind, iulog
-  use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
+  use dimensions_mod, only : np, nc, nlev,qsize,nelemd
   use hybrid_mod, only : hybrid_t, hybrid_create
   use parallel_mod, only : parallel_t
   use element_mod, only : element_t

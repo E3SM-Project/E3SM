@@ -249,12 +249,9 @@ contains
   ! =======================================
 
   subroutine pmax_mt_int_1d(red,redp,len,hybrid)
+
     use hybrid_mod, only : hybrid_t
-#ifdef _MPI
     use parallel_mod, only: mpi_min, mpi_max, mpiinteger_t,abortmp
-#else
-    use parallel_mod, only: abortmp
-#endif
 
     type (ReductionBuffer_int_1d_t)   :: red       ! shared memory reduction buffer struct
     integer,               intent(in) :: len       ! buffer length
@@ -262,9 +259,7 @@ contains
     type (hybrid_t),       intent(in) :: hybrid    ! parallel handle
 
     ! Local variables
-#ifdef _MPI
     integer ierr
-#endif
 
     integer  :: k
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
@@ -285,10 +280,11 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP END CRITICAL (CRITMAX)
 #endif
-#ifdef _MPI
+
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
+
     if (hybrid%ithr==0) then
 
        call MPI_Allreduce(red%buf(1),redp,len,MPIinteger_t, &
@@ -296,7 +292,7 @@ contains
 
        red%buf(1:len)=redp(1:len)
     end if
-#endif
+
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -306,11 +302,7 @@ contains
   
   subroutine pmax_mt_r_1d(red,redp,len,hybrid)
     use hybrid_mod, only : hybrid_t
-#ifdef _MPI
     use parallel_mod, only: mpi_min, mpi_max, mpireal_t,abortmp
-#else
-    use parallel_mod, only: abortmp
-#endif
 
     type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct
     real (kind=real_kind), intent(inout) :: redp(:) ! thread private vector of partial sum
@@ -318,9 +310,7 @@ contains
     type (hybrid_t),       intent(in) :: hybrid  ! parallel handle
 
     ! Local variables
-#ifdef _MPI
     integer ierr
-#endif
 
     integer  :: k
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
@@ -340,7 +330,6 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP END CRITICAL (CRITMAX)
 #endif
-#ifdef _MPI
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -351,7 +340,6 @@ contains
 
        red%buf(1:len)=redp(1:len)
     end if
-#endif
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -367,13 +355,10 @@ contains
   ! =======================================
 
   subroutine pmin_mt_r_1d(red,redp,len,hybrid)
+
     use kinds, only : int_kind
     use hybrid_mod, only : hybrid_t
-#ifdef _MPI
     use parallel_mod, only: mpi_min, mpireal_t,abortmp
-#else
-    use parallel_mod, only: abortmp
-#endif
 
     type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct
     real (kind=real_kind), intent(inout) :: redp(:) ! thread private vector of partial sum
@@ -382,9 +367,7 @@ contains
 
     ! Local variables
 
-#ifdef _MPI
     integer ierr
-#endif
     integer (kind=int_kind) :: k
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
@@ -404,7 +387,6 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP END CRITICAL (CRITMAX)
 #endif
-#ifdef _MPI
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -415,7 +397,6 @@ contains
 
        red%buf(1:len)=redp(1:len)
     end if
-#endif
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -426,11 +407,8 @@ contains
   subroutine ElementSum_1d(res,variable,type,hybrid)
     use hybrid_mod, only : hybrid_t
     use dimensions_mod, only : nelem
-#ifdef _MPI
-  use parallel_mod, only : ORDERED, mpireal_t, mpi_min, mpi_max, mpi_sum, mpi_success
-#else
-  use parallel_mod, only : ORDERED
-#endif
+    use parallel_mod, only : ORDERED, mpireal_t, mpi_min, mpi_max, mpi_sum, mpi_success
+
     implicit none
 
     ! ==========================
@@ -456,15 +434,12 @@ contains
     real(kind=real_kind),allocatable :: buffer(:)
 #endif
 
-#ifdef _MPI
     integer                           :: errorcode,errorlen
     character*(80) errorstring
 
     real(kind=real_kind)             :: local_sum
     integer                          :: ierr
-#endif
 
-#ifdef _MPI
     if(hybrid%ithr == 0) then 
 #if 0
        if(type == ORDERED) then
@@ -525,21 +500,7 @@ contains
        endif
 #endif
     endif
-#else
-    if(hybrid%ithr == 0) then 
-       if(type == ORDERED) then
-          ! ===========================
-          !  Perform the ordererd sum
-          ! ===========================
-          res = 0.0d0
-          do i=1,nelem
-             res = res + variable(i)
-          enddo
-       else
-          res=SUM(variable)
-       endif
-    endif
-#endif
+
 
   end subroutine ElementSum_1d
 

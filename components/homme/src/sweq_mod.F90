@@ -18,7 +18,7 @@ contains
     !-----------------
     use derivative_mod, only : derivative_t, derivinit, deriv_print, allocate_subcell_integration_matrix
     !-----------------
-    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc, ntrac
+    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
@@ -53,17 +53,6 @@ contains
     !-----------------
     use advance_mod, only : advance_nonstag, advance_si_nonstag
     !-----------------
-#ifdef TRILINOS
-    use implicit_mod, only : advance_imp_nonstag
-    !-----------------
-    use, intrinsic :: iso_c_binding 
-    !-----------------
-    use derived_type_mod ,only : derived_type, initialize
-
-
-    use precon_type_mod ,only : precon_type, init_precon
-    use solver_mod, only : solver_test, solver_test_ml
-#endif
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
@@ -76,9 +65,6 @@ contains
     use checksum_mod, only : test_ghost, test_bilin_phys2gll
 
     use fvm_control_volume_mod, only : fvm_struct
-    
-    use fvm_mod, only : fvm_init2,fvm_init3    
-    use fvm_bsp_mod, only: fvm_init_tracer
 
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile
@@ -132,35 +118,7 @@ contains
     type (quadrature_t)   :: gp           ! quadratures on velocity and pressure grids
     real (kind=real_kind) :: solver_wts(npsq,nete-nets+1) ! solver wets array for nonstag grid
 
-#ifdef TRILINOS
-    integer :: lenx
-    real (c_double) ,allocatable ,dimension(:) :: xstate
-! state_object is a derived data type passed thru noxinit as a pointer
-    type(derived_type) ,target         :: state_object
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-
-    type(derived_type) ,target          :: pre_object
-    type(derived_type) ,pointer         :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-
-    type(derived_type) ,target          :: jac_object
-    type(derived_type) ,pointer        :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
-
-    type (element_t)  :: pc_elem(size(elem))
-    type (element_t)  :: jac_elem(size(elem))
-
-
-    real (kind=real_kind), dimension(np,np)  :: utemp1,utemp2
-
-
-
-
-#endif
-
     integer :: simday
-
     integer :: point
     integer :: i,j,iptr
     integer :: it,ie,k
@@ -176,25 +134,6 @@ contains
   
   real (kind=real_kind)                          :: xtmp
   real (kind=real_kind)                          :: maxcflx, maxcfly  
-
-
-#ifdef TRILINOS
-  interface 
-     subroutine noxinit(vectorSize, vector, comm, v_container, p_container) &
-          bind(C,name='noxinit')
-       use ,intrinsic :: iso_c_binding
-       integer(c_int)                :: vectorSize,comm
-       real(c_double)  ,dimension(*) :: vector
-       type(c_ptr)                   :: v_container
-       type(c_ptr)                   :: p_container  !precon ptr
-     end subroutine noxinit
-
-    subroutine noxfinish() bind(C,name='noxfinish')
-      use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
-    end subroutine noxfinish
-
-  end interface
-#endif
 
 #if 0
      call allocate_subcell_integration_matrix(np,  6)
@@ -245,10 +184,7 @@ contains
        fvm_points(i)= ( fvm_corners(i)+fvm_corners(i+1) ) /2
     end do
     call derivinit(deriv,fvm_corners,fvm_points)
-    if (ntrac>0) then
-       call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
-       call test_bilin_phys2gll(elem,fvm,hybrid,nets,nete)
-    endif
+
 
 !   if (hybrid%masterthread) then
 !       call deriv_print(deriv)
@@ -316,9 +252,7 @@ contains
 #if 0
     if (hybrid%masterthread) print *,'running CG solver test'
     call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
-#ifdef TRILINOS
-    call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
-#endif
+
     if (hybrid%masterthread) print *,'running global integration-by-parts checks'
     call test_ibyp(elem,hybrid,nets,nete)
     if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
@@ -468,16 +402,7 @@ contains
              call tc5_init_state(elem,nets,nete,pmean,deriv)
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
-             
-             if (ntrac>0) then
-             do ie=nets,nete
-               call fvm_init_tracer(fvm(ie),tl)
-             end do
-             call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
-             if (hybrid%masterthread) print *,"initializing fvm tracers for swtc5..."
-             endif
-
-             
+                          
           else if (test_case(1:5) == "swtc6") then
              if (hybrid%masterthread)  print *,"initializing swtc6..."
              call tc6_init_state(elem,nets,nete,pmean)
@@ -531,14 +456,6 @@ contains
                 allocate(blkjac(nets:nete))
                 call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
              end if
-          else if (integration == "full_imp") then
-! only nonstagger is coded
-             allocate(blkjac(nets:nete))
-             lambdasq(:) = pmean*dt*dt
-!             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
-!             if (precon_method == "block_jacobi") then
-!                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
-!             end if
           end if
 
           if (toy_chemistry==1) call toy_chemistry_forcing(elem,nets,nete,tl,dt)
@@ -595,18 +512,17 @@ contains
           ! ===============================================================
           ! Print Min/Max/Sum of State vars after first timestep
           ! ===============================================================
-          if (integration /= "full_imp") then
 
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
 
-          endif  ! if time step taken
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+
        endif  ! if initial run 
     end if ! if topology == "cube"
 
     ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
     ! one extra timestep to get started.  dont count that timestep, otherwise
-    ! times will all be off by tstep. Also, full_imp is just starting.
+    ! times will all be off by tstep.
 
     tl%nstep=0 
 
@@ -621,53 +537,8 @@ contains
        if (precon_method == "block_jacobi") then
           call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
        end if
-    else if (integration == "full_imp") then
-       lambdasq(:) = pmean*dt*dt
-!       if (precon_method == "block_jacobi") then
-!          call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
-!       end if
     end if
 
-    if (integration == "full_imp") then
-      if (hybrid%masterthread) print *,'initializing Trilinos solver info'
-
-#ifdef TRILINOS
-      lenx=np*np*nlev*nvar*(nete-nets+1)
-      allocate(xstate(lenx))
-      xstate(:) = 0
-       call initialize(state_object, lenx, elem, pmean,edge1,edge2, edge3, &
-        hybrid, deriv, dt, tl, nets, nete)
-       !call init_precon(pre_object, lenx, elem, blkjac, edge1, edge2, edge3, &
-       ! red, deriv, cg, lambdasq, dt, pmean, tl, nets, nete)
-
-    
-       pc_elem=elem
-       jac_elem=elem
-
-
-       call initialize(pre_object, lenx, pc_elem, pmean, edge1,edge2,edge3, &
-        hybrid, deriv, dt, tl, nets, nete)
-
-       call initialize(jac_object, lenx, jac_elem, pmean, edge1,edge2,edge3, &
-        hybrid, deriv, dt, tl, nets, nete)
-
-
-       fptr => state_object
-       c_ptr_to_object =  c_loc(fptr)
-       pptr => pre_object
-       c_ptr_to_pre =  c_loc(pptr)
-       jptr => jac_object
-       c_ptr_to_jac =  c_loc(jptr)
-
-
-
-
-
-        call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre)
-#endif
-
-    end if
-    
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -706,91 +577,7 @@ contains
           end do
         endif
 #endif 
-               
-               
-       else if (integration == "full_imp") then
-            dt=tstep
-#ifdef TRILINOS
 
-    nm1   = tl%nm1
-    n0    = tl%n0
-    np1   = tl%np1
-
-
-        do ie=nets,nete
-         do k=1,nlev
-          do i=1,np
-           do j=1,np
-           utemp1(i,j)= elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
-           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
-           elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
-           elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
-
-           utemp1(i,j)= elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
-           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0) 
-           elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
-           elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
-
-           utemp1(i,j)= elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
-           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
-
-           elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
-           elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
-! need  to  convert  xstate  to  latlon
-
-           end do !nv
-          end do !nv 
-         end do !nlev 
-        end do !ie 
-
-
-
-
-            call advance_imp_nonstag(elem, edge1, edge2, edge3, red, deriv,  &
-               cg, hybrid, blkjac, lambdasq, dt, pmean, tl, nets, nete, xstate)
-
-            ! TODO update with vortex and swirl possibly using set_prescribed_velocity
-
-        do ie=nets,nete
-
-         if (topology == "cube" .and. test_case=="swtc1") then
-             do k=1,nlev
-                elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
-                elem(ie)%state%v(:,:,:,k,n0)=elem(ie)%state%v(:,:,:,k,np1)
-                elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,nm1)
-             end do 
-         else
-         do k=1,nlev
-          do i=1,np
-           do j=1,np
-           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
-           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
-
-           elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
-           elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
-
-           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
-           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0)
-
-           elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
-           elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
-
-           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
-           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
-
-           elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
-           elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
-! need ! to ! convert ! xstate ! to ! contravariant 
-           end do !np 
-          end do !np 
-         end do !nlev 
-        end if
-        end do !ie
-
-#else
-!           Check /utils/trilinos/README for more details
-            call abortmp('Need to include -DTRILINOS at compile time to execute FI solver')
-#endif
        else if (integration == "semi_imp") then
           call advance_si_nonstag(elem, edge1, edge2,    edge3        ,   red          ,             &
                deriv,                                  &
@@ -806,20 +593,13 @@ contains
        ! =================================
        ! update time level pointers
        ! =================================
-        if (integration == "full_imp") then
-           if (tstep_type == 13) then
-              call TimeLevel_update(tl,"leapfrog") ! for BDF2
-           else     
-              call TimeLevel_update(tl,"forward") ! second order Crank Nicolson
-           end if
-        else
-           if (tl%nstep==0) then
-              call TimeLevel_update(tl,"forward")
-              dt=dt*2    
-           else
-              call TimeLevel_update(tl,"leapfrog")
-           endif
-        end if 
+
+       if (tl%nstep==0) then
+          call TimeLevel_update(tl,"forward")
+          dt=dt*2    
+       else
+          call TimeLevel_update(tl,"leapfrog")
+       endif
 
        ! ============================================================
        ! Instrumentation alley:
@@ -973,15 +753,8 @@ contains
 
     end do
 
-     if (integration == "full_imp") then ! closeout trilinos assignments
-#ifdef TRILINOS
-       call noxfinish()
-       deallocate(xstate)
-#endif
-     end if
-
 ! TODO: branch has this, I think we need it here as well, but not yet tested
-!     if ((integration == "full_imp").or.(integration == "semi_imp")) then ! closeout 
+!     if ((integration == "semi_imp") then ! closeout
 !       deallocate(blkjac)
 !     end if
 
@@ -1546,14 +1319,13 @@ contains
       use element_mod, only : element_t
       use fvm_control_volume_mod, only : fvm_struct
       use derivative_mod, only : derivative_t
-      use kinds, only : real_kind
+      use kinds,      only : real_kind
       use hybrid_mod, only : hybrid_t
-      use time_mod, only : timelevel_t
-      use perf_mod, only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
+      use time_mod,   only : timelevel_t
+      use perf_mod,   only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
       use derivative_mod, only : divergence_sphere, ugradv_sphere
-      use fvm_mod, only :  cslam_runairdensity, edgeveloc, fvm_mcgregor,fvm_mcgregordss
-      use bndry_mod, only : bndry_exchangev
-      use edge_mod, only  : edgevpack, edgevunpack
+      use bndry_mod,  only : bndry_exchangev
+      use edge_mod,   only  : edgevpack, edgevunpack
       use dimensions_mod, only : np, nlev
       
       implicit none
@@ -1629,14 +1401,7 @@ contains
         
       enddo  
     end do  
-      call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
 !-------END new McGregor scheme--------
-
-      ! fvm departure calcluation should use vstar.
-      ! from c(n0) compute c(np1): 
-      ! call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
-      
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete,0.0_real_kind)
 
       call t_stopf('shal_advec_tracers_fvm')
     end subroutine shal_advec_tracers_fvm  

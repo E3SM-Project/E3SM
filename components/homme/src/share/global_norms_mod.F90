@@ -246,7 +246,7 @@ contains
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
-    use dimensions_mod, only : np,ne,nelem,nelemd,nc,nhe,ntrac,qsize
+    use dimensions_mod, only : np,ne,nelem,nelemd,nc,nhe,qsize
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
@@ -530,18 +530,7 @@ contains
        if (qsize>0) &
           write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
                1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
-       if (ntrac>0) then
-          !
-          ! rough estimate of Courant number limted time-step:
-          !
-          ! U_max*dt_tracer/dx < nhe
-          !
-          ! where U_max=120 m/s and dx = 360 degrees/(4*ne*nc) = (2*pi*Rearth m)/(4*ne*nc)
-          !
-          write(iulog,'(a,f10.2,a)') "Stability (fvm Courant number): advective (120m/s)   dt_tracer < ",&
-               dble(nhe)*(2.0D0*dd_pi*Rearth/dble(4.0*ne*nc))/120.0d0,'s'
-          write(iulog,*) "(note that fvm stability is also limited by flow deformation - Lipschitz criterion!)"
-       end if
+
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', &
                                    1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &

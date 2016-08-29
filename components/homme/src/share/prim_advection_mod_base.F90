@@ -56,7 +56,7 @@ module prim_advection_mod_base
 !
 !
   use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, nc
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use derivative_mod, only     : gradient, vorticity, gradient_wk, derivative_t, divergence, &
                                  gradient_sphere, divergence_sphere
@@ -191,11 +191,6 @@ contains
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap1_nofilter  ! _EXTERNAL (actually INTERNAL)
-    use fvm_mod, only : cslam_runairdensity, cslam_runflux, edgeveloc
-    use fvm_mod, only: fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
-    use fvm_mod, only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
-    use fvm_mod, only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
-    use fvm_bsp_mod, only: get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use fvm_control_volume_mod, only : n0_fvm,np1_fvm,fvm_supercycling
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
@@ -271,26 +266,6 @@ contains
              eta_dot_dpdn(:,:,k) = eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
           enddo
 
-
-          ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
-          !        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
-          ! elem%state%u(np1)  = velocity at time t+1 on reference levels
-          ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-!           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
-          do k=1,nlev
-             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-             dp_star(:,:,k) = dp(:,:,k) + dt*(eta_dot_dpdn(:,:,k+1) -   eta_dot_dpdn(:,:,k))
-             if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
-               if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
-                 elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(np1))
-               else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
-                 elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(np1))
-               else
-                 call abortmp('Bad fvm_test_type in prim_step')
-               end if
-             end if
-          enddo
           call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
        end do
     else
@@ -299,30 +274,6 @@ contains
        ! to interpolate v(np1). 
     endif
 
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! 2D advection step
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!------------------------------------------------------------------------------------
-!     call t_startf('fvm_depalg')
-
-!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt*fvm_supercycling, 3)
-    call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt*fvm_supercycling, 3)
-    write(*,*) "fvm_rkdss dt ",dt*fvm_supercycling
-!     call t_stopf('fvm_depalg')
-
-!------------------------------------------------------------------------------------
-    
-    ! fvm departure calcluation should use vstar.
-    ! from c(n0) compute c(np1):
-    if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
-      call cslam_runflux(elem,fvm,hybrid,deriv,dt,tl,nets,nete,hvcoord%hyai(1)*hvcoord%ps0)
-    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete,hvcoord%hyai(1)*hvcoord%ps0)
-    else
-      call abortmp('Bad tracer_transport_type in Prim_Advec_Tracers_fvm')
-    end if
 
     call t_stopf('prim_advec_tracers_fvm')
   end subroutine Prim_Advec_Tracers_fvm
@@ -1934,7 +1885,6 @@ OMP_SIMD
 
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type(fvm_struct), intent(inout) :: fvm(:)
-  real (kind=real_kind)           :: cdp(1:nc,1:nc,nlev,ntrac)
   real (kind=real_kind)           :: psc(nc,nc), dpc(nc,nc,nlev),dpc_star(nc,nc,nlev)
   type (element_t), intent(inout) :: elem(:)
   type (hvcoord_t)                :: hvcoord
@@ -2055,61 +2005,6 @@ OMP_SIMD
            call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
            call t_stopf('vertical_remap1_3')
         endif
-     endif
-
-     if (ntrac>0) then
-
-        ! create local variable  cdp(1:nc,1:nc,nlev,ntrac)
-        ! cdp(:,:,:,n) = fvm%c(:,:,:,n,np1_fvm)*fvm%dp_fvm(:,:,:,np1_fvm)
-        ! dp(:,:,:) = reference level thicknesses
-
-        ! call remap1(cdp,nc,ntrac-1,fvm%c(:,:,:,1,np1_fvm),dp)
-
-        ! convert back to mass:
-        ! fvm%dp_fvm(:,:,:,np1_fvm) = dp(:,:,:) ??XXgoldyXX??
-        ! fvm%c(:,:,:,n,np1_fvm) = fvm%c(:,:,:,n,np1_fvm)/dp(:,:,:)
-
-        if (ntrac>0) then
-           !
-           ! Recompute dp_fvm (this will not be necessary when SE fluxes are coded)
-           !
-           do k = 1, nlev
-              fvm(ie)%dp_fvm(1:nc,1:nc,k,np1_fvm)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
-           end do
-           !
-           !
-           !
-           do i=1,nc
-              do j=1,nc
-                 !
-                 ! compute surface pressure implied by fvm scheme: psC
-                 psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
-                 !
-                 ! compute source (cdp) and target (dpc) pressure grids for vertical remapping
-                 !
-                 do k=1,nlev
-                    dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                         (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-                    cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1_fvm)*fvm(ie)%dp_fvm(i,j,k,np1_fvm)
-                 end do
-              end do
-           end do
-           dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1_fvm)
-
-           call t_startf('vertical_remap1_5')
-           call remap1(cdp,nc,ntrac,dpc_star,dpc)
-           call t_stopf('vertical_remap1_5')
-
-           do k=1,nlev
-              do j=1,nc
-                 do i=1,nc
-                    fvm(ie)%dp_fvm(i,j,k,np1_fvm)=dpc(i,j,k) !!XXgoldyXX??
-                    fvm(ie)%c(i,j,k,1:ntrac,np1_fvm)=cdp(i,j,k,1:ntrac)/dpc(i,j,k)
-                 end do
-              end do
-           end do
-        end if
-        !         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
      endif
 
   enddo

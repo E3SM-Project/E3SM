@@ -4,47 +4,33 @@
 
 
 
-module restart_io_mod 
-   !------------------
-   use kinds , only : int_kind, real_kind
-   !------------------
-   use dimensions_mod, only : nelem, ne, np, nlev, nelemd
-   !------------------
-   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-#ifdef _MPI
-   use parallel_mod, only : iam, mpiinteger_t, mpireal_t, mpi_status_size, &
+module restart_io_mod
+
+   use kinds ,          only : int_kind, real_kind
+   use dimensions_mod,  only : nelem, ne, np, nlev, nelemd
+   use perf_mod,        only : t_startf, t_stopf ! _EXTERNAL
+   use parallel_mod,    only : iam, mpiinteger_t, mpireal_t, mpi_status_size, &
       mpi_success, mpi_max, syncmp, haltmp, &
       MPIinteger_t,parallel_t, &
       MPI_BYTE, abortmp
-   use parallel_mod, only : abortmp
+   use parallel_mod,    only : abortmp
 #ifdef _PRESTART
-   use parallel_mod, only :  mpi_offset_kind, mpi_address_kind, mpi_mode_wronly,&
+   use parallel_mod,    only :  mpi_offset_kind, mpi_address_kind, mpi_mode_wronly,&
       mpi_mode_create, mpi_info_null, mpi_mode_rdonly, mpi_order_fortran
 #endif
-#else
-   use parallel_mod, only : iam, mpiinteger_t, mpireal_t,parallel_t,haltmp
-#endif
-   !------------------
+
    use time_mod, only : timelevel_t, nendstep, nmax
-   !------------------
    use element_mod, only: elem_state_t, element_t
-   !------------------
    use control_mod, only : restartdir, restartfile, columnpackage
-   !------------------
 #ifdef _PRIM
    use physics_types_mod, only : physics_state_t, pelem
 #endif
-   !------------------
    use schedtype_mod, only : Schedule
-   !------------------
    implicit none
 
 ! these should be accessed through parallel_mod, above:
 ! intel fortran will complain if they appear in both places
-!#ifdef _MPI
 !#include <mpif.h> ! _EXTERNAL
-!#endif
-
 
    private 
 
@@ -139,7 +125,7 @@ module restart_io_mod
    public :: AddStateField
    public :: CreateStateDescriptor,PrintStateDescriptor
    public :: ConstructElementFile
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
    public :: PrintTypeInfo
 #endif
 
@@ -151,7 +137,7 @@ module restart_io_mod
    !  Some variables used by all MPI routines
    ! =========================================
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
    integer(kind=MPI_OFFSET_KIND)   :: offset,nbytes
    integer :: STATUS(MPI_STATUS_SIZE)
 #else
@@ -181,7 +167,7 @@ contains
      !==================
      integer           :: ie, ig
      integer           :: amode, info
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
 
      integer (kind=int_kind)	:: type_ablock, type_fview
      integer                    :: array_disp(nelemd)
@@ -192,7 +178,7 @@ contains
 #endif
      call t_startf('WriteState')
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
 if (COLLECTIVE_IO_WRITE) then
      call mpi_type_contiguous( recl, MPI_BYTE, type_ablock, ierr )
      call mpi_type_commit( type_ablock, ierr )
@@ -264,14 +250,14 @@ endif
        open(unit=56,file=File%fname,status='UNKNOWN',form='UNFORMATTED', &
 	     recl=recl,ACCESS='DIRECT')
      endif
-#ifdef _MPI
+
      call syncmp(File%par)
      if (iam /= 1) then 
        open(unit=56,file=File%fname,status='OLD',form='UNFORMATTED', &
              recl=recl,ACCESS='DIRECT')
 
      endif   
-#endif
+
      do ie=1,nelemd
        ig = Schedule(1)%Local2Global(ie)
 !	print *, __FILE__,__LINE__,ie,ig,sizeof(variable(ie))
@@ -303,7 +289,7 @@ endif
      !==================
      integer           :: ie, ig, info, amode
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
      integer (kind=int_kind)    :: type_ablock, type_fview
      integer                    :: array_disp(nelemd)
      integer                    :: array_blen(nelemd)
@@ -313,7 +299,7 @@ endif
 
      call t_startf('ReadState')
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
 if ( COLLECTIVE_IO_READ ) then
      call mpi_type_contiguous( recl, MPI_BYTE, type_ablock, ierr )
      call mpi_type_commit( type_ablock, ierr )
@@ -488,7 +474,7 @@ endif
      ! =============================================
      offset = 0
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
      amode = IOR(MPI_MODE_WRONLY,MPI_MODE_CREATE)
      info  = MPI_INFO_NULL
      call MPI_file_open(File%par%comm,headername,amode,info,File%fh,ierr)
@@ -548,7 +534,7 @@ endif
 
      headername = trim(File%fname)//'.hdr'
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
      amode = MPI_MODE_RDONLY     
      info  = MPI_INFO_NULL
      call MPI_file_open(File%par%comm,headername,amode,info,File%fh,ierr)
@@ -610,9 +596,8 @@ endif
        read(57,rec=1) Header 
        close(57)
     endif
-#ifdef _MPI
+
     call MPI_bcast(Header,RESTART_HDR_CNT,MPIinteger_t,File%par%root,File%par%comm,ierr)
-#endif
     
 #endif
 
@@ -706,7 +691,7 @@ endif
 
    integer,intent(in)   :: fh
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
      call MPI_file_close(fh,ierr)
      if(ierr .ne. MPI_SUCCESS) then
        errorcode=ierr
@@ -741,7 +726,7 @@ endif
     integer (kind=int_kind)      :: ie,ig
  
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
     if (collective_io_read .or. collective_io_write ) then
        ! we need to setup collective MPI IO structs and data types
     else
@@ -894,7 +879,7 @@ endif
 
  
     end subroutine AddStateField
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
 !=========================================================================
 !  PrintTypeInfo:
 !    Prints out information about an MPI datatype 

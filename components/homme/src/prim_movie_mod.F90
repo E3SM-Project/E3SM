@@ -3,15 +3,12 @@
 #endif
 
 module prim_movie_mod
+
 #ifndef PIO_INTERP
   use kinds, only : real_kind, longdouble_kind
-  use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize, ntrac, nc
+  use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize, nc
   use hybvcoord_mod, only :  hvcoord_t 
-#ifdef _MPI
   use parallel_mod, only : syncmp, iam, mpireal_t, mpi_max, mpi_sum, mpiinteger_t, parallel_t, haltmp, abortmp
-#else
-  use parallel_mod, only : syncmp, iam, mpireal_t, parallel_t
-#endif
   use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
   use element_mod, only : element_t
   use fvm_control_volume_mod, only : fvm_struct
@@ -120,10 +117,7 @@ contains
     real (kind=real_kind) :: vartmp(np,np,nlev)
     real (kind=real_kind),allocatable :: var3d(:,:)
 
-
-#ifdef _MPI
     integer :: ierr
-#endif
 
     num_agg = 1
     call PIO_setDebugLevel(0)
@@ -722,30 +716,6 @@ contains
                    call nf_put_var(ncdf(ios),var3d,start, count, name=vname)
                 end if
              enddo
-
-             if (present(fvm)) then
-             do qindex=1,min(ntrac,4)
-                write(vname,'(a1,i1)') 'C',qindex
-                if (qindex==1) vname='C'
-                if(nf_selectedvar(vname, output_varnames)) then
-
-                   
-                   if (par%masterproc) print *,'writing ',vname
-                   do k=1,nlev
-                      jj=0
-                      do ie=1,nelemd
-                         do j=1,nc
-                            do i=1,nc
-                               jj=jj+1
-                               varphys(jj,k)= fvm(ie)%c(i,j,k,qindex,tl%n0)
-                            end do
-                         end do
-                      end do
-                   end do
-                   call nf_put_var(ncdf(ios),varphys,start, count, name=vname,iodescin=iodesc3d_nc)
-                endif
-             enddo
-             endif
 
              if(nf_selectedvar('geo', output_varnames)) then
                 st=1

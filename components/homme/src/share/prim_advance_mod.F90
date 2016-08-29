@@ -19,10 +19,6 @@ module prim_advance_mod
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
        applyCAMforcing_dynamics, applyCAMforcing, smooth_phis, overwrite_SEdensity
 
-#ifdef TRILINOS
-  public :: distribute_flux_at_corners
-#endif
-  
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
   type (EdgeBuffer_t) :: edge3p1
@@ -96,10 +92,6 @@ contains
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use time_mod, only : TimeLevel_t,  timelevel_qdp, tevolve
     use diffusion_mod, only :  prim_diffusion
-#ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
-    use, intrinsic :: iso_c_binding
-#endif
 
 #ifndef CAM
     use asp_tests, only : asp_advection_vertical
@@ -133,43 +125,6 @@ contains
     real (kind=real_kind) ::  deta
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx
-
-#ifdef TRILINOS
-    real (c_double) ,allocatable, dimension(:) :: xstate(:)
-
-!    type (element_t) :: pc_elem(size(elem))
-!    type (element_t) :: jac_elem(size(elem))
-
-! state_object is a derived data type passed thru noxinit as a pointer
-    type(derived_type) ,target         :: state_object
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-    type(derived_type) ,target         :: pre_object
-    type(derived_type) ,pointer         :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-    type(derived_type) ,target         :: jac_object
-    type(derived_type) ,pointer         :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
-
-    integer(c_int) :: ierr = 0
-
-  interface
-
-   subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container,ierr) &
-!   subroutine noxsolve(vectorSize,vector,v_container) &
-     bind(C,name='noxsolve')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-      type(c_ptr)                   :: j_container  !analytic jacobian ptr
-      integer(c_int)                :: ierr         !error flag
-    end subroutine noxsolve
-
-  end interface
-
-#endif
 
 !JMD    call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
 !pw call t_adj_detailf(+1)
@@ -209,11 +164,6 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!
-! integration = "full_imp"
-!
-!   tstep_type=1  Backward Euler or BDF2 implicit dynamics
-!
 
 ! default weights for computing mean dynamics fluxes
     eta_ave_w = 1d0/qsplit
@@ -465,144 +415,7 @@ contains
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
        call t_stopf("U3-5stage_timestep")
 #endif
-
-    else if ((method==11).or.(method==12)) then
-       ! Fully implicit JFNK method (vertically langragian not active yet)
-       if (rsplit > 0) then
-       call abortmp('ERROR: full_imp integration not yet coded for vert lagrangian adv option')
-       end if
-!      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
-
-#ifdef TRILINOS
-      call t_startf("JFNK_imp_timestep")
-      lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
-      allocate(xstate(lenx))
-      xstate(:) = 0d0
-
-      call initialize(state_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
-
-      call initialize(pre_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
-
-      call initialize(jac_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
-
-!      pc_elem = elem
-!      jac_elem = elem
-
-        fptr => state_object
-        c_ptr_to_object =  c_loc(fptr)
-        pptr => state_object
-        c_ptr_to_pre =  c_loc(pptr)
-        jptr => state_object
-        c_ptr_to_jac =  c_loc(jptr)
-
-! create flat state vector to pass through NOX
-! use previous time step as the first guess for the new one (because with LF time level update n0=np1)
-
-       np1 = n0
-
-       lx = 1
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%T(i,j,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do j=1,np
-			   do i=1,np
-				   xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
-				   lx = lx+1
-			   end do
-		   end do
-	   end do
-       
-! activate these lines to test infrastructure and still solve with explicit code
-!       ! RK2
-!       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
-!       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
-!            deriv,nets,nete,compute_diagnostics,0d0)
-!       ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
-!       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-!            deriv,nets,nete,.false.,eta_ave_w)
-
-! interface to use nox and loca solver libraries using JFNK, and returns xstate(n+1)
-    call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac, ierr)
-
-    if (ierr /= 0) call abortmp('Error in noxsolve: Newton failed to converge')
-
-      call c_f_pointer(c_ptr_to_object, fptr) ! convert C ptr to F ptr
-      elem = fptr%base
-
-	  lx = 1
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx) 
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%T(i,j,k,np1) = xstate(lx)
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do j=1,np
-			  do i=1,np
-				  elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
-				  lx = lx+1
-			  end do
-		  end do
-	  end do
-      call t_stopf("JFNK_imp_timestep")
-#endif
-
-    else
+      else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
@@ -1563,7 +1376,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
-  use dimensions_mod, only : np, nc, nlev, qsize, ntrac
+  use dimensions_mod, only : np, nc, nlev, qsize
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
   use control_mod, only : moisture, tracer_grid_type
@@ -1620,28 +1433,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
      enddo
-     ! Repeat for the fvm tracers
-     do q = 1, ntrac
-        do k = 1, nlev
-           do j = 1, nc
-              do i = 1, nc
-                 v1 = fvm(ie)%fc(i,j,k,q)
-                 if (fvm(ie)%c(i,j,k,q,n0_fvm) + v1 < 0 .and. v1<0) then
-                    if (fvm(ie)%c(i,j,k,q,n0_fvm) < 0 ) then
-                       v1 = 0  ! C already negative, dont make it more so
-                    else
-                       v1 = -fvm(ie)%c(i,j,k,q,n0_fvm)
-                    end if
-                 end if
-                 fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,n0_fvm) + v1
-                 !                    if (q == 1) then
-                 !!XXgoldyXX: Should update the pressure forcing here??!!??
-                 !                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                 !                  end if
-              end do
-           end do
-        end do
-     end do
 
      if (wet .and. qsize>0) then
         ! to conserve dry mass in the precese of Q1 forcing:
@@ -2035,7 +1826,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use dimensions_mod, only : np, np, nlev, nc, ntrac, max_corner_elem
+  use dimensions_mod, only : np, np, nlev, nc, max_corner_elem
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
   use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
@@ -2226,15 +2017,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                     vtens(i,j,2,k,ie)=vtens_tmp
                  enddo
               enddo
-              if (0<ntrac) then 
-                elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
-                                              eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
-                if (nu_top>0 .and. k<=3) then
-                  laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
-                  elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
-                endif
-              endif
 
               ! NOTE: we will DSS all tendicies, EXCEPT for dp3d, where we DSS the new state
               elem(ie)%state%dp3d(:,:,k,nt) = elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%spheremp(:,:)&
@@ -2262,41 +2044,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            kptr=nlev
            call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
            kptr=3*nlev
-           if (0<ntrac) then
-             do k=1,nlev
-               temp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt) / elem(ie)%spheremp  ! STATE before DSS 
-             enddo
-             corners = 0.0d0
-             corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,nt) ! fill in interior data of STATE*mass
-           endif
            call edgeVunpack(edge3, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
-
-
-
-           if (0<ntrac) then
-             kptr=3*nlev
-             desc = elem(ie)%desc
-             
-             call edgeDGVunpack(edge3, corners, nlev, kptr, ie) 
-             corners = corners/dt
-             
-             do k=1,nlev
-               temp(:,:,k) =  elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,nt) - temp(:,:,k)
-               temp(:,:,k) =  temp(:,:,k)/dt
-
-               call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
- 
-               cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
-               cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
-               cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
-               cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
-
-               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                 eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
-             end do
-           endif
-
-
 
            ! apply inverse mass matrix, accumulate tendencies
 #if (defined COLUMN_OPENMP)
@@ -2667,7 +2415,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   ! ===================================
   use kinds, only : real_kind
-  use dimensions_mod, only : np, nc, nlev, ntrac, max_corner_elem
+  use dimensions_mod, only : np, nc, nlev, max_corner_elem
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
@@ -3246,12 +2994,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            if (rsplit>0) &
               elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
               (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
-           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
-              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
-           end if
+
         enddo
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
@@ -3266,14 +3009,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                 elem(ie)%state%dp3d(:,:,k,np1) = &
                   elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
                   dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
-
-
-           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
-              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
-           end if
         enddo
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%ps_v(:,:,nm1) - dt2*sdot_sum )
 
@@ -3323,38 +3058,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
 
      if (rsplit>0) then
-        if (0<ntrac.and.eta_ave_w.ne.0.) then
-          do k=1,nlev
-             stashdp3d(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)/elem(ie)%spheremp(:,:)
-          end do
-        endif
 
         corners = 0.0d0
         corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,np1)
         kptr=kptr+2*nlev
         call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
 
-        if  (0<ntrac.and.eta_ave_w.ne.0.) then
-          desc = elem(ie)%desc
-          call edgeDGVunpack(edge3p1, corners, nlev, kptr, ie)
-          corners = corners/dt2
-
-          do k=1,nlev
-            tempdp3d = elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-            tempdp3d = tempdp3d - stashdp3d(:,:,k)
-            tempdp3d = tempdp3d/dt2
-
-            call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
- 
-            cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
-            cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
-            cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
-            cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
-
-            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet, cflux)
-            elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
-          end do
-        end if   
      endif
 
      ! ====================================================
@@ -3393,73 +3102,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !pw  call t_adj_detailf(-1)
 
   end subroutine compute_and_apply_rhs
-
-
-  subroutine distribute_flux_at_corners(cflux, corners, getmapP)
-    use kinds,          only : int_kind, real_kind
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod,    only : swest
-    implicit none
-
-    real   (kind=real_kind), intent(out)  :: cflux(2,2,2)
-    real   (kind=real_kind), intent(in)   :: corners(0:np+1,0:np+1)
-    integer(kind=int_kind),  intent(in)   :: getmapP(:)
-
-    cflux = 0.0d0
-    if (getmapP(swest+0*max_corner_elem) /= -1) then
-      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
-      cflux(1,1,1) = cflux(1,1,1) + (corners(0,0) - corners(1,1)) / 2.0d0
-      cflux(1,1,1) = cflux(1,1,1) + (corners(0,1) - corners(1,0)) / 2.0d0
- 
-      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
-      cflux(1,1,2) = cflux(1,1,2) + (corners(0,0) - corners(1,1)) / 2.0d0
-      cflux(1,1,2) = cflux(1,1,2) + (corners(1,0) - corners(0,1)) / 2.0d0
-    else
-      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
-      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
-    endif
- 
-    if (getmapP(swest+1*max_corner_elem) /= -1) then
-      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
-      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,0) - corners(np,1)) / 2.0d0
-      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,1) - corners(np,0)) / 2.0d0
- 
-      cflux(2,1,2) =                (corners(np  ,0) - corners(np,  1))     
-      cflux(2,1,2) = cflux(2,1,2) + (corners(np+1,0) - corners(np,  1)) / 2.0d0
-      cflux(2,1,2) = cflux(2,1,2) + (corners(np  ,0) - corners(np+1,1)) / 2.0d0
-    else
-      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
-      cflux(2,1,2) =                (corners(np  ,0) - corners(np,1))     
-    endif
- 
-    if (getmapP(swest+2*max_corner_elem) /= -1) then
-      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
-      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
-      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np  ) - corners(1,np+1)) / 2.0d0
- 
-      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
-      cflux(1,2,2) = cflux(1,2,2) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
-      cflux(1,2,2) = cflux(1,2,2) + (corners(1,np+1) - corners(0,np  )) / 2.0d0
-    else
-      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
-      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
-    endif
- 
-    if (getmapP(swest+3*max_corner_elem) /= -1) then
-      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
-      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
-      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np  ) - corners(np,np+1)) / 2.0d0
- 
-      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
-      cflux(2,2,2) = cflux(2,2,2) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
-      cflux(2,2,2) = cflux(2,2,2) + (corners(np  ,np+1) - corners(np+1,np)) / 2.0d0
-    else
-      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
-      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
-    endif
-  end subroutine
-
-
 
   subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
   use dimensions_mod, only : np, np, nlev
@@ -3621,8 +3263,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
 
-    use fvm_reconstruction_mod, only: reconstruction
-    use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
+    !use fvm_reconstruction_mod, only: reconstruction
     use dimensions_mod, only : np, nlev, nc,nhe
     use hybrid_mod, only : hybrid_t
     use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
@@ -3655,8 +3296,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     endif
 #if defined(_FVM)
     do ie=nets,nete
-      call reconstruction(fvm(ie)%psc, fvm(ie),recons)
-      call monotonic_gradient_cart(fvm(ie)%psc, fvm(ie),recons, elem(ie)%desc)
+      !call reconstruction(fvm(ie)%psc, fvm(ie),recons)
+      !call monotonic_gradient_cart(fvm(ie)%psc, fvm(ie),recons, elem(ie)%desc)
       do j=1,np
         do i=1,np
           xp=tan(elem(ie)%cartp(i,j)%x)
@@ -3691,7 +3332,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !           enddo
 !           jy = starti
 
-          call recons_val_cart(fvm(ie)%psc, xp,yp,fvm(ie)%spherecentroid,recons,ix,jy,tmpval)
+          !call recons_val_cart(fvm(ie)%psc, xp,yp,fvm(ie)%spherecentroid,recons,ix,jy,tmpval)
           elem(ie)%state%ps_v(i,j,np1)= elem(ie)%state%ps_v(i,j,np1) +&
                dt_q*(tmpval - elem(ie)%state%ps_v(i,j,np1) )/(7*24*60*60)
         end do

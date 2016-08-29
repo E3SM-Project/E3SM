@@ -175,11 +175,6 @@ IF(${BUILD_HOMME_PRIM})
   ADD_SUBDIRECTORY(primA)
 ENDIF()
 
-# Add the test exec subdirs for the swim executable
-IF(${BUILD_HOMME_SWIM})
-  ADD_SUBDIRECTORY(swim5)
-ENDIF()
-
 # Read the test-list.cmake file to get the HOMME_TESTS list
 INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 # Need a properly scoped variable to store the test directories for the

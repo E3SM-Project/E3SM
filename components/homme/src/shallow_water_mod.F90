@@ -3,47 +3,27 @@
 #endif
 
 module shallow_water_mod
-  ! ------------------------
-  use kinds, only : real_kind
-  ! ------------------------
-  use physical_constants, only : omega, g, rearth, rrearth, dd_pi
-  ! ------------------------
-  use dimensions_mod, only : nlev, np
-  ! ------------------------
-  use derivative_mod, only : derivative_t, vorticity_sphere, derivative_stag_t, gradient_wk, &
-                             divergence, vorticity, laplace_sphere_wk, &
-                             vlaplace_sphere_wk, divergence_sphere
-  ! ------------------------
-  use edge_mod, only : edgeVpack, edgeVunpack
-  use edgetype_mod, only : EdgeBuffer_t
-  ! ------------------------
-  use bndry_mod, only : bndry_exchangeV
-  ! ------------------------
-  use coordinate_systems_mod, only : spherical_polar_t
-  ! ------------------------
-  use quadrature_mod, only : gauss, gaussian_int, quadrature_t
-  ! ------------------------
-  use global_norms_mod, only : global_integral, linf_snorm, l1_snorm, l2_snorm
-  ! ------------------------
-  use time_mod, only : time_at, secpday, timelevel_t, nmax
-  ! ------------------------
-  use element_mod, only : element_t
-  ! ------------------------
-  use hybrid_mod, only : hybrid_t
-  ! ------------------------
-  use parallel_mod, only : parallel_t
-  ! ------------------------
-#ifdef _REFSOLN
-  use ref_state_mod, only : ref_state_read, ref_state_write
-#endif
-  ! ------------------------
-  use common_io_mod, only: output_prefix     ! Added to support output_prefix 
-  ! ------------------------
-  use viscosity_mod, only: biharmonic_wk, neighbor_minmax
-  ! ------------------------
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, &
-                           kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation, toy_chemistry
-  ! ------------------------
+
+  use kinds,              only: real_kind
+  use physical_constants, only: omega, g, rearth, rrearth, dd_pi
+  use dimensions_mod,     only: nlev, np
+  use derivative_mod,     only: derivative_t, vorticity_sphere, derivative_stag_t, gradient_wk, &
+                                divergence, vorticity, laplace_sphere_wk, &
+                                vlaplace_sphere_wk, divergence_sphere
+  use edge_mod,           only: edgeVpack, edgeVunpack
+  use edgetype_mod,       only: EdgeBuffer_t
+  use bndry_mod,          only: bndry_exchangeV
+  use coordinate_systems_mod, only: spherical_polar_t
+  use quadrature_mod,     only: gauss, gaussian_int, quadrature_t
+  use global_norms_mod,   only: global_integral, linf_snorm, l1_snorm, l2_snorm
+  use time_mod,           only: time_at, secpday, timelevel_t, nmax
+  use element_mod,        only: element_t
+  use hybrid_mod,         only: hybrid_t
+  use parallel_mod,       only: parallel_t
+  use common_io_mod,      only: output_prefix     ! Added to support output_prefix
+  use viscosity_mod,      only: biharmonic_wk, neighbor_minmax
+  use control_mod,        only: nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, &
+                                kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation, toy_chemistry
 
   implicit none
   private
@@ -516,7 +496,6 @@ contains
     ! with monotone limiter of order -1e-11 for some reason
     if (integration == "explicit" .and. limiter_option /= 0) pmean = 0
     if (integration == "runge_kutta" .and. limiter_option /= 0) pmean = 0
-    if (integration == "full_imp" .and. limiter_option /= 0) pmean = 0
   end function tc1_init_pmean
   ! ===========================================
   ! tc2_init_pmean
@@ -1772,52 +1751,6 @@ contains
        v(:,:,:,ie) = elem(ie)%state%v(:,:,:,1,tl%n0)
     end do
 
-    ! ======================================================
-    ! write in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-!  Parallel version of ref_state, comment out if reading below
-!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       pt(:,:,ie)=p(:,:,ie)
-!       vt(:,:,:,ie)=v(:,:,:,ie)
-!    end do
-#endif
-
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    npts=np
-
-    l1   = l1_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%masterthread) then
-       write(iounit+0,30)REAL(simday),l1
-       write(iounit+1,30)REAL(simday),l2
-       write(iounit+2,30)REAL(simday),linf
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-#endif
-
 30  format(f11.6,4x,e13.6)
 
   end subroutine tc5_errors
@@ -2230,49 +2163,6 @@ contains
        v(:,:,:,ie) = elem(ie)%state%v(:,:,:,1,tl%n0)
     end do
 
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-!  Parallel version of ref_state, comment out read below if writing here
-!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       pt(:,:,ie)=p(:,:,ie)
-!       vt(:,:,:,ie)=v(:,:,:,ie)
-!    end do
-#endif
-
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-#ifdef _REFSOLN
-#if (defined HORIZ_OPENMP)
-!    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    ! Get the state variables from the simulation (layer 1 only)...
-
-    npts = np
-
-    l1   = l1_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%masterthread) then
-       write(iounit+0,30)REAL(simday),l1
-       write(iounit+1,30)REAL(simday),l2
-       write(iounit+2,30)REAL(simday),linf
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#endif
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -3999,52 +3889,6 @@ contains
        p(:,:,ie)   = elem(ie)%state%p(:,:,1,tl%n0) + pmean
        v(:,:,:,ie) = elem(ie)%state%v(:,:,:,1,tl%n0)
     end do
-
-    ! ======================================================
-    ! write in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-!  Parallel version of ref_state, comment out if reading below
-!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       pt(:,:,ie)=p(:,:,ie)
-!       vt(:,:,:,ie)=v(:,:,:,ie)
-!    end do
-#endif
-
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-   call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-   !$OMP BARRIER
-#endif
-
-    npts=np
-
-    l1   = l1_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%masterthread) then
-       write(iounit+0,30)REAL(simday),l1
-       write(iounit+1,30)REAL(simday),l2
-       write(iounit+2,30)REAL(simday),linf
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-#endif
 
 30  format(f11.6,4x,e13.6)
 

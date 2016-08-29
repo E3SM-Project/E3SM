@@ -43,8 +43,6 @@ SET(SWEQX_SRCS
                ${SRC_BASE}/state_mod.F90
                ${SRC_BASE}/sweq_mod.F90
                ${SRC_BASE}/types_mod.F90
-               ${SRC_SHARE}/fvm_bsp_mod.F90
-               ${SRC_SHARE}/fvm_transformation_mod.F90
                ${SRC_SHARE}/cg_mod.F90
                ${SRC_SHARE}/control_mod.F90
                ${SRC_SHARE}/coordinate_systems_mod.F90
@@ -54,13 +52,7 @@ SET(SWEQX_SRCS
                ${SRC_SHARE}/domain_mod.F90
                ${SRC_SHARE}/element_mod.F90
                ${SRC_SHARE}/filter_mod.F90
-               ${SRC_SHARE}/fvm_analytic_mod.F90
                ${SRC_SHARE}/fvm_control_volume_mod.F90
-               ${SRC_SHARE}/fvm_filter_mod.F90
-               ${SRC_SHARE}/fvm_line_integrals_mod.F90
-               ${SRC_SHARE}/fvm_line_integrals_flux_mod.F90
-               ${SRC_SHARE}/fvm_mod.F90
-               ${SRC_SHARE}/fvm_reconstruction_mod.F90
                ${SRC_SHARE}/global_norms_mod.F90
                ${SRC_SHARE}/gridgraph_mod.F90
                ${SRC_SHARE}/hybrid_mod.F90
@@ -93,8 +85,6 @@ SET(SWEQX_SRCS
                ${SRC_UTILS}/shr_vmath_mod.F90
                ${SRC_UTILS}/shr_const_mod.F90
                ${SRC_UTILS}/shr_spfn_mod.F90
-               ${SRC_BASE}/ref_state_mod.F90
-               ${SRC_BASE}/jrio.c
 )
 
 SET(EXEC_SOURCES ${SWEQX_SRCS} ${SRC_BASE}/main.F90 )

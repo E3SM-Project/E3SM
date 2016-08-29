@@ -34,11 +34,8 @@ private
    integer                         :: errorcode,errorlen,ierr
    character(len=80)               :: errorstring
 #if 0
-#ifdef _MPI
    integer(kind=MPI_OFFSET_KIND)   :: offset,nbytes
-#else
-   integer(kind=int_kind)          :: offset,nbytes
-#endif
+
 #endif
    ! ====================================================
    !  Routines for Restart files
@@ -100,7 +97,7 @@ contains
     len = SIZE(state%gradps)
     call AddStateField(RestDesc,len,type)
 
-#if defined(_MPI) && defined(_PRESTART)
+#if defined(_PRESTART)
     call PrintStateDescriptor(RestDesc)
     call ConstructElementFile(RestDesc,File,ierr)
 #endif

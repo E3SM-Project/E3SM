@@ -27,9 +27,7 @@ module interpolate_mod
   use physical_constants,     only : DD_PI
   use quadrature_mod,         only : quadrature_t, gauss, gausslobatto
   use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPIinteger_t
-#ifdef _MPI
   use parallel_mod,           only : MPI_MAX, MPI_SUM, MPI_MIN
-#endif
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
   use control_mod,            only : cubed_sphere_map
@@ -670,8 +668,7 @@ contains
 !-----------------------------------------------------------------------------------!
 subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   use fvm_control_volume_mod, only : fvm_struct
-  use fvm_reconstruction_mod, only: reconstruction
-  use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
+  !use fvm_reconstruction_mod, only: reconstruction
   use edgetype_mod, only : edgedescriptor_t
   
   type (interpdata_t), intent(in)     :: interpdata                        
@@ -688,8 +685,8 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   integer                           :: i, ix, jy, starti,endi,tmpi
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
   
-  call reconstruction(f, fvm,recons)
-  call monotonic_gradient_cart(f, fvm,recons, desc) 
+  !call reconstruction(f, fvm,recons)
+  !call monotonic_gradient_cart(f, fvm,recons, desc)
 !phl PCoM  recons=0.0
 
   tmpaxp=(corners(1)%x+corners(2)%x)/2
@@ -729,7 +726,7 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
     enddo
     jy = starti
     
-    call recons_val_cart(f, xp,yp,fvm%spherecentroid,recons,ix,jy,tmpval)
+    !call recons_val_cart(f, xp,yp,fvm%spherecentroid,recons,ix,jy,tmpval)
     flatlon(i)=tmpval    
 !phl PCoM     flatlon(i)=f(ix,jy)    
   end do
@@ -1380,18 +1377,17 @@ end subroutine interpol_phys_latlon
        endif
     enddo
     err2=err
-#ifdef _MPI
+
     call MPI_Allreduce(err,err2,1,MPIreal_t,MPI_MAX,par%comm,ierr)
-#endif
+
     if (par%masterproc) then
        write(iulog,'(a,e12.4)') 'Max interpolation point search error: ',err2
     endif
 
     ! if multile elements claim a interpolation point, take the one with largest gid:
     global_elem_gid = local_elem_gid
-#ifdef _MPI
+
     call MPI_Allreduce(local_elem_gid, global_elem_gid, nlat*nlon, MPIinteger_t, MPI_MAX, par%comm,ierr)
-#endif
 
     missing_pts=0
     do j=1,nlat
@@ -1409,9 +1405,8 @@ end subroutine interpol_phys_latlon
 
     countx=maxval(interpdata(1:nelemd)%n_interp)
     count_max = countx
-#ifdef _MPI
+
     call MPI_Allreduce(countx,count_max,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
-#endif
 
     if (par%masterproc) then
        write(iulog,'(a,i6)') 'Maximum number of interpolation points claimed by an element: ',count_max
@@ -1468,9 +1463,9 @@ end subroutine interpol_phys_latlon
        enddo
     enddo
     global_elem_gid = local_elem_gid
-#ifdef _MPI
+
     call MPI_Allreduce(local_elem_gid, global_elem_gid, nlat*nlon, MPIinteger_t, MPI_SUM, par%comm,ierr)
-#endif
+
     if (par%masterproc) then
        countx=0
        do j=1,nlat

@@ -8,88 +8,52 @@ contains
 ! not a nice way to integrate fvm but otherwise DG does not work anymore
   subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt, fvm)
     use kinds, only : real_kind, longdouble_kind
-    ! --------------------------------
     use thread_mod, only : nthreads, omp_set_num_threads
-    ! --------------------------------
-    use control_mod, only : filter_counter, restartfreq, topology, &
-          partmethod, while_iter
-    ! --------------------------------
+    use control_mod, only : filter_counter, restartfreq, topology, partmethod, while_iter
     use namelist_mod, only : readnl
-    ! --------------------------------
-    use dimensions_mod, only : np, nelem, nlev, nelemd, nelemdmax,  &
-	GlobalUniqueCols
-    ! -------------------------------- 
+    use dimensions_mod, only : np, nelem, nlev, nelemd, nelemdmax, 	GlobalUniqueCols
     use time_mod, only : time_at, nmax
-    ! --------------------------------
     use quadrature_mod, only :  test_gauss, test_gausslobatto, quadrature_t, gausslobatto
-    ! --------------------------------
     use element_mod, only : element_t, allocate_element_desc
-    ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
-    ! --------------------------------
     use mesh_mod, only : MeshUseMeshFile
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
-    ! --------------------------------
     use mesh_mod, only :   MeshSetCoordinates,      &
                            MeshCubeTopology,  &
                            MeshCubeElemCount, &
                            MeshCubeEdgeCount
-    ! --------------------------------
     use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
          assign_node_numbers_to_elem
 
-    ! --------------------------------
     use edge_mod, only : initedgebuffer
     use edgetype_mod, only : EdgeDescriptor_t, edgebuffer_t
-    ! --------------------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_flops, red_timer, &
          red_sum, red_sum_int, red_max, red_max_int, InitReductionBuffer
-    ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, LocalElemCount, &
          initmetagraph
-    ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, PrintGridEdge, PrintGridVertex, allocate_gridvertex_nbrs
-    ! --------------------------------
     use schedule_mod, only : genEdgeSched
-    ! --------------------------------
     use schedtype_mod, only : schedule
-    ! --------------------------------
     use state_mod, only : printstate_init
-    ! --------------------------------
     !  use global_norms_mod
-    ! --------------------------------
     use parallel_mod, only : iam, parallel_t, haltmp, mpiinteger_t, abortmp,global_shared_buf, nrepro_vars
-    ! --------------------------------
     use metis_mod, only : genmetispart
-    ! --------------------------------
     use checksum_mod, only : testchecksum
-    ! --------------------------------
     use spacecurve_mod, only : genspacepart
-    ! --------------------------------
     use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
-    ! --------------------------------
     use restart_io_mod, only : restfile
-    ! --------------------------------
     use restart_mod, only : initRestartFile
-    ! --------------------------------
     use params_mod, only : SFCURVE
-    ! ---------------------------------
     use thread_mod, only : nThreadsHoriz, omp_get_num_threads
-    ! ---------------------------------
     use domain_mod, only: domain1d_t, decompose 
-    ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-    ! --------------------------------
-    use fvm_mod, only : fvm_init1
     use fvm_control_volume_mod, only : fvm_struct
-    use dimensions_mod, only : nc, ntrac
+    use dimensions_mod, only : nc
 
     implicit none
-#ifdef _MPI
 ! _EXTERNAL
 #include <mpif.h> 
-#endif
-!   G95  "pointer attribute conflicts with INTENT attribute":  
+!   G95  "pointer attribute conflicts with INTENT attribute":
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
     type (fvm_struct), pointer, optional :: fvm(:)
@@ -246,20 +210,13 @@ contains
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
 
     nelemd = LocalElemCount(MetaVertex(1))
-#ifdef _MPI
+
     call mpi_allreduce(nelemd,nelemdmax,1, MPIinteger_t,MPI_MAX,par%comm,ierr)
-#else
-    nelemdmax=nelemd
-#endif
 
     allocate(elem(nelemd))
     call allocate_element_desc(elem)
     if (present(fvm)) then
-    if (ntrac>0) then
-       allocate(fvm(nelemd))
-    else
        allocate(fvm(0))  ! create mesh, even if no cslam tracers
-    endif
     endif
 
     ! ====================================================
@@ -369,8 +326,7 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    if (ntrac>0) call fvm_init1(par,elem)
-    
+
     call t_stopf('init')
   end subroutine init
 
