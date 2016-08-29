@@ -76,7 +76,7 @@ contains
 
    subroutine li_calculate_diagnostic_vars(domain, solveVelo, err)
 
-      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction_sia
+      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction
 
       !-----------------------------------------------------------------
       !
@@ -172,11 +172,13 @@ contains
             call li_heat_dissipation_sia(domain, err_tmp)
             err = ior(err, err_tmp)
 
-            ! Compute heat flux due to basal friction
-            call li_basal_friction_sia(domain, err_tmp)
-            err = ior(err, err_tmp)
-
          endif   ! sia
+         ! (HO dissipation is calculated within dycore)
+
+         ! Compute heat flux due to basal friction
+         !   appropriate for SIA or HO dycore, assuming Taub=beta*ub
+         call li_basal_friction(domain, err_tmp)
+         err = ior(err, err_tmp)
 
       endif   ! temperature or enthalpy
 
