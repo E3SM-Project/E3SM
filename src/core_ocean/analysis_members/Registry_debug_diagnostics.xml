@@ -34,7 +34,7 @@
 				filename_template="analysis_members/debugDiagnostics.$Y-$M-$D.nc"
 				filename_interval="01-00-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
-				reference_time="0000-01-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
 				packages="debugDiagnosticsAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
