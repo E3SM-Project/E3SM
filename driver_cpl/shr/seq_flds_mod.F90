@@ -1094,12 +1094,12 @@ module seq_flds_mod
      call metadata_set(attname, longname, stdname, units)
 
      ! Irrigation fraction (land/rof only) 
-     call seq_flds_add(l2x_states,"Sl_frac_irrig")
-     call seq_flds_add(x2a_states,"Sl_frac_irrig")
+     call seq_flds_add(l2x_states,"Flrl_frac_irrig")
+     call seq_flds_add(x2a_states,"Flrl_frac_irrig")
      longname = 'Irrigation fraction'
      stdname  = 'irrigation_fraction'
      units    = '1'
-     attname  = 'Sl_frac_irrig'
+     attname  = 'Flrl_frac_irrig'
      call metadata_set(attname, longname, stdname, units)
 
      ! Surface snow depth (ice/atm only)
