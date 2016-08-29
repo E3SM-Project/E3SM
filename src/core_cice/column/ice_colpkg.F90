@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg.F90 1108 2016-03-07 18:42:44Z njeffery $
+!  SVN:$Id: ice_colpkg.F90 1141 2016-08-25 17:22:04Z njeffery $
 !=========================================================================
 !
 ! flags and interface routines for the column package
@@ -365,9 +365,7 @@
       use ice_constants_colpkg, only: iyear_AD, eccen, obliqr, lambm0, &
          mvelpp, obliq, mvelp, decln, eccf, log_print
 
-#ifdef CCSMCOUPLED
-      use shr_orb_mod, only: shr_orb_params
-#else
+#ifndef CCSMCOUPLED
       use ice_orbital, only: shr_orb_params
 #endif
 
@@ -377,17 +375,14 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort the model
 
-      character (char_len), intent(out) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       l_stop = .false.      ! initialized for CCSMCOUPLED
       stop_label = ''       ! initialized for CCSMCOUPLED
       iyear_AD  = 1950
       log_print = .false.   ! if true, write out orbital parameters
 
-#ifdef CCSMCOUPLED
-      call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
-                           obliqr  , lambm0, mvelpp, log_print)
-#else
+#ifndef CCSMCOUPLED
       call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
                            obliqr  , lambm0, mvelpp, log_print, &
                            nu_diag , l_stop, stop_label)
@@ -537,7 +532,7 @@
          hum       ! hum (mmol/m^3)
 
       real (kind=dbl_kind), dimension (max_algae), intent(inout) :: &
-         algalN    ! ocean algal nitrogen (mmol/m^3) (diatoms, phaeo, pico)
+         algalN    ! ocean algal nitrogen (mmol/m^3) (diatoms, pico, phaeocystis)
 
       real (kind=dbl_kind), dimension (max_doc), intent(inout) :: &
          doc       ! ocean doc (mmol/m^3)  (proteins, EPS, lipid)
@@ -560,7 +555,7 @@
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
         
-      character (char_len), intent(inout) :: stop_label
+      character (len=*), intent(inout) :: stop_label
 
       ! local variables
 
@@ -1668,8 +1663,8 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort model
 
-      character (len=char_len), intent(out) :: &
-         stop_label
+      character (len=*), intent(out) :: &
+         stop_label      ! abort error message
 
       integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
@@ -1863,10 +1858,10 @@
                                  mlt_onset,    frz_onset,    &
                                  yday,         dsnown   (n), &
                                  l_stop,       nu_diag,      &
-                                 prescribed_ice)
+                                 stop_label,   prescribed_ice)
                
             if (l_stop) then
-               stop_label = 'ice: Vertical thermo error'
+               stop_label = 'ice: Vertical thermo error: '//trim(stop_label)
                return
             endif
                
@@ -2045,7 +2040,7 @@
                                      first_ice,    fzsal,         &
                                      flux_bio,     ocean_bio,     &
                                      l_stop,       stop_label,    &
-                                     nu_diag,                     &
+                                     nu_diag,      frazil_diag,   &
                                      frz_onset,    yday)
 
       use ice_constants_colpkg, only: puny
@@ -2109,7 +2104,8 @@
          fhocn    , & ! net heat flux to ocean (W/m^2)
          fzsal    , & ! salt flux to ocean from zsalinity (kg/m^2/s)
          meltl    , & ! lateral ice melt         (m/step-->cm/day)
-         frazil       ! frazil ice growth        (m/step-->cm/day)
+         frazil   , & ! frazil ice growth        (m/step-->cm/day)
+         frazil_diag  ! frazil ice growth diagnostic (m/step-->cm/day)
 
       real (kind=dbl_kind), dimension(:), intent(inout) :: &
          aicen_init,& ! initial concentration of ice
@@ -2129,7 +2125,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop         ! if true, abort model
 
-      character (char_len), intent(out) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       real (kind=dbl_kind), intent(inout), optional :: &
          frz_onset    ! day of year that freezing begins (congel or frazil)
@@ -2215,7 +2211,7 @@
                            cgrid,         igrid,        &
                            nbtrcr,        flux_bio,     &
                            ocean_bio,     fzsal,        &
-                           nu_diag,                     &
+                           nu_diag,       frazil_diag,  &
                            l_stop,        stop_label)
 
          if (l_stop) return
@@ -2818,7 +2814,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop       ! if true, abort the model
 
-      character (char_len), intent(out) :: &
+      character (len=*), intent(out) :: &
          stop_label   ! diagnostic information for abort
 
       ! local variables
@@ -4284,7 +4280,7 @@
       logical (kind=log_kind), intent(inout) :: &  
          l_stop          ! if true, abort the model
 
-      character (char_len), intent(inout) :: stop_label
+      character (len=*), intent(inout) :: stop_label
 
       ! local variables
 
@@ -4688,11 +4684,11 @@
        dmsp = p1  
        dms  = p1    
        algalN(1) = c1  !0.0026_dbl_kind ! ISPOL, Lannuzel 2013(pennate) 
-       algalN(2) = 0.0027_dbl_kind ! ISPOL, Lannuzel 2013(Phaeocystis)
-       algalN(3) = 0.0057_dbl_kind ! ISPOL, Lannuzel 2013(flagellates)  
+       algalN(2) = 0.0057_dbl_kind ! ISPOL, Lannuzel 2013(small plankton)
+       algalN(3) = 0.0027_dbl_kind ! ISPOL, Lannuzel 2013(Phaeocystis)
                                      ! 0.024_dbl_kind ! 5% of 1 mgchl/m^3 
        doc(1) = 16.2_dbl_kind ! 18% saccharides
-       doc(2) = 9.0_dbl_kind  ! 
+       doc(2) = 9.0_dbl_kind  ! lipids
        doc(3) = c1 ! 
        do k = 1, max_dic
             dic(k) = c1
@@ -4828,6 +4824,8 @@
       integer (kind=int_kind) :: &
          k, ks           ! tracer indices
 
+      ocean_bio_all(:) = c0
+
       do k = 1, max_algae           
          ocean_bio_all(k)      = algalN(k)           ! N
          ks = max_algae + max_doc + max_dic + 1
@@ -4859,7 +4857,7 @@
       ocean_bio_all(ks) =  R_S2N(1)*algalN(1) &      ! DMSPp
                         +  R_S2N(2)*algalN(2) &
                         +  R_S2N(3)*algalN(3) 
-      ks = 2*max_algae + max_doc + 5 + max_dic
+      ks = ks + 1
       ocean_bio_all(ks) = dmsp                       ! DMSPd
       ks = ks + 1
       ocean_bio_all(ks) = dms                        ! DMS

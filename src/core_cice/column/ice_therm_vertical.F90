@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_vertical.F90 1105 2016-01-28 17:14:14Z njeffery $
+!  SVN:$Id: ice_therm_vertical.F90 1136 2016-07-29 21:10:31Z eclare $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures and compute
@@ -73,7 +73,8 @@
                                   mlt_onset,   frz_onset, &
                                   yday,        dsnow,     &
                                   l_stop,      nu_diag,   &
-                                  prescribed_ice)
+                                  stop_label,  prescribed_ice)
+
       use ice_therm_mushy, only: temperature_changes_salinity
 
       integer (kind=int_kind), intent(in) :: &
@@ -165,13 +166,16 @@
          frz_onset    ! day of year that freezing begins (congel or frazil) 
 
       real (kind=dbl_kind), intent(in) :: &
-         yday      ! day of year
+         yday         ! day of year
 
       logical (kind=log_kind), intent(out) :: &
-         l_stop          ! if true, print diagnostics and abort on return
+         l_stop       ! if true, print diagnostics and abort on return
+
+      character (len=*), intent(out) :: &
+         stop_label   ! abort error message
 
       integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
+         nu_diag      ! file unit number (diagnostic only)
 
       ! local variables
 
@@ -250,9 +254,9 @@
                                   zqsn,     zTsn,    &
                                   zSin,              &
                                   einit,    Tbot,    &
-                                  nu_diag,  l_stop)
+                                  nu_diag,  l_stop,  &
+                                  stop_label)
 
-         
       if (l_stop) return
 
       ! Save initial ice and snow thickness (for fresh and fsalt)
@@ -287,7 +291,7 @@
                                               fcondtopn, fcondbot,  &
                                               fadvocn,   snoice,    &
                                               einit,     l_stop,    &
-                                              nu_diag)
+                                              nu_diag,   stop_label)
                
             if (l_stop) return
 
@@ -309,7 +313,8 @@
                                      flwoutn,   fsurfn,    &
                                      fcondtopn, fcondbot,  &
                                      einit,     l_stop,    &
-                                     nu_diag)
+                                     nu_diag,   stop_label)
+
             if (l_stop) return
 
          endif ! ktherm
@@ -329,7 +334,8 @@
                                        fsensn,    flatn,    &
                                        flwoutn,   fsurfn,   &
                                        fcondtopn, fcondbot, &
-                                       l_stop,    nu_diag)
+                                       l_stop,    nu_diag,  &
+                                       stop_label)
 
             if (l_stop) return
 
@@ -394,7 +400,8 @@
                                       einter,    efinal,   &
                                       fcondtopn, fcondbot, &
                                       fadvocn,   fbot,     &
-                                      nu_diag,   l_stop)
+                                      nu_diag,   l_stop,   &
+                                      stop_label)
       
       if (l_stop) return
 
@@ -635,7 +642,8 @@
                                        zqsn,     zTsn,     &
                                        zSin,               &
                                        einit,    Tbot,     &
-                                       nu_diag,  l_stop)
+                                       nu_diag,  l_stop,   &
+                                       stop_label)
 
       use ice_mushy_physics, only: temperature_mush, &
                                    liquidus_temperature_mush, &
@@ -679,6 +687,9 @@
 
       logical (kind=log_kind), intent(inout) :: &
          l_stop          ! if true, print diagnostics and abort model
+
+      character (len=*), intent(out) :: &
+         stop_label      ! abort error message
 
       ! local variables
       real (kind=dbl_kind), dimension(nilyr) :: &
@@ -782,6 +793,7 @@
                write(nu_diag,*) 'Tmax=',Tmax
                write(nu_diag,*) 'zqsn',zqsn(k),-Lfresh*rhos,zqsn(k)+Lfresh*rhos
                l_stop = .true.
+               stop_label = "init_vertical_profile: Starting thermo, zTsn > Tmax"
                return
             endif
 
@@ -800,6 +812,7 @@
                write(nu_diag,*) hin
                write(nu_diag,*) hsn
                l_stop = .true.
+               stop_label = "init_vertical_profile: Starting thermo, zTsn < Tmin"
                return
             endif
 
@@ -832,6 +845,7 @@
             write(nu_diag,*) 'zSin =', zSin(k)
             write(nu_diag,*) 'min_salin =', min_salin
             l_stop = .true.
+            stop_label = "init_vertical_profile: Starting zSin < min_salin, layer"
             return
          endif
          
@@ -903,6 +917,7 @@
                   write(nu_diag,*) 'zTin=',zTin(k)
                else
                   l_stop = .true.
+                  stop_label = "init_vertical_profile: Starting thermo, T > Tmax, layer"
                   return
                endif
             endif
@@ -916,6 +931,7 @@
                write(nu_diag,*) 'zTin =', zTin(k)
                write(nu_diag,*) 'Tmin =', Tmin
                l_stop = .true.
+               stop_label = "init_vertical_profile: Starting thermo, T < Tmin, layer"
                return
             endif
          endif                  ! tice_low
@@ -1091,7 +1107,9 @@
          qmlt            ! enthalpy of melted ice (J m-3) = zero in BL99 formulation
 
       real (kind=dbl_kind) :: &
-         qbotp
+         qbotm       , &
+         qbotp       , &
+         qbot0
 
       !-----------------------------------------------------------------
       ! Initialize
@@ -1189,12 +1207,15 @@
 
       if (ktherm == 2) then
 
+         qbotm = enthalpy_mush(Tbot, sss)
          qbotp = -Lfresh * rhoi * (c1 - phi_i_mushy)
+         qbot0 = qbotm - qbotp
 
          dhi = ebot_gro / qbotp     ! dhi > 0
 
-         hqtot = dzi(nilyr)*zqin(nilyr) + dhi*qbotp
+         hqtot = dzi(nilyr)*zqin(nilyr) + dhi*qbotm
          hstot = dzi(nilyr)*zSin(nilyr) + dhi*sss
+         emlt_ocn = emlt_ocn - qbot0 * dhi
 
       else
 
@@ -1757,7 +1778,8 @@
                                             efinal,             &
                                             fcondtopn,fcondbot, &
                                             fadvocn,  fbot,     &
-                                            nu_diag,  l_stop)
+                                            nu_diag,  l_stop,   &
+                                            stop_label)
 
       integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
@@ -1784,6 +1806,9 @@
       logical (kind=log_kind), intent(inout) :: &
          l_stop          ! if true, print diagnostics and abort model
 
+      character (len=*), intent(out) :: &
+         stop_label   ! abort error message
+
       ! local variables
 
       real (kind=dbl_kind) :: &
@@ -1807,6 +1832,7 @@
 
       if (ferr > ferrmax) then
          l_stop = .true.
+         stop_label = "conservation_check_vthermo: Thermo energy conservation error"
 
          write(nu_diag,*) 'Thermo energy conservation error'
          write(nu_diag,*) 'Flux error (W/m^2) =', ferr

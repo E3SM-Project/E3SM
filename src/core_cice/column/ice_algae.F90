@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1109 2016-03-07 20:24:24Z njeffery $
+!  SVN:$Id: ice_algae.F90 1141 2016-08-25 17:22:04Z njeffery $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)
@@ -168,7 +168,7 @@
       integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
 
-      character (char_len) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       ! local variables
 
@@ -317,7 +317,7 @@
       integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
 
-      character (char_len) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       ! local variables
 
@@ -417,7 +417,7 @@
       integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
 
-      character (char_len) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       ! local variables
 
@@ -740,7 +740,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, print diagnostics and abort on return
 
-      character (char_len) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
@@ -920,14 +920,22 @@
       !   time constants for mobile/stationary phase changes
       !-----------------------------------------------------------------
 
-         if (hin_old  > hin) then  !melting
-            rtau_rel(m) = c1/tau_rel(m)
-            rtau_ret(m) = c0
-         else                              !not melting
-            rtau_ret(m) = c1/tau_ret(m)
-            rtau_rel(m) = c0
-         endif  
-         
+         if (m .ne. nlt_bgc_N(1)) then  
+            if (hin_old  > hin) then  !melting
+               rtau_rel(m) = c1/tau_rel(m)
+               rtau_ret(m) = c0
+            else                              !not melting
+               rtau_ret(m) = c1/tau_ret(m)
+               rtau_rel(m) = c0
+            endif  
+         elseif (tr_bgc_N .and. hin_old > hin + algal_vel*dt) then
+               rtau_rel(m) = c1/tau_rel(m)
+               rtau_ret(m) = c0
+         elseif (tr_bgc_N) then
+               rtau_ret(m) = c1/tau_ret(m)
+               rtau_rel(m) = c0
+         endif
+
          ocean_b(m) = ocean_bio(m)
          dhtop      = dh_top
          dhbot      = dh_bot
@@ -1057,7 +1065,7 @@
                                  i_grid,                 flux_bio(mm),&
                                  l_stop,                 stop_label,  &
                                  meltb)
-           elseif (tr_bgc_N .and. meltb > c0) then  
+           elseif (tr_bgc_N .and. meltb > algal_vel*dt) then  
             call regrid_stationary &
                                 (initcons_stationary,    hbri_old,    &
                                  hbri,                   dt,          &
@@ -1865,7 +1873,7 @@
       ! not become immediately bioavailable
 
       do n = 1,n_fep
-         Fep_s(n) = Fep_s(n) + rFep(n)* (Zoo + Am_s * R_Fe2N(1) * (c1-fr_dFe))   
+         Fep_s(n) = Fep_s(n) + rFep(n)* (Am_s * R_Fe2N(1) * (c1-fr_dFe))   
       enddo ! losses not direct to Fed 
 
       !--------------------------------------------------------------------

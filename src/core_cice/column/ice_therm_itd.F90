@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_itd.F90 1099 2015-12-12 18:12:30Z eclare $
+!  SVN:$Id: ice_therm_itd.F90 1136 2016-07-29 21:10:31Z eclare $
 !=======================================================================
 !
 ! Thermo calculations after call to coupler, related to ITD:
@@ -123,7 +123,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop    ! if true, abort on return
 
-      character (char_len), intent(out) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       ! local variables
 
@@ -1001,7 +1001,7 @@
                               bgrid,      cgrid,      igrid,    &
                               nbtrcr,    flux_bio,   &
                               ocean_bio, fzsal,      &
-                              nu_diag,    &
+                              nu_diag,   frazil_diag,&
                               l_stop,    stop_label)
 
       use ice_itd, only: column_sum, &
@@ -1048,6 +1048,7 @@
       real (kind=dbl_kind), intent(inout) :: &
          aice0     , & ! concentration of open water
          frazil    , & ! frazil ice growth        (m/step-->cm/day)
+         frazil_diag,& ! frazil ice growth diagnostic (m/step-->cm/day)
          fresh     , & ! fresh water flux to ocean (kg/m^2/s)
          fsalt         ! salt flux to ocean (kg/m^2/s)
 
@@ -1070,7 +1071,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop    ! if true, abort on return
 
-      character (char_len), intent(out) :: stop_label
+      character (len=*), intent(out) :: stop_label
 
       ! BGC
       real (kind=dbl_kind), dimension (nblyr+2), intent(in) :: &
@@ -1251,6 +1252,7 @@
             dfsalt = ice_ref_salinity*p001*dfresh
             fresh  = fresh + dfresh
             fsalt  = fsalt + dfsalt
+            frazil_diag = frazil - vi0tmp
          ! elseif ktherm==1 do nothing
          endif
       endif

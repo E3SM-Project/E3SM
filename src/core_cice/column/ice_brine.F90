@@ -411,8 +411,9 @@
       k_min               = MINVAL(kin(2:nblyr+1))
       kperm               = c0  ! initialize
       ktemp               = c0
-      bphi_min            = max(bphin(1),bSin(2)*rhosi/bphin(2) &  
-                          / (brine_sal(1)*brine_rho(1))*phi_snow)
+      bphi_min            = bphin     (1)
+!     bphi_min            = max(bphin(1),bSin(2)*rhosi/bphin(2) &  
+!                        / (brine_sal(1)*brine_rho(1))*phi_snow)
 
       do k = 2, nblyr
          if (k_min > c0) then
@@ -515,7 +516,7 @@
          
          if (hbr_old > thinS .AND. hin_old > thinS .AND. hin > thinS ) then
             hbrmin = thinS
-            dhS_top = -snoice -max(c0, min(hin_old-hbr_old, meltt)) * rhoi/rhow 
+            dhS_top = -max(c0, min(hin_old-hbr_old, meltt)) * rhoi/rhow 
             dhS_top = dhS_top - max(c0, melts) * rhos/rhow
             dh_top_chl = dhS_top
             dhbr    = dhS_bottom - dhS_top  
