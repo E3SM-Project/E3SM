@@ -111,6 +111,14 @@ OR
                         "all object executables, and data files will"
                         " be removed after tests are run")
 
+    parser.add_argument("-m", "--machine",
+                        help="The machine for which to build tests, this machine must be defined"
+                        " in the config_machines.xml file for the given model. "
+                        "Default is to match the name of the machine in the test name or "
+                        "the name of the machine this script is run on to the "
+                        "NODENAME_REGEX field in config_machines.xml. This option is highly "
+                        "unsafe and should only be used if you know what you're doing.")
+
     if model == "cesm":
         parser.add_argument("-c", "--compare",
                             help="While testing, compare baselines"
@@ -136,13 +144,6 @@ OR
         parser.add_argument("testargs", nargs="*",
                             help="Tests or test suites to run."
                             " Testnames expect in form CASE.GRID.COMPSET[.MACHINE_COMPILER]")
-
-        parser.add_argument("-m", "--machine",
-                            help="The machine for which to build tests, this machine must be defined"
-                            " in the config_machines.xml file for the given model. "
-                            "Default is to match the name of the machine in the test name or "
-                            "the name of the machine this script is run on to the "
-                            "NODENAME_REGEX field in config_machines.xml")
 
     else:
 
@@ -294,7 +295,7 @@ OR
 
         logger.info("Testnames: %s" % test_names)
     else:
-        mach_obj = Machines()
+        mach_obj = Machines(machine=args.machine)
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
 
         test_names = update_acme_tests.get_full_test_names(args.testargs, mach_obj.get_machine_name(), args.compiler)
@@ -442,7 +443,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
 
     success = impl.run_tests()
 
-    if single_submit:
+    if success and single_submit:
         # Get real test root
         test_root = impl._test_root
 

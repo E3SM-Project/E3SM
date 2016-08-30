@@ -545,6 +545,7 @@ class Case(object):
             opti_tasks = match2.group(1)
             opti_thrds = 1
 
+        other = {}
         if match1 or match2:
             for component_class in self._component_classes:
                 if component_class == "DRV":
@@ -560,9 +561,6 @@ class Case(object):
 
             pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount)
-
-
-
 
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
