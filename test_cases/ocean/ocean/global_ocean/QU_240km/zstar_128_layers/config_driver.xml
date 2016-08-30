@@ -1,0 +1,19 @@
+<driver_script name="run_test.py">
+	<case name="init_step1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step1" post_message=" - Complete"/>
+	</case>
+	<case name="init_step2">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message=" - Complete"/>
+	</case>
+	<case name="forward">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message=" - Complete"/>
+	</case>
+	<validation>
+		<compare_fields file1="forward/output.nc">
+			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+		<compare_timers rundir1="forward">
+			<timer name="time integration"/>
+		</compare_timers>
+	</validation>
+</driver_script>

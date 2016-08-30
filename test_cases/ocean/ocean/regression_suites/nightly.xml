@@ -1,4 +1,7 @@
 <regression_suite name="nightly_ocean_test_suite">
+	<test name="Global Ocean 240km - Performance Test" core="ocean" configuration="global_ocean" resolution="QU_240km" test="performance_test">
+		<script name="run_test.py"/>
+	</test>
 	<test name="Global Ocean 240km - Restart Test" core="ocean" configuration="global_ocean" resolution="QU_240km" test="restart_test">
 		<script name="run_test.py"/>
 	</test>
@@ -6,9 +9,6 @@
 		<script name="run_test.py"/>
 	</test>
 	<test name="Global Ocean 240km - RK4 Blocks Test" core="ocean" configuration="global_ocean" resolution="QU_240km" test="rk4_blocks_test">
-		<script name="run_test.py"/>
-	</test>
-	<test name="Global Ocean 240km - Performance Test" core="ocean" configuration="global_ocean" resolution="QU_240km" test="performance_test">
 		<script name="run_test.py"/>
 	</test>
 	<test name="Global Ocean 240km - Analysis Test" core="ocean" configuration="global_ocean" resolution="QU_240km" test="analysis_test">

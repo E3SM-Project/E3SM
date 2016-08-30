@@ -25,11 +25,14 @@
 		<option name="config_global_ocean_salinity_file">'salinity.nc'</option>
 		<option name="config_global_ocean_tracer_nlat_dimname">'t_lat'</option>
 		<option name="config_global_ocean_tracer_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_tracer_ndepth_dimname">'depth_t'</option>
+		<option name="config_global_ocean_tracer_depth_conversion_factor">1.0</option>
 		<option name="config_global_ocean_temperature_varname">'TEMP'</option>
 		<option name="config_global_ocean_salinity_varname">'SALT'</option>
 		<option name="config_global_ocean_tracer_latlon_degrees">.true.</option>
 		<option name="config_global_ocean_tracer_lat_varname">'t_lat'</option>
 		<option name="config_global_ocean_tracer_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_tracer_depth_varname">'depth_t'</option>
 		<option name="config_global_ocean_tracer_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_smooth_TS_iterations">5</option>
 		<option name="config_global_ocean_piston_velocity">5.0e-5</option>
@@ -69,12 +72,13 @@
 		<option name="config_global_ocean_ecosys_forcing_file">'ecosys_forcing.nc'</option>
 		<option name="config_global_ocean_ecosys_nlat_dimname">'t_lat'</option>
 		<option name="config_global_ocean_ecosys_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_ecosys_ndepth_dimname">'depth_t'</option>
 		<option name="config_global_ocean_ecosys_lat_varname">'t_lat'</option>
 		<option name="config_global_ocean_ecosys_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_ecosys_depth_varname">'depth_t'</option>
 		<option name="config_global_ocean_ecosys_latlon_degrees">.true.</option>
 		<option name="config_global_ocean_ecosys_method">'bilinear_interpolation'</option>
 		<option name="config_global_ecosys_forcing_time_dimname">'record'</option>
-
 	</namelist>
 	<streams>
 		<stream name="input_init">
