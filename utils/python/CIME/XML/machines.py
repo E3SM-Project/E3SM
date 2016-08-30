@@ -126,7 +126,9 @@ class Machines(GenericXML):
         ...
         SystemExit: ERROR: No machine trump found
         """
-        if self.machine != machine or self.machine_node is None:
+        if machine == "Query":
+            self.machine = machine
+        elif self.machine != machine or self.machine_node is None:
             self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
             expect(self.machine_node is not None, "No machine %s found" % machine)
             self.machine = machine
