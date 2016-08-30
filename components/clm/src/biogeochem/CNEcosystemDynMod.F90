@@ -631,7 +631,7 @@ contains
 
           call CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
-               cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars)
+               cnstate_vars, crop_vars,  soilstate_vars)
           call t_stopf('CNRootDyn')
        end if
 

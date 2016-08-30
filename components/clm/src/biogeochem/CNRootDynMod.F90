@@ -11,14 +11,13 @@ module CNRootDynMod
   use clm_varpar          , only: nlevsoi, nlevgrnd
   use clm_varctl          , only: use_vertsoilc
   use decompMod           , only: bounds_type
-  use pftvarcon           , only: noveg, npcropmin, roota_par, rootb_par,root_dmx, evergreen
+  use pftvarcon           , only: noveg, npcropmin, roota_par, rootb_par,root_dmx
   use ColumnType          , only: col
   use PatchType           , only: pft
   use CNStateType         , only: cnstate_type
   use CNCarbonStateType   , only: carbonstate_type
   use CNCarbonFluxType    , only: carbonflux_type
   use CNNitrogenStateType , only: nitrogenstate_type
-  use EnergyFluxType      , only: energyflux_type
   use SoilStateType       , only: soilstate_type
   use CropType            , only: crop_type
   use SimpleMathMod       , only: array_normalization
@@ -36,7 +35,7 @@ contains
   !
   subroutine CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonstate_vars, nitrogenstate_vars, carbonflux_vars,                    &
-       cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars)
+       cnstate_vars, crop_vars,  soilstate_vars)
     !
     ! !DESCRIPTION:
     ! This routine determine the fine root distribution
@@ -58,7 +57,6 @@ contains
     type(carbonflux_type)    , intent(in)    :: carbonflux_vars
     type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars !
     type(crop_type)          , intent(in)    :: crop_vars
-    type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
 
     !
@@ -73,7 +71,10 @@ contains
     real(r8) :: sumrsmn(bounds%begp:bounds%endp)               ! scaling  soil mineral N availability in each soil layer
     real(r8) :: frootc_dz(bounds%begp:bounds%endp, 1:nlevgrnd) ! root carbon in each soil layer (gC)
     real(r8) :: sumfrootc(bounds%begp:bounds%endp)             ! fine root carbon total before turnover in each step
+    real(r8) :: psi                                            ! soil moisture potential
+    real(r8) :: maxpsi                                         ! maximum soil moisture potential
     real(r8) :: new_growth                                     ! new carbon allocated to roots this timestep
+    real(r8), parameter :: minpsi = -1.5_r8                    ! minimum soil moisture potential - permanent wilting point (MPa)
 
     !-----------------------------------------------------------------------
     ! Assign local pointers to derived type arrays (in)
@@ -82,15 +83,14 @@ contains
          pcolumn                => pft%column                                  , & ! Input  :  [integer (:)]  pft's column index
          croplive               => cnstate_vars%croplive_patch                 , & ! Input  :  [logical (:)]  flag, true if planted, not harvested
          cpool_to_frootc        => carbonflux_vars%cpool_to_frootc_patch       , & ! Input  :  [real(r8) (:)] allocation to fine root C (gC/m2/s)
-         cpool_to_frootc_storage=> carbonflux_vars%cpool_to_frootc_storage_patch, & ! Input :  [real(r8) (:)] allocation to fine root C storage (gC/m2/s)
          frootc_xfer_to_frootc  => carbonflux_vars%frootc_xfer_to_frootc_patch , & ! Input  :  [real(r8) (:)] fine root C growth from storage (gC/m2/s)
-         onset_flag             => cnstate_vars%onset_flag_patch               , & ! Input  :  [real(r8) (:)] onset flag
          dormant_flag           => cnstate_vars%dormant_flag_patch             , & ! Input  :  [real(r8) (:)]  dormancy flag
          root_depth             => soilstate_vars%root_depth_patch             , & ! InOut  :  [real(r8) (:)] current root depth
          dz                     => col%dz                                      , & ! Input  :  layer thickness (m)  (-nlevsno+1:nlevgrnd)
          zi                     => col%zi                                      , & ! Input  :  interface level below a "z" level (m) (-nlevsno+0:nlevgrnd)
          rootfr                 => soilstate_vars%rootfr_patch                 , & ! Output :  [real(r8) (:,:)]  fraction of roots in each soil layer
-         rresis                 => energyflux_vars%rresis_patch                , & ! Output : [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)
+         sucsat                 => soilstate_vars%sucsat_col                   , & ! Input  :  minimum soil suction (mm)
+         soilpsi                => soilstate_vars%soilpsi_col                  , & ! Input  :  soil water potential in each soil layer (MPa)
          sminn_vr               => nitrogenstate_vars%sminn_vr_col             , & ! Iniput :  [real(r8) (:,:)]  (gN/m3) soil mineral N
          frootc                 => carbonstate_vars%frootc_patch               , & ! Input  :  [real(r8) (:)]  (gC/m2) fine root C
          hui                    => crop_vars%gddplant_patch                    , & ! Input  :  [real(r8) (:)]  =gdd since planting (gddplant)
@@ -135,22 +135,34 @@ contains
       !  ! calculate a weighting function by soil depth that depends on the
       ! fine root distribution per pft and depth and the pft weight on the column.
       ! This will be used to weight the temperature and water potential scalars
+      ! for decomposition control.
 
-      do f = 1,num_soilp
-         p = filter_soilp(f)
-         c = pcolumn(p)
-         do j = 1,nlevsoi
+      ! calculate the rate constant scalar for soil water content.
+      ! Uses the log relationship with water potential given in
+      ! Andren, O., and K. Paustian, 1987. Barley straw decomposition in the field:
+      ! a comparison of models. Ecology, 68(5):1190-1200.
+      ! and supported by data in
+      ! Orchard, V.A., and F.J. Cook, 1983. Relationship between soil respiration
+      ! and soil moisture. Soil Biol. Biochem., 15(4):447-453.
+
+      do j = 1,nlevsoi
+         do f = 1,num_soilp
+            p = filter_soilp(f)
+            c = pcolumn(p)
+            maxpsi = sucsat(c,j) * (-9.8e-6_r8)
+            psi = min(soilpsi(c,j),maxpsi)
+            if (psi > minpsi) then
 
                ! First calculate water in the root zone
-            if (root_depth(p) >  zi(c,3) .and. (zi(c,j) <= root_depth(p) .or. &
-                 (zi(c,j-1) < root_depth(p) .and. zi(c,j) > root_depth(p)))) then
-               w_limit(p) = w_limit(p) + max(rresis(p,j)*rootfr(p,j),0._r8)
-               w_limit(p) = min(1._r8,w_limit(p))
-            end if
-            ! Calculate the water in each soil layer
-            if (root_depth(p) >= zi(c,j) .or. &
-                 (zi(c,j-1) < root_depth(p) .and. zi(c,j) > root_depth(p))) then
-                  rswa(p,j) = max(0._r8, rresis(p,j))
+               if (root_depth(p) >  zi(c,3) .and. (zi(c,j) <= root_depth(p) .or. &
+                    (zi(c,j-1) < root_depth(p) .and. zi(c,j) > root_depth(p)))) then
+                  w_limit(p) = w_limit(p) + max(0._r8,log(minpsi/psi)/log(minpsi/maxpsi))*rootfr(p,j)
+               end if
+               ! Calculate the water in each soil layer
+               if (root_depth(p) >= zi(c,j) .or. &
+                    (zi(c,j-1) < root_depth(p) .and. zi(c,j) > root_depth(p))) then
+                  rswa(p,j) = max(0._r8, (log(minpsi/psi)/log(minpsi/maxpsi)))
+               end if
             end if
             sumrswa(p) = sumrswa(p) + rswa(p,j)
 
@@ -158,9 +170,14 @@ contains
             ! For now, the profile for each PFT is equivilent to the
             ! column profile, in the future, this could be changed to a weighted profile
             if (use_vertsoilc) then !for vertical soil profile
-               rsmn(p,j) = sminn_vr(c,j)*dz(c,j)
-            else ! need to calculate a profile, an exponential decay
-                rsmn(p,j) = dz(c,j)*exp(-3._r8*zi(c,j))
+               rsmn(p,j) = sminn_vr(c,j)
+            else ! need to calculate a profile, top three layers are constant, and decrease linearly
+               if (j <= 3) then
+                  rsmn(p,j) = dz(c,j)
+               end if
+               if (j > 3) then
+                  rsmn(p,j) = dz(c,j) * (zi(c,10) - zi(c,j)) / (zi(c,10) - zi(c,3))
+               end if
             end if
             if (root_depth(p) >= zi(c,j).or. &
                  (zi(c,j-1) < root_depth(p) .and. zi(c,j) > root_depth(p))) then
@@ -174,18 +191,13 @@ contains
       ! Now calculate the density of roots in each soil layer for each pft
       ! based on this timesteps growth
       !--------------------------------------------------------------------
+      do lev = 1, nlevgrnd
 
-      do f = 1, num_soilp
-         p = filter_soilp(f) 
-         c = pcolumn(p)
-         do lev = 1, nlevsoi
-            new_growth = 0._r8
-            if (onset_flag(p) == 0._r8) then
-               new_growth = (cpool_to_frootc(p) + frootc_xfer_to_frootc(p))*dt
-            end if
-            if (evergreen(ivt(p)) == 0._r8) then
-               new_growth = new_growth + cpool_to_frootc_storage(p)*dt
-            end if
+         do f = 1, num_soilp
+            p = filter_soilp(f) 
+            c = pcolumn(p)
+
+            new_growth = (cpool_to_frootc(p) + frootc_xfer_to_frootc(p))*dt
             if (zi(c,lev) <= root_depth(p) .or. &
                  (zi(c,lev-1) < root_depth(p) .and. zi(c,lev) > root_depth(p))) then
                if (sumrswa(p) <= 0._r8 .or. sumrsmn(p) <= 0._r8) then
@@ -210,12 +222,29 @@ contains
 
       ! normalize the root fraction for each pft
 
-      do f = 1, num_soilp
-         p = filter_soilp(f)
-         c = pcolumn(p)
-         do lev = 1, nlevgrnd
+      do lev = 1, nlevgrnd
+         do f = 1, num_soilp
+            p = filter_soilp(f)
+            c = pcolumn(p)
             if (sumfrootc(p) > 0._r8) then
                rootfr(p,lev) = frootc_dz(p,lev)/sumfrootc(p)
+            end if
+            if (ivt(p) >= npcropmin .and. .not. croplive(p)) then
+               ! CROPS are dormant, there are no roots!
+               ! but, need an initial frootr so crops can start root production
+               ! default is just the exponential over the top two soil layers
+               if (lev <  2) then
+                  rootfr(p,lev) = .5_r8*( exp(-roota_par(pft%itype(p)) * zi(c,lev-1))  &
+                       + exp(-rootb_par(pft%itype(p)) * zi(c,lev-1))  &
+                       - exp(-roota_par(pft%itype(p)) * zi(c,lev  ))  &
+                       - exp(-rootb_par(pft%itype(p)) * zi(c,lev  )) )
+               elseif (lev == 2) then
+                  rootfr(p,lev) = .5_r8*( exp(-roota_par(pft%itype(p)) * zi(c,lev-1))  &
+                       + exp(-rootb_par(pft%itype(p)) * zi(c,lev-1)) )
+               else
+                  rootfr(p,lev) =  0.0_r8
+               end if
+
             end if
          end do
       end do
