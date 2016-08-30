@@ -340,13 +340,9 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <!-- Yes, you really do need this huge -wmismatch flag for NAG to work.    -->
-    <!-- More specifically, it exempts MPI functions without explicit          -->
-    <!-- interfaces from certain argument checks. Should not be necessary in   -->
-    <!-- libraries that only use the F90 module interface. mpibcast and        -->
-    <!-- mpiscatterv are actually CAM wrappers for MPI.                        -->
-    <!--  <FFLAGS      > -Wp,-macro=no_com -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>-->
-    <base>  -Wp,-macro=no_com -convert=BIG_ENDIAN -mismatch_all </base>
+    <!-- The indirect flag below is to deal with MPI functions that violate    -->
+    <!-- the Fortran standard, by adding a large set of arguments from a file. -->
+    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect <env>CIMEROOT</env>/cime_config/cesm/machines/nag_mpi_argument.txt</base>
     <!-- DEBUG vs. non-DEBUG runs.                                             -->
     <append DEBUG="FALSE"> -ieee=full -O2 </append>
     <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
@@ -354,6 +350,11 @@ for mct, etc.
     <append DEBUG="TRUE"> -C=all -g -time -f2003 -ieee=stop </append>
     <append DEBUG="TRUE" compile_threaded="false"> -gline </append>
     <append compile_threaded="true"> -openmp </append>
+    <!-- The SLAP library (which is part of the CISM build) has many instances of
+       arguments being passed to different types. So disable argument type
+       checking when building CISM. This can be removed once we remove SLAP from
+       CISM. -->
+    <append MODEL="cism"> -mismatch_all </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> <var>FFLAGS</var> </base>
@@ -944,15 +945,19 @@ for mct, etc.
     <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
   <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
+  <NETCDF_PATH><env>NETCDF_PATH</env></NETCDF_PATH>
   <SLIBS>
     <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell></append>
   </SLIBS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="intel">
+  <CFLAGS>
+    <append> -lifcore</append>
+  </CFLAGS>
   <FFLAGS>
+    <append> -lifcore</append>
     <append MPILIB="mpi-serial"> -mcmodel medium </append>
   </FFLAGS>
   <LDFLAGS>
@@ -961,6 +966,7 @@ for mct, etc.
     <append> -Wl,-rpath,<env>COMPILER_PATH</env>/lib/intel64 </append>
     <append> -Wl,-rpath,<env>COMPILER_PATH</env>/mkl/lib/intel64 </append>
     <append> -Wl,-rpath,<env>MPI_PATH</env>/lib</append>
+    <append> -lifcore</append>
   </LDFLAGS>
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
   <SLIBS>
@@ -1031,36 +1037,6 @@ for mct, etc.
   <SLIBS>
     <append>-L/bgsys/local/netcdf/lib -lnetcdf -L/bgsys/drivers/ppcfloor/comm/lib </append>
   </SLIBS>
-</compiler>
-
-<compiler MACH="logan">
-  <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell></append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="logan" COMPILER="intel">
-  <LDFLAGS>
-    <append> -Wl,-rpath,<var>NETCDF_PATH</var>/lib </append>
-    <append> -Wl,-rpath,<env>COMPILER_PATH</env>/lib/intel64 </append>
-  </LDFLAGS>
-</compiler>
-
-<compiler MACH="logan" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> -lgomp </append>
-    <append> -Wl,-R<var>NETCDF_PATH</var>/lib</append>
-    <append> -Wl,-R<env>COMPILER_PATH</env>/lib</append>
-    <append> -Wl,-R<env>COMPILER_PATH</env>/libso</append>
-  </LDFLAGS>
 </compiler>
 
 <compiler MACH="melvin" COMPILER="gnu">
@@ -1235,11 +1211,11 @@ for mct, etc.
 
 <compiler MACH="stampede">
   <CPPDEFS>
-    <!--PNETCDF_PATH>$(TACC_NETCDF_DIR)</PNETCDF_PATH-->
     <append> -DHAVE_NANOTIME </append>
   </CPPDEFS>
   <NETCDF_PATH><env>TACC_NETCDF_DIR</env></NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH><env>TACC_PNETCDF_DIR</env></PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="stampede" COMPILER="intel">
@@ -1253,12 +1229,6 @@ for mct, etc.
   <LDFLAGS>
     <append>-L<env>TACC_HDF5_LIB</env> -lhdf5</append>
   </LDFLAGS>
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpicxx</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
-  <SFC>ifort</SFC>
   <SLIBS>
     <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -L<env>TACC_HDF5_LIB</env> -lhdf5</append>
   </SLIBS>
@@ -1367,6 +1337,8 @@ for mct, etc.
   <PAPI_LIB MPILIB="mpich2">/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
   <PFUNIT_PATH><env>CESMDATAROOT</env>/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
   <!-- Needed due to the way that netcdf is loaded on yellowstone -->
+  <SCC MPILIB="mpi-serial">icc</SCC>
+  <SFC MPILIB="mpi-serial">ifort</SFC>
   <SCC MPILIB="mpich2"><var>MPICC</var></SCC>
   <SFC MPILIB="mpich2"><var>MPIFC</var></SFC>
   <SLIBS>

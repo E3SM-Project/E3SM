@@ -154,9 +154,9 @@ def _main_func():
 
     with Case(caseroot, read_only=False) as case:
         # Set values for env_case.xml
-        case.set_value("CASE", os.path.basename(caseroot))
-        case.set_value("CASEROOT", caseroot)
-        case.set_value("SRCROOT", srcroot)
+        case.set_lookup_value("CASE", os.path.basename(caseroot))
+        case.set_lookup_value("CASEROOT", caseroot)
+        case.set_lookup_value("SRCROOT", srcroot)
 
         # Configure the Case
         case.configure(compset, grid, machine_name=machine, project=project,

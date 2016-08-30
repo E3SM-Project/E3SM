@@ -56,9 +56,7 @@ class SSP(SystemTestsCommon):
         clone.flush()
 
         dout_sr = clone.get_value("DOUT_S_ROOT")
-        self.run_indv(suffix="spinup",
-                      coupler_log_path=os.path.join(dout_sr, "logs"),
-                      st_archive=True)
+        self.run_indv(suffix="spinup", st_archive=True)
 
         #-------------------------------------------------------------------
         # (2) do a hybrid, non-spinup run in orig_case

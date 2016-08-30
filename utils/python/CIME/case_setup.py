@@ -295,12 +295,15 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
-    test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
-    with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
-        try:
-            _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
-        except:
-            ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
-            raise
-        else:
-            ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
+    if case.get_value("TEST"):
+        test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
+        with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
+            try:
+                _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
+            except:
+                ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
+                raise
+            else:
+                ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
+    else:
+        _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)

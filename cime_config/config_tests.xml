@@ -4,13 +4,15 @@
 
 The following are the test functionality categories:
   1) smoke tests
-  2) restart tests
-  3) threading/pe-count modification tests
-  4) sequencing (layout) modification tests
-  5) multi-instance tests
-  6) archiving (short-term and long-term) tests
-  7) performance tests
-  8) spinup tests
+  2) basic reproducibility tests
+  3) restart tests
+  4) threading/pe-count modification tests
+  5) sequencing (layout) modification tests
+  6) multi-instance tests
+  7) archiving (short-term and long-term) tests
+  8) performance tests
+  9) spinup tests
+  10) other component-specific tests
 
 NOTES:
 - unless otherwise noted everything is run in one executable directory
@@ -28,6 +30,12 @@ SMS    smoke startup test (default length)
        success for non-iop is just a successful coupler
 
 SBN    smoke build-namelist test (just run preview_namelist and check_input_data)
+
+======================================================================
+    Basic reproducibility Tests
+======================================================================
+
+REP    reproducibility: do two identical runs give the same results?
 
 ======================================================================
     Restart Tests
@@ -143,6 +151,13 @@ SPO    smoke spinup-ocean test
 
 LAR    long term archive test
 
+======================================================================
+    Other component-specific tests
+======================================================================
+
+LII    CLM initial condition interpolation test
+
+
 -->
 
 <config_test>
@@ -217,8 +232,28 @@ LAR    long term archive test
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="TESTBUILDFAILEXC">
+    <DESC>For testing infra only. Insta-fail build step by failing to init.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="TESTRUNFAIL">
     <DESC>For testing infra only. Insta-fail run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNFAILEXC">
+    <DESC>For testing infra only. Insta-fail run step via exception.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>0</CCSM_TCOST>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -303,16 +338,22 @@ LAR    long term archive test
     <DESC>CLM initial condition interpolation test (requires configuration with non-blank finidat)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>0</CCSM_TCOST>
-    <REST_OPTION>none</REST_OPTION>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="PEA">
     <DESC>single pe bfb test (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
-    <REST_OPTION>never</REST_OPTION>
     <CCSM_TCOST>1</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="PEM">
@@ -329,7 +370,10 @@ LAR    long term archive test
     <INFO_DBUG>1</INFO_DBUG>
     <BFBFLAG>TRUE</BFBFLAG>
     <BUILD_THREADED>TRUE</BUILD_THREADED>
-    <REST_OPTION>never</REST_OPTION>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
     <CCSM_TCOST>1</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
   </test>
@@ -375,6 +419,17 @@ LAR    long term archive test
     <TIMER_LEVEL>12</TIMER_LEVEL>
     <CCSM_TCOST>4</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="REP">
+    <DESC>reproducibility test: do two runs give the same answers?</DESC>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="SBN">

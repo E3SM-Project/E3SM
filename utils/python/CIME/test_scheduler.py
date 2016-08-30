@@ -14,7 +14,6 @@ import CIME.compare_namelists
 import CIME.utils
 from CIME.utils import append_status
 from CIME.test_status import *
-import update_acme_tests
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
@@ -35,33 +34,27 @@ class TestScheduler(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, test_names,
+    def __init__(self, test_names, test_data=None,
                  no_run=False, no_build=False, no_setup=False, no_batch=None,
                  test_root=None, test_id=None,
                  machine_name=None, compiler=None,
-                 baseline_root=None, baseline_name=None,
-                 clean=False, compare=False, generate=False, namelists_only=False,
+                 baseline_root=None, baseline_cmp_name=None, baseline_gen_name=None,
+                 clean=False, namelists_only=False,
                  project=None, parallel_jobs=None,
-                 xml_machine=None, xml_compiler=None, xml_category=None,
-                 xml_testlist=None, walltime=None, proc_pool=None,
-                 use_existing=False, save_timing=False, queue=None):
+                 walltime=None, proc_pool=None,
+                 use_existing=False, save_timing=False, queue=None, allow_baseline_overwrite=False):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
 
         self._save_timing = save_timing
         self._queue       = queue
+        self._test_data   = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
 
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
 
-        # if machine_name is set use it, otherwise if xml_machine is set use it,
-        # otherwise probe for machine_name
-        if machine_name is None:
-            machine_name = xml_machine
-
         self._machobj = Machines(machine=machine_name)
-        machine_name = self._machobj.get_machine_name()
 
         self._no_setup = no_setup
         self._no_build = no_build or no_setup or namelists_only
@@ -81,49 +74,18 @@ class TestScheduler(object):
         expect(not (self._no_batch and self._queue is not None),
                "Does not make sense to request a queue without batch system")
 
-        self._test_root = test_root if test_root is not None \
-            else self._machobj.get_value("CESMSCRATCHROOT")
-
+        # Determine and resolve test_root
+        self._test_root = self._machobj.get_value("CESMSCRATCHROOT") if test_root is None else test_root
         if self._project is not None:
             self._test_root = self._test_root.replace("$PROJECT", self._project)
 
         self._test_root = os.path.abspath(self._test_root)
         self._test_id   = test_id if test_id is not None else CIME.utils.get_utc_timestamp()
 
-        # if compiler is set use it, otherwise if xml_compiler is set use it,
-        # otherwise use the default compiler for the machine
-        if compiler is not None:
-            self._compiler = compiler
-        elif xml_compiler is not None:
-            self._compiler = xml_compiler
-        else:
-            self._compiler = self._machobj.get_default_compiler()
-
-        expect(self._machobj.is_valid_compiler(self._compiler),
-               "Compiler %s not valid for machine %s" % (self._compiler, machine_name))
+        self._compiler = self._machobj.get_default_compiler() if compiler is None else compiler
 
         self._clean          = clean
         self._namelists_only = namelists_only
-
-        # Extra data associated with tests, do not modify after construction
-        # test_name -> test_data
-        #   test_data: name -> value
-        self._test_xml = {}
-
-        # If xml options are provided get tests from xml file, otherwise use acme dictionary
-        if not test_names and (xml_machine is not None or xml_category is not None or
-                               xml_compiler is not None or xml_testlist is not None):
-            test_data = CIME.test_utils.get_tests_from_xml(xml_machine, xml_category,
-                                                           xml_compiler, xml_testlist,
-                                                           machine_name, compiler)
-            test_names = [item["name"] for item in test_data]
-            logger.info("Testnames: %s"%test_names)
-            for test_datum in test_data:
-                self._test_xml[test_datum["name"]] = test_datum
-        else:
-            expect(len(test_names) > 0, "No tests to run")
-            test_names = update_acme_tests.get_full_test_names(test_names,
-                                                               machine_name, self._compiler)
 
         self._walltime = walltime
 
@@ -133,44 +95,10 @@ class TestScheduler(object):
         else:
             self._parallel_jobs = parallel_jobs
 
-        self._baseline_cmp_name = None
-        self._baseline_gen_name = None
-        self._compare = False
-        self._generate = False
-        if compare or generate:
-            # Figure out what baseline name to use
-            if baseline_name is None:
-                if compare is not None and isinstance(compare, str):
-                    self._baseline_cmp_name = compare
-                    self._compare = True
-                if generate is not None and isinstance(generate, str):
-                    self._baseline_gen_name = generate
-                    self._generate = True
+        self._baseline_cmp_name = baseline_cmp_name # Implies comparison should be done if not None
+        self._baseline_gen_name = baseline_gen_name # Implies generation should be done if not None
 
-                if self._compare and self._baseline_cmp_name is None:
-                    branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
-                    expect(branch_name is not None,
-                           "Could not determine baseline name from branch, please use -b option")
-                    self._baseline_cmp_name = os.path.join(self._compiler, branch_name)
-                if self._generate and self._baseline_gen_name is None:
-                    branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
-                    expect(branch_name is not None,
-                           "Could not determine baseline name from branch, please use -b option")
-                    self._baseline_gen_name = os.path.join(self._compiler, branch_name)
-            else:
-                if compare:
-                    self._compare = True
-                    self._baseline_cmp_name = baseline_name
-                    if not self._baseline_cmp_name.startswith("%s/" % self._compiler): # pylint: disable=maybe-no-member
-                        self._baseline_cmp_name = os.path.join(self._compiler,
-                                                               self._baseline_cmp_name)
-                if generate:
-                    self._generate = True
-                    self._baseline_gen_name  = baseline_name
-                    if not self._baseline_gen_name.startswith("%s/" % self._compiler): # pylint: disable=maybe-no-member
-                        self._baseline_gen_name = os.path.join(self._compiler,
-                                                               self._baseline_gen_name)
-
+        if baseline_cmp_name or baseline_gen_name:
             # Compute baseline_root
             self._baseline_root = baseline_root if baseline_root is not None \
                 else self._machobj.get_value("CCSM_BASELINE")
@@ -180,10 +108,17 @@ class TestScheduler(object):
 
             self._baseline_root = os.path.abspath(self._baseline_root)
 
-            if self._compare:
+            if self._baseline_cmp_name:
                 full_baseline_dir = os.path.join(self._baseline_root, self._baseline_cmp_name)
                 expect(os.path.isdir(full_baseline_dir),
                        "Missing baseline comparison directory %s" % full_baseline_dir)
+
+            # the following is to assure that the existing generate directory is not overwritten
+            if self._baseline_gen_name and not allow_baseline_overwrite:
+                full_baseline_dir = os.path.join(self._baseline_root, self._baseline_gen_name)
+                expect(not os.path.isdir(full_baseline_dir),
+                       "Refusing to overwrite existing baseline directory, use -o to force overwrite %s" % full_baseline_dir)
+
         else:
             self._baseline_root = None
 
@@ -215,7 +150,7 @@ class TestScheduler(object):
             self._phases.remove(MODEL_BUILD_PHASE)
         if self._no_run:
             self._phases.remove(RUN_PHASE)
-        if not self._compare and not self._generate:
+        if not self._baseline_cmp_name and not self._baseline_gen_name:
             self._phases.remove(NAMELIST_PHASE)
 
         if use_existing:
@@ -249,9 +184,9 @@ class TestScheduler(object):
     def _get_case_id(self, test):
     ###########################################################################
         baseline_action_code = ""
-        if self._generate:
+        if self._baseline_gen_name:
             baseline_action_code += "G"
-        if self._compare:
+        if self._baseline_cmp_name:
             baseline_action_code += "C"
         if len(baseline_action_code) > 0:
             return "%s.%s.%s" % (test, baseline_action_code, self._test_id)
@@ -348,9 +283,12 @@ class TestScheduler(object):
                 else:
                     break
             else:
-                self._log_output(test,
-                                 "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
-                                 (phase, test, cmd, output, errput))
+                # We don't want "RUN PASSED" in the TestStatus.log if the only thing that
+                # succeeded was the submission.
+                if phase != RUN_PHASE or self._no_batch:
+                    self._log_output(test,
+                                     "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
+                                     (phase, test, cmd, output, errput))
                 break
 
         return rc == 0
@@ -400,8 +338,8 @@ class TestScheduler(object):
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
-        elif test in self._test_xml and "wallclock" in self._test_xml[test]:
-            create_newcase_cmd += " --walltime %s" % self._test_xml[test]['wallclock']
+        elif test in self._test_data and "wallclock" in self._test_data[test]:
+            create_newcase_cmd += " --walltime %s" % self._test_data[test]['wallclock']
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
@@ -427,11 +365,13 @@ class TestScheduler(object):
         envtest.set_value("CASEBASEID", test)
 
         test_argv = "-testname %s -testroot %s" % (test, self._test_root)
-        if self._generate:
+        if self._baseline_gen_name:
             test_argv += " -generate %s" % self._baseline_gen_name
+            basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
+            logger.warn("basegen_case is %s"%basegen_case_fullpath)
             envtest.set_value("BASELINE_NAME_GEN", self._baseline_gen_name)
             envtest.set_value("BASEGEN_CASE", os.path.join(self._baseline_gen_name, test))
-        if self._compare:
+        if self._baseline_cmp_name:
             test_argv += " -compare %s" % self._baseline_cmp_name
             envtest.set_value("BASELINE_NAME_CMP", self._baseline_cmp_name)
             envtest.set_value("BASECMP_CASE", os.path.join(self._baseline_cmp_name, test))
@@ -439,10 +379,10 @@ class TestScheduler(object):
         envtest.set_value("TEST_ARGV", test_argv)
         envtest.set_value("CLEANUP", self._clean)
 
-        if self._generate or self._compare:
+        if self._baseline_gen_name or self._baseline_cmp_name:
             envtest.set_value("BASELINE_ROOT", self._baseline_root)
-        envtest.set_value("GENERATE_BASELINE", self._generate)
-        envtest.set_value("COMPARE_BASELINE", self._compare)
+        envtest.set_value("GENERATE_BASELINE", self._baseline_gen_name is not None)
+        envtest.set_value("COMPARE_BASELINE", self._baseline_cmp_name is not None)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
 
         # Add the test instructions from config_test to env_test in the case
@@ -533,7 +473,7 @@ class TestScheduler(object):
         compare_nl     = os.path.join(CIME.utils.get_scripts_root(), "Tools", "compare_namelists")
         simple_compare = os.path.join(CIME.utils.get_scripts_root(), "Tools", "simple_compare")
 
-        if self._compare:
+        if self._baseline_cmp_name:
             has_fails         = False
             baseline_dir      = os.path.join(self._baseline_root, self._baseline_cmp_name, test)
             baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
@@ -568,7 +508,7 @@ class TestScheduler(object):
             if has_fails:
                 self._test_has_nl_problem(test)
 
-        if self._generate:
+        if self._baseline_gen_name:
             baseline_dir      = os.path.join(self._baseline_root, self._baseline_gen_name, test)
             baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
             if not os.path.isdir(baseline_dir):

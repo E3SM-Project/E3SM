@@ -10,30 +10,46 @@ from CIME.XML.machines import Machines
 #   If testmods are needed, a 2-ple must be provided  (test, mods)
 #   If you want to restrict the test mods to certain machines, than a 3-ple is needed (test, mods, [machines])
 _TEST_SUITES = {
-    "acme_tiny" : (None,
+    "cime_tiny" : (None,
                    ("ERS.f19_g16_rx1.A",
                     "NCK.f19_g16_rx1.A")
                    ),
 
-    "acme_test_only_pass" : (None,
+    "cime_test_only_pass" : (None,
                    ("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.ne30_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
-    "acme_test_only_slow_pass" : (None,
+    "cime_test_only_slow_pass" : (None,
                    ("TESTRUNSLOWPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNSLOWPASS_Mmpi-serial.ne30_g16_rx1.A",
                     "TESTRUNSLOWPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
-    "acme_test_only" : (None,
+    "cime_test_only" : (None,
                    ("TESTBUILDFAIL.f19_g16_rx1.A",
+                    "TESTBUILDFAILEXC.f19_g16_rx1.A",
                     "TESTRUNFAIL_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
                     "TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X")
                    ),
+
+    "cime_developer" : (None,
+                            ("NCK_Ld3.f45_g37_rx1.A",
+                             "ERI.f45_g37.X",
+                             "SEQ_Ln9.f19_g16_rx1.A",
+                             "ERS_Ld3.ne30_g16_rx1.A",
+                             "ERS_N2_Ld3.f19_g16_rx1.A",
+                             "ERR_Ld3.f45_g37_rx1.A",
+                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A")
+                            ),
+
+    #
+    # ACME tests below
+    #
 
     "acme_runoff_developer" : (None,
                              ("SMS.f19_f19.IM1850CLM45CN",
@@ -61,16 +77,6 @@ _TEST_SUITES = {
                              "SMS.f19_g16.FC5ATMMOD",
                              "SMS.f19_g16.FC5ATMMODCOSP",
                              "SMS_D.f19_g16.FC5ATMMODCOSP")
-                            ),
-
-    "cime_developer" : (None,
-                            ("NCK_Ld3.f45_g37_rx1.A",
-                             "ERI.f45_g37.X",
-                             "SEQ_Ln9.f19_g16_rx1.A",
-                             "ERS_Ld3.ne30_g16_rx1.A",
-                             "ERS_N2_Ld3.f19_g16_rx1.A",
-                             "ERR_Ld3.f45_g37_rx1.A",
-                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A")
                             ),
 
     "acme_developer" : ("acme_land_developer",
@@ -194,16 +200,16 @@ def get_full_test_names(testargs, machine, compiler):
 
     Testargs can be categories or test names and support the NOT symbol '^'
 
-    >>> get_full_test_names(["acme_tiny"], "melvin", "gnu")
+    >>> get_full_test_names(["cime_tiny"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu']
 
-    >>> get_full_test_names(["acme_tiny", "PEA_P1_M.f45_g37_rx1.A"], "melvin", "gnu")
+    >>> get_full_test_names(["cime_tiny", "PEA_P1_M.f45_g37_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'PEA_P1_M.f45_g37_rx1.A.melvin_gnu']
 
     >>> get_full_test_names(['ERS.f19_g16_rx1.A', 'NCK.f19_g16_rx1.A', 'PEA_P1_M.f45_g37_rx1.A'], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'PEA_P1_M.f45_g37_rx1.A.melvin_gnu']
 
-    >>> get_full_test_names(["acme_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
+    >>> get_full_test_names(["cime_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
     """
     expect(machine is not None, "Must define a machine")

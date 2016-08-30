@@ -28,7 +28,7 @@ class ERR(ERS):
             dout_s_root = self._case.get_value("DOUT_S_ROOT")
             rundir = self._case.get_value("RUNDIR")
             logger.info("staging files from archive %s" % dout_s_root)
-            for item in glob.glob(os.path.join(dout_s_root, "rest", "*", "*")):
+            for item in glob.glob(os.path.join(dout_s_root, "*", "hist", "*base")):
                 shutil.copy(item, rundir)
 
             self._ers_second_phase()

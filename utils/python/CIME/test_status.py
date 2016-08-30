@@ -62,7 +62,13 @@ def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, che
 
 class TestStatus(object):
 
-    def __init__(self, test_dir=os.getcwd(), test_name=None):
+    def __init__(self, test_dir=None, test_name=None):
+        """
+        Create a TestStatus object
+
+        If test_dir is not specified, it is set to the current working directory
+        """
+        test_dir = os.getcwd() if test_dir is None else test_dir
         self._filename = os.path.join(test_dir, TEST_STATUS_FILENAME)
         self._phase_statuses = OrderedDict() # {name -> (status, comments)}
         self._test_name = test_name

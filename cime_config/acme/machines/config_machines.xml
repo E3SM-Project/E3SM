@@ -371,6 +371,7 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+        <command name="load">git/2.1.3</command>
 	<command name="load">python/2.7.9</command>
 	<command name="load">gcc/5.1.0/openmpi/1.8.7</command>
 	<command name="load">cmake/2.8.12</command>
@@ -1014,11 +1015,11 @@
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
-         <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
+         <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$MEMBERWORK/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$ENV{MEMBERWORK}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.eos</CCSM_CPRNC>
@@ -1039,12 +1040,64 @@
              <arg name="num_tasks" > -n {{ num_tasks }}</arg>
              <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
              <arg name="thread_count" > -d {{ thread_count }}</arg>
-             <arg name="numa_node" > -cc {{ numa_node }}</arg>
+             <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mpi-serial">
            <executable></executable>
          </mpirun>
+	 <module_system type="module">
+	   <init_path lang="sh">$MODULESHOME/init/sh</init_path>
+	   <init_path lang="csh">$MODULESHOME/init/csh</init_path>
+	   <init_path lang="perl">$MODULESHOME/init/perl.pm</init_path>
+	   <init_path lang="python">$MODULESHOME/init/python.py</init_path>
+	   <cmd_path lang="sh">module</cmd_path>
+	   <cmd_path lang="csh">module</cmd_path>
+	   <cmd_path lang="perl">$MODULESHOME/bin/modulecmd perl</cmd_path>
+	   <cmd_path lang="python">$MODULESHOME/bin/modulecmd python</cmd_path>
+	   <modules>
+	     <command name="rm">intel</command>
+	     <command name="rm">cray</command>
+	     <command name="rm">cray-parallel-netcdf</command>
+	     <command name="rm">cray-libsci</command>
+	     <command name="rm">cray-netcdf</command>
+	     <command name="rm">cray-netcdf-hdf5parallel</command>
+	     <command name="rm">netcdf</command>
+	   </modules>
+	   <modules compiler="intel">
+	     <command name="load">intel/16.0.1.150</command>
+	     <command name="load">papi</command>
+	   </modules>
+	   <modules compiler="cray">
+	     <command name="load">PrgEnv-cray</command>
+	     <command name="switch">cce cce/8.1.9</command>
+	     <command name="load">cray-libsci/12.1.00</command>
+	   </modules>
+	   <modules compiler="gnu">
+	     <command name="load">PrgEnv-gnu</command>
+	     <command name="switch">gcc gcc/4.8.0</command>
+	     <command name="load">cray-libsci/12.1.00</command>
+	   </modules>
+	   <modules mpilib="mpi-serial">
+	     <command name="load">cray-netcdf/4.3.2</command>
+	   </modules>
+	   <modules mpilib="!mpi-serial">
+	     <command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	     <command name="load">cray-parallel-netcdf/1.6.1</command>
+	   </modules>
+	   <modules>
+	     <command name="load">cmake/2.8.11.2</command>
+	     <command name="load">python/2.7.9</command>
+	   </modules>
+	   <environment_variables>
+	     <env name="MPICH_ENV_DISPLAY">1</env>
+	     <env name="MPICH_VERSION_DISPLAY">1</env>
+	     <!-- This increases the stack size, which is necessary
+		  for CICE to run threaded on this machine -->
+	     <env name="OMP_STACKSIZE">64M</env>
+	     
+	   </environment_variables>
+	 </module_system>
 </machine>
 
 <machine MACH="mustang">
