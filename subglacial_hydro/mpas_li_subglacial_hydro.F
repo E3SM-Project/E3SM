@@ -562,10 +562,12 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseVertex
+      real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+      real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeTangent
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
       real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
@@ -616,11 +618,13 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
 
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
+      call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'waterPressureSlopeNormal', waterPressureSlopeNormal)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -653,6 +657,7 @@ module li_subglacial_hydro
          endif
 
          hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - hydropotentialBase(cell1)) / dcEdge(iEdge)
+         waterPressureSlopeNormal(iEdge) = (waterPressure(cell2) - waterPressure(cell1)) / dcEdge(iEdge)
       end do
 
 
@@ -1197,14 +1202,17 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: creep_coeff
       real (kind=RKIND), pointer :: rhoi
       real (kind=RKIND), pointer :: config_SGH_incipient_channel_width
+      logical, pointer :: config_SGH_include_pressure_melt
 
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelMelt
+      real (kind=RKIND), dimension(:), pointer :: channelPressureFreeze
       real (kind=RKIND), dimension(:), pointer :: channelDischarge
       real (kind=RKIND), dimension(:), pointer :: channelVelocity
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+      real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: channelOpeningRate
       real (kind=RKIND), dimension(:), pointer :: channelClosingRate
       real (kind=RKIND), dimension(:), pointer :: channelChangeRate
@@ -1233,16 +1241,19 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_beta', beta_c)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_creep_coefficient', creep_coeff)
       call mpas_pool_get_config(liConfigs, 'config_SGH_incipient_channel_width', config_SGH_incipient_channel_width)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_include_pressure_melt', config_SGH_include_pressure_melt)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
       call mpas_pool_get_array(hydroPool, 'channelMelt', channelMelt)
+      call mpas_pool_get_array(hydroPool, 'channelPressureFreeze', channelPressureFreeze)
       call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
       call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'waterPressureSlopeNormal', waterPressureSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
       call mpas_pool_get_array(hydroPool, 'channelOpeningRate', channelOpeningRate)
       call mpas_pool_get_array(hydroPool, 'channelClosingRate', channelClosingRate)
@@ -1267,7 +1278,15 @@ module li_subglacial_hydro
       channelMelt = (abs(channelDischarge * hydropotentialBaseSlopeNormal) &  ! channel dissipation
                   +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width)        &  ! some sheet dissipation
                   ) / latent_heat_ice
-      channelOpeningRate = channelMelt / rhoi
+      channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
+         (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
+         * waterPressureSlopeNormal / latent_heat_ice
+
+      if (config_SGH_include_pressure_melt) then
+         channelOpeningRate = (channelMelt - channelPressureFreeze) / rhoi
+      else
+         channelOpeningRate = channelMelt / rhoi
+      endif
 
       ! Calculate terms needed for closing (creep) rate
       ! Need cell center quantities on edges
@@ -1370,7 +1389,7 @@ module li_subglacial_hydro
       ! Now update channel area
       channelArea = channelChangeRate * deltatSGH + channelArea
       ! If sheet dissipation contributes to channel, there should be no need for a minimum channel size
-      !channelArea = max(0.001_RKIND, channelArea)  ! TODO: need min channel area parameter?
+      channelArea = max(1.0e-8_RKIND, channelArea)  ! make some tiny value when it goes negative
 
    !--------------------------------------------------------------------
    end subroutine evolve_channel
