@@ -321,29 +321,29 @@ class Case(object):
 
             # Determine the compsets file for this component
             compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
-            pes_filename      = files.get_value("PES_SPEC_FILE"     , {"component":component})
-            tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
-            tests_mods_dir    = files.get_value("TESTS_MODS_DIR"    , {"component":component}, resolved=False)
-            user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
 
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
                 match = compsets.get_compset_match(name=compset_name)
+                pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
-                    self._pesfile = pes_filename
+                    self._pesfile = pesfile
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
-                    self.set_value("COMPSETS_SPEC_FILE" ,
+                    tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
+                    tests_mods_dir    = files.get_value("TESTS_MODS_DIR"    , {"component":component}, resolved=False)
+                    user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
+                    self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    self.set_value("TESTS_SPEC_FILE"    , tests_filename)
-                    self.set_value("TESTS_MODS_DIR"     , tests_mods_dir)
-                    self.set_value("USER_MODS_DIR"      , user_mods_dir)
-                    self.set_value("PES_SPEC_FILE"      ,
+                    self.set_lookup_value("TESTS_SPEC_FILE"    , tests_filename)
+                    self.set_lookup_value("TESTS_MODS_DIR"     , tests_mods_dir)
+                    self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
+                    self.set_lookup_value("PES_SPEC_FILE"      ,
                                    files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
                     logger.info("Compset longname is %s " %(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
-                    logger.info("Pes     specification file is %s" %(pes_filename))
+                    logger.info("Pes     specification file is %s" %(pesfile))
                     return
 
         if user_compset is True:
@@ -351,7 +351,7 @@ class Case(object):
             logger.warn("Could not find a compset match for either alias or longname in %s" %(compset_name))
             self._compsetname = compset_name
             self._pesfile = pesfile
-            self.set_value("PES_SPEC_FILE", pesfile)
+            self.set_lookup_value("PES_SPEC_FILE", pesfile)
         else:
             expect(False,
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
@@ -821,6 +821,7 @@ class Case(object):
             else:
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods_dir)
+            self.set_value("USER_MODS_FULLPATH",user_mods_path)
             ninst_vals = {}
             for i in xrange(1,len(self._component_classes)):
                 comp_class = self._component_classes[i]
