@@ -33,7 +33,7 @@ def parse_command_line(args, cimeroot):
                         "To see list of current compsets, use the utility manage_case in this directory")
 
     parser.add_argument("--mach", "-mach",
-                        help="(required) Specify a machine. "
+                        help="Specify a machine. "
                         "To see list of current  machines, use the utility manage_case in this directory")
 
     parser.add_argument("--compiler", "-compiler",

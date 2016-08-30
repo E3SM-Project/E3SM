@@ -116,6 +116,14 @@ class TestScheduler(object):
             # the following is to assure that the existing generate directory is not overwritten
             if self._baseline_gen_name:
                 full_baseline_dir = os.path.join(self._baseline_root, self._baseline_gen_name)
+                existing_baselines = []
+                for test_name in test_names:
+                    test_baseline = os.path.join(full_baseline_dir, test_name)
+                    if os.path.isdir(test_baseline):
+                        existing_baselines.append(test_baseline)
+                expect(allow_baseline_overwrite or len(existing_baselines) == 0,
+                           "Baseline directories already exists %s\n"\
+                           "Use --allow_baseline_overwrite to avoid this error"%existing_baselines)
         else:
             self._baseline_root = None
 
@@ -365,7 +373,6 @@ class TestScheduler(object):
         if self._baseline_gen_name:
             test_argv += " -generate %s" % self._baseline_gen_name
             basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
-            expect(self._allow_baseline_overwrite or not os.path.isdir(basegen_case_fullpath), "Baseline directory already exists")
             logger.debug("basegen_case is %s"%basegen_case_fullpath)
             envtest.set_value("BASELINE_NAME_GEN", self._baseline_gen_name)
             envtest.set_value("BASEGEN_CASE", os.path.join(self._baseline_gen_name, test))

@@ -152,9 +152,6 @@ class SystemTestsCommon(object):
             logger.warning(excmsg)
             append_status(excmsg, sfile="TestStatus.log")
 
-        # Always try to report, should NOT throw an exception
-        self.report()
-
         # Writing the run status should be the very last thing due to wait_for_tests
         time_taken = time.time() - start_time
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
@@ -224,12 +221,6 @@ class SystemTestsCommon(object):
         except:
             logger.info("%s is not compressed, assuming run failed"%newestcpllogfile)
         return False
-
-    def report(self):
-        """
-        Please explain what kind of things happen in report
-        """
-        pass
 
     def _component_compare_move(self, suffix):
         comments = move(self._case, suffix)

@@ -16,9 +16,8 @@ logger = logging.getLogger(__name__)
 
 class NCK(SystemTestsCompareTwo):
 
-    _COMPONENT_LIST = ('ATM','OCN','WAV','GLC','ICE','ROF','LND')
-
     def __init__(self, case):
+        self._comp_classes = []
         SystemTestsCompareTwo.__init__(self, case,
                                        separate_builds = True,
                                        run_two_suffix = 'multiinst',
@@ -32,19 +31,21 @@ class NCK(SystemTestsCompareTwo):
         # think that the halving was unnecessary; but it's needed in case the
         # original NTASKS was odd. (e.g., for NTASKS originally 15, we want to
         # use NTASKS = int(15/2) * 2 = 14 tasks for case two.)
-        for comp in self._COMPONENT_LIST:
+        self._comp_classes = self._case.get_value("COMP_CLASSES").split(',')
+        self._comp_classes.remove("DRV")
+        for comp in self._comp_classes:
             ntasks = self._case.get_value("NTASKS_%s"%comp)
             if ( ntasks > 1 ):
                 self._case.set_value("NTASKS_%s"%comp, int(ntasks/2))
 
     def _case_one_setup(self):
-        for comp in self._COMPONENT_LIST:
+        for comp in self._comp_classes:
             self._case.set_value("NINST_%s"%comp, 1)
 
         case_setup(self._case, test_mode=True, reset=True)
 
     def _case_two_setup(self):
-        for comp in self._COMPONENT_LIST:
+        for comp in self._comp_classes:
             self._case.set_value("NINST_%s"%comp, 2)
             ntasks = self._case.get_value("NTASKS_%s"%comp)
             self._case.set_value("NTASKS_%s"%comp, ntasks*2)
