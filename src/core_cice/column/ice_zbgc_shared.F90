@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc_shared.F90 1108 2016-03-07 18:42:44Z njeffery $
+!  SVN:$Id: ice_zbgc_shared.F90 1141 2016-08-25 17:22:04Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry variables
@@ -48,10 +48,9 @@
       real (kind=dbl_kind), parameter, public :: &
          R_gC2molC  = 12.01_dbl_kind,  & ! mg/mmol C
          fr_resp    = 0.05_dbl_kind ,  & ! fraction of algal growth lost due to respiration
-         tau_min    = 5.2e3_dbl_kind,  & ! rapid mobile to stationary exchanges (s)
-                                         ! 3.12e4_dbl_kind = 6 hours, 1.25e5_dbl_kind s = 1 day
-         tau_max    = 1.875e6_dbl_kind   ! long time mobile to stationary exchanges (s) = 15 days
-                                         ! 6.25e5_dbl_kind = 5 days
+         tau_min    = 5.2e3_dbl_kind,  & ! rapid mobile to stationary exchanges (s) = 1.5 hours
+         tau_max    = 1.73e5_dbl_kind, & ! long time mobile to stationary exchanges (s) = 2 days
+         algal_vel  = 1.11e-8_dbl_kind   ! 0.5 cm/d(m/s) Lavoie 2005  1.5 cm/day
 
       real (kind=dbl_kind), parameter, public :: &  
          R_dFe2dust  = 0.035_dbl_kind,  & ! g/g (3.5% content) Tagliabue 2009

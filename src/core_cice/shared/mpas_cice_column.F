@@ -1685,7 +1685,8 @@ contains
          biologyGrid, &
          verticalGrid, &
          interfaceBiologyGrid, &
-         zSalinityFlux
+         zSalinityFlux, &
+         frazilGrowthDiagnostic
    
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -1781,6 +1782,7 @@ contains
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMelt", lateralIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
+       call MPAS_pool_get_array(melt_growth_rates, "frazilGrowthDiagnostic", frazilGrowthDiagnostic)
 
        call MPAS_pool_get_array(ponds, "pondFreshWaterFlux", pondFreshWaterFlux)
 
@@ -1870,6 +1872,7 @@ contains
                abortFlag, &
                abortMessage, &
                stdoutUnit, &
+               frazilGrowthDiagnostic(iCell), &
                freezeOnset(iCell), &
                dayOfYear)
 

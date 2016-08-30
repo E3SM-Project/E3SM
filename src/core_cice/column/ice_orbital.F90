@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_orbital.F90 1099 2015-12-12 18:12:30Z eclare $
+!  SVN:$Id: ice_orbital.F90 1112 2016-03-24 22:49:56Z eclare $
 !=======================================================================
 
 ! Orbital parameters computed from date
@@ -341,7 +341,7 @@ SUBROUTINE shr_orb_params( iyear_AD , eccen , obliq , mvelp    , &
 
    !-------------------------- Formats -----------------------------------------
    character(*),parameter :: svnID  = "SVN " // &
-   "$Id: ice_orbital.F90 1099 2015-12-12 18:12:30Z eclare $"
+   "$Id: ice_orbital.F90 1112 2016-03-24 22:49:56Z eclare $"
    character(*),parameter :: svnURL = "SVN <unknown URL>" 
 !  character(*),parameter :: svnURL = "SVN " // &
 !  "$URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_121022/shr/shr_orb_mod.F90 $"

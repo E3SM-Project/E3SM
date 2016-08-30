@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg_shared.F90 1109 2016-03-07 20:24:24Z njeffery $
+!  SVN:$Id: ice_colpkg_shared.F90 1141 2016-08-25 17:22:04Z njeffery $
 !=========================================================================
 !
 ! flags for the column package
@@ -243,7 +243,7 @@
       ! DOC        : Proteins, EPS, Lipids
       !-----------------------------------------------------------------
       real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
-         algaltype = (/p5, p5, p5/)  ! tau_min for both retention and release
+         algaltype = (/c0, p5, p5/)  ! tau_min for both retention and release
 
       real (kind=dbl_kind), parameter, public :: &
          nitratetype  = -c1, & ! purely mobile

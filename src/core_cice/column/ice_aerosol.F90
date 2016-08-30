@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_aerosol.F90 1104 2016-01-28 00:10:05Z njeffery $
+!  SVN:$Id: ice_aerosol.F90 1112 2016-03-24 22:49:56Z eclare $
 !=======================================================================
 
 ! Aerosol tracer within sea ice

@@ -1677,6 +1677,7 @@
 		<var name="snowThicknessChange"               type="real"     dimensions="nCells Time"              name_in_code="snowThicknessChange"/>
                 <var name="snowThicknessChangeCategory"       type="real"     dimensions="nCategories nCells Time"  name_in_code="snowThicknessChangeCategory"/>
 		<var name="frazilFormation"                   type="real"     dimensions="nCells Time"              name_in_code="frazilFormation"/>
+		<var name="frazilGrowthDiagnostic"            type="real"     dimensions="nCells Time"              name_in_code="frazilGrowthDiagnostic"/>
 	</var_struct>
 
 	<!-- fluxes with the atmosphere -->
