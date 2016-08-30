@@ -223,7 +223,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fa
    ! Following Redelsperger et al. (2000, J. Clim)
    ! Ug = log(1.0+6.69R-0.476R^2)
    ! Coefficients X by 8640 for mm/s (from cam) -> cm/day (for above forumla)
-   ugust(gprec) = gust_fac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))!BALLI change 2 to 2.0_R8  
+   ugust(gprec) = gust_fac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
 
  
    !--- formats ----------------------------------------
