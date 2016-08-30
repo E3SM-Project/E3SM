@@ -110,7 +110,7 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
             normalized_name = hist[hist.rfind(model):]
             if suffix != "":
                 expect(normalized_name.endswith(suffix), "How did '%s' not have suffix '%s'" % (hist, suffix))
-                normalized_name = normalized_name[:len(normalized_name) - len(suffix)]
+                normalized_name = normalized_name[:len(normalized_name) - len(suffix) - 1]
 
             m = re.search("(.+)_[0-9]{4}(.+.nc)",normalized_name)
             if m is not None:
@@ -129,7 +129,10 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
 
     match_ups = sorted([ (hists1[normalized1.index(item)], hists2[normalized2.index(item)]) for item in both])
 
+    # Special case - comparing multiinstance to single instance files
+
     if multi_normalized1 != multi_normalized2:
+        # in this case hists1 contains multiinstance hists2 does not
         if set(multi_normalized1) == set(normalized2):
             for idx, norm_hist1 in enumerate(multi_normalized1):
                 for idx1, hist2 in enumerate(hists2):
@@ -140,6 +143,9 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
                             two_not_one.remove(hist2)
                         if hists1[idx] in one_not_two:
                             one_not_two.remove(hists1[idx])
+        # in this case hists2 contains multiinstance hists1 does not
+        print multi_normalized2
+        print normalized1
         if set(multi_normalized2) == set(normalized1):
             for idx, norm_hist2 in enumerate(multi_normalized2):
                 for idx1, hist1 in enumerate(hists1):
@@ -150,9 +156,11 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
                             one_not_two.remove(hist1)
                         if hists2[idx] in two_not_one:
                             two_not_one.remove(hists2[idx])
+
     if not multiinst:
         expect(len(match_ups) + len(set_of_1_not_2) == len(hists1), "Programming error1")
         expect(len(match_ups) + len(set_of_2_not_1) == len(hists2), "Programming error2")
+
     return one_not_two, two_not_one, match_ups
 
 def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
