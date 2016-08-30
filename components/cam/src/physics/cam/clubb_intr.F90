@@ -2147,12 +2147,14 @@ end subroutine clubb_init_cnst
    call t_startf('ice_cloud_detrain_diag')
    do k=1,pver
       do i=1,ncol
-         if( state1%t(i,k) > clubb_tk1 ) then!BALLI
+         if( state1%t(i,k) > clubb_tk1 ) then
             dum1 = 0.0_r8
-         elseif ( state1%t(i,k) < clubb_tk2 ) then!BALLI
+         elseif ( state1%t(i,k) < clubb_tk2 ) then
             dum1 = 1.0_r8
          else
-            dum1 = ( clubb_tk1 - state1%t(i,k) ) / 30._r8 !(clubb_tk1 - clubb_tk2)!BALLI
+            !Note: Denominator is changed from 30.0_r8 to (clubb_tk1 - clubb_tk2),
+            !(clubb_tk1 - clubb_tk2) is also 30.0 but it introduced a non-bfb change
+            dum1 = ( clubb_tk1 - state1%t(i,k) ) /(clubb_tk1 - clubb_tk2)
          endif
         
          ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
