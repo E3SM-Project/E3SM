@@ -94,6 +94,10 @@
 		            description="creep closure coefficient"
 		            possible_values="positive real number"
 		/>
+		<nml_option name="config_SGH_incipient_channel_width" type="real" default_value="2.0" units="m"
+                            description="width of sheet beneath/around channel that contributes to melt within the channel"
+		            possible_values="positive real number"
+		/>
 
 	</nml_record>
 
