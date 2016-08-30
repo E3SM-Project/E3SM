@@ -1196,12 +1196,14 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: beta_c
       real (kind=RKIND), pointer :: creep_coeff
       real (kind=RKIND), pointer :: rhoi
+      real (kind=RKIND), pointer :: config_SGH_incipient_channel_width
 
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelMelt
       real (kind=RKIND), dimension(:), pointer :: channelDischarge
       real (kind=RKIND), dimension(:), pointer :: channelVelocity
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
+      real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: channelOpeningRate
       real (kind=RKIND), dimension(:), pointer :: channelClosingRate
@@ -1230,6 +1232,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_alpha', alpha_c)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_beta', beta_c)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_creep_coefficient', creep_coeff)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_incipient_channel_width', config_SGH_incipient_channel_width)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -1240,6 +1243,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
       call mpas_pool_get_array(hydroPool, 'channelOpeningRate', channelOpeningRate)
       call mpas_pool_get_array(hydroPool, 'channelClosingRate', channelClosingRate)
       call mpas_pool_get_array(hydroPool, 'channelChangeRate', channelChangeRate)
@@ -1260,7 +1264,9 @@ module li_subglacial_hydro
       end where
 
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
-      channelMelt = abs(channelDischarge * hydropotentialBaseSlopeNormal) / latent_heat_ice  ! TODO: add sheet dissipation
+      channelMelt = (abs(channelDischarge * hydropotentialBaseSlopeNormal) &  ! channel dissipation
+                  +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width)        &  ! some sheet dissipation
+                  ) / latent_heat_ice
       channelOpeningRate = channelMelt / rhoi
 
       ! Calculate terms needed for closing (creep) rate
@@ -1363,7 +1369,8 @@ module li_subglacial_hydro
 
       ! Now update channel area
       channelArea = channelChangeRate * deltatSGH + channelArea
-      channelArea = max(0.1_RKIND, channelArea)  ! TODO: need min channel area parameter?
+      ! If sheet dissipation contributes to channel, there should be no need for a minimum channel size
+      !channelArea = max(0.001_RKIND, channelArea)  ! TODO: need min channel area parameter?
 
    !--------------------------------------------------------------------
    end subroutine evolve_channel
