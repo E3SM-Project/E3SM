@@ -126,6 +126,10 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     both = set(normalized1) & set(normalized2)
 
     match_ups = sorted([ (hists1[normalized1.index(item)], hists2[normalized2.index(item)]) for item in both])
+
+    # In some multiinstance cases hist1 will be single instance and hist2 multiinstance
+    # or visa-versa if this is the case match all instances in one with the single instance
+    # in the other and remove the files from the unmatched list.
     if multiinst:
         new_two_not_one = []
         new_one_not_two = []
