@@ -375,7 +375,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort the model
 
-     ! character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       l_stop = .false.      ! initialized for CCSMCOUPLED
@@ -556,7 +555,6 @@
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
         
-!      character (char_len), intent(inout) :: stop_label
       character (len=*), intent(inout) :: stop_label
 
       ! local variables
@@ -1919,7 +1917,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort model
 
-!     character (char_len), intent(out) :: &
       character (len=*), intent(out) :: &
          stop_label      ! abort error message
 
@@ -2382,7 +2379,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop         ! if true, abort model
 
-!     character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       real (kind=dbl_kind), intent(inout), optional :: &

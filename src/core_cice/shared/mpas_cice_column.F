@@ -9261,100 +9261,360 @@ contains
     ! chlabs_phaeo = config_chla_absorptivity_of_phaeocystis
 
     ! alpha2max_low_diatoms:
-    ! light limitation (1/(W/m^2))  
+    ! light limitation diatoms (1/(W/m^2))  
     ! alpha2max_low_diatoms = config_light_attenuation_diatoms
 
-    ! alpha2max_low_sp_in      , & 
-    ! alpha2max_low_phaeo_in   , & 
-    ! beta2max_diatoms_in , & ! light inhibition (1/(W/m^2))  
-    ! beta2max_sp_in      , & 
-    ! beta2max_phaeo_in   , & 
-    ! mu_max_diatoms_in   , & ! maximum growth rate (1/day)       
-    ! mu_max_sp_in        , & 
-    ! mu_max_phaeo_in     , & 
-    ! grow_Tdep_diatoms_in, & ! Temperature dependence of growth (1/C)
-    ! grow_Tdep_sp_in     , & 
-    ! grow_Tdep_phaeo_in  , & 
-    ! fr_graze_diatoms_in , & ! Fraction grazed
-    ! fr_graze_sp_in      , & 
-    ! fr_graze_phaeo_in   , & 
-    ! mort_pre_diatoms_in , & ! Mortality (1/day)
-    ! mort_pre_sp_in      , & 
-    ! mort_pre_phaeo_in   , & 
-    ! mort_Tdep_diatoms_in, & ! T dependence of mortality (1/C) 
-    ! mort_Tdep_sp_in     , &  
-    ! mort_Tdep_phaeo_in  , &  
-    ! k_exude_diatoms_in  , & ! algal exudation (1/d)
-    ! k_exude_sp_in       , &  
-    ! k_exude_phaeo_in    , &  
-    ! K_Nit_diatoms_in    , & ! nitrate half saturation (mmol/m^3)
-    ! K_Nit_sp_in    ! , &  
-    ! K_Nit_phaeo_in      , &  
-    ! K_Am_diatoms_in     , & ! ammonium half saturation (mmol/m^3)
-    ! K_Am_sp_in    !  , &   
-    ! K_Am_phaeo_in       , &   
-    ! K_Sil_diatoms_in    , & ! silicate half saturation (mmol/m^3)
-    ! K_Sil_sp_in    ! , &   
-    ! K_Sil_phaeo_in      , &   
-    ! K_Fe_diatoms_in     , & ! iron half saturation (nM)
-    ! K_Fe_sp_in    !  , &   
-    ! K_Fe_phaeo_in       , &    
-    ! f_don_protein_in    , & ! fraction of spilled grazing to proteins    !    
-    ! kn_bac_protein_in   , & ! Bacterial degredation of DON (1/d)    !     ! 
-    ! f_don_Am_protein_in , & ! fraction of remineralized DON to ammonium    !  
-    ! f_doc_s_in    !  , & ! fraction of mortality to DOC 
-    ! f_doc_l_in    !  , &   
-    ! f_exude_s_in        , & ! fraction of exudation to DOC
-    ! f_exude_l_in        , & 
-    ! k_bac_s_in    !  , & ! Bacterial degredation of DOC (1/d)
-    ! k_bac_l_in    !  , & 
-    ! T_max_in    !    , & ! maximum temperature (C)
-    ! fsal_in    !     , & ! Salinity limitation (ppt)
-    ! op_dep_min_in       , & ! Light attenuates for optical depths exceeding min
-    ! fr_graze_s_in       , & ! fraction of grazing spilled or slopped
-    ! fr_graze_e_in       , & ! fraction of assimilation excreted 
-    ! fr_mort2min_in      , & ! fractionation of mortality to Am
-    ! fr_dFe_in    !   , & ! fraction of remineralized nitrogen 
-    !     !     !     ! ! (in units of algal iron)
-    ! k_nitrif_in    ! , & ! nitrification rate (1/day)    !    
-    ! t_iron_conv_in      , & ! desorption loss pFe to dFe (day)
-    ! max_loss_in    ! , & ! restrict uptake to % of remaining value 
-    ! max_dfe_doc1_in     , & ! max ratio of dFe to saccharides in the ice 
-    !     !     !     ! ! (nM Fe/muM C)    
-    ! fr_resp_s_in        , & ! DMSPd fraction of respiration loss as DMSPd
-    ! y_sk_DMS_in    ! , & ! fraction conversion given high yield
-    ! t_sk_conv_in        , & ! Stefels conversion time (d)
-    ! t_sk_ox_in    !  , &   ! DMS oxidation time (d)
-    ! algaltype_diatoms_in  , & ! mobility type
-    ! algaltype_sp_in       , & !
-    ! algaltype_phaeo_in    , & !
-    ! nitratetype_in        , & !
-    ! ammoniumtype_in       , & !
-    ! silicatetype_in       , & !
-    ! dmspptype_in    !  , & !
-    ! dmspdtype_in    !  , & !
-    ! humtype_in    !    , & !
-    ! doctype_s_in    !  , & !
-    ! doctype_l_in    !  , & !
-    ! dontype_protein_in    , & !
-    ! fedtype_1_in    !  , & !
-    ! feptype_1_in    !  , & !
-    ! zaerotype_bc1_in      , & !
-    ! zaerotype_bc2_in      , & !
-    ! zaerotype_dust1_in    , & !
-    ! zaerotype_dust2_in    , & !
-    ! zaerotype_dust3_in    , & !
-    ! zaerotype_dust4_in    , & !
-    ! ratio_C2N_diatoms_in  , & ! algal C to N ratio (mol/mol)
-    ! ratio_C2N_sp_in       , & !
-    ! ratio_C2N_phaeo_in    , & !
-    ! ratio_chl2N_diatoms_in, & ! algal chlorophyll to N ratio (mg/mmol)
-    ! ratio_chl2N_sp_in     , & !
-    ! ratio_chl2N_phaeo_in  , & !
-    ! F_abs_chl_diatoms_in  , & ! scales absorbed radiation for dEdd
-    ! F_abs_chl_sp_in       , & !
-    ! F_abs_chl_phaeo_in    , & !
-    ! ratio_C2N_proteins_in     ! ratio of C to N in proteins (mol/mol)       
+    ! alpha2max_low_sp:
+    ! light limitation small plankton (1/(W/m^2))  
+    ! alpha2max_low_sp = config_light_attenuation_small_plankton
+
+    ! alpha2max_low_phaeo:
+    ! light limitation phaeocystis (1/(W/m^2))  
+    ! alpha2max_low_phaeo = config_light_attenuation_phaeocystis
+
+    ! beta2max_diatoms:
+    ! light inhibition diatoms(1/(W/m^2))  
+    ! beta2max_diatoms = config_light_inhibition_diatoms
+
+    ! beta2max_sp:
+    ! light inhibition small plankton(1/(W/m^2))  
+    ! beta2max_sp = config_light_inhibition_small_plankton
+
+    ! beta2max_phaeo:
+    ! light inhibition phaeocystis (1/(W/m^2))  
+    ! beta2max_phaeo = config_light_inhibition_phaeocystis
+
+    ! mu_max_diatoms:
+    ! maximum growth rate diatoms (1/day)       
+    ! mu_max_diatoms = config_maximum_growth_rate_diatoms
+
+    ! mu_max_sp:
+    ! maximum growth rate small plankton (1/day)       
+    ! mu_max_sp = config_maximum_growth_rate_small plankton
+
+    ! mu_max_phaeo:
+    ! maximum growth rate phaeocystis (1/day)       
+    ! mu_max_phaeo = config_maximum_growth_rate_phaeocystis
+
+    ! grow_Tdep_sp:
+    ! Temperature dependence of growth small plankton (1/C)
+    ! grow_Tdep_sp = config_temperature_growth_small_plankton
+
+    ! grow_Tdep_phaeo:
+    ! Temperature dependence of growth phaeocystis (1/C)
+    ! grow_Tdep_phaeo = config_temperature_growth_phaeocystis
+
+    ! fr_graze_diatoms:
+    ! Fraction grazed diatoms
+    ! fr_graze_diatoms = config_grazed_fraction_diatoms
+
+    ! fr_graze_sp:
+    ! Fraction grazed small_plankton
+    ! fr_graze_sp = config_grazed_fraction_small_plankton
+
+    ! fr_graze_phaeo:
+    ! Fraction grazed phaeocystis
+    ! fr_graze_phaeo = config_grazed_fraction_phaeocystis
+
+    ! mort_pre_diatoms:
+    ! Mortality diatoms (1/day)
+    ! mort_pre_diatoms = config_mortality_diatoms
+
+    ! mort_pre_sp:
+    ! Mortality small_plankton (1/day)
+    ! mort_pre_sp = config_mortality_small_plankton
+
+    ! mort_pre_phaeo:
+    ! Mortality phaeocystis (1/day)
+    ! mort_pre_phaeo = config_mortality_phaeocystis
+
+    ! mort_Tdep_diatoms:
+    ! T dependence of mortality diatoms (1/C) 
+    ! mort_Tdep_diatoms = config_temperature_mortality_diatoms
+
+    ! mort_Tdep_sp:
+    ! T dependence of mortality small plankton (1/C) 
+    ! mort_Tdep_sp = config_temperature_mortality_small_plankton
+
+    ! mort_Tdep_phaeo:
+    ! T dependence of mortality phaeocystis (1/C) 
+    ! mort_Tdep_phaeo = config_temperature_mortality_phaeocystis
+
+    ! k_exude_diatoms:
+    ! algal exudation diatoms (1/d)
+    ! k_exude_diatoms = config_exudation_diatoms
+
+    ! k_exude_sp:
+    ! algal exudation small_plankton (1/d)
+    ! k_exude_sp = config_exudation_small_plankton
+
+    ! k_exude_phaeo:
+    ! algal exudation phaeocystis (1/d)
+    ! k_exude_phaeo = config_exudation_phaeocystis
+
+    ! K_Nit_diatoms:
+    ! nitrate half saturation diatoms (mmol/m^3)
+    ! K_Nit_diatoms = config_nitrate_saturation_diatoms
+
+    ! K_Nit_sp:
+    ! nitrate half saturation small_plankton (mmol/m^3)
+    ! K_Nit_sp = config_nitrate_saturation_small_plankton
+
+    ! K_Nit_phaeo:
+    ! nitrate half saturation phaeocystis (mmol/m^3)
+    ! K_Nit_phaeocystis = config_nitrate_saturation_phaeocystis
+
+    ! K_Am_diatoms:
+    ! ammonium half saturation diatoms (mmol/m^3)
+    ! K_Am_diatoms = config_ammonium_saturation_diatoms
+
+    ! K_Am_sp:
+    ! ammonium half saturation small_plankton (mmol/m^3)
+    ! K_Am_sp = config_ammonium_saturation_small_plankton
+
+    ! K_Am_phaeo:
+    ! ammonium half saturation phaeocystis (mmol/m^3)
+    ! K_Am_phaeocystis = config_ammonium_saturation_phaeocystis
+
+    ! K_Sil_diatoms:
+    ! silicate half saturation diatoms (mmol/m^3)
+    ! K_Sil_diatoms = config_silicate_saturation_diatoms
+
+    ! K_Sil_sp:
+    ! silicate half saturation small_plankton (mmol/m^3)
+    ! K_Sil_sp = config_silicate_saturation_small_plankton
+
+    ! K_Sil_phaeo:
+    ! silicate half saturation phaeocystis (mmol/m^3)
+    ! K_Sil_phaeocystis = config_silicate_saturation_phaeocystis
+
+    ! K_Fe_diatoms:
+    ! iron half saturation diatoms (nM)
+    ! K_Fe_diatoms = config_iron_saturation_diatoms
+
+    ! K_Fe_sp:
+    ! iron half saturation small_plankton (nM)
+    ! K_Fe_sp = config_iron_saturation_small_plankton
+
+    ! K_Fe_phaeo:
+    ! iron half saturation phaeocystis (nM)
+    ! K_Fe_phaeocystis = config_iron_saturation_phaeocystis
+
+    ! f_don_protein:
+    ! fraction of spilled grazing to proteins    !    
+    ! f_don_protein = config_fraction_spilled_to_DON
+
+    ! kn_bac_protein:
+    ! Bacterial degredation of DON (1/d)    !     ! 
+    ! kn_bac_protein = config_degredation_of_DON
+
+    ! f_don_Am_protein:
+    ! fraction of remineralized DON to ammonium    !  
+    ! f_don_Am_protein = config_fraction_DON_ammonium
+
+    ! f_doc_s:
+    ! fraction of mortality to DOC saccharids
+    ! f_doc_s = config_fraction_loss_to_saccharids
+
+    ! f_doc_l:
+    ! fraction of mortality to DOC lipids
+    ! f_doc_l = config_fraction_loss_to_lipids
+
+    ! f_exude_s:
+    ! fraction of exudation to DOC saccharids
+    ! f_exude_s = config_fraction_exudation_to_saccharids
+
+    ! f_exude_l:
+    ! fraction of exudation to DOC lipids
+    ! f_exude_l = config_fraction_exudation_to_lipids
+
+    ! k_bac_s:
+    ! Bacterial degredation of DOC (1/d) saccharids
+    ! k_bac_s = config_remineralization_saccharids
+
+    ! k_bac_l:
+    ! Bacterial degredation of DOC (1/d) lipids
+    ! k_bac_l = config_remineralization_lipids
+
+    ! T_max:
+    ! maximum temperature (C)
+    ! T_max = config_maximum_brine_temperature
+
+    ! fsal:
+    ! Salinity limitation (ppt)
+    ! fsal = config_salinity_dependence_of_growth
+
+    ! op_dep_min:
+    ! Light attenuates for optical depths exceeding min
+    ! op_dep_min = config_minimum_optical_depth
+
+    ! fr_graze_s:
+    ! fraction of grazing spilled or slopped
+    ! fr_graze_s = config_slopped_grazing_fraction
+
+    ! fr_graze_e:
+    ! fraction of assimilation excreted 
+    ! fr_graze_e = config_excreted_fraction
+
+    ! fr_mort2min:
+    ! fractionation of mortality to Am
+    ! fr_mort2min = config_fraction_mortality_to_ammonium
+
+    ! fr_dFe:
+    ! remineralized nitrogen (in units of algal iron)
+    ! fr_dFe = config_fraction_iron_remineralized
+
+    ! k_nitrif:
+    ! nitrification rate (1/day) 
+    ! k_nitrif = config_nitrification_rate
+
+    ! t_iron_conv:
+    ! desorption loss pFe to dFe (day)
+    ! t_iron_conv = config_desorption_loss_particulate_iron
+
+    ! max_loss:
+    ! restrict uptake to % of remaining value 
+    ! max_loss = config_maximum_loss_fraction
+ 
+    ! max_dfe_doc1:
+    ! max ratio of dFe to saccharides in the ice  (nM Fe/muM C)   
+    ! max_dfe_doc1 = config_maximum_ratio_iron_to_saccharids
+
+    ! fr_resp_s:
+    ! DMSPd fraction of respiration loss as DMSPd
+    ! fr_resp_s = config_respiration_loss_to_DMSPd
+
+    ! y_sk_DMS:
+    ! fraction conversion given high yield
+    ! y_sk_DMS = config_DMSP_to_DMS_conversion_fraction
+
+    ! t_sk_conv:
+    ! Stefels conversion time (d)
+    ! t_sk_conv = config_DMSP_to_DMS_conversion_time 
+
+    ! t_sk_ox:
+    ! DMS oxidation time (d)
+    ! t_sk_ox = config_DMS_oxidation_time
+
+    ! algaltype_diatoms:
+    ! mobility type diatoms
+    ! algaltype_diatoms = config_mobility_type_diatoms
+
+    ! algaltype_sp:
+    ! mobility type small_plankton
+    ! algaltype_sp = config_mobility_type_small_plankton
+
+    ! algaltype_phaeo:
+    ! mobility type phaeocystis
+    ! algaltype_phaeo = config_mobility_type_phaeocystis
+
+    ! nitratetype:
+    ! mobility type nitrate
+    ! nitratetype = config_mobility_type_nitrate
+
+    ! ammoniumtype:
+    ! mobility type ammonium
+    ! ammoniumtype = config_mobility_type_ammonium
+
+    ! silicatetype:
+    ! mobility type silicate
+    ! silicatetype = config_mobility_type_silicate
+
+    ! dmspptype:
+    ! mobility type DMSPp
+    ! dmspptype = config_mobility_type_DMSPp
+
+    ! dmspdtype:
+    ! mobility type DMSPd
+    ! dmspdtype = config_mobility_type_DMSPd
+
+    ! humicstype:
+    ! mobility type humics
+    ! humicstype = config_mobility_type_humics
+
+    ! doctype_s:
+    ! mobility type sachharids
+    ! doctype_s = config_mobility_type_saccharids
+
+    ! doctype_l:
+    ! mobility type lipids
+    ! doctype_l = config_mobility_type_lipids
+   
+    ! dontype_protein:
+    ! mobility type proteins
+    ! dontype_protein = config_mobility_type_proteins
+
+    ! fedtype_1:
+    ! mobility type dissolved iron
+    ! fedtype_1 =  config_mobility_type_dissolved_iron
+
+    ! feptype_1:
+    ! mobility type particulate iron
+    ! feptype_1 =  config_mobility_type_particulate_iron
+
+    ! zaerotype_bc1:
+    ! mobility type for black carbon 1
+    ! zaerotype_bc1 = config_mobility_type_black_carbon1
+
+    ! zaerotype_bc2:
+    ! mobility type for black carbon 2
+    ! zaerotype_bc2 = config_mobility_type_black_carbon2
+
+    ! zaerotype_dust1:
+    ! mobility type for dust 1
+    ! zaerotype_dust1 = config_mobility_type_dust1
+
+    ! zaerotype_dust2:
+    ! mobility type for dust 2
+    ! zaerotype_dust2 = config_mobility_type_dust2
+
+    ! zaerotype_dust3:
+    ! mobility type for dust 3
+    ! zaerotype_dust3 = config_mobility_type_dust3
+
+    ! zaerotype_dust4:
+    ! mobility type for dust 4
+    ! zaerotype_dust4 = config_mobility_type_dust4
+
+    ! ratio_C2N_diatoms:
+    ! algal C to N ratio (mol/mol) diatoms
+    ! ratio_C2N_diatoms = config_ratio_C_to_N_diatoms
+
+    ! ratio_C2N_sp:
+    ! algal C to N ratio (mol/mol) small_plankton
+    ! ratio_C2N_sp = config_ratio_C_to_N_small_plankton
+
+    ! ratio_C2N_phaeo:
+    ! algal C to N ratio (mol/mol) phaeocystis
+    ! ratio_C2N_phaeo = config_ratio_C_to_N_phaeocystis
+
+    ! ratio_chl2N_diatoms:
+    ! algal chla to N ratio (mol/mol) diatoms
+    ! ratio_chl2N_diatoms = config_ratio_chla_to_N_diatoms
+
+    ! ratio_chl2N_sp:
+    ! algal chla to N ratio (mol/mol) small_plankton
+    ! ratio_chl2N_sp = config_ratio_chla_to_N_small_plankton
+
+    ! ratio_chl2N_phaeo:
+    ! algal chla to N ratio (mol/mol) phaeocystis
+    ! ratio_chl2N_phaeo = config_ratio_chla_to_N_phaeocystis
+
+    ! F_abs_chl_diatoms:
+    ! scales absorbed radiation for dEdd diatoms
+    ! F_abs_chl_diatoms = config_scales_absorption_diatoms
+
+    ! F_abs_chl_sp:
+    ! scales absorbed radiation for dEdd small_plankton
+    ! F_abs_chl_sp = config_scales_absorption_small_plankton
+
+    ! F_abs_chl_phaeo:
+    ! scales absorbed radiation for dEdd phaeocystis
+    ! F_abs_chl_phaeo = config_scales_absorption_phaeocystis
+
+    ! ratio_C2N_proteins:
+    ! ratio of C to N in proteins (mol/mol)       
+    ! ratio_C2N_proteins = config_ratio_C_to_N_proteins
 
     ! grid_oS:
     ! for bottom flux (zsalinity)
