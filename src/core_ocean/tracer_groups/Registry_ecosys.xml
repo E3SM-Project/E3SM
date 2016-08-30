@@ -1272,3 +1272,44 @@
 			</var_array>
 		</var_struct>
 	</var_struct>
+	<var_struct name="ecosysMonthlyForcing" time_levs="1">
+		<var name="depositionFluzNO3" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="Atmospheric Deposition of NO3"
+		/>
+		<var name="depositionFluzNH4" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="Atmospheric Deposition of NH4"
+		/>
+		<var name="riverFluzNO3" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of NO3"
+		/>
+		<var name="riverFluzPO4" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of PO4"
+		/>
+		<var name="riverFluzSiO3" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of SiO3"
+		/>
+		<var name="riverFluzFe" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of Fe"
+		/>
+		<var name="riverFluzDOC" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of DOC"
+		/>
+		<var name="riverFluzDON" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of DON"
+		/>
+		<var name="riverFluzDOP" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of DOP"
+		/>
+		<var name="riverFluzDIC" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of DIC"
+		/>
+		<var name="riverFluzALK" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="River Runoff Fluz of ALK"
+		/>
+		<var name="dust_FLUZ_IN" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="Surface Dust Flux"
+		/>
+		<var name="IRON_FLUZ_IN" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
+			description="Surface Fe Flux"
+		/>
+	</var_struct>

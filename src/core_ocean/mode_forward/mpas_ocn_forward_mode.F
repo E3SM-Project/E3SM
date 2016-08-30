@@ -456,12 +456,14 @@ module ocn_forward_mode
       character(len=StrKIND), pointer :: config_restart_timestamp_name, config_sw_absorption_type
 
       logical, pointer :: config_write_output_on_startup
+      logical, pointer :: config_use_ecosysTracers
 
       ierr = 0
 
       call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(domain % configs, 'config_sw_absorption_type', config_sw_absorption_type)
+      call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
@@ -484,6 +486,12 @@ module ocn_forward_mode
       call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .true.)
       call mpas_timer_stop('io_shortwave')
 
+      ! read initial data required for ecosys forcing
+      if (config_use_ecosysTracers) then
+        call mpas_timer_start('io_ecosys',.false.)
+        call ocn_get_ecosysData(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_ecosys')
+      endif
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -566,6 +574,8 @@ module ocn_forward_mode
             end if
 
             if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain)
+
+            if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain)
          end if
 
          call mpas_timer_start('reset_io_alarms')
@@ -583,6 +593,13 @@ module ocn_forward_mode
          call mpas_timer_start('io_shortwave',.false.)
          call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .false.)
          call mpas_timer_stop('io_shortwave')
+
+         ! read next time level data required for ecosys forcing
+         if (config_use_ecosysTracers) then
+           call mpas_timer_start('io_ecosys',.false.)
+           call ocn_get_ecosysData(domain % streamManager, domain, domain % clock, .false.)
+           call mpas_timer_stop('io_ecosys')
+         endif
 
       end do
 
