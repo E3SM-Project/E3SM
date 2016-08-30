@@ -2956,11 +2956,21 @@
 
   <entry id="CCSM_CPRNC">
     <type>char</type>
-    <default_value>/UNSET</default_value>
+    <default_value>UNSET</default_value>
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard full pathname of the cprnc executable</desc>
   </entry>
+
+  <entry id="USER_MODS_FULLPATH">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>user_mods</group>
+    <file>env_case.xml</file>
+    <desc>path to user mods under TESTS_MODS_DIR or USER_MODS_DIR</desc>
+  </entry>
+
+
 
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
