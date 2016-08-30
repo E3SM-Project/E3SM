@@ -355,7 +355,7 @@
 
 <machine MACH="sandia-srn-sems">
     <DESC>Linux workstation RHEL6 on sandia SRN with SEMS</DESC>
-    <NODENAME_REGEX>s999964</NODENAME_REGEX>
+    <NODENAME_REGEX>(s999964|climate)</NODENAME_REGEX>
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
