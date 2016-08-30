@@ -19,23 +19,23 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
 
 # Make SRCS global so the tests can access it
 SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
-               ${SRC_DIR}/advance_mod.F90
                ${SRC_DIR}/checksum_mod.F90
                ${SRC_DIR}/common_io_mod.F90
                ${SRC_DIR}/common_movie_mod.F90
-               ${SRC_DIR}/init_mod.F90
                ${SRC_DIR}/interp_movie_mod.F90
                ${SRC_DIR}/netcdf_io_mod.F90
                ${SRC_DIR}/pio_io_mod.F90
                ${SRC_DIR}/repro_sum_mod.F90
                ${SRC_DIR}/restart_io_mod.F90
-               ${SRC_DIR}/restart_mod.F90
-               ${SRC_DIR}/rk_mod.F90
-               ${SRC_DIR}/shallow_water_mod.F90
-               ${SRC_DIR}/shal_movie_mod.F90
-               ${SRC_DIR}/state_mod.F90
-               ${SRC_DIR}/sweq_mod.F90
-               ${SRC_DIR}/types_mod.F90
+               ${SRC_DIR}/sweqx/advance_mod.F90
+               ${SRC_DIR}/sweqx/init_mod.F90
+               ${SRC_DIR}/sweqx/restart_mod.F90
+               ${SRC_DIR}/sweqx/rk_mod.F90
+               ${SRC_DIR}/sweqx/shallow_water_mod.F90
+               ${SRC_DIR}/sweqx/shal_movie_mod.F90
+               ${SRC_DIR}/sweqx/state_mod.F90
+               ${SRC_DIR}/sweqx/sweq_mod.F90
+               ${SRC_DIR}/sweqx/types_mod.F90
                ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
                ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
                ${SRC_SHARE_DIR}/bndry_mod.F90
