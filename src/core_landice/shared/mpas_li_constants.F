@@ -27,7 +27,8 @@ module li_constants
           cp_ice => SHR_CONST_CPICE,&
           latent_heat_ice => SHR_CONST_LATICE,&
           triple_point => SHR_CONST_TKTRIP,&
-          rho_water => SHR_CONST_RHOFW
+          rho_water => SHR_CONST_RHOFW, &
+          cp_freshwater => SHR_CONST_CPFW
    implicit none
    save
 
@@ -41,6 +42,7 @@ module li_constants
    real (kind=RKIND), parameter, public :: latent_heat_ice = 335.0d3    !< Latent heat of melting of ice (J/kg)
    real (kind=RKIND), parameter, public :: triple_point = 273.16_RKIND  !< Triple point of water (K)
    real (kind=RKIND), parameter, public :: rho_water = 1000.0_RKIND     !< Density of fresh water (kg m^-3)
+   real (kind=RKIND), parameter, public :: cp_freshwater = 4.188e3_RKIND        !< heat capacity of freshwater (J/kg/K)
 
 #endif
 

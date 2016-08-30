@@ -98,6 +98,10 @@
                             description="width of sheet beneath/around channel that contributes to melt within the channel"
 		            possible_values="positive real number"
 		/>
+		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".true." units="none"
+                            description="whether to include the pressure melt term in the channel opening"
+		            possible_values=".true. or .false."
+		/>
 
 	</nml_record>
 
@@ -172,12 +176,14 @@
 		     description="hydropotential without water thickness contribution" />
                 <var name="hydropotentialBaseVertex" type="real" dimensions="nVertices Time" units="Pa"
 		     description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
-                <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa"
+                <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^-1"
 		     description="normal component of gradient of hydropotentialBase" />
-                <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa"
+                <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^-1"
 		     description="tangent component of gradient of hydropotentialBase" />
                 <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="?"
 		     description="magnitude of the gradient of hydropotentialBase, on Edges" />
+                <var name="waterPressureSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^-1"
+		     description="normal component of gradient of waterPressure" />
                 <var name="divergence" type="real" dimensions="nCells Time" units="m s^-1"
 		     description="flux divergence of water" />
                 <var name="openingRate" type="real" dimensions="nCells Time" units="m s^-1"
@@ -205,6 +211,8 @@
 		     description="hydropotential on edges, used for channel" />
                 <var name="channelMelt" type="real" dimensions="nEdges Time" units="kg m^-2 s^-1"
 		     description="melt rate in subglacial channel" />
+                <var name="channelPressureFreeze" type="real" dimensions="nEdges Time" units="kg m^-2 s^-1"
+		     description="freezing rate in subglacial channel due to water pressure gradient.  positive=freezing, negative=melting" />
                 <var name="flowParamAChannel" type="real" dimensions="nEdges Time" units="Pa^-3 s^-1"
 		     description="flow parameter A on edges used for channel" />
                 <var name="channelEffectivePressure" type="real" dimensions="nEdges Time" units="Pa"
