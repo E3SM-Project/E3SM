@@ -144,8 +144,6 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
                         if hists1[idx] in one_not_two:
                             one_not_two.remove(hists1[idx])
         # in this case hists2 contains multiinstance hists1 does not
-        print multi_normalized2
-        print normalized1
         if set(multi_normalized2) == set(normalized1):
             for idx, norm_hist2 in enumerate(multi_normalized2):
                 for idx1, hist1 in enumerate(hists1):
