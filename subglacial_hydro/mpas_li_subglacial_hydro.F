@@ -327,6 +327,7 @@ module li_subglacial_hydro
          ! Update halos on channel
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'channelChangeRate')
+         call mpas_dmpar_field_halo_exch(domain, 'channelDischarge')
          call mpas_timer_stop("halo updates")
       endif
 
@@ -390,6 +391,7 @@ module li_subglacial_hydro
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'divergenceChannel')
          call mpas_dmpar_field_halo_exch(domain, 'channelAreaChangeCell')
+         call mpas_dmpar_field_halo_exch(domain, 'channelArea')
          call mpas_timer_stop("halo updates")
       endif
 
