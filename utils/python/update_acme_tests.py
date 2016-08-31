@@ -120,7 +120,7 @@ _TEST_SUITES = {
                            "PET_PT.f19_g16.X",
                            "PET_PT.f45_g37_rx1.A",
                            "PET_PT_Ln9.ne30_oEC.A_WCYCL2000",
-                           "PEM_Ln3.ne30_oEC.A_WCYCL2000",
+                           "ERP_Ln3.ne30_oEC.A_WCYCL2000",
                            "PFS.ne30_ne30.FC5",
                            "SEQ_IOP.f19_g16.X",
                            "SEQ.f45_g37.B1850C5",
