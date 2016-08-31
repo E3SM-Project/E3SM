@@ -1011,7 +1011,7 @@ contains
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal*nVertLevels))
 
       ! start accumulating fresh water inputs
-      netFreshwaterInput = sums(variableIndex)
+      netFreshwaterInput = dt * sums(variableIndex)
 
       ! evaporationFlux
       variableIndex = variableIndex + 1
