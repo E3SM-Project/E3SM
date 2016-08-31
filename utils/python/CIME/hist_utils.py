@@ -239,7 +239,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False):
     m1 = multiinst_regex.match(file1)
     m2 = multiinst_regex.match(file2)
     if m1 is not None:
-       mstr1 = m1.group(1)
+        mstr1 = m1.group(1)
     if m2 is not None:
         mstr2 = m2.group(1)
     if mstr1 != mstr2:
