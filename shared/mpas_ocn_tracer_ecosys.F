@@ -629,10 +629,14 @@ contains
 
       integer :: numColumns, column, iCell, iTracer, iLevelSurface
 
-! input flux components in ecosysAuxiliary
+! input flux components in forcing pool
       real (kind=RKIND), dimension(:), pointer :: &
          seaSurfacePressure,   &
          iceFraction,          &
+         landIceFraction
+
+! input flux components in ecosysAuxiliary
+      real (kind=RKIND), dimension(:), pointer :: &
          windSpeedSquared10m,  &
          depositionFluxNO3,    &
          depositionFluxNH4,    &
@@ -689,6 +693,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
@@ -745,6 +750,10 @@ contains
 !        BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
          BGC_forcing%surfacePressure(column) = 1.0_RKIND
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
+!maltrud assume for now that if there is any land ice, it is all land ice
+         if (associated(landIceFraction)) then
+            if (landIceFraction(iCell) > 0.0_RKIND) BGC_forcing%iceFraction(column) = 1.0_RKIND
+         endif
          BGC_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)*mSquared_to_cmSquared
          BGC_forcing%atmCO2(column) = atmosphericCO2(iCell)
          BGC_forcing%atmCO2_ALT_CO2(column) = atmosphericCO2_ALT_CO2(iCell)
