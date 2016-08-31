@@ -66,6 +66,10 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
         $grid_date .= '151031';
         $grid_prefix .= 'seaice.RRS.30-10km';
         $decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oRRS18to6' ) {
+        $grid_date .= '160830';
+        $grid_prefix .= 'seaice.RRS.18to6km';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS15to5' ) {
         $grid_date .= '151209';
         $grid_prefix .= 'seaice.RRS.15to5km';
