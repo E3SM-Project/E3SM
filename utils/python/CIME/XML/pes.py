@@ -67,7 +67,7 @@ class Pes(GenericXML):
         pes_ntasks, pes_nthrds, pes_rootpe, other_settings = {}, {}, {}, {}
         for node in pe_select:
             vid = node.tag
-            logger.warn("vid is %s"%vid)
+            logger.debug("vid is %s"%vid)
             if "ntasks" in vid:
                 for child in node:
                     pes_ntasks[child.tag.upper()] = child.text

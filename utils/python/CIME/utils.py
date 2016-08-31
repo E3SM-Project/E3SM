@@ -489,14 +489,17 @@ def find_proc_id(proc_name=None,
 
     return list(rv)
 
-def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
+def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
     """
     Get a string representing the current UTC time in format: YYMMDD_HHMMSS
 
     The format can be changed if needed.
     """
-    utc_time_tuple = time.gmtime()
-    return time.strftime(timestamp_format, utc_time_tuple)
+    if utc_time:
+        time_tuple = time.gmtime()
+    else:
+        time_tuple = time.localtime()
+    return time.strftime(timestamp_format, time_tuple)
 
 def get_project(machobj=None):
     """
