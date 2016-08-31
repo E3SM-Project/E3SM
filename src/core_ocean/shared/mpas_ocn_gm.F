@@ -438,7 +438,6 @@ contains
       ! first, compute tapering across full domain based on a maximum allowable slope
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
-        relativeSlopeTaperingCell(k, iCell) = 0.0_RKIND
         do k = 1, maxLevelCell(iCell)
           relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope / (relativeSlopeTopOfCell(k,iCell)+epsGM))
         end do
@@ -625,6 +624,7 @@ contains
       call mpas_deallocate_scratch_field(dDensityDzTopOfEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradZMidEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradZMidTopOfEdgeField, .true.)
+      call mpas_deallocate_scratch_field(areaCellSumField, .true.)
 
       call mpas_timer_stop('gm bolus velocity')
 
