@@ -17,5 +17,8 @@
         <case name="experiment_A5">
                 <step executable="./setup_test.py" quiet="false" pre_message=" * Running setup_test step" post_message="     Complete"/>
         </case>
+        <case name="experiment_A6">
+                <step executable="./setup_test.py" quiet="false" pre_message=" * Running setup_test step" post_message="     Complete"/>
+        </case>
 </driver_script>
 
