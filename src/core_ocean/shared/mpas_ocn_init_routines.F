@@ -680,7 +680,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, err1, 1)
       err = ior(err, err1)
       call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
-                                                    forcingPool, scratchPool, err1)
+                                                    forcingPool, scratchPool, statePool, dt, err1)
       err = ior(err, err1)
 
 

@@ -233,7 +233,7 @@ contains
       integer :: k, i, fileID
       integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_activeTracers
-      character*1 timeChar
+
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
@@ -256,7 +256,9 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
-      real (kind=RKIND), dimension(:), pointer :: rainFlux
+      real (kind=RKIND), dimension(:), pointer :: rainFlux, landIceFreshwaterFlux
+      real (kind=RKIND), dimension(:), pointer :: accumulatedLandIceMass, accumulatedLandIceHeat, &
+                                                  accumulatedLandIceFrazilMass
 
       real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
 
@@ -368,6 +370,11 @@ contains
          call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
          call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
          call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
+         call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
+
+         call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMass, 1)
+         call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeat, 1)
+         call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMass, 1)
 
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
@@ -834,6 +841,96 @@ contains
          verticalSumMins(variableIndex) = mins(variableIndex)
          verticalSumMaxes(variableIndex) = maxes(variableIndex)
 
+         ! landIceFreshwaterFlux
+         variableIndex = variableIndex + 1
+         if ( associated(landIceFreshwaterFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 landIceFreshwaterFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+         ! accumulatedLandIceMass
+         variableIndex = variableIndex + 1
+         if ( associated(accumulatedLandIceMass) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 accumulatedLandIceMass(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+         ! accumulatedLandIceHeat
+         variableIndex = variableIndex + 1
+         if ( associated(accumulatedLandIceHeat) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 accumulatedLandIceHeat(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+         ! accumulatedLandIceFrazilMass
+         variableIndex = variableIndex + 1
+         if ( associated(accumulatedLandIceFrazilMass) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                                                                 areaCell(1:nCellsSolve), &
+                                                                 accumulatedLandIceFrazilMass(1:nCellsSolve), sums_tmp(variableIndex), &
+                                                                 sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                                                                 maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+
+
          deallocate(workArray)
 
          nVariables = variableIndex
@@ -1060,6 +1157,29 @@ contains
 
       ! continue accumulating fresh water inputs
       netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! landIceFreshwaterFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! accumulatedLandIceMass
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! accumulatedLandIceHeat
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! accumulatedLandIceFrazilMass
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
 
       ! calculate fresh water conservation check quantities
       absoluteFreshWaterConservation = totalVolumeChange - netFreshwaterInput
