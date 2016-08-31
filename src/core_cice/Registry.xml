@@ -205,6 +205,121 @@
 		<nml_option name="config_snow_porosity_at_ice_surface"       	 type="real"          default_value="-0.3"/>
 		<nml_option name="config_new_ice_fraction_biotracer"             type="real"          default_value="0.80"/>
 		<nml_option name="config_fraction_biotracer_in_frazil"           type="real"          default_value="0.80"/>
+		<nml_option name="config_ratio_Si_to_N_diatoms"                  type="real"          default_value="1.80"/>
+		<nml_option name="config_ratio_Si_to_N_small_plankton"           type="real"          default_value="0.00"/>
+		<nml_option name="config_ratio_Si_to_N_phaeocystis"              type="real"          default_value="0.00"/>
+		<nml_option name="config_ratio_S_to_N_diatoms"                   type="real"          default_value="0.03"/>
+		<nml_option name="config_ratio_S_to_N_small_plankton"            type="real"          default_value="0.03"/>
+		<nml_option name="config_ratio_S_to_N_phaeocystis"               type="real"          default_value="0.03"/>
+		<nml_option name="config_ratio_Fe_to_C_diatoms"                  type="real"          default_value="0.0033"/>
+		<nml_option name="config_ratio_Fe_to_C_small_plankton"           type="real"          default_value="0.0033"/>
+		<nml_option name="config_ratio_Fe_to_C_phaeocystis"              type="real"          default_value="0.1"/> 
+		<nml_option name="config_ratio_Fe_to_N_diatoms"                  type="real"          default_value="0.023"/>
+		<nml_option name="config_ratio_Fe_to_N_small_plankton"           type="real"          default_value="0.023"/>
+		<nml_option name="config_ratio_Fe_to_N_phaeocystis"              type="real"          default_value="0.7"/> 
+		<nml_option name="config_ratio_Fe_to_DON"                        type="real"          default_value="0.023"/>
+		<nml_option name="config_ratio_Fe_to_DOC_saccharids"             type="real"          default_value="0.1"/> 
+		<nml_option name="config_ratio_Fe_to_DOC_lipids"                 type="real"          default_value="0.033"/>
+		<nml_option name="config_respiration_fraction_of_growth"         type="real"          default_value="0.05"/>
+		<nml_option name="config_rapid_mobile_to_stationary_time"        type="real"          default_value="5200.0"/>
+		<nml_option name="config_long_mobile_to_stationary_time"         type="real"          default_value="173000.0"/>
+		<nml_option name="config_algal_maximum_velocity"                 type="real"          default_value="0.0000000111"/>
+		<nml_option name="config_ratio_Fe_to_dust"                       type="real"          default_value="0.035"/>
+		<nml_option name="config_solubility_of_Fe_in_dust"               type="real"          default_value="0.005"/>
+		<nml_option name="config_chla_absorptivity_of_diatoms"           type="real"          default_value="0.03"/>
+		<nml_option name="config_chla_absorptivity_of_small_plankton"    type="real"          default_value="0.01"/>
+		<nml_option name="config_chla_absorptivity_of_phaeocystis"       type="real"          default_value="0.05"/>
+		<nml_option name="config_light_attenuation_diatoms"              type="real"          default_value="0.8"/>
+		<nml_option name="config_light_attenuation_small_plankton"       type="real"          default_value="0.67"/>
+		<nml_option name="config_light_attenuation_phaeocystis"          type="real"          default_value="0.67"/>
+		<nml_option name="config_light_inhibition_diatoms"               type="real"          default_value="0.018"/>
+		<nml_option name="config_light_inhibition_small_plankton"        type="real"          default_value="0.0025"/>
+		<nml_option name="config_light_inhibition_phaeocystis"           type="real"          default_value="0.01"/>
+		<nml_option name="config_maximum_growth_rate_diatoms"            type="real"          default_value="1.44"/>
+		<nml_option name="config_maximum_growth_rate_small_plankton"     type="real"          default_value="0.851"/>
+		<nml_option name="config_maximum_growth_rate_phaeocystis"        type="real"          default_value="0.851"/>
+		<nml_option name="config_temperature_growth_diatoms"             type="real"          default_value="0.06"/>
+		<nml_option name="config_temperature_growth_small_plankton"      type="real"          default_value="0.06"/>
+		<nml_option name="config_temperature_growth_phaeocystis"         type="real"          default_value="0.06"/>
+		<nml_option name="config_grazed_fraction_diatoms"                type="real"          default_value="0.0"/>
+		<nml_option name="config_grazed_fraction_small_plankton"         type="real"          default_value="0.1"/>
+		<nml_option name="config_grazed_fraction_phaeocystis"            type="real"          default_value="0.1"/>
+		<nml_option name="config_mortality_diatoms"                      type="real"          default_value="0.007"/>
+		<nml_option name="config_mortality_small_plankton"               type="real"          default_value="0.007"/>
+		<nml_option name="config_mortality_phaeocystis"                  type="real"          default_value="0.007"/>
+		<nml_option name="config_temperature_mortality_diatoms"          type="real"          default_value="0.03"/>
+		<nml_option name="config_temperature_mortality_small_plankton"   type="real"          default_value="0.03"/>
+		<nml_option name="config_temperature_mortality_phaeocystis"      type="real"          default_value="0.03"/>
+		<nml_option name="config_exudation_diatoms"                      type="real"          default_value="0.0"/>
+		<nml_option name="config_exudation_small_plankton"               type="real"          default_value="0.0"/>
+		<nml_option name="config_exudation_phaeocystis"                  type="real"          default_value="0.0"/>
+		<nml_option name="config_nitrate_saturation_diatoms"             type="real"          default_value="1.0"/>
+		<nml_option name="config_nitrate_saturation_small_plankton"      type="real"          default_value="1.0"/>
+		<nml_option name="config_nitrate_saturation_phaeocystis"         type="real"          default_value="1.0"/>
+		<nml_option name="config_ammonium_saturation_diatoms"            type="real"          default_value="0.3"/>
+		<nml_option name="config_ammonium_saturation_small_plankton"     type="real"          default_value="0.3"/>
+		<nml_option name="config_ammonium_saturation_phaeocystis"        type="real"          default_value="0.3"/>
+		<nml_option name="config_silicate_saturation_diatoms"            type="real"          default_value="4.0"/>
+		<nml_option name="config_silicate_saturation_small_plankton"     type="real"          default_value="0.0"/>
+		<nml_option name="config_silicate_saturation_phaeocystis"        type="real"          default_value="0.0"/>
+		<nml_option name="config_iron_saturation_diatoms"                type="real"          default_value="1.0"/>
+		<nml_option name="config_iron_saturation_small_plankton"         type="real"          default_value="0.2"/>
+		<nml_option name="config_iron_saturation_phaeocystis"            type="real"          default_value="0.1"/>
+		<nml_option name="config_fraction_spilled_to_DON"                type="real"          default_value="0.6"/>
+		<nml_option name="config_degredation_of_DON"                     type="real"          default_value="0.03"/>
+		<nml_option name="config_fraction_DON_ammonium"                  type="real"          default_value="0.25"/>
+		<nml_option name="config_fraction_loss_to_saccharids"            type="real"          default_value="0.4"/>
+		<nml_option name="config_fraction_loss_to_lipids"                type="real"          default_value="0.4"/>
+		<nml_option name="config_fraction_exudation_to_saccharids"       type="real"          default_value="1.0"/>
+		<nml_option name="config_fraction_exudation_to_lipids"           type="real"          default_value="1.0"/>
+		<nml_option name="config_remineralization_saccharids"            type="real"          default_value="0.03"/>
+		<nml_option name="config_remineralization_lipids"                type="real"          default_value="0.03"/>
+		<nml_option name="config_maximum_brine_temperature"              type="real"          default_value="0.0"/>
+		<nml_option name="config_salinity_dependence_of_growth"          type="real"          default_value="1.0"/>
+		<nml_option name="config_minimum_optical_depth"                  type="real"          default_value="0.1"/>
+		<nml_option name="config_slopped_grazing_fraction"               type="real"          default_value="0.5"/>
+		<nml_option name="config_excreted_fraction"                      type="real"          default_value="0.5"/>
+		<nml_option name="config_fraction_mortality_to_ammonium"         type="real"          default_value="0.5"/>
+		<nml_option name="config_fraction_iron_remineralized"            type="real"          default_value="0.3"/>
+		<nml_option name="config_nitrification_rate"                     type="real"          default_value="0.0"/>
+		<nml_option name="config_desorption_loss_particulate_iron"       type="real"          default_value="3065.0"/>
+		<nml_option name="config_maximum_loss_fraction"                  type="real"          default_value="0.9"/>
+		<nml_option name="config_maximum_ratio_iron_to_saccharids"       type="real"          default_value="0.2"/>
+		<nml_option name="config_respiration_loss_to_DMSPd"              type="real"          default_value="0.75"/>
+		<nml_option name="config_DMSP_to_DMS_conversion_fraction"        type="real"          default_value="0.5"/>
+		<nml_option name="config_DMSP_to_DMS_conversion_time"            type="real"          default_value="3.0"/>
+		<nml_option name="config_DMS_oxidation_time"                     type="real"          default_value="10.0"/>
+		<nml_option name="config_mobility_type_diatoms"                  type="real"          default_value="0.0"/>
+		<nml_option name="config_mobility_type_small_plankton"           type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_phaeocystis"              type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_nitrate"                  type="real"          default_value="-1.0"/>
+		<nml_option name="config_mobility_type_ammonium"                 type="real"          default_value="1.0"/>
+		<nml_option name="config_mobility_type_silicate"                 type="real"          default_value="-1.0"/>
+		<nml_option name="config_mobility_type_DMSPp"                    type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_DMSPd"                    type="real"          default_value="-1.0"/>
+		<nml_option name="config_mobility_type_humics"                   type="real"          default_value="1.0"/>
+		<nml_option name="config_mobility_type_saccharids"               type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_lipids"                   type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_proteins"                 type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_dissolved_iron"           type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_particulate_iron"         type="real"          default_value="0.5"/>
+		<nml_option name="config_mobility_type_black_carbon1"            type="real"          default_value="1.0"/>
+		<nml_option name="config_mobility_type_black_carbon2"            type="real"          default_value="1.0"/>
+		<nml_option name="config_mobility_type_dust1"                    type="real"          default_value="1.0"/>
+		<nml_option name="config_mobility_type_dust2"                    type="real"          default_value="1.0"/>
+		<nml_option name="config_mobility_type_dust3"                    type="real"          default_value="1.0"/>
+		<nml_option name="config_mobility_type_dust4"                    type="real"          default_value="1.0"/>
+		<nml_option name="config_ratio_C_to_N_diatoms"                   type="real"          default_value="7.0"/>
+		<nml_option name="config_ratio_C_to_N_small_plankton"            type="real"          default_value="7.0"/>
+		<nml_option name="config_ratio_C_to_N_phaeocystis"               type="real"          default_value="7.0"/>
+		<nml_option name="config_ratio_chla_to_N_diatoms"                type="real"          default_value="2.1"/>
+		<nml_option name="config_ratio_chla_to_N_small_plankton"         type="real"          default_value="1.1"/>
+		<nml_option name="config_ratio_chla_to_N_phaeocystis"            type="real"          default_value="0.84"/>
+		<nml_option name="config_scales_absorption_diatoms"              type="real"          default_value="2.0"/>
+		<nml_option name="config_scales_absorption_small_plankton"       type="real"          default_value="4.0"/>
+		<nml_option name="config_scales_absorption_phaeocystis"          type="real"          default_value="5.0"/>
+		<nml_option name="config_ratio_C_to_N_proteins"                  type="real"          default_value="7.0"/>
+
 	</nml_record>
 
 	<nml_record name="shortwave" in_defaults="true"> 
@@ -1956,3 +2071,4 @@
 
 #include "analysis_members/Registry_cice_analysis_members.xml"
 </registry>
+n

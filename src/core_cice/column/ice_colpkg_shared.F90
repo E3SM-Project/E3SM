@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg_shared.F90 1141 2016-08-25 17:22:04Z njeffery $
+!  SVN:$Id: ice_colpkg_shared.F90 1142 2016-08-27 16:07:51Z njeffery $
 !=========================================================================
 !
 ! flags for the column package
@@ -234,6 +234,138 @@
          restore_bgc      ! if true, restore nitrate
 
       !-----------------------------------------------------------------
+      ! From ice_zbgc_shared.F90
+      !-----------------------------------------------------------------
+
+      real (kind=dbl_kind), public :: &
+         ratio_Si2N_diatoms, &   ! algal Si to N (mol/mol)
+         ratio_Si2N_sp     , &
+         ratio_Si2N_phaeo  , &
+         ratio_S2N_diatoms , &   ! algal S  to N (mol/mol)
+         ratio_S2N_sp      , &
+         ratio_S2N_phaeo   , &
+         ratio_Fe2C_diatoms, &   ! algal Fe to C  (umol/mol)
+         ratio_Fe2C_sp     , &
+         ratio_Fe2C_phaeo  , &
+         ratio_Fe2N_diatoms, &   ! algal Fe to N  (umol/mol)
+         ratio_Fe2N_sp     , &
+         ratio_Fe2N_phaeo  , &
+         ratio_Fe2DON      , &   ! Fe to N of DON (nmol/umol)
+         ratio_Fe2DOC_s    , &   ! Fe to C of DOC (nmol/umol) saccharids
+         ratio_Fe2DOC_l    , &   ! Fe to C of DOC (nmol/umol) lipids
+         fr_resp           , &   ! fraction of algal growth lost due to respiration        
+         tau_min           , &   ! rapid mobile to stationary exchanges (s) = 1.5 hours
+         tau_max           , &   ! long time mobile to stationary exchanges (s) = 2 days
+         algal_vel         , &   ! 0.5 cm/d(m/s) Lavoie 2005  1.5 cm/day
+         R_dFe2dust        , &   !  g/g (3.5% content) Tagliabue 2009
+         dustFe_sol              ! solubility fraction
+
+      !-----------------------------------------------------------------
+      ! From algal_dyn in ice_algae.F90
+      !-----------------------------------------------------------------
+
+      real (kind=dbl_kind), public :: &
+         chlabs_diatoms   , & ! chl absorption (1/m/(mg/m^3))
+         chlabs_sp        , & !
+         chlabs_phaeo     , & !
+         alpha2max_low_diatoms , & ! light limitation (1/(W/m^2))  
+         alpha2max_low_sp      , & 
+         alpha2max_low_phaeo   , & 
+         beta2max_diatoms , & ! light inhibition (1/(W/m^2))  
+         beta2max_sp      , & 
+         beta2max_phaeo   , & 
+         mu_max_diatoms   , & ! maximum growth rate (1/day)       
+         mu_max_sp        , & 
+         mu_max_phaeo     , & 
+         grow_Tdep_diatoms, & ! Temperature dependence of growth (1/C)
+         grow_Tdep_sp     , & 
+         grow_Tdep_phaeo  , & 
+         fr_graze_diatoms , & ! Fraction grazed
+         fr_graze_sp      , & 
+         fr_graze_phaeo   , & 
+         mort_pre_diatoms , & ! Mortality (1/day)
+         mort_pre_sp      , & 
+         mort_pre_phaeo   , & 
+         mort_Tdep_diatoms, & ! T dependence of mortality (1/C)
+         mort_Tdep_sp     , &  
+         mort_Tdep_phaeo  , &  
+         k_exude_diatoms  , & ! algal exudation (1/d)
+         k_exude_sp       , &  
+         k_exude_phaeo    , &  
+         K_Nit_diatoms    , & ! nitrate half saturation (mmol/m^3)
+         K_Nit_sp         , &  
+         K_Nit_phaeo      , &  
+         K_Am_diatoms     , & ! ammonium half saturation (mmol/m^3)
+         K_Am_sp          , &   
+         K_Am_phaeo       , &   
+         K_Sil_diatoms    , & ! silicate half saturation (mmol/m^3)
+         K_Sil_sp         , &   
+         K_Sil_phaeo      , &   
+         K_Fe_diatoms     , & ! iron half saturation (nM)
+         K_Fe_sp          , &   
+         K_Fe_phaeo       , &    
+         f_don_protein    , & ! fraction of spilled grazing to proteins           
+         kn_bac_protein   , & ! Bacterial degredation of DON (1/d)                
+         f_don_Am_protein , & ! fraction of remineralized DON to ammonium         
+         f_doc_s          , & ! fraction of mortality to DOC 
+         f_doc_l          , &   
+         f_exude_s        , & ! fraction of exudation to DOC
+         f_exude_l        , & 
+         k_bac_s          , & ! Bacterial degredation of DOC (1/d)
+         k_bac_l          , & 
+         T_max            , & ! maximum temperature (C)
+         fsal             , & ! Salinity limitation (ppt)
+         op_dep_min       , & ! Light attenuates for optical depths exceeding min
+         fr_graze_s       , & ! fraction of grazing spilled or slopped
+         fr_graze_e       , & ! fraction of assimilation excreted 
+         fr_mort2min      , & ! fractionation of mortality to Am
+         fr_dFe           , & ! fraction of remineralized nitrogen (in units of algal iron)
+         k_nitrif         , & ! nitrification rate (1/day)           
+         t_iron_conv      , & ! desorption loss pFe to dFe (day)
+         max_loss         , & ! restrict uptake to % of remaining value 
+         max_dfe_doc1     , & ! max ratio of dFe to saccharides in the ice (nM Fe/muM C)    
+         fr_resp_s        , & ! DMSPd fraction of respiration loss as DMSPd
+         y_sk_DMS         , & ! fraction conversion given high yield
+         t_sk_conv        , & ! Stefels conversion time (d)
+         t_sk_ox              ! DMS oxidation time (d)
+
+      !-----------------------------------------------------------------
+      ! former parameters now in namelist
+      !-----------------------------------------------------------------
+
+      real (kind=dbl_kind), public :: &
+         algaltype_diatoms  , & ! mobility type
+         algaltype_sp       , & !
+         algaltype_phaeo    , & !
+         nitratetype        , & !
+         ammoniumtype       , & !
+         silicatetype       , & !
+         dmspptype          , & !
+         dmspdtype          , & !
+         humtype            , & !
+         doctype_s          , & !
+         doctype_l          , & !
+         dontype_protein    , & !
+         fedtype_1          , & !
+         feptype_1          , & !
+         zaerotype_bc1      , & !
+         zaerotype_bc2      , & !
+         zaerotype_dust1    , & !
+         zaerotype_dust2    , & !
+         zaerotype_dust3    , & !
+         zaerotype_dust4    , & !
+         ratio_C2N_diatoms  , & ! algal C to N ratio (mol/mol)
+         ratio_C2N_sp       , & !
+         ratio_C2N_phaeo    , & !
+         ratio_chl2N_diatoms, & ! algal chlorophyll to N ratio (mg/mmol)
+         ratio_chl2N_sp     , & !
+         ratio_chl2N_phaeo  , & !
+         F_abs_chl_diatoms  , & ! scales absorbed radiation for dEdd
+         F_abs_chl_sp       , & !
+         F_abs_chl_phaeo    , & !
+         ratio_C2N_proteins     ! ratio of C to N in proteins (mol/mol)       
+
+      !-----------------------------------------------------------------
       ! Transport type 
       !-----------------------------------------------------------------
       ! In delta Eddington, algal particles are assumed to cause no
@@ -242,31 +374,23 @@
       ! Algal types: Diatoms, flagellates, Phaeocycstis
       ! DOC        : Proteins, EPS, Lipids
       !-----------------------------------------------------------------
-      real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
-         algaltype = (/c0, p5, p5/)  ! tau_min for both retention and release
-
-      real (kind=dbl_kind), parameter, public :: &
-         nitratetype  = -c1, & ! purely mobile
-         ammoniumtype =  c1, & ! tau_max for retention and tau_min for release 
-         silicatetype = -c1, &
-         dmspptype    =  p5, & ! 
-         dmspdtype    = -c1, & !
-         humtype      =  c1    !  
-
-      real (kind=dbl_kind), parameter, dimension(max_doc), public :: &
-         doctype   = (/ p5, p5, p5/)
-
       real (kind=dbl_kind), parameter, dimension(max_dic), public :: &
-         dictype   = (/-c1/)
+         dictype   = (/-c1/)  ! not in namelist
 
-      real (kind=dbl_kind), parameter, dimension(max_don), public :: &
-         dontype   = (/p5/)
+      real (kind=dbl_kind), dimension(max_algae), public :: &
+         algaltype   ! tau_min for both retention and release
 
-      real (kind=dbl_kind), parameter, dimension(max_fe), public :: &
-         fedtype   = (/p5, p5/)
+      real (kind=dbl_kind), dimension(max_doc), public :: &
+         doctype 
 
-      real (kind=dbl_kind), parameter, dimension(max_fe), public :: &
-         feptype   = (/ p5, p5/) 
+      real (kind=dbl_kind), dimension(max_don), public :: &
+         dontype  
+
+      real (kind=dbl_kind), dimension(max_fe), public :: &
+         fedtype 
+
+      real (kind=dbl_kind), dimension(max_fe), public :: &
+         feptype  
 
       !------------------------------------------------------------
       ! Aerosol order and type should be consistent with order/type 
@@ -275,9 +399,8 @@
       ! 4) dust (0.5-1.25 micron); 5) dust (1.25-2.5 micron);
       ! 6) dust (2.5-5 micron) 
       !-------------------------------------------------------------
-      real (kind=dbl_kind), parameter, dimension(max_aero), public :: &
-         zaerotype   = (/ c1, c1, c1, &
-                          c1, c1, c1/)
+      real (kind=dbl_kind), dimension(max_aero), public :: &
+         zaerotype  
 
       !-----------------------------------------------------------------
       ! Forcing input, history and diagnostic output
@@ -288,19 +411,13 @@
                                        ! Cox and Weeks, 1982: 919-974 kg/m^2
          sk_l      = 0.03_dbl_kind     ! skeletal layer thickness (m)
 
-      real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
-         R_C2N     = (/ 7.0_dbl_kind,      & ! algal C to N (mole/mole) 
-                        7.0_dbl_kind,      & ! Kristiansen 1991 (Barents) 9.0
-                        7.0_dbl_kind /),   &
-         R_chl2N   = (/ 2.1_dbl_kind,      & ! 3 algal chlorophyll to N (mg/mmol)
-                        1.1_dbl_kind,      &
-                        0.84_dbl_kind/),   &
-         F_abs_chl = (/ 2.0_dbl_kind,      & ! to scale absorption in Dedd
-                        4.0_dbl_kind,      &
-                        5.0_dbl_kind /)     
+      real (kind=dbl_kind), dimension(max_algae), public :: &
+         R_C2N     ,      & ! algal C to N (mole/mole) 
+         R_chl2N   ,      & ! 3 algal chlorophyll to N (mg/mmol)
+         F_abs_chl          ! to scale absorption in Dedd
 
       real (kind=dbl_kind), dimension(max_don), public :: &  ! increase compare to algal R_Fe2C
-         R_C2N_DON  =  (/ 7.0_dbl_kind /)  !  
+         R_C2N_DON 
 
 !=======================================================================
 

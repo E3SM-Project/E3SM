@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1141 2016-08-25 17:22:04Z njeffery $
+!  SVN:$Id: ice_algae.F90 1142 2016-08-27 16:07:51Z njeffery $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)
@@ -678,7 +678,8 @@
                                     nlt_bgc_Fed, nlt_zaero, bio_index, tr_bgc_N, &
                                     nlt_bgc_N
       use ice_constants_colpkg, only: c0, c1, c2, p5, puny
-      use ice_colpkg_shared, only: hi_ssl, dEdd_algae, solve_zbgc
+      use ice_colpkg_shared, only: hi_ssl, dEdd_algae, solve_zbgc, &
+                                   R_dFe2dust, dustFe_sol, algal_vel
 
       integer (kind=int_kind), intent(in) :: &
          n_cat,              & ! category number
@@ -1222,7 +1223,22 @@
                             Nerror,       conserve_N)      
 
       use ice_constants_colpkg, only: p1, p5, c0, c1, secday, puny
-      use ice_colpkg_shared, only: max_algae, max_DON, max_DOC, R_C2N, R_chl2N
+      use ice_colpkg_shared, only: max_algae, max_DON, max_DOC, R_C2N, R_chl2N, &
+      	  		     	   T_max, fsal      , fr_resp          , & 
+                                   op_dep_min       , fr_graze_s       , & 
+                                   fr_graze_e       , fr_mort2min      , & 
+                                   fr_dFe           , k_nitrif         , & 
+                                   t_iron_conv      , max_loss         , & 
+                                   max_dfe_doc1     , fr_resp_s        , & 
+                                   y_sk_DMS         , t_sk_conv        , & 
+                                   t_sk_ox              
+
+      use ice_zbgc_shared, only:   chlabs, alpha2max_low, beta2max, mu_max, &
+                                   grow_Tdep, fr_graze, mort_pre, mort_Tdep, &
+                                   k_exude, K_Nit, K_Am, K_Sil, K_Fe, &   
+                                   f_don, kn_bac, f_don_Am, & 
+                                   f_doc, f_exude, k_bac
+
       use ice_colpkg_tracers, only: tr_brine, nt_fbri, &
           tr_bgc_Nit,    tr_bgc_Am,    tr_bgc_Sil,    &
           tr_bgc_DMS,    tr_bgc_PON,   tr_bgc_S,      &
@@ -1268,7 +1284,7 @@
 
       !  local variables
       !------------------------------------------------------------------------------------
-      ! Parameters for 3 possible autotrophs nt_bgc_N(1:3):  diatoms, flagellates, phaeocystis
+      !            3 possible autotrophs nt_bgc_N(1:3):  diatoms, flagellates, phaeocystis
       !                2 types of dissolved organic carbon nt_bgc_DOC(1:2): 
       !                        polysaccharids, lipids
       !                1 DON (proteins)
@@ -1279,68 +1295,7 @@
       ! --------------------------------------------------------------------------------------
 
       real (kind=dbl_kind),  parameter, dimension(max_algae) :: &
-         ! if dEdd_algae = F, then absorption is included in dEdd, and we don't include here
-         chlabs     = (/ 0.03_dbl_kind, 0.01_dbl_kind, 0.05_dbl_kind/), & !these seem high
-                                                                          !0.003 1/m/(mg/m^3)
-         alpha2max_low  = (/ 0.8_dbl_kind, 0.67_dbl_kind, 0.67_dbl_kind/), & !Kirst and Wiencke 1995, Arrigo (2003)
-                         ! light limitation (1/(W/m^2))
-                                                                       !low PAR value
-         alpha2max_high  = (/ 0.25_dbl_kind, 0.25_dbl_kind, 0.25_dbl_kind/), & ! light limitation (1/(W/m^2))
-                                                                       !high PAR value
-         beta2max   = (/ 0.018_dbl_kind, 0.0025_dbl_kind, 0.01_dbl_kind/), & !Jin 2006
-                              ! corresponding light inhibition (1/W/m^2)
-         !Eppley 1972 curve mux_max = 0.851(1.066)^T , at T = 0
-         mu_max     = (/ 1.44_dbl_kind, 0.851_dbl_kind, 0.851_dbl_kind/), &   ! Jin 2006 (0.06 /h)
-                      ! (/ 0.851_dbl_kind, 0.851_dbl_kind, 0.851_dbl_kind/), & 
-                      ! (1/day) maximum growth rate
-         grow_Tdep  = (/0.06_dbl_kind, 0.06_dbl_kind, 0.06_dbl_kind/),& ! (1/C)and its T dependence
-         fr_graze   = (/c0, p1, p1/) ,  & ! A93 val for S, set to zero in Jin 06   Diatoms are not grazed
-         mort_pre   = (/0.007_dbl_kind, 0.007_dbl_kind, 0.007_dbl_kind/),& ! 0.02 (1/day) prefix to mortality
-         mort_Tdep  = (/0.03_dbl_kind ,0.03_dbl_kind, 0.03_dbl_kind/) , & ! (1/C) T dependence of mortality
-         k_exude    = (/c0, c0, c0/),    & ! algal carbon  exudation rate (1/d)
-         K_Nit      = (/ c1, c1, c1/) ,  & ! nitrate half saturation (mmol/m^3) 
-         K_Am       = (/ 0.3_dbl_kind, 0.3_dbl_kind, 0.3_dbl_kind/) ,  & ! ammonium half saturation (mmol/m^3) 
-         K_Sil      = (/4.0_dbl_kind, c0, c0/) , & ! Jin, Eslinger and others (2001)
-                     !(/3.0_dbl_kind , c0, c0/), & ! silicon half saturation (mmol/m^3)
-         K_Fe       = (/1.0_dbl_kind , 0.2_dbl_kind, 0.1_dbl_kind/) ! 0.2-1  (nM)
-                     ! (nM) iron half saturation  or micromol/m^3
-                     ! Timmermans et al 2004 for values 2e-4-1.1e-3 mmol/m^3 for Antarctic diatoms
-            
-      real (kind=dbl_kind), parameter, dimension(max_DON) :: &
-         f_don     = (/ 0.6_dbl_kind/), & !fraction of spilled grazing 
-                     !that goes to each DON pool(proteins and amino acids)
-         kn_bac    = (/0.03_dbl_kind/), &!(1/d) Bacterial degredation of DON
-         f_don_Am  =  (/0.25_dbl_kind/)   !frac of remineralized DON to Am
-
-      real (kind=dbl_kind),  parameter, dimension(max_DOC) :: &
-         f_doc     = (/ 0.4_dbl_kind, 0.4_dbl_kind, 0.2_dbl_kind /), &
-                      ! fraction of mort_N that goes to each doc pool
-         f_exude    = (/c1, c1, c1 /) , & ! fraction of exuded carbon to each DOC pool
-         k_bac      = (/0.03_dbl_kind,0.03_dbl_kind,0.03_dbl_kind/)    
-                      ! (1/d) Bacterial degredation of DOC (1/month)
-      real (kind=dbl_kind), parameter :: & 
-         T_max      = c0            , & 
-         fsal       = c1            , & ! 0.2  Arrigo and Sullivan 1992 (only for T < -5oC or S_b > 60 ppt)
-         op_dep_min = 0.1           , & ! 0.01 Light attenuates for optical depths exceeding
-                                        ! op_dep_min (small effect unless chla > 100 mg/m^2)
-         fr_graze_s = 0.5_dbl_kind  , & ! fraction of grazing spilled or slopped
-         fr_graze_e = 0.5_dbl_kind  , & ! fraction of assimilation excreted 
-         fr_mort2min= 0.5_dbl_kind  , & ! fractionation of mortality to Am
-         fr_dFe     = 0.3_dbl_kind  , & ! fraction of remineralized nitrogen (in units of algal iron) that becomes
-                                        ! dFe (the rest goes to pFe)  10%
-         k_nitrif   = c0            , & !(1/day) nitrification rate   0.015_dbl_kind 
-         t_iron_conv= 3065.0_dbl_kind , & ! 65.0_dbl_kind desorption loss pFe to dFe (Parekh et al, 2004 use 61 days)
-         max_loss   = 0.9_dbl_kind  , & ! restrict uptake to 90% of remaining value 
-         max_dfe_doc1 = 0.2_dbl_kind    ! 0.1852_dbl_kind 
-                                        ! (nM Fe/muM C) max ratio of dFe to saccharides allowed in the ice
-                                        ! tuned for the Southern Ocean with 16.2 muM of saccharides at ISPOL
-                                        ! and a maximum dFe of 3 nM in Southern Ocean waters. 
-
-      real (kind=dbl_kind), parameter :: &
-         fr_resp_s  = 0.75_dbl_kind, &  ! DMSPd fraction of respiration loss as DMSPd
-         y_sk_DMS   = 0.5_dbl_kind , &  ! and conversion given high yield
-         t_sk_conv  = 3.0_dbl_kind , &  ! at a Stefels rate (d)
-         t_sk_ox    = 10.0_dbl_kind     ! DMS in turn oxidizes slowly (d)
+         alpha2max_high  = (/ 0.25_dbl_kind, 0.25_dbl_kind, 0.25_dbl_kind/) ! light limitation (1/(W/m^2))
 
       integer (kind=int_kind) :: k, n
 
