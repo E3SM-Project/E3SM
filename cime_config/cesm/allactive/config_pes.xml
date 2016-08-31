@@ -1407,7 +1407,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="X" compset="CAM.+CLM.+CICE.+POP.+">
+      <pes pesize="X2" compset="CAM.+CLM.+CICE.+POP.+">
 	<PES_PER_NODE>16</PES_PER_NODE>
 	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	<comment>none</comment>
