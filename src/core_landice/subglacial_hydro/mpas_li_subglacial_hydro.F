@@ -309,6 +309,10 @@ module li_subglacial_hydro
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'waterFlux')
       ! intermediate fields will be out of date, but will be correct in output files
+      ! These will have halo "creases" in them.  These are only for viz, but need to halo update to be correct
+      ! (Or alternatively, halo update on waterVelocity before these are computed)
+      call mpas_dmpar_field_halo_exch(domain, 'waterVelocityCellX')
+      call mpas_dmpar_field_halo_exch(domain, 'waterVelocityCellY')
       call mpas_timer_stop("halo updates")
 
 
