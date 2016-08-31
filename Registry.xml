@@ -493,6 +493,7 @@
 			<var name="waterThickness" packages="hydro"/>
 			<var name="tillWaterThickness" packages="hydro"/>
 			<var name="waterPressure" packages="hydro"/>
+                        <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 		</stream>
 
 
