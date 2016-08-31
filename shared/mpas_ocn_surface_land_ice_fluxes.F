@@ -355,7 +355,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
-      forcingPool, scratchPool, err) !{{{
+      forcingPool, scratchPool, statePool, dt, err) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -366,6 +366,7 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool, &     !< Input: mesh information
          diagnosticsPool !< Input: diagnostics information
+      real(kind=RKIND), intent(in) :: dt ! the time step over which to accumulate fluxes
 
       !-----------------------------------------------------------------
       !
@@ -374,7 +375,8 @@ contains
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: &
          forcingPool, & !< Input: Forcing information
-         scratchPool    !< Input: scratch field information
+         scratchPool, & !< Input: scratch field information
+         statePool      !< Input: state field information
 
       !-----------------------------------------------------------------
       !
@@ -410,6 +412,10 @@ contains
                                                   freezeInterfaceSalinity, freezeInterfaceTemperature, &
                                                   freezeFreshwaterFlux, freezeHeatFlux, &
                                                   freezeIceHeatFlux
+      real (kind=RKIND), dimension(:), pointer :: accumulatedLandIceMassOld, &
+                                                  accumulatedLandIceMassNew, &
+                                                  accumulatedLandIceHeatOld, &
+                                                  accumulatedLandIceHeatNew
 
       real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, &
                                                     landIceInterfaceTracers, &
@@ -455,6 +461,10 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracers)
       call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
       call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatOld, 1)
 
       if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
          call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
@@ -583,6 +593,12 @@ contains
          call mpas_deallocate_scratch_field(freezeHeatFluxField, .true.)
          call mpas_deallocate_scratch_field(freezeIceHeatFluxField, .true.)
       end if
+
+      ! accumulate land-ice mass and heat
+      do iCell = 1, nCellsSolve
+        accumulatedLandIceMassNew(iCell) = accumulatedLandIceMassOld(iCell) - dt*landIceFreshwaterFlux(iCell)
+        accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) + dt*heatFluxToLandIce(iCell)
+      end do
 
       call mpas_timer_stop("land_ice_build_arrays")
 

@@ -365,6 +365,8 @@ contains
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityOld
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassNew
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassOld
       real (kind=RKIND), pointer, dimension(:)     :: ssh
       real (kind=RKIND), pointer, dimension(:,:)   :: zMid
       real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
@@ -407,6 +409,8 @@ contains
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityOld, 1)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassOld, 1)
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
@@ -580,6 +584,14 @@ contains
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
                                            * config_frazil_ice_density
         accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + sumNewThicknessWeightedSaltContent
+
+        if ( associated(landIceMask) ) then
+           ! accumulate frazil formed under land ice in case we're not coupling and we need to keep track of it
+           ! for freshwater budgets
+           accumulatedLandIceFrazilMassNew(iCell) = accumulatedLandIceFrazilMassOld(iCell) &
+                                                  + landIceMask(iCell) * sumNewFrazilIceThickness &
+                                                    * config_frazil_ice_density
+        end if
 
       enddo   ! do iCell = 1, nCells
       !$omp end do
