@@ -15,7 +15,7 @@ class EnvMachPes(EnvBase):
         """
         EnvBase.__init__(self, case_root, infile)
 
-    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None):
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
         if "NTASKS" in vid or "ROOTPE" in vid and pes_per_node is None:
             pes_per_node = self.get_value("PES_PER_NODE")
@@ -26,7 +26,7 @@ class EnvMachPes(EnvBase):
                 value = -1*value*pes_per_node
         return value
 
-    def set_value(self, vid, value, subgroup=None, ignore_type=False, pes_per_node=None):
+    def set_value(self, vid, value, subgroup=None, ignore_type=False, pes_per_node=None): # pylint: disable=arguments-differ
         """
         Set the value of an entry-id field to value
         Returns the value or None if not found
@@ -40,7 +40,7 @@ class EnvMachPes(EnvBase):
 
 
 
-    def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, pes_per_node=None):
+    def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, pes_per_node=None): # pylint: disable=arguments-differ
         if vid is None:
             vid = node.get("id")
 
