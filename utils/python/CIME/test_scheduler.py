@@ -46,7 +46,7 @@ class TestScheduler(object):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
-
+        self._allow_baseline_overwrite  = allow_baseline_overwrite
         self._save_timing = save_timing
         self._queue       = queue
         self._test_data   = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
@@ -80,7 +80,7 @@ class TestScheduler(object):
             self._test_root = self._test_root.replace("$PROJECT", self._project)
 
         self._test_root = os.path.abspath(self._test_root)
-        self._test_id   = test_id if test_id is not None else CIME.utils.get_utc_timestamp()
+        self._test_id   = test_id if test_id is not None else CIME.utils.get_timestamp()
 
         self._compiler = self._machobj.get_default_compiler() if compiler is None else compiler
 
@@ -114,11 +114,16 @@ class TestScheduler(object):
                        "Missing baseline comparison directory %s" % full_baseline_dir)
 
             # the following is to assure that the existing generate directory is not overwritten
-            if self._baseline_gen_name and not allow_baseline_overwrite:
+            if self._baseline_gen_name:
                 full_baseline_dir = os.path.join(self._baseline_root, self._baseline_gen_name)
-                expect(not os.path.isdir(full_baseline_dir),
-                       "Refusing to overwrite existing baseline directory, use -o to force overwrite %s" % full_baseline_dir)
-
+                existing_baselines = []
+                for test_name in test_names:
+                    test_baseline = os.path.join(full_baseline_dir, test_name)
+                    if os.path.isdir(test_baseline):
+                        existing_baselines.append(test_baseline)
+                expect(allow_baseline_overwrite or len(existing_baselines) == 0,
+                           "Baseline directories already exists %s\n"\
+                           "Use --allow_baseline_overwrite to avoid this error"%existing_baselines)
         else:
             self._baseline_root = None
 
@@ -368,7 +373,7 @@ class TestScheduler(object):
         if self._baseline_gen_name:
             test_argv += " -generate %s" % self._baseline_gen_name
             basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
-            logger.warn("basegen_case is %s"%basegen_case_fullpath)
+            logger.debug("basegen_case is %s"%basegen_case_fullpath)
             envtest.set_value("BASELINE_NAME_GEN", self._baseline_gen_name)
             envtest.set_value("BASEGEN_CASE", os.path.join(self._baseline_gen_name, test))
         if self._baseline_cmp_name:

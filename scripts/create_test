@@ -257,7 +257,7 @@ OR
         args.no_batch = True
 
     if args.test_id is None:
-        args.test_id = CIME.utils.get_utc_timestamp()
+        args.test_id = CIME.utils.get_timestamp()
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:

@@ -258,11 +258,15 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
         _build_usernl_files(case, "drv", "cpl")
 
-        if case.get_value("TEST"):
+        user_mods_path = case.get_value("USER_MODS_USE_CASE")
+        if user_mods_path is not None:
+            apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
+        elif case.get_value("TEST"):
             test_mods = parse_test_name(casebaseid)[6]
             if test_mods is not None:
                 user_mods_path = os.path.join(case.get_value("TESTS_MODS_DIR"), test_mods)
                 apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
+
 
         # Run preview namelists for scripts
         logger.info("preview_namelists")

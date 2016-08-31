@@ -107,7 +107,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     batch_args = "--no-batch" if no_batch else ""
     pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
 
-    test_id = "%s_%s" % (test_id_root, CIME.utils.get_utc_timestamp())
+    test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
     create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s" % \
                       (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
 
