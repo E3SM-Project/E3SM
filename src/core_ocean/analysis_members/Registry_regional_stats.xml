@@ -55,7 +55,7 @@
 					default_value="avg"
 					units="unitless"
 					description="An operation describing the statistic to apply to all variables in the output stream."
-					possible_values="An operation, where it can be 'avg', 'min', or 'max'."
+					possible_values="An operation, where it can be 'avg', 'min', 'max', 'sum', or 'sos' (sum of squares)."
 		/>
 
 		<nml_option name="config_AM_regionalStats_region_type"
@@ -77,14 +77,14 @@
 					default_value="mul"
 					units="unitless"
 					description="An operation applied to every element in a region WITHOUT a vertical dimension, with a 1D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values)."
-					possible_values="A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg')."
+					possible_values="A weight operation, where it can be 'id' (for 'min', 'max', 'avg', 'sum', or 'sos') or 'mul' (where 'mul' is restricted to 'avg', 'sum', and 'sos')."
 		/>
 		<nml_option name="config_AM_regionalStats_2d_weighting_function"
 					type="character"
 					default_value="mul"
 					units="unitless"
 					description="An operation applied to every element in a region WITH a vertical dimension, with a 2D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values)."
-					possible_values="A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg')."
+					possible_values="A weight operation, where it can be 'id' (for 'min', 'max', 'avg', 'sum', or 'sos') or 'mul' (where 'mul' is restricted to 'avg', 'sum', and 'sos')."
 		/>
 		<nml_option name="config_AM_regionalStats_1d_weighting_field"
 					type="character"
