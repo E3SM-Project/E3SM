@@ -31,6 +31,10 @@
 					description="if true, surface value is computed for 'MacroMoleculesGRP' category"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_MacroMoleculesTracers_sea_ice_coupling" type="logical" default_value=".false." units="unitless"
+					description="if true, couple MacroMolecules fields with sea ice"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 	<packages>

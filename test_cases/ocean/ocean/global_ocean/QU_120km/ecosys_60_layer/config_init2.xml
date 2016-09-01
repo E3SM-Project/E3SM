@@ -25,7 +25,7 @@
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest_path="initial_condition_database" file_name="ecoForcingAllSurfaceMonthly.forMPASO.interp360x180.12.nc">
+	<get_file dest_path="initial_condition_database" file_name="ecoForcingAllSurface.forMPASO.interp360x180.1timeLevel.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
@@ -40,7 +40,7 @@
 	<add_link source_path="initial_condition_database" source="ETOPO2v2c_f4_151106.nc" dest="topography.nc"/>
 	<add_link source_path="initial_condition_database" source="chlorophyllA_monthly_averages_1deg.151201.nc" dest="swData.nc"/>
 	<add_link source_path="initial_condition_database" source="ecosys_jan_IC_360x180x60_corrO2_Dec2014phaeo.nc" dest="ecosys.nc"/>
-	<add_link source_path="initial_condition_database" source="ecoForcingAllSurfaceMonthly.forMPASO.interp360x180.12.nc" dest="ecosys_forcing.nc"/>
+	<add_link source_path="initial_condition_database" source="ecoForcingAllSurface.forMPASO.interp360x180.1timeLevel.nc" dest="ecosys_forcing.nc"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>

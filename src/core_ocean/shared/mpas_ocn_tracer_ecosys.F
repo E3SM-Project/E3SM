@@ -629,10 +629,14 @@ contains
 
       integer :: numColumns, column, iCell, iTracer, iLevelSurface
 
-! input flux components in ecosysAuxiliary
+! input flux components in forcing pool
       real (kind=RKIND), dimension(:), pointer :: &
          seaSurfacePressure,   &
          iceFraction,          &
+         landIceFraction
+
+! input flux components in ecosysAuxiliary
+      real (kind=RKIND), dimension(:), pointer :: &
          windSpeedSquared10m,  &
          depositionFluxNO3,    &
          depositionFluxNH4,    &
@@ -682,12 +686,14 @@ contains
 !        PascalsToAtmospheres = 0.0_RKIND,  &
 !        mSquared_to_cmSquared = 1.0_RKIND
 
-      call mpas_timer_start("ecosys surface flux")
+      logical, pointer :: config_use_ecosysTracers_sea_ice_coupling
 
+      call mpas_timer_start("ecosys surface flux")
       err = 0
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
@@ -712,17 +718,24 @@ contains
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_gas_flux', CO2_gas_flux)
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_alt_gas_flux', CO2_alt_gas_flux)
 
-      call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers_sea_ice_coupling',  &
+                                             config_use_ecosysTracers_sea_ice_coupling)
 
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxPhytoC', iceFluxPhytoC)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDIC', iceFluxDIC)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxNO3', iceFluxNO3)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxSiO3', iceFluxSiO3)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxNH4', iceFluxNH4)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDOCr', iceFluxDOCr)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOC)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDON)
-      call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxFeDissolved', iceFluxFeDissolved)
+      if (config_use_ecosysTracers_sea_ice_coupling) then
+
+         call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxPhytoC', iceFluxPhytoC)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDIC', iceFluxDIC)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxNO3', iceFluxNO3)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxSiO3', iceFluxSiO3)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxNH4', iceFluxNH4)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDOCr', iceFluxDOCr)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOC)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDON)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxFeDissolved', iceFluxFeDissolved)
+
+      endif
 
       BGC_forcing%lcalc_O2_gas_flux  = .true.
       BGC_forcing%lcalc_CO2_gas_flux = .true.
@@ -733,8 +746,14 @@ contains
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
 
-         BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
+!maltrud we really want sea level pressure for this, but it isnt available so just use 1 atm
+!        BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
+         BGC_forcing%surfacePressure(column) = 1.0_RKIND
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
+!maltrud assume for now that if there is any land ice, it is all land ice
+         if (associated(landIceFraction)) then
+            if (landIceFraction(iCell) > 0.0_RKIND) BGC_forcing%iceFraction(column) = 1.0_RKIND
+         endif
          BGC_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)*mSquared_to_cmSquared
          BGC_forcing%atmCO2(column) = atmosphericCO2(iCell)
          BGC_forcing%atmCO2_ALT_CO2(column) = atmosphericCO2_ALT_CO2(iCell)
@@ -770,23 +789,27 @@ contains
          BGC_forcing%riverFlux(column,BGC_indices%alk_ind)         = riverFluxALK(iCell)
          BGC_forcing%riverFlux(column,BGC_indices%doc_ind)         = riverFluxDOC(iCell)
 
-!maltrud debug
-!        BGC_forcing%seaIceFlux(column,BGC_indices%no3_ind)         = iceFluxNO3(iCell)
-!        BGC_forcing%seaIceFlux(column,BGC_indices%don_ind)         = iceFluxDON(iCell)
-!maltrud renorm value?
-!        BGC_forcing%seaIceFlux(column,BGC_indices%donr_ind)        = iceFluxDOCr(iCell) * ????
-!        BGC_forcing%seaIceFlux(column,BGC_indices%donr_ind)        = iceFluxDOCr(iCell)
-!        BGC_forcing%seaIceFlux(column,BGC_indices%sio3_ind)        = iceFluxSiO3(iCell)
-!        BGC_forcing%seaIceFlux(column,BGC_indices%nh4_ind)         = iceFluxNH4(iCell)
-!        BGC_forcing%seaIceFlux(column,BGC_indices%fe_ind)          = iceFluxFeDissolved(iCell) / parm_Fe_bioavail
-!        BGC_forcing%seaIceFlux(column,BGC_indices%dic_ind)         = iceFluxDIC(iCell)
-!        BGC_forcing%seaIceFlux(column,BGC_indices%dic_alt_co2_ind) = iceFluxDIC(iCell)
+         if (config_use_ecosysTracers_sea_ice_coupling) then
 
-!        BGC_forcing%seaIceFlux(column,BGC_indices%doc_ind)         = iceFluxDOC(1,iCell) + iceFluxDOC(2,iCell)
+!maltrud sea ice fluxes are already correct MPAS units, so change to POP units
+            BGC_forcing%seaIceFlux(column,BGC_indices%no3_ind)         = iceFluxNO3(iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%don_ind)         = iceFluxDON(iCell)/renormFluxes
+!maltrud sea ice BGC doesnt care about C or N--this is just a placeholder--so assume N units
+            BGC_forcing%seaIceFlux(column,BGC_indices%donr_ind)        = iceFluxDOCr(iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%sio3_ind)        = iceFluxSiO3(iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%nh4_ind)         = iceFluxNH4(iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%fe_ind)          = iceFluxFeDissolved(iCell)/renormFluxes/ parm_Fe_bioavail
+            BGC_forcing%seaIceFlux(column,BGC_indices%dic_ind)         = iceFluxDIC(iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%dic_alt_co2_ind) = iceFluxDIC(iCell)/renormFluxes
 
-!        BGC_forcing%seaIceFlux(column,BGC_indices%diatC_ind)       = iceFluxPhytoC(1,iCell)
-!        BGC_forcing%seaIceFlux(column,BGC_indices%spC_ind)         = iceFluxPhytoC(2,iCell)
-!        BGC_forcing%seaIceFlux(column,BGC_indices%phaeoC_ind)      = iceFluxPhytoC(3,iCell)
+            BGC_forcing%seaIceFlux(column,BGC_indices%doc_ind)         = iceFluxDOC(1,iCell)/renormFluxes + &
+                                                                         iceFluxDOC(2,iCell)/renormFluxes
+
+            BGC_forcing%seaIceFlux(column,BGC_indices%diatC_ind)       = iceFluxPhytoC(1,iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%spC_ind)         = iceFluxPhytoC(2,iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%phaeoC_ind)      = iceFluxPhytoC(3,iCell)/renormFluxes
+
+         endif
 
          call BGC_SurfaceFluxes(BGC_indices, BGC_input, BGC_forcing,   &
                                 BGC_flux_diagnostic_fields,   &
@@ -810,23 +833,22 @@ contains
          ecosysSurfaceFlux(ecosysIndices%dic_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dic_ind)*renormFluxes
          ecosysSurfaceFlux(ecosysIndices%dic_alt_co2_ind,iCell) =   &
             BGC_forcing%netFlux(column,BGC_indices%dic_alt_co2_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%diatC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%diatC_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%spC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%spC_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%phaeoC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%phaeoC_ind)*renormFluxes
 
 !explicitly set the rest to 0
-! NOTE:  some will not be zero when we get sea ice fluxes
          ecosysSurfaceFlux(ecosysIndices%dofe_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%zooC_ind,iCell) = 0.0_RKIND
-         ecosysSurfaceFlux(ecosysIndices%spC_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%spChl_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%spFe_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%spCaCO3_ind,iCell) = 0.0_RKIND
-         ecosysSurfaceFlux(ecosysIndices%diatC_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%diatChl_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%diatFe_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%diatSi_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%diazC_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%diazChl_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%diazFe_ind,iCell) = 0.0_RKIND
-         ecosysSurfaceFlux(ecosysIndices%phaeoC_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%phaeoChl_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%phaeoFe_ind,iCell) = 0.0_RKIND
 

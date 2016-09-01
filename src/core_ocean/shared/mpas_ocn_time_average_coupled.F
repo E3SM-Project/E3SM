@@ -24,6 +24,9 @@ module ocn_time_average_coupled
     use mpas_derived_types
     use mpas_pool_routines
     use ocn_constants
+    use ocn_tracer_ecosys
+    use ocn_tracer_DMS
+    use ocn_tracer_MacroMolecules
 
     implicit none
     save
@@ -54,6 +57,28 @@ module ocn_time_average_coupled
         integer :: iCell
         integer, pointer :: nAccumulatedCoupled, nCells
 
+        logical, pointer :: config_use_ecosysTracers, &
+                            config_use_DMSTracers,    &
+                            config_use_MacroMoleculesTracers
+
+        type (mpas_pool_type), pointer :: ecosysSeaIceCoupling, &
+                                          DMSSeaIceCoupling,    &
+                                          MacroMoleculesSeaIceCoupling
+
+        real (kind=RKIND), dimension(:), pointer :: avgOceanSurfaceDIC, &
+                                                    avgOceanSurfaceDON, &
+                                                    avgOceanSurfaceNO3, &
+                                                    avgOceanSurfaceSiO3, &
+                                                    avgOceanSurfaceNH4, &
+                                                    avgOceanSurfaceDMS, &
+                                                    avgOceanSurfaceDMSP, &
+                                                    avgOceanSurfaceDOCr, &
+                                                    avgOceanSurfaceFeParticulate, &
+                                                    avgOceanSurfaceFeDissolved
+
+        real (kind=RKIND), dimension(:,:), pointer :: avgOceanSurfacePhytoC, &
+                                                      avgOceanSurfaceDOC
+
         call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
 
         call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
@@ -83,6 +108,66 @@ module ocn_time_average_coupled
            end do
            !$omp end do
         end if
+
+        !  set up BGC coupling fields if necessary
+        call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+        call mpas_pool_get_config(ocnConfigs, 'config_use_DMSTracers', config_use_DMSTracers)
+        call mpas_pool_get_config(ocnConfigs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
+
+        if (config_use_ecosysTracers) then
+
+           call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDIC', avgOceanSurfaceDIC)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNO3', avgOceanSurfaceNO3)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
+
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgOceanSurfacePhytoC(:,iCell) = 0.0_RKIND
+
+              avgOceanSurfaceDIC(iCell) = 0.0_RKIND
+              avgOceanSurfaceNO3(iCell) = 0.0_RKIND
+              avgOceanSurfaceSiO3(iCell) = 0.0_RKIND
+              avgOceanSurfaceNH4(iCell) = 0.0_RKIND
+              avgOceanSurfaceDOCr(iCell) = 0.0_RKIND
+              avgOceanSurfaceFeParticulate(iCell) = 0.0_RKIND
+              avgOceanSurfaceFeDissolved(iCell) = 0.0_RKIND
+           end do
+           !$omp end do
+        end if
+
+        if (config_use_DMSTracers) then
+           call mpas_pool_get_subpool(forcingPool, 'DMSSeaIceCoupling', DMSSeaIceCoupling)
+
+           call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMS', avgOceanSurfaceDMS)
+           call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMSP', avgOceanSurfaceDMSP)
+
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgOceanSurfaceDMS(iCell) = 0.0_RKIND
+              avgOceanSurfaceDMSP(iCell) = 0.0_RKIND
+           end do
+           !$omp end do
+        endif
+        if (config_use_MacroMoleculesTracers) then
+           call mpas_pool_get_subpool(forcingPool, 'MacroMoleculesSeaIceCoupling', MacroMoleculesSeaIceCoupling)
+
+           call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDOC', avgOceanSurfaceDOC)
+           call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDON', avgOceanSurfaceDON)
+
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgOceanSurfaceDOC(:,iCell) = 0.0_RKIND
+              avgOceanSurfaceDON(iCell) = 0.0_RKIND
+           end do
+           !$omp end do
+        endif
 
         nAccumulatedCoupled = 0
 
@@ -115,6 +200,35 @@ module ocn_time_average_coupled
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
         real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce
         character (len=StrKIND), pointer :: config_land_ice_flux_mode
+
+        logical, pointer :: config_use_ecosysTracers, &
+                            config_use_DMSTracers,    &
+                            config_use_MacroMoleculesTracers
+
+        type (mpas_pool_type), pointer :: tracersPool
+
+        real (kind=RKIND), dimension(:,:,:), pointer :: &
+           ecosysTracers,  &
+           DMSTracers,     &
+           MacroMoleculesTracers
+
+        type (mpas_pool_type), pointer :: ecosysSeaIceCoupling, &
+                                          DMSSeaIceCoupling,    &
+                                          MacroMoleculesSeaIceCoupling
+
+        real (kind=RKIND), dimension(:), pointer :: avgOceanSurfaceDIC, &
+                                                    avgOceanSurfaceDON, &
+                                                    avgOceanSurfaceNO3, &
+                                                    avgOceanSurfaceSiO3, &
+                                                    avgOceanSurfaceNH4, &
+                                                    avgOceanSurfaceDMS, &
+                                                    avgOceanSurfaceDMSP, &
+                                                    avgOceanSurfaceDOCr, &
+                                                    avgOceanSurfaceFeParticulate, &
+                                                    avgOceanSurfaceFeDissolved
+
+        real (kind=RKIND), dimension(:,:), pointer :: avgOceanSurfacePhytoC, &
+                                                      avgOceanSurfaceDOC
 
         call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
         call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
@@ -169,6 +283,98 @@ module ocn_time_average_coupled
            end do
            !$omp end do
         end if
+
+        !  accumulate BGC coupling fields if necessary
+        call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+        call mpas_pool_get_config(ocnConfigs, 'config_use_DMSTracers', config_use_DMSTracers)
+        call mpas_pool_get_config(ocnConfigs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
+
+        if (config_use_ecosysTracers) then
+
+         call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDIC', avgOceanSurfaceDIC)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNO3', avgOceanSurfaceNO3)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
+
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+         call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
+
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+
+           avgOceanSurfacePhytoC(1,iCell) = ( avgOceanSurfacePhytoC(1,iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%diatC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfacePhytoC(2,iCell) = ( avgOceanSurfacePhytoC(2,iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%spC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfacePhytoC(3,iCell) = ( avgOceanSurfacePhytoC(3,iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%phaeoC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+
+           avgOceanSurfaceDIC(iCell) = ( avgOceanSurfaceDIC(iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%dic_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfaceSiO3(iCell) = ( avgOceanSurfaceSiO3(iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%sio3_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfaceNO3(iCell) = ( avgOceanSurfaceNO3(iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%no3_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfaceNH4(iCell) = ( avgOceanSurfaceNH4(iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%nh4_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfaceFeDissolved(iCell) = ( avgOceanSurfaceFeDissolved(iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%fe_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+!maltrud need to renormalize
+           avgOceanSurfaceDOCr(iCell) = ( avgOceanSurfaceDOCr(iCell) * nAccumulatedCoupled &
+              + ecosysTracers(ecosysIndices%donr_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+
+           avgOceanSurfaceFeParticulate(iCell) = 0.0_RKIND
+
+           end do
+           !$omp end do
+        end if
+
+        if (config_use_DMSTracers) then
+           call mpas_pool_get_subpool(forcingPool, 'DMSSeaIceCoupling', DMSSeaIceCoupling)
+
+           call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMS', avgOceanSurfaceDMS)
+           call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMSP', avgOceanSurfaceDMSP)
+
+           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+           call mpas_pool_get_array(tracersPool, 'DMSTracers', DMSTracers, 1)
+
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+           avgOceanSurfaceDMS(iCell) = ( avgOceanSurfaceDMS(iCell) * nAccumulatedCoupled &
+              + DMSTracers(dmsIndices%dms_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfaceDMSP(iCell) = ( avgOceanSurfaceDMSP(iCell) * nAccumulatedCoupled &
+              + DMSTracers(dmsIndices%dmsp_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           end do
+           !$omp end do
+        endif
+
+        if (config_use_MacroMoleculesTracers) then
+           call mpas_pool_get_subpool(forcingPool, 'MacroMoleculesSeaIceCoupling', MacroMoleculesSeaIceCoupling)
+
+           call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDOC', avgOceanSurfaceDOC)
+           call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDON', avgOceanSurfaceDON)
+
+           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+           call mpas_pool_get_array(tracersPool, 'MacroMoleculesTracers', MacroMoleculesTracers, 1)
+
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+           avgOceanSurfaceDOC(1,iCell) = ( avgOceanSurfaceDOC(1,iCell) * nAccumulatedCoupled &
+              + MacroMoleculesTracers(macrosIndices%poly_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfaceDOC(2,iCell) = ( avgOceanSurfaceDOC(2,iCell) * nAccumulatedCoupled &
+              + MacroMoleculesTracers(macrosIndices%lip_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+!maltrud need to renormalize
+           avgOceanSurfaceDON(iCell) = ( avgOceanSurfaceDON(iCell) * nAccumulatedCoupled &
+              + MacroMoleculesTracers(macrosIndices%prot_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           end do
+           !$omp end do
+        endif
 
         nAccumulatedCoupled = nAccumulatedCoupled + 1
 
