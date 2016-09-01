@@ -20,7 +20,6 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
 ###############################################################################
 
     logs = []
-    overall_smp = os.environ["SMP"]
 
     thread_bad_results = []
     for model, comp, nthrds, _, config_dir in complist:
@@ -43,8 +42,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             else:
                 continue
 
-        os.environ["MODEL"] = model
-        os.environ["SMP"] = stringify_bool(nthrds > 1 or build_threaded)
+        smp = nthrds > 1 or build_threaded
 
         bldroot = os.path.join(exeroot, model, "obj")
         libroot = os.path.join(exeroot, "lib")
@@ -60,7 +58,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         # build the component library
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, caseroot, bldroot, libroot, incroot, file_build,
-                  thread_bad_results))
+                  thread_bad_results, smp))
         t.start()
 
         for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
@@ -75,18 +73,17 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     # aquap has a dependancy on atm so we build it after the threaded loop
 
     for model, comp, nthrds, _, config_dir in complist:
+        smp = nthrds > 1 or build_threaded
         if comp == "aquap":
             logger.debug("Now build aquap ocn component")
             _build_model_thread(config_dir, comp, caseroot, bldroot, libroot, incroot, file_build,
-                                thread_bad_results)
+                                thread_bad_results, smp)
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
     #
     # Now build the executable
     #
-
-    os.environ["SMP"] = overall_smp
 
     cime_model = get_model()
     file_build = os.path.join(exeroot, "%s.bldlog.%s" % (cime_model, lid))
@@ -523,17 +520,17 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
             if (not os.path.isdir(ndir)):
                 os.makedirs(ndir)
 
-        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs)
+        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs, False)
 
     return logs
 
 ###############################################################################
 def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build,
-                        thread_bad_results):
+                        thread_bad_results, smp):
 ###############################################################################
     with open(file_build, "w") as fd:
-        stat = run_cmd("%s/buildlib %s %s %s " %
-                       (config_dir, caseroot, bldroot, libroot),
+        stat = run_cmd("MODEL=%s SMP=%s %s/buildlib %s %s %s " %
+                       (compclass, stringify_bool(smp), config_dir, caseroot, bldroot, libroot),
                        from_dir=bldroot, verbose=True, arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
     if (stat != 0):
@@ -558,7 +555,6 @@ def clean(case, cleanlist=None):
                 clm_config_opts is not None and "lnd" in cleanlist and \
                 "clm4_0" not in clm_config_opts:
             cleanlist.remove('lnd')
-
 
     debug           = case.get_value("DEBUG")
     use_esmf_lib    = case.get_value("USE_ESMF_LIB")
