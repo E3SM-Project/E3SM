@@ -116,7 +116,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: &
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure, frazilSurfacePressure, &
-        pressureAdjustedSSH, gradSSH, landIcePressure
+        pressureAdjustedSSH, gradSSH, landIcePressure, landIceDraft
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, &
         normalGMBolusVelocity, tangentialVelocity, pressure, circulation, kineticEnergyCell, montgomeryPotential, &
@@ -232,6 +232,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+      call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -850,12 +851,12 @@ contains
       end do
       !$omp end do
 
-      if(associated(landIcePressure)) then
+      if(associated(landIceDraft)) then
          !$omp do schedule(runtime)
          do iCell = 1, nCells
-            ! Note: rho_sw may differ from the effective density of seawater displaced by land ice,
-            ! leading to sea ice still feeling a small sea-surface tilt toward (or away from) land ice
-            pressureAdjustedSSH(iCell) = pressureAdjustedSSH(iCell) + ( landIcePressure(iCell) / ( gravity * rho_sw ) )
+            ! subtract the land ice draft from the SSH so sea ice doesn't experience tilt
+            ! toward land ice
+            pressureAdjustedSSH(iCell) = pressureAdjustedSSH(iCell) - landIceDraft(iCell)
          end do
          !$omp end do
       end if

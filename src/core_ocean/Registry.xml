@@ -1217,6 +1217,7 @@
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
+			<var name="landIceDraft"/>
 			<var name="landIceSurfaceTemperature"/>
 			<var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
 			<var_array name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG"/>
@@ -1358,6 +1359,7 @@
 			<var name="simulationStartTime"/>
 			<var name="boundaryLayerDepth"/>
 			<var name="landIcePressure" packages="restartForcingFields"/>
+			<var name="landIceDraft" packages="restartForcingFields"/>
 			<var name="landIceFraction" packages="restartForcingFields"/>
 			<var name="landIceMask" packages="restartForcingFields"/>
 			<var_array name="tracersSurfaceValue"/>
@@ -1454,6 +1456,7 @@
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
+			<var name="landIceDraft"/>
 			<var name="landIceSurfaceTemperature"/>
 			<var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
 			<var_array name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG"/>
@@ -2666,6 +2669,10 @@
 		/>
 		<var name="landIcePressure" type="real" dimensions="nCells Time" units="Pa"
 			description="Pressure defined at the sea surface due to land ice."
+			packages="landIcePressurePKG"
+		/>
+		<var name="landIceDraft" type="real" dimensions="nCells Time" units="m"
+			description="The elevation of the interface between land ice and the ocean."
 			packages="landIcePressurePKG"
 		/>
 		<!-- Input fields from initial condition for standalone land-ice fluxes -->
