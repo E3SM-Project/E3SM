@@ -380,8 +380,8 @@
 			<var name="depositionFluxNH4" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
 				description="Atmospheric Deposition of NH4"
 			/>
-			<var name="pocToSed" type="real" dimensions="nCells Time" units="need to fill in"
-				description="need to fill in"
+			<var name="pocToSed" type="real" dimensions="nCells Time" units="nmol cm^{-2} m s^{-1}"
+				description="Flux of POC into bottom sediments"
 			/>
 			<var name="riverFluxNO3" type="real" dimensions="nCells Time" units="mmol m^{-3} m s^{-1}"
 				description="River Runoff Flux of NO3"

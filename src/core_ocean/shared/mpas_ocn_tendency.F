@@ -560,7 +560,7 @@ contains
                ! Get Array of total surface temp/salt flux (includes thickness
                ! tendencies
                call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', nonLocalSurfaceTracerFlux)
-               
+
                ! Get surface flux due to river runoff array
 !maltrud only active tracers have runoff flux for now
                if (trim(groupItr % memberName) == 'activeTracers') then
