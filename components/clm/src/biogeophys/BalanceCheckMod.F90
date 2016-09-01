@@ -300,10 +300,11 @@ contains
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
                   - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)) * dtime
-             dwb(c)=(endwb(c)-begwb(c))/dtime
+             dwb(c) = (endwb(c)-begwb(c))/dtime
           else
 
              errh2o(c) = 0.0_r8
+             dwb(c)    = 0.0_r8
 
           end if
 
