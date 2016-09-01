@@ -1068,13 +1068,15 @@
         -->
       </modules>
 
-      <modules compiler="pgi_acc">
-        <command name="switch">pgi pgi/15.9.lustre</command>
-        <command name="switch">cray-mpich cray-mpich/7.2.5</command>
-        <command name="switch">cray-libsci cray-libsci/13.2.0</command>
+      <modules compiler="pgi_acc"> <!-- changing pgi_acc to pgicuda -->
+	<command name="load">PrgEnv-pgi</command>
+        <command name="switch">pgi pgi/15.7.0</command>
+	<!-- command name="switch">pgi pgi/15.9.lustre</command -->
+        <command name="load">cray-mpich/7.4.0</command>
+        <command name="load">cray-libsci/16.06.01</command>
         <command name="load">esmf/5.2.0rp2</command>
-        <command name="switch">atp atp/1.8.3</command>
-        <command name="add">cudatoolkit</command>
+        <command name="load">atp/2.0.2</command>
+        <command name="load">cudatoolkit</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">PrgEnv-pgi</command>
@@ -1089,23 +1091,23 @@
         <command name="load">PrgEnv-intel</command>
         <!-- command name="switch">intel intel/15.0.2.164</command -->
         <command name="load">intel/15.0.2.164</command>
-        <command name="switch">cray-libsci cray-libsci/13.2.0</command>
-        <command name="switch">cray-mpich cray-mpich/7.2.5</command>
-        <command name="switch">atp atp/1.8.3</command>
+        <command name="load">cray-libsci/16.06.1</command>
+        <command name="load">cray-mpich/7.4.0</command>
+        <command name="load">atp/2.0.2</command>
       </modules>
       <modules compiler="cray">
         <command name="rm">PrgEnv-pgi</command>
         <command name="load">PrgEnv-cray</command>
-        <command name="switch">cce cce/8.4.0</command>
-        <command name="swap">cray-mpich cray-mpich/7.2.5</command>
+        <command name="load">cce/8.4.0</command>
+        <command name="load">cray-mpich/7.4.0</command>
       </modules>
       <!-- mpi lib settings -->
       <modules mpilib="mpi-serial">
-        <command name="load">cray-netcdf/4.3.3.1</command>
+        <command name="load">cray-netcdf/4.4.0</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
-        <command name="load">cray-parallel-netcdf/1.6.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+        <command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
          <modules>
         <command name="load">subversion/1.8.3</command>
