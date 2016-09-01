@@ -701,6 +701,8 @@ contains
             sumSquares_tmp(variableIndex) = 0.0_RKIND
             mins_tmp(variableIndex) = 0.0_RKIND
             maxes_tmp(variableIndex) = 0.0_RKIND
+            verticalSumMins_tmp(variableIndex) = 0.0_RKIND
+            verticalSumMaxes_tmp(variableIndex) = 0.0_RKIND
          end if
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
@@ -930,7 +932,6 @@ contains
          verticalSumMaxes(variableIndex) = maxes(variableIndex)
 
 
-
          deallocate(workArray)
 
          nVariables = variableIndex
@@ -963,8 +964,8 @@ contains
          nMaxes = nMaxes + 1
          maxes(nMaxes) = localCFL
          do i = 1, nVariables
-            mins(nMins+i) = min(mins(nMins+i),verticalSumMins_tmp(i))
-            maxes(nMaxes+i) = max(maxes(nMaxes+i),verticalSumMaxes_tmp(i))
+            mins(nMins+i) = min(mins(nMins+i),verticalSumMins(i))
+            maxes(nMaxes+i) = max(maxes(nMaxes+i),verticalSumMaxes(i))
          end do
 
          nMins = nMins + nVariables
