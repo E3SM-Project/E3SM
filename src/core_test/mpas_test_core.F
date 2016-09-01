@@ -75,6 +75,7 @@ module test_core
       use mpas_derived_types
       use mpas_kind_types
       use mpas_timer
+      use test_core_sorting, only : test_core_test_sorting
    
       implicit none
    
@@ -84,6 +85,15 @@ module test_core
       type (mpas_pool_type), pointer :: pool
       type (mpas_pool_iterator_type) :: itr
 
+      !
+      ! Test performance of framework sorting routines
+      !
+      call test_core_test_sorting(domain, iErr)
+      if (iErr == 0) then
+         write(stderrUnit,*) ' * Sorting tests: SUCCESS'
+      else
+         write(stderrUnit,*) ' * Sorting tests: FAILURE'
+      end if
 
       iErr = 0
 
