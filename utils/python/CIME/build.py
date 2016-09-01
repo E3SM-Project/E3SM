@@ -520,7 +520,8 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
             if (not os.path.isdir(ndir)):
                 os.makedirs(ndir)
 
-        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs, False)
+        smp = "SMP" in os.environ and os.environ["SMP"] == "TRUE"
+        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs, smp)
 
     return logs
 
