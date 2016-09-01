@@ -200,8 +200,10 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2=""):
                 comments += cprnc_comments + "\n"
                 all_success = False
 
-    expect(num_compared > 0, "Did not compare any hist files for suffix1='%s' suffix2='%s', dir1='%s', dir2='%s'\nComments=%s" %
-           (suffix1, suffix2, from_dir1, from_dir2, comments))
+    if num_compared == 0:
+        all_success = False
+        comments += "Did not compare any hist files! Missing baselines?\n"
+
     return all_success, comments
 
 def compare_test(case, suffix1, suffix2):
