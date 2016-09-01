@@ -515,7 +515,7 @@ module ocn_forward_mode
            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
            call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
-                                                         forcingPool, scratchPool, err)
+                                                         forcingPool, scratchPool, statePool, dt, err)
            call mpas_timer_stop("land_ice_build_arrays")
 
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
