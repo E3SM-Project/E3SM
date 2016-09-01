@@ -1175,16 +1175,6 @@ for mct, etc.
 	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
-<compiler MACH="mustang">
-    <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
-    <PNETCDF_PATH>$(PARALLEL_NETCDF)</PNETCDF_PATH>
-</compiler>
-
-<compiler MACH="wolf">
-    <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
-    <PNETCDF_PATH>$(PARALLEL_NETCDF)</PNETCDF_PATH>
-</compiler>
-
 <compiler COMPILER="gnu" MACH="mustang">
 	<ADD_CFLAGS>  -std=c99 </ADD_CFLAGS>
 </compiler>
