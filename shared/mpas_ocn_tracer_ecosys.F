@@ -686,9 +686,9 @@ contains
 !        PascalsToAtmospheres = 0.0_RKIND,  &
 !        mSquared_to_cmSquared = 1.0_RKIND
 
-      call mpas_timer_start("ecosys surface flux")
       logical, pointer :: config_use_ecosysTracers_sea_ice_coupling
 
+      call mpas_timer_start("ecosys surface flux")
       err = 0
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
