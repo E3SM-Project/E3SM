@@ -1175,13 +1175,8 @@ for mct, etc.
 	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
-<compiler COMPILER="gnu" MACH="mustang">
-	<ADD_CFLAGS>  -std=c99 </ADD_CFLAGS>
+<compiler COMPILER="gnu">
+	<ADD_CFLAGS MODEL="csm_share"> -std=c99 </ADD_CFLAGS>
 </compiler>
-
-<compiler COMPILER="gnu" MACH="wolf">
-	<ADD_CFLAGS>  -std=c99 </ADD_CFLAGS>
-</compiler>
-
 
 </config_compilers>
