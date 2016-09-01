@@ -2064,6 +2064,13 @@ module mpas_timekeeping
                          call mpas_get_time(curTime, S=second)
                          write(timePart, '(i0.2)') second
                          outString = trim(outString) // trim(timePart)
+                     case ('S')
+                         call mpas_get_time(curTime, H=hour)
+                         call mpas_get_time(curTime, M=minute)
+                         call mpas_get_time(curTime, S=second)
+                         second = second + 60 * minute + 3600 * hour
+                         write(timePart, '(i0.5)') second
+                         outString = trim(outString) // trim(timePart)
 !                    case ('G')
                         ! Expands to multi-grid level
                      case default
