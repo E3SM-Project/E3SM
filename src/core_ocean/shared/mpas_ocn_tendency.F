@@ -562,8 +562,11 @@ contains
                call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', nonLocalSurfaceTracerFlux)
                
                ! Get surface flux due to river runoff array
+!maltrud only active tracers have runoff flux for now
+               if (trim(groupItr % memberName) == 'activeTracers') then
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
+               endif
 
                ! Get surface flux removed array to keep track of how much flux is ignored
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRemoved"
