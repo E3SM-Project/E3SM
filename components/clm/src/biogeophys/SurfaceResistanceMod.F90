@@ -105,6 +105,7 @@ contains
      use column_varcon   , only : icol_road_imperv, icol_road_perv
      use ColumnType      , only : col
      use LandunitType    , only : lun
+     use clm_varctl      , only : use_vsfm
      !
      implicit none
      type(bounds_type)     , intent(in)    :: bounds    ! bounds   
@@ -151,7 +152,23 @@ contains
                    soilbeta(c) = 1._r8
                 end if
              else if (col%itype(c) == icol_road_perv) then
-                soilbeta(c) = 0._r8
+                if (.not. use_vsfm) then
+                   soilbeta(c) = 0._r8
+                else
+                   wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/col%dz(c,1)
+                   fac  = min(1._r8, wx/watsat(c,1))
+                   fac  = max( fac, 0.01_r8 )
+                   if (wx < watfc(c,1) ) then  !when water content of ths top layer is less than that at F.C.
+                      fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
+                      fac_fc  = max( fac_fc, 0.01_r8 )
+                      ! modify soil beta by snow cover. soilbeta for snow surface is one
+                      soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
+                           *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
+                           + frac_sno(c)+ frac_h2osfc(c)
+                   else   !when water content of ths top layer is more than that at F.C.
+                      soilbeta(c) = 1._r8
+                   end if
+                endif
              else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
                 soilbeta(c) = 0._r8          
              else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
