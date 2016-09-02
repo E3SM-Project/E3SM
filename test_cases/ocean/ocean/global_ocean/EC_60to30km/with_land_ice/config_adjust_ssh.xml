@@ -19,7 +19,7 @@
 		<option name="config_check_ssh_consistency">.false.</option>
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_dt">'00:20:00'</option>
-		<option name="config_run_duration">'0000_04:00:00'</option>
+		<option name="config_run_duration">'0000_01:00:00'</option>
 		<option name="config_write_output_on_startup">.false.</option>
 		<option name="config_land_ice_flux_mode">'pressure_only'</option>
 	</namelist>
@@ -27,7 +27,7 @@
 	<streams name="streams.ocean" keep="immutable" mode="forward">
 		<template file="template_adjust_ssh.xml" path_base="script_configuration_dir"/>
 		<stream name="output_ssh">
-			<attribute name="output_interval">0000_04:00:00</attribute>
+			<attribute name="output_interval">0000_01:00:00</attribute>
 		</stream>
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
@@ -43,7 +43,7 @@
 			<argument flag="graph.info">128</argument>
 		</step>
 		<step executable="./iterate_init.py">
-			<argument flag="">--iteration_count=15</argument>
+			<argument flag="">--iteration_count=20</argument>
 			<argument flag="">--variable_to_modify=landIcePressure</argument>
 		</step>
 	</run_script>

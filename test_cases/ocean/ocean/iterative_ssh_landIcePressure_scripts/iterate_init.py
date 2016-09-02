@@ -89,6 +89,9 @@ for iterIndex in range(args.first_iteration,args.iteration_count):
     # then, modifty the SSH or land-ice pressure
     if args.variable_to_modify == 'ssh':
       outInitFile.variables['ssh'][0,:] = finalSSH
+      # also update the landIceDraft variable, which will be used to compensate
+      # for the SSH due to land-ice pressure when computing sea-surface tilt
+      outInitFile.variables['landIceDraft'][0,:] = finalSSH
       # we also need to stretch layerThickness to be compatible with the new SSH
       stretch = (finalSSH + bottomDepth)/(initialSSH + bottomDepth)
       var = initFile.variables['layerThickness']

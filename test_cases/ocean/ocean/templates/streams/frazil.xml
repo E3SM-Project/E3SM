@@ -10,6 +10,7 @@
 				<member name="xtime" type="var"/>
 				<member name="accumulatedFrazilIceMass" type="var"/>
 				<member name="accumulatedFrazilIceSalinity" type="var"/>
+				<member name="accumulatedLandIceFrazilMass" type="var"/>
 				<member name="seaIceEnergy" type="var"/>
 				<member name="frazilLayerThicknessTendency" type="var"/>
 				<member name="frazilTemperatureTendency" type="var"/>

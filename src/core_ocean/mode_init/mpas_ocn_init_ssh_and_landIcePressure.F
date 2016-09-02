@@ -148,7 +148,7 @@ contains
      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, zMid
 
      real (kind=RKIND), dimension(:,:), pointer :: density
-     real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
+     real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceDraft, &
                                                  effectiveDensityInLandIce
 
 
@@ -165,6 +165,98 @@ contains
      iErr = 0
 
      call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
+
+     ! compute density (needed regardless of config_iterative_init_variable)
+
+     block_ptr => domain % blocklist
+     do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+       call mpas_pool_get_array(diagnosticsPool, 'density', density)
+
+       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+           scratchPool, nCells, 0, 'relative', density, iErr, &
+           timeLevelIn=1)
+
+       if(iErr .ne. 0) then
+         write(stderrUnit,*) 'ERROR: ocn_equation_of_state_density failed.'
+         return
+       end if
+
+       block_ptr => block_ptr % next
+     end do !block_ptr
+
+     ! first, handle the simple case where we're going to compute landIcePressure from the density at the top.
+     ! In this case, we already computed the correct vertical grid with the ssh, so all we have to do is
+     ! landIcePressure from the denisty we just got.
+     if(config_iterative_init_variable ==  'landIcePressure_from_top_density') then
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+         call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+
+         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
+
+         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+         call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'density', density)
+         call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
+
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+             scratchPool, nCells, 0, 'relative', density, iErr, &
+             timeLevelIn=1)
+
+         if(iErr .ne. 0) then
+           write(stderrUnit,*) 'ERROR: ocn_equation_of_state_density failed.'
+           return
+         end if
+
+         do iCell = 1, nCells
+           if(modifySSHMask(iCell) == 0) then
+             ssh(iCell) = 0.0_RKIND
+             landIcePressure(iCell) = 0.0_RKIND
+
+             if (associated(effectiveDensityInLandIce)) &
+               ! effective density cannot be determined
+               effectiveDensityInLandIce(iCell) = 0.0_RKIND
+             cycle
+           end if
+
+           landIcePressure(iCell) = max(0.0_RKIND, -density(1,iCell)*gravity*ssh(iCell))
+           if (associated(effectiveDensityInLandIce)) &
+             effectiveDensityInLandIce(iCell) = density(1,iCell)
+         end do
+
+         ! copy the SSH into the landIceDraft so we can use it later to remove it when
+         ! computing sea-surface tilt
+         landIceDraft(:) = ssh(:)
+ 
+         block_ptr => block_ptr % next
+       end do !block_ptr
+
+       return
+     end if
+
+     ! The other cases are more complicated and require interpolating the activeTracers
+     ! once the ssh or landIcePressure is determined
+
      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
      call mpas_pool_get_field(scratchPool, 'scratchZMid', origZMidField)
@@ -180,7 +272,6 @@ contains
        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
        call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -211,19 +302,18 @@ contains
        end if
 
        do iCell = 1, nCells
-         if(config_iterative_init_variable == 'landIcePressure_from_top_density') then
-           if(modifySSHMask(iCell) == 0) then
-             ssh(iCell) = 0.0_RKIND
-             landIcePressure(iCell) = 0.0_RKIND
+         if(modifySSHMask(iCell) == 0) then
+           ssh(iCell) = 0.0_RKIND
+           landIcePressure(iCell) = 0.0_RKIND
 
-             if (associated(effectiveDensityInLandIce)) &
-               ! effective density cannot be determined
-               effectiveDensityInLandIce(iCell) = 0.0_RKIND
-             cycle
-           end if
+           if (associated(effectiveDensityInLandIce)) &
+             ! effective density cannot be determined
+             effectiveDensityInLandIce(iCell) = 0.0_RKIND
 
-           landIcePressure(iCell) = max(0.0_RKIND, -density(1,iCell)*gravity*ssh(iCell))
-         else if(config_iterative_init_variable == 'ssh') then
+           cycle
+         end if
+
+         if(config_iterative_init_variable == 'ssh') then
            ! compute ssh where pressure equals landIcePressure
            ssh(iCell) = find_z_given_pressure(landIcePressure(iCell), density(:,iCell), &
                                               layerThickness(:,iCell), nVertLevels, maxLevelCell(iCell))
@@ -244,17 +334,19 @@ contains
        origZMid(:,:) = zMid(:,:)
        origMaxLevelCell(:) = maxLevelCell(:)
 
+       ! copy the SSH into the landIceDraft so we can use it later to remove it when
+       ! computing sea-surface tilt
+       landIceDraft(:) = ssh(:)
+  
        block_ptr => block_ptr % next
      end do !block_ptr
 
-     if(config_iterative_init_variable .ne. 'landIcePressure_from_top_density') then
-       ! update the vertical grid based on the new ssh
-       call ocn_init_vertical_grid(domain, updateWithSSH=.true., iErr=iErr)
+     ! update the vertical grid based on the new ssh
+     call ocn_init_vertical_grid(domain, updateWithSSH=.true., iErr=iErr)
 
-       if(iErr .ne. 0) then
-         write(stderrUnit,*) 'ERROR: ocn_init_vertical_grid failed.'
-         return
-       end if
+     if(iErr .ne. 0) then
+       write(stderrUnit,*) 'ERROR: ocn_init_vertical_grid failed.'
+       return
      end if
 
      block_ptr => domain % blocklist
@@ -273,7 +365,6 @@ contains
        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-       call mpas_pool_get_array(diagnosticsPool, 'density', density)
 
        call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
        call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', origMaxLevelCell)
@@ -515,6 +606,7 @@ contains
 
         do iTracer = 1, nTracers
           inTracerColumn(:) = activeTracers(iTracer,:,iCell)
+          outTracerColumn(:) = -9.969209968386869e+36_RKIND
           call ocn_init_interpolation_linear_vert(inZMid(1:inKMax,iCell), &
                                                   inTracerColumn(1:inKMax), &
                                                   inKMax, &
