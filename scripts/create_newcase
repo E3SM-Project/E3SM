@@ -170,7 +170,7 @@ def _main_func():
 
         # Write out the case files
         case.flush(flushall=True)
-        if user_mods_dir.startswith(".."):
+        if user_mods_dir is not None and user_mods_dir.startswith(".."):
             user_mods_dir = os.path.abspath(user_mods_dir)
 
         case.apply_user_mods(user_mods_dir)
