@@ -138,8 +138,6 @@ subroutine qqflx_fixer (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
              
             q(i,pver,i_wv) = qbot 
 
-            if(print_fixer_message) then 
-
             write(iulog,*) ' ### qflx_fixer ### ', &
                            ' chunk', lchnk, &
                            ' col', i, &
@@ -152,19 +150,7 @@ subroutine qqflx_fixer (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
                            ' dwp by qflx = ', dwpbot, & 
                            ' q scaled to ', 100.*ratio, "%"
 
-            end if 
-
          else 
-
-            !! if the column above the surface layer doens't have enough water
-            !! use qneg4 to fix qflx and printout the conservation error message
-            !!....................................................................... 
-          
-            qflx_org   = qflx (i,i_wv) 
- 
-            qflx (i,i_wv) = qflx (i,i_wv) - excess(i)
-            lhflx(i)   = lhflx(i) - excess(i)*latvap
-            shflx(i)   = shflx(i) + excess(i)*latvap
 
             write(iulog,*) ' ### qqflx_fixer ### ', &
                            ' chunk', lchnk, &
@@ -172,10 +158,34 @@ subroutine qqflx_fixer (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
                            ' lat = ', get_lat_p(lchnk,i), &
                            ' lon = ', get_lon_p(lchnk,i), & 
                            ' original qflx = ', qflx_org, &  
-                           ' modified qflx = ', qflx(i,i_wv), & 
                            ' qsurf = ', qori, & 
                            ' column wp = ', wsp, & 
                            ' dwp by qflx = ', dwpbot
+            write(iulog,*) ' column does not have enough water to compensate water vapor sink due to negative qflx !!! '
+
+            call endrun('qflx_fixer: spurious negative qflx ') 
+
+
+!!            !! if the column above the surface layer doens't have enough water
+!!            !! use qneg4 to fix qflx and printout the conservation error message
+!!            !!....................................................................... 
+!!          
+!!            qflx_org   = qflx (i,i_wv) 
+!! 
+!!            qflx (i,i_wv) = qflx (i,i_wv) - excess(i)
+!!            lhflx(i)   = lhflx(i) - excess(i)*latvap
+!!            shflx(i)   = shflx(i) + excess(i)*latvap
+!!
+!!            write(iulog,*) ' ### qqflx_fixer ### ', &
+!!                           ' chunk', lchnk, &
+!!                           ' col', i, &
+!!                           ' lat = ', get_lat_p(lchnk,i), &
+!!                           ' lon = ', get_lon_p(lchnk,i), & 
+!!                           ' original qflx = ', qflx_org, &  
+!!                           ' modified qflx = ', qflx(i,i_wv), & 
+!!                           ' qsurf = ', qori, & 
+!!                           ' column wp = ', wsp, & 
+!!                           ' dwp by qflx = ', dwpbot
 
          end if !! if(wpnet.gt.0._r8 .and. wsp.gt.0._r8) 
          
