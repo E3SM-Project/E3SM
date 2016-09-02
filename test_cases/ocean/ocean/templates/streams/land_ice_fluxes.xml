@@ -24,6 +24,8 @@
 				<member name="landIceBoundaryLayerTracers" type="var_array"/>
 				<member name="landIceTracerTransferVelocities" type="var_array"/>
 				<member name="landIceInterfaceTracers" type="var_array"/>
+				<member name="accumulatedLandIceMass" type="var"/>
+				<member name="accumulatedLandIceHeat" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>
