@@ -227,7 +227,7 @@ class SystemTestsCommon(object):
         append_status(comments, sfile="TestStatus.log")
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
-            self._test_status.set_status("%s_%s_%s" % (COMPARE_PHASE, suffix1, suffix2), status)
+            self._test_status.set_status("%s_%s" % (COMPARE_PHASE, suffix), status)
         return success
 
     def _component_compare_test(self, suffix1, suffix2):
