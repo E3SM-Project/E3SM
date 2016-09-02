@@ -298,7 +298,7 @@
   </grid>
   <grid name="a%ne120np4">
     <mach name="titan|stampede|bluewaters|edison|eos|corip1">
-      <pes compset="any" pesize="any">
+      <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>4800</ntasks_atm>
@@ -557,7 +557,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="titan|stampede|bluewaters">
-      <pes compset="any" pesize="any">
+      <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>1280</ntasks_atm>
