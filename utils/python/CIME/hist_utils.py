@@ -75,9 +75,12 @@ def move(case, suffix):
             comments += "    Copying '%s' to '%s'\n" % (test_hist, new_file)
             shutil.copy(test_hist, new_file)
 
-    expect(num_moved > 0, "move failed: no hist files found in rundir '%s'" % rundir)
+    all_success = True
+    if num_moved == 0:
+        all_success = False
+        comments += "WARNING: No hist files found in rundir '%s'" % rundir
 
-    return comments
+    return all_success, comments
 
 
 def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
@@ -301,9 +304,11 @@ def get_extension(model, filepath):
     'h'
     >>> get_extension("clm","clm2_0002.h0.1850-01-06-00000.nc")
     '0002.h0'
+    >>> get_extension("pop","PFS.f09_g16.B1850.yellowstone_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
+    'h'
     """
     basename = os.path.basename(filepath)
-    ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.][^.]+)?[.]nc' % model)
+    ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
 
     m = ext_regex.match(basename)
     expect(m is not None, "Failed to get extension for file '%s'" % filepath)
@@ -311,6 +316,7 @@ def get_extension(model, filepath):
         result = m.group(1)+'.'+m.group(2)
     else:
         result = m.group(2)
+
 
     return result
 
