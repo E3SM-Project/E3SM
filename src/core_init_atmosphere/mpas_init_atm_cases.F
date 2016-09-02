@@ -2616,6 +2616,10 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: sm_fg
       real (kind=RKIND), dimension(:), pointer :: soilz
 
+      type (hashtable) :: level_hash
+      logical :: too_many_fg_levs
+      integer :: level_value
+
       call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
@@ -3184,6 +3188,9 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
          call mpas_dmpar_abort(dminfo)
       end if
 
+      call mpas_hash_init(level_hash)
+      too_many_fg_levs = .false.
+
       call read_next_met_field(field, istatus)
 
       do while (istatus == 0)
@@ -3255,16 +3262,31 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
             else if (index(field % field, 'PMSL') == 0 .and. &
                      index(field % field, 'PSFC') == 0 .and. &
                      index(field % field, 'SOILHGT') == 0) then
+
+               ! Since the hash table can only store integers, transfer the bit pattern from 
+               ! the real-valued xlvl into an integer; that the result is not an integer version
+               ! of the level is not important, since we only want to test uniqueness of levels
+               level_value = transfer(field % xlvl, level_value)
+               if (.not. mpas_hash_search(level_hash, level_value)) then
+                  call mpas_hash_insert(level_hash, level_value)
+                  if (mpas_hash_size(level_hash) > config_nfglevels) then
+                     too_many_fg_levs = .true.
+                  end if
+               end if
+
+               !
+               ! In case we have more than config_nfglevels levels, just keep cycling through
+               ! the remaining fields in the intermediate file for the purpose of counting how
+               ! many unique levels are found using the code above
+               !
+               if (too_many_fg_levs) then
+                  call read_next_met_field(field, istatus)
+                  cycle
+               end if
+
                do k=1,config_nfglevels
                   if (vert_level(k) == field % xlvl .or. vert_level(k) == -1.0) exit
                end do
-               if (k > config_nfglevels) then
-                  write(0,*) '*******************************************************************'
-                  write(0,*) 'Error: The meteorological data file has more than config_nfglevels.'
-                  write(0,*) '       Please increase config_nfglevels in the namelist and re-run.'
-                  write(0,*) '*******************************************************************'
-                  call mpas_dmpar_abort(dminfo)
-               end if
                if (vert_level(k) == -1.0) vert_level(k) = field % xlvl
             else
                k = 1
@@ -3824,6 +3846,17 @@ write(0,*) 'Interpolating SKINTEMP'
       end do
 
       call read_met_close()
+      level_value = mpas_hash_size(level_hash)
+      call mpas_hash_destroy(level_hash)
+
+      if (too_many_fg_levs) then
+         write(0,*) '*******************************************************************'
+         write(0,*) 'Error: The meteorological data file has more than config_nfglevels.'
+         write(0,*) '       Please increase config_nfglevels to at least ', level_value
+         write(0,*) '       in the namelist and re-run.'
+         write(0,*) '*******************************************************************'
+         call mpas_dmpar_abort(dminfo)
+      end if
 
 
       !
