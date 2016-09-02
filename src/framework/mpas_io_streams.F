@@ -2427,7 +2427,7 @@ module mpas_io_streams
 
 !write(stderrUnit,*) 'Distributing and Copying field to other blocks'
 
-            call mpas_dmpar_bcast_int(field_cursor % int0dField % block % domain % dminfo, int0d_temp)
+            call mpas_dmpar_bcast_int( mpas_io_handle_dminfo(stream % fileHandle), int0d_temp)
             field_0dint_ptr => field_cursor % int0dField
             do while (associated(field_0dint_ptr))
                field_0dint_ptr % scalar = int0d_temp
@@ -2487,14 +2487,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % int1dField % isVarArray) then
-                     call mpas_dmpar_bcast_int(field_cursor % int1dField % block % domain % dminfo, int0d_temp)
+                     call mpas_dmpar_bcast_int( mpas_io_handle_dminfo(stream % fileHandle), int0d_temp)
                      field_1dint_ptr => field_cursor % int1dField
                      do while (associated(field_1dint_ptr))
                         field_1dint_ptr % array(j) = int0d_temp
                         field_1dint_ptr => field_1dint_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_ints(field_cursor % int1dField % block % domain % dminfo, size(int1d_temp), int1d_temp(:))
+                     call mpas_dmpar_bcast_ints( mpas_io_handle_dminfo(stream % fileHandle), size(int1d_temp), int1d_temp(:))
                      field_1dint_ptr => field_cursor % int1dField
                      do while (associated(field_1dint_ptr))
                         field_1dint_ptr % array(:) = int1d_temp(:)
@@ -2565,14 +2565,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % int2dField % isVarArray) then
-                     call mpas_dmpar_bcast_ints(field_cursor % int2dField % block % domain % dminfo, size(int1d_temp), int1d_temp(:))
+                     call mpas_dmpar_bcast_ints( mpas_io_handle_dminfo(stream % fileHandle), size(int1d_temp), int1d_temp(:))
                      field_2dint_ptr => field_cursor % int2dField
                      do while (associated(field_2dint_ptr))
                         field_2dint_ptr % array(j,:) = int1d_temp(:)
                         field_2dint_ptr => field_2dint_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_ints(field_cursor % int2dField % block % domain % dminfo, size(int2d_temp), int2d_temp(:,1))
+                     call mpas_dmpar_bcast_ints( mpas_io_handle_dminfo(stream % fileHandle), size(int2d_temp), int2d_temp(:,1))
                      field_2dint_ptr => field_cursor % int2dField
                      do while (associated(field_2dint_ptr))
                         field_2dint_ptr % array(:,:) = int2d_temp(:,:)
@@ -2647,14 +2647,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % int3dField % isVarArray) then
-                     call mpas_dmpar_bcast_ints(field_cursor % int3dField % block % domain % dminfo, size(int2d_temp), int2d_temp(:,1))
+                     call mpas_dmpar_bcast_ints( mpas_io_handle_dminfo(stream % fileHandle), size(int2d_temp), int2d_temp(:,1))
                      field_3dint_ptr => field_cursor % int3dField
                      do while (associated(field_3dint_ptr))
                         field_3dint_ptr % array(j,:,:) = int2d_temp(:,:)
                         field_3dint_ptr => field_3dint_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_ints(field_cursor % int3dField % block % domain % dminfo, size(int3d_temp), int3d_temp(:,1,1))
+                     call mpas_dmpar_bcast_ints( mpas_io_handle_dminfo(stream % fileHandle), size(int3d_temp), int3d_temp(:,1,1))
                      field_3dint_ptr => field_cursor % int3dField
                      do while (associated(field_3dint_ptr))
                         field_3dint_ptr % array(:,:,:) = int3d_temp(:,:,:)
@@ -2687,7 +2687,7 @@ module mpas_io_streams
 
 !write(stderrUnit,*) 'Distributing and Copying field to other blocks'
 
-            call mpas_dmpar_bcast_real(field_cursor % real0dField % block % domain % dminfo, real0d_temp)
+            call mpas_dmpar_bcast_real( mpas_io_handle_dminfo(stream % fileHandle), real0d_temp)
             field_0dreal_ptr => field_cursor % real0dField
             do while (associated(field_0dreal_ptr))
                field_0dreal_ptr % scalar = real0d_temp
@@ -2748,14 +2748,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % real1dField % isVarArray) then
-                     call mpas_dmpar_bcast_real(field_cursor % real1dField % block % domain % dminfo, real0d_temp)
+                     call mpas_dmpar_bcast_real( mpas_io_handle_dminfo(stream % fileHandle), real0d_temp)
                      field_1dreal_ptr => field_cursor % real1dField
                      do while (associated(field_1dreal_ptr))
                         field_1dreal_ptr % array(j) = real0d_temp
                         field_1dreal_ptr => field_1dreal_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_reals(field_cursor % real1dField % block % domain % dminfo, size(real1d_temp), real1d_temp(:))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real1d_temp), real1d_temp(:))
                      field_1dreal_ptr => field_cursor % real1dField
                      do while (associated(field_1dreal_ptr))
                         field_1dreal_ptr % array(:) = real1d_temp(:)
@@ -2826,14 +2826,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % real2dField % isVarArray) then
-                     call mpas_dmpar_bcast_reals(field_cursor % real2dField % block % domain % dminfo, size(real1d_temp), real1d_temp(:))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real1d_temp), real1d_temp(:))
                      field_2dreal_ptr => field_cursor % real2dField
                      do while (associated(field_2dreal_ptr))
                         field_2dreal_ptr % array(j,:) = real1d_temp(:)
                         field_2dreal_ptr => field_2dreal_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_reals(field_cursor % real2dField % block % domain % dminfo, size(real2d_temp), real2d_temp(:,1))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real2d_temp), real2d_temp(:,1))
                      field_2dreal_ptr => field_cursor % real2dField
                      do while (associated(field_2dreal_ptr))
                         field_2dreal_ptr % array(:,:) = real2d_temp(:,:)
@@ -2912,14 +2912,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % real3dField % isVarArray) then
-                     call mpas_dmpar_bcast_reals(field_cursor % real3dField % block % domain % dminfo, size(real2d_temp), real2d_temp(:,1))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real2d_temp), real2d_temp(:,1))
                      field_3dreal_ptr => field_cursor % real3dField
                      do while (associated(field_3dreal_ptr))
                         field_3dreal_ptr % array(j,:,:) = real2d_temp(:,:)
                         field_3dreal_ptr => field_3dreal_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_reals(field_cursor % real3dField % block % domain % dminfo, size(real3d_temp), real3d_temp(:,1,1))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real3d_temp), real3d_temp(:,1,1))
                      field_3dreal_ptr => field_cursor % real3dField
                      do while (associated(field_3dreal_ptr))
                         field_3dreal_ptr % array(:,:,:) = real3d_temp(:,:,:)
@@ -2999,14 +2999,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % real3dField % isVarArray) then
-                     call mpas_dmpar_bcast_reals(field_cursor % real4dField % block % domain % dminfo, size(real3d_temp), real3d_temp(:,1,1))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real3d_temp), real3d_temp(:,1,1))
                      field_4dreal_ptr => field_cursor % real4dField
                      do while (associated(field_4dreal_ptr))
                         field_4dreal_ptr % array(j,:,:,:) = real3d_temp(:,:,:)
                         field_4dreal_ptr => field_4dreal_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_reals(field_cursor % real4dField % block % domain % dminfo, size(real4d_temp), real4d_temp(:,1,1,1))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real4d_temp), real4d_temp(:,1,1,1))
                      field_4dreal_ptr => field_cursor % real4dField
                      do while (associated(field_4dreal_ptr))
                         field_4dreal_ptr % array(:,:,:,:) = real4d_temp(:,:,:,:)
@@ -3089,14 +3089,14 @@ module mpas_io_streams
                else
    
                   if (field_cursor % real5dField % isVarArray) then
-                     call mpas_dmpar_bcast_reals(field_cursor % real5dField % block % domain % dminfo, size(real4d_temp), real4d_temp(:,1,1,1))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real4d_temp), real4d_temp(:,1,1,1))
                      field_5dreal_ptr => field_cursor % real5dField
                      do while (associated(field_5dreal_ptr))
                         field_5dreal_ptr % array(j,:,:,:,:) = real4d_temp(:,:,:,:)
                         field_5dreal_ptr => field_5dreal_ptr % next
                      end do
                   else
-                     call mpas_dmpar_bcast_reals(field_cursor % real5dField % block % domain % dminfo, size(real5d_temp), real5d_temp(:,1,1,1,1))
+                     call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real5d_temp), real5d_temp(:,1,1,1,1))
                      field_5dreal_ptr => field_cursor % real5dField
                      do while (associated(field_5dreal_ptr))
                         field_5dreal_ptr % array(:,:,:,:,:) = real5d_temp(:,:,:,:,:)
@@ -3129,7 +3129,7 @@ module mpas_io_streams
 
 !write(stderrUnit,*) 'Distributing and Copying field to other blocks'
 
-            call mpas_dmpar_bcast_char(field_cursor % char0dField % block % domain % dminfo, field_cursor % char0dField % scalar)
+            call mpas_dmpar_bcast_char( mpas_io_handle_dminfo(stream % fileHandle), field_cursor % char0dField % scalar)
             field_0dchar_ptr => field_cursor % char0dField
             do while (associated(field_0dchar_ptr))
                field_0dchar_ptr % scalar = field_cursor % char0dField % scalar
@@ -3153,7 +3153,7 @@ module mpas_io_streams
 
 !write(stderrUnit,*) 'Distributing and Copying field to other blocks'
 
-            call mpas_dmpar_bcast_chars(field_cursor % char1dField % block % domain % dminfo, &
+            call mpas_dmpar_bcast_chars( mpas_io_handle_dminfo(stream % fileHandle), &
                                         field_cursor % char1dField % dimSizes(1), char1d_temp)
             field_1dchar_ptr => field_cursor % char1dField
             do while (associated(field_1dchar_ptr))
