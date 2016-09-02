@@ -982,7 +982,7 @@
 <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>titan</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
-    <COMPILERS>pgi,pgi_acc,intel,cray</COMPILERS>
+    <COMPILERS>pgi,pgiacc,intel,cray</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
     <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
@@ -1068,7 +1068,7 @@
         -->
       </modules>
 
-      <modules compiler="pgi_acc"> <!-- changing pgi_acc to pgicuda -->
+      <modules compiler="pgiacc"> <!-- changing pgi_acc to pgiacc -->
 	<command name="load">PrgEnv-pgi</command>
         <command name="switch">pgi pgi/15.7.0</command>
 	<!-- command name="switch">pgi pgi/15.9.lustre</command -->
