@@ -78,7 +78,7 @@ def move(case, suffix):
     all_success = True
     if num_moved == 0:
         all_success = False
-        comments += "WARNING: No hist files found in rundir '%s'" % rundir)
+        comments += "WARNING: No hist files found in rundir '%s'" % rundir
 
     return all_success, comments
 
