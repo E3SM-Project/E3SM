@@ -170,10 +170,10 @@ def _main_func():
 
         # Write out the case files
         case.flush(flushall=True)
-        if user_mods_dir is not None and user_mods_dir.startswith(".."):
-            user_mods_dir = os.path.abspath(user_mods_dir)
-
-        case.apply_user_mods(user_mods_dir)
+        if user_mods_dir is not None:
+            if os.path.isdir(user_mods_dir):
+                user_mods_dir = os.path.abspath(user_mods_dir)
+            case.apply_user_mods(user_mods_dir)
 
     # Copy env_case.xml into LockedFiles
     copyfile(os.path.join(caseroot,"env_case.xml"),
