@@ -242,6 +242,7 @@ integer :: &
    real(r8) :: prc_coef1_in             = huge(1.0_r8)
    real(r8) :: prc_exp_in               = huge(1.0_r8)
    real(r8) :: prc_exp1_in              = huge(1.0_r8)
+   real(r8) :: cld_sed_in               = huge(1.0_r8) !scale fac for cloud sedimentation velocity
 
 interface p
    module procedure p1
@@ -618,7 +619,8 @@ subroutine micro_mg_cam_init(pbuf2d)
                      do_clubb_sgs_out     = do_clubb_sgs,      &
                      prc_coef1_out        = prc_coef1_in,      &
                      prc_exp_out          = prc_exp_in,        &
-                     prc_exp1_out         = prc_exp1_in        )
+                     prc_exp1_out         = prc_exp1_in,       &
+                     cld_sed_out          = cld_sed_in         )
 
    if (do_clubb_sgs) then
      allow_sed_supersat = .false.
@@ -680,7 +682,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
-              prc_exp1_in, errstring)
+              prc_exp1_in, cld_sed_in, errstring)
       end select
    end select
 
