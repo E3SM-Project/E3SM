@@ -182,9 +182,12 @@ def _build_data_nml(case, caseroot, compclass):
 ###############################################################################
 def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
 ###############################################################################
-
-    with open(user_nl_file, "r") as file_usernl:
-        lines_input = file_usernl.readlines()
+    lines_input = []
+    if os.path.isfile(user_nl_file):
+        with open(user_nl_file, "r") as file_usernl:
+            lines_input = file_usernl.readlines()
+    else:
+        logger.warn("WARNING: No file %s found in case directory"%user_nl_file)
 
     lines_output = []
     lines_output.append("&comp_inparm \n")
