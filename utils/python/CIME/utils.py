@@ -142,7 +142,7 @@ def get_model():
 
 _hack=object()
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
-            arg_stdout=_hack, arg_stderr=_hack):
+            arg_stdout=_hack, arg_stderr=_hack, env=None):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
@@ -170,7 +170,8 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
                             stdout=arg_stdout,
                             stderr=arg_stderr,
                             stdin=stdin,
-                            cwd=from_dir)
+                            cwd=from_dir,
+                            env=env)
 
     output, errput = proc.communicate(input_str)
     output = output.strip() if output is not None else output

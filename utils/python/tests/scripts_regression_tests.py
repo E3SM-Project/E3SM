@@ -31,10 +31,10 @@ os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
 # pragma pylint: disable=protected-access
 ###############################################################################
-def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0):
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None):
 ###############################################################################
     from_dir = os.getcwd() if from_dir is None else from_dir
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env)
     if expected_stat == 0:
         expectation = "SHOULD HAVE WORKED, INSTEAD GOT STAT %s" % stat
     else:
@@ -1219,8 +1219,7 @@ query:
         environment = os.environ.copy()
         environment.update(env)
         environment.update(var)
-        subprocess.check_output(["gmake", "query", "--directory="+temp_dir],
-                                stderr=subprocess.STDOUT, env=environment)
+        run_cmd_assert_result(self.parent, "gmake query --directory=%s 2>&1" % temp_dir, env=environment)
 
         with open(output_name, "r") as output:
             query_result = output.read().strip()
@@ -1308,8 +1307,7 @@ file(WRITE query.out "${{{}}}")
 
         environment = os.environ.copy()
         environment.update(env)
-        subprocess.check_output(["cmake", "."], cwd=temp_dir,
-                                stderr=subprocess.STDOUT, env=environment)
+        run_cmd_assert_result(self.parent, "cmake . 2>&1", from_dir=temp_dir, env=environment)
 
         with open(output_name, "r") as output:
             query_result = output.read().strip()

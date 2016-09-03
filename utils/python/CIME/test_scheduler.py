@@ -595,7 +595,6 @@ class TestScheduler(object):
         else:
             return 1
 
-
     ###########################################################################
     def _wait_for_something_to_finish(self, threads_in_flight):
     ###########################################################################
@@ -612,6 +611,17 @@ class TestScheduler(object):
         for finished_test, procs_needed in finished_tests:
             self._procs_avail += procs_needed
             del threads_in_flight[finished_test]
+
+    ###########################################################################
+    def _update_test_status_file(self, test, test_phase, status):
+    ###########################################################################
+        """
+        In general, test_scheduler should not be responsible for updating
+        the TestStatus file, but there are a few cases where it has to.
+        """
+        test_dir = self._get_test_dir(test)
+        with TestStatus(test_dir=test_dir, test_name=test) as ts:
+            ts.set_status(test_phase, status)
 
     ###########################################################################
     def _consumer(self, test, test_phase, phase_method):
@@ -634,14 +644,9 @@ class TestScheduler(object):
         if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE, NAMELIST_PHASE]:
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
-            test_dir = self._get_test_dir(test)
-
-            with TestStatus(test_dir=test_dir, test_name=test) as ts:
-                nl_problem = self._get_test_data(test)[2]
-                if test_phase == NAMELIST_PHASE and nl_problem:
-                    ts.set_status(test_phase, TEST_FAIL_STATUS)
-                else:
-                    ts.set_status(test_phase, status)
+            nl_problem = self._get_test_data(test)[2]
+            status = TEST_FAIL_STATUS if nl_problem and test_phase == NAMELIST_PHASE else status
+            self._update_test_status_file(test, test_phase, status)
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
@@ -684,6 +689,16 @@ class TestScheduler(object):
                             threads_in_flight[test] = (new_thread, procs_needed, next_phase)
                             new_thread.start()
                             num_threads_launched_this_iteration += 1
+                        else:
+                            if not threads_in_flight:
+                                msg = "Phase '%s' for test '%s' required more processors, %d, than this machine can provide, %d" % \
+                                    (next_phase, test, procs_needed, self._procs_avail)
+                                logger.warning(msg)
+                                self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
+                                self._update_test_status(test, next_phase, TEST_FAIL_STATUS)
+                                self._log_output(test, msg)
+                                self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                num_threads_launched_this_iteration += 1
 
             if not work_to_do:
                 break
