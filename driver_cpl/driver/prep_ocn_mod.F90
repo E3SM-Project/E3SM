@@ -551,7 +551,6 @@ contains
     integer, save :: index_x2o_Faxa_snow
     integer, save :: index_x2o_Faxa_rain
     integer, save :: index_x2o_Faxa_prec
-    integer, save :: index_x2o_Foxx_swpen0
     integer, save :: index_x2o_Foxx_rofl
     integer, save :: index_x2o_Foxx_rofi
     integer, save :: index_x2o_Sf_afrac
@@ -630,7 +629,6 @@ contains
        index_x2o_Faxa_snow      = mct_aVect_indexRA(x2o_o,'Faxa_snow')
        index_x2o_Faxa_rain      = mct_aVect_indexRA(x2o_o,'Faxa_rain')
        index_x2o_Faxa_prec      = mct_aVect_indexRA(x2o_o,'Faxa_prec')
-       index_x2o_Foxx_swpen0    = mct_aVect_indexRA(x2o_o,'Foxx_swpen0')
        index_x2o_Foxx_rofl      = mct_aVect_indexRA(x2o_o,'Foxx_rofl')
        index_x2o_Foxx_rofi      = mct_aVect_indexRA(x2o_o,'Foxx_rofi')
 
@@ -963,7 +961,6 @@ contains
                  + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
        x2o_o%rAttr(index_x2o_Foxx_swnet,n) = (fswabsv + fswabsi)                 * afracr + &
                                              i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
-       x2o_o%rAttr(index_x2o_Foxx_swpen0,n) = (fswabsv + fswabsi)                * afracr
 
        if (seq_flds_i2o_per_cat) then
           x2o_o%rAttr(index_x2o_Sf_afrac,n)          = afrac
