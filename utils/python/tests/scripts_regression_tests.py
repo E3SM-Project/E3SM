@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import io, glob, os, re, shutil, signal, sys, tempfile, \
-    threading, time, logging, unittest
+    threading, time, logging, unittest, getpass
 
 from xml.etree.ElementTree import ParseError
 
@@ -11,7 +11,7 @@ sys.path.append(LIB_DIR)
 import subprocess
 subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 
-from CIME.utils import run_cmd, run_cmd_no_fail
+from CIME.utils import run_cmd, run_cmd_no_fail, get_lids
 import update_acme_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
@@ -984,9 +984,10 @@ class L_TestSaveTimings(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
-    def test_save_timings(self):
+    def simple_test(self, manual_timing=False):
     ###########################################################################
-        create_test_cmd =  "%s/create_test SMS_Ln9_Mmpi-serial.f19_g16_rx1.A --save-timing --walltime 0:15:00 -t %s" % (SCRIPT_DIR, self._baseline_name)
+        timing_flag = "" if manual_timing else "--save-timing"
+        create_test_cmd =  "%s/create_test SMS_Ln9_Mmpi-serial.f19_g16_rx1.A %s --walltime 0:15:00 -t %s" % (SCRIPT_DIR, timing_flag, self._baseline_name)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
@@ -994,6 +995,33 @@ class L_TestSaveTimings(TestCreateTestCommon):
         if (self._hasbatch):
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                   from_dir=self._testroot)
+
+        statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, self._baseline_name))
+        self.assertEqual(len(statuses), 1, msg="Should have had exactly one match, found %s" % statuses)
+        casedir = os.path.dirname(statuses[0])
+
+        with Case(casedir, read_only=True) as case:
+            lids = get_lids(case)
+            timing_dir = case.get_value("SAVE_TIMING_DIR")
+            casename = case.get_value("CASEBASEID")
+
+        self.assertEqual(len(lids), 1, msg="Expected one LID, found %s" % lids)
+
+        if manual_timing:
+            run_cmd_assert_result(self, "cd %s && %s/save_provenance postrun" % (casedir, TOOLS_DIR))
+
+        provenance_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0])
+        self.assertTrue(os.path.isdir(provenance_dir), msg="'%s' was missing" % provenance_dir)
+
+    ###########################################################################
+    def test_save_timings(self):
+    ###########################################################################
+        self.simple_test()
+
+    ###########################################################################
+    def test_save_timings_manual(self):
+    ###########################################################################
+        self.simple_test(manual_timing=True)
 
 ###############################################################################
 class C_TestXMLQuery(unittest.TestCase):

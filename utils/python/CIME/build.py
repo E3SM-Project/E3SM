@@ -5,6 +5,7 @@ from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status
 from CIME.preview_namelists     import preview_namelists
 from CIME.check_input_data      import check_input_data
+from CIME.provenance            import save_build_provenance
 import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,8 @@ def post_build(case, logs):
         os.remove("LockedFiles/env_build.xml")
 
     shutil.copy("env_build.xml", "LockedFiles")
+
+    save_build_provenance(case)
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False):
@@ -593,5 +596,3 @@ def clean(case, cleanlist=None):
     # append call of to CaseStatus
     msg = "cleanbuild %s "%" ".join(cleanlist)
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-
-###############################################################################

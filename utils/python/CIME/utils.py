@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil
+import logging, gzip, sys, os, time, re, shutil, glob
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -923,3 +923,24 @@ def find_system_test(testname, case):
     mod = import_module(path)
     return getattr(mod, m)
 
+def _get_most_recent_lid_impl(files):
+    """
+    >>> files = ['/foo/bar/acme.log.20160905_111212', '/foo/bar/acme.log.20160906_111212.gz']
+    >>> _get_most_recent_lid_impl(files)
+    ['20160905_111212', '20160906_111212']
+    """
+    results = []
+    for item in files:
+        basename = os.path.basename(item)
+        components = basename.split(".")
+        if len(components) > 2:
+            results.append(components[2])
+        else:
+            logger.warning("Apparent model log file '%s' did not conform to expected name format" % item)
+
+    return sorted(results)
+
+def get_lids(case):
+    model = case.get_value("MODEL")
+    rundir = case.get_value("RUNDIR")
+    return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (rundir, model)))
