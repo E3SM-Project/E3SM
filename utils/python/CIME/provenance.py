@@ -113,7 +113,7 @@ def save_prerun_provenance_acme(case, lid=None):
         for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
             run_cmd_no_fail("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach == ["corip1", "edison"]:
+    elif mach in ["corip1", "edison"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
             run_cmd_no_fail("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
