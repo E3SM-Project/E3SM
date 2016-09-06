@@ -6,7 +6,7 @@
 		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message=" - Complete"/>
 	</case>
 	<case name="adjust_ssh">
-		<step executable="./run.py" quiet="true" pre_message=" * Running adjust_ssh" post_message="     Complete"/>
+		<step executable="./run.py" quiet="true" pre_message=" * Running adjust_ssh" post_message=" - Complete"/>
 	</case>
 	<case name="spin_up1">
 		<step executable="./run.py" quiet="true" pre_message=" * Running spin_up1" post_message=" - Complete"/>
@@ -15,10 +15,10 @@
 		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message=" - Complete"/>
 	</case>
 	<validation>
-		<compare_fields file1="forward/output/output.0000-01-01_00.00.00.nc">
+		<compare_fields file1="forward/output/output.0001-01-01_00.00.00.nc">
 			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
 		</compare_fields>
-		<compare_fields file1="forward/land_ice_fluxes.nc">
+		<compare_fields file1="forward/output/land_ice_fluxes.0001-01-01_00.00.00.nc">
 			<template file="land_ice_flux_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
 		</compare_fields>
 	</validation>
