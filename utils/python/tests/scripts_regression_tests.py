@@ -1016,11 +1016,15 @@ class L_TestSaveTimings(TestCreateTestCommon):
     ###########################################################################
     def test_save_timings(self):
     ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping test. ACME feature")
         self.simple_test()
 
     ###########################################################################
     def test_save_timings_manual(self):
     ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping test. ACME feature")
         self.simple_test(manual_timing=True)
 
 ###############################################################################
