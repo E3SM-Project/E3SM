@@ -103,7 +103,8 @@ module clubb_intr
   real(r8) :: clubb_liq_sh   = unset_r8
   real(r8) :: clubb_ice_deep = unset_r8
   real(r8) :: clubb_ice_sh   = unset_r8
-
+  real(r8) :: clubb_tk1      = unset_r8
+  real(r8) :: clubb_tk2      = unset_r8
 
 !  Constant parameters
   logical, parameter, private :: &
@@ -369,7 +370,7 @@ end subroutine clubb_init_cnst
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
                                 clubb_do_adv, clubb_do_deep, clubb_timestep, clubb_stabcorrect, &
                                 clubb_rnevap_effic, clubb_liq_deep, clubb_liq_sh, clubb_ice_deep, &
-                                clubb_ice_sh
+                                clubb_ice_sh, clubb_tk1, clubb_tk2
 
     !----- Begin Code -----
 
@@ -423,6 +424,8 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_liq_sh,             1,   mpir8,   0, mpicom)
       call mpibcast(clubb_ice_deep,           1,   mpir8,   0, mpicom)
       call mpibcast(clubb_ice_sh,             1,   mpir8,   0, mpicom)
+      call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
+      call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -2144,12 +2147,14 @@ end subroutine clubb_init_cnst
    call t_startf('ice_cloud_detrain_diag')
    do k=1,pver
       do i=1,ncol
-         if( state1%t(i,k) > 268.15_r8 ) then
+         if( state1%t(i,k) > clubb_tk1 ) then
             dum1 = 0.0_r8
-         elseif ( state1%t(i,k) < 238.15_r8 ) then
+         elseif ( state1%t(i,k) < clubb_tk2 ) then
             dum1 = 1.0_r8
          else
-            dum1 = ( 268.15_r8 - state1%t(i,k) ) / 30._r8 
+            !Note: Denominator is changed from 30.0_r8 to (clubb_tk1 - clubb_tk2),
+            !(clubb_tk1 - clubb_tk2) is also 30.0 but it introduced a non-bfb change
+            dum1 = ( clubb_tk1 - state1%t(i,k) ) /(clubb_tk1 - clubb_tk2)
          endif
         
          ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )

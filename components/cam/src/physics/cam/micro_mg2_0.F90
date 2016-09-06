@@ -176,6 +176,7 @@ real(r8) :: tmelt       ! freezing point of water (K)
 real(r8) :: prc_coef1 = huge(1.0_r8)
 real(r8) :: prc_exp   = huge(1.0_r8)
 real(r8) :: prc_exp1  = huge(1.0_r8)
+real(r8) :: cld_sed   = huge(1.0_r8) !scale fac for cld sedimentation velocity
 
 ! latent heats of:
 real(r8) :: xxlv        ! vaporization
@@ -223,7 +224,8 @@ subroutine micro_mg_init( &
 !!== KZ_DCS 
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
-     allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,prc_exp1_in, errstring)
+     allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
+     prc_exp1_in, cld_sed_in, errstring)
 
   use micro_mg_utils, only: micro_mg_utils_init
 
@@ -261,7 +263,7 @@ subroutine micro_mg_init( &
   character(len=16),intent(in)  :: micro_mg_precip_frac_method_in  ! type of precipitation fraction method
   real(r8),         intent(in)  :: micro_mg_berg_eff_factor_in     ! berg efficiency factor
   logical,  intent(in)  ::  allow_sed_supersat_in ! allow supersaturated conditions after sedimentation loop
-  real(r8), intent(in)  :: prc_coef1_in,prc_exp_in,prc_exp1_in
+  real(r8), intent(in)  :: prc_coef1_in,prc_exp_in,prc_exp1_in, cld_sed_in
 
 
   character(128), intent(out) :: errstring    ! Output status (non-blank for error return)
@@ -277,6 +279,7 @@ subroutine micro_mg_init( &
  prc_coef1 = prc_coef1_in
  prc_exp   = prc_exp_in
  prc_exp1  = prc_exp1_in
+ cld_sed   = cld_sed_in
 
   ! Initialize subordinate utilities module.
   call micro_mg_utils_init(kind, rh2o, cpair, tmelt_in, latvap, latice, &
@@ -881,7 +884,7 @@ subroutine micro_mg_tend ( &
 
   arn=ar*rhof
   asn=as*rhof
-  acn=g*rhow/(18._r8*mu)
+  acn=g*rhow/(18._r8*mu) * cld_sed
   ain=ai*(rhosu/rho)**0.35_r8
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
