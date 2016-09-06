@@ -1010,21 +1010,18 @@ class L_TestSaveTimings(TestCreateTestCommon):
         if manual_timing:
             run_cmd_assert_result(self, "cd %s && %s/save_provenance postrun" % (casedir, TOOLS_DIR))
 
-        provenance_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0])
-        self.assertTrue(os.path.isdir(provenance_dir), msg="'%s' was missing" % provenance_dir)
+        if CIME.utils.get_model() != "acme":
+            provenance_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0])
+            self.assertTrue(os.path.isdir(provenance_dir), msg="'%s' was missing" % provenance_dir)
 
     ###########################################################################
     def test_save_timings(self):
     ###########################################################################
-        if CIME.utils.get_model() != "acme":
-            self.skipTest("Skipping test. ACME feature")
         self.simple_test()
 
     ###########################################################################
     def test_save_timings_manual(self):
     ###########################################################################
-        if CIME.utils.get_model() != "acme":
-            self.skipTest("Skipping test. ACME feature")
         self.simple_test(manual_timing=True)
 
 ###############################################################################
