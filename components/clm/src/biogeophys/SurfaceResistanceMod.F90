@@ -124,6 +124,7 @@ contains
      associate(                                              &
           watsat      =>    soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)] volumetric soil water at saturation (porosity)
           watfc       =>    soilstate_vars%watfc_col       , & ! Input:  [real(r8) (:,:)] volumetric soil water at field capacity
+          watmin      =>    soilstate_vars%watmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
           
           h2osoi_ice  =>    waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
           h2osoi_liq  =>    waterstate_vars%h2osoi_liq_col , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
@@ -159,12 +160,16 @@ contains
                    fac  = min(1._r8, wx/watsat(c,1))
                    fac  = max( fac, 0.01_r8 )
                    if (wx < watfc(c,1) ) then  !when water content of ths top layer is less than that at F.C.
-                      fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
-                      fac_fc  = max( fac_fc, 0.01_r8 )
-                      ! modify soil beta by snow cover. soilbeta for snow surface is one
-                      soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
-                           *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
-                           + frac_sno(c)+ frac_h2osfc(c)
+                      if (wx >= watmin(c,1)) then
+                         fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
+                         fac_fc  = max( fac_fc, 0.01_r8 )
+                         ! modify soil beta by snow cover. soilbeta for snow surface is one
+                         soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
+                              *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
+                              + frac_sno(c)+ frac_h2osfc(c)
+                      else
+                         soilbeta(c) = 0._r8
+                      endif
                    else   !when water content of ths top layer is more than that at F.C.
                       soilbeta(c) = 1._r8
                    end if
