@@ -111,11 +111,13 @@ def save_prerun_provenance_acme(case, lid=None):
     job_id = _get_batch_job_id_for_syslog(case)
     if mach == "mira":
         for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
-            run_cmd_no_fail("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
+            filename = "%s.%s" % (filename, lid)
+            run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach in ["corip1", "edison"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
-            run_cmd_no_fail("%s > %s.%s" % (cmd, filename, lid), from_dir=full_timing_dir)
+            filename = "%s.%s" % (filename, lid)
+            run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
         for cmd, filename in [("xtdb2proc -f xtdb2proc", "xtdb2procf"),
