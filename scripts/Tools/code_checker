@@ -107,7 +107,7 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     pylint = find_executable("pylint")
-    expect(pylint is not None,"pylint not found")
+    expect(pylint is not None, "pylint not found")
 
     dir_to_check, num_procs, files = parse_command_line(sys.argv, description)
 
