@@ -85,19 +85,20 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
             os.chmod(shell_command_file, 0777)
             run_cmd_no_fail(shell_command_file)
 
-def build_include_dirs_list(user_mods_path, include_dirs=None):
+def build_include_dirs_list(user_mods_path, include_dirs=[]):
     '''
     If user_mods_path has a file "include_user_mods" read that
     file and add directories to the include_dirs, recursively check
     each of those directories for further directories.
     The file may also include comments deleneated with # in the first column
     '''
+    if user_mods_path is None or user_mods_path == 'UNSET':
+        return include_dirs
     expect(os.path.isabs(user_mods_path),
            "Expected full directory path, got '%s'"%user_mods_path)
     expect(os.path.isdir(user_mods_path),
            "Directory not found %s"%user_mods_path)
     logger.info("Adding user mods directory %s"%user_mods_path)
-    include_dirs = [] if include_dirs is None else include_dirs
     include_dirs.append(os.path.normpath(user_mods_path))
     include_file = os.path.join(include_dirs[-1],"include_user_mods")
     if os.path.isfile(include_file):
