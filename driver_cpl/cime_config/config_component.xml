@@ -895,7 +895,7 @@
   <entry id="SAVE_TIMING_DIR">
     <type>char</type>
     <valid_values></valid_values>
-    <default_value>UNSET</default_value>
+    <default_value>timing</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Where to auto archive timing data</desc>
@@ -1144,6 +1144,14 @@
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>number of wav cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="MASK_GRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>grid mask - DO NOT EDIT (for experts only)</desc>
   </entry>
 
   <entry id="PTS_MODE">
