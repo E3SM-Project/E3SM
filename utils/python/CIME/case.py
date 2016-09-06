@@ -702,6 +702,7 @@ class Case(object):
         toolfiles = (os.path.join(toolsdir, "check_lockedfiles"),
                      os.path.join(toolsdir, "lt_archive.sh"),
                      os.path.join(toolsdir, "getTiming"),
+                     os.path.join(toolsdir, "save_provenance"),
                      os.path.join(machines_dir,"Makefile"),
                      os.path.join(machines_dir,"mkSrcfiles"),
                      os.path.join(machines_dir,"mkDepends"))
