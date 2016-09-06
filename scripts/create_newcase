@@ -33,8 +33,9 @@ def parse_command_line(args, cimeroot):
                         "To see list of current compsets, use the utility manage_case in this directory")
 
     parser.add_argument("--mach", "-mach",
-                        help="(required) Specify a machine. "
-                        "To see list of current  machines, use the utility manage_case in this directory")
+                        help="Specify a machine. default: match NODENAME_REGEX in config_machines.xml "
+                        "To see list of current  machines, use the utility manage_case in this directory"
+                        )
 
     parser.add_argument("--compiler", "-compiler",
                         help="Specify a compiler. "
@@ -169,8 +170,10 @@ def _main_func():
 
         # Write out the case files
         case.flush(flushall=True)
-
-        case.apply_user_mods(user_mods_dir)
+        if user_mods_dir is not None:
+            if os.path.isdir(user_mods_dir):
+                user_mods_dir = os.path.abspath(user_mods_dir)
+            case.apply_user_mods(user_mods_dir)
 
     # Copy env_case.xml into LockedFiles
     copyfile(os.path.join(caseroot,"env_case.xml"),

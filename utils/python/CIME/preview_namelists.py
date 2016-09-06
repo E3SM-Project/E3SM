@@ -77,6 +77,8 @@ def preview_namelists(case, dryrun=False):
             expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
         if out is not None:
             logger.info("     %s"%out)
+        if err is not None:
+            logger.info("     %s"%err)
     # refresh case xml object from file
     case.read_xml()
     # Save namelists to docdir

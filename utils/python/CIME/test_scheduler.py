@@ -46,7 +46,7 @@ class TestScheduler(object):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
-
+        self._allow_baseline_overwrite  = allow_baseline_overwrite
         self._save_timing = save_timing
         self._queue       = queue
         self._test_data   = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
@@ -80,7 +80,7 @@ class TestScheduler(object):
             self._test_root = self._test_root.replace("$PROJECT", self._project)
 
         self._test_root = os.path.abspath(self._test_root)
-        self._test_id   = test_id if test_id is not None else CIME.utils.get_utc_timestamp()
+        self._test_id   = test_id if test_id is not None else CIME.utils.get_timestamp()
 
         self._compiler = self._machobj.get_default_compiler() if compiler is None else compiler
 
@@ -114,11 +114,16 @@ class TestScheduler(object):
                        "Missing baseline comparison directory %s" % full_baseline_dir)
 
             # the following is to assure that the existing generate directory is not overwritten
-            if self._baseline_gen_name and not allow_baseline_overwrite:
+            if self._baseline_gen_name:
                 full_baseline_dir = os.path.join(self._baseline_root, self._baseline_gen_name)
-                expect(not os.path.isdir(full_baseline_dir),
-                       "Refusing to overwrite existing baseline directory, use -o to force overwrite %s" % full_baseline_dir)
-
+                existing_baselines = []
+                for test_name in test_names:
+                    test_baseline = os.path.join(full_baseline_dir, test_name)
+                    if os.path.isdir(test_baseline):
+                        existing_baselines.append(test_baseline)
+                expect(allow_baseline_overwrite or len(existing_baselines) == 0,
+                           "Baseline directories already exists %s\n"\
+                           "Use --allow_baseline_overwrite to avoid this error"%existing_baselines)
         else:
             self._baseline_root = None
 
@@ -368,7 +373,7 @@ class TestScheduler(object):
         if self._baseline_gen_name:
             test_argv += " -generate %s" % self._baseline_gen_name
             basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
-            logger.warn("basegen_case is %s"%basegen_case_fullpath)
+            logger.debug("basegen_case is %s"%basegen_case_fullpath)
             envtest.set_value("BASELINE_NAME_GEN", self._baseline_gen_name)
             envtest.set_value("BASEGEN_CASE", os.path.join(self._baseline_gen_name, test))
         if self._baseline_cmp_name:
@@ -454,7 +459,6 @@ class TestScheduler(object):
             envtest.set_initial_values(case)
             if self._save_timing:
                 case.set_value("SAVE_TIMING", True)
-                case.set_value("CHECK_TIMING", True)
 
         return True
 
@@ -590,7 +594,6 @@ class TestScheduler(object):
         else:
             return 1
 
-
     ###########################################################################
     def _wait_for_something_to_finish(self, threads_in_flight):
     ###########################################################################
@@ -607,6 +610,17 @@ class TestScheduler(object):
         for finished_test, procs_needed in finished_tests:
             self._procs_avail += procs_needed
             del threads_in_flight[finished_test]
+
+    ###########################################################################
+    def _update_test_status_file(self, test, test_phase, status):
+    ###########################################################################
+        """
+        In general, test_scheduler should not be responsible for updating
+        the TestStatus file, but there are a few cases where it has to.
+        """
+        test_dir = self._get_test_dir(test)
+        with TestStatus(test_dir=test_dir, test_name=test) as ts:
+            ts.set_status(test_phase, status)
 
     ###########################################################################
     def _consumer(self, test, test_phase, phase_method):
@@ -629,14 +643,9 @@ class TestScheduler(object):
         if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE, NAMELIST_PHASE]:
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
-            test_dir = self._get_test_dir(test)
-
-            with TestStatus(test_dir=test_dir, test_name=test) as ts:
-                nl_problem = self._get_test_data(test)[2]
-                if test_phase == NAMELIST_PHASE and nl_problem:
-                    ts.set_status(test_phase, TEST_FAIL_STATUS)
-                else:
-                    ts.set_status(test_phase, status)
+            nl_problem = self._get_test_data(test)[2]
+            status = TEST_FAIL_STATUS if nl_problem and test_phase == NAMELIST_PHASE else status
+            self._update_test_status_file(test, test_phase, status)
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
@@ -679,6 +688,16 @@ class TestScheduler(object):
                             threads_in_flight[test] = (new_thread, procs_needed, next_phase)
                             new_thread.start()
                             num_threads_launched_this_iteration += 1
+                        else:
+                            if not threads_in_flight:
+                                msg = "Phase '%s' for test '%s' required more processors, %d, than this machine can provide, %d" % \
+                                    (next_phase, test, procs_needed, self._procs_avail)
+                                logger.warning(msg)
+                                self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
+                                self._update_test_status(test, next_phase, TEST_FAIL_STATUS)
+                                self._log_output(test, msg)
+                                self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                num_threads_launched_this_iteration += 1
 
             if not work_to_do:
                 break

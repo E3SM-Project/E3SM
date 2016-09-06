@@ -20,6 +20,14 @@ class EnvMachSpecific(EnvBase):
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
         EnvBase.__init__(self, caseroot, fullpath)
 
+    def populate(self, machobj):
+        """Add entries to the file using information from a Machines object."""
+        items = ("module_system", "environment_variables", "mpirun")
+        for item in items:
+            nodes = machobj.get_first_child_nodes(item)
+            for node in nodes:
+                self.add_child(node)
+
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
         <element_name attribute='attribute_value>value</element_name>"""

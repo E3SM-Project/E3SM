@@ -1,6 +1,178 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 08-31-2016
+Tag: cime5.0.9
+Answer Changes: None
+Tests: scripts_regression_tests, several multiinstance and component tests
+Dependencies:
+
+Brief Summary: Fix a host of issues related to testing, remove remaining
+	esmf code, update pio externals,
+
+User interface changes: add --allow-baseline-overwrite flag
+
+Modified files: git diff --name-status
+M       cime_config/acme/config_files.xml
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/cesm/config_archive.xml
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/machines/config_batch.xml
+M       cime_config/cesm/machines/config_build.xml
+M       cime_config/cesm/machines/config_compilers.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/cesm/machines/config_pio.xml
+A       cime_config/config_tests.xml
+M       cime_config/xml_schemas/archive.xsd
+M       components/data_comps/dice/bld/build-namelist
+D       components/stub_comps/satm/cpl/atm_comp_esmf.F90
+D       components/stub_comps/sesp/cpl/esp_comp_esmf.F90
+D       components/stub_comps/sglc/cpl/glc_comp_esmf.F90
+D       components/stub_comps/sice/cpl/ice_comp_esmf.F90
+D       components/stub_comps/slnd/cpl/lnd_comp_esmf.F90
+D       components/stub_comps/socn/cpl/ocn_comp_esmf.F90
+D       components/stub_comps/srof/cpl/rof_comp_esmf.F90
+D       components/stub_comps/swav/cpl/wav_comp_esmf.F90
+D       components/xcpl_comps/xatm/cpl/atm_comp_esmf.F90
+D       components/xcpl_comps/xglc/cpl/glc_comp_esmf.F90
+D       components/xcpl_comps/xice/cpl/ice_comp_esmf.F90
+D       components/xcpl_comps/xlnd/cpl/lnd_comp_esmf.F90
+D       components/xcpl_comps/xocn/cpl/ocn_comp_esmf.F90
+D       components/xcpl_comps/xrof/cpl/rof_comp_esmf.F90
+D       components/xcpl_comps/xwav/cpl/wav_comp_esmf.F90
+M       driver_cpl/bld/build-namelist
+M       driver_cpl/bld/namelist_files/namelist_defaults_drv.xml
+M       driver_cpl/bld/namelist_files/namelist_definition_drv.xml
+M       driver_cpl/cime_config/config_component.xml
+M       externals/pio1/pio/box_rearrange.F90.in
+M       externals/pio1/pio/pio_types.F90
+M       externals/pio1/pio/piolib_mod.F90
+M       externals/pio2/CMakeLists.txt
+M       externals/pio2/ctest/CTestEnvironment-nwsc.cmake
+M       externals/pio2/ctest/runcdash-cgd-nag.sh
+M       externals/pio2/ctest/runctest-cgd.sh
+M       externals/pio2/doc/CMakeLists.txt
+M       externals/pio2/doc/Doxyfile.in
+M       externals/pio2/doc/source/Error.txt
+M       externals/pio2/doc/source/Examples.txt
+M       externals/pio2/doc/source/Installing.txt
+A       externals/pio2/doc/source/Testing.txt
+M       externals/pio2/doc/source/base.txt
+M       externals/pio2/doc/source/mach_walkthrough.txt
+M       externals/pio2/examples/c/example2.c
+A       externals/pio2/examples/c/valsupp_example1.supp
+M       externals/pio2/examples/f03/examplePio.f90
+M       externals/pio2/src/clib/CMakeLists.txt
+M       externals/pio2/src/clib/bget.c
+M       externals/pio2/src/clib/config.h.in
+M       externals/pio2/src/clib/pio.h
+M       externals/pio2/src/clib/pio_darray.c
+A       externals/pio2/src/clib/pio_darray_async.c
+M       externals/pio2/src/clib/pio_file.c
+A       externals/pio2/src/clib/pio_get_nc_async.c
+M       externals/pio2/src/clib/pio_internal.h
+M       externals/pio2/src/clib/pio_lists.c
+A       externals/pio2/src/clib/pio_msg.c
+M       externals/pio2/src/clib/pio_nc.c
+M       externals/pio2/src/clib/pio_nc4.c
+A       externals/pio2/src/clib/pio_nc_async.c
+A       externals/pio2/src/clib/pio_put_nc_async.c
+A       externals/pio2/src/clib/pio_varm.c
+M       externals/pio2/src/clib/pioc.c
+M       externals/pio2/src/clib/pioc_support.c
+M       externals/pio2/src/flib/pio.F90
+M       externals/pio2/src/flib/pio_nf.F90
+M       externals/pio2/src/gptl/perf_mod.F90
+A       externals/pio2/tests/performance/kt.PIO1.perfmakefile
+M       externals/pio2/tests/performance/pioperformance.F90
+M       externals/pio2/tests/unit/CMakeLists.txt
+M       externals/pio2/tests/unit/basic_tests.F90
+M       externals/pio2/tests/unit/driver.F90
+A       externals/pio2/tests/unit/test_darray.c
+A       externals/pio2/tests/unit/test_darray_async.c
+A       externals/pio2/tests/unit/test_intercomm.c
+A       externals/pio2/tests/unit/test_names.c
+M       externals/pio2/tests/unit/test_nc4.c
+M       scripts/Testing/Testcases/NOC_script
+D       scripts/Testing/Testcases/config_tests.xml
+M       scripts/Testing/testreporter.pl
+D       scripts/Tools/baseline_gen_comp
+M       scripts/Tools/bless_test_results
+M       scripts/Tools/case.build
+A       scripts/Tools/compare_test_results
+D       scripts/Tools/component_compare.sh
+A       scripts/Tools/component_compare_baseline
+A       scripts/Tools/component_compare_move
+D       scripts/Tools/component_compare_move.sh
+A       scripts/Tools/component_compare_test
+D       scripts/Tools/component_compare_test.sh
+D       scripts/Tools/component_compgen_baseline.sh
+D       scripts/Tools/component_generate.sh
+A       scripts/Tools/component_generate_baseline
+M       scripts/Tools/xmlchange
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/manage_case
+M       share/csm_share/shr/shr_pio_mod.F90
+M       tools/configure
+M       tools/cprnc/README
+M       tools/cprnc/compare_vars_mod.F90.in
+M       utils/perl5lib/Streams/TemplateGeneric.pm
+M       utils/python/CIME/SystemTests/README
+M       utils/python/CIME/SystemTests/eri.py
+M       utils/python/CIME/SystemTests/err.py
+M       utils/python/CIME/SystemTests/lii.py
+M       utils/python/CIME/SystemTests/nck.py
+M       utils/python/CIME/SystemTests/pea.py
+M       utils/python/CIME/SystemTests/pet.py
+A       utils/python/CIME/SystemTests/rep.py
+M       utils/python/CIME/SystemTests/ssp.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+A       utils/python/CIME/SystemTests/system_tests_compare_two.py
+A       utils/python/CIME/SystemTests/test_utils/__init__.py
+A       utils/python/CIME/SystemTests/test_utils/user_nl_utils.py
+M       utils/python/CIME/XML/batch.py
+A       utils/python/CIME/XML/build.py
+M       utils/python/CIME/XML/compilers.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/machines.py
+M       utils/python/CIME/XML/pes.py
+M       utils/python/CIME/bless_test_results.py
+M       utils/python/CIME/buildnml.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/case_test.py
+M       utils/python/CIME/check_lockedfiles.py
+M       utils/python/CIME/compare_namelists.py
+A       utils/python/CIME/compare_test_results.py
+A       utils/python/CIME/hist_utils.py
+D       utils/python/CIME/macros.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/test_status.py
+A       utils/python/CIME/tests/README
+A       utils/python/CIME/tests/SystemTests/__init__.py
+A       utils/python/CIME/tests/SystemTests/test_system_tests_compare_two.py
+A       utils/python/CIME/tests/SystemTests/test_system_tests_compare_two_link_to_case2_output.py
+A       utils/python/CIME/tests/SystemTests/test_utils/__init__.py
+A       utils/python/CIME/tests/SystemTests/test_utils/test_user_nl_utils.py
+A       utils/python/CIME/tests/__init__.py
+A       utils/python/CIME/tests/case_fake.py
+A       utils/python/CIME/tests/test_case_fake.py
+M       utils/python/CIME/utils.py
+M       utils/python/jenkins_generic_job.py
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+======================================================================
+
+
+======================================================================
+
+Originator: Jim Edwards
 Date: Aug 11, 2012
 Tag: cime5.0.8
 Answer Changes: None

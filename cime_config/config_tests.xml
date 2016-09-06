@@ -169,6 +169,7 @@ LII    CLM initial condition interpolation test
     <STOP_N>22</STOP_N>
     <CCSM_TCOST>0</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
+    <BUILD_THREADED>TRUE</BUILD_THREADED>
   </test>
 
   <test NAME="ERP">
@@ -179,6 +180,7 @@ LII    CLM initial condition interpolation test
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
     <DOUT_S>FALSE</DOUT_S>
+    <BUILD_THREADED>TRUE</BUILD_THREADED>
   </test>
 
   <test NAME="ERS">
@@ -393,6 +395,10 @@ LII    CLM initial condition interpolation test
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="NCR">

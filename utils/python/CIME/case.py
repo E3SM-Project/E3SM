@@ -10,6 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
+from CIME.XML.build                 import Build
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -30,7 +31,6 @@ from CIME.XML.env_batch             import EnvBatch
 
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
-from CIME.macros import MacroMaker
 
 logger = logging.getLogger(__name__)
 
@@ -321,29 +321,29 @@ class Case(object):
 
             # Determine the compsets file for this component
             compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
-            pes_filename      = files.get_value("PES_SPEC_FILE"     , {"component":component})
-            tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
-            tests_mods_dir    = files.get_value("TESTS_MODS_DIR"    , {"component":component}, resolved=False)
-            user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
 
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
                 match = compsets.get_compset_match(name=compset_name)
+                pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
-                    self._pesfile = pes_filename
+                    self._pesfile = pesfile
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
-                    self.set_value("COMPSETS_SPEC_FILE" ,
+                    tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
+                    tests_mods_dir    = files.get_value("TESTS_MODS_DIR"    , {"component":component}, resolved=False)
+                    user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
+                    self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    self.set_value("TESTS_SPEC_FILE"    , tests_filename)
-                    self.set_value("TESTS_MODS_DIR"     , tests_mods_dir)
-                    self.set_value("USER_MODS_DIR"      , user_mods_dir)
-                    self.set_value("PES_SPEC_FILE"      ,
+                    self.set_lookup_value("TESTS_SPEC_FILE"    , tests_filename)
+                    self.set_lookup_value("TESTS_MODS_DIR"     , tests_mods_dir)
+                    self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
+                    self.set_lookup_value("PES_SPEC_FILE"      ,
                                    files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
                     logger.info("Compset longname is %s " %(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
-                    logger.info("Pes     specification file is %s" %(pes_filename))
+                    logger.info("Pes     specification file is %s" %(pesfile))
                     return
 
         if user_compset is True:
@@ -351,7 +351,7 @@ class Case(object):
             logger.warn("Could not find a compset match for either alias or longname in %s" %(compset_name))
             self._compsetname = compset_name
             self._pesfile = pesfile
-            self.set_value("PES_SPEC_FILE", pesfile)
+            self.set_lookup_value("PES_SPEC_FILE", pesfile)
         else:
             expect(False,
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
@@ -525,13 +525,9 @@ class Case(object):
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
 
-        # the following go into the env_mach_specific file
-        items = ("module_system", "environment_variables", "mpirun")
+        # Create env_mach_specific settings from machine info.
         env_mach_specific_obj = self.get_env("mach_specific")
-        for item in items:
-            nodes = machobj.get_first_child_nodes(item)
-            for node in nodes:
-                env_mach_specific_obj.add_child(node)
+        env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
         #--------------------------------------------
@@ -549,6 +545,7 @@ class Case(object):
             opti_tasks = match2.group(1)
             opti_thrds = 1
 
+        other = {}
         if match1 or match2:
             for component_class in self._component_classes:
                 if component_class == "DRV":
@@ -562,22 +559,27 @@ class Case(object):
         else:
             pesobj = Pes(self._pesfile)
 
-            pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
+            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount)
 
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
+        # Since other items may include PES_PER_NODE we need to do this first
+        # we can get rid of this code when all of the perl is removed
+        for key, value in other.items():
+            self.set_value(key, value)
+        pes_per_node = self.get_value("PES_PER_NODE")
         for key, value in pes_ntasks.items():
             totaltasks[key[-3:]] = int(value)
-            mach_pes_obj.set_value(key,int(value))
+            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
         for key, value in pes_rootpe.items():
             totaltasks[key[-3:]] += int(value)
-            mach_pes_obj.set_value(key,int(value))
+            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
         for key, value in pes_nthrds.items():
             totaltasks[key[-3:]] *= int(value)
-            mach_pes_obj.set_value(key,int(value))
+            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
+
         maxval = 1
-        pes_per_node = mach_pes_obj.get_value("PES_PER_NODE")
         for key, val in totaltasks.items():
             if val < 0:
                 val = -1*val*pes_per_node
@@ -714,13 +716,16 @@ class Case(object):
 
         # Create Macros file.
         machine = self.get_value("MACH")
-        if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE":
-            os_ = self.get_value("OS")
-            files = Files()
+        files = Files()
+        # Use config_build if the environment variable is set, or if there is no
+        # config_compilers file.
+        if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE" or \
+           files.get_value("COMPILERS_SPEC_FILE") is None:
             build_file = files.get_value("BUILD_SPEC_FILE")
             machobj = Machines(machine=machine, files=files)
-            macro_maker = MacroMaker(os_, machobj)
-            with open(os.path.join(self._caseroot, "Macros"), "w") as macros_file:
+            macro_maker = Build(machobj)
+            macros_path = os.path.join(self._caseroot, "Macros")
+            with open(macros_path, "w") as macros_file:
                 macro_maker.write_macros('Makefile', build_file, macros_file)
 
         # Copy any system or compiler Depends files to the case.
@@ -818,6 +823,7 @@ class Case(object):
             else:
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods_dir)
+            self.set_value("USER_MODS_FULLPATH",user_mods_path)
             ninst_vals = {}
             for i in xrange(1,len(self._component_classes)):
                 comp_class = self._component_classes[i]

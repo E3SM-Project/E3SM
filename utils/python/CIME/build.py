@@ -5,8 +5,9 @@ from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status
 from CIME.preview_namelists     import preview_namelists
 from CIME.check_input_data      import check_input_data
+from CIME.provenance            import save_build_provenance
 
-import glob, shutil, time, threading, gzip, subprocess, tarfile
+import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,6 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
 ###############################################################################
 
     logs = []
-    overall_smp = os.environ["SMP"]
 
     thread_bad_results = []
     for model, comp, nthrds, _, config_dir in complist:
@@ -44,8 +44,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             else:
                 continue
 
-        os.environ["MODEL"] = model
-        os.environ["SMP"] = stringify_bool(nthrds > 1 or build_threaded)
+        smp = nthrds > 1 or build_threaded
 
         bldroot = os.path.join(exeroot, model, "obj")
         libroot = os.path.join(exeroot, "lib")
@@ -61,7 +60,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         # build the component library
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, caseroot, bldroot, libroot, incroot, file_build,
-                  thread_bad_results))
+                  thread_bad_results, smp))
         t.start()
 
         for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
@@ -76,18 +75,17 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     # aquap has a dependancy on atm so we build it after the threaded loop
 
     for model, comp, nthrds, _, config_dir in complist:
+        smp = nthrds > 1 or build_threaded
         if comp == "aquap":
             logger.debug("Now build aquap ocn component")
             _build_model_thread(config_dir, comp, caseroot, bldroot, libroot, incroot, file_build,
-                                thread_bad_results)
+                                thread_bad_results, smp)
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
     #
     # Now build the executable
     #
-
-    os.environ["SMP"] = overall_smp
 
     cime_model = get_model()
     file_build = os.path.join(exeroot, "%s.bldlog.%s" % (cime_model, lid))
@@ -108,61 +106,6 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     logs.append(file_build)
 
     return logs
-
-###############################################################################
-def cesm_post_build(case): # pylint: disable=unused-argument
-###############################################################################
-    pass
-
-###############################################################################
-def acme_post_build(case):
-###############################################################################
-    cimeroot = case.get_value("CIMEROOT")
-    exeroot = case.get_value("EXEROOT")
-    caseroot = case.get_value("CASEROOT")
-    lid = os.environ["LID"]
-
-    # Save git describe
-    describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.%s" % lid)
-    if os.path.exists(describe_prov):
-        os.remove(describe_prov)
-    run_cmd_no_fail("git describe > %s" % describe_prov, from_dir=cimeroot)
-
-    # Save HEAD
-    headfile = os.path.join(cimeroot, ".git", "logs", "HEAD")
-    headfile_prov = os.path.join(exeroot, "GIT_LOGS_HEAD.%s" % lid)
-    if os.path.exists(headfile_prov):
-        os.remove(headfile_prov)
-    if os.path.exists(headfile):
-        shutil.copy(headfile, headfile_prov)
-
-    # Save SourceMods
-    sourcemods = os.path.join(caseroot, "SourceMods")
-    sourcemods_prov = os.path.join(exeroot, "SourceMods.%s.tar.gz" % lid)
-    if os.path.exists(sourcemods_prov):
-        os.remove(sourcemods_prov)
-    if os.path.isdir(sourcemods):
-        with tarfile.open(sourcemods_prov, "w:gz") as tfd:
-            tfd.add(sourcemods)
-
-    # Save build env
-    env_prov = os.path.join(exeroot, "build_environment.%s.txt" % lid)
-    if os.path.exists(env_prov):
-        os.remove(env_prov)
-    shutil.copy(os.path.join(caseroot, "software_environment.txt"), env_prov)
-
-    # For all the just-created post-build provenance files, symlink a generic name
-    # to them to indicate that these are the most recent or active.
-    for item in ["GIT_DESCRIBE", "GIT_LOGS_HEAD", "SourceMods", "build_environment"]:
-        globstr = "%s/%s.%s*" % (exeroot, item, lid)
-        matches = glob.glob(globstr)
-        expect(len(matches) < 2, "Multiple matches for glob %s should not have happened" % globstr)
-        if matches:
-            the_match = matches[0]
-            generic_name = the_match.replace(".%s" % lid, "")
-            if os.path.exists(generic_name):
-                os.remove(generic_name)
-            os.symlink(the_match, generic_name)
 
 ###############################################################################
 def post_build(case, logs):
@@ -196,11 +139,7 @@ def post_build(case, logs):
 
     shutil.copy("env_build.xml", "LockedFiles")
 
-    model = case.get_value("MODEL")
-    if model == "acme":
-        acme_post_build(case)
-    else:
-        cesm_post_build(case)
+    save_build_provenance(case)
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False):
@@ -585,17 +524,18 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
             if (not os.path.isdir(ndir)):
                 os.makedirs(ndir)
 
-        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs)
+        smp = "SMP" in os.environ and os.environ["SMP"] == "TRUE"
+        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs, smp)
 
     return logs
 
 ###############################################################################
 def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build,
-                        thread_bad_results):
+                        thread_bad_results, smp):
 ###############################################################################
     with open(file_build, "w") as fd:
-        stat = run_cmd("%s/buildlib %s %s %s " %
-                       (config_dir, caseroot, bldroot, libroot),
+        stat = run_cmd("MODEL=%s SMP=%s %s/buildlib %s %s %s " %
+                       (compclass, stringify_bool(smp), config_dir, caseroot, bldroot, libroot),
                        from_dir=bldroot, verbose=True, arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
     if (stat != 0):
@@ -620,7 +560,6 @@ def clean(case, cleanlist=None):
                 clm_config_opts is not None and "lnd" in cleanlist and \
                 "clm4_0" not in clm_config_opts:
             cleanlist.remove('lnd')
-
 
     debug           = case.get_value("DEBUG")
     use_esmf_lib    = case.get_value("USE_ESMF_LIB")
@@ -658,5 +597,3 @@ def clean(case, cleanlist=None):
     # append call of to CaseStatus
     msg = "cleanbuild %s "%" ".join(cleanlist)
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-
-###############################################################################

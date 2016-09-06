@@ -111,14 +111,23 @@ OR
                         "all object executables, and data files will"
                         " be removed after tests are run")
 
+    parser.add_argument("-m", "--machine",
+                        help="The machine for which to build tests, this machine must be defined"
+                        " in the config_machines.xml file for the given model. "
+                        "Default is to match the name of the machine in the test name or "
+                        "the name of the machine this script is run on to the "
+                        "NODENAME_REGEX field in config_machines.xml. This option is highly "
+                        "unsafe and should only be used if you know what you're doing.")
+
     if model == "cesm":
         parser.add_argument("-c", "--compare",
                             help="While testing, compare baselines"
                             "  against the given compare directory ")
 
         parser.add_argument("-g", "--generate",
-                            help="While testing, generate baselines,"
-                            " to the given generate directory")
+                            help="While testing, generate baselines"
+                            " to the given generate directory; "
+                            "this can also be done after the fact with bless_test_results")
 
         parser.add_argument("--xml-machine",
                             help="Use this machine key in the lookup in testlist.xml, default is all if any --xml- argument is used")
@@ -136,13 +145,6 @@ OR
                             help="Tests or test suites to run."
                             " Testnames expect in form CASE.GRID.COMPSET[.MACHINE_COMPILER]")
 
-        parser.add_argument("-m", "--machine",
-                            help="The machine for which to build tests, this machine must be defined"
-                            " in the config_machines.xml file for the given model. "
-                            "Default is to match the name of the machine in the test name or "
-                            "the name of the machine this script is run on to the "
-                            "NODENAME_REGEX field in config_machines.xml")
-
     else:
 
         parser.add_argument("testargs", nargs="+",
@@ -158,7 +160,8 @@ OR
                             help="While testing, compare baselines")
 
         parser.add_argument("-g", "--generate", action="store_true",
-                            help="While testing, generate baselines")
+                            help="While testing, generate baselines; "
+                            "this can also be done after the fact with bless_test_results")
 
     parser.add_argument("--compiler",
                         help="Compiler to use to build cime.  Default will be the name in"
@@ -197,9 +200,10 @@ OR
                         help="A file containing an ascii list of tests to run")
 
     parser.add_argument("-o", "--allow-baseline-overwrite", action="store_true",
-                        help="If the generate baseline option is specified with a baseline directory option "
-                        "existing tests in that directory will not be overwritten unless this flag is provided."
-                        "You can use bless-test-results to bless baselines from a recent run.")
+                        help="If the --generate option is given, then by default "
+                        "an attempt to overwrite an existing baseline directory "
+                        "will raise an error. Specifying this option allows "
+                        "existing baseline directories to be silently overwritten.")
 
     args = parser.parse_args(args[1:])
 
@@ -253,7 +257,7 @@ OR
         args.no_batch = True
 
     if args.test_id is None:
-        args.test_id = CIME.utils.get_utc_timestamp()
+        args.test_id = CIME.utils.get_timestamp()
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:
@@ -279,7 +283,8 @@ OR
         args.compiler = args.xml_compiler if args.compiler is None else args.compiler
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
         if args.testargs:
-            test_names = args.testargs
+            test_names = update_acme_tests.get_full_test_names(args.testargs,
+                                                               mach_obj.get_machine_name(), args.compiler)
         else:
             test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
                                                            args.xml_compiler, args.xml_testlist,
@@ -290,7 +295,7 @@ OR
 
         logger.info("Testnames: %s" % test_names)
     else:
-        mach_obj = Machines()
+        mach_obj = Machines(machine=args.machine)
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
 
         test_names = update_acme_tests.get_full_test_names(args.testargs, mach_obj.get_machine_name(), args.compiler)
@@ -314,7 +319,7 @@ OR
             if args.compare:
                 baseline_cmp_name = baseline_name
             elif args.generate:
-                baseline_gen_name = baseline_nam
+                baseline_gen_name = baseline_name
 
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
@@ -438,7 +443,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
 
     success = impl.run_tests()
 
-    if single_submit:
+    if success and single_submit:
         # Get real test root
         test_root = impl._test_root
 

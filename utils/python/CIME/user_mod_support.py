@@ -94,6 +94,8 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
     '''
     expect(os.path.isabs(user_mods_path),
            "Expected full directory path, got '%s'"%user_mods_path)
+    expect(os.path.isdir(user_mods_path),
+           "Directory not found %s"%user_mods_path)
     logger.info("Adding user mods directory %s"%user_mods_path)
     include_dirs = [] if include_dirs is None else include_dirs
     include_dirs.append(os.path.normpath(user_mods_path))

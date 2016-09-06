@@ -619,7 +619,7 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/usr/lib64 -L/usr/lib64/atlas -lblas -llapack</ADD_SLIBS>
   <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
@@ -1175,23 +1175,8 @@ for mct, etc.
 	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
-<compiler MACH="mustang">
-    <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
-    <PNETCDF_PATH>$(PARALLEL_NETCDF)</PNETCDF_PATH>
+<compiler COMPILER="gnu">
+	<ADD_CFLAGS MODEL="csm_share"> -std=c99 </ADD_CFLAGS>
 </compiler>
-
-<compiler MACH="wolf">
-    <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
-    <PNETCDF_PATH>$(PARALLEL_NETCDF)</PNETCDF_PATH>
-</compiler>
-
-<compiler COMPILER="gnu" MACH="mustang">
-	<ADD_CFLAGS>  -std=c99 </ADD_CFLAGS>
-</compiler>
-
-<compiler COMPILER="gnu" MACH="wolf">
-	<ADD_CFLAGS>  -std=c99 </ADD_CFLAGS>
-</compiler>
-
 
 </config_compilers>
