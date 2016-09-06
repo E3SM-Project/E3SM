@@ -258,7 +258,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
         _build_usernl_files(case, "drv", "cpl")
 
-        user_mods_path = case.get_value("USER_MODS_USE_CASE")
+        user_mods_path = case.get_value("USER_MODS_FULLPATH")
         if user_mods_path is not None:
             apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
         elif case.get_value("TEST"):
