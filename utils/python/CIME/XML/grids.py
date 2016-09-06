@@ -114,8 +114,9 @@ class Grids(GenericXML):
                 mask_name = "ocn_mask"
             root = self.get_optional_node(nodename="domain", attributes={"name":grid[1]})
             if root is not None:
-                domains[grid[0]+"_NX"] = int(self.get_value("nx", root=root))
-                domains[grid[0]+"_NY"] = int(self.get_value("ny", root=root))
+                if grid[0] != "MASK":
+                    domains[grid[0]+"_NX"] = int(self.get_value("nx", root=root))
+                    domains[grid[0]+"_NY"] = int(self.get_value("ny", root=root))
                 domains[grid[0] + "_GRID"] = grid[1]
                 if mask_name is not None:
                     file_ = self.get_value("file", attributes={mask_name:mask}, root=root)
