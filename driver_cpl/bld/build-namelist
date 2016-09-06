@@ -398,6 +398,7 @@ add_default($nl, 'bfbflag', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'do_budgets','BUDGETS'=>"$xmlvars{'BUDGETS'}");
 
 add_default($nl, 'flux_diurnal');
+add_default($nl, 'gust_fac');
 add_default($nl, 'flux_albav');
 add_default($nl, 'flux_epbal');
 add_default($nl, 'info_debug');
