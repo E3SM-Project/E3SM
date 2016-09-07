@@ -1,4 +1,3 @@
-
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.machines              import Machines

@@ -6,6 +6,7 @@ from CIME.utils                 import get_model, append_status
 from CIME.preview_namelists     import preview_namelists
 from CIME.check_input_data      import check_input_data
 from CIME.provenance            import save_build_provenance
+
 import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)

@@ -507,6 +507,14 @@
     <desc></desc>
   </entry>
 
+  <entry id="SYSLOG_N">
+    <type>integer</type>
+    <default_value>900</default_value>
+    <group>run_data_archive</group>
+    <file>env_run.xml</file>
+    <desc>system workload snapshot frequency (in seconds, if greater than 0; disabled otherwise)</desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- definitions machines specific -->
   <!-- ===================================================================== -->
