@@ -171,7 +171,7 @@ def save_prerun_provenance_acme(case, lid=None):
     if job_id is not None:
         sample_interval = case.get_value("SYSLOG_N")
         if sample_interval > 0:
-            archive_checkpoints = os.path.join(full_timing_dir, "checkpoints")
+            archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.%s" % lid)
             os.mkdir(archive_checkpoints)
             touch("%s/acme.log.%s" % (rundir, lid))
             syslog_jobid = run_cmd_no_fail("./mach_syslog %d %s %s %s %s/timing/checkpoints %s/checkpoints >& /dev/null & echo $!" %
