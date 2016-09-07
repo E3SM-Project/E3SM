@@ -331,6 +331,7 @@ contains
     call cnst_get_ind('NUMLIQ', ixnumliq, abort=.false.)
     call cnst_get_ind('NUMRAI', ixnumrain, abort=.false.)
     call cnst_get_ind('NUMSNO', ixnumsnow, abort=.false.)
+  
     do m = 1, pcnst
        if(ptend%lq(m)) then
           do k = ptend%top_level, ptend%bot_level

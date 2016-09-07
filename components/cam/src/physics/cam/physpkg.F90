@@ -1124,8 +1124,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
     use physconst,      only: stebol, latvap
     use carma_intr,     only: carma_accumulate_stats
-    use time_manager,   only: get_nstep
-    use check_energy,   only: check_energy_gmean, qflx_gmean
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
@@ -1142,7 +1140,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
     type(cam_out_t),     intent(inout), dimension(begchunk:endchunk) :: cam_out
     type(cam_in_t),      intent(inout), dimension(begchunk:endchunk) :: cam_in
-    integer             :: nstep           ! current timestep number
     !
     !-----------------------------------------------------------------------
     !---------------------------Local workspace-----------------------------
@@ -1179,14 +1176,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call t_barrierf('sync_ac_physics', mpicom)
     call t_startf ('ac_physics')
     !call t_adj_detailf(+1)
-
-!!== KZ_WATCON
-!!    nstep = get_nstep()
-!!
-!!    call t_startf ('qflx_gmean')
-!!    call qflx_gmean(phys_state, phys_tend, cam_in, ztodt, nstep)
-!!    call t_stopf ('qflx_gmean') 
-!!== KZ_WATCON
 
 !$OMP PARALLEL DO PRIVATE (C, NCOL, phys_buffer_chunk)
 
@@ -1789,7 +1778,7 @@ subroutine tphysbc (ztodt,               &
     use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
-    use phys_control,    only: use_qqflx_fixer, use_mass_borrower, clubb_qflx_fix 
+    use phys_control,    only: use_qqflx_fixer, use_mass_borrower
 
     implicit none
 
@@ -2388,20 +2377,10 @@ end if
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
-
-                !! clubb_qflx_fix if-then block is only for integration purposes 
-                !! should be removed later 
-                !!...............................................................
+                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
+                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
  
-                if(clubb_qflx_fix) then 
-                   call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-                else 
-                   call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-                        cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-                end if
           endif
 
           call t_stopf('macrop_tend')

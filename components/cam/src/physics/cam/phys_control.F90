@@ -102,9 +102,6 @@ logical, public, protected :: use_mass_borrower    = .false.     ! switch on tra
 logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on water vapor fixer to compensate changes in qflx
 logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file
 
-!! this variable only for integration purposes, should be removed later 
-logical, public, protected :: clubb_qflx_fix       = .false.     ! switch on the qflx fix in CLUBB
-
 ! Macro/micro-physics co-substeps
 integer           :: cld_macmic_num_steps = 1
 
@@ -172,7 +169,6 @@ subroutine phys_ctl_readnl(nlfile)
       use_mass_borrower, & 
       use_qqflx_fixer, & 
       print_fixer_message, & 
-      clubb_qflx_fix, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
@@ -225,7 +221,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_mass_borrower,               1 , mpilog,  0, mpicom)
    call mpibcast(use_qqflx_fixer,                 1 , mpilog,  0, mpicom)
    call mpibcast(print_fixer_message,             1 , mpilog,  0, mpicom)
-   call mpibcast(clubb_qflx_fix,                  1 , mpilog,  0, mpicom)
    call mpibcast(micro_do_icesupersat,            1 , mpilog,  0, mpicom)
    call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
    call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
