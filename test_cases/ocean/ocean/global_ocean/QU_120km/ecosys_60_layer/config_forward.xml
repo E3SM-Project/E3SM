@@ -1,10 +1,16 @@
 <?xml version="1.0"?>
 <config case="forward">
+
+	<get_file dest_path="initial_condition_database" file_name="oQU120km.monthlySurfaceForcingBGC.160907.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
 	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="metis" dest="metis"/>
+
+	<add_link source_path="initial_condition_database" source="oQU120km.monthlySurfaceForcingBGC.160907.nc" dest="ecosys_monthly_forcing.nc"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
@@ -31,6 +37,28 @@
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<stream name="output">
 			<attribute name="output_interval">0000_01:30:00</attribute>
+		</stream>
+		<stream name="ecosys_monthly_flux">
+			<attribute name="filename_template">ecosys_monthly_forcing.nc</attribute>
+			<attribute name="input_interval">none</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="packages">ecosysTracersPKG</attribute>
+			<add_contents>
+				<member name="xtime" type="var" />
+				<member name="depositionFluzNO3" type="var" />
+				<member name="depositionFluzNH4" type="var" />
+				<member name="IRON_FLUZ_IN" type="var" />
+				<member name="dust_FLUZ_IN" type="var" />
+				<member name="riverFluzNO3" type="var" />
+				<member name="riverFluzPO4" type="var" />
+				<member name="riverFluzDON" type="var" />
+				<member name="riverFluzDOP" type="var" />
+				<member name="riverFluzSiO3" type="var" />
+				<member name="riverFluzFe" type="var" />
+				<member name="riverFluzDIC" type="var" />
+				<member name="riverFluzALK" type="var" />
+				<member name="riverFluzDOC" type="var" />
+			</add_contents>
 		</stream>
 	</streams>
 
