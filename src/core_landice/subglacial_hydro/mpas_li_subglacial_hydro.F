@@ -900,19 +900,11 @@ module li_subglacial_hydro
          ! Don't let SGH time step exceed master time step - technically need to check the interval til completion, because we might already be partway through the deltat
          proposedDt = min(proposedDt, maxDt)
 
-         ! Round down to the nearest second to avoid losing accuracy when time steps are small
-         proposedDt = real(floor(proposedDt), kind=RKIND)
-
          write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
 
       else ! not SGH adaptive
          ! master dt could change if using master adaptive time stepper, so update it in case
          proposedDt = deltat
-      endif
-
-      if (proposedDt < 1.0_RKIND) then
-         write(stdErrUnit,*) "ERROR: SGH adaptive time step is less than 1.0 second."
-         err = ior(err, 1)
       endif
 
       ! Assign new time step to all blocks
