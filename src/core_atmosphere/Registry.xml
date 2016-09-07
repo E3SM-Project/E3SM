@@ -3285,4 +3285,11 @@
                 <var name="ol4" type="real" dimensions="nCells" units="unitless"
                      description="directional asymmetry function of orography"/>
         </var_struct>
+
+<!-- **************************************************************************************** -->
+<!-- ************************************** Diagnostics ************************************* -->
+<!-- **************************************************************************************** -->
+
+#include "diagnostics/Registry_diagnostics.xml"
+
 </registry>

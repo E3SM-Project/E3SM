@@ -25,6 +25,7 @@ module atm_core
       use mpas_performance, only : mpas_performance_init
       use mpas_atm_dimensions, only : mpas_atm_set_dims
       use mpas_atm_soundings, only : mpas_atm_soundings_init
+      use mpas_atm_diagnostics_manager, only : mpas_atm_diag_setup
 
       implicit none
 
@@ -152,6 +153,8 @@ module atm_core
       ! Set up sounding locations
       !
       call mpas_atm_soundings_init(clock, mesh, '3:00:00')
+
+      call mpas_atm_diag_setup()
 
    end function atm_core_init
 
@@ -411,6 +414,7 @@ module atm_core
       use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
       use mpas_atm_soundings, only : mpas_atm_soundings_write
+      use mpas_atm_diagnostics_manager, only : mpas_atm_diag_update, mpas_atm_diag_compute, mpas_atm_diag_reset
    
       implicit none
    
@@ -553,6 +557,10 @@ module atm_core
          call mpas_advance_clock(clock)
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
 
+         call mpas_atm_diag_update()
+
+         call mpas_atm_diag_compute()
+
          !
          ! Write any output streams that have alarms ringing, after computing diagnostics fields
          !
@@ -629,6 +637,8 @@ module atm_core
                close(22)
             end if
          end if
+
+         call mpas_atm_diag_reset()
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
@@ -833,6 +843,7 @@ module atm_core
       use mpas_timekeeping
       use mpas_performance, only : mpas_performance_finalize
       use mpas_atm_soundings, only : mpas_atm_soundings_finalize
+      use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
    
 #ifdef DO_PHYSICS
       use mpas_atmphys_finalize
@@ -846,6 +857,8 @@ module atm_core
 
       ierr = 0
       call mpas_atm_soundings_finalize()
+
+      call mpas_atm_diag_cleanup()
 
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
