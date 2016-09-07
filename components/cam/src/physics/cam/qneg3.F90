@@ -1,5 +1,5 @@
 subroutine qneg3 (subnam  ,idx     ,ncol    ,ncold   ,lver    ,lconst_beg  , &
-                  lconst_end       ,qmin    ,q       )
+                  lconst_end       ,qmin    ,q       ,lfix)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -13,9 +13,17 @@ subroutine qneg3 (subnam  ,idx     ,ncol    ,ncold   ,lver    ,lconst_beg  , &
 ! 
 ! Author: J. Rosinski
 ! 
+! Modifications: 
+!
+!  2016-08   Kai Zhang (kai.zhang@pnnl.gov) 
+!            Added an option to print out the information about negative 
+!            values without clipping the tracer concentration. This can
+!            be used together with subroutine massborrow.  
 !-----------------------------------------------------------------------
    use shr_kind_mod, only: r8 => shr_kind_r8
    use cam_logfile,  only: iulog
+   use phys_control, only: use_mass_borrower, print_fixer_message 
+
    implicit none
 
 !------------------------------Arguments--------------------------------
@@ -30,6 +38,7 @@ subroutine qneg3 (subnam  ,idx     ,ncol    ,ncold   ,lver    ,lconst_beg  , &
    integer, intent(in) :: lver         ! number of vertical levels in column
    integer, intent(in) :: lconst_beg   ! beginning constituent
    integer, intent(in) :: lconst_end   ! ending    constituent
+   logical, intent(in) :: lfix         ! if true, fix negative tracers
 
    real(r8), intent(in) :: qmin(lconst_beg:lconst_end)      ! Global minimum constituent concentration
 
@@ -94,19 +103,30 @@ subroutine qneg3 (subnam  ,idx     ,ncol    ,ncold   ,lver    ,lconst_beg  , &
             end do
             if (iwtmp /= -1 ) kw = k
             if (iwtmp /= -1 ) iw = indx(iwtmp,k)
+            if(lfix) then 
 !cdir nodep,altcode=loopcnt
-            do ii=1,nval(k)
-               i = indx(ii,k)
-               q(i,k,m) = qmin(m)
-            end do
+               do ii=1,nval(k)
+                  i = indx(ii,k)
+                  q(i,k,m) = qmin(m)
+               end do
+            end if
          end if
       end do
-      if (found .and. abs(worst)>max(qmin(m),1.e-12_r8)) then
-         write(iulog,9000)subnam,m,idx,nvals,qmin(m),worst,iw,kw
+      if (lfix) then 
+         if (found .and. abs(worst)>max(qmin(m),1.e-12_r8)) then 
+            write(iulog,9000)subnam,m,idx,nvals,qmin(m),worst,iw,kw
+         end if
+      else
+         if (print_fixer_message .and. found .and. abs(worst)>max(qmin(m),1.e-12_r8)) then 
+            write(iulog,8000)subnam,m,idx,nvals,worst,iw,kw
+         end if
       end if
    end do
 !
    return
+8000 format(' QNEG3 from ',a,':m=',i3,' lat/lchnk=',i7, &
+            ' Min. mixing ratio violated at ',i4,' points. ', &
+            ' Worst =',e8.1,' at i,k=',i4,i3)
 9000 format(' QNEG3 from ',a,':m=',i3,' lat/lchnk=',i7, &
             ' Min. mixing ratio violated at ',i4,' points.  Reset to ', &
             1p,e8.1,' Worst =',e8.1,' at i,k=',i4,i3)
