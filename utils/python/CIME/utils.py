@@ -530,7 +530,10 @@ def get_project(machobj=None):
     projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"), ".cesm_proj"))
     if (os.path.isfile(projectfile)):
         with open(projectfile,'r') as myfile:
-            project = myfile.read().rstrip()
+            for line in myfile:
+                project = line.rstrip()
+                if not project.startswith("#"):
+                    break
             logger.info("Using project from .cesm_proj: " + project)
             cime_config.set('main','PROJECT',project)
             return project
