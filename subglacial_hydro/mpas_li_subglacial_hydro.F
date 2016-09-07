@@ -202,6 +202,7 @@ module li_subglacial_hydro
 !>  for the current ISM time step.
 !-----------------------------------------------------------------------
    subroutine li_SGH_solve(domain, err)
+      use mpas_vector_reconstruction
 
       !-----------------------------------------------------------------
       ! input variables
@@ -239,6 +240,10 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), pointer :: waterVelocity
+      real (kind=RKIND), dimension(:), pointer :: waterVelocityCellX
+      real (kind=RKIND), dimension(:), pointer :: waterVelocityCellY
+      real (kind=RKIND), dimension(:), allocatable :: cellJunk
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -249,6 +254,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: Cd
       real (kind=RKIND), pointer :: tillMax
       integer, pointer :: nCellsSolve
+      integer, pointer :: nCells
       integer :: iCell, iEdge, iEdgeOnCell
       integer :: err_tmp
 
@@ -309,11 +315,28 @@ module li_subglacial_hydro
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'waterFlux')
       ! intermediate fields will be out of date, but will be correct in output files
-      ! These will have halo "creases" in them.  These are only for viz, but need to halo update to be correct
-      ! (Or alternatively, halo update on waterVelocity before these are computed)
-      call mpas_dmpar_field_halo_exch(domain, 'waterVelocityCellX')
-      call mpas_dmpar_field_halo_exch(domain, 'waterVelocityCellY')
+      ! waterVelocity needs to be updated in order to get waterVelocityCellX/Y correct
+      call mpas_dmpar_field_halo_exch(domain, 'waterVelocity')
       call mpas_timer_stop("halo updates")
+
+      ! Calculate reconstructed velocities on cell centers for viz
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
+         call mpas_pool_get_array(hydroPool, 'waterVelocityCellX', waterVelocityCellX)
+         call mpas_pool_get_array(hydroPool, 'waterVelocityCellY', waterVelocityCellY)
+         allocate(cellJunk(nCells+1))
+         call mpas_reconstruct(meshPool, waterVelocity, waterVelocityCellX, waterVelocityCellY, &
+              cellJunk, cellJunk, cellJunk)
+         deallocate(cellJunk)
+         waterVelocityCellX = waterVelocityCellX * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
+         waterVelocityCellY = waterVelocityCellY * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
+
+         block => block % next
+      end do
 
 
       ! =============
@@ -542,7 +565,6 @@ module li_subglacial_hydro
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
       use li_setup, only: li_cells_to_vertices_1dfield_using_kiteAreas
-      use mpas_vector_reconstruction
 
       !-----------------------------------------------------------------
       ! input variables
@@ -584,12 +606,9 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterFluxAdvec
       real (kind=RKIND), dimension(:), pointer :: waterFluxDiffu
-      real (kind=RKIND), dimension(:), pointer :: waterVelocityCellX
-      real (kind=RKIND), dimension(:), pointer :: waterVelocityCellY
       integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: edgeMask
-      real (kind=RKIND), dimension(:), allocatable :: cellJunk
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: verticesOnEdge
       integer, dimension(:,:), pointer :: baryCellsOnVertex
@@ -643,8 +662,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
       call mpas_pool_get_array(hydroPool, 'waterFluxAdvec', waterFluxAdvec)
       call mpas_pool_get_array(hydroPool, 'waterFluxDiffu', waterFluxDiffu)
-      call mpas_pool_get_array(hydroPool, 'waterVelocityCellX', waterVelocityCellX)
-      call mpas_pool_get_array(hydroPool, 'waterVelocityCellY', waterVelocityCellY)
 
 
 
@@ -740,15 +757,6 @@ module li_subglacial_hydro
          endif
       end do
       waterFlux(:) = waterFluxAdvec(:) + waterFluxDiffu(:)
-
-
-      ! Calculate reconstructed velocities on cell centers for viz
-      allocate(cellJunk(nCells+1))
-      call mpas_reconstruct(meshPool, waterVelocity, waterVelocityCellX, waterVelocityCellY, &
-              cellJunk, cellJunk, cellJunk)
-      deallocate(cellJunk)
-      waterVelocityCellX = waterVelocityCellX * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
-      waterVelocityCellY = waterVelocityCellY * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
 
    !--------------------------------------------------------------------
    end subroutine calc_edge_quantities
