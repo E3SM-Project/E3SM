@@ -118,7 +118,6 @@ parser = OptionParser()
 parser.add_option("--outImageFolder", type="string", default="plots", dest="outImageFolder")
 parser.add_option("--inFolder", type="string", default=".", dest="inFolder")
 parser.add_option("--initFile", type="string", default='init.nc', dest="initFile")
-parser.add_option("--forcingFile", type="string", default='forcing_data.nc', dest="forcingFile")
 parser.add_option("--sshFile", type="string", default='output_ssh.nc', dest="sshFile")
 parser.add_option("--iterIndex", type="int", default=0, dest="iterIndex")
 
@@ -131,8 +130,6 @@ except OSError as e:
 
 inFileName = '%s/%s'%(options.inFolder,options.initFile)
 inFile = Dataset(inFileName,'r')
-inFileName = '%s/%s'%(options.inFolder,options.forcingFile)
-forcingFile = Dataset(inFileName,'r')
 inFileName = '%s/%s'%(options.inFolder,options.sshFile)
 sshFile = Dataset(inFileName,'r')
 
@@ -147,7 +144,7 @@ xVertex = numpy.array(inFile.variables['xVertex'])
 yVertex = numpy.array(inFile.variables['yVertex'])
 
 nTime = len(sshFile.dimensions['Time'])
-landIcePressure = forcingFile.variables['landIcePressure'][nTime-1,:]
+landIcePressure = inFile.variables['landIcePressure'][nTime-1,:]
 nTime = len(sshFile.dimensions['Time'])
 ssh = sshFile.variables['ssh'][nTime-1,:]
 deltaSSH = ssh - inFile.variables['ssh'][0,:]
