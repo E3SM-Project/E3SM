@@ -102,8 +102,6 @@ module ocn_time_integration
       real (kind=RKIND), pointer :: daysSinceStartOfSim
       character (len=StrKIND), pointer :: simulationStartTime
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
-      real (kind=RKIND) :: nanCheck
-      real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
 
 
       if (rk4On) then
@@ -129,15 +127,6 @@ module ocn_time_integration
         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
         call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
         daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
-
-        !now test for NaNs in the ocean velocity field and abort if true
-        call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 2)
-        call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-        nanCheck = sum(normalVelocity)
-        if (nanCheck /= nanCheck) then
-           write(stderrUnit,*) 'Ocean Abort: NaN detected'
-           call mpas_dmpar_global_abort('MPAS-ocean: time_integration: NaN detected')
-        endif
 
         block => block % next
      end do
