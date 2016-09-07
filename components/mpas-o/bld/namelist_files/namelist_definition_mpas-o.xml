@@ -138,14 +138,6 @@ Valid values: Any positive integer value greater than 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_restart_forcing_fields" type="logical"
-	category="io" group="io">
-Controls whether forcing related fields are part of the restart stream or not.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 
 <!-- decomposition -->
 
@@ -2458,6 +2450,30 @@ Valid values: Dim name from input files.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_global_ocean_tracer_ndepth_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of vertical levels in tracer initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_depth_conversion_factor" type="real"
+	category="global_ocean" group="global_ocean">
+Conversion factor for tracer initial condition depth levels. Should convert units on input depth levels to meters.
+
+Valid values: Any positive real value greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_vert_levels" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of vertical levels in tracer initial condition file.  Set to -1 to read from file with config_global_ocean_tracer_ndepth_dimname
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_global_ocean_temperature_varname" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Name of the variable containing temperature in temperature initial condition file.
@@ -2493,6 +2509,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_global_ocean_tracer_lon_varname" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Name of the variable containing longitude coordinates for tracer values in temperature initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_depth_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing depth coordinates for tracer values in temperature initial condition file.
 
 Valid values: Variable name from input file.
 Default: Defined in namelist_defaults.xml
@@ -2914,6 +2938,30 @@ Valid values: Dim name from input files.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_global_ocean_ecosys_ndepth_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of vertical levels in ecosys initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_depth_conversion_factor" type="real"
+	category="global_ocean" group="global_ocean">
+Conversion factor for ecosys initial condition depth levels. Should convert units on input depth levels to meters.
+
+Valid values: Any positive real value greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_vert_levels" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of vertical levels in ecosys initial condition file.  Set to -1 to read from file with config_global_ocean_ecosys_ndepth_dimname
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_global_ocean_ecosys_lat_varname" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Name of the variable containing latitude coordinates for ecosys values in ecosys initial condition file.
@@ -2925,6 +2973,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_global_ocean_ecosys_lon_varname" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Name of the variable containing longitude coordinates for ecosys values in ecosys initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_depth_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing depth coordinates for ecosys values in ecosys initial condition file.
 
 Valid values: Variable name from input file.
 Default: Defined in namelist_defaults.xml
@@ -4854,6 +4910,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, couple ecosys fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- tracer_forcing_DMSTracers -->
 
@@ -4921,6 +4985,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_DMSTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, couple DMS fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- tracer_forcing_MacroMoleculesTracers -->
 
@@ -4983,6 +5055,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_MacroMoleculesTracers_surface_value" type="logical"
 	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
 if true, surface value is computed for 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, couple MacroMolecules fields with sea ice
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
