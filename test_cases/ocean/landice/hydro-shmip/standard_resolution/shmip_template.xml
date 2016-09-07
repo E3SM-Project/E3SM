@@ -1,7 +1,7 @@
 <template>
         <namelist>
                 <option name="config_dt">'0000-01-0_00:00:00'</option>
-                <option name="config_stop_time">'0020-01-01_00:00:00'</option>
+                <option name="config_stop_time">'0030-01-01_00:00:00'</option>
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
                 <option name="config_velocity_solver">'none'</option>
                 <option name="config_thickness_advection">'none'</option>
