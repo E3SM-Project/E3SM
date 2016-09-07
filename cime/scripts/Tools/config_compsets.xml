@@ -1919,6 +1919,15 @@ DOCN%COPY => docn copy mode
 <GLC_NCPL compset="_CAM.*_CLM.*MPASO">1</GLC_NCPL>
 <ROF_NCPL compset="_CAM.*_CLM.*MPASO">8</ROF_NCPL>
 
+<!-- coupler intervals for CAM, CLM, and MPASO ultra low-res testing compset -->
+<NCPL_BASE_PERIOD compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day  </NCPL_BASE_PERIOD>
+<ATM_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</ATM_NCPL>
+<LND_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</LND_NCPL>
+<ICE_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</ICE_NCPL>
+<OCN_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</OCN_NCPL>
+<GLC_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</GLC_NCPL>
+<ROF_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</ROF_NCPL>
+
 <!-- coupler intervals for CAM, CLM, and MPASO high-res compset -->
 <NCPL_BASE_PERIOD compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day  </NCPL_BASE_PERIOD>
 <ATM_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</ATM_NCPL>
