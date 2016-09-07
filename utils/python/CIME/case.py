@@ -650,6 +650,15 @@ class Case(object):
         if self.get_value("RUN_TYPE") == 'hybrid':
             self.set_value("GET_REFCASE", True)
 
+# Turn on short term archiving as cesm default setting
+        import pdb
+        pdb.set_trace()
+        model = get_model()
+        if model == "cesm" and not test:
+            self.set_value("DOUT_S",True)
+
+
+
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
@@ -765,7 +774,7 @@ class Case(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        if get_model() is "cesm":
+        if get_model() == "cesm":
         # Note: this is CESM specific, given that we are referencing cism explitly
             if "cism" in components:
                 directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "glimmer-cism")
