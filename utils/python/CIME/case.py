@@ -580,11 +580,12 @@ class Case(object):
             mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
 
         maxval = 1
-        for key, val in totaltasks.items():
-            if val < 0:
-                val = -1*val*pes_per_node
-            if val > maxval:
-                maxval = val
+        if mpilib != "mpi-serial":
+            for key, val in totaltasks.items():
+                if val < 0:
+                    val = -1*val*pes_per_node
+                if val > maxval:
+                    maxval = val
 
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
@@ -650,9 +651,7 @@ class Case(object):
         if self.get_value("RUN_TYPE") == 'hybrid':
             self.set_value("GET_REFCASE", True)
 
-# Turn on short term archiving as cesm default setting
-        import pdb
-        pdb.set_trace()
+        # Turn on short term archiving as cesm default setting
         model = get_model()
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
