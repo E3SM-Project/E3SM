@@ -56,7 +56,6 @@
 		<option name="config_global_ocean_topography_varname">'z'</option>
 		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_smooth_topography">.true.</option>
-		<option name="config_global_ocean_deepen_critical_passages">.true.</option>
 		<option name="config_global_ocean_cull_inland_seas">.false.</option>
 		<option name="config_global_ocean_windstress_file">'wind_stress.nc'</option>
 		<option name="config_global_ocean_windstress_nlat_dimname">'u_lat'</option>
@@ -83,15 +82,6 @@
 	<streams>
 		<stream name="input_init">
 			<attribute name="filename_template">mesh.nc</attribute>
-		</stream>
-		<stream name="critical_passages">
-			<attribute name="filename_template">critical_passages.nc</attribute>
-			<attribute name="input_interval">initial_only</attribute>
-			<attribute name="type">input</attribute>
-			<add_contents>
-				<member name="transectCellMasks" type="var"/>
-				<member name="depthTransects" type="var"/>
-			</add_contents>
 		</stream>
 		<stream name="output_init">
 			<attribute name="type">output</attribute>
