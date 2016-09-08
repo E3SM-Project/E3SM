@@ -1300,6 +1300,10 @@
 			<var name="lowFreqDivergence"/>
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
+			<var name="landIceMask"/>
+			<var name="landIcePressure"/>
+			<var name="landIceFraction"/>
+			<var name="landIceDraft"/>
 		</stream>
 		<stream name="KPP_testing"
 				type="output"
