@@ -118,7 +118,6 @@ module ocn_core_interface
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
-      logical, pointer :: restartForcingFieldsActive
       logical, pointer :: variableShortwaveActive
 
       type (mpas_pool_iterator_type) :: pkgItr
@@ -139,8 +138,6 @@ module ocn_core_interface
       logical, pointer :: config_use_tracerGroup_exponential_decay
       logical, pointer :: config_use_tracerGroup_idealAge_forcing
       logical, pointer :: config_use_tracerGroup_ttd_forcing
-
-      logical, pointer :: config_restart_forcing_fields
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_use_frazil_ice_formation
@@ -267,15 +264,6 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          inSituEOSActive = .true.
-      end if
-
-      !
-      ! test for restart of forcing fields
-      !
-      call mpas_pool_get_package(packagePool, 'restartForcingFieldsActive', restartForcingFieldsActive)
-      call mpas_pool_get_config(configPool, 'config_restart_forcing_fields', config_restart_forcing_fields)
-      if ( config_restart_forcing_fields ) then
-         restartForcingFieldsActive = .true.
       end if
 
       !

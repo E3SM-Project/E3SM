@@ -22,8 +22,6 @@
 		<stream name="output_ssh">
 			<attribute name="output_interval">0000_04:00:00</attribute>
 		</stream>
-		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<stream name="globalStatsOutput">
 			<attribute name="clobber_mode">truncate</attribute>

@@ -17,17 +17,10 @@ args = parser.parse_args()
 dev_null = open('/dev/null', 'w')
 error = False
 
-if args.variable_to_modify == 'ssh':
-  initFileName = 'init0.nc'
-  forcingFileName = 'forcing_data.nc'
-elif args.variable_to_modify == 'landIcePressure':
-  initFileName = 'init.nc'
-  forcingFileName = 'forcing_data0.nc'
-else:
+if args.variable_to_modify not in ['ssh', 'landIcePressure']:
   print "Error: unknown variable to modify", args.variable_to_modify
 
-subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', initFileName], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-subprocess.check_call(['ln', '-sfn', '../init_step2/init_mode_forcing_data.nc', forcingFileName], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'init0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
 if args.plot_globalStats:
   subprocess.check_call(['mkdir', '-p', 'statsPlots'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
@@ -35,10 +28,7 @@ if args.plot_globalStats:
 for iterIndex in range(args.first_iteration,args.iteration_count):
     print " * Iteration %i/%i"%(iterIndex+1,args.iteration_count)
 
-    if args.variable_to_modify == 'ssh':
-      subprocess.check_call(['ln', '-sfn', 'init%i.nc'%iterIndex, 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-    else:
-      subprocess.check_call(['ln', '-sfn', 'forcing_data%i.nc'%iterIndex, 'forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+    subprocess.check_call(['ln', '-sfn', 'init%i.nc'%iterIndex, 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
     print "   * Running forward model"
     # ./run_model.py
@@ -56,22 +46,15 @@ for iterIndex in range(args.first_iteration,args.iteration_count):
 
     # copy the init file first
 
-    if args.variable_to_modify == 'ssh':
-      subprocess.check_call(['cp', 'init%i.nc'%iterIndex, 'init%i.nc'%(iterIndex+1)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-      subprocess.check_call(['ln', '-sfn', 'init%i.nc'%(iterIndex+1), 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-      initFile = Dataset('init.nc','r+')
-      forcingFile = Dataset('forcing_data.nc','r')
-    else:
-      subprocess.check_call(['cp', 'forcing_data%i.nc'%iterIndex, 'forcing_data%i.nc'%(iterIndex+1)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-      subprocess.check_call(['ln', '-sfn', 'forcing_data%i.nc'%(iterIndex+1), 'forcing_data.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-      initFile = Dataset('init.nc','r')
-      forcingFile = Dataset('forcing_data.nc','r+')
+    subprocess.check_call(['cp', 'init%i.nc'%iterIndex, 'init%i.nc'%(iterIndex+1)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+    subprocess.check_call(['ln', '-sfn', 'init%i.nc'%(iterIndex+1), 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+    initFile = Dataset('init.nc','r+')
 
     nVertLevels = len(initFile.dimensions['nVertLevels'])
     initSSH = initFile.variables['ssh'][0,:]
     bottomDepth = initFile.variables['bottomDepth'][:]
     modifySSHMask = initFile.variables['modifySSHMask'][0,:]
-    landIcePressure = forcingFile.variables['landIcePressure'][0,:]
+    landIcePressure = initFile.variables['landIcePressure'][0,:]
     lonCell = initFile.variables['lonCell'][:]
     latCell = initFile.variables['latCell'][:]
     maxLevelCell = initFile.variables['maxLevelCell'][:]
@@ -107,12 +90,11 @@ for iterIndex in range(args.first_iteration,args.iteration_count):
 
       landIcePressure = numpy.maximum(0.0, landIcePressure + deltaLandIcePressure)
 
-      forcingFile.variables['landIcePressure'][0,:] = landIcePressure
+      initFile.variables['landIcePressure'][0,:] = landIcePressure
 
       finalSSH = initSSH
 
     initFile.close()
-    forcingFile.close()
 
     # Write the largest change in SSH and its lon/lat to a file
     logFile = open('maxDeltaSSH_%03i.log'%iterIndex,'w')
