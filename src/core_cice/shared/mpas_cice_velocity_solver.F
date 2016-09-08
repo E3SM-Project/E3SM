@@ -281,11 +281,9 @@ contains
          oceanCouplingPool, &
          meshPool
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         landIceMask
-
     integer, dimension(:), pointer :: &
-         landIceMaskVertex
+         landIceMaskVertex, &
+         landIceMask
 
     integer, dimension(:,:), pointer :: &
          cellsOnVertex
@@ -321,7 +319,7 @@ contains
 
              iCell = cellsOnVertex(iCellOnVertex,iVertex)
 
-             if (landIceMask(iCell) == 1.0_RKIND) then
+             if (landIceMask(iCell) == 1) then
 
                 landIceMaskVertex(iVertex) = 1
 
@@ -677,8 +675,7 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCellInitial, &
-         totalMassCell, &
-         landIceMask
+         totalMassCell
 
     integer :: &
          iCell, &
@@ -689,7 +686,8 @@ contains
          nCells
 
     integer, dimension(:), pointer :: &
-         nEdgesOnCell
+         nEdgesOnCell, &
+         landIceMask
     
     integer, dimension(:,:), pointer :: &
          cellsOnCell
@@ -720,7 +718,7 @@ contains
 
           if (iceAreaCellInitial(iCell) > ciceAreaMinimum .and. &
               totalMassCell(iCell) > ciceMassMinimum .and. &
-              landIceMask(iCell) == 0.0_RKIND) then
+              landIceMask(iCell) == 0) then
 
              ! this cell has sufficient ice
              solveStress(iCell) = 1
@@ -734,7 +732,7 @@ contains
 
                 if (iceAreaCellInitial(iCellNeighbour) > ciceAreaMinimum .and. &
                     totalMassCell(iCellNeighbour) > ciceMassMinimum .and. &
-                    landIceMask(iCellNeighbour) == 0.0_RKIND) then
+                    landIceMask(iCellNeighbour) == 0) then
 
                    solveStress(iCell) = 1
                    exit
