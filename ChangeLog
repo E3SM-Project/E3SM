@@ -1,6 +1,55 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 09-08-2016
+Tag: cime5.0.11
+Answer Changes: None
+Tests: scripts_regression_tests, problem related testing
+Dependencies: none
+
+Brief Summary: Fixes issues found in cime5.0.10
+	Change DOUT_S default for cesm
+	Fix cost_estimate for timing tables
+	Fix issue with task count for archive tools
+	Restore MASK_GRID xml variable
+	Fix issues with user_mods path
+	add provenance save capabilities for acme
+
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/allactive/config_pes.xml.cime2
+M       cime_config/acme/allactive/config_pesall.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/cime_config/config_compsets.xml
+M       scripts/Tools/code_checker
+M       scripts/Tools/getTiming
+A       scripts/Tools/save_provenance
+M       utils/python/CIME/SystemTests/ssp.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/grids.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+A       utils/python/CIME/get_timing.py
+M       utils/python/CIME/hist_utils.py
+A       utils/python/CIME/provenance.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/user_mod_support.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 08-31-2016
 Tag: cime5.0.9
 Answer Changes: None
