@@ -248,7 +248,6 @@
     !add coupled tendencies due to PBL processes:
     if (config_pbl_scheme .ne. 'off') then
        if (rk_step == 1 .and. dynamics_substep == 1) then
-          rublten_Edge(:,:) = 0.
           call tend_toEdges(block,mesh,rublten,rvblten,rublten_Edge)
        end if
        do i = 1, nEdgesSolve
@@ -272,7 +271,6 @@
 
        if (config_convection_scheme .eq. 'tiedtke') then
           if (rk_step == 1 .and. dynamics_substep == 1) then
-             rucuten_Edge(:,:) = 0.
              call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
           end if
           do i = 1, nEdgesSolve
