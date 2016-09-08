@@ -1003,7 +1003,7 @@ class L_TestSaveTimings(TestCreateTestCommon):
         with Case(casedir, read_only=True) as case:
             lids = get_lids(case)
             timing_dir = case.get_value("SAVE_TIMING_DIR")
-            casename = case.get_value("CASEBASEID")
+            casename = case.get_value("CASE")
 
         self.assertEqual(len(lids), 1, msg="Expected one LID, found %s" % lids)
 

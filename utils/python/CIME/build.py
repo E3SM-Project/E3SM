@@ -139,7 +139,9 @@ def post_build(case, logs):
 
     shutil.copy("env_build.xml", "LockedFiles")
 
-    save_build_provenance(case)
+    # must ensure there's an lid
+    lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
+    save_build_provenance(case, lid=lid)
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False):
