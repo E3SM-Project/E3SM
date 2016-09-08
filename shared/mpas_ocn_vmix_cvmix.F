@@ -453,6 +453,8 @@ contains
               bulkRichardsonFlag = .false.
               topIndex = 1
 !             call mpas_timer_start('Bulk Richardson kIndexOBL loops')
+              ! compute the index of the last cell in the KPP defined surface layer
+              ! this index is used for the necessary surface layer averages of buoyancy and momentum
               do kIndexOBL = 1, maxLevelCell(iCell)
 
                  ! Reset deltaVelocitySquared and bulkRichardsonNumber at this layer for the later computation
@@ -466,6 +468,8 @@ contains
                  OBLDepths(kIndexOBL) = abs(cvmix_variables % zw_iface(kIndexOBL+1))
                  interfaceForcings(kIndexOBL) = cvmix_variables % SurfaceBuoyancyForcing
 
+                 ! initialize the surfaceAverageIndex for cases when the if statement below is not true 
+                 surfaceAverageIndex(kIndexOBL) = 1
                  ! move progressively downward to find the bottom most layer within the surface layer
                  sfc_layer_depth = cvmix_variables % BoundaryLayerDepth * config_cvmix_kpp_surface_layer_extent
                  do kav=topIndex,kIndexOBL
