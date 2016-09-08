@@ -8,11 +8,9 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
-		<option name="config_check_ssh_consistency">.false.</option>
+		<template file="template_adjust_ssh.xml" path_base="script_configuration_dir"/>
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_run_duration">'0000_06:00:00'</option>
-		<option name="config_land_ice_flux_mode">'pressure_only'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
