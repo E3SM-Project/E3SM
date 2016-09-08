@@ -1052,6 +1052,13 @@ module mpas_block_creator
        nullify(indexToCellIDPoolField % sendList)
        nullify(indexToCellIDPoolField % recvList)
        nullify(indexToCellIDPoolField % copyList)
+       allocate(indexToCellIDPoolField % attLists(1))
+       allocate(indexToCellIDPoolField % attLists(1) % attList)
+       indexToCellIDPoolField % attLists(1) % attList % attName = ''
+       indexToCellIDPoolField % attLists(1) % attList % attType = -1
+       nullify(indexToCellIDPoolField % attLists(1) % attList % next)
+       nullify(indexToCellIDPoolField % attLists(1) % attList % attValueIntA)
+       nullify(indexToCellIDPoolField % attLists(1) % attList % attValueRealA)
        allocate(indexToCellIDPoolField % array(nCells+1))
        indexToCellIDPoolField % array(nCells+1) = 0
 
@@ -1071,6 +1078,13 @@ module mpas_block_creator
        nullify(indexToEdgeIDPoolField % sendList)
        nullify(indexToEdgeIDPoolField % recvList)
        nullify(indexToEdgeIDPoolField % copyList)
+       allocate(indexToEdgeIDPoolField % attLists(1))
+       allocate(indexToEdgeIDPoolField % attLists(1) % attList)
+       indexToEdgeIDPoolField % attLists(1) % attList % attName = ''
+       indexToEdgeIDPoolField % attLists(1) % attList % attType = -1
+       nullify(indexToEdgeIDPoolField % attLists(1) % attList % next)
+       nullify(indexToEdgeIDPoolField % attLists(1) % attList % attValueIntA)
+       nullify(indexToEdgeIDPoolField % attLists(1) % attList % attValueRealA)
        allocate(indexToEdgeIDPoolField % array(nEdges+1))
        indexToEdgeIDPoolField % array(nEdges+1) = 0
 
@@ -1091,6 +1105,13 @@ module mpas_block_creator
        nullify(indexToVertexIDPoolField % sendList)
        nullify(indexToVertexIDPoolField % recvList)
        nullify(indexToVertexIDPoolField % copyList)
+       allocate(indexToVertexIDPoolField % attLists(1))
+       allocate(indexToVertexIDPoolField % attLists(1) % attList)
+       indexToVertexIDPoolField % attLists(1) % attList % attName = ''
+       indexToVertexIDPoolField % attLists(1) % attList % attType = -1
+       nullify(indexToVertexIDPoolField % attLists(1) % attList % next)
+       nullify(indexToVertexIDPoolField % attLists(1) % attList % attValueIntA)
+       nullify(indexToVertexIDPoolField % attLists(1) % attList % attValueRealA)
        allocate(indexToVertexIDPoolField % array(nVertices+1))
        indexToVertexIDPoolField % array(nVertices+1) = 0
 
@@ -1261,6 +1282,13 @@ module mpas_block_creator
        ownedIndices % isActive = .true.
        ownedIndices % isVarArray = .false.
        ownedIndices % isPersistent = .true.
+       allocate(ownedIndices % attLists(1))
+       allocate(ownedIndices % attLists(1) % attList)
+       ownedIndices % attLists(1) % attList % attName = ''
+       ownedIndices % attLists(1) % attList % attType = -1
+       nullify(ownedIndices % attLists(1) % attList % next)
+       nullify(ownedIndices % attLists(1) % attList % attValueIntA)
+       nullify(ownedIndices % attLists(1) % attList % attValueRealA)
        call mpas_pool_add_field(block_ptr % allFields, 'nCellsOwnedIndices', ownedIndices)
 
        indexField % array(:) = indexFieldBlk % array(:)
@@ -1281,6 +1309,13 @@ module mpas_block_creator
        ownedIndices % isActive = .true.
        ownedIndices % isVarArray = .false.
        ownedIndices % isPersistent = .true.
+       allocate(ownedIndices % attLists(1))
+       allocate(ownedIndices % attLists(1) % attList)
+       ownedIndices % attLists(1) % attList % attName = ''
+       ownedIndices % attLists(1) % attList % attType = -1
+       nullify(ownedIndices % attLists(1) % attList % next)
+       nullify(ownedIndices % attLists(1) % attList % attValueIntA)
+       nullify(ownedIndices % attLists(1) % attList % attValueRealA)
        call mpas_pool_add_field(block_ptr % allFields, 'nEdgesOwnedIndices', ownedIndices)
 
        indexField % array(:) = indexFieldBlk % array(:)
@@ -1301,6 +1336,13 @@ module mpas_block_creator
        ownedIndices % isActive = .true.
        ownedIndices % isVarArray = .false.
        ownedIndices % isPersistent = .true.
+       allocate(ownedIndices % attLists(1))
+       allocate(ownedIndices % attLists(1) % attList)
+       ownedIndices % attLists(1) % attList % attName = ''
+       ownedIndices % attLists(1) % attList % attType = -1
+       nullify(ownedIndices % attLists(1) % attList % next)
+       nullify(ownedIndices % attLists(1) % attList % attValueIntA)
+       nullify(ownedIndices % attLists(1) % attList % attValueRealA)
        call mpas_pool_add_field(block_ptr % allFields, 'nVerticesOwnedIndices', ownedIndices)
 
        indexField % array(:) = indexFieldBlk % array(:)

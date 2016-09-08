@@ -4901,6 +4901,17 @@ module mpas_io
    end subroutine MPAS_io_finalize
 
 
+   type (dm_info) function MPAS_io_handle_dminfo(handle)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(in) :: handle
+
+      MPAS_io_handle_dminfo = handle % ioContext % dminfo
+
+   end function MPAS_io_handle_dminfo
+
+
    subroutine MPAS_io_err_mesg(ierr, fatal)
 
       implicit none
