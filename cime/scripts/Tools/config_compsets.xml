@@ -78,8 +78,11 @@ value of RUN_STARTDATE will be date2.
 
 <!-- ACME v1 science compsets -->
 <COMPSET sname="ACME_WCYCL2000"                alias="A_WCYCL2000" >2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</COMPSET>
+<COMPSET sname="ACME_WCYCL2000S"               alias="A_WCYCL2000S">2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</COMPSET>
 <COMPSET sname="ACME_WCYCL1850"                alias="A_WCYCL1850" >1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</COMPSET>
+<COMPSET sname="ACME_WCYCL1850S"               alias="A_WCYCL1850" >1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</COMPSET>
 <COMPSET sname="ACME_WCYCL20TR"                alias="A_WCYCL20TR" >20TR_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</COMPSET>
+<COMPSET sname="ACME_WCYCL20TRS"               alias="A_WCYCL20TR" >20TR_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</COMPSET>
 
 <COMPSET sname="ACME_CRYO"                alias="A_CRYO" >2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_RTM_MPASLIALB_SWAV</COMPSET>
 
@@ -1087,6 +1090,31 @@ CLM45%[^_]*BGCDV => clm4.5 BGC (CN with vertically resolved soil BGC, based on C
 CLM50            => clm5.0 Physics
 CLM50%[^_]*SP    => clm5.0 Satellite phenology
 CLM50%[^_]*BGC   => clm5.0 BGC (CN with vertically resolved soil BGC, based on Century with Methane)
+</help>
+
+<!-- ================================================================================== -->
+<!-- SECTION: component MPAS-CICE -->
+<!-- ================================================================================== -->
+
+<MPASCICE_IC_MODE compset="MPASCICE_">cold_start</MPASCICE_IC_MODE>
+<MPASCICE_IC_MODE compset="MPASCICE%SPUNUP">spunup</MPASCICE_IC_MODE>
+
+<!-- ======================================= -->
+<!--          USER_DEFINED section           -->
+<!-- Add new values for                      -->
+<!--    MPASCICE_IC_MODE                     -->
+<!-- here                                    -->
+<!-- ======================================= -->
+
+<desc compset="MPASCICE%SPUNUP">spunup mpas-cice:</desc>
+<desc compset="MPASCICE_">cold_start mpas-cice:</desc>
+
+<help>
+=========================================
+MPASCICE naming conventions in compset name
+=========================================
+MPASCICE        => use cold start initial conditions for MPASCICE
+MPASCICE%SPUNUP => use spunup initial conditions for MPASCICE
 </help>
 
 <!-- ================================================================================== -->

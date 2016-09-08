@@ -77,6 +77,7 @@
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 
 <!-- velocity_solver -->
+<config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU240">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU120">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="mpas120">1</config_dynamics_subcycle_number>

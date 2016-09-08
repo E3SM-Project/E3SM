@@ -50,6 +50,8 @@ OPTIONS
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
+     -ic_mode              variable for initial condition file mode
+                           Options are: spunup, cold_start
 
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -91,6 +93,7 @@ my %opts = ( help        => 0,
              inst_string => undef,
              ice_grid    => undef,
              date_stamp  => undef,
+             ic_mode     => undef,
              cfg_dir     => $cfgdir,
            );
 
@@ -105,6 +108,7 @@ GetOptions(
     "inst_string=s" => \$opts{'inst_string'},	   
     "ice_grid=s"    => \$opts{'ice_grid'},
     "date_stamp=s"  => \$opts{'date_stamp'},
+    "ic_mode=s"     => \$opts{'ic_mode'},
     "cfg_dir=s"     => \$opts{'cfg_dir'},
     "preview"       => \$opts{'preview'},
 )  or usage();
@@ -136,6 +140,7 @@ my $SCRIPTSROOT = $opts{'scriptsroot'};
 my $inst_string = $opts{'inst_string'};
 my $ICE_GRID    = $opts{'ice_grid'};
 my $date_stamp  = $opts{'date_stamp'};
+my $ic_mode     = $opts{'ic_mode'};
 $cfgdir         = $opts{'cfg_dir'};
 
 # Validate some of the commandline option values.
@@ -468,7 +473,11 @@ add_default($nl, 'config_nSnowLayers');
 # Namelist group: initialize #
 ##############################
 
-add_default($nl, 'config_initial_condition_type');
+if ($ic_mode eq 'spunup') {
+        add_default($nl, 'config_initial_condition_type', 'val'=>"restart");
+} else {
+        add_default($nl, 'config_initial_condition_type');
+}
 add_default($nl, 'config_initial_ice_area');
 add_default($nl, 'config_initial_ice_volume');
 add_default($nl, 'config_initial_snow_volume');

@@ -13,18 +13,19 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod;
 
-my $CASEROOT		= `./xmlquery  CASEROOT			-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
-my $CCSMROOT		= `./xmlquery  CCSMROOT			-value`;
-my $OBJROOT		    = `./xmlquery  OBJROOT			-value`;
-my $SCRIPTSROOT		= `./xmlquery  SCRIPTSROOT		-value`;
-my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value`;
-my $DIN_LOC_ROOT    = `./xmlquery  DIN_LOC_ROOT     -value`;
-my $OCN_GRID		= `./xmlquery  OCN_GRID			-value`;
-my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN		-value`;
+my $CASEROOT        = `./xmlquery  CASEROOT             -value`;
+my $CASEBUILD       = `./xmlquery  CASEBUILD            -value`;
+my $CCSMROOT        = `./xmlquery  CCSMROOT             -value`;
+my $OBJROOT         = `./xmlquery  OBJROOT              -value`;
+my $SCRIPTSROOT	    = `./xmlquery  SCRIPTSROOT          -value`;
+my $COMP_INTERFACE  = `./xmlquery  COMP_INTERFACE       -value`;
+my $DIN_LOC_ROOT    = `./xmlquery  DIN_LOC_ROOT         -value`;
+my $OCN_GRID        = `./xmlquery  OCN_GRID             -value`;
+my $OCN_MASK        = `./xmlquery  MASK_GRID            -value`;
+my $NTASKS_OCN      = `./xmlquery  NTASKS_OCN           -value`;
 #my $NINST_OCN		= `./xmlquery  NINST_OCN		-value`;
-my $NINST_OCN = 1; # Change if you want multiple instances... though this isn't coded yet.
-my $RUNDIR		    = `./xmlquery  RUNDIR			-value`;
+my $NINST_OCN       = 1; # Change if you want multiple instances... though this isn't coded yet.
+my $RUNDIR          = `./xmlquery  RUNDIR               -value`;
 my $STREAM_NAME     = 'streams.ocean';
 
 if (! -d "$CASEBUILD/mpas-oconf" ) {
@@ -39,35 +40,48 @@ if (! -d "$CASEBUILD/mpas-oconf" ) {
 my $grid_date = '';
 my $grid_prefix = '';
 my $decomp_prefix = '';
+my $ic_date = '';
 my $ic_prefix = '';
 
 if ( $OCN_GRID eq 'oEC60to30' ) {
 	$grid_date .= '151031';
-	$grid_prefix .= 'oEC60to30';
-	$ic_prefix .= 'oEC60to30';
+        $grid_prefix .= 'oEC60to30';
+        $ic_date .= '151031';
+        $ic_prefix .= 'oEC60to30';
+	$decomp_prefix .= 'mpas-o.graph.info.';
+} elsif ( $OCN_GRID eq 'oEC60to30_ICG' ) {
+	$grid_date .= '151031';
+        $grid_prefix .= 'oEC60to30';
+        $ic_date .= '160827';
+        $ic_prefix .= 'oEC60to30.restartFrom_eos1b';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU240' ) {
 	$grid_date .= '151209';
+	$ic_date .= '151209';
 	$grid_prefix .= 'ocean.QU.240km';
 	$ic_prefix .= 'ocean.QU.240km';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU120' ) {
 	$grid_date .= '160318';
+	$ic_date .= '160318';
  	$grid_prefix .= 'ocean.QU.120km';
  	$ic_prefix .= 'ocean.QU.120km';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'mpas120' ) {
 	$grid_date .= '151031';
+	$ic_date .= '151031';
 	$grid_prefix .= 'ocean120km';
 	$ic_prefix .= 'ocean120km';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS30to10' ) {
 	$grid_date .= '151031';
+	$ic_date .= '151031';
 	$grid_prefix .= 'ocean.RRS.30-10km';
 	$ic_prefix .= 'ocean.RRS.30-10km';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS15to5' ) {
 	$grid_date .= '151209';
+	$ic_date .= '151209';
 	$grid_prefix .= 'ocean.RRS.15-5km';
 	$ic_prefix .= 'ocean.RRS.15-5km';
 	$decomp_prefix .= 'mpas-o.graph.info.';
@@ -80,10 +94,10 @@ chdir "$CASEBUILD/mpas-oconf";
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpas-o.input_data_list");
-print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$grid_prefix.$grid_date.nc\n";
-print $input_list "ic = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$ic_prefix.$grid_date.nc\n";
-#print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$decomp_prefix$grid_date\n";
-print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$decomp_prefix$grid_date.part.$NTASKS_OCN\n";
+print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$grid_prefix.$grid_date.nc\n";
+print $input_list "ic = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc\n";
+#print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$grid_date\n";
+print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$grid_date.part.$NTASKS_OCN\n";
 close($input_list);
 
 #--------------------------------------------------------------------
@@ -139,7 +153,10 @@ while ($inst_counter <= $NINST_OCN) {
 	$sysmod .= " -scriptsroot $SCRIPTSROOT";
 	$sysmod .= " -inst_string '$inst_string'";
 	$sysmod .= " -date_stamp '$grid_date'";
-	$sysmod .= " -ocn_grid '$OCN_GRID'";
+	$sysmod .= " -ocn_grid '$OCN_MASK'";
+
+    # pass in OCN_MASK for now as a short-cut for the grid
+    # at some point, we may want to pass both -- but for now this is simpler
 
     system($sysmod) == 0 or die "ERROR mpas-o.buildnml: $sysmod failed: $?\n";
 
@@ -173,14 +190,14 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '<immutable_stream name="mesh"' . "\n";
 	print $stream_file '                  type="none"' . "\n";
 	print $stream_file "                  filename_template=" . '"'
-					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$grid_prefix.$grid_date.nc"
+					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$grid_prefix.$grid_date.nc"
 					. '"' . "\n";
 	print $stream_file '/>' . "\n";
 	print $stream_file '<immutable_stream name="input"' . "\n";
 	print $stream_file '                  type="input"' . "\n";
 	print $stream_file '                  input_interval="initial_only"' . "\n";
 	print $stream_file "                  filename_template=" . '"'
-					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$ic_prefix.$grid_date.nc"
+					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc"
 					. '"' . "\n";
 	print $stream_file '/>' . "\n";
 	print $stream_file '' . "\n";
