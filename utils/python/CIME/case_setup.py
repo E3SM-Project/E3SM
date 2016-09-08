@@ -189,7 +189,17 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             check_lockedfiles()
 
             tm = TaskMaker(case)
-            pestot = tm.fullsum
+            mtpn = case.get_value("MAX_TASKS_PER_NODE")
+            pespn = case.get_value("PES_PER_NODE")
+            # This is hardcoded because on yellowstone by default we
+            # run with 15 pes per node
+            # but pay for 16 pes per node.  See github issue #518
+            if case.get_value("MACH") == "yellowstone":
+                pespn = 16
+            pestot = tm.totaltasks
+            if mtpn > pespn:
+                pestot = pestot * (mtpn // pespn)
+                case.set_value("COST_PES", tm.num_nodes*pespn)
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
