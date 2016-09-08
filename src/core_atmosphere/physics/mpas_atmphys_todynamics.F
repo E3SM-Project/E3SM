@@ -366,8 +366,6 @@
  allocate(Ux_tend_halo(nVertLevels,nCells+1))
  allocate(Uy_tend_halo(nVertLevels,nCells+1))
 
- Ux_tend_halo(:,:) = 0.
- Uy_tend_halo(:,:) = 0.
  do iCell = 1, nCellsSolve
     do k = 1, nVertLevels
        Ux_tend_halo(k,iCell) = Ux_tend(k,iCell)
