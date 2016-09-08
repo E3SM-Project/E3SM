@@ -51,7 +51,8 @@ module SoilStateType
      real(r8), pointer :: watopt_col           (:,:) ! col btran parameter for btran = 1
      real(r8), pointer :: watfc_col            (:,:) ! col volumetric soil water at field capacity (nlevsoi)
      real(r8), pointer :: watmin_col           (:,:) ! col minimum volumetric soil water (nlevsoi)
-     real(r8), pointer :: sucsat_col           (:,:) ! col minimum soil suction (mm) (nlevgrnd) 
+     real(r8), pointer :: sucsat_col           (:,:) ! col minimum soil suction (mm) (nlevgrnd)
+     real(r8), pointer :: sucmin_col           (:,:) ! col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
      real(r8), pointer :: soilbeta_col         (:)   ! col factor that reduces ground evaporation L&P1992(-)
      real(r8), pointer :: soilalpha_col        (:)   ! col factor that reduces ground saturated specific humidity (-)
      real(r8), pointer :: soilalpha_u_col      (:)   ! col urban factor that reduces ground saturated specific humidity (-) 
@@ -143,6 +144,7 @@ contains
     allocate(this%watfc_col            (begc:endc,nlevgrnd))            ; this%watfc_col            (:,:) = nan
     allocate(this%watmin_col           (begc:endc,nlevgrnd))            ; this%watmin_col           (:,:) = nan
     allocate(this%sucsat_col           (begc:endc,nlevgrnd))            ; this%sucsat_col           (:,:) = spval
+    allocate(this%sucmin_col           (begc:endc,nlevgrnd))            ; this%sucmin_col           (:,:) = spval
     allocate(this%soilbeta_col         (begc:endc))                     ; this%soilbeta_col         (:)   = nan   
     allocate(this%soilalpha_col        (begc:endc))                     ; this%soilalpha_col        (:)   = nan
     allocate(this%soilalpha_u_col      (begc:endc))                     ; this%soilalpha_u_col      (:)   = nan
@@ -350,7 +352,7 @@ contains
     integer            :: ipedof  
     integer            :: begc, endc
     integer            :: begg, endg
-    real(r8), parameter :: min_liquid_pressure = 10132500._r8 ! Minimum soil liquid water pressure [mm]
+    real(r8), parameter :: min_liquid_pressure = -10132500._r8 ! Minimum soil liquid water pressure [mm]
     !-----------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -521,6 +523,7 @@ contains
              this%watmin_col(c,lev) = spval
              this%hksat_col(c,lev)  = spval
              this%sucsat_col(c,lev) = spval
+             this%sucmin_col(c,lev) = spval
              this%watdry_col(c,lev) = spval 
              this%watopt_col(c,lev) = spval 
              this%bd_col(c,lev)     = spval 
@@ -552,6 +555,7 @@ contains
              this%bsw_col(c,lev)    = spval
              this%hksat_col(c,lev)  = spval
              this%sucsat_col(c,lev) = spval
+             this%sucmin_col(c,lev) = spval
              this%watdry_col(c,lev) = spval 
              this%watopt_col(c,lev) = spval 
              this%bd_col(c,lev) = spval 
@@ -692,8 +696,10 @@ contains
                 this%watfc_col(c,lev) = this%watsat_col(c,lev) * &
                      (0.1_r8 / (this%hksat_col(c,lev)*secspday))**(1._r8/(2._r8*this%bsw_col(c,lev)+3._r8))
 
+                this%sucmin_col(c,lev) = min_liquid_pressure
+
                 this%watmin_col(c,lev) = &
-                     this%watsat_col(c,lev)*(min_liquid_pressure/this%sucsat_col(c,lev))**(-1._r8/this%bsw_col(c,lev))
+                     this%watsat_col(c,lev)*(-min_liquid_pressure/this%sucsat_col(c,lev))**(-1._r8/this%bsw_col(c,lev))
 
              end if
           end do

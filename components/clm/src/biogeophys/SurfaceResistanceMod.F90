@@ -125,6 +125,8 @@ contains
           watsat      =>    soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)] volumetric soil water at saturation (porosity)
           watfc       =>    soilstate_vars%watfc_col       , & ! Input:  [real(r8) (:,:)] volumetric soil water at field capacity
           watmin      =>    soilstate_vars%watmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
+          sucmin      =>    soilstate_vars%sucmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
+          soilp_col   =>    waterstate_vars%soilp_col      , & ! Input:  [real(r8) (:,:)] soil water pressure (Pa)
           
           h2osoi_ice  =>    waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
           h2osoi_liq  =>    waterstate_vars%h2osoi_liq_col , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
@@ -152,6 +154,10 @@ contains
                 else   !when water content of ths top layer is more than that at F.C.
                    soilbeta(c) = 1._r8
                 end if
+                if ( use_vsfm .and. &
+                     ((wx < watmin(c,1)) .or. (soilp_col(c,1) < sucmin(c,1)))) then
+                   soilbeta(c) = 0._r8
+                end if
              else if (col%itype(c) == icol_road_perv) then
                 if (.not. use_vsfm) then
                    soilbeta(c) = 0._r8
@@ -160,7 +166,7 @@ contains
                    fac  = min(1._r8, wx/watsat(c,1))
                    fac  = max( fac, 0.01_r8 )
                    if (wx < watfc(c,1) ) then  !when water content of ths top layer is less than that at F.C.
-                      if (wx >= watmin(c,1)) then
+                      if (wx >= watmin(c,1) .and. soilp_col(c,1) >= sucmin(c,1) ) then
                          fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
                          fac_fc  = max( fac_fc, 0.01_r8 )
                          ! modify soil beta by snow cover. soilbeta for snow surface is one
