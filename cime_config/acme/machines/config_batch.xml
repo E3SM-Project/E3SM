@@ -319,7 +319,6 @@
    </batch_system>
 
    <batch_system MACH="titan" type="pbs" version="x.y">
-     <jobid_pattern>(\d+)</jobid_pattern>
      <directives>
        <directive>-A {{ project }}</directive>
        <directive>-l nodes={{ num_nodes }}</directive>

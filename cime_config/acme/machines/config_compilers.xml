@@ -194,7 +194,7 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
-<compiler COMPILER="pgi_acc">
+<compiler COMPILER="pgiacc">
   <!-- http://www.pgroup.com/resources/docs.htm                                              -->
   <!-- Notes:  (see pgi man page & user's guide for the details) -->
   <!--  -Mextend        => Allow 132-column source lines -->
@@ -756,7 +756,7 @@ for mct, etc.
   <ALBANY_PATH>/ccs/proj/cli106/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-<compiler COMPILER="pgi_acc" MACH="titan">
+<compiler COMPILER="pgiacc" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
