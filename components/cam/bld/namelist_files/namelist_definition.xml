@@ -1096,6 +1096,26 @@ model.
 Default: 5
 </entry>
 
+<!-- Fixers -->
+
+<entry id="use_mass_borrower" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new mass borrower (instead of QNEG3).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_qqflx_fixer" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new qqflx fixer (instead of QNEG4). 
+Default: set by build-namelist.
+</entry>
+
+<entry id="print_fixer_message" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to printout fixer diagnostic message. 
+Default: set by build-namelist.
+</entry>
+
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"

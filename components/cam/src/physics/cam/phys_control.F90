@@ -99,6 +99,10 @@ logical           :: do_tms
 logical           :: micro_do_icesupersat
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
                                                        ! in physics_update.
+logical, public, protected :: use_mass_borrower    = .false.     ! switch on tracer borrower, instead of using the QNEG3 clipping
+logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on water vapor fixer to compensate changes in qflx
+logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file
+
 ! Macro/micro-physics co-substeps
 integer           :: cld_macmic_num_steps = 1
 
@@ -163,6 +167,9 @@ subroutine phys_ctl_readnl(nlfile)
       use_subcol_microp, atm_dep_flux, history_amwg, history_vdiag, history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
+      use_mass_borrower, & 
+      use_qqflx_fixer, & 
+      print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
@@ -212,6 +219,9 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(do_clubb_sgs,                    1 , mpilog,  0, mpicom)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
+   call mpibcast(use_mass_borrower,               1 , mpilog,  0, mpicom)
+   call mpibcast(use_qqflx_fixer,                 1 , mpilog,  0, mpicom)
+   call mpibcast(print_fixer_message,             1 , mpilog,  0, mpicom)
    call mpibcast(micro_do_icesupersat,            1 , mpilog,  0, mpicom)
    call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
    call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
@@ -374,6 +384,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
+                        use_mass_borrower_out, & 
+                        use_qqflx_fixer_out, & 
+                        print_fixer_message_out, & 
                         cld_macmic_num_steps_out, micro_do_icesupersat_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
@@ -414,6 +427,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    character(len=32), intent(out), optional :: cam_chempkg_out
    logical,           intent(out), optional :: prog_modal_aero_out
    logical,           intent(out), optional :: do_tms_out
+   logical,           intent(out), optional :: use_mass_borrower_out
+   logical,           intent(out), optional :: use_qqflx_fixer_out
+   logical,           intent(out), optional :: print_fixer_message_out
    logical,           intent(out), optional :: state_debug_checks_out
    logical,           intent(out), optional :: fix_g1_err_ndrop_out!BSINGH - bugfix for ndrop.F90
    logical,           intent(out), optional :: ssalt_tuning_out    
@@ -469,6 +485,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(cam_chempkg_out         ) ) cam_chempkg_out          = cam_chempkg
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
+   if ( present(use_mass_borrower_out   ) ) use_mass_borrower_out    = use_mass_borrower
+   if ( present(use_qqflx_fixer_out     ) ) use_qqflx_fixer_out      = use_qqflx_fixer
+   if ( present(print_fixer_message_out ) ) print_fixer_message_out  = print_fixer_message
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
    if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop
    if ( present(ssalt_tuning_out        ) ) ssalt_tuning_out         = ssalt_tuning   
