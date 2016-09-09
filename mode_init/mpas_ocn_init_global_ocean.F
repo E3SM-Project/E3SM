@@ -2182,7 +2182,6 @@ contains
       if (config_global_ocean_smooth_TS_iterations .gt. 0) then
          call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
-
          do iSmooth = 1,config_global_ocean_smooth_TS_iterations
 
             block_ptr => domain % blocklist
@@ -2192,7 +2191,6 @@ contains
 
                call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-               call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
                call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
                call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
@@ -2212,9 +2210,10 @@ contains
 
                      do j = 1, nEdgesOnCell(iCell)
                         coc = cellsOnCell(j, iCell)
-
-                        smoothedTracer(k, iCell) = smoothedTracer(k, iCell) + interpTracer (k, coc)
-                        counter = counter + 1
+                        if (coc<nCells+1) then
+                           smoothedTracer(k, iCell) = smoothedTracer(k, iCell) + interpTracer (k, coc)
+                           counter = counter + 1
+                        end if
 
                      end do ! edgesOnCell
 
