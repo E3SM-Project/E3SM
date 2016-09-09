@@ -35,17 +35,33 @@ thickness = gridfile.variables['thickness']
 bedTopography = gridfile.variables['bedTopography']
 layerThicknessFractions = gridfile.variables['layerThicknessFractions']
 SMB = gridfile.variables['sfcMassBal']
+waterFluxMask = gridfile.variables['waterFluxMask']
 
 
 if options.test in ('A','B','C','D'):  # set up sqrt geometry
    print "Setting up experiment:", options.test
-   unique_xs=np.array(sorted(list(set(xCell[:]))))
-   if min(unique_xs) >= 0.0:
-      shiftx = unique_xs[3]  # put origin in a few cells to the right of the left edge of mesh
-      xCell[:] = xCell[:] - shiftx
-      xEdge[:] = xEdge[:] - shiftx
-      xVertex[:] = xVertex[:] - shiftx
 
+   # adjust mesh origin if it hasn't been done yet
+   if xVertex[:].min() != 0.0:
+      # x origin should have left edge of 3rd cell at x=0 (2 gutter cells)
+      #shiftx = np.unique(xVertex[:])[5]
+      # x origin should have divide on a cell center
+      # Find center of domain
+      x0 = xCell[:].min() + 0.5 * (xCell[:].max() - xCell[:].min() )
+      centerCellIndex = np.abs(xCell[:]-x0).argmin()
+      xShift = xCell[centerCellIndex] - 100000.0
+      xCell[:] = xCell[:] - xShift
+      xEdge[:] = xEdge[:] - xShift
+      xVertex[:] = xVertex[:] - xShift
+
+      # y origin should have yVertex of bottom row at y=0
+      yShift = yVertex[:].min()
+      yCell[:] = yCell[:] - yShift
+      yEdge[:] = yEdge[:] - yShift
+      yVertex[:] = yVertex[:] - yShift
+   print "Min/Max yVertex:", yVertex[:].min(), yVertex[:].max()
+   if abs(yVertex[:].max() - 20000.0) > gridfile.variables['dcEdge'][:].min() * 0.866:
+      sys.exit('Error: yVertex is too far from 20000.0! Adjust ny in periodic_hex namelist and/or --remove_extra_y argument to mark_periodic_boundaries_for_culling.py')
 
    # thickness
    x = 100.0e3 - np.absolute(xCell[:] - 100.0e3)
@@ -54,6 +70,14 @@ if options.test in ('A','B','C','D'):  # set up sqrt geometry
 
    # flat bed
    bedTopography[:] = 0.0
+
+   # Set up no flux mask along north and south
+   waterFluxMask = gridfile.variables['waterFluxMask'][0,:]
+   waterFluxMask[np.nonzero(yEdge[:]==np.unique(yEdge[:])[0])] = 2
+   waterFluxMask[np.nonzero(yEdge[:]==np.unique(yEdge[:])[-1])] = 2
+   gridfile.variables['waterFluxMask'][0,:] = waterFluxMask
+   print waterFluxMask.size
+
 else:
    sys.exit('Invalid test letter specified:'+options.test)
 

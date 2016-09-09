@@ -154,6 +154,8 @@
 		     description="subglacial hydropotential" />
                 <var name="waterFlux" type="real" dimensions="nEdges Time" units="m^2/s"
 		     description="total subglacial water flux" />
+                <var name="waterFluxMask" type="integer" dimensions="nEdges Time" units="none"
+		     description="mask indicating how to handle fluxes on each edge: 0=calculate based on hydropotential gradient; 1=allow outflow based on hydropotential gradient, but no inflow (NOT YET IMPLEMENTED); 2=zero flux" />
                 <var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m^2/s"
 		     description="advective subglacial water flux" />
                 <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m^2/s"

@@ -1,6 +1,8 @@
 &periodic_grid
+   ! 100km x doublewide = 100 cells + a 2 extra on either side for culling and 4 for gutter
    nx = 106,
-   ny = 12
+   ! 12 + 2 for culling
+   ny = 14
    dc = 2000.,
    nVertLevels = 1,
    nTracers = 1,

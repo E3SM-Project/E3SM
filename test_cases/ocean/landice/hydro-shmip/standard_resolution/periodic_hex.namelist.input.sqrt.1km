@@ -1,6 +1,7 @@
 &periodic_grid
    nx = 206,
-   ny = 24,
+   ! 24 + 2 for culling
+   ny = 26,
    dc = 1000.,
    nVertLevels = 1,
    nTracers = 1,

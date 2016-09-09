@@ -1,5 +1,6 @@
 &periodic_grid
-   nx = 408,
+   nx = 406,
+   !  want 46 + 2 for culling;
    ny = 48,
    dc = 500.,
    nVertLevels = 1,
