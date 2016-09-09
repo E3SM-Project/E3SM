@@ -7,8 +7,6 @@
         <!-- link in scripts that the user will need -->
         <add_link source_path="script_test_dir" source="setup_hydro-shmip_experimentA_initial_conditions.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="visualize_output_shmip.py" dest="."/>
-        <add_link source_path="script_configuration_dir" source="tuning_A3.txt" dest="."/>
-        <add_link source_path="script_configuration_dir" source="tuning_A5.txt" dest="."/>
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
@@ -32,7 +30,7 @@
                 </step>
 
                 <!-- Setup IC for this test -->
-                <step executable="./setup_hydro-shmip_initial_conditions.py" pre_message="\n\n### Setup IC\n\n" post_message="\n\n### Setup IC complete\n\n">
+                <step executable="./setup_hydro-shmip_experimentA_initial_conditions.py" pre_message="\n\n### Setup IC\n\n" post_message="\n\n### Setup IC complete\n\n">
                         <argument flag="-n">6</argument>
                 </step>
 

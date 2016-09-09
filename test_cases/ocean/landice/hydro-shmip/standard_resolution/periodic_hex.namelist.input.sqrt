@@ -1,5 +1,6 @@
 &periodic_grid
-   nx = 206,
+   ! 100km = 100 cells + 2 extra on either side for culling and 2 for gutter
+   nx = 104,
    ! 24 + 2 for culling
    ny = 26,
    dc = 1000.,

@@ -39,14 +39,11 @@ waterFluxMask = gridfile.variables['waterFluxMask']
 
 
 # adjust mesh origin if it hasn't been done yet
-if xVertex[:].min() != 0.0:
-   # x origin should have left edge of 3rd cell at x=0 (2 gutter cells)
-   #shiftx = np.unique(xVertex[:])[5]
-   # x origin should have divide on a cell center
-   # Find center of domain
-   x0 = xCell[:].min() + 0.5 * (xCell[:].max() - xCell[:].min() )
-   centerCellIndex = np.abs(xCell[:]-x0).argmin()
-   xShift = xCell[centerCellIndex] - 100000.0
+if yVertex[:].min() != 0.0:
+   # x=100km should be value on right vertices
+   # this would be the average of the last two vertices
+   # which is the second to last edge
+   xShift = np.unique(xEdge[:])[-2] - 100.0e3
    xCell[:] = xCell[:] - xShift
    xEdge[:] = xEdge[:] - xShift
    xVertex[:] = xVertex[:] - xShift
@@ -68,12 +65,14 @@ thickness[0, x<0.0]=0.0  # make a margin
 # flat bed
 bedTopography[:] = 0.0
 
-# Set up no flux mask along north and south
+# Set up no flux mask along north and south and east
 waterFluxMask = gridfile.variables['waterFluxMask'][0,:]
 waterFluxMask[np.nonzero(yEdge[:]==np.unique(yEdge[:])[0])] = 2
 waterFluxMask[np.nonzero(yEdge[:]==np.unique(yEdge[:])[-1])] = 2
+waterFluxMask[np.nonzero(xEdge[:]==np.unique(xEdge[:])[-3])] = 2  # last 3 edge values
+waterFluxMask[np.nonzero(xEdge[:]==np.unique(xEdge[:])[-2])] = 2  # last 3 edge values
+waterFluxMask[np.nonzero(xEdge[:]==np.unique(xEdge[:])[-1])] = 2  # last 3 edge values
 gridfile.variables['waterFluxMask'][0,:] = waterFluxMask
-print waterFluxMask.size
 
 
 print "Setting up test number:", options.number
@@ -94,7 +93,8 @@ gridfile.variables['uReconstructX'][:] = 1.0e-6 # all tests use this velocity
 gridfile.variables['waterThickness'][0,:] = 0.05 * np.absolute(xCell[:] - 100.0e3)/100.0e3 # start with something to avoid weird adapative time steps initially
 
 # initial waterPressure
-gridfile.variables['waterPressure'][:] = 0.5 * 9.81 * 910.0 * thickness[:] * (0.97 + 0.03 * np.random.rand(thickness[:].size)) # start with half of Pice.  Last factor adds some random noise to disrupt symmetry.
+#gridfile.variables['waterPressure'][:] = 0.5 * 9.81 * 910.0 * thickness[:] * (0.97 + 0.03 * np.random.rand(thickness[:].size)) # start with half of Pice.  Last factor adds some random noise to disrupt symmetry.
+gridfile.variables['waterPressure'][:] = 0.5 * 9.81 * 910.0 * thickness[:]
 
 gridfile.close()
 
