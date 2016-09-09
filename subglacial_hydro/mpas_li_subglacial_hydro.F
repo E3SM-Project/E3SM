@@ -606,6 +606,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterFluxAdvec
       real (kind=RKIND), dimension(:), pointer :: waterFluxDiffu
+      integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: edgeMask
@@ -662,7 +663,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
       call mpas_pool_get_array(hydroPool, 'waterFluxAdvec', waterFluxAdvec)
       call mpas_pool_get_array(hydroPool, 'waterFluxDiffu', waterFluxDiffu)
-
+      call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
 
 
       do iEdge = 1, nEdgesSolve
@@ -756,6 +757,11 @@ module li_subglacial_hydro
             waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) / dcEdge(iEdge)
          endif
       end do
+      where (waterFluxMask == 2)
+         waterFluxAdvec = 0.0_RKIND
+         waterFluxDiffu = 0.0_RKIND
+         waterVelocity = 0.0_RKIND
+      end where
       waterFlux(:) = waterFluxAdvec(:) + waterFluxDiffu(:)
 
    !--------------------------------------------------------------------
@@ -1233,6 +1239,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: flowParamAChannel
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      integer, dimension(:), pointer :: waterFluxMask
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nVertLevels
@@ -1277,8 +1284,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
-
-
+      call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
 
       ! Calculate terms needed for opening (melt) rate
 
@@ -1286,6 +1292,10 @@ module li_subglacial_hydro
          channelDischarge(:) = 0.0_RKIND
       elsewhere
          channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * hydropotentialBaseSlopeNormal
+      end where
+      where (waterFluxMask == 2)
+         channelDischarge = 0.0_RKIND
+         channelArea = 0.0_RKIND
       end where
 
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
@@ -1314,6 +1324,10 @@ module li_subglacial_hydro
       end do
       channelClosingRate(:) = creep_coeff * channelArea(:) * flowParamAChannel(:) * channelEffectivePressure(:)**3
 
+      where (waterFluxMask == 2)
+         channelOpeningRate = 0.0_RKIND
+         channelClosingRate = 0.0_RKIND
+      end where
       channelChangeRate = channelOpeningRate - channelClosingRate
 
    !--------------------------------------------------------------------
