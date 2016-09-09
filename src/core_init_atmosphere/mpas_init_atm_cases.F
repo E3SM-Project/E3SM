@@ -2439,6 +2439,7 @@ module init_atm_cases
       use init_atm_read_met
       use init_atm_llxy
       use init_atm_hinterp
+      use mpas_atmphys_constants, only : svpt0, svp1, svp2, svp3
 
       implicit none
 
@@ -2615,6 +2616,13 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: st_fg
       real (kind=RKIND), dimension(:,:), pointer :: sm_fg
       real (kind=RKIND), dimension(:), pointer :: soilz
+
+      ! For outputting surface fields u10, v10, q2, rh2, and t2m from first-guess data
+      real (kind=RKIND), dimension(:), pointer :: u10
+      real (kind=RKIND), dimension(:), pointer :: v10
+      real (kind=RKIND), dimension(:), pointer :: q2
+      real (kind=RKIND), dimension(:), pointer :: rh2
+      real (kind=RKIND), dimension(:), pointer :: t2m
 
       call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
@@ -3299,23 +3307,47 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
             if (index(field % field, 'UU') /= 0) then
 write(0,*) 'Interpolating U at ', k, vert_level(k)
 
-               mask_array => edge_mask
+               ! For U10, interpolate to cell centers
+               if (vert_level(k) == 200100.0) then
+                  nInterpPoints = nCells
+                  latPoints => latCell
+                  lonPoints => lonCell
+                  call mpas_pool_get_array(fg, 'u10', destField1d)
+                  ndims = 1
 
-               nInterpPoints = nEdges
-               latPoints => latEdge
-               lonPoints => lonEdge
-               call mpas_pool_get_array(fg, 'u', destField2d)
-               ndims = 2
+               ! otherwise to edges
+               else
+                  mask_array => edge_mask
+
+                  nInterpPoints = nEdges
+                  latPoints => latEdge
+                  lonPoints => lonEdge
+                  call mpas_pool_get_array(fg, 'u', destField2d)
+                  ndims = 2
+               end if
+
             else if (index(field % field, 'VV') /= 0) then
 write(0,*) 'Interpolating V at ', k, vert_level(k)
 
-               mask_array => edge_mask
+               ! For V10, interpolate to cell centers
+               if (vert_level(k) == 200100.0) then
+                  nInterpPoints = nCells
+                  latPoints => latCell
+                  lonPoints => lonCell
+                  call mpas_pool_get_array(fg, 'v10', destField1d)
+                  ndims = 1
 
-               nInterpPoints = nEdges
-               latPoints => latEdge
-               lonPoints => lonEdge
-               call mpas_pool_get_array(fg, 'v', destField2d)
-               ndims = 2
+               ! otherwise to edges
+               else
+                  mask_array => edge_mask
+
+                  nInterpPoints = nEdges
+                  latPoints => latEdge
+                  lonPoints => lonEdge
+                  call mpas_pool_get_array(fg, 'v', destField2d)
+                  ndims = 2
+               end if
+
             else if (index(field % field, 'TT') /= 0) then
 write(0,*) 'Interpolating T at ', k, vert_level(k)
                nInterpPoints = nCells
@@ -3836,6 +3868,41 @@ write(0,*) 'Interpolating SKINTEMP'
       write(0,*) '*************************************************'
       write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
       write(0,*) '*************************************************'
+
+   
+      !
+      ! Extract surface fields from first-guess
+      !
+!      call mpas_pool_get_array(fg, 'u10', u10)
+!      call mpas_pool_get_array(fg, 'v10', v10)
+      call mpas_pool_get_array(fg, 'q2', q2)
+      call mpas_pool_get_array(fg, 'rh2', rh2)
+      call mpas_pool_get_array(fg, 't2m', t2m)
+      call mpas_pool_get_array(fg, 'u', u_fg)
+      call mpas_pool_get_array(fg, 'v', v_fg)
+      call mpas_pool_get_array(fg, 't', t_fg)
+      call mpas_pool_get_array(fg, 'rh', rh_fg)
+!      u10(:) = 0.0
+!      v10(:) = 0.0
+      q2(:) = 0.0
+      rh2(:) = 0.0
+      t2m(:) = 0.0
+
+      do k=1,config_nfglevels
+         if (vert_level(k) == 200100.0) then
+!            u10(:) = u_fg(k,:)
+!            v10(:) = v_fg(k,:)
+            t2m(:) = t_fg(k,:)
+            rh2(:) = rh_fg(k,:)
+            do iCell = 1, nCells
+               es = svp1 * 10.0_RKIND * exp(svp2 * (t2m(iCell)-svpt0) / (t2m(iCell)-svp3))
+               es = min(es, 0.99_RKIND * 0.01_RKIND * psfc(iCell))
+               rs = 0.622_RKIND * es * 100.0_RKIND / (psfc(iCell) - es * 100.0_RKIND)
+               q2(iCell) = 0.01_RKIND * rs * rh2(iCell)
+             end do
+         end if
+      end do
+
 
 
       ! 

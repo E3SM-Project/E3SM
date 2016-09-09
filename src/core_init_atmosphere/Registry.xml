@@ -338,6 +338,10 @@
                         <var name="theta_base" packages="met_stage_out"/>
                         <var name="surface_pressure" packages="met_stage_out"/>
                         <var name="precipw" packages="met_stage_out"/>
+                        <var name="u10" packages="met_stage_out"/>
+                        <var name="v10" packages="met_stage_out"/>
+                        <var name="q2" packages="met_stage_out"/>
+                        <var name="t2m" packages="met_stage_out"/>
 		</stream>
 
 		<stream name="surface" 
@@ -519,6 +523,13 @@
                 <var name="vegfra"                            type="real"     dimensions="nCells Time"/>
                 <var name="sfc_albbck"                        type="real"     dimensions="nCells Time"/>
                 <var name="xland"                             type="real"     dimensions="nCells Time"/>
+
+                <!-- surface fields from first-guess data -->
+                <var name="u10"                               type="real"     dimensions="nCells Time"/>
+                <var name="v10"                               type="real"     dimensions="nCells Time"/>
+                <var name="q2"                                type="real"     dimensions="nCells Time"/>
+                <var name="rh2"                               type="real"     dimensions="nCells Time"/>
+                <var name="t2m"                               type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="diag" time_levs="1">
