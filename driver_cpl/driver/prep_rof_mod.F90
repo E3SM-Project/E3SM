@@ -455,7 +455,7 @@ contains
     ! Extract the necessary fields from attribute vectors
     ! ------------------------------------------------------------------------
 
-    lsize_l = mct_aVect_lsize(l2racc_lx)
+    lsize_l = mct_aVect_lsize(l2racc_lx(eli))
 
     allocate(irrig_flux_l(lsize_l))
     call mct_aVect_exportRattr(l2racc_lx(eli), irrig_flux_field, irrig_flux_l)
