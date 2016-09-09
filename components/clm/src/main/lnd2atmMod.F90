@@ -288,8 +288,18 @@ contains
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     call c2g( bounds, &
+         waterflux_vars%qflx_h2osfc_surf_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_rofliq_qsurp_grc  (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    call c2g( bounds, &
          waterflux_vars%qflx_drain_col (bounds%begc:bounds%endc), &
          lnd2atm_vars%qflx_rofliq_qsub_grc   (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    call c2g( bounds, &
+         waterflux_vars%qflx_drain_perched_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_rofliq_qsubp_grc  (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     call c2g( bounds, &

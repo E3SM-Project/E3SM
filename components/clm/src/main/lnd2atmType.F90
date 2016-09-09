@@ -50,11 +50,13 @@ module lnd2atmType
      real(r8), pointer :: flxvoc_grc         (:,:) => null() ! VOC flux (size bins)
      real(r8), pointer :: flux_ch4_grc       (:)   => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
      ! lnd->rof
-     real(r8), pointer :: qflx_rofliq_grc    (:)   => null() ! rof liq forcing
-     real(r8), pointer :: qflx_rofliq_qsur_grc(:)  => null() ! rof liq -- surface runoff component
-     real(r8), pointer :: qflx_rofliq_qsub_grc(:)  => null() ! rof liq -- subsurface runoff component
-     real(r8), pointer :: qflx_rofliq_qgwl_grc(:)  => null() ! rof liq -- glacier, wetland and lakes water balance residual component
-     real(r8), pointer :: qflx_rofice_grc    (:)   => null() ! rof ice forcing
+     real(r8), pointer :: qflx_rofliq_grc      (:) => null() ! rof liq forcing
+     real(r8), pointer :: qflx_rofliq_qsur_grc (:) => null() ! rof liq -- surface runoff component
+     real(r8), pointer :: qflx_rofliq_qsurp_grc(:) => null() ! rof liq -- surface ponding runoff component
+     real(r8), pointer :: qflx_rofliq_qsub_grc (:) => null() ! rof liq -- subsurface runoff component
+     real(r8), pointer :: qflx_rofliq_qsubp_grc(:) => null() ! rof liq -- perched subsurface runoff component
+     real(r8), pointer :: qflx_rofliq_qgwl_grc (:) => null() ! rof liq -- glacier, wetland and lakes water balance residual component
+     real(r8), pointer :: qflx_rofice_grc      (:) => null() ! rof ice forcing
 
    contains
 
@@ -95,32 +97,34 @@ contains
 
     begg = bounds%begg; endg= bounds%endg
 
-    allocate(this%t_rad_grc          (begg:endg))            ; this%t_rad_grc          (:)   =ival
-    allocate(this%t_ref2m_grc        (begg:endg))            ; this%t_ref2m_grc        (:)   =ival
-    allocate(this%q_ref2m_grc        (begg:endg))            ; this%q_ref2m_grc        (:)   =ival
-    allocate(this%u_ref10m_grc       (begg:endg))            ; this%u_ref10m_grc       (:)   =ival
-    allocate(this%h2osno_grc         (begg:endg))            ; this%h2osno_grc         (:)   =ival
-    allocate(this%h2osoi_vol_grc     (begg:endg,1:nlevgrnd)) ; this%h2osoi_vol_grc     (:,:) =ival
-    allocate(this%albd_grc           (begg:endg,1:numrad))   ; this%albd_grc           (:,:) =ival
-    allocate(this%albi_grc           (begg:endg,1:numrad))   ; this%albi_grc           (:,:) =ival
-    allocate(this%taux_grc           (begg:endg))            ; this%taux_grc           (:)   =ival
-    allocate(this%tauy_grc           (begg:endg))            ; this%tauy_grc           (:)   =ival
-    allocate(this%eflx_lwrad_out_grc (begg:endg))            ; this%eflx_lwrad_out_grc (:)   =ival
-    allocate(this%eflx_sh_tot_grc    (begg:endg))            ; this%eflx_sh_tot_grc    (:)   =ival
-    allocate(this%eflx_lh_tot_grc    (begg:endg))            ; this%eflx_lh_tot_grc    (:)   =ival
-    allocate(this%qflx_evap_tot_grc  (begg:endg))            ; this%qflx_evap_tot_grc  (:)   =ival
-    allocate(this%fsa_grc            (begg:endg))            ; this%fsa_grc            (:)   =ival
-    allocate(this%nee_grc            (begg:endg))            ; this%nee_grc            (:)   =ival
-    allocate(this%nem_grc            (begg:endg))            ; this%nem_grc            (:)   =ival
-    allocate(this%ram1_grc           (begg:endg))            ; this%ram1_grc           (:)   =ival
-    allocate(this%fv_grc             (begg:endg))            ; this%fv_grc             (:)   =ival
-    allocate(this%flxdst_grc         (begg:endg,1:ndst))     ; this%flxdst_grc         (:,:) =ival
-    allocate(this%flux_ch4_grc       (begg:endg))            ; this%flux_ch4_grc       (:)   =ival
-    allocate(this%qflx_rofliq_grc    (begg:endg))            ; this%qflx_rofliq_grc    (:)   =ival
-    allocate(this%qflx_rofliq_qsur_grc(begg:endg))           ; this%qflx_rofliq_qsur_grc(:)  =ival
-    allocate(this%qflx_rofliq_qsub_grc(begg:endg))           ; this%qflx_rofliq_qsub_grc(:)  =ival
-    allocate(this%qflx_rofliq_qgwl_grc(begg:endg))           ; this%qflx_rofliq_qgwl_grc(:)  =ival
-    allocate(this%qflx_rofice_grc    (begg:endg))            ; this%qflx_rofice_grc    (:)   =ival
+    allocate(this%t_rad_grc            (begg:endg))            ; this%t_rad_grc            (:) =ival
+    allocate(this%t_ref2m_grc          (begg:endg))            ; this%t_ref2m_grc          (:) =ival
+    allocate(this%q_ref2m_grc          (begg:endg))            ; this%q_ref2m_grc          (:) =ival
+    allocate(this%u_ref10m_grc         (begg:endg))            ; this%u_ref10m_grc         (:) =ival
+    allocate(this%h2osno_grc           (begg:endg))            ; this%h2osno_grc           (:) =ival
+    allocate(this%h2osoi_vol_grc       (begg:endg,1:nlevgrnd)) ; this%h2osoi_vol_grc     (:,:) =ival
+    allocate(this%albd_grc             (begg:endg,1:numrad))   ; this%albd_grc           (:,:) =ival
+    allocate(this%albi_grc             (begg:endg,1:numrad))   ; this%albi_grc           (:,:) =ival
+    allocate(this%taux_grc             (begg:endg))            ; this%taux_grc             (:) =ival
+    allocate(this%tauy_grc             (begg:endg))            ; this%tauy_grc             (:) =ival
+    allocate(this%eflx_lwrad_out_grc   (begg:endg))            ; this%eflx_lwrad_out_grc   (:) =ival
+    allocate(this%eflx_sh_tot_grc      (begg:endg))            ; this%eflx_sh_tot_grc      (:) =ival
+    allocate(this%eflx_lh_tot_grc      (begg:endg))            ; this%eflx_lh_tot_grc      (:) =ival
+    allocate(this%qflx_evap_tot_grc    (begg:endg))            ; this%qflx_evap_tot_grc    (:) =ival
+    allocate(this%fsa_grc              (begg:endg))            ; this%fsa_grc              (:) =ival
+    allocate(this%nee_grc              (begg:endg))            ; this%nee_grc              (:) =ival
+    allocate(this%nem_grc              (begg:endg))            ; this%nem_grc              (:) =ival
+    allocate(this%ram1_grc             (begg:endg))            ; this%ram1_grc             (:) =ival
+    allocate(this%fv_grc               (begg:endg))            ; this%fv_grc               (:) =ival
+    allocate(this%flxdst_grc           (begg:endg,1:ndst))     ; this%flxdst_grc         (:,:) =ival
+    allocate(this%flux_ch4_grc         (begg:endg))            ; this%flux_ch4_grc         (:) =ival
+    allocate(this%qflx_rofliq_grc      (begg:endg))            ; this%qflx_rofliq_grc      (:) =ival
+    allocate(this%qflx_rofliq_qsur_grc (begg:endg))            ; this%qflx_rofliq_qsur_grc (:) =ival
+    allocate(this%qflx_rofliq_qsurp_grc(begg:endg))            ; this%qflx_rofliq_qsurp_grc(:) =ival
+    allocate(this%qflx_rofliq_qsub_grc (begg:endg))            ; this%qflx_rofliq_qsub_grc (:) =ival
+    allocate(this%qflx_rofliq_qsubp_grc(begg:endg))            ; this%qflx_rofliq_qsubp_grc(:) =ival
+    allocate(this%qflx_rofliq_qgwl_grc (begg:endg))            ; this%qflx_rofliq_qgwl_grc (:) =ival
+    allocate(this%qflx_rofice_grc      (begg:endg))            ; this%qflx_rofice_grc      (:) =ival
 
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
