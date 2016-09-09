@@ -81,6 +81,13 @@
 
  end do
 
+ !
+ ! Ensure that no output alarms are still ringing for the 'surface' stream after
+ ! we exit the time loop above; the main run routine may write out all other
+ ! output streams with ringing alarms.
+ !
+ call mpas_stream_mgr_reset_alarms(stream_manager, streamID='surface', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
  end subroutine init_atm_case_sfc
 
 !==================================================================================================
