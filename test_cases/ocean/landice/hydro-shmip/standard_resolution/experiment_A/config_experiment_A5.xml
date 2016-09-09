@@ -5,7 +5,7 @@
         <add_link source="../setup_sqrt_mesh/graph.info.part.4" dest="."/>
         <add_executable source="model" dest="landice_model"/>
         <!-- link in scripts that the user will need -->
-        <add_link source_path="script_configuration_dir" source="setup_hydro-shmip_initial_conditions.py" dest="."/>
+        <add_link source_path="script_test_dir" source="setup_hydro-shmip_experimentA_initial_conditions.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="visualize_output_shmip.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="tuning_A3.txt" dest="."/>
         <add_link source_path="script_configuration_dir" source="tuning_A5.txt" dest="."/>
@@ -33,7 +33,6 @@
 
                 <!-- Setup IC for this test -->
                 <step executable="./setup_hydro-shmip_initial_conditions.py" pre_message="\n\n### Setup IC\n\n" post_message="\n\n### Setup IC complete\n\n">
-                        <argument flag="-t">a</argument>
                         <argument flag="-n">5</argument>
                 </step>
 
