@@ -1093,15 +1093,6 @@ module seq_flds_mod
      attname  = 'Sl_snowh'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Irrigation fraction (land/rof only) 
-     call seq_flds_add(l2x_states,"Flrl_frac_irrig")
-     call seq_flds_add(x2a_states,"Flrl_frac_irrig")
-     longname = 'Irrigation fraction'
-     stdname  = 'irrigation_fraction'
-     units    = '1'
-     attname  = 'Flrl_frac_irrig'
-     call metadata_set(attname, longname, stdname, units)
-
      ! Surface snow depth (ice/atm only)
      call seq_flds_add(i2x_states,"Si_snowh")
      call seq_flds_add(x2a_states,"Si_snowh")
@@ -1952,6 +1943,15 @@ module seq_flds_mod
      attname  = 'Flrl_rofi'
      call metadata_set(attname, longname, stdname, units)
 
+     ! Irrigation fraction (land/rof only) 
+     call seq_flds_add(l2x_fluxes,"Flrl_frac_irrig")
+     call seq_flds_add(x2r_fluxes,"Flrl_frac_irrig")
+     longname = 'Irrigation fraction'
+     stdname  = 'irrigation_fraction'
+     units    = '1'
+     attname  = 'Flrl_frac_irrig'
+     call metadata_set(attname, longname, stdname, units)
+
      !-----------------------------
      ! rof->ocn (runoff) and rof->lnd (flooding)
      !-----------------------------
@@ -1992,14 +1992,6 @@ module seq_flds_mod
      stdname  = 'flooding_water_flux'
      units    = 'kg m-2 s-1'
      attname  = 'Flrr_flood'
-     call metadata_set(attname, longname, stdname, units)
-
-     call seq_flds_add(r2x_fluxes,'Flrr_irrig')
-     call seq_flds_add(x2l_fluxes,'Flrr_irrig')
-     longname = 'Waterrflux due to irrigation'
-     stdname  = 'irrigation_water_flux'
-     units    = 'kg m-2 s-1'
-     attname  = 'Flrr_irrig'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(r2x_fluxes,'Flrr_volr')
