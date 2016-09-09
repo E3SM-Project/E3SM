@@ -1160,9 +1160,9 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (fk1 == 1) then
-         call seq_io_wopen(hist_file(found), clobber=.true., cdf64=cdf64)
-      else
-         call seq_io_wopen(hist_file(found), clobber=.false., cdf64=cdf64)
+         call seq_io_wopen(hist_file(found), clobber=.true., cdf64=cdf64, file_ind=found)
+!     else
+!        call seq_io_wopen(hist_file(found), clobber=.false., cdf64=cdf64)
       endif
 
       ! loop twice,  first time write header,  second time write data for perf
@@ -1194,16 +1194,16 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
          if (tbnds(1) >= tbnds(2)) then
             call seq_io_write(hist_file(found), &
                            time_units=time_units, time_cal=calendar, time_val=avg_time, &
-                           nt=ncnt(found), whead=whead, wdata=wdata)
+                           nt=ncnt(found), whead=whead, wdata=wdata, file_ind=found)
          else
             call seq_io_write(hist_file(found), &
                            time_units=time_units, time_cal=calendar, time_val=avg_time, &
-                           nt=ncnt(found), whead=whead, wdata=wdata, tbnds=tbnds)
+                           nt=ncnt(found), whead=whead, wdata=wdata, tbnds=tbnds, file_ind=found)
          endif
 
          if (fwrite(found)) then
             call seq_io_write(hist_file(found), gsmap, dom%data, trim(dname),  &
-                              nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname))
+                              nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname), file_ind=found)
          endif
 
          if (useavg) then
@@ -1211,21 +1211,21 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
                call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
                call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
                                  nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                                 pre=trim(aname), tavg=.true., use_float=.true.)
+                                 pre=trim(aname), tavg=.true., use_float=.true., file_ind=found)
             else
                call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
                                  nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                                 pre=trim(aname), tavg=.true.,  use_float=.true.)
+                                 pre=trim(aname), tavg=.true.,  use_float=.true., file_ind=found)
             end if
          else if (present(flds)) then
             call mct_aVect_copy(aVin=av,  aVout=avflds)
             call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
                               nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                              use_float=.true.)
+                              use_float=.true., file_ind=found)
          else
             call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
                               nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                              use_float=.true.)
+                              use_float=.true., file_ind=found)
          endif
 
          if (present(flds)) then
@@ -1234,7 +1234,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
             end if
          end if
 
-         if (fk == 1) call seq_io_enddef(hist_file(found))
+         if (fk == 1) call seq_io_enddef(hist_file(found), file_ind=found)
          if (fk == 2) then
             fwrite(found) = .false.
             if (useavg) then
@@ -1245,7 +1245,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
          endif
       enddo
 
-      call seq_io_close(hist_file(found))
+      call seq_io_close(hist_file(found), file_ind=found)
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
    endif   ! lwrite_now
