@@ -1943,8 +1943,19 @@ module seq_flds_mod
      attname  = 'Flrl_rofi'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Irrigation fraction (land/rof only) 
-     call seq_flds_add(l2x_fluxes,"Flrl_frac_irrig")
+     ! TODO(wjs, 2016-09-09) Currently lnd sends an actual irrigation flux, but rof
+     ! receives a fractional amount (fraction of VOLR). We plan to change this so that
+     ! rof receives the irrigation flux.
+
+     ! Irrigation flux (land/rof only)
+     call seq_flds_add(l2x_fluxes,"Flrl_irrig")
+     longname = 'Irrigation flux (withdrawal from rivers)'
+     stdname  = 'irrigation'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_irrig'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Irrigation fraction (land/rof only)
      call seq_flds_add(x2r_fluxes,"Flrl_frac_irrig")
      longname = 'Irrigation fraction'
      stdname  = 'irrigation_fraction'

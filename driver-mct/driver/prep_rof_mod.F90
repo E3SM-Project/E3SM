@@ -42,6 +42,7 @@ module prep_rof_mod
   !--------------------------------------------------------------------------
 
   private :: prep_rof_merge
+  private :: prep_rof_map_irrig
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -411,10 +412,106 @@ contains
        call seq_map_map(mapper_Fl2r, l2racc_lx(eli), l2r_rx(eri), &
             fldlist=seq_flds_x2r_fluxes, norm=.true., &
             avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
+       call prep_rof_map_irrig(eri=eri, eli=eli, &
+            avwts_s = fractions_lx(efi), &
+            avwtsfld_s = 'lfrin')
     end do
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_rof_calc_l2r_rx
+
+  !================================================================================================
+
+  subroutine prep_rof_map_irrig(eri, eli, avwts_s, avwtsfld_s)
+    !---------------------------------------------------------------
+    ! Description
+    ! Do custom mapping for the irrigation flux
+    !
+    ! This mapping first converts the flux to a fraction of volr, then maps this fraction
+    !
+    ! Arguments
+    integer, intent(in) :: eri  ! rof instance index
+    integer, intent(in) :: eli  ! lnd instance index
+    type(mct_aVect) , intent(in) :: avwts_s    ! attr vect for source weighting
+    character(len=*), intent(in) :: avwtsfld_s ! field in avwts_s to use
+    !
+    ! Local variables
+    integer :: i
+    integer :: lsize_l  ! number of land points
+    type(mct_avect), pointer :: x2l_lx
+    type(mct_avect) :: irrig_frac_l_av
+
+    ! The following need to be pointers to satisfy the MCT interface:
+    real(r8), pointer :: irrig_flux_l(:)  ! irrigation flux on the land grid [kg m-2 s-1]
+    real(r8), pointer :: volr_l(:)        ! river volume on the land grid
+    real(r8), pointer :: irrig_frac_l(:)  ! irrigation as a fraction of volr
+
+    character(len=*), parameter :: irrig_flux_field = 'Flrl_irrig'
+    character(len=*), parameter :: volr_field       = 'Flrr_volr'
+    character(len=*), parameter :: irrig_frac_field = 'Flrl_frac_irrig'
+    !---------------------------------------------------------------
+
+    ! ------------------------------------------------------------------------
+    ! Extract the necessary fields from attribute vectors
+    ! ------------------------------------------------------------------------
+
+    lsize_l = mct_aVect_lsize(l2racc_lx)
+
+    allocate(irrig_flux_l(lsize_l))
+    call mct_aVect_exportRattr(l2racc_lx(eli), irrig_flux_field, irrig_flux_l)
+
+    ! TODO(wjs, 2016-09-09) Currently we're getting the already-mapped VOLR on the land
+    ! grid. I think it would be more robust (to possible changes in driver sequencing) if
+    ! we computed volr_l here, by remapping volr_r from rof -> lnd - rather than relying
+    ! on the already-mapped volr_l, which may be out-of-sync with the latest volr in ROF,
+    ! depending on when rof -> lnd mapping happens relative to this routine.
+    x2l_lx => component_get_x2c_cx(lnd(eli))
+    allocate(volr_l(lsize_l))
+    call mct_aVect_exportRattr(x2l_lx, volr_field, volr_l)
+
+    ! ------------------------------------------------------------------------
+    ! Determine irrigation as a fraction of volr
+    ! ------------------------------------------------------------------------
+
+    ! NOTE(wjs, 2016-09-09) Is it really right to call this a fraction of volr? That
+    ! would imply that they have the same units. Would it be more accurate to just call
+    ! this 'irrigation normalized by volr'?
+
+    allocate(irrig_frac_l(lsize_l))
+    ! FIXME(wjs, 2016-09-09) Need to handle possible divide by 0
+    irrig_frac_l(:) = irrig_flux_l(:) / volr_l(:)
+
+    call mct_aVect_init(irrig_frac_l_av, rList = irrig_frac_field, lsize = lsize_l)
+    call mct_aVect_importRattr(irrig_frac_l_av, irrig_frac_field, irrig_frac_l)
+
+    ! ------------------------------------------------------------------------
+    ! Map irrigation_frac
+    !
+    ! NOTE(wjs, 2016-09-09) In principle, we could probably avoid doing a separate
+    ! seq_map_map call by sticking the computed irrigation_frac into l2racc_lx. But it
+    ! seems confusing to put this computed field into that AV, since this computed field
+    ! isn't actually an accumulated quantity (like the rest of the fields in that AV). So
+    ! for now I'm doing an extra mapping, even though that may incur some extra cost.
+    ! ------------------------------------------------------------------------
+
+    call seq_map_map(mapper = mapper_Fl2r, &
+         av_s = irrig_frac_l_av, &
+         av_d = l2r_rx(eri), &
+         fldlist = irrig_frac_field, &
+         norm = .true., &
+         avwts_s = avwts_s, &
+         avwtsfld_s = avwtsfld_s)
+
+    ! ------------------------------------------------------------------------
+    ! Clean up
+    ! ------------------------------------------------------------------------
+
+    deallocate(irrig_flux_l)
+    deallocate(volr_l)
+    deallocate(irrig_frac_l)
+    call mct_aVect_clean(irrig_frac_l_av)
+
+  end subroutine prep_rof_map_irrig
 
   !================================================================================================
 
