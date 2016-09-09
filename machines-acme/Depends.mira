@@ -26,6 +26,11 @@ wetdep.o
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnostrict  $<
+#Model crashes if these files are compiled with O3(default) optimizations
+  seasalt_model.o: seasalt_model.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O2 $<
+  linoz_data.o: linoz_data.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O2 $<
 endif
 
 ### These files take long time to compile with default optimization flags.
