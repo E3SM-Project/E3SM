@@ -345,23 +345,25 @@
  type (field2DReal), pointer :: tempField
  type (field2DReal), target :: tempFieldTarget
  integer:: iCell,iEdge,k,j
- integer,pointer:: nCells,nCellsSolve
- integer,dimension(:),pointer  :: nEdgesOnCell
- integer,dimension(:,:),pointer:: edgesOnCell
+ integer:: cell1, cell2
+ integer,pointer:: nCells,nCellsSolve,nEdges
+ integer,dimension(:,:),pointer:: cellsOnEdge
 
- real(kind=RKIND),dimension(:,:),pointer:: east,north,edge_normal
  real(kind=RKIND),dimension(:,:),allocatable,target:: Ux_tend_halo,Uy_tend_halo
+ real(kind=RKIND), dimension(:,:), pointer :: east, north, edgeNormalVectors
+
  
 !--------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_dimension(mesh, 'nCells', nCells)
  call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+ call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
 
  call mpas_pool_get_array(mesh, 'east', east)
  call mpas_pool_get_array(mesh, 'north', north)
- call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
- call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
- call mpas_pool_get_array(mesh, 'edgeNormalVectors', edge_normal)
+ call mpas_pool_get_array(mesh, 'edgeNormalVectors', edgeNormalVectors)
+
+ call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
  allocate(Ux_tend_halo(nVertLevels,nCells+1))
  allocate(Uy_tend_halo(nVertLevels,nCells+1))
@@ -389,21 +391,23 @@
  tempField % array => Uy_tend_halo
  call mpas_dmpar_exch_halo_field(tempField)
 
- U_tend(:,:) = 0.0
- do iCell = 1, nCells
- do j = 1, nEdgesOnCell(iCell)
-    iEdge = edgesOnCell(j,iCell)
-    do k = 1, nVertLevels
-       U_tend(k,iEdge) = U_tend(k,iEdge) & 
-                + 0.5 * Ux_tend_halo(k,iCell) * (edge_normal(1,iEdge) * east(1,iCell)   &
-                                              +  edge_normal(2,iEdge) * east(2,iCell)   &
-                                              +  edge_normal(3,iEdge) * east(3,iCell))  &
-                + 0.5 * Uy_tend_halo(k,iCell) * (edge_normal(1,iEdge) * north(1,iCell)  &
-                                              +  edge_normal(2,iEdge) * north(2,iCell)  &
-                                              +  edge_normal(3,iEdge) * north(3,iCell))
-    enddo
- enddo
- enddo
+ do iEdge = 1, nEdges
+    cell1 = cellsOnEdge(1,iEdge)
+    cell2 = cellsOnEdge(2,iEdge)
+                           
+    U_tend(:,iEdge) =  Ux_tend_halo(:,cell1) * 0.5 * (edgeNormalVectors(1,iEdge) * east(1,cell1)   &
+                                                   +  edgeNormalVectors(2,iEdge) * east(2,cell1)   &
+                                                   +  edgeNormalVectors(3,iEdge) * east(3,cell1))  &
+                     + Uy_tend_halo(:,cell1) * 0.5 * (edgeNormalVectors(1,iEdge) * north(1,cell1)   &
+                                                   +  edgeNormalVectors(2,iEdge) * north(2,cell1)   &
+                                                   +  edgeNormalVectors(3,iEdge) * north(3,cell1))  &
+                     + Ux_tend_halo(:,cell2) * 0.5 * (edgeNormalVectors(1,iEdge) * east(1,cell2)   &
+                                                   +  edgeNormalVectors(2,iEdge) * east(2,cell2)   &
+                                                   +  edgeNormalVectors(3,iEdge) * east(3,cell2))  &
+                     + Uy_tend_halo(:,cell2) * 0.5 * (edgeNormalVectors(1,iEdge) * north(1,cell2)   &
+                                                   +  edgeNormalVectors(2,iEdge) * north(2,cell2)   &
+                                                   +  edgeNormalVectors(3,iEdge) * north(3,cell2))
+ end do
 
  deallocate(Ux_tend_halo)
  deallocate(Uy_tend_halo)
