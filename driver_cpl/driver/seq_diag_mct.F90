@@ -239,6 +239,7 @@ module seq_diag_mct
    integer :: index_l2x_Flrl_rofsub
    integer :: index_l2x_Flrl_rofdto
    integer :: index_l2x_Flrl_rofi
+   integer :: index_l2x_Flrl_frac_irrig
 
    integer :: index_x2l_Faxa_lwdn
    integer :: index_x2l_Faxa_rainc
@@ -257,6 +258,7 @@ module seq_diag_mct
    integer :: index_x2r_Flrl_rofsub
    integer :: index_x2r_Flrl_rofdto
    integer :: index_x2r_Flrl_rofi
+   integer :: index_x2r_Flrl_frac_irrig
 
    integer :: index_o2x_Fioo_frazil ! currently used by acme
    integer :: index_o2x_Fioo_q      ! currently used by cesm
@@ -847,6 +849,7 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l)
          index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_l,'Flrl_rofsub')
          index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_l,'Flrl_rofdto')
          index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
+         index_l2x_Flrl_frac_irrig   = mct_aVect_indexRA(l2x_l,'Flrl_frac_irrig')
 
          index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
          if ( index_l2x_Fall_evap_16O /= 0 ) flds_wiso_lnd = .true.
@@ -878,6 +881,8 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l)
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
          if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
+!scs: this needs to be done...
+!         if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_frac_irrig,n)
 
          if ( flds_wiso_lnd )then
             if = f_wevap_16O;
