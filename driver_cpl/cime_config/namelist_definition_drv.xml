@@ -995,6 +995,32 @@
     </values>
   </entry>
 
+  <entry id="histaux_a2x1hr">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      turns on coupler history stream for 1-hour average atm to coupler fields.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="histaux_a2x1hri">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      turns on coupler history stream for 1-hour instantaneous atm to coupler fields.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <entry id="histaux_a2x3hr">
     <type>logical</type>
     <category>history</category>

@@ -425,6 +425,8 @@ module cesm_comp_mod
    logical :: do_hist_a2x             ! create aux files: a2x
    logical :: do_hist_a2x3hrp         ! create aux files: a2x 3hr precip
    logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
+   logical :: do_hist_a2x1hri         ! create aux files: a2x 1hr instantaneous
+   logical :: do_hist_a2x1hr          ! create aux files: a2x 1hr
    integer :: budget_inst             ! instantaneous budget flag
    integer :: budget_daily            ! daily budget flag
    integer :: budget_month            ! monthly budget flag
@@ -434,9 +436,25 @@ module cesm_comp_mod
 
 !  character(CL) :: hist_r2x_flds     = 'all'
 !  character(CL) :: hist_l2x_flds     = 'all'
-   character(CL) :: hist_a2x_flds     = 'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 !  character(CL) :: hist_a2x24hr_flds = 'all'
-   character(CL) :: hist_a2x3hrp_flds = 'Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl'
+
+   character(CL) :: hist_a2x_flds     = &
+        'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
+
+   character(CL) :: hist_a2x3hrp_flds = &
+        'Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl'
+
+   character(CL) :: hist_a2x24hr_flds = &
+        'Faxa_bcphiwet:Faxa_bcphodry:Faxa_bcphidry:Faxa_ocphiwet:Faxa_ocphidry:&
+        &Faxa_ocphodry:Faxa_dstwet1:Faxa_dstdry1:Faxa_dstwet2:Faxa_dstdry2:Faxa_dstwet3:&
+        &Faxa_dstdry3:Faxa_dstwet4:Faxa_dstdry4:Sa_co2prog:Sa_co2diag'
+
+   character(CL) :: hist_a2x1hri_flds = &
+        'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
+
+   character(CL) :: hist_a2x1hr_flds  = &
+        'Sa_u:Sa_v'
+
    character(CL) :: hist_a2x3hr_flds  = &
         'Sa_z:Sa_topo:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
         &Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl:&
@@ -875,6 +893,8 @@ subroutine cesm_pre_init2()
         budget_ltann=budget_ltann                 , &
         budget_ltend=budget_ltend                 , &
         histaux_a2x=do_hist_a2x                   , &
+        histaux_a2x1hri=do_hist_a2x1hri           , &
+        histaux_a2x1hr=do_hist_a2x1hr             , &
         histaux_a2x3hr =do_hist_a2x3hr            , &
         histaux_a2x3hrp=do_hist_a2x3hrp           , &
         histaux_a2x24hr=do_hist_a2x24hr           , &
@@ -2915,17 +2935,6 @@ end subroutine cesm_init
             call component_diag(infodata, rof, flow='c2x', comment= 'recv rof', &
                  info_debug=info_debug, timer_diag='CPL:rofpost_diagav')
 
-            if (do_hist_r2x) then
-               call t_drvstartf ('CPL:rofpost_histaux', barrier=mpicom_CPLID)
-               do eri = 1,num_inst_rof
-                  suffix =  component_get_suffix(rof(eri))
-                  call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
-                       aname='r2x'//trim(suffix), dname='domrb', &
-                       nx=rof_nx, ny=rof_ny, nt=1)
-               enddo
-               call t_drvstopf ('CPL:rofpost_histaux')
-            endif
-
             if (rof_c2_lnd) then
                call prep_lnd_calc_r2x_lx(timer='CPL:rofpost_rof2lnd')
             endif
@@ -2939,6 +2948,25 @@ end subroutine cesm_init
             endif
 
             call t_drvstopf  ('CPL:ROFPOST', cplrun=.true.)
+         endif
+      endif
+
+      if (rof_present) then
+         if (iamin_CPLID) then
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
+            call t_drvstartf  ('DRIVER_ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
+            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+            if (do_hist_r2x) then
+               call t_drvstartf ('driver_rofpost_histaux', barrier=mpicom_CPLID)
+               do eri = 1,num_inst_rof
+                  suffix =  component_get_suffix(rof(eri)) 
+                  call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
+                       aname='r2x'//trim(suffix), dname='domrb', &
+                       nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
+               enddo
+               call t_drvstopf ('driver_rofpost_histaux')
+            endif
+            call t_drvstopf  ('DRIVER_ROFPOST', cplrun=.true.)
          endif
       endif
 
@@ -3551,6 +3579,36 @@ end subroutine cesm_init
             enddo
          endif
 
+         if (do_hist_a2x1hri .and. t1hr_alarm) then
+            do eai = 1,num_inst_atm
+               suffix =  component_get_suffix(atm(eai))
+               if (trim(hist_a2x1hri_flds) == 'all') then
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1hi'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24)
+               else
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1hi'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24, flds=hist_a2x1hri_flds)
+               endif
+            enddo
+         endif
+
+         if (do_hist_a2x1hr) then
+            do eai = 1,num_inst_atm
+               suffix =  component_get_suffix(atm(eai))
+               if (trim(hist_a2x1hr_flds) == 'all') then
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1h'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm)
+               else
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1h'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm, flds=hist_a2x1hr_flds)
+               endif
+            enddo
+         endif
+
          if (do_hist_a2x3hr) then
             do eai = 1,num_inst_atm
                suffix =  component_get_suffix(atm(eai))
@@ -3584,9 +3642,15 @@ end subroutine cesm_init
          if (do_hist_a2x24hr) then
             do eai = 1,num_inst_atm
                suffix = component_get_suffix(atm(eai))
-               call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                    aname='a2x1d'//trim(suffix), dname='doma', &
-                    nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
+               if (trim(hist_a2x24hr_flds) == 'all') then
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1d'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
+               else
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1d'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm, flds=hist_a2x24hr_flds)
+               endif
             enddo
          endif
 
