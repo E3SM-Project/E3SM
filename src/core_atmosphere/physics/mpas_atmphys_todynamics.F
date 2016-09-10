@@ -334,7 +334,7 @@
 !----------------
  type(block_type),intent(in),target:: block
  type(mpas_pool_type),intent(in):: mesh
- real(kind=RKIND),intent(in),dimension(:,:):: Ux_tend,Uy_tend 
+ real(kind=RKIND),intent(in),dimension(:,:),target:: Ux_tend,Uy_tend 
 
 !output arguments:
 !-----------------
@@ -349,7 +349,7 @@
  integer,pointer:: nCells,nCellsSolve,nEdges
  integer,dimension(:,:),pointer:: cellsOnEdge
 
- real(kind=RKIND),dimension(:,:),allocatable,target:: Ux_tend_halo,Uy_tend_halo
+ real(kind=RKIND),dimension(:,:),pointer:: Ux_tend_halo,Uy_tend_halo
  real(kind=RKIND), dimension(:,:), pointer :: east, north, edgeNormalVectors
 
  
@@ -365,15 +365,8 @@
 
  call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
- allocate(Ux_tend_halo(nVertLevels,nCells+1))
- allocate(Uy_tend_halo(nVertLevels,nCells+1))
-
- do iCell = 1, nCellsSolve
-    do k = 1, nVertLevels
-       Ux_tend_halo(k,iCell) = Ux_tend(k,iCell)
-       Uy_tend_halo(k,iCell) = Uy_tend(k,iCell)
-    enddo
- enddo
+ Ux_tend_halo => Ux_tend
+ Uy_tend_halo => Uy_tend
 
  tempField => tempFieldTarget 
  tempField % block => block
@@ -408,9 +401,6 @@
                                                    +  edgeNormalVectors(2,iEdge) * north(2,cell2)   &
                                                    +  edgeNormalVectors(3,iEdge) * north(3,cell2))
  end do
-
- deallocate(Ux_tend_halo)
- deallocate(Uy_tend_halo)
  
  end subroutine tend_toEdges
 
