@@ -175,7 +175,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "	-->\n";
 	print $stream_file "	<immutable_stream name=" . '"restart"' . "\n";
 	print $stream_file "					  type=" . '"input;output"' . "\n";
-	print $stream_file "					  filename_template=" . '"rst.mpasli.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "					  filename_template=" . '"mpasli.rst.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file "					  filename_interval=" . '"output_interval"' . "\n";
 	print $stream_file "					  clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "					  input_interval=" . '"initial_only"' . "\n";
@@ -188,7 +188,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "\n";
 	print $stream_file "	<stream name=" . '"output"' . "\n";
 	print $stream_file "			type=" . '"output"' . "\n";
-	print $stream_file "			filename_template=" . '"hist.mpasli.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "			filename_template=" . '"mpasli.hist.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file "			filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
 	print $stream_file "			clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "			output_interval=" . '"0001-00-00_00:00:00"' . ">\n";
@@ -230,7 +230,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "\n";
 	print $stream_file "<stream name=" . '"globalStatsOutput"' . "\n";
 	print $stream_file "        type=" . '"output"' . "\n";
-	print $stream_file "        filename_template=" . '"am.mpasli.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "        filename_template=" . '"mpasli.hist.am.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file "        filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
 	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "        packages=" . '"globalStatsAMPKG"' . "\n";
