@@ -11,11 +11,11 @@
                 <option name="config_max_adaptive_timestep">3.15e9</option>
                 <option name="config_adaptive_timestep_CFL_fraction">0.25</option>
                 <option name="config_adaptive_timestep_include_DCFL">.false.</option>
-                <option name="config_adaptive_timestep_force_interval">'99999-00-00_00:00:00'</option>
+                <option name="config_adaptive_timestep_force_interval">'00100-00-00_00:00:00'</option>
                 <option name="config_dt">'0001-00-00_00:00:00'</option>
                 <option name="config_run_duration">'none'</option>
                 <option name="config_start_time">'0000-01-01_00:00:00'</option>
-                <option name="config_stop_time">'20000-01-01_00:00:00'</option>
+                <option name="config_stop_time">'15000-01-01_00:00:00'</option>
                 <option name="config_year_digits">5</option>
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
         </namelist>
@@ -29,10 +29,10 @@
                 <stream name="output">
                         <attribute name="type">output</attribute>
                         <attribute name="filename_template">output_$Y.nc</attribute>
-                        <attribute name="filename_interval">10000-00-00_00:00:00</attribute>
-                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                        <attribute name="filename_interval">20000-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
                         <attribute name="reference_time">00000-01-01_00:00:00</attribute>
-                        <attribute name="clobber_mode">overwrite</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
                                 <member name="xtime" type="var"/>
@@ -41,6 +41,10 @@
                                 <member name="allowableDtDCFL" type="var"/>
                                 <member name="thickness" type="var"/>
                                 <member name="upperSurface" type="var"/>
+                                <member name="bedTopography" type="var"/>
+                                <member name="uReconstructZonal" type="var"/>
+                                <member name="uReconstructMeridional" type="var"/>
+                                <member name="basalMassBal" type="var"/>
                                 <member name="edgeMask" type="var"/>
                                 <member name="cellMask" type="var"/>
                                 <member name="surfaceSpeed" type="var"/>
@@ -51,10 +55,10 @@
                 <stream name="outputmask">
                         <attribute name="type">output</attribute>
                         <attribute name="filename_template">output-mask_$Y.nc</attribute>
-                        <attribute name="filename_interval">10000-00-00_00:00:00</attribute>
+                        <attribute name="filename_interval">20000-00-00_00:00:00</attribute>
                         <attribute name="output_interval">0000-00-01_00:00:00</attribute>
                         <attribute name="reference_time">00000-01-01_00:00:00</attribute>
-                        <attribute name="clobber_mode">overwrite</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
                                 <member name="xtime" type="var"/>
@@ -70,7 +74,7 @@
                         <attribute name="type">input;output</attribute>
                         <attribute name="filename_template">restart_$Y.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
-                        <attribute name="output_interval">0500-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <attribute name="precision">double</attribute>
                         <attribute name="input_interal">initial_only</attribute>

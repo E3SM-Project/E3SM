@@ -6,7 +6,7 @@
 #   X. Asay-Davis et al. (2015), Experimental design for three interrelated 
 #   Marine Ice-Sheet and Ocean Model Intercomparison Projects, Geosci. Model Devel. Discuss.,
 #   8, 9859-9924.
-# Following grid setup and initialization, the code will be run for 20,000 years
+# Following grid setup and initialization, the code should be spun up for ~10-20 ka
 #  without basal melting, which should result in a stable grounding line
 #  crossing the center of the channel around x = 450 km.
 
@@ -90,7 +90,7 @@ if yCell.min() > 0.0:
    dvEdge[ np.nonzero(yEdge == unique_ys_edge[-2]) ] *= 0.5  # cut length in half for edges between boundary cells
 
 
-#The following function computes the MISMIP+ bed according to Asay-Davis et al. (2015)
+#The following function computes the MISMIP+ bed according to Asay-Davis et al. (2016)
 
 def computeBed(x,y):
    x = x/1.e3     # m to km
@@ -149,7 +149,7 @@ gridfile.variables['thickness'][0,:] = thickness[:]
 
 print "Defining SMB"
 SMB = np.zeros((nCells,))
-rhoi = 918.0  # from Asay-Davis et al. (2015)
+rhoi = 918.0  # from Asay-Davis et al. (2016)
 seconds_per_year = 3600.0 * 24.0 * 365.0
 SMB[:] = 0.3 * rhoi/seconds_per_year
 for iCell in range(1,nCells):
@@ -201,7 +201,7 @@ gridfile.variables['uReconstructY'][0,:] = 0.0
 
 # Set basal traction coefficient, beta.
 # For now, assume a Weertman-type power law, tau_b = C * u^(1/m), where C = beta.
-# Asay-Davis et al. (2015) specify C = 3.160 x 10^6 Pa m^{-1/3} s^{1/3} for power-law friction,
+# Asay-Davis et al. (2016) specify C = 3.160 x 10^6 Pa m^{-1/3} s^{1/3} for power-law friction,
 #  with friction-law exponent m = 3.
 # Later, we could support a Tsai friction law.
 
@@ -231,4 +231,3 @@ gridfile.sync()
 gridfile.close()
 
 print 'Successfully added MISMIP+ initial conditions to: ', options.filename
-
