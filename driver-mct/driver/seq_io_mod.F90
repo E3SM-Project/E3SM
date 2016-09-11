@@ -264,7 +264,7 @@ subroutine seq_io_close(filename,file_ind)
        call pio_closefile(cpl_io_file(lfile_ind))
     else
        ! different filename is open, abort
-       if(iam==0) write(logunit,*) subname,' different file currently open ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' different file currently open, aborting ',trim(filename)
        call shr_sys_abort()
     endif
 

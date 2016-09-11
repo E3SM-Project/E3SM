@@ -1158,97 +1158,101 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
             fk1 = 2
          endif
 
-      if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-      if (fk1 == 1) then
-         call seq_io_wopen(hist_file(found), clobber=.true., cdf64=cdf64, file_ind=found)
-!     else
-!        call seq_io_wopen(hist_file(found), clobber=.false., cdf64=cdf64)
-      endif
-
-      ! loop twice,  first time write header,  second time write data for perf
-
-      tbnds(1) = tbnds1(found)
-      tbnds(2) = tbnds2(found)
-
-      do fk = fk1, 2
-         if (fk == 1) then
-            whead = .true.
-            wdata = .false.
-         elseif (fk == 2) then
-            whead = .false.
-            wdata = .true.
-         else
-            call shr_sys_abort('seq_hist_writeaux fk illegal')
-         end if
-
-         if (present(flds)) then
-            if (fk == fk1) then
-               lsize = mct_aVect_lsize(av)
-               call mct_aVect_init(avflds,  rList=flds,  lsize=lsize)
-               call mct_aVect_zero(avflds)
-            end if
-         end if
-
-         avg_time = 0.5_r8 * (tbnds(1) + tbnds(2))
-         !------- tcx nov 2011 tbnds of same values causes problems in ferret
-         if (tbnds(1) >= tbnds(2)) then
-            call seq_io_write(hist_file(found), &
-                           time_units=time_units, time_cal=calendar, time_val=avg_time, &
-                           nt=ncnt(found), whead=whead, wdata=wdata, file_ind=found)
-         else
-            call seq_io_write(hist_file(found), &
-                           time_units=time_units, time_cal=calendar, time_val=avg_time, &
-                           nt=ncnt(found), whead=whead, wdata=wdata, tbnds=tbnds, file_ind=found)
+         if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+         if (fk1 == 1) then
+            call seq_io_wopen(hist_file(found), clobber=.true., cdf64=cdf64, file_ind=found)
          endif
 
-         if (fwrite(found)) then
-            call seq_io_write(hist_file(found), gsmap, dom%data, trim(dname),  &
-                              nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname), file_ind=found)
-         endif
+         ! loop twice,  first time write header,  second time write data for perf
 
-         if (useavg) then
-            if (present(flds)) then
-               call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
-               call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                                 nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                                 pre=trim(aname), tavg=.true., use_float=.true., file_ind=found)
+         tbnds(1) = tbnds1(found)
+         tbnds(2) = tbnds2(found)
+
+         do fk = fk1, 2
+            if (fk == 1) then
+               whead = .true.
+               wdata = .false.
+            elseif (fk == 2) then
+               whead = .false.
+               wdata = .true.
             else
-               call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
-                                 nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                                 pre=trim(aname), tavg=.true.,  use_float=.true., file_ind=found)
+               call shr_sys_abort('seq_hist_writeaux fk illegal')
             end if
-         else if (present(flds)) then
-            call mct_aVect_copy(aVin=av,  aVout=avflds)
-            call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                              nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                              use_float=.true., file_ind=found)
-         else
-            call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
-                              nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                              use_float=.true., file_ind=found)
-         endif
 
-         if (present(flds)) then
-            if (fk == 2) then
-               call mct_aVect_clean(avflds)
+            if (present(flds)) then
+               if (fk == fk1) then
+                  lsize = mct_aVect_lsize(av)
+                  call mct_aVect_init(avflds,  rList=flds,  lsize=lsize)
+                  call mct_aVect_zero(avflds)
+               end if
             end if
-         end if
 
-         if (fk == 1) call seq_io_enddef(hist_file(found), file_ind=found)
-         if (fk == 2) then
-            fwrite(found) = .false.
-            if (useavg) then
-               call mct_aVect_zero(avavg(found))
-               avcnt(found) = 0
+            avg_time = 0.5_r8 * (tbnds(1) + tbnds(2))
+            !------- tcx nov 2011 tbnds of same values causes problems in ferret
+            if (tbnds(1) >= tbnds(2)) then
+               call seq_io_write(hist_file(found), &
+                    time_units=time_units, time_cal=calendar, time_val=avg_time, &
+                    nt=ncnt(found), whead=whead, wdata=wdata, file_ind=found)
+            else
+               call seq_io_write(hist_file(found), &
+                    time_units=time_units, time_cal=calendar, time_val=avg_time, &
+                    nt=ncnt(found), whead=whead, wdata=wdata, tbnds=tbnds, file_ind=found)
             endif
-            tbnds1(found) = curr_time
-         endif
-      enddo
 
-      call seq_io_close(hist_file(found), file_ind=found)
-      if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+            if (fwrite(found)) then
+               call seq_io_write(hist_file(found), gsmap, dom%data, trim(dname),  &
+                    nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname), file_ind=found)
+            endif
 
-   endif   ! lwrite_now
+            if (useavg) then
+               if (present(flds)) then
+                  call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
+                  call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
+                       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
+                       pre=trim(aname), tavg=.true., use_float=.true., file_ind=found)
+               else
+                  call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
+                       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
+                       pre=trim(aname), tavg=.true.,  use_float=.true., file_ind=found)
+               end if
+            else if (present(flds)) then
+               call mct_aVect_copy(aVin=av,  aVout=avflds)
+               call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
+                    nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
+                    use_float=.true., file_ind=found)
+            else
+               call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
+                    nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
+                    use_float=.true., file_ind=found)
+            endif
+
+            if (present(flds)) then
+               if (fk == 2) then
+                  call mct_aVect_clean(avflds)
+               end if
+            end if
+
+            if (fk == 1) then
+               call seq_io_enddef(hist_file(found), file_ind=found)
+            end if
+
+            if (fk == 2) then
+               fwrite(found) = .false.
+               if (useavg) then
+                  call mct_aVect_zero(avavg(found))
+                  avcnt(found) = 0
+               endif
+               tbnds1(found) = curr_time
+            endif
+
+         enddo ! fk=1,2
+
+         if (ncnt(found) == nt) then
+            call seq_io_close(hist_file(found), file_ind=found)
+         end if
+         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      endif   ! lwrite_now
 
    endif   ! iamin_CPLID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -1413,7 +1417,7 @@ subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, fl
          end if
 
          tbnds = real(ncnt(found), r8)
-!------- tcx nov 2011 tbnds of same values causes problems in ferret
+         !------- tcx nov 2011 tbnds of same values causes problems in ferret
          if (tbnds(1) >= tbnds(2)) then
            call seq_io_write(hist_file(found), &
                              time_units='nstep', time_cal='nstep', time_val=real(ncnt(found), r8), &
