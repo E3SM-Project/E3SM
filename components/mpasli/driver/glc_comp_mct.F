@@ -836,6 +836,7 @@ contains
          itimestep = itimestep + 1
 
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
+         call shr_sys_flush(stderrUnit)
 
          ! ===
          ! === Perform Timestep
