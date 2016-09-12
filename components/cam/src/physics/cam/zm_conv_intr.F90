@@ -570,6 +570,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('ZMEIHEAT', ptend_loc%s, pcols, lchnk)
    call outfld('CMFMCDZM   ',mcon ,  pcols   ,lchnk   )
    call outfld('PRECCDZM   ',prec,  pcols   ,lchnk   )
+   call outfld('FREQZMSUP  ',freqzmsup,  pcols, lchnk)
 
 
 
