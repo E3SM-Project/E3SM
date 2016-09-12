@@ -132,6 +132,7 @@ def _archive_history_files(case, archive, archive_entry,
 
     # determine history archive directory (create if it does not exist)
     dout_s_root = case.get_value("DOUT_S_ROOT")
+    casename = case.get_value("CASE")
     archive_histdir = os.path.join(dout_s_root, compclass, 'hist')
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
@@ -146,9 +147,9 @@ def _archive_history_files(case, archive, archive_entry,
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
             if ninst_string:
-                newsuffix = compname + ".*" + ninst_string[i] + suffix
+                newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
             else:
-                newsuffix = compname + ".*" + suffix
+                newsuffix = casename + '.' + compname + ".*" + suffix
             logger.debug("short term archiving suffix is %s " %newsuffix)
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
@@ -204,7 +205,7 @@ def _archive_restarts(case, archive, archive_entry,
     # determine directory for archiving restarts based on datename
     dout_s_root = case.get_value("DOUT_S_ROOT")
     rundir = case.get_value("RUNDIR")
-
+    casename = case.get_value("CASE")
     archive_restdir = join(dout_s_root, 'rest', datename)
     if not os.path.exists(archive_restdir):
         os.makedirs(archive_restdir)
@@ -224,7 +225,7 @@ def _archive_restarts(case, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
             restfiles = ""
-            pattern = r"\.%s\d*.*" % compname
+            pattern = r"%s\.%s\d*.*" % (casename, compname)
             if pattern != "dart":
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]

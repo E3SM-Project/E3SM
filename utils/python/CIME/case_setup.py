@@ -283,7 +283,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
         preview_namelists(case)
 
         logger.info("See ./CaseDoc for component namelists")
-        logger.info("If an old case build already exists, might want to run \'case.build --clean-all\' before building")
+        logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
         # Create test script if appropriate
         # Short term fix to be removed when csh tests are removed
