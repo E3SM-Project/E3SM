@@ -471,8 +471,10 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
 def _main_func(description):
 ###############################################################################
     if "--test" in sys.argv:
-        CIME.utils.run_cmd_no_fail("python -m doctest %s/CIME/test_scheduler.py -v" %
-                                   CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        libroot = CIME.utils.get_python_libs_root()
+
+        CIME.utils.run_cmd_no_fail("PYTHONPATH=%s python -m doctest %s/CIME/test_scheduler.py -v" %
+                                   (libroot, libroot), arg_stdout=None, arg_stderr=None)
         return
 
     test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root, baseline_root, clean, \
