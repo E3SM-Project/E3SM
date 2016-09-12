@@ -1248,7 +1248,12 @@ query:
         environment = os.environ.copy()
         environment.update(env)
         environment.update(var)
-        run_cmd_assert_result(self.parent, "gmake query --directory=%s 2>&1" % temp_dir, env=environment)
+        gmake_exe = MACHINE.get_value("GMAKE")
+        if gmake_exe is None:
+            gmake_exe = "gmake"
+        run_cmd_assert_result(self.parent, "%s query --directory=%s 2>&1" % (gmake_exe, temp_dir), env=environment)
+
+
 
         with open(output_name, "r") as output:
             query_result = output.read().strip()
