@@ -483,7 +483,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     freqzmsup(:) = 0._r8
     do i =1, lengath
        ii = ideep(i)
-       if (prec(ii).lt.0.0000578_r8) then
+       ! precipitaiton threshold of 5 mm/d
+       if (prec(ii).lt.0.0000000578_r8) then
           freqzmsup(ii) = 1.0_r8
           ! Change all tendencies to zero
           ptend_loc%s(ii,:pver)=0._r8
