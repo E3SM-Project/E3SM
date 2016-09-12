@@ -1123,7 +1123,6 @@ class B_CheckCode(unittest.TestCase):
             pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
             major = int(pylintver.group(1))
             minor = int(pylintver.group(2))
-            print("DEBUG:%s" ,  )
         if pylint is None or major < 1 or (major == 1 and minor < 5):
             self.skipTest("pylint version 1.5 or newer not found")
         else:
