@@ -1,0 +1,87 @@
+#! /bin/csh -fx
+
+#-------------------------------------------------------------------------------
+# Modules and library paths
+#-------------------------------------------------------------------------------
+
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
+  set MPILIB   = `./xmlquery MPILIB   -value`
+  set DEBUG   = `./xmlquery DEBUG   -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
+echo "DEBUG=$DEBUG"
+
+#if (-e /usr/share/Modules/init/csh) then
+  #source /opt/modules/default/init/csh
+  source /usr/share/Modules/init/csh
+  module unload intel-compilers
+  module unload intel-mpi
+  module unload openmpi
+  module unload hdf5
+  module unload netcdf
+#endif
+
+#if($DEBUG=="TRUE") then
+#  module load itac
+#  #source /global/opt/intel/parallel_studio_xe_2016_update2/advisor_xe_2016.1.30.450722/advixe-vars.sh
+#endif
+
+#defined in config_machines
+module load cmake
+module load netcdf/3.6.3
+#module load netcdf
+#pnetcdf/host-1.5.0
+module load p-netcdf
+
+if ( $COMPILER == "intel" ) then
+  module load PE-intel
+  module unload intel-compilers
+  module load intel-compilers
+  #module load intel-compilers/2016.1.056
+  #module load intel-compilers
+  echo "SUCCESS: initialized intel compiler module"
+else
+  echo "1 ERROR: Failed to initialize modules"
+  exit -1
+endif    
+
+if ( $MPILIB == "impi" ) then
+  module unload intel-mpi
+  #module load intel-mpi/5.1.2.150
+  module load intel-mpi
+else if ( $MPILIB == "openmpi" ) then
+  module load openmpi/1.8.3
+  #module load openmpi
+  module unload intel-mpi
+  #module load intel-mpi/5.1.2.150
+  module load intel-mpi
+else
+  echo "2 ERROR: Failed to initialize modules"
+  exit -1
+endif  
+
+module list >& software_environment.txt
+
+setenv MKL -mkl
+
+#-------------------------------------------------------------------------------
+# Runtime environment variables
+#-------------------------------------------------------------------------------
+
+
+limit coredumpsize unlimited
+limit stacksize unlimited
+
+
+
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine.  
+setenv OMP_STACKSIZE 64M
+if ( $?PERL ) then
+  printenv
+endif

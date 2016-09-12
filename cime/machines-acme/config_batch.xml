@@ -223,5 +223,19 @@
      </directives>
    </batch_system>
 
+   <batch_system MACH="beacon" type="pbs" version="x.y">
+     <batch_query args="-f" >qstat</batch_query>
+     <batch_submit>qsub </batch_submit>
+     <batch_directive>#PBS</batch_directive>
+     <jobid_pattern>^(\d+)\.</jobid_pattern>
+     <depend_string> -W depend=afterok:jobid</depend_string>
+     <directives>
+       <directive> -q {{ queue }}</directive>
+       <directive> -l nodes={{ num_nodes }}</directive>
+       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
+       <directive default="/usr/bin/perl" > -S {{ shell }} </directive>
+     </directives>
+   </batch_system>
+
 </config_batch>
 

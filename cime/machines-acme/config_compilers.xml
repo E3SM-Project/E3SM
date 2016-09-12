@@ -1205,4 +1205,39 @@ for mct, etc.
         <ADD_SLIBS>-L/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib -lnetcdff -L/soft/hdf5/hdf5-1.8.13-intel-2013-sp1-update3-impi-5.0.0.028/lib -openmp -fPIC -lnetcdf -lnetcdf -L/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm </ADD_SLIBS>
 </compiler>
 
+
+<compiler COMPILER="intel" MACH="beacon">
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -O2  -g -qopt-report=5 -qopt-report-phase=vec -np-ipo -ip-no-inlining -vec -simd -qopenmp </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -O2  -g -qopt-report=5 -qopt-report-phase=vec -np-ipo -ip-no-inlining -vec -simd -qopenmp </ADD_CFLAGS>
+  <MPIFC> mpiifort </MPIFC>
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <ADD_CPPDEFS> -DCPRINTEL </ADD_CPPDEFS>
+  <CXX_LIBS DEBUG="TRUE"> -g </CXX_LIBS>
+  <modules compiler="intel">
+    <command name="load">netcdf</command>
+  </modules>
+
+  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
+  <ADD_SLIBS> -mkl</ADD_SLIBS>
+
+  <NETCDF_DIR>/lustre/scratch/tug970/ACME/work/chadb/netcdf-fortran-4.4.3/</NETCDF_DIR>
+  <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
+  <PNETCDF_PATH>$(PNETCDF_DIR)</PNETCDF_PATH>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+
+</compiler>
+
+
+
+
+
 </config_compilers>
