@@ -3,6 +3,7 @@ module prep_rof_mod
   use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
+  use shr_kind_mod,     only: cxx => SHR_KIND_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc
   use seq_comm_mct,     only: CPLID, ROFID, logunit
@@ -59,7 +60,12 @@ module prep_rof_mod
   integer        , target  :: l2racc_lx_cnt  ! l2racc_lx: number of time samples accumulated
 
   ! other module variables
-  integer :: mpicom_CPLID                            ! MPI cpl communicator
+  integer :: mpicom_CPLID                            ! MPI cpl communicator  
+
+  ! field names and lists, for fields that need to be treated specially
+  character(len=*), parameter :: irrig_flux_field = 'Flrl_irrig'
+  ! fluxes mapped from lnd to rof that don't need any special handling
+  character(CXX) :: lnd2rof_normal_fluxes
   !================================================================================================
 
 contains
@@ -138,6 +144,14 @@ contains
           call seq_map_init_rcfile(mapper_Fl2r, lnd(1), rof(1), &
                'seq_maps.rc','lnd2rof_fmapname:','lnd2rof_fmaptype:',samegrid_lr, &
                string='mapper_Fl2r initialization', esmf_map=esmf_map_flag)
+
+          ! We'll map irrigation specially, so exclude this from the list of l2r fields
+          ! that are mapped "normally". Note that the following assumes that all
+          ! x2r_fluxes are lnd2rof (as opposed to coming from some other component).
+          call shr_string_listDiff( &
+               list1 = seq_flds_x2r_fluxes, &
+               list2 = irrig_flux_field, &
+               listout = lnd2rof_normal_fluxes)
        endif
        call shr_sys_flush(logunit)
 
@@ -252,13 +266,13 @@ contains
     integer, save :: index_l2x_Flrl_rofsub
     integer, save :: index_l2x_Flrl_rofdto
     integer, save :: index_l2x_Flrl_rofi
-    integer, save :: index_l2x_Flrl_frac_irrig
+    integer, save :: index_l2x_Flrl_irrig
     integer, save :: index_x2r_Flrl_rofsur
     integer, save :: index_x2r_Flrl_rofgwl
     integer, save :: index_x2r_Flrl_rofsub
     integer, save :: index_x2r_Flrl_rofdto
     integer, save :: index_x2r_Flrl_rofi
-    integer, save :: index_x2r_Flrl_frac_irrig
+    integer, save :: index_x2r_Flrl_irrig
     integer, save :: index_l2x_Flrl_rofl_16O
     integer, save :: index_l2x_Flrl_rofi_16O
     integer, save :: index_x2r_Flrl_rofl_16O
@@ -299,14 +313,14 @@ contains
        index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
        index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
        index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_r,'Flrl_rofdto' )
-       index_l2x_Flrl_frac_irrig = mct_aVect_indexRA(l2x_r,'Flrl_frac_irrig' )
+       index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
-       index_x2r_Flrl_frac_irrig = mct_aVect_indexRA(x2r_r,'Flrl_frac_irrig' )
+       index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
 
        if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
@@ -339,8 +353,8 @@ contains
           'lfrac*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
           'lfrac*l2x%Flrl_rofi'
-       mrgstr(index_x2r_Flrl_frac_irrig) = trim(mrgstr(index_x2r_Flrl_frac_irrig))//' = '// &
-          'lfrac*l2x%Flrl_frac_irrig'
+       mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
+          'lfrac*l2x%Flrl_irrig'
        if ( flds_wiso_rof ) then
           mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
              'lfrac*l2x%Flrl_rofl_16O'
@@ -364,7 +378,7 @@ contains
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
-       x2r_r%rAttr(index_x2r_Flrl_frac_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_frac_irrig,i) * lfrac
+       x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * lfrac
        if ( flds_wiso_rof ) then
           x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * lfrac
           x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * lfrac
@@ -410,7 +424,7 @@ contains
        eli = mod((eri-1),num_inst_lnd) + 1
        efi = mod((eri-1),num_inst_frc) + 1
        call seq_map_map(mapper_Fl2r, l2racc_lx(eli), l2r_rx(eri), &
-            fldlist=seq_flds_x2r_fluxes, norm=.true., &
+            fldlist=lnd2rof_normal_fluxes, norm=.true., &
             avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
        call prep_rof_map_irrig(eri=eri, eli=eli, &
             avwts_s = fractions_lx(efi), &
@@ -427,7 +441,15 @@ contains
     ! Description
     ! Do custom mapping for the irrigation flux
     !
-    ! This mapping first converts the flux to a fraction of volr, then maps this fraction
+    ! This mapping first converts the flux to a fraction of volr, then maps this
+    ! fraction, then converts the fraction back to a flux on the rof grid.
+    !
+    ! This uses the field given by irrig_flux_field from l2racc_lx(eli), and sets the
+    ! field given by irrig_flux_field in l2r_rx(eri).
+    !
+    ! In addition, it uses the following fields from other attribute vectors:
+    ! - r2x_rx (obtained via component_get_c2x_cx(rof(eri))): Flrr_volr
+    ! - x2l_lx (obtained via component_get_x2c_cx(lnd(eli))): Flrr_volr
     !
     ! Arguments
     integer, intent(in) :: eri  ! rof instance index
@@ -438,27 +460,41 @@ contains
     ! Local variables
     integer :: i
     integer :: lsize_l  ! number of land points
+    integer :: lsize_r  ! number of rof points
     type(mct_avect), pointer :: x2l_lx
-    type(mct_avect) :: irrig_frac_l_av
+    type(mct_avect), pointer :: r2x_rx
+    type(mct_avect) :: irrig_frac_l_av  ! temporary attribute vector holding irrig_frac on the land grid
+    type(mct_avect) :: irrig_frac_r_av  ! temporary attribute vector holding irrig_frac on the rof grid
 
     ! The following need to be pointers to satisfy the MCT interface:
-    real(r8), pointer :: irrig_flux_l(:)  ! irrigation flux on the land grid [kg m-2 s-1]
+    real(r8), pointer :: volr_r(:)        ! river volume on the rof grid
     real(r8), pointer :: volr_l(:)        ! river volume on the land grid
-    real(r8), pointer :: irrig_frac_l(:)  ! irrigation as a fraction of volr
+    real(r8), pointer :: irrig_flux_l(:)  ! irrigation flux on the land grid [kg m-2 s-1]
+    real(r8), pointer :: irrig_flux_r(:)  ! irrigation flux on the rof grid [kg m-2 s-1]
+    real(r8), pointer :: irrig_frac_l(:)  ! irrigation as a fraction of volr, land grid
+    real(r8), pointer :: irrig_frac_r(:)  ! irrigation as a fraction of volr, rof grid
 
-    character(len=*), parameter :: irrig_flux_field = 'Flrl_irrig'
     character(len=*), parameter :: volr_field       = 'Flrr_volr'
     character(len=*), parameter :: irrig_frac_field = 'Flrl_frac_irrig'
     !---------------------------------------------------------------
 
     ! ------------------------------------------------------------------------
-    ! Extract the necessary fields from attribute vectors
+    ! Determine attribute vector sizes
     ! ------------------------------------------------------------------------
 
     lsize_l = mct_aVect_lsize(l2racc_lx(eli))
+    lsize_r = mct_aVect_lsize(l2x_rx(eri))
+
+    ! ------------------------------------------------------------------------
+    ! Extract the necessary fields from attribute vectors
+    ! ------------------------------------------------------------------------
 
     allocate(irrig_flux_l(lsize_l))
     call mct_aVect_exportRattr(l2racc_lx(eli), irrig_flux_field, irrig_flux_l)
+
+    r2x_rx => component_get_c2x_cx(rof(eri))
+    allocate(volr_r(lsize_r))
+    call mct_aVect_exportRattr(r2x_rx, volr_field, volr_r)
 
     ! TODO(wjs, 2016-09-09) Currently we're getting the already-mapped VOLR on the land
     ! grid. I think it would be more robust (to possible changes in driver sequencing) if
@@ -473,43 +509,57 @@ contains
     ! Determine irrigation as a fraction of volr
     ! ------------------------------------------------------------------------
 
-    ! NOTE(wjs, 2016-09-09) Is it really right to call this a fraction of volr? That
-    ! would imply that they have the same units. Would it be more accurate to just call
-    ! this 'irrigation normalized by volr'?
+    ! NOTE(wjs, 2016-09-09) Is it really right to call this a fraction of volr? That would
+    ! imply that they have the same units. Would it be more accurate to just call this
+    ! 'irrigation normalized by volr'? (Then would need to rename some variables; also
+    ! search for 'fraction' in comments.)
 
     allocate(irrig_frac_l(lsize_l))
     ! FIXME(wjs, 2016-09-09) Need to handle possible divide by 0
     irrig_frac_l(:) = irrig_flux_l(:) / volr_l(:)
 
-    call mct_aVect_init(irrig_frac_l_av, rList = irrig_frac_field, lsize = lsize_l)
-    call mct_aVect_importRattr(irrig_frac_l_av, irrig_frac_field, irrig_frac_l)
-
     ! ------------------------------------------------------------------------
     ! Map irrigation_frac
-    !
-    ! NOTE(wjs, 2016-09-09) In principle, we could probably avoid doing a separate
-    ! seq_map_map call by sticking the computed irrigation_frac into l2racc_lx. But it
-    ! seems confusing to put this computed field into that AV, since this computed field
-    ! isn't actually an accumulated quantity (like the rest of the fields in that AV). So
-    ! for now I'm doing an extra mapping, even though that may incur some extra cost.
     ! ------------------------------------------------------------------------
+
+    call mct_aVect_init(irrig_frac_l_av, rList = irrig_frac_field, lsize = lsize_l)
+    call mct_aVect_importRattr(irrig_frac_l_av, irrig_frac_field, irrig_frac_l)
+    call mct_aVect_init(irrig_frac_r_av, rList = irrig_frac_field, lsize = lsize_r)
 
     call seq_map_map(mapper = mapper_Fl2r, &
          av_s = irrig_frac_l_av, &
-         av_d = l2r_rx(eri), &
+         av_d = irrig_frac_r_av, &
          fldlist = irrig_frac_field, &
          norm = .true., &
          avwts_s = avwts_s, &
          avwtsfld_s = avwtsfld_s)
 
+    allocate(irrig_frac_r(lsize_r))
+    call mct_aVect_exportRattr(irrig_frac_r_av, irrig_frac_field, irrig_frac_r)
+    
+    ! ------------------------------------------------------------------------
+    ! Convert irrigation_frac to an irrigation flux on the ROF grid
+    ! ------------------------------------------------------------------------
+
+    allocate(irrig_flux_r(lsize_r))
+    do i = 1, lsize_r
+       irrig_flux_r(i) = irrig_frac_r(i) * volr_r(i)
+    end do
+
+    call mct_aVect_importRattr(l2r_rx(eri), irrig_flux_field, irrig_flux_r)
+
     ! ------------------------------------------------------------------------
     ! Clean up
     ! ------------------------------------------------------------------------
 
-    deallocate(irrig_flux_l)
+    deallocate(volr_r)
     deallocate(volr_l)
+    deallocate(irrig_flux_l)
+    deallocate(irrig_flux_r)
     deallocate(irrig_frac_l)
+    deallocate(irrig_frac_r)
     call mct_aVect_clean(irrig_frac_l_av)
+    call mct_aVect_clean(irrig_frac_r_av)
 
   end subroutine prep_rof_map_irrig
 
