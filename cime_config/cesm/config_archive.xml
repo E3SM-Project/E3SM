@@ -90,7 +90,7 @@
 
   <comp_archive_spec compname="pop" compclass="ocn">
     <rest_file_extension>\.r.*</rest_file_extension>
-    <hist_file_extension>\.[hd].*</hist_file_extension>
+    <hist_file_extension>\.h.*.nc$|\.d[dovt]\.</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.ocn.restart</rpointer_file>

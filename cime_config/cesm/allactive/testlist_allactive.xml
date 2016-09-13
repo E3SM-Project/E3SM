@@ -8,7 +8,7 @@
       </options>
     </machines>
   </test>
-  <test name="ERI" grid="f09_g16" compset="B1850Ws" testmods="allactive/cesm2dev01">
+  <test name="ERI" grid="f09_g16" compset="B1850Ws" testmods="allactive/default">
     <machines>
       <machine name="edison" compiler="intel" category="prebeta"/>
       <options>
@@ -41,7 +41,7 @@
       </options>
     </machines>
   </test>
-  <test name="ERS" grid="f09_g16" compset="B1850" testmods="allactive/cesm2dev01io">
+  <test name="ERS" grid="f09_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <options>
@@ -117,7 +117,7 @@
       </options>
     </machines>
   </test>
-  <test name="ERS_Ld5" grid="T31_g37" compset="B1850C5L45BGCR" testmods="allactive/cism/test_coupling">
+  <test name="ERS_Ld5" grid="T31_g37" compset="B1850C5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <options>
@@ -233,7 +233,7 @@
       </options>
     </machines>
   </test>
-  <test name="NCK_Ld5" grid="f19_g16" compset="BC5L45BGCR" testmods="allactive/cism/test_coupling">
+  <test name="NCK_Ld5" grid="f19_g16" compset="BC5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="gnu" category="prebeta"/>
       <options>
@@ -241,7 +241,7 @@
       </options>
     </machines>
   </test>
-  <test name="NCK_Ld5" grid="f19_g16" compset="BC5L45BGCRG" testmods="allactive/cism/test_coupling">
+  <test name="NCK_Ld5" grid="f19_g16" compset="BC5L45BGCRG" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <machine name="yellowstone" compiler="intel" category="prebeta"/>
@@ -293,7 +293,7 @@
       </options>
     </machines>
   </test>
-  <test name="PFS" grid="f09_g16" compset="B1850" testmods="allactive/cesm2dev01">
+  <test name="PFS" grid="f09_g16" compset="B1850" testmods="allactive/default">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <options>
@@ -326,7 +326,7 @@
       </options>
     </machines>
   </test>
-  <test name="SMS_Ld5" grid="T31_g37_gl20" compset="B1850C5L45BGCRG2" testmods="allactive/cism/test_coupling">
+  <test name="SMS_Ld5" grid="T31_g37_gl20" compset="B1850C5L45BGCRG2" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <machine name="yellowstone" compiler="intel" category="prebeta"/>
@@ -335,7 +335,7 @@
       </options>
     </machines>
   </test>
-  <test name="SMS_Ld5" grid="T31_g37_gl20" compset="BC5L45BGCRG" testmods="allactive/cism/test_coupling">
+  <test name="SMS_Ld5" grid="T31_g37_gl20" compset="BC5L45BGCRG" testmods="allactive/defaultio">
     <machines>
       <machine name="hobart" compiler="nag" category="prebeta"/>
       <options>
@@ -351,7 +351,7 @@
       </options>
     </machines>
   </test>
-  <test name="SMS_Ld5" grid="f09_g16_gl4" compset="J1850G2" testmods="allactive/cism/test_coupling">
+  <test name="SMS_Ld5" grid="f09_g16_gl4" compset="J1850G2" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="gnu" category="prebeta"/>
       <options>
@@ -359,7 +359,7 @@
       </options>
     </machines>
   </test>
-  <test name="SMS_Ld7" grid="f09_g16" compset="B1850" testmods="allactive/cesm2dev01io">
+  <test name="SMS_Ld7" grid="f09_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <options>
