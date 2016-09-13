@@ -1361,6 +1361,7 @@
 			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
+			<var name="seaSurfacePressure"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
