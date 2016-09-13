@@ -588,7 +588,12 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <OCN_DOMAIN_FILE>domain.ocn.oQU120.160401.nc</OCN_DOMAIN_FILE>
 </griddom>
 
-<griddom grid="oEC60to30*" mask="oEC60to30">
+<griddom grid="oEC60to30" mask="oEC60to30">
+  <ICE_DOMAIN_FILE>domain.ocn.oEC60to30.150616.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.oEC60to30.150616.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="oEC60to30_ICG" mask="oEC60to30">
   <ICE_DOMAIN_FILE>domain.ocn.oEC60to30.150616.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.oEC60to30.150616.nc</OCN_DOMAIN_FILE>
 </griddom>
