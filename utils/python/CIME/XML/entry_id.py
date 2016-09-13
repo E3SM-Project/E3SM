@@ -162,7 +162,11 @@ class EntryID(GenericXML):
             node.set("value",value)
         else:
             type_str = self._get_type_info(node)
+            valid_values = self.get_optional_node("valid_values", root=node)
+            if valid_values.text is not None:
+                expect(value in valid_values.text.split(','), "Did not find %s in valid values:%s"%(value, valid_values.text))
             node.set("value", convert_to_string(value, type_str, vid))
+
         return value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
