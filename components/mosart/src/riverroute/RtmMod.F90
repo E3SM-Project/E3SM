@@ -2452,7 +2452,7 @@ contains
       
         if(TUnit%rlen(iunit) > 0._r8) then
            TUnit%hlen(iunit) = TUnit%area(iunit) / TUnit%rlenTotal(iunit) / 2._r8
-           hlen_max = max(1000.0, sqrt(TUnit%area(iunit))) ! constain the hillslope length
+           hlen_max = max(1000.0_r8, sqrt(TUnit%area(iunit))) ! constrain the hillslope length
            if(TUnit%hlen(iunit) > hlen_max) then
               TUnit%hlen(iunit) = hlen_max   ! allievate the outlier in drainage density estimation. TO DO
            end if
