@@ -1356,6 +1356,7 @@
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="seaSurfacePressure"/>
 			<var name="landIcePressure" packages="restartForcingFields"/>
 			<var name="landIceFraction" packages="restartForcingFields"/>
 			<var name="landIceMask" packages="restartForcingFields"/>
