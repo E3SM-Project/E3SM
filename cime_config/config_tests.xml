@@ -388,6 +388,7 @@ LII    CLM initial condition interpolation test
     <REST_OPTION>none</REST_OPTION>
     <CCSM_TCOST>0</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
   <test NAME="NCK">
