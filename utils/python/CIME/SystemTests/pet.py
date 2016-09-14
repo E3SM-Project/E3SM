@@ -40,5 +40,14 @@ class PET(SystemTestsCompareTwo):
         for comp in self._COMPONENT_LIST:
             self._case.set_value("NTHRDS_%s"%comp, 1)
 
+        # The need for this is subtle. On batch systems, the entire PET test runs
+        # under a single submission and that submission is configured based on
+        # the case settings for case 1, IE 2 threads for all components. This causes
+        # the procs-per-node to be half of what it would be for single thread. On some
+        # machines, if the mpiexec tries to exceed the procs-per-node that were given
+        # to the batch submission, things break. Setting MAX_TASKS_PER_NODE to half of
+        # it original value prevents this.
+        self._case.set_value("MAX_TASKS_PER_NODE", self._case.get_value("MAX_TASKS_PER_NODE") / 2)
+
         # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
