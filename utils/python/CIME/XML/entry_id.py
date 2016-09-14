@@ -157,15 +157,17 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         expect(subgroup is None, "Subgroup not supported")
+        valid_values = self.get_optional_node("valid_values", root=node)
         if ignore_type:
             expect(type(value) is str, "Value must be type string if ignore_type is true")
-            node.set("value",value)
+            str_value = value
         else:
             type_str = self._get_type_info(node)
-            valid_values = self.get_optional_node("valid_values", root=node)
-            if valid_values.text is not None:
-                expect(value in valid_values.text.split(','), "Did not find %s in valid values:%s"%(value, valid_values.text))
-            node.set("value", convert_to_string(value, type_str, vid))
+            str_value = convert_to_string(value, type_str, vid)
+        if valid_values is not None and valid_values.text is not None and not str_value.startswith('$'):
+            vvlist = map(str.lstrip, valid_values.text.split(','))
+            expect(str_value in vvlist, "Did not find %s in valid values:%s"%(value, vvlist))
+        node.set("value", str_value)
 
         return value
 
