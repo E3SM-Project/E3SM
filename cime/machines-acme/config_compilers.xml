@@ -552,7 +552,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>  
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
+  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</ADD_SLIBS>
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
   <MPIFC> ftn </MPIFC>
   <MPICC> cc </MPICC>
