@@ -25,7 +25,6 @@
 
 	<add_link source="../init_step1/culled_mesh_final.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
-	<add_link source="../init_step1/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
 	<add_link source_path="initial_condition_database" source="PTemp.Jan_p3.filled.mpas100levs.160127.nc" dest="temperature.nc"/>
 	<add_link source_path="initial_condition_database" source="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc" dest="salinity.nc"/>
 	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
@@ -34,6 +33,7 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+		<option name="config_global_ocean_deepen_critical_passages">.false.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

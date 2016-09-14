@@ -5,6 +5,7 @@
 			<attribute name="filename_template">land_ice_fluxes.nc</attribute>
 			<attribute name="output_interval">0000_00:00:01</attribute>
 			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
 			<add_contents>
 				<member name="mesh" type="stream"/>
 				<member name="xtime" type="var"/>
