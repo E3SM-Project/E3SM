@@ -1763,27 +1763,31 @@
                 <var name="rqvdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
                 <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
                 <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
+	<!-- MGD should we add packages to the field below? -->
+			<var name="rucuten_Edge" type="real"     dimensions="nVertLevels nEdges Time"/>
 
-                <!-- GRELL ONLY -->
-                <!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->
+			<!-- GRELL ONLY -->
+			<!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->
 
-                <var name="rthdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in"/>
+			<var name="rthdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in"/>
 
-                <!-- ================================================================================================== -->
-                <!-- ... TENDENCIES FROM PARAMETERIZATION OF PLANETARY BOUNDARY LAYER PROCESSES:                        -->
-                <!-- ================================================================================================== -->
-                <!-- rublten   : tendency of zonal wind due to pbl processes                                   (m s-1)  -->
-                <!-- rvblten   : tendency of meridional wind due to pbl processes                              (m s-1)  -->
-                <!-- rthblten  : tendency of potential temperature due to pbl processes                        (K s-1)  -->
-                <!-- rqvblten  : tendency of water vapor mixing ratio due to pbl processes                 (kg/kg s-1)  -->
-                <!-- rqcblten  : tendency of cloud water mixing ratio due to pbl processes                 (kg/kg s-1)  -->
-                <!-- rqiblten  : tendency of cloud ice mixing ratio due to pbl processes                   (kg/kg s-1)  -->
-                <!-- rniblten  : tendency of cloud ice number concentration due to pbl processes             (m-3 s-1)  -->
+			<!-- ================================================================================================== -->
+			<!-- ... TENDENCIES FROM PARAMETERIZATION OF PLANETARY BOUNDARY LAYER PROCESSES:                        -->
+			<!-- ================================================================================================== -->
+			<!-- rublten   : tendency of zonal wind due to pbl processes                                   (m s-1)  -->
+			<!-- rvblten   : tendency of meridional wind due to pbl processes                              (m s-1)  -->
+			<!-- rthblten  : tendency of potential temperature due to pbl processes                        (K s-1)  -->
+			<!-- rqvblten  : tendency of water vapor mixing ratio due to pbl processes                 (kg/kg s-1)  -->
+			<!-- rqcblten  : tendency of cloud water mixing ratio due to pbl processes                 (kg/kg s-1)  -->
+			<!-- rqiblten  : tendency of cloud ice mixing ratio due to pbl processes                   (kg/kg s-1)  -->
+			<!-- rniblten  : tendency of cloud ice number concentration due to pbl processes             (m-3 s-1)  -->
 
-                <var name="rublten"      type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
-                <var name="rvblten"      type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
-                <var name="rthblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
-                <var name="rqvblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+			<var name="rublten"      type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+			<var name="rvblten"      type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+			<var name="rthblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+	<!-- MGD should we add packages to the field below? -->
+			<var name="rublten_Edge" type="real"     dimensions="nVertLevels nEdges Time"/>
+			<var name="rqvblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
                 <var name="rqcblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
                 <var name="rqiblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
                 <var name="rniblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>

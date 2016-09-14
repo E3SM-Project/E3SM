@@ -322,9 +322,9 @@ module atm_time_integration
 
          block => block % next
       end do
+      call mpas_timer_stop('atm_rk_integration_setup')
 
       call mpas_timer_start('atm_compute_moist_coefficients')
-
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', state)
@@ -351,15 +351,13 @@ module atm_time_integration
 
          block => block % next
       end do
-
       call mpas_timer_stop('atm_compute_moist_coefficients')
-
-      call mpas_timer_stop('atm_rk_integration_setup')
 
       DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
             !  Compute the coefficients for the vertically implicit solve in the acoustic step.
             !  These coefficients will work for the first acoustic step in all cases.
+            call mpas_timer_start('atm_compute_vert_imp_coefs')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -381,6 +379,7 @@ module atm_time_integration
 !$OMP END PARALLEL DO
                block => block % next
             end do
+            call mpas_timer_stop('atm_compute_vert_imp_coefs')
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -466,6 +465,7 @@ MPAS_GPTL_STOP('dyn_tend')
             call mpas_timer_stop('atm_compute_dyn_tend')
 
 #ifdef DO_PHYSICS
+            call mpas_timer_start('physics_addtend')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -480,9 +480,11 @@ MPAS_GPTL_STOP('dyn_tend')
                                       tend, &
                               tend_physics, &
                            block % configs, &
-                                   rk_step )
+                                   rk_step, &
+                          dynamics_substep  )
                block => block % next
             end do
+            call mpas_timer_stop('physics_addtend')
 #endif
 
             !***********************************
