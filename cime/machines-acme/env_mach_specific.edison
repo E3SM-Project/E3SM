@@ -19,10 +19,12 @@ echo "DEBUG=$DEBUG"
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
 
-  #ndk 1/28/16  As loading/unloading craype is heavy-weight, let's get this straight upfront.
-  # we had some issues where module commands were ill-behaved when craype was unloaded.
+  #module unload modules
+  #module load modules/3.2.10.4
+  #module list >& ml00.txt; env >>& ml00.txt
+
   module rm craype
-  module load craype/2.5.0
+  module load craype/2.5.5
 
   module rm PrgEnv-intel
   module rm PrgEnv-cray
@@ -48,45 +50,48 @@ if (-e /opt/modules/default/init/csh) then
 endif
 
 module load craype-ivybridge
-module load cray-libsci/13.0.3
+module load cray-libsci/16.07.1
 module load pmi/5.0.10-1.0000.11050.0.0.ari
 
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel/5.2.56
-    module load intel/15.0.1.133
-
-    #module use /global/project/projectdirs/ccsm1/modulefiles/edison
-    #if( $DEBUG == "TRUE" ) then
-    #     module load esmf/6.2.0-defio-mpi-g
-    #else
-    #     module load esmf/6.2.0-defio-mpi-O
-    #endif
+    module rm intel
+    #module load intel/15.0.1.133
+    module load intel/16.0.0.109
+    #module load intel/17.0.0.042
+    #module load intel/2017.beta.up2
 endif
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray/5.2.56
-    module load cce/8.4.2
+    module load cce/8.5.1
 endif
 if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu/5.2.56
-    module load gcc/5.2.0
+    module load gcc/6.1.0
 endif
 
 module load cray-mpich/7.3.0
-module load papi/5.4.1.3
+#module load cray-mpich/7.3.1
+#module load cray-mpich/7.3.2
+#module load cray-mpich/7.4.1
+module load papi/5.4.3.2
 
 if ( $MPILIB == "mpi-serial") then
-  module load cray-hdf5/1.8.14
-  module load cray-netcdf/4.3.3.1
+  module load cray-hdf5/1.8.16
+  module load cray-netcdf/4.4.0
 else
-  module load cray-hdf5-parallel/1.8.14
-  module load cray-netcdf-hdf5parallel/4.3.3.1
+  module load cray-hdf5-parallel/1.8.16
+  module load cray-netcdf-hdf5parallel/4.4.0
   module load cray-parallel-netcdf/1.6.1
+  #module load cray-parallel-netcdf/1.7.0
 endif
 
-module load cmake/2.8.11.2
-module load cray-petsc/3.5.3.0
+module load cmake/3.3.2
+module load cray-petsc/3.5.3.1
+#module load cray-petsc/3.7.2.0
 
 module list >& software_environment.txt
+env >>& software_environment.txt
 
 #-------------------------------------------------------------------------------
 # Runtime environment variables
@@ -104,6 +109,7 @@ setenv MPICH_CPUMASK_DISPLAY 1
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine.
 setenv OMP_STACKSIZE 64M
+#setenv OMP_STACKSIZE 128M
 if ( $?PERL ) then
   printenv
 endif

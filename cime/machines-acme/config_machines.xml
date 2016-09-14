@@ -125,9 +125,9 @@
              <queue walltimemax="00:30:00" jobmin="1" jobmax="12288">debug</queue>
            </queues>
            <walltimes>
-             <walltime default="true">01:15:00</walltime>
-             <walltime ccsm_estcost="1">01:50:00</walltime>
-             <walltime ccsm_estcost="3">05:00:00</walltime>
+             <walltime default="true">00:45:00</walltime>
+             <walltime ccsm_estcost="1">00:55:00</walltime>
+             <walltime ccsm_estcost="3">01:20:00</walltime>
            </walltimes>
          </batch_system>
          <mpirun mpilib="default">
