@@ -499,10 +499,10 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
           flxprec(ii,:)=0._r8
           flxsnow(ii,:)=0._r8
           ptend_all%s(ii,:pver)=0._r8
-          ptend_all%q(ii,pver,1)=0._r8
+          ptend_all%q(ii,:pver,1)=0._r8
           mu(ii,:)=0._r8
           md(ii,:)=0._r8
-          evapcdp(ii,:)=0._r8
+          evapcdp(ii,:pver)=0._r8
        endif
     end do
     ! End of loop
