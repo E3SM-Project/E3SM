@@ -29,8 +29,8 @@ def pre_run_check(case):
     logger.debug("check_lockedfiles OK")
 
     # check that build is done
-    expect (build_complete,
-            "BUILD_COMPLETE is not true\nPlease rebuild the model interactively")
+    expect(build_complete,
+           "BUILD_COMPLETE is not true\nPlease rebuild the model interactively")
     logger.debug("build complete is %s " %build_complete)
 
     # load the module environment...
@@ -59,23 +59,23 @@ def pre_run_check(case):
     if not os.path.isdir(rundir):
         os.mkdir(rundir)
 
-    if os.path.isdir(os.path.join(rundir,"timing")):
-        shutil.rmtree(os.path.join(rundir,"timing"))
+    if os.path.isdir(os.path.join(rundir, "timing")):
+        shutil.rmtree(os.path.join(rundir, "timing"))
 
-    os.makedirs(os.path.join(rundir,"timing","checkpoints"))
+    os.makedirs(os.path.join(rundir, "timing", "checkpoints"))
 
     # run preview namelists
     preview_namelists(case)
 
     # document process
-    append_status("Run started ",caseroot=caseroot,
-                 sfile="CaseStatus")
+    append_status("Run started ", caseroot=caseroot,
+                  sfile="CaseStatus")
 
-    logger.info( "-------------------------------------------------------------------------")
-    logger.info( " - To prestage required restarts, untar a restart.tar file into %s" %(rundir))
-    logger.info( " - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
-    logger.info( " - Checking for required input datasets in DIN_LOC_ROOT")
-    logger.info( "-------------------------------------------------------------------------")
+    logger.info("-------------------------------------------------------------------------")
+    logger.info(" - To prestage required restarts, untar a restart.tar file into %s" %(rundir))
+    logger.info(" - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
+    logger.info(" - Checking for required input datasets in DIN_LOC_ROOT")
+    logger.info("-------------------------------------------------------------------------")
 
 ###############################################################################
 def run_model(case):
@@ -96,7 +96,7 @@ def run_model(case):
     logger.info("run command is %s " %cmd)
     rundir = case.get_value("RUNDIR")
     run_cmd_no_fail(cmd, from_dir=rundir)
-    logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
 ###############################################################################
 def post_run_check(case, lid):
@@ -107,8 +107,8 @@ def post_run_check(case, lid):
     model = case.get_value("MODEL")
 
     # find the last model.log and cpl.log
-    model_logfile = os.path.join(rundir,model + ".log." + lid)
-    cpl_logfile   = os.path.join(rundir,"cpl" + ".log." + lid)
+    model_logfile = os.path.join(rundir, model + ".log." + lid)
+    cpl_logfile = os.path.join(rundir, "cpl" + ".log." + lid)
 
     if not os.path.isfile(model_logfile):
         msg = "Model did not complete, no %s log file "%model_logfile
@@ -121,16 +121,16 @@ def post_run_check(case, lid):
     elif os.stat(model_logfile).st_size == 0:
         msg = " Run FAILED "
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-        expect (False, msg)
+        expect(False, msg)
     else:
         with open(cpl_logfile, 'r') as fd:
             if 'SUCCESSFUL TERMINATION' in fd.read():
                 msg = "Run SUCCESSFUL"
-                append_status(msg, caseroot=caseroot, sfile="CaseStatus" )
+                append_status(msg, caseroot=caseroot, sfile="CaseStatus")
             else:
                 msg = "Model did not complete - see %s \n " %(cpl_logfile)
                 append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-                expect (False, msg)
+                expect(False, msg)
 
 ###############################################################################
 def save_logs(case, lid):
@@ -142,7 +142,7 @@ def save_logs(case, lid):
 
         caseroot = case.get_value("CASEROOT")
         rundir = case.get_value("RUNDIR")
-        logfiles = glob.glob(os.path.join(rundir,"*.log.%s"%(lid)))
+        logfiles = glob.glob(os.path.join(rundir, "*.log.%s"%(lid)))
         for logfile in logfiles:
             if os.path.isfile(logfile):
                 logfile_gz = gzip_existing_file(logfile)
@@ -171,7 +171,8 @@ def resubmit_check(case):
     elif dout_s and mach == 'mira':
         caseroot = case.get_value("CASEROOT")
         cimeroot = case.get_value("CIMEROOT")
-        cmd = "ssh cooleylogin1 'cd %s; CIMEROOT=%s ./case.submit %s --job case.st_archive' "%(caseroot, cimeroot, caseroot)
+        cmd = "ssh cooleylogin1 'cd %s; CIMEROOT=%s ./case.submit %s"%(caseroot, cimeroot, caseroot)
+        cmd = cmd + " --job case.st_archive' "
         run_cmd(cmd, verbose=True)
 
     if resubmit:
@@ -182,35 +183,46 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_data_assimilation(da_script, lid):
+def do_data_assimilation(da_script, cycle, data_assimilation_cycles, lid):
 ###############################################################################
-    cmd = da_script + "1> da.log.%s 2>&1" %(lid)
+    cmd = da_script + " 1> da.log.%s %d %d 2>&1" %(lid, cycle, data_assimilation_cycles)
     logger.debug("running %s" %da_script)
     run_cmd_no_fail(cmd)
     # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
+
+###############################################################################
+def new_lid():
+###############################################################################
+    lid = time.strftime("%y%m%d-%H%M%S")
+    os.environ["LID"] = lid
+    return lid
 
 ###############################################################################
 def case_run(case):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
     run_with_submit = case.get_value("RUN_WITH_SUBMIT")
-    expect (run_with_submit,
-            "You are not calling the run script via the submit script. "
-            "As a result, short-term archiving will not be called automatically."
-            "Please submit your run using the submit script like so:"
-            " ./case.submit")
+    expect(run_with_submit,
+           "You are not calling the run script via the submit script. "
+           "As a result, short-term archiving will not be called automatically."
+           "Please submit your run using the submit script like so:"
+           " ./case.submit")
 
     data_assimilation = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
 
     # set up the LID
-    lid = time.strftime("%y%m%d-%H%M%S")
-    os.environ["LID"] = lid
+    lid = new_lid()
 
     save_prerun_provenance(case)
 
-    for _ in range(data_assimilation_cycles):
+    for cycle in range(data_assimilation_cycles):
+        # After the first DA cycle, runs are restart runs
+        if cycle > 0:
+            case.set_value("CONTINUE_RUN", "TRUE")
+            lid = new_lid()
+
         pre_run_check(case)
         run_model(case)
         post_run_check(case, lid)
@@ -219,7 +231,7 @@ def case_run(case):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
-            do_data_assimilation(data_assimilation_script, lid)
+            do_data_assimilation(data_assimilation_script, cycle, data_assimilation_cycles, lid)
 
         save_postrun_provenance(case)
 
