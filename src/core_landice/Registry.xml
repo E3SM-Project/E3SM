@@ -879,7 +879,7 @@ is the value of that variable from the *previous* time level!
 
 	<!-- Variables related to thermal state -->
 	<var_struct name="thermal" time_levs="1">
-		<var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+		<var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K" default_value="273.15"
 		     description="interior ice temperature"
 		/>
 		<var name="waterfrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
