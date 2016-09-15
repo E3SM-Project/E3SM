@@ -888,13 +888,13 @@ is the value of that variable from the *previous* time level!
 		<var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"
 		     description="interior ice enthalpy"
 		/>
-		<var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K"
+		<var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
 		     description="surface air temperature"
 		/>
-		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K"
+		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
 		     description="upper surface ice temperature"
 		/>
-		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
+		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
 		     description="lower surface ice temperature"
 		/>
 		<var name="pmpTemperature" type="real" dimensions="nVertLevels nCells Time" units="K"
@@ -909,7 +909,7 @@ is the value of that variable from the *previous* time level!
 		<var name="basalConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 		     description="conductive heat flux at the lower surface (positive downward)"
 		/>
-		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" default_value="0.06"
 		     description="basal heat flux into the ice (positive upward)"
 		/>
 		<var name="basalFrictionFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
