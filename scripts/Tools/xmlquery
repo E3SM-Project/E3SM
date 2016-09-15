@@ -65,7 +65,7 @@ def parse_command_line(args, description):
 
     parser.add_argument("-value", "--value", default=False, action="store_true",
                         help="Only print one value without newline character. If more than one has been found print first value in list.")
-    parser.add_argument("-no-resolve", "--no-resolve", default=False, action="store_true",
+    parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
                         help="Do not resolve variable values")
 
     args = parser.parse_args(args[1:])
