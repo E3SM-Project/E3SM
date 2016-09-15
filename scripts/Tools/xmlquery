@@ -65,8 +65,8 @@ def parse_command_line(args, description):
 
     parser.add_argument("-value", "--value", default=False, action="store_true",
                         help="Only print one value without newline character. If more than one has been found print first value in list.")
-    parser.add_argument("-resolve", "--resolve", default=True, action="store_true",
-                        help="Resolve variable names")
+    parser.add_argument("-no-resolve", "--no-resolve", default=False, action="store_true",
+                        help="Do not resolve variable values")
 
     args = parser.parse_args(args[1:])
 
@@ -108,19 +108,19 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False,
     with Case(caseroot) as case:
         values  = []
         results = [] # List of formatted strings containing the search results
-
+        resolved = not args.no_resolve
         if(listofattributes and len(listofattributes) >= 1):
 
             for xmlattr in listofattributes:
                 # type_str = case.get_type_info(xmlattr)
                 logger.debug("Searching for %s", xmlattr)
-                attribute_hits = case.get_values(xmlattr, resolved=args.resolve,
+                attribute_hits = case.get_values(xmlattr, resolved=resolved,
                                                  subgroup=subgroup)
                 results       += attribute_hits
 
         elif (args.listall):
             logger.warning("Retrieving all values.")
-            results = case.get_values(None, resolved=args.resolve,
+            results = case.get_values(None, resolved=resolved,
                                       subgroup=subgroup)
         else:
             logger.warning("No attributes (%s) or listall option",
