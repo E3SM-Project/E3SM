@@ -858,9 +858,6 @@ contains
 
        logical :: isOcean
 
-       integer, dimension(:), pointer :: scratchMaxLevelCell
-       type (field1DInteger), pointer :: scratchMaxLevelCellField
-
        iErr = 0
 
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_method', config_global_ocean_topography_method)
@@ -872,8 +869,6 @@ contains
                                  config_global_ocean_topography_has_ocean_frac)
 
        call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-       call mpas_pool_get_field(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCellField)
-       call mpas_allocate_scratch_field(scratchMaxLevelCellField, .false.)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -1027,15 +1022,10 @@ contains
           call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
           call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
 
-          call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
-
           ! Compute refLayerThickness and refZMid
           call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
                refBottomDepth,refBottomDepth(nVertLevels), &
                nVertLevels,nVertLevels,iErr)
-
-          ! save maxLevelCell from topo to use in reading/smoothing tracers
-          scratchMaxLevelCell(:) = maxLevelCell(:)
 
           block_ptr => block_ptr % next
        end do
@@ -2128,7 +2118,7 @@ contains
       type (mpas_pool_type), pointer :: meshPool, scratchPool, diagnosticsPool
 
       real (kind=RKIND) :: counter
-      integer :: iSmooth, j, coc, iCell, k
+      integer :: iSmooth, j, coc, iCell, k, nDepth
       integer, pointer :: nCells, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
@@ -2146,8 +2136,6 @@ contains
 
       type (field2DReal), pointer :: interpTracerField
       real (kind=RKIND), dimension(:,:), pointer :: interpTracer
-
-       integer, dimension(:), pointer :: scratchMaxLevelCell
 
       iErr = 0
 
@@ -2194,7 +2182,6 @@ contains
       if (config_global_ocean_smooth_TS_iterations .gt. 0) then
          call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
-
          do iSmooth = 1,config_global_ocean_smooth_TS_iterations
 
             block_ptr => domain % blocklist
@@ -2204,34 +2191,29 @@ contains
 
                call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-               call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
                call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
                call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
                call mpas_pool_get_array(scratchPool, trim(interpTracerName)//'Smooth', smoothedTracer)
                call mpas_pool_get_array(scratchPool, trim(interpTracerName), interpTracer)
-               call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
 
-               maxLevelCell(nCells+1) = -1
+               nDepth = size(smoothedTracer, 1)
 
                ! initialize smoothed tracer with original values
                smoothedTracer = interpTracer
 
                do iCell = 1, nCells
-                  if(maxLevelCell(iCell) <= 0) cycle
-                  if(scratchMaxLevelCell(iCell) <= 0) cycle
 
-                  do k = 1, scratchMaxLevelCell(iCell)
+                  do k = 1, nDepth
                      ! Initialize counter to 1 because of central cell in stencil.
                      counter = 1
 
                      do j = 1, nEdgesOnCell(iCell)
                         coc = cellsOnCell(j, iCell)
-                        ! check if coc not 0 (or nCells+1)?
-                        if (k > scratchMaxLevelCell(coc)) cycle
-
-                        smoothedTracer(k, iCell) = smoothedTracer(k, iCell) + interpTracer (k, coc)
-                        counter = counter + 1
+                        if (coc<nCells+1) then
+                           smoothedTracer(k, iCell) = smoothedTracer(k, iCell) + interpTracer (k, coc)
+                           counter = counter + 1
+                        end if
 
                      end do ! edgesOnCell
 
@@ -2270,9 +2252,9 @@ contains
 
          allocate(outTracerColumn(nVertLevels))
 
+         inKMax = size(interpTracer, 1)
          do iCell = 1, nCells
             outKMax = maxLevelCell(iCell)
-            inKMax = scratchMaxLevelCell(iCell)
             if(outKMax < 1) cycle ! nothing to interpolate
 
             outTracerColumn(:) = 9.969209968386869e+36_RKIND
@@ -2283,7 +2265,7 @@ contains
                  outTracerColumn(1:outKMax), &
                  outKMax, &
                  extrapolate=.false.)
-            tracerArray(tracerIndex,:,iCell) = outTracerColumn(:)
+            tracerArray(tracerIndex,1:outKMax,iCell) = outTracerColumn(1:outKMax)
 
          end do
 
