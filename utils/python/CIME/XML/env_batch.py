@@ -25,48 +25,6 @@ class EnvBatch(EnvBase):
         EnvBase.__init__(self, case_root, infile)
         self.prereq_jobid = None
         self.batchtype = None
-        self.maxthreads = None 
-        self.taskgeometry = None 
-        self.threadgeometry = None 
-        self.taskcount = None 
-        self.thread_count = None 
-        self.pedocumentation = None 
-        self.ptile = None 
-        self.tasks_per_node = None  
-        self.max_tasks_per_node = None 
-        self.tasks_per_numa = None 
-        self.num_tasks = None 
-        self.num_nodes = None 
-
-    def set_taskmaker(self, case, task_count="default"):
-        task_maker = TaskMaker(case)
-        self.maxthreads = task_maker.maxthreads
-        self.taskgeometry = task_maker.taskgeometry
-        self.threadgeometry = task_maker.threadgeometry
-        self.taskcount = task_maker.taskcount
-        self.thread_count = task_maker.thread_count
-        self.pedocumentation = task_maker.document()
-        self.ptile = task_maker.ptile
-        self.tasks_per_node = task_maker.tasks_per_node
-        self.max_tasks_per_node = task_maker.MAX_TASKS_PER_NODE
-        self.tasks_per_numa = task_maker.tasks_per_numa
-        self.num_tasks = task_maker.totaltasks
-        self.num_nodes = task_maker.num_nodes
-        if task_count == "default":
-            self.sumpes = task_maker.fullsum
-            self.totaltasks = task_maker.totaltasks
-            self.fullsum = task_maker.fullsum
-            self.sumtasks = task_maker.totaltasks
-            self.task_count = task_maker.fullsum
-            self.num_nodes = task_maker.num_nodes
-        else:
-            self.sumpes = task_count
-            self.totaltasks = task_count
-            self.fullsum = task_count
-            self.sumtasks = task_count
-            self.task_count = task_count
-            self.num_nodes = task_count
-            self.pedocumentation = ""
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         val = None
@@ -260,11 +218,36 @@ class EnvBatch(EnvBase):
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '%s' does not exist" % input_template)
+        task_maker = TaskMaker(case)
+
+        self.maxthreads = task_maker.maxthreads
+        self.taskgeometry = task_maker.taskgeometry
+        self.threadgeometry = task_maker.threadgeometry
+        self.taskcount = task_maker.taskcount
+        self.thread_count = task_maker.thread_count
+        self.pedocumentation = task_maker.document()
+        self.ptile = task_maker.ptile
+        self.tasks_per_node = task_maker.tasks_per_node
+        self.max_tasks_per_node = task_maker.MAX_TASKS_PER_NODE
+        self.tasks_per_numa = task_maker.tasks_per_numa
+        self.num_tasks = task_maker.totaltasks
 
         task_count = self.get_value("task_count", subgroup=job)
-        if self.taskcount is None:
-            self.set_taskmaker(case, task_count)
-
+        if task_count == "default":
+            self.sumpes = task_maker.fullsum
+            self.totaltasks = task_maker.totaltasks
+            self.fullsum = task_maker.fullsum
+            self.sumtasks = task_maker.totaltasks
+            self.task_count = task_maker.fullsum
+            self.num_nodes = task_maker.num_nodes
+        else:
+            self.sumpes = task_count
+            self.totaltasks = task_count
+            self.fullsum = task_count
+            self.sumtasks = task_count
+            self.task_count = task_count
+            self.num_nodes = task_count
+            self.pedocumentation = ""
         self.job_id = case.get_value("CASE") + os.path.splitext(job)[1]
         if "pleiades" in case.get_value("MACH"):
             # pleiades jobname needs to be limited to 15 chars
@@ -329,8 +312,6 @@ class EnvBatch(EnvBase):
         '''
         return a list of touples (flag, name)
         '''
-        if self.taskcount is None:
-            self.set_taskmaker(case)
         submitargs = " "
         bs_nodes = self.get_nodes("batch_system")
         submit_arg_nodes = []
@@ -350,11 +331,7 @@ class EnvBatch(EnvBase):
             else:
                 if name.startswith("$"):
                     name = name[1:]
-                if name.startswith("{{"):
-                    val = transform_vars(name, case=case, subgroup=job, check_members=self)
-                else:
-                    val = case.get_value(name,subgroup=job)
-                logger.warn("name is %s val is %s"%(name, val))
+                val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
 
