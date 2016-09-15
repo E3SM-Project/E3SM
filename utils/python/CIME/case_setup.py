@@ -200,6 +200,10 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             if mtpn > pespn:
                 pestot = pestot * (mtpn // pespn)
                 case.set_value("COST_PES", tm.num_nodes*pespn)
+            else:
+                # reset cost_pes to totalpes
+                case.set_value("COST_PES", 0)
+
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
