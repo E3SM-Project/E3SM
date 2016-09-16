@@ -59,6 +59,7 @@
                                 <member name="daysSinceStart" type="var"/>
                                 <member name="waterThickness" type="var"/>
                                 <member name="waterVelocityCellX" type="var"/>
+                                <member name="waterVelocityCellY" type="var"/>
                                 <member name="effectivePressure" type="var"/>
                                 <member name="channelDischarge" type="var"/>
                                 <member name="channelArea" type="var"/>

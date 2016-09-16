@@ -5,6 +5,7 @@ Details here: http://shmip.bitbucket.org/
 '''
 
 from netCDF4 import Dataset as NetCDFFile
+import netCDF4
 import numpy as np
 import sys
 import shutil
@@ -28,6 +29,9 @@ shutil.copyfile(options.afile, options.filename)
 
 # Open the file, get needed dimensions
 gridfile = NetCDFFile(options.filename,'r+')
+StrLen = len(gridfile.dimensions['StrLen'])
+gridfile.variables['xtime'][0,:] = netCDF4.stringtoarr('0000-01-01_00:00:00'.ljust(StrLen), StrLen)
+gridfile.variables['simulationStartTime'][:] = netCDF4.stringtoarr('0000-01-01_00:00:00'.ljust(StrLen), StrLen)
 
 b_moulin = {}  # empty dictionary
 
