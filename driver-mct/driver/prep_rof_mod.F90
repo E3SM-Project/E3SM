@@ -552,7 +552,7 @@ contains
     call seq_map_map(mapper = mapper_Fl2r, &
          av_s = irrig_l_av, &
          av_d = irrig_r_av, &
-         fldlist = irrig_frac_field, &
+         fldlist = fields_to_remap, &
          norm = .true., &
          avwts_s = avwts_s, &
          avwtsfld_s = avwtsfld_s)
