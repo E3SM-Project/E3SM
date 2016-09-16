@@ -7,6 +7,7 @@ module RootBiophysMod
   !
   ! HISTORY
   ! created by Jinyun Tang, Mar 1st, 2014
+  ! added variable DTB option for Zeng-Decker, Michael A. Brunke, Aug. 25, 2016
   implicit none
   private
   public :: init_vegrootfr
@@ -120,14 +121,14 @@ contains
                   + exp(-rootb_par(pft%itype(p)) * col%zi(c,lev-1))  &
                   - exp(-roota_par(pft%itype(p)) * col%zi(c,lev  ))  &
                   - exp(-rootb_par(pft%itype(p)) * col%zi(c,lev  )) )
-	     if(lev <= nlevbed) then         ! Added by MAB, 5/25/16
+	     if(lev <= nlevbed) then
 	       totrootfr = totrootfr + rootfr(p,lev)
 	     end if
           end do
           rootfr(p,ubj) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,ubj-1))  &
                + exp(-rootb_par(pft%itype(p)) * col%zi(c,ubj-1)) )
 
-       ! Adjust layer root fractions if nlev2bed < nlevsoi, added by MAB 5/25/16
+       ! Adjust layer root fractions if nlev2bed < nlevsoi
          if(do_varsoil .and. nlevbed < ubj) then
            do lev = 1, nlevbed
              rootfr(p,lev) = rootfr(p,lev) / totrootfr

@@ -5,6 +5,7 @@ module SoilWaterMovementMod
   ! module contains different subroutines to couple soil and root water interactions
   !
   ! created by Jinyun Tang, Mar 12, 2014
+  ! added variable DTB option for Zeng-Decker, Michael A. Brunke, Aug. 25, 2016
   implicit none
   save 
   private
@@ -58,7 +59,6 @@ contains
     call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_vsfm) soilroot_water_method = vsfm
 
-    ! Added by MAB, 6/9/16
     if(do_varsoil .and. soilroot_water_method .ne. zengdecker_2009) then
       do_varsoil = .false.
     end if
@@ -106,7 +106,7 @@ contains
     ! !LOCAL VARIABLES:
     character(len=32)                        :: subname = 'SoilWater'       ! subroutine name
     real(r8)                                 :: xs(bounds%begc:bounds%endc) !excess soil water above urban ponding limit
-    integer                                  :: nlevbed                     ! number of layers to bedrock, added by MAB 6/7/16
+    integer                                  :: nlevbed                     ! number of layers to bedrock
 
     integer  :: fc, c, j
     
@@ -146,7 +146,7 @@ contains
     do fc = 1, num_hydrologyc
      c = filter_hydrologyc(fc)
      if(soilroot_water_method .eq. zengdecker_2009 .and. do_varsoil) then
-       nlevbed = nlev2bed(c)			! Added by MAB, 6/7/16
+       nlevbed = nlev2bed(c)
      else
        nlevbed = nlevsoi
      end if
@@ -164,7 +164,7 @@ contains
     do fc = 1, num_hydrologyc
        c = filter_hydrologyc(fc)
      if(soilroot_water_method .eq. zengdecker_2009 .and. do_varsoil) then
-       j = nlev2bed(c)	      	   		  ! Added by MAB, 6/7/16
+       j = nlev2bed(c)
      else
        j = nlevsoi
      end if
@@ -181,7 +181,7 @@ contains
     do fc = 1, num_hydrologyc
        c = filter_hydrologyc(fc)
        if(soilroot_water_method .eq. zengdecker_2009 .and. do_varsoil) then
-         nlevbed = nlev2bed(c)			! Added by MAB, 6/7/16
+         nlevbed = nlev2bed(c)
        else
          nlevbed = nlevsoi
        end if
@@ -299,7 +299,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: p,c,fc,j                                     ! do loop indices
-    integer  :: nlevbed                                      ! number of layers to bedrock, added by MAB 7/26/16
+    integer  :: nlevbed                                      ! number of layers to bedrock
     integer  :: jtop(bounds%begc:bounds%endc)                ! top level at each column
     integer  :: jbot(bounds%begc:bounds%endc)                ! bottom level at each column
     real(r8) :: dtime                                        ! land model time step (sec)
@@ -396,7 +396,7 @@ contains
       do fc = 1, num_hydrologyc
         c = filter_hydrologyc(fc)
         if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
         else
           nlevbed = nlevsoi
         end if
@@ -430,7 +430,7 @@ contains
       do fc = 1, num_hydrologyc
         c = filter_hydrologyc(fc)
         if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
         else
           nlevbed = nlevsoi
         end if
@@ -443,7 +443,7 @@ contains
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
             if(do_varsoil) then
-              nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+              nlevbed = nlev2bed(c)
             else
               nlevbed = nlevsoi
             end if
@@ -470,7 +470,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -488,7 +488,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -525,7 +525,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -560,7 +560,7 @@ contains
       do fc=1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -582,7 +582,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -650,7 +650,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -687,7 +687,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -716,7 +716,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -795,11 +795,11 @@ contains
 
       jtop(bounds%begc : bounds%endc) = 1
       ! Determination of how many layers (nlev2bed) to do for the tridiagonal
-      ! at each column, MAB 5/14/14
+      ! at each column
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -821,7 +821,7 @@ contains
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -873,7 +873,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if
@@ -888,7 +888,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
-          nlevbed = nlev2bed(c)			! Added by MAB, 7/25/16
+          nlevbed = nlev2bed(c)
          else
           nlevbed = nlevsoi
          end if

@@ -93,7 +93,7 @@ contains
          c = filter_hydrologyc(f)
          if(zwt(c) <= zi(c,nlevsoi)) then
            if(do_varsoil) then
-	      wa(c) = 0._r8                  ! Made 0 by MAB, 5/12/16
+	      wa(c) = 0._r8               ! Made 0 for variable soil thickness
 	   else
               wa(c) = 5000._r8
 	   end if

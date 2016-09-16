@@ -132,7 +132,7 @@ contains
       do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
         if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 6/12/16
+       	    nlevbed = nlev2bed(c)
         else
             nlevbed = nlevsoi
         end if
@@ -376,7 +376,7 @@ contains
        do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/12/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -653,7 +653,7 @@ contains
        do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -677,7 +677,7 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -696,7 +696,7 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -768,7 +768,7 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -1019,7 +1019,7 @@ contains
         do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 6/8/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if

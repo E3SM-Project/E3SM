@@ -568,13 +568,13 @@ contains
       deallocate(std)
 
       !-----------------------------------------------
-      ! Read in depth to bedrock, added by MAB 5/20/16
+      ! Read in depth to bedrock
       !-----------------------------------------------
 
       allocate(dtb(bounds%begg:bounds%endg))
       call ncd_io(ncid=ncid, varname='DTB', flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         call shr_sys_abort(' ERROR: NLEV to BEDROCK NOT on surfdata file'//&
+         call shr_sys_abort(' ERROR: DTB NOT on surfdata file'//&
               errMsg(__FILE__, __LINE__)) 
       end if
       do c = begc,endc

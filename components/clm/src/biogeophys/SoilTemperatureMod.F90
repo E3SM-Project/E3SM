@@ -657,7 +657,7 @@ contains
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
             if(do_varsoil) then
-       	      nlevbed = nlev2bed(c)             ! Added by MAB, 5/18/16
+       	      nlevbed = nlev2bed(c)
             else
               nlevbed = nlevsoi
             end if
@@ -761,7 +761,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if(do_varsoil) then
-       	      nlevbed = nlev2bed(c)             ! Added by MAB, 5/18/16
+       	      nlevbed = nlev2bed(c)
             else
               nlevbed = nlevsoi
             end if
