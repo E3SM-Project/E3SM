@@ -168,6 +168,7 @@
 
 !     ESL=612.2*EXP(17.67*X/(T-29.65))
       ESL=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      ESL=MIN(ESL, P*0.15)        ! Even with P=1050mb and T=55C, the sat. vap. pres only contributes to ~15% of total pres.
       RSLF=.622*ESL/(P-ESL)
 
 !    ALTERNATIVE
@@ -200,6 +201,7 @@
 
       X=MAX(-80.,T-273.16)
       ESI=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      ESI=MIN(ESI, P*0.15)
       RSIF=.622*ESI/(P-ESI)
 
 !    ALTERNATIVE
