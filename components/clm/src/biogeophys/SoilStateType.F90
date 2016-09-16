@@ -345,7 +345,7 @@ contains
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
-    integer            :: nlevbed                       ! # of layers above bedrock, added by MAB 5/24/16
+    integer            :: nlevbed                       ! # of layers above bedrock
     integer            :: ipedof  
     integer            :: begc, endc
     integer            :: begg, endg
@@ -570,7 +570,6 @@ contains
 
           do lev = 1,nlevgrnd
          ! Number of soil layers in hydrologically active columns = NLEV2BED
-         ! MAB 5/24/16
 	     nlevbed = col%nlev2bed(c)
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 
