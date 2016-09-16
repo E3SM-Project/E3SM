@@ -417,6 +417,8 @@ contains
                                                   accumulatedLandIceHeatOld, &
                                                   accumulatedLandIceHeatNew
 
+      integer, dimension(:), pointer :: landIceMask
+
       real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, &
                                                     landIceInterfaceTracers, &
                                                     landIceTracerTransferVelocities
@@ -453,6 +455,7 @@ contains
       end if
 
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
       call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
@@ -489,6 +492,8 @@ contains
       if(isomipOn) then
          !$omp do schedule(runtime) private(heatFlux)
          do iCell = 1, nCellsSolve
+            if (landIceMask(iCell) == 0) cycle
+
             ! linearized equaiton for the S and p dependent potential freezing temperature
             landIceInterfaceTracers(indexIT,iCell) = ocn_freezing_temperature( &
                salinity=landIceBoundaryLayerTracers(indexBLT,iCell), &
@@ -520,6 +525,7 @@ contains
          if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
             ! melting solution
             call compute_HJ99_melt_fluxes( &
+               landIceMask, &
                landIceBoundaryLayerTracers(indexBLT,:), &
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -539,6 +545,7 @@ contains
 
             ! freezing solution
             call compute_melt_fluxes( &
+               landIceMask, &
                landIceBoundaryLayerTracers(indexBLT,:), &
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -555,15 +562,18 @@ contains
                call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_melt_fluxes failed.")
             end if
 
-            where(landIceFreshwaterFlux < 0.0_RKIND)
-               landIceInterfaceTracers(indexIS,:) = freezeInterfaceSalinity
-               landIceInterfaceTracers(indexIT,:) = freezeInterfaceTemperature
-               landIceFreshwaterFlux = freezeFreshwaterFlux
-               landIceHeatFlux = freezeHeatFlux
-               heatFluxToLandIce = freezeIceHeatFlux
-            end where
+            do iCell = 1, nCellsSolve
+               if ((landIceMask(iCell) == 0) .or. (landIceFreshwaterFlux >= 0.0_RKIND)) cycle
+
+               landIceInterfaceTracers(indexIS,iCell) = freezeInterfaceSalinity(iCell)
+               landIceInterfaceTracers(indexIT,iCell) = freezeInterfaceTemperature(iCell)
+               landIceFreshwaterFlux = freezeFreshwaterFlux(iCell)(iCell)
+               landIceHeatFlux(iCell) = freezeHeatFlux(iCell)
+               heatFluxToLandIce(iCell) = freezeIceHeatFlux(iCell)
+            end do
          else ! not using Holland and Jenkins advection/diffusion
             call compute_melt_fluxes( &
+               landIceMask, &
                landIceBoundaryLayerTracers(indexBLT,:), &
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -580,9 +590,15 @@ contains
                call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_melt_fluxes failed.")
             end if
          end if
-         landIceFreshwaterFlux(:) = landIceFraction(:)*landIceFreshwaterFlux(:)
-         landIceHeatFlux(:) = landIceFraction(:)*landIceHeatFlux(:)
-         heatFluxToLandIce(:) = landIceFraction(:)*heatFluxToLandIce(:)
+
+         ! modulate the fluxes by the landIceFraction
+         do iCell = 1, nCellsSolve
+            if (landIceMask(iCell) == 0) cycle
+
+            landIceFreshwaterFlux(iCell) = landIceFraction(iCell)*landIceFreshwaterFlux(iCell)
+            landIceHeatFlux(iCell) = landIceFraction(iCell)*landIceHeatFlux(iCell)
+            heatFluxToLandIce(iCell) = landIceFraction(iCell)*heatFluxToLandIce(iCell)
+         end do
 
       end if
 
@@ -694,6 +710,7 @@ contains
 
 
   subroutine compute_melt_fluxes( &
+    mask, &
     oceanTemperature, &
     oceanSalinity, &
     oceanHeatTransferVelocity, &
@@ -715,6 +732,9 @@ contains
     ! input variables
     !
     !-----------------------------------------------------------------
+
+    integer, dimension(:), intent(in) :: &
+      mask                         !< Input: mask for land-ice fluxes
 
     real (kind=RKIND), dimension(:), intent(in) :: &
       oceanTemperature, &          !< Input: ocean temperature in top layer
@@ -759,6 +779,8 @@ contains
 
     logical :: coupled
 
+    real (kind=RKIND), parameter :: minInterfaceSalinity = 0.001_RKIND
+
     err = 0
     coupled = present(iceTemperature) .and. present(iceTemperatureDistance) &
             .and. present(kappa_land_ice)
@@ -766,6 +788,8 @@ contains
 
     !$omp do schedule(runtime) private(iceHeatFluxCoeff, nu, iceDeltaT, T0, transferVelocityRatio, a, b, c)
     do iCell = 1, nCells
+      if (mask(iCell) == 0) cycle
+
       if(coupled) then
         iceHeatFluxCoeff = rho_land_ice*cp_land_ice*kappa_land_ice/iceTemperatureDistance(iCell)
         nu = iceHeatFluxCoeff/(rho_sw*cp_sw*oceanHeatTransferVelocity(iCell))
@@ -781,22 +805,17 @@ contains
 
       a = -dTf_dS*(1.0_RKIND + nu)
       b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
-      c = -transferVelocityRatio*Tlatent*oceanSalinity(iCell)
+      c = -transferVelocityRatio*Tlatent*max(oceanSalinity(iCell), 0.0_RKIND)
 
       ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
       ! Since a can be zero, we need a solution of the quadratic equation for 1/Si instead of Si.
       ! Following: https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
       ! Since a and -c are are non-negative, the term in the square root is also always >= |b|.
       ! In all reasonable cases, b will be strictly positive, since transferVelocityRatio*Tlatent ~ 2 C,
-      ! T0 ~ -1.8 C and oceanTemperature should never be able to get below about -2.4 C
+      ! T0 ~ -1.8 C and oceanTemperature should never be able to get below about -3 C
       ! As long as either b or both a and c are greater than zero, the strictly non-negative root is
-      outInterfaceSalinity(iCell) = -(2.0_RKIND*c)/(b + sqrt(b**2 - 4.0_RKIND*a*c))
+      outInterfaceSalinity(iCell) = max(-(2.0_RKIND*c)/(b + sqrt(b**2 - 4.0_RKIND*a*c)), minInterfaceSalinity)
 
-      if(outInterfaceSalinity(iCell) <= 0.0_RKIND) then
-        write(stderrUnit, *) "ERROR: interfaceSalinity <= 0", outInterfaceSalinity(iCell), oceanSalinity(iCell), a, b, c
-        err = 1
-        call mpas_dmpar_global_abort('MPAS-ocean: ERROR: interfaceSalinity is negative...')
-      end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 
       outFreshwaterFlux(iCell) = rho_sw*oceanSaltTransferVelocity(iCell) &
@@ -855,6 +874,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine compute_HJ99_melt_fluxes( &
+    mask, &
     oceanTemperature, &
     oceanSalinity, &
     oceanHeatTransferVelocity, &
@@ -874,6 +894,9 @@ contains
     ! input variables
     !
     !-----------------------------------------------------------------
+
+    integer, dimension(:), intent(in) :: &
+      mask                         !< Input: mask for land-ice fluxes
 
     real (kind=RKIND), dimension(:), intent(in) :: &
       oceanTemperature, &          !< Input: ocean temperature in top layer
@@ -920,6 +943,8 @@ contains
     cpRatio = cp_land_ice/cp_sw
     !$omp do schedule(runtime) private(T0, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
     do iCell = 1, nCells
+      if (mask(iCell) == 0) cycle
+
       T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
       dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
       transferVelocityRatio = (rho_fw/rho_sw)*oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
