@@ -461,6 +461,11 @@ ifneq "$(NETCDF)" ""
 	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
 		LIBS += $(NCLIBF)
 	endif # CHECK FOR NETCDF4
+	ifneq "$(NETCDFF)" ""
+		FCINCLUDES += -I$(NETCDFF)/include
+		LIBS += -L$(NETCDFF)/lib
+		LIBS += $(NCLIBF)
+	endif
 	LIBS += $(NCLIB)
 endif
 
