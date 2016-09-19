@@ -1253,8 +1253,6 @@ query:
             gmake_exe = "gmake"
         run_cmd_assert_result(self.parent, "%s query --directory=%s 2>&1" % (gmake_exe, temp_dir), env=environment)
 
-
-
         with open(output_name, "r") as output:
             query_result = output.read().strip()
 
