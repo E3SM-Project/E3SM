@@ -114,7 +114,6 @@ module ocn_time_series_stats
   character (len=StrKIND), parameter :: OUTPUT_STREAM_SUFFIX = '_output_stream'
   character (len=StrKIND), parameter :: RESTART_STREAM_SUFFIX = '_restart_stream'
   character (len=StrKIND), parameter :: OPERATION_SUFFIX = '_operation'
-  character (len=StrKIND), parameter :: ADD_MESH_SUFFIX = '_add_mesh'
 
   character (len=StrKIND), parameter :: NUMBER_OF_BUFFERS_SUFFIX = &
     '_number_of_buffers'
@@ -177,8 +176,9 @@ contains
 !>  Specifically, it ensures the streams used for this instance are correctly
 !>  configured.
 !-----------------------------------------------------------------------
-subroutine ocn_bootstrap_time_series_stats(domain, err)!{{{
+subroutine ocn_bootstrap_time_series_stats(domain, instance, err)!{{{
   ! input variables
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -188,15 +188,11 @@ subroutine ocn_bootstrap_time_series_stats(domain, err)!{{{
 
   ! local variables
   integer :: v
-  character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
   logical, dimension(:), pointer :: valid_input
 
   ! start procedure
   err = 0
-
-  ! TODO placeholder for some unique ID if this code is replicated
-  instance = '' ! TODO to be passed in
 
   ! initial allocation of instance state for this AM from the namelist
   call start_state(domain, instance, series, valid_input, err)
@@ -223,8 +219,9 @@ end subroutine ocn_bootstrap_time_series_stats!}}}
 !>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_init_time_series_stats(domain, err)!{{{
+subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
   ! input variables
+  character (len=StrKIND), intent(in) :: instance 
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -234,7 +231,6 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
 
   ! local variables
   integer :: v, b
-  character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
   type (time_series_alarms_type), allocatable, dimension(:) :: alarms
   type (MPAS_Time_type) :: start_intv
@@ -242,9 +238,6 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
 
   ! start procedure
   err = 0
-
-  ! TODO placeholder for some unique ID if this code is replicated
-  instance = '' ! TODO to be passed in
 
   ! coming back from a potential restart read
   ! get all of the state for this instance
@@ -288,8 +281,9 @@ end subroutine ocn_init_time_series_stats!}}}
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
+subroutine ocn_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
   ! input variables
+  character (len=StrKIND), intent(in) :: instance
   integer, intent(in) :: timeLevel
 
   ! input/output variables
@@ -299,7 +293,6 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  character (len=StrKIND) :: instance ! TODO intent(in)
   integer :: v, b
   type (time_series_type) :: series
   type (MPAS_TimeInterval_type) :: dt
@@ -309,9 +302,6 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
 
   ! start procedure
   err = 0
-
-  ! TODO placeholder for some unique ID if this code is replicated
-  instance = '' ! TODO to be passed in
 
   ! get all of the state for this instance to be able to compute
   call get_state(domain, instance, series)
@@ -371,8 +361,9 @@ end subroutine ocn_compute_time_series_stats!}}}
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_restart_time_series_stats(domain, err)!{{{
+subroutine ocn_restart_time_series_stats(domain, instance, err)!{{{
   ! input variables
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -399,8 +390,9 @@ end subroutine ocn_restart_time_series_stats!}}}
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_finalize_time_series_stats(domain, err)!{{{
+subroutine ocn_finalize_time_series_stats(domain, instance, err)!{{{
   ! input variables
+  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -780,18 +772,20 @@ subroutine get_state(domain, instance, series)
 
     ! xtime start
     if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_START_PREFIX) // '_' // buf_identifier
+      field_name = trim(TIME_START_PREFIX) // trim(instance) // &
+        '_' // buf_identifier
     else
-      field_name = trim(TIME_START_PREFIX)
+      field_name = trim(TIME_START_PREFIX) // trim(instance)
     end if
     call mpas_pool_get_array(amPool, &
       field_name, series % buffers(b) % xtime_start, 1)
 
     ! xtime end
     if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_END_PREFIX) // '_' // buf_identifier
+      field_name = trim(TIME_END_PREFIX) // trim(instance) // &
+        '_' // buf_identifier
     else
-      field_name = trim(TIME_END_PREFIX)
+      field_name = trim(TIME_END_PREFIX) // trim(instance)
     end if
     call mpas_pool_get_array(amPool, &
       field_name, series % buffers(b) % xtime_end, 1)
@@ -1125,9 +1119,10 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
 
     ! xtime start
     if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_START_PREFIX) // '_' // buf_identifier
+      field_name = trim(TIME_START_PREFIX) // trim(instance) // &
+        '_' // buf_identifier
     else
-      field_name = trim(TIME_START_PREFIX)
+      field_name = trim(TIME_START_PREFIX) // trim(instance)
     end if
     call add_new_string(domain % blocklist % allFields, amPool, amPool, &
       field_name, series % buffers(b) % xtime_start)
@@ -1140,9 +1135,10 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
 
     ! xtime end
     if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_END_PREFIX) // '_' // buf_identifier
+      field_name = trim(TIME_END_PREFIX) // trim(instance) // &
+        '_' // buf_identifier
     else
-      field_name = trim(TIME_END_PREFIX)
+      field_name = trim(TIME_END_PREFIX) // trim(instance)
     end if
     call add_new_string(domain % blocklist % allFields, amPool, amPool, &
       field_name, series % buffers(b) % xtime_end)
