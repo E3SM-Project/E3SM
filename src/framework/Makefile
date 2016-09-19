@@ -34,7 +34,8 @@ OBJS = mpas_kind_types.o \
        mpas_field_routines.o \
        mpas_pool_routines.o \
        mpas_performance.o \
-       xml_stream_parser.o
+       xml_stream_parser.o \
+       mpas_field_accessor.o
 
 all: framework $(DEPS)
 
@@ -102,6 +103,8 @@ mpas_forcing.o: mpas_derived_types.o mpas_timekeeping.o mpas_io_streams.o mpas_s
 
 xml_stream_parser.o: xml_stream_parser.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPINCLUDES) -I../external/ezxml -c xml_stream_parser.c
+
+mpas_field_accessor.o: mpas_derived_types.o mpas_kind_types.o mpas_pool_routines.o mpas_io_units.o
 
 clean:
 	$(RM) *.o *.mod *.f90 libframework.a

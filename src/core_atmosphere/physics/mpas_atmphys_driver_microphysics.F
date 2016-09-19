@@ -29,50 +29,56 @@
           microphysics_init
 
 
-!MPAS driver for parameterization of cloud microphysics processes.
-!Laura D. Fowler (send comments to laura@ucar.edu).
-!2013-05-01.
-!
-! subroutines in mpas_atmphys_driver_microphysics:
-! ------------------------------------------------
-! allocate_microphysics  : allocate local arrays for parameterization of cloud microphysics.
-! deallocate_microphysics: deallocate local arrays for parameterization of cloud microphysics.
-! microphysics_init      : initialization of individual cloud microphysics schemes.
-! microphysics_driver    : main driver (called from mpas_atm_time_integration).
-! precip_from_MPAS       : initialize timestep local arrays for precipitation.
-! precip_to_MPAS         : copy local arrays to MPAS arrays.
-! compute_radar_reflectivity: compute radar reflectivities.
-!
-! WRF physics called from microphysics_driver:
-! --------------------------------------------
-!    * module_mp_kessler : Kessler cloud microphysics.
-!    * module_mp_wsm6    : WSM6 cloud microphysics.
-!
-! comments:
-! unlike all the other physics parameterizations, parameterizations of cloud microphysics schemes
-! are called at the bottom of subroutine atm_srk3 in module atm_time_integration.
-!
-! add-ons and modifications to sourcecode:
-! ----------------------------------------
-! * removed call to the Thompson cloud microphysics scheme until scheme is updated to that in WRF revision 3.5.
-!   Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
-! * added subroutine compute_relhum to calculate the relative humidity using the functions rslf and rsif from 
-!   the Thompson cloud microphysics scheme.
-!   Laura D. Fowler (laura@ucar.edu) / 2013-07-12. 
-! * removed the argument tend from the call to microphysics_from_MPAS (not needed).
-!   Laura D. Fowler (laura@ucar.edu) / 2013-11-07.
-! * in call to subroutine wsm6, replaced the variable g (that originally pointed to gravity) with gravity, 
-!   for simplicity.
-!   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
-! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-! * modified sourcecode to use pools.
-!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-! * moved the variable relhum from the diag_physics to the diag pool. Changed the argument
-!   list for the subroutine compute_relhum accordingly.
-!   Laura D. Fowler (laura@ucar.edu) / 2015-04-22.
-! * added parameterization of the Thompson cloud microphysics (WRF version 3.8).
-!   Laura D. Fowler (laura@ucar.edu) / 2016-03-28.
+!>\brief MPAS driver for parameterization of cloud microphysics processes.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_microphysics:
+!> ------------------------------------------------
+!> allocate_microphysics  : allocate local arrays for parameterization of cloud microphysics.
+!> deallocate_microphysics: deallocate local arrays for parameterization of cloud microphysics.
+!> microphysics_init      : initialization of individual cloud microphysics schemes.
+!> microphysics_driver    : main driver (called from mpas_atm_time_integration).
+!> precip_from_MPAS       : initialize timestep local arrays for precipitation.
+!> precip_to_MPAS         : copy local arrays to MPAS arrays.
+!> compute_radar_reflectivity: compute radar reflectivities.
+!>
+!> WRF physics called from microphysics_driver:
+!> --------------------------------------------
+!>    * module_mp_kessler : Kessler cloud microphysics.
+!>    * module_mp_wsm6    : WSM6 cloud microphysics.
+!>
+!> comments:
+!> unlike all the other physics parameterizations, parameterizations of cloud microphysics schemes
+!> are called at the bottom of subroutine atm_srk3 in module atm_time_integration.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed call to the Thompson cloud microphysics scheme until the scheme is updated to that
+!>      in WRF revision 3.5.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+!>    * added subroutine compute_relhum to calculate the relative humidity using the functions
+!>      rslf and rsif from the Thompson cloud microphysics scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-12. 
+!>    * removed the argument tend from the call to microphysics_from_MPAS (not needed).
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-11-07.
+!>    * in call to subroutine wsm6, replaced the variable g (that originally pointed to gravity)
+!>      with gravity, for simplicity.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * Moved the variable relhum from the diag_physics to the diag pool. Changed the argument
+!>      list for the subroutine compute_relhum accordingly.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-04-22.
+!>    * added parameterization of the Thompson cloud microphysics (WRF version 3.8).
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-03-28.
+!>    * In subroutine compute_relhum, multiply relhum by 100. so that it has the same unit as in
+!>      the initial conditions.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-06-20.
 
 
  contains
@@ -784,13 +790,8 @@
        qvs1d(k) = rslf(p1d(k),t1d(k))
        if(tempc .le. 0._RKIND) qvs1d(k) = rsif(p1d(k),t1d(k))
        qv1d(k) = qv_p(i,k,j)
-       rh = qv1d(k) / qvs1d(k)
-       rh = min(100., rh)
-       rh = max(0., rh)
-       relhum(k,i) = rh
-!      relhum(k,i) = qv1d(k) / qvs1d(k)
-!      write(0,101) i,k,p1d(k),t1d(k),qvs1d(k), &
-!         relhum(k,i)*100._RKIND
+       relhum(k,i) = qv1d(k) / qvs1d(k)
+       relhum(k,i) = relhum(k,i) * 100._RKIND
     enddo
 !   write(0,*)
 

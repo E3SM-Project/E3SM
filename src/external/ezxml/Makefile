@@ -3,7 +3,7 @@
 OBJS = ezxml.o
 
 all: clean
-	$(MAKE) library
+	$(MAKE) -j 1 library
 
 library: $(OBJS)
 

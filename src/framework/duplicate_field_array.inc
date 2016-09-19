@@ -56,6 +56,16 @@
                else
                   nullify(dst_cursor % array)
                end if
+
+               if ( associated(dst_cursor % attLists) ) then
+                  deallocate(dst_cursor % attLists)
+               end if
+
+               allocate(dst_cursor % attLists( size(src_cursor % attLists) ) )
+
+               do iConstituent = 1, size(src_cursor % attLists)
+                  call mpas_duplicate_attlist(src_cursor % attLists(iConstituent) % attList, dst_cursor % attLists(iConstituent) % attList)
+               end do
             end if
             if ( dst_cursor % isActive .and. src_cursor % isActive ) then
                dst_cursor % array = src_cursor % array

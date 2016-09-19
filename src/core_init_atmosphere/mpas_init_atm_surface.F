@@ -81,6 +81,13 @@
 
  end do
 
+ !
+ ! Ensure that no output alarms are still ringing for the 'surface' stream after
+ ! we exit the time loop above; the main run routine may write out all other
+ ! output streams with ringing alarms.
+ !
+ call mpas_stream_mgr_reset_alarms(stream_manager, streamID='surface', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
  end subroutine init_atm_case_sfc
 
 !==================================================================================================
@@ -145,7 +152,7 @@
  have_landmask = .false.
  call read_next_met_field(field,istatus)
  do while (istatus == 0)
-    if(index(field % field, 'LANDSEA') /= 0) then
+    if(trim(field % field) == 'LANDSEA') then
        have_landmask = .true.
        if(.not.allocated(maskslab)) allocate(maskslab(-2:field % nx+3, field % ny))
        maskslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
@@ -183,7 +190,7 @@
  do while (istatus == 0)
 
     !sea-surface data:
-    if(index(field % field, 'SKINTEMP') /= 0 .or. index(field % field, 'SST') /= 0) then
+    if((trim(field % field) == 'SKINTEMP') .or. (trim(field % field) ==  'SST')) then
 !      write(0,*) '... Processing SST:'
        sst(1:nCells) = 0.0_RKIND
        destField1d => sst
@@ -208,7 +215,7 @@
        deallocate(field%slab)
 
     !sea-ice data:
-    else if(index(field % field, 'SEAICE') /= 0) then
+    else if(trim(field % field) == 'SEAICE') then
 !      write(0,*) '... Processing SEAICE:'
        xice(1:nCells) = 0.0_RKIND
        destField1d => xice

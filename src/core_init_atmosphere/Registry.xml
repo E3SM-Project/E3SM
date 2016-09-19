@@ -54,6 +54,7 @@
                 <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"/>
                 <nml_option name="config_fg_interval"           type="integer"       default_value="86400"/>
                 <nml_option name="config_landuse_data"          type="character"     default_value="USGS"/>
+                <nml_option name="config_use_spechumd"          type="logical"       default_value="false"/>
         </nml_record>
 
         <nml_record name="vertical_grid" in_defaults="true">
@@ -347,7 +348,7 @@
 			<var name="v10" packages="met_stage_out"/>
 			<var name="q2" packages="met_stage_out"/>
 			<var name="rh2" packages="met_stage_out"/>
-			<var name="t2" packages="met_stage_out"/>
+			<var name="t2m" packages="met_stage_out"/>
 		</stream>
 
 		<stream name="surface" 
@@ -538,7 +539,7 @@
                 <var name="u10"                               type="real"     dimensions="nCells Time"/>
                 <var name="v10"                               type="real"     dimensions="nCells Time"/>
                 <var name="q2"                                type="real"     dimensions="nCells Time"/>
-                <var name="t2"                                type="real"     dimensions="nCells Time"/>
+                <var name="t2m"                               type="real"     dimensions="nCells Time"/>
                 <var name="rh2"                               type="real"     dimensions="nCells Time"/>
         </var_struct>
 
