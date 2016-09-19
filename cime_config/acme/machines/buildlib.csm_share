@@ -45,7 +45,7 @@ chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
 my @filepath = ( "$CASEROOT/SourceMods/src.share",
 		 "$CIMEROOT/driver_cpl/shr",
-		 "$CIMEROOT/components/xcpl_models/xshare",
+		 "$CIMEROOT/components/xcpl_comps/xshare",
 		 "$CIMEROOT/share/csm_share/shr",
 		 "$CIMEROOT/share/shr_RandNum/src",
 		 "$CIMEROOT/share/shr_RandNum/src/dsfmt_f03",

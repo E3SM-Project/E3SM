@@ -1123,7 +1123,7 @@ class B_CheckCode(unittest.TestCase):
             pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
             major = int(pylintver.group(1))
             minor = int(pylintver.group(2))
-        if pylint is None or (major <= 1 and minor < 5):
+        if pylint is None or major < 1 or (major == 1 and minor < 5):
             self.skipTest("pylint version 1.5 or newer not found")
         else:
             run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker -d 2>&1"))
@@ -1248,7 +1248,10 @@ query:
         environment = os.environ.copy()
         environment.update(env)
         environment.update(var)
-        run_cmd_assert_result(self.parent, "gmake query --directory=%s 2>&1" % temp_dir, env=environment)
+        gmake_exe = MACHINE.get_value("GMAKE")
+        if gmake_exe is None:
+            gmake_exe = "gmake"
+        run_cmd_assert_result(self.parent, "%s query --directory=%s 2>&1" % (gmake_exe, temp_dir), env=environment)
 
         with open(output_name, "r") as output:
             query_result = output.read().strip()

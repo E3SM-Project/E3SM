@@ -455,6 +455,7 @@
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/home/climate1/acme/baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/home/climate1/acme/cprnc/build/cprnc</CCSM_CPRNC>
+    <SAVE_TIMING_DIR>$CESMSCRATCHROOT/timings</SAVE_TIMING_DIR>
     <BATCHQUERY></BATCHQUERY>
     <BATCHSUBMIT></BATCHSUBMIT>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
