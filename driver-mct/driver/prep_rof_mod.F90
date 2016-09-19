@@ -448,8 +448,8 @@ contains
     ! field given by irrig_flux_field in l2r_rx(eri).
     !
     ! In addition, it uses the following fields from other attribute vectors:
-    ! - r2x_rx (obtained via component_get_c2x_cx(rof(eri))): Flrr_volr
-    ! - x2l_lx (obtained via component_get_x2c_cx(lnd(eli))): Flrr_volr
+    ! - r2x_rx (obtained via component_get_c2x_cx(rof(eri))): Flrr_volrmch
+    ! - x2l_lx (obtained via component_get_x2c_cx(lnd(eli))): Flrr_volrmch
     !
     ! Arguments
     integer, intent(in) :: eri  ! rof instance index
@@ -476,7 +476,7 @@ contains
     real(r8), pointer :: irrig_excess_l(:) ! irrigation where volr <= 0, land grid
     real(r8), pointer :: irrig_excess_r(:) ! irrigation where volr <= 0, rof grid
 
-    character(len=*), parameter :: volr_field         = 'Flrr_volr'
+    character(len=*), parameter :: volr_field         = 'Flrr_volrmch'
     character(len=*), parameter :: irrig_frac_field   = 'Flrl_irrig_frac'
     character(len=*), parameter :: irrig_excess_field = 'Flrl_irrig_excess'
     character(len=*), parameter :: fields_to_remap = &
