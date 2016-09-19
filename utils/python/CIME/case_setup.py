@@ -204,7 +204,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                 # reset cost_pes to totalpes
                 case.set_value("COST_PES", 0)
 
-            logger.warn("at update TOTALPES = %s"%pestot)
+            logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
@@ -258,7 +258,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
-            logger.warn("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
+            logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
             shutil.copy("env_mach_pes.xml", "LockedFiles")
 
         # Create user_nl files for the required number of instances
