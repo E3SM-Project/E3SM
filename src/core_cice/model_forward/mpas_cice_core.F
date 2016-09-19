@@ -86,13 +86,15 @@ module cice_core
       ! Regardless of which stream we read for initial conditions, reset the
       ! input alarms for both input and restart before reading any remaining input streams.
       !
-      if (config_do_restart .and. trim(config_initial_condition_type) /= "restart") then
+      if (config_do_restart) then
          call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=ierr)
-      else if (trim(config_initial_condition_type) == "restart") then
-         call MPAS_stream_mgr_read(domain % streamManager, streamID='restart_ic', ierr=ierr)
       else
-         call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
-      end if
+         if (trim(config_initial_condition_type) == "restart") then
+            call MPAS_stream_mgr_read(domain % streamManager, streamID='restart_ic', ierr=ierr)
+         else
+            call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
+         end if
+      endif
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
 
