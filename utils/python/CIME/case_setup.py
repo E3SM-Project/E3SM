@@ -197,13 +197,14 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             if case.get_value("MACH") == "yellowstone":
                 pespn = 16
             pestot = tm.totaltasks
-            if mtpn > pespn:
+            if mtpn > pespn and pestot > pespn:
                 pestot = pestot * (mtpn // pespn)
                 case.set_value("COST_PES", tm.num_nodes*pespn)
             else:
                 # reset cost_pes to totalpes
                 case.set_value("COST_PES", 0)
 
+            logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
@@ -257,6 +258,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
+            logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
             shutil.copy("env_mach_pes.xml", "LockedFiles")
 
         # Create user_nl files for the required number of instances
