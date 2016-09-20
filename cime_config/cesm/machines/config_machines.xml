@@ -735,6 +735,9 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
     </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
     <module_system type="module">
       <init_path lang="perl">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/init/perl</init_path>
       <init_path lang="python">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
