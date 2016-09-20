@@ -637,13 +637,17 @@ module cice_core_interface
       if (.not. associated(config_do_restart)) then
          write(stream,'(a)') ''
          ierr = 1
-      else if (trim(config_initial_condition_type) == "restart") then
-         write(stream,'(a)') 'restart_ic'
-      else if (trim(config_initial_condition_type) /= "restart" .and. config_do_restart) then
-         write(stream,'(a)') 'restart'
       else
-         write(stream,'(a)') 'input'
-      end if
+         if (config_do_restart) then
+            write(stream,'(a)') 'restart'
+         else
+            if (trim(config_initial_condition_type) == "restart") then
+               write(stream,'(a)') 'restart_ic'
+            else
+               write(stream,'(a)') 'input'
+            end if
+         endif
+      endif
 
    end function cice_get_mesh_stream!}}}
 
