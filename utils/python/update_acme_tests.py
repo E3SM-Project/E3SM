@@ -44,7 +44,7 @@ _TEST_SUITES = {
                              "ERS_Ld3.ne30_g16_rx1.A",
                              "ERS_N2_Ld3.f19_g16_rx1.A",
                              "ERR_Ld3.f45_g37_rx1.A",
-                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A")
+                             "SMS_D_Ln9.f19_g16_rx1.A")
                             ),
 
     #
