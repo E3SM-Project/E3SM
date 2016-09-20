@@ -376,6 +376,9 @@
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
+    <values>
+      <value compset="_DATM.+_CLM">ndays</value>
+    </values>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
