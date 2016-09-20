@@ -20,7 +20,7 @@
  use module_cu_gf_momentum
  use module_cu_kfeta
  use module_cu_tiedtke
- use module_cu_tiedtke_wrf38
+ use module_cu_tiedtke_wrf381
 
  implicit none
  private
@@ -85,8 +85,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 ! * in the call to subroutine cu_grell_freitas, removed the argument ktop_deep.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-20.
-! * added the call to the Tiedtke parameterization of convection from WRF version 3.8. This option is triggered
-!   using the option cu_tiedtke_wrf38.
+! * added the call to the Tiedtke parameterization of convection from WRF version 3.8.1. This option is triggered
+!   using the option cu_tiedtke_wrf381.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-08-18.
 
 
@@ -183,7 +183,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf38")
+    case ("cu_tiedtke","cu_tiedtke_wrf381")
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
@@ -272,7 +272,7 @@
        if(allocated(rqrcuten_p)   ) deallocate(rqrcuten_p   )
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
-    case ("cu_tiedtke","cu_tiedtke_wrf38")
+    case ("cu_tiedtke","cu_tiedtke_wrf381")
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
@@ -539,8 +539,8 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                     )
 
-    case("cu_tiedtke_wrf38")
-       call cu_tiedtke_wrf38 ( &
+    case("cu_tiedtke_wrf381")
+       call cu_tiedtke_wrf381 ( &
              pcps        = pres_hyd_p    , p8w       = pres2_hyd_p   ,               &
              znu         = znu_hyd_p     , t3d       = t_p           ,               &
              dt          = dt_dyn        , itimestep = itimestep     ,               &
@@ -735,7 +735,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf38")
+    case ("cu_tiedtke","cu_tiedtke_wrf381")
        call mpas_pool_get_array(sfc_input,'xland',xland)
        call mpas_pool_get_array(diag_physics,'hfx',hfx)
        call mpas_pool_get_array(diag_physics,'qfx',qfx)
@@ -866,7 +866,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf38")
+    case ("cu_tiedtke","cu_tiedtke_wrf381")
        call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
        call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
 

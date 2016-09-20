@@ -96,7 +96,7 @@ mpas_atmphys_driver_convection.o: \
 	./physics_wrf/module_cu_gf_momentum.mpas.o \
 	./physics_wrf/module_cu_kfeta.o \
 	./physics_wrf/module_cu_tiedtke.o \
-	./physics_wrf/module_cu_tiedtke.wrf-3.8.o
+	./physics_wrf/module_cu_tiedtke.wrf-3.8.1.o
 
 mpas_atmphys_finalize.o: \
 	./physics_wrf/module_mp_thompson.o
