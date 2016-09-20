@@ -335,7 +335,7 @@ class EnvBatch(EnvBase):
                 if val is None:
                     val = case.get_resolved_value(name)
 
-                if val is not None and len(val) > 0 and val != "None":
+                if val is not None and len(str(val)) > 0 and val != "None":
                     # Try to evaluate val
                     try:
                         rval = eval(val)
