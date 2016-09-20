@@ -286,22 +286,37 @@
    <batch_system MACH="oic2" type="pbs" version="x.y">
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+		 <directive>-q esd08q</directive>
          </directives>
-            <queues>
-              <queue default="true">esd08q</queue>
-            </queues>
-            <walltimes>
-              <walltime default="true">24:00:00</walltime>
-            </walltimes>
+         <queues>
+           <queue default="true">esd08q</queue>
+         </queues>
+         <walltimes>
+           <walltime default="true">24:00:00</walltime>
+         </walltimes>
    </batch_system>
 
    <batch_system MACH="oic5" type="pbs" version="x.y">
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+		 <directive>-q esd13q</directive>
          </directives>
          <queues>
            <queue default="true">esd13q</queue>
            <queue walltimemax="1:00">esddbg13q</queue>
+         </queues>
+         <walltimes>
+           <walltime default="true">24:00:00</walltime>
+         </walltimes>
+   </batch_system>
+
+   <batch_system MACH="cades" type="pbs" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+                 <directive>-W group_list=cades-ccsi</directive>
+         </directives>
+         <queues>
+           <queue default="true">batch</queue>
          </queues>
          <walltimes>
            <walltime default="true">24:00:00</walltime>
