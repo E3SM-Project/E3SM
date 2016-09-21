@@ -104,9 +104,9 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                                         no_files_missing = False
                                 else:
                                     no_files_missing = False
+                        # if not download
                         else:
                             no_files_missing = False
-
                     else:
                         logging.debug("Already had input file: '%s'" % full_path)
 
