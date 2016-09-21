@@ -38,6 +38,9 @@ module atm_time_integration
 
    integer :: timerid, secs, u_secs
 
+   ! Used to store physics tendencies for dynamics variables
+   real (kind=RKIND), allocatable, dimension(:,:) :: tend_ru_physics, tend_rtheta_physics
+   
    ! Used in compute_dyn_tend
    real (kind=RKIND), allocatable, dimension(:,:) :: qtot 
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_theta, delsq_w, delsq_divergence
@@ -241,6 +244,15 @@ module atm_time_integration
       call mpas_pool_get_field(diag, 'rtheta_p', rtheta_p_field)
 
       !
+      ! allocate storage for physics tendency save
+      !
+      call mpas_pool_get_dimension(state, 'nCells', nCells)
+      call mpas_pool_get_dimension(state, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+      allocate(tend_rtheta_physics(nVertLevels,nCells+1))
+      allocate(tend_ru_physics(nVertLevels,nEdges+1))
+
+      !
       ! Initialize RK weights
       !
 
@@ -301,6 +313,7 @@ module atm_time_integration
 
 
       call mpas_timer_start('atm_rk_integration_setup')
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', state)
@@ -353,7 +366,35 @@ module atm_time_integration
       end do
       call mpas_timer_stop('atm_compute_moist_coefficients')
 
-      DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
+#ifdef DO_PHYSICS
+            call mpas_timer_start('physics_addtend')
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'tend', tend)
+               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
+               rk_step = 1
+               dynamics_substep = 1
+               call physics_get_tend( block, &
+                                       mesh, &
+                                      state, &     
+                                       diag, &
+                                       tend, &
+                               tend_physics, &
+                            block % configs, &
+                                    rk_step, &
+                           dynamics_substep, &
+                            tend_ru_physics, &
+                        tend_rtheta_physics )
+               block => block % next
+            end do
+            call mpas_timer_stop('physics_addtend')
+#endif
+
+
+            DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
             !  Compute the coefficients for the vertically implicit solve in the acoustic step.
             !  These coefficients will work for the first acoustic step in all cases.
@@ -422,6 +463,7 @@ module atm_time_integration
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
+               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
    
                call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
@@ -440,7 +482,7 @@ module atm_time_integration
 MPAS_GPTL_START('dyn_tend')
 !$OMP PARALLEL DO
                do thread=1,block % nThreads
-                  call atm_compute_dyn_tend( tend, state, diag, mesh, block % configs, nVertLevels, rk_step, dt, & 
+                  call atm_compute_dyn_tend( tend, tend_physics, state, diag, mesh, block % configs, nVertLevels, rk_step, dt, & 
                                              block % cellThreadStart(thread), block % cellThreadEnd(thread), &
                                              block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
                                              block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
@@ -465,26 +507,26 @@ MPAS_GPTL_STOP('dyn_tend')
             call mpas_timer_stop('atm_compute_dyn_tend')
 
 #ifdef DO_PHYSICS
-            call mpas_timer_start('physics_addtend')
-            block => domain % blocklist
-            do while (associated(block))
-               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-               call mpas_pool_get_subpool(block % structs, 'state', state)
-               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
-               call physics_addtend( block, &
-                                      mesh, &
-                                     state, &     
-                                      diag, &
-                                      tend, &
-                              tend_physics, &
-                           block % configs, &
-                                   rk_step, &
-                          dynamics_substep  )
-               block => block % next
-            end do
-            call mpas_timer_stop('physics_addtend')
+!            call mpas_timer_start('physics_addtend')
+!            block => domain % blocklist
+!            do while (associated(block))
+!               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+!               call mpas_pool_get_subpool(block % structs, 'state', state)
+!               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+!               call mpas_pool_get_subpool(block % structs, 'tend', tend)
+!               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
+!               call physics_addtend( block, &
+!                                      mesh, &
+!                                     state, &     
+!                                      diag, &
+!                                      tend, &
+!                              tend_physics, &
+!                           block % configs, &
+!                                   rk_step, &
+!                          dynamics_substep  )
+!               block => block % next
+!            end do
+!            call mpas_timer_stop('physics_addtend')
 #endif
 
             !***********************************
@@ -814,7 +856,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       end do DYNAMICS_SUBSTEPS
 
 
-       deallocate(qtot)  !  we are finished with qtot now...
+      deallocate(qtot)  !  we are finished with these now
+      deallocate(tend_rtheta_physics)
+      deallocate(tend_ru_physics)
 
       !
       !  split transport, at present RK3
@@ -3379,7 +3423,7 @@ MPAS_GPTL_STOP('mono_exch_2')
    end subroutine atm_advance_scalars_mono_work
 
 
-   subroutine atm_compute_dyn_tend(tend, state, diag, mesh, configs, nVertLevels, rk_step, dt, &
+   subroutine atm_compute_dyn_tend(tend, tend_physics, state, diag, mesh, configs, nVertLevels, rk_step, dt, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -3401,6 +3445,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       ! Dummy arguments
       !
       type (mpas_pool_type), intent(inout) :: tend
+      type (mpas_pool_type), intent(inout) :: tend_physics
       type (mpas_pool_type), intent(in) :: state
       type (mpas_pool_type), intent(in) :: diag
       type (mpas_pool_type), intent(in) :: mesh
@@ -3432,6 +3477,7 @@ MPAS_GPTL_STOP('mono_exch_2')
 
 
       real (kind=RKIND), dimension(:,:), pointer :: tend_rtheta_adv  ! needed for Tiedtke convection scheme
+      real (kind=RKIND), dimension(:,:), pointer :: rthdynten  ! needed for Grell-Freitas convection scheme
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
@@ -3511,6 +3557,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(diag, 'exner', exner)
 
       call mpas_pool_get_array(diag, 'tend_rtheta_adv', tend_rtheta_adv)
+      call mpas_pool_get_array(tend_physics, 'rthdynten', rthdynten)
 
       call mpas_pool_get_array(mesh, 'pzp', pzp)
       call mpas_pool_get_array(mesh, 'pzm', pzm)
@@ -3601,7 +3648,7 @@ MPAS_GPTL_STOP('mono_exch_2')
          rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
          tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
          config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
-         tend_rtheta_adv, &
+         tend_rtheta_adv, rthdynten, &
          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -3622,7 +3669,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
       tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
       config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
-      tend_rtheta_adv, &
+      tend_rtheta_adv, rthdynten, &
       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -3743,7 +3790,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       integer, intent(in) :: rk_step
       real (kind=RKIND), intent(in) :: dt
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv, rthdynten
 
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
@@ -4042,7 +4089,8 @@ MPAS_GPTL_STOP('mono_exch_2')
       do iEdge=edgeSolveStart,edgeSolveEnd
 !DIR$ IVDEP
          do k=1,nVertLevels
-            tend_u(k,iEdge) = tend_u(k,iEdge) + tend_u_euler(k,iEdge)
+!            tend_u(k,iEdge) = tend_u(k,iEdge) + tend_u_euler(k,iEdge)
+            tend_u(k,iEdge) = tend_u(k,iEdge) + tend_u_euler(k,iEdge) + tend_ru_physics(k,iEdge)
          end do
       end do
 
@@ -4334,7 +4382,8 @@ MPAS_GPTL_STOP('mono_exch_2')
 !DIR$ IVDEP
          do k=1,nVertLevels
             tend_theta(k,iCell) = tend_theta(k,iCell)*invAreaCell(iCell) -rdzw(k)*(wdtz(k+1)-wdtz(k))
-            tend_rtheta_adv(k,iCell) = tend_theta(k,iCell)
+            tend_rtheta_adv(k,iCell) = tend_theta(k,iCell)   !  this is for the Tiedke scheme
+            rthdynten(k,iCell) = tend_theta(k,iCell)/rho_zz(k,iCell)  !  this is for the Grell-Freitas scheme
             tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
       end do
@@ -4342,7 +4391,8 @@ MPAS_GPTL_STOP('mono_exch_2')
       do iCell = cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
          do k=1,nVertLevels
-            tend_theta(k,iCell) = tend_theta(k,iCell) + tend_theta_euler(k,iCell)
+!            tend_theta(k,iCell) = tend_theta(k,iCell) + tend_theta_euler(k,iCell)
+            tend_theta(k,iCell) = tend_theta(k,iCell) + tend_theta_euler(k,iCell) + tend_rtheta_physics(k,iCell)
          end do
       end do
 
