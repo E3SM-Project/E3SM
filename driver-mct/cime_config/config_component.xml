@@ -376,6 +376,9 @@
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
+    <values>
+      <value compset="_DATM.+_CLM">ndays</value>
+    </values>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
@@ -505,6 +508,14 @@
     <group>run_data_archive</group>
     <file>env_run.xml</file>
     <desc></desc>
+  </entry>
+
+  <entry id="SYSLOG_N">
+    <type>integer</type>
+    <default_value>900</default_value>
+    <group>run_data_archive</group>
+    <file>env_run.xml</file>
+    <desc>system workload snapshot frequency (in seconds, if greater than 0; disabled otherwise)</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -895,7 +906,7 @@
   <entry id="SAVE_TIMING_DIR">
     <type>char</type>
     <valid_values></valid_values>
-    <default_value>UNSET</default_value>
+    <default_value>timing</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Where to auto archive timing data</desc>
@@ -1144,6 +1155,14 @@
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>number of wav cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="MASK_GRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>grid mask - DO NOT EDIT (for experts only)</desc>
   </entry>
 
   <entry id="PTS_MODE">
@@ -2956,11 +2975,21 @@
 
   <entry id="CCSM_CPRNC">
     <type>char</type>
-    <default_value>/UNSET</default_value>
+    <default_value>UNSET</default_value>
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard full pathname of the cprnc executable</desc>
   </entry>
+
+  <entry id="USER_MODS_FULLPATH">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>user_mods</group>
+    <file>env_case.xml</file>
+    <desc>path to user mods under TESTS_MODS_DIR or USER_MODS_DIR</desc>
+  </entry>
+
+
 
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
