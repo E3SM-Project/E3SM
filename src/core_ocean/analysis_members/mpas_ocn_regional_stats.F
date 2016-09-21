@@ -209,9 +209,8 @@ contains
 !>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_init_regional_stats(domain, instance, err)!{{{
+subroutine ocn_init_regional_stats(domain, err)!{{{
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -221,9 +220,13 @@ subroutine ocn_init_regional_stats(domain, instance, err)!{{{
 
   ! local variables
   integer :: v
+  character (len=StrKIND) :: instance ! TODO intent(in)
 
   ! start procedure
   err = 0
+
+  ! TODO placeholder for some unique ID if this code is replicated
+  instance = '' ! TODO to be passed in
 
   ! create all of the state for this instance
   call start_state(domain, instance, err)
@@ -242,10 +245,9 @@ end subroutine ocn_init_regional_stats!}}}
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_compute_regional_stats(domain, timeLevel, instance, err)!{{{
+subroutine ocn_compute_regional_stats(domain, timeLevel, err)!{{{
   ! input variables
   integer, intent(in) :: timeLevel
-  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -254,6 +256,7 @@ subroutine ocn_compute_regional_stats(domain, timeLevel, instance, err)!{{{
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
+  character (len=StrKIND) :: instance ! TODO intent(in)
   integer :: v, last, m, b, i
   integer, pointer :: levels, solve
   type (regional_type) :: regions
@@ -274,6 +277,9 @@ subroutine ocn_compute_regional_stats(domain, timeLevel, instance, err)!{{{
 
   ! start procedure
   err = 0
+
+  ! TODO placeholder for some unique ID if this code is replicated
+  instance = '' ! TODO to be passed in
 
   ! get all of the state for this instance to be able to compute
   call get_state(domain, instance, regions)
@@ -436,9 +442,8 @@ end subroutine ocn_compute_regional_stats!}}}
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_restart_regional_stats(domain, instance, err)!{{{
+subroutine ocn_restart_regional_stats(domain, err)!{{{
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -465,9 +470,8 @@ end subroutine ocn_restart_regional_stats!}}}
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine ocn_finalize_regional_stats(domain, instance, err)!{{{
+subroutine ocn_finalize_regional_stats(domain, err)!{{{
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
