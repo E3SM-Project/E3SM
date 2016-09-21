@@ -121,6 +121,15 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
+    def phase_statuses_dump(self):
+        if self._phase_statuses:
+                for phase, data in self._phase_statuses.iteritems():
+                    status, comments = data
+                    if not comments:
+                        print "%s %s %s" % (status, self._test_name, phase)
+                    else:
+                        print "%s %s %s %s" % (status, self._test_name, phase, comments)
+
     def flush(self):
         if self._phase_statuses:
             with open(self._filename, "w") as fd:
