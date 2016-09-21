@@ -218,7 +218,6 @@ class EnvBatch(EnvBase):
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '%s' does not exist" % input_template)
-
         task_maker = TaskMaker(case)
 
         self.maxthreads = task_maker.maxthreads
@@ -233,7 +232,7 @@ class EnvBatch(EnvBase):
         self.tasks_per_numa = task_maker.tasks_per_numa
         self.num_tasks = task_maker.totaltasks
 
-        task_count = self.get_value("task_count")
+        task_count = self.get_value("task_count", subgroup=job)
         if task_count == "default":
             self.sumpes = task_maker.fullsum
             self.totaltasks = task_maker.totaltasks

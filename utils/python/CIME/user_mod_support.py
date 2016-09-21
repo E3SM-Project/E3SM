@@ -31,7 +31,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                 continue
             case_user_nl = user_nl.replace(include_dir, caseroot)
             comp = case_user_nl.split('_')[-1]
-            if ninst is not None and comp in ninst.keys():
+            if ninst is not None and comp in ninst.keys() and ninst[comp] > 1:
                 for comp_inst in xrange(1, ninst[comp]+1):
                     contents = newcontents
                     case_user_nl_inst = case_user_nl + "_%4.4d"%comp_inst
@@ -92,10 +92,14 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
     each of those directories for further directories.
     The file may also include comments deleneated with # in the first column
     '''
+    include_dirs = [] if include_dirs is None else include_dirs
+    if user_mods_path is None or user_mods_path == 'UNSET':
+        return include_dirs
     expect(os.path.isabs(user_mods_path),
            "Expected full directory path, got '%s'"%user_mods_path)
+    expect(os.path.isdir(user_mods_path),
+           "Directory not found %s"%user_mods_path)
     logger.info("Adding user mods directory %s"%user_mods_path)
-    include_dirs = [] if include_dirs is None else include_dirs
     include_dirs.append(os.path.normpath(user_mods_path))
     include_file = os.path.join(include_dirs[-1],"include_user_mods")
     if os.path.isfile(include_file):

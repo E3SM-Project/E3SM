@@ -56,7 +56,8 @@ class SSP(SystemTestsCommon):
         clone.flush()
 
         dout_sr = clone.get_value("DOUT_S_ROOT")
-        self.run_indv(suffix="spinup", st_archive=True)
+        # No history files expected, set suffix=None to avoid compare error
+        self.run_indv(suffix=None, st_archive=True)
 
         #-------------------------------------------------------------------
         # (2) do a hybrid, non-spinup run in orig_case

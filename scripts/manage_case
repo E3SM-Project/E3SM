@@ -34,8 +34,8 @@ def query_machines():
     config_file = files.get_value("MACHINES_SPEC_FILE")
     expect(os.path.isfile(config_file),
            "Cannot find config_file %s on disk" %config_file)
-
-    machines = Machines(config_file)
+    # Provide a special machine name indicating no need for a machine name
+    machines = Machines(config_file,machine="Query")
     machines.print_values()
 
 ###############################################################################

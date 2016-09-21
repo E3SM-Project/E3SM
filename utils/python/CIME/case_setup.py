@@ -189,7 +189,22 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             check_lockedfiles()
 
             tm = TaskMaker(case)
-            pestot = tm.fullsum
+            mtpn = case.get_value("MAX_TASKS_PER_NODE")
+            pespn = case.get_value("PES_PER_NODE")
+            # This is hardcoded because on yellowstone by default we
+            # run with 15 pes per node
+            # but pay for 16 pes per node.  See github issue #518
+            if case.get_value("MACH") == "yellowstone":
+                pespn = 16
+            pestot = tm.totaltasks
+            if mtpn > pespn and pestot > pespn:
+                pestot = pestot * (mtpn // pespn)
+                case.set_value("COST_PES", tm.num_nodes*pespn)
+            else:
+                # reset cost_pes to totalpes
+                case.set_value("COST_PES", 0)
+
+            logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
 
             # Compute cost based on PE count
@@ -243,6 +258,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
+            logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
             shutil.copy("env_mach_pes.xml", "LockedFiles")
 
         # Create user_nl files for the required number of instances
@@ -258,18 +274,22 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
         _build_usernl_files(case, "drv", "cpl")
 
-        if case.get_value("TEST"):
+        user_mods_path = case.get_value("USER_MODS_FULLPATH")
+        if user_mods_path is not None:
+            apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
+        elif case.get_value("TEST"):
             test_mods = parse_test_name(casebaseid)[6]
             if test_mods is not None:
                 user_mods_path = os.path.join(case.get_value("TESTS_MODS_DIR"), test_mods)
                 apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
+
 
         # Run preview namelists for scripts
         logger.info("preview_namelists")
         preview_namelists(case)
 
         logger.info("See ./CaseDoc for component namelists")
-        logger.info("If an old case build already exists, might want to run \'case.build --clean-all\' before building")
+        logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
         # Create test script if appropriate
         # Short term fix to be removed when csh tests are removed

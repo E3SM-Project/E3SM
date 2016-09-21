@@ -177,7 +177,10 @@ class TaskMaker(object):
         self.pbsrs = pbsrs + "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=$MODEL" % (max_total_node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
 
         # calculate ptile..
-        ptile = self.MAX_TASKS_PER_NODE / 2
+        if self.MAX_TASKS_PER_NODE > self.PES_PER_NODE:
+            ptile = self.MAX_TASKS_PER_NODE / 2
+        else:
+            ptile = self.PES_PER_NODE
         if self.maxthreads > 1:
             ptile = int(math.floor(float(self.MAX_TASKS_PER_NODE) / self.maxthreads))
 

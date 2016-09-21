@@ -26,7 +26,9 @@ class Pes(GenericXML):
         mach_choice = None
         compset_choice = None
         pesize_choice = None
+        other_settings = {}
         max_points = -1
+
         # Get all the nodes
         grid_nodes = self.get_nodes("grid")
         for grid_node in grid_nodes:
@@ -62,16 +64,22 @@ class Pes(GenericXML):
                                     logger.warn("points = %d"%points)
                                     expect(False, "We dont expect to be here" )
 
-        pes_ntasks, pes_nthrds, pes_rootpe = {}, {}, {}
-        for pes_data, xpath in [(pes_ntasks, "ntasks"),
-                                (pes_nthrds, "nthrds"),
-                                (pes_rootpe, "rootpe")]:
-            nodes = pe_select.findall(".//%s/*" % xpath)
-            for node in nodes:
-                name = node.tag.upper()
-                value = node.text
-                pes_data[name] = value
-                logger.debug("%s %s " % (name, value))
+        pes_ntasks, pes_nthrds, pes_rootpe, other_settings = {}, {}, {}, {}
+        for node in pe_select:
+            vid = node.tag
+            logger.debug("vid is %s"%vid)
+            if "ntasks" in vid:
+                for child in node:
+                    pes_ntasks[child.tag.upper()] = child.text
+            elif "nthrds" in vid:
+                for child in node:
+                    pes_nthrds[child.tag.upper()] = child.text
+            elif "rootpe" in vid:
+                for child in node:
+                    pes_rootpe[child.tag.upper()] = child.text
+            # if the value is already upper case its something else we are trying to set
+            elif vid == node.tag:
+                other_settings[vid] = node.text
 
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)
@@ -79,5 +87,5 @@ class Pes(GenericXML):
         logger.info("Pes setting: machine match is %s " %mach_choice)
         logger.info("Pes setting: compset_match is %s " %compset_choice)
         logger.info("Pes setting: pesize match  is %s " %pesize_choice)
-
-        return pes_ntasks, pes_nthrds, pes_rootpe
+        logger.info("Pes other settings: %s"%other_settings)
+        return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
