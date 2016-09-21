@@ -88,6 +88,12 @@ module ocn_analysis_driver
    character (len=*), parameter :: restartTimerPrefix = 'restart_'
    character (len=*), parameter :: finalizeTimerPrefix = 'finalize_'
    character (len=*), parameter :: computeAlarmSuffix = 'CMPALRM'
+
+   character (len=StrKIND), parameter :: timeSeriesDailyTAG = 'Daily'
+   character (len=StrKIND), parameter :: timeSeriesMonthlyTAG = 'Monthly'
+   character (len=StrKIND), parameter :: timeSeriesClimatologyTAG = 'Climatology'
+   character (len=StrKIND), parameter :: timeSeriesCustomTAG = 'Custom'
+
    type (mpas_pool_type), pointer :: analysisMemberList
 
 !***********************************************************************
@@ -165,10 +171,13 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
       call mpas_pool_add_config(analysisMemberList, 'rpnCalculator', 1)
       call mpas_pool_add_config(analysisMemberList, 'regionalStats', 1)
-      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStats', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsClimatology', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsCustom', 1)
       call mpas_pool_add_config(analysisMemberList, 'pointwiseStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'debugDiagnostics', 1)
-     call mpas_pool_add_config(analysisMemberList, 'transectTransport', 1)
+      call mpas_pool_add_config(analysisMemberList, 'transectTransport', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -980,11 +989,21 @@ contains
 
       !if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
       !   call ocn_bootstrap_test_compute_interval(domain, err_tmp)
-      if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_bootstrap_time_series_stats(domain, err_tmp)
+      if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
+         call ocn_bootstrap_time_series_stats(domain, timeSeriesDailyTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
+         call ocn_bootstrap_time_series_stats(domain, timeSeriesMonthlyTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
+         call ocn_bootstrap_time_series_stats(domain, timeSeriesClimatologyTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call ocn_bootstrap_time_series_stats(domain, timeSeriesCustomTAG, &
+           err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
          call ocn_bootstrap_pointwise_stats(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+      else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
         call ocn_init_transect_transport(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
@@ -1057,8 +1076,14 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
          call ocn_init_regional_stats(domain, err_tmp)
       ! time is last
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_init_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
+         call ocn_init_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
+         call ocn_init_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
+         call ocn_init_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call ocn_init_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1129,8 +1154,18 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
          call ocn_compute_regional_stats(domain, timeLevel, err_tmp)
       ! time is last
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_compute_time_series_stats(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, &
+           timeSeriesDailyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, &
+           timeSeriesMonthlyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, &
+           timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, &
+           timeSeriesCustomTAG, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1200,8 +1235,14 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
          call ocn_restart_regional_stats(domain, err_tmp)
       ! time is last
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_restart_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
+         call ocn_restart_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
+         call ocn_restart_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
+         call ocn_restart_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call ocn_restart_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1271,8 +1312,18 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
          call ocn_finalize_regional_stats(domain, err_tmp)
       ! time is last
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_finalize_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
+         call ocn_finalize_time_series_stats(domain, timeSeriesDailyTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
+         call ocn_finalize_time_series_stats(domain, timeSeriesMonthlyTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
+         call ocn_finalize_time_series_stats(domain, timeSeriesClimatologyTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call ocn_finalize_time_series_stats(domain, timeSeriesCustomTAG, &
+           err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
