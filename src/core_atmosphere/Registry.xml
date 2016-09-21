@@ -155,7 +155,7 @@
 
                 <nml_option name="config_del4u_div_factor" type="real" default_value="1.0" in_defaults="false"
                      units="-"
-                     description="Scaling factor for the divergence component of $\nabla^4 u$ calculation"
+                     description="Scaling factor for the divergent component of $\nabla^4 u$ calculation"
                      possible_values="Positive real values"/>
 
                 <nml_option name="config_w_adv_order" type="integer" default_value="3"
@@ -1620,6 +1620,9 @@
 
                 <var name="rho_p_save" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
                      description="predicted value rho_p, saved before acoustic steps"/>
+
+                <var name="divergence_3d" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
+                     description="3D divergence used for acoustic filtering"/>
 
                 <var name="kdiff" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
                      description="Smagorinsky horizontal eddy viscosity"/>

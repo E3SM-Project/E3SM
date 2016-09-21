@@ -195,6 +195,7 @@ module atm_time_integration
       type (field2DReal), pointer :: pressure_p_field
       type (field2DReal), pointer :: rtheta_p_field
       type (field2DReal), pointer :: rtheta_pp_field
+      type (field2DReal), pointer :: divergence_3d_field
       type (field2DReal), pointer :: tend_u_field
       type (field2DReal), pointer :: u_field
       type (field2DReal), pointer :: w_field
@@ -550,7 +551,7 @@ MPAS_GPTL_STOP('dyn_tend')
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
    
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-
+               
 !$OMP PARALLEL DO
                do thread=1,block % nThreads
                   call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs, &
@@ -618,7 +619,10 @@ MPAS_GPTL_STOP('dyn_tend')
                call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
                call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
                call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 1 /))
- 
+
+               call mpas_pool_get_field(diag, 'divergence_3d', divergence_3d_field)
+               call mpas_dmpar_exch_halo_field(divergence_3d_field, (/ 1 /))
+
             end do  ! end of acoustic steps loop
 
             !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % rw_p, (/ 1 /))
@@ -1678,7 +1682,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                                     wwAvg, rho_pp, cofwt, coftz, zxu,        &
                                                     a_tri, alpha_tri, gamma_tri, dss,        &
                                                     tend_ru, tend_rho, tend_rt, tend_rw,     &
-                                                    zgrid, cofwr, cofwz, w
+                                                    zgrid, cofwr, cofwz, w, divergence_3d
 
 ! redefine ru_p to be perturbation from time t, change 3a  ! temporary
       real (kind=RKIND), dimension(:,:), pointer :: ru
@@ -1721,6 +1725,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(diag, 'ruAvg', ruAvg)
       call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
       call mpas_pool_get_array(diag, 'rho_pp', rho_pp)
+      call mpas_pool_get_array(diag, 'divergence_3d', divergence_3d)
       call mpas_pool_get_array(diag, 'cofwt', cofwt)
       call mpas_pool_get_array(diag, 'coftz', coftz)
       call mpas_pool_get_array(diag, 'cofrz', cofrz)
@@ -1774,7 +1779,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
-                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, fzm, fzp, rdzw, dcEdge, invDcEdge, &
+                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
                                    dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
                                    )
@@ -1786,7 +1791,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
-                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, fzm, fzp, rdzw, dcEdge, invDcEdge, &
+                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
                                    dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
                                    )
@@ -1810,6 +1815,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
 
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz_rtheta_pp_old
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: divergence_3d
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner
       real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: cqu
@@ -1864,12 +1870,13 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       !
       integer :: cell1, cell2, iEdge, iCell, i, k
       real (kind=RKIND) :: c2, rcv, rtheta_pp_tmp
-      real (kind=RKIND) :: pgrad, flux, resm
+      real (kind=RKIND) :: pgrad, flux, resm, rdts
 
 
       rcv = rgas / (cp - rgas)
       c2 = cp * rcv
       resm = (1.0 - epssm) / (1.0 + epssm)
+      rdts = 1./dts
 
       if(small_step /= 1) then  !  not needed on first small step 
 
@@ -1908,7 +1915,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                  pgrad = ((rtheta_pp(k,cell2)-rtheta_pp(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = cqu(k,iEdge)*0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
                  pgrad = pgrad + 0.5*zxu(k,iEdge)*gravity*(rho_pp(k,cell1)+rho_pp(k,cell2))
-                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) 
+                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) &
+                                  - smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1))
               end do
 
               ! accumulate ru_p for use later in scalar transport
@@ -1959,9 +1967,12 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             rtheta_pp(1:nVertLevels,iCell) = 0.0            
             zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
             rw_p(:,iCell) = 0.0
+            divergence_3d(1:nVertLevels,iCell) = 0.
          else  ! reset rtheta_pp to input value;
-               !  rtheta_pp_old stores input value for use in div damping on next acoustic step
+               !  rtheta_pp_old stores input value for use in div damping on next acoustic step.
+               !  Save rho_pp to compute d_rho_pp/dt to get divergence for next acoustic filter application.
             rtheta_pp(1:nVertLevels,iCell) = zz_rtheta_pp_old(1:nVertLevels,iCell)  
+            divergence_3d(1:nVertLevels,iCell) = rho_pp(1:nVertLevels,iCell)
          end if
             
          do i=1,nEdgesOnCell(iCell) 
@@ -2043,6 +2054,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             rho_pp(k,iCell) = rs(k,iCell) - cofrz(k) *(rw_p(k+1,iCell)-rw_p(k  ,iCell))
             rtheta_pp(k,iCell) = ts(k,iCell) - rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)  &
                                -coftz(k  ,iCell)*rw_p(k  ,iCell))
+            divergence_3d(k,iCell) = (rho_pp(k,iCell) - divergence_3d(k,iCell))*rdts
          end do
 
       end do !  end of loop over cells
