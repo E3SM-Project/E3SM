@@ -123,12 +123,12 @@ class TestStatus(object):
 
     def phase_statuses_dump(self):
         if self._phase_statuses:
-                for phase, data in self._phase_statuses.iteritems():
-                    status, comments = data
-                    if not comments:
-                        print "%s %s %s" % (status, self._test_name, phase)
-                    else:
-                        print "%s %s %s %s" % (status, self._test_name, phase, comments)
+            for phase, data in self._phase_statuses.iteritems():
+                status, comments = data
+                if not comments:
+                    logging.info("%s %s %s" % (status, self._test_name, phase))
+                else:
+                    logging.info("%s %s %s %s" % (status, self._test_name, phase, comments))
 
     def flush(self):
         if self._phase_statuses:
