@@ -439,10 +439,16 @@ contains
   subroutine prep_rof_map_irrig(eri, eli, avwts_s, avwtsfld_s)
     !---------------------------------------------------------------
     ! Description
-    ! Do custom mapping for the irrigation flux
+    ! Do custom mapping for the irrigation flux, from land -> rof
     !
-    ! This mapping first converts the flux to a fraction of volr, then maps this
-    ! fraction, then converts the fraction back to a flux on the rof grid.
+    ! This mapping works by:
+    !
+    ! (1) Normalizing the land's irrigation flux by volr
+    !
+    ! (2) Mapping this volr-normalized flux to the rof grid
+    !
+    ! (3) Converting the mapped, volr-normalized flux back to a normal
+    !     (non-volr-normalized) flux on the rof grid.
     !
     ! This uses the field given by irrig_flux_field from l2racc_lx(eli), and sets the
     ! field given by irrig_flux_field in l2r_rx(eri).
@@ -467,20 +473,20 @@ contains
     type(mct_avect) :: irrig_r_av  ! temporary attribute vector holding irrigation_fluxes on the rof grid
 
     ! The following need to be pointers to satisfy the MCT interface:
-    real(r8), pointer :: volr_r(:)        ! river volume on the rof grid
-    real(r8), pointer :: volr_l(:)        ! river volume on the land grid
-    real(r8), pointer :: irrig_flux_l(:)  ! irrigation flux on the land grid [kg m-2 s-1]
-    real(r8), pointer :: irrig_flux_r(:)  ! irrigation flux on the rof grid [kg m-2 s-1]
-    real(r8), pointer :: irrig_frac_l(:)  ! irrigation as a fraction of volr, land grid
-    real(r8), pointer :: irrig_frac_r(:)  ! irrigation as a fraction of volr, rof grid
-    real(r8), pointer :: irrig_excess_l(:) ! irrigation where volr <= 0, land grid
-    real(r8), pointer :: irrig_excess_r(:) ! irrigation where volr <= 0, rof grid
+    real(r8), pointer :: volr_r(:)             ! river volume on the rof grid
+    real(r8), pointer :: volr_l(:)             ! river volume on the land grid
+    real(r8), pointer :: irrig_flux_l(:)       ! irrigation flux on the land grid [kg m-2 s-1]
+    real(r8), pointer :: irrig_flux_r(:)       ! irrigation flux on the rof grid [kg m-2 s-1]
+    real(r8), pointer :: irrig_normalized_l(:) ! irrigation normalized by volr, land grid
+    real(r8), pointer :: irrig_normalized_r(:) ! irrigation normalized by volr, rof grid
+    real(r8), pointer :: irrig_excess_l(:)     ! irrigation where volr <= 0, land grid
+    real(r8), pointer :: irrig_excess_r(:)     ! irrigation where volr <= 0, rof grid
 
-    character(len=*), parameter :: volr_field         = 'Flrr_volrmch'
-    character(len=*), parameter :: irrig_frac_field   = 'Flrl_irrig_frac'
-    character(len=*), parameter :: irrig_excess_field = 'Flrl_irrig_excess'
+    character(len=*), parameter :: volr_field             = 'Flrr_volrmch'
+    character(len=*), parameter :: irrig_normalized_field = 'Flrl_irrig_normalized'
+    character(len=*), parameter :: irrig_excess_field     = 'Flrl_irrig_excess'
     character(len=*), parameter :: fields_to_remap = &
-         irrig_frac_field // ':' // irrig_excess_field
+         irrig_normalized_field // ':' // irrig_excess_field
     !---------------------------------------------------------------
 
     ! ------------------------------------------------------------------------
@@ -511,32 +517,27 @@ contains
     call mct_aVect_exportRattr(x2l_lx, volr_field, volr_l)
 
     ! ------------------------------------------------------------------------
-    ! Determine irrigation as a fraction of volr
+    ! Determine irrigation normalized by volr
     !
-    ! NOTE(wjs, 2016-09-09) Is it really right to call this a fraction of volr? That would
-    ! imply that they have the same units. Would it be more accurate to just call this
-    ! 'irrigation normalized by volr'? (Then would need to rename some variables; also
-    ! search for 'frac' / 'fraction' in comments.)
-    ! ------------------------------------------------------------------------
-
     ! In order to avoid possible divide by 0, as well as to handle non-sensical negative
     ! volr on the land grid, we divide the land's irrigation flux into two separate flux
     ! components: a component where we have positive volr on the land grid (put in
-    ! irrig_frac_l, which is mapped using volr normalization) and a component where we
-    ! have zero or negative volr on the land grid (put in irrig_excess_l, which is mapped
-    ! as a standard flux). We then remap both of these components to the rof grid, and
-    ! then finally add the two components to determine the total irrigation flux on the
-    ! rof grid.
+    ! irrig_normalized_l, which is mapped using volr-normalization) and a component where
+    ! we have zero or negative volr on the land grid (put in irrig_excess_l, which is
+    ! mapped as a standard flux). We then remap both of these components to the rof grid,
+    ! and then finally add the two components to determine the total irrigation flux on
+    ! the rof grid.
+    ! ------------------------------------------------------------------------
 
-    allocate(irrig_frac_l(lsize_l))
+    allocate(irrig_normalized_l(lsize_l))
     allocate(irrig_excess_l(lsize_l))
     do i = 1, lsize_l
        if (volr_l(i) > 0._r8) then
-          irrig_frac_l(i)   = irrig_flux_l(i) / volr_l(i)
-          irrig_excess_l(i) = 0._r8
+          irrig_normalized_l(i) = irrig_flux_l(i) / volr_l(i)
+          irrig_excess_l(i)     = 0._r8
        else
-          irrig_frac_l(i)   = 0._r8
-          irrig_excess_l(i) = irrig_flux_l(i)
+          irrig_normalized_l(i) = 0._r8
+          irrig_excess_l(i)     = irrig_flux_l(i)
        end if
     end do
 
@@ -545,7 +546,7 @@ contains
     ! ------------------------------------------------------------------------
 
     call mct_aVect_init(irrig_l_av, rList = fields_to_remap, lsize = lsize_l)
-    call mct_aVect_importRattr(irrig_l_av, irrig_frac_field, irrig_frac_l)
+    call mct_aVect_importRattr(irrig_l_av, irrig_normalized_field, irrig_normalized_l)
     call mct_aVect_importRattr(irrig_l_av, irrig_excess_field, irrig_excess_l)
     call mct_aVect_init(irrig_r_av, rList = fields_to_remap, lsize = lsize_r)
 
@@ -557,9 +558,9 @@ contains
          avwts_s = avwts_s, &
          avwtsfld_s = avwtsfld_s)
 
-    allocate(irrig_frac_r(lsize_r))
+    allocate(irrig_normalized_r(lsize_r))
     allocate(irrig_excess_r(lsize_r))
-    call mct_aVect_exportRattr(irrig_r_av, irrig_frac_field, irrig_frac_r)
+    call mct_aVect_exportRattr(irrig_r_av, irrig_normalized_field, irrig_normalized_r)
     call mct_aVect_exportRattr(irrig_r_av, irrig_excess_field, irrig_excess_r)
 
     ! ------------------------------------------------------------------------
@@ -569,7 +570,7 @@ contains
 
     allocate(irrig_flux_r(lsize_r))
     do i = 1, lsize_r
-       irrig_flux_r(i) = (irrig_frac_r(i) * volr_r(i)) + irrig_excess_r(i)
+       irrig_flux_r(i) = (irrig_normalized_r(i) * volr_r(i)) + irrig_excess_r(i)
     end do
 
     call mct_aVect_importRattr(l2r_rx(eri), irrig_flux_field, irrig_flux_r)
@@ -582,8 +583,8 @@ contains
     deallocate(volr_l)
     deallocate(irrig_flux_l)
     deallocate(irrig_flux_r)
-    deallocate(irrig_frac_l)
-    deallocate(irrig_frac_r)
+    deallocate(irrig_normalized_l)
+    deallocate(irrig_normalized_r)
     deallocate(irrig_excess_l)
     deallocate(irrig_excess_r)
     call mct_aVect_clean(irrig_l_av)
