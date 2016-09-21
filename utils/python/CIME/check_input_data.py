@@ -69,7 +69,6 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
     expect(data_list_files, "No .input_data_list files found in dir '%s'" % data_list_dir)
 
     no_files_missing = True
-
     for data_list_file in data_list_files:
         logging.info("Loading input file: '%s'" % data_list_file)
         with open(data_list_file, "r") as fd:
@@ -105,9 +104,9 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                                         no_files_missing = False
                                 else:
                                     no_files_missing = False
-                            else:
-                                no_files_missing = False
-
+                        # if not download
+                        else:
+                            no_files_missing = False
                     else:
                         logging.debug("Already had input file: '%s'" % full_path)
 
