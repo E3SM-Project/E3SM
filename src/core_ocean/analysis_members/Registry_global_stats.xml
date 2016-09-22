@@ -56,6 +56,10 @@
 			 description="maximum CFL number over the full domain"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="landIceFloatingAreaSum" type="real" dimensions="Time" units="m^2"
+			 description="sum of areaCell where landIceMask == 1, used to normalize global statistics in land-ice cavities"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var_array name="minGlobalStats" type="real" dimensions="Time">
 			<var name="layerThicknessMin" array_group="mins" units="m"
 				 description="Minimum global value of layerThickness in ocean cells."
@@ -130,16 +134,16 @@
 				 description="Minimum global value of iceRunoffFlux in ocean cells."
 			/>
 			<var name="landIceFreshwaterFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
-				 description="Minimum global value of landIceFreshwaterFlux in ocean cells."
+				 description="Minimum value of landIceFreshwaterFlux in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceMassMin" array_group="mins" units="kg m^{-2}"
-				 description="Minimum global value of accumulatedLandIceMass in ocean cells."
+				 description="Minimum value of accumulatedLandIceMass in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceHeatMin" array_group="mins" units="J m^{-2}"
-				 description="Minimum global value of accumulatedLandIceHeat in ocean cells."
+				 description="Minimum value of accumulatedLandIceHeat in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceFrazilMassMin" array_group="mins" units="kg m^{-2}"
-				 description="Minimum global value of accumulatedLandIceFrazilMass in ocean cells."
+				 description="Minimum value of accumulatedLandIceFrazilMass in ocean cells where landIceMask == 1."
 			/>
 		</var_array>
 
@@ -217,16 +221,16 @@
 				 description="Maximum global value of iceRunoffFlux in ocean cells."
 			/>
 			<var name="landIceFreshwaterFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
-				 description="Maximum global value of landIceFreshwaterFlux in ocean cells."
+				 description="Maximum value of landIceFreshwaterFlux in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceMassMax" array_group="maxes" units="kg m^{-2}"
-				 description="Maximum global value of accumulatedLandIceMass in ocean cells."
+				 description="Maximum value of accumulatedLandIceMass in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceHeatMax" array_group="maxes" units="J m^{-2}"
-				 description="Maximum global value of accumulatedLandIceHeat in ocean cells."
+				 description="Maximum value of accumulatedLandIceHeat in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceFrazilMassMax" array_group="maxes" units="kg m^{-2}"
-				 description="Maximum global value of accumulatedLandIceFrazilMass in ocean cells."
+				 description="Maximum value of accumulatedLandIceFrazilMass in ocean cells where landIceMask == 1."
 			/>
 		</var_array>
 
@@ -304,16 +308,16 @@
 				 description="Accumulated global value of iceRunoffFlux in ocean cells."
 			/>
 			<var name="landIceFreshwaterFluxSum" array_group="sums" units="kg s^{-1}"
-				 description="Accumulated global value of landIceFreshwaterFlux in ocean cells."
+				 description="Sum of landIceFreshwaterFlux in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceMassSum" array_group="sums" units="kg"
-				 description="Accumulated global value of accumulatedLandIceMass in ocean cells."
+				 description="Sum of accumulatedLandIceMass in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceHeatSum" array_group="sums" units="J"
-				 description="Accumulated global value of accumulatedLandIceHeat in ocean cells."
+				 description="Sum of accumulatedLandIceHeat in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceFrazilMassSum" array_group="sums" units="kg"
-				 description="Accumulated global value of accumulatedLandIceFrazilMass in ocean cells."
+				 description="Sum of accumulatedLandIceFrazilMass in ocean cells where landIceMask == 1."
 			/>
 		</var_array>
 
@@ -391,16 +395,16 @@
 				 description="Global root mean square value of iceRunoffFlux in ocean cells."
 			/>
 			<var name="landIceFreshwaterFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
-				 description="Global root mean square value of landIceFreshwaterFlux in ocean cells."
+				 description="Root-mean-squared value of landIceFreshwaterFlux in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceMassRms" array_group="rms" units="kg m^{-2}"
-				 description="Global root mean square value of accumulatedLandIceMass in ocean cells."
+				 description="Root-mean-squared value of accumulatedLandIceMass in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceHeatRms" array_group="rms" units="J m^{-2}"
-				 description="Global root mean square value of accumulatedLandIceHeat in ocean cells."
+				 description="Root-mean-squared value of accumulatedLandIceHeat in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceFrazilMassRms" array_group="rms" units="kg m^{-2}"
-				 description="Global root mean square value of accumulatedLandIceFrazilMass in ocean cells."
+				 description="Root-mean-squared value of accumulatedLandIceFrazilMass in ocean cells where landIceMask == 1."
 			/>
 		</var_array>
 
@@ -478,16 +482,16 @@
 				 description="Average value of iceRunoffFlux in ocean cells."
 			/>
 			<var name="landIceFreshwaterFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
-				 description="Average value of landIceFreshwaterFlux in ocean cells."
+				 description="Average value of landIceFreshwaterFlux in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceMassAvg" array_group="avg" units="kg m^{-2}"
-				 description="Average value of accumulatedLandIceMass in ocean cells."
+				 description="Average value of accumulatedLandIceMass in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceHeatAvg" array_group="avg" units="J m^{-2}"
-				 description="Average value of accumulatedLandIceHeat in ocean cells."
+				 description="Average value of accumulatedLandIceHeat in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceFrazilMassAvg" array_group="avg" units="kg m^{-2}"
-				 description="Average value of accumulatedLandIceFrazilMass in ocean cells."
+				 description="Average value of accumulatedLandIceFrazilMass in ocean cells where landIceMask == 1."
 			/>
 		</var_array>
 
@@ -565,16 +569,16 @@
 				 description="Minimum vertical sum of iceRunoffFlux in ocean cells."
 			/>
 			<var name="landIceFreshwaterFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
-				 description="Minimum vertical sum of landIceFreshwaterFlux in ocean cells."
+				 description="Minimum vertical sum of landIceFreshwaterFlux in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceMassMinVertSum" array_group="vertSumMin" units="kg m^{-2}"
-				 description="Minimum vertical sum of accumulatedLandIceMass in ocean cells."
+				 description="Minimum vertical sum of accumulatedLandIceMass in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceHeatMinVertSum" array_group="vertSumMin" units="J m^{-2}"
-				 description="Minimum vertical sum of accumulatedLandIceHeat in ocean cells."
+				 description="Minimum vertical sum of accumulatedLandIceHeat in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceFrazilMassMinVertSum" array_group="vertSumMin" units="kg m^{-2}"
-				 description="Minimum vertical sum of accumulatedLandIceFrazilMass in ocean cells."
+				 description="Minimum vertical sum of accumulatedLandIceFrazilMass in ocean cells where landIceMask == 1."
 			/>
 		</var_array>
 
@@ -652,16 +656,16 @@
 				 description="Maximum vertical sum of iceRunoffFlux in ocean cells."
 			/>
 			<var name="landIceFreshwaterFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}m"
-				 description="Maximum vertical sum of landIceFreshwaterFlux in ocean cells."
+				 description="Maximum vertical sum of landIceFreshwaterFlux in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceMassMaxVertSum" array_group="vertSumMax" units="kg m^{-2}"
-				 description="Maximum vertical sum of accumulatedLandIceMass in ocean cells."
+				 description="Maximum vertical sum of accumulatedLandIceMass in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceHeatMaxVertSum" array_group="vertSumMax" units="J m^{-2}"
-				 description="Maximum vertical sum of accumulatedLandIceHeat in ocean cells."
+				 description="Maximum vertical sum of accumulatedLandIceHeat in ocean cells where landIceMask == 1."
 			/>
 			<var name="accumulatedLandIceFrazilMassMaxVertSum" array_group="vertSumMax" units="kg m^{-2}"
-				 description="Maximum vertical sum of accumulatedLandIceFrazilMass in ocean cells."
+				 description="Maximum vertical sum of accumulatedLandIceFrazilMass in ocean cells where landIceMask == 1."
 			/>
 		</var_array>
 		<var name="totalVolumeChange" type="real" dimensions="Time" units="m"
