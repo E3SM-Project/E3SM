@@ -21,6 +21,7 @@
  use module_cu_kfeta
  use module_cu_tiedtke
  use module_cu_tiedtke_wrf381
+ use module_cu_ntiedtke_wrf381
 
  implicit none
  private
@@ -88,6 +89,9 @@
 ! * added the call to the Tiedtke parameterization of convection from WRF version 3.8.1. This option is triggered
 !   using the option cu_tiedtke_wrf381.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-08-18.
+! * added the call to the "new" Tiedtke parameterization of convection from WRF version 3.8.1. This option is
+!   triggered using the option cu_ntiedtke_wrf381.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-09-20.
 
 
  contains
@@ -183,12 +187,10 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381")
+    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
-       if(.not.allocated(rqvdynten_p)  ) allocate(rqvdynten_p(ims:ime,kms:kme,jms:jme)  )
-       if(.not.allocated(rqvdynblten_p)) allocate(rqvdynblten_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(rucuten_p)    ) allocate(rucuten_p(ims:ime,kms:kme,jms:jme)    )
        if(.not.allocated(rvcuten_p)    ) allocate(rvcuten_p(ims:ime,kms:kme,jms:jme)    )
 
@@ -203,13 +205,44 @@
        do i = its,ite
        do k = kts,kte
        do j = jts,jte
-          rqvdynten_p(i,k,j)   = 0._RKIND
-          rqvdynblten_p(i,k,j) = 0._RKIND
           rucuten_p(i,k,j)     = 0._RKIND
           rvcuten_p(i,k,j)     = 0._RKIND
        enddo
        enddo
        enddo
+
+       cu_tiedtke_select: select case(convection_scheme)
+
+          case ("cu_tiedtke","cu_tiedtke_wrf381")
+             if(.not.allocated(rqvdynten_p)  ) allocate(rqvdynten_p(ims:ime,kms:kme,jms:jme)  )
+             if(.not.allocated(rqvdynblten_p)) allocate(rqvdynblten_p(ims:ime,kms:kme,jms:jme))
+
+             do i = its,ite
+             do k = kts,kte
+             do j = jts,jte
+                rqvdynten_p(i,k,j)   = 0._RKIND
+                rqvdynblten_p(i,k,j) = 0._RKIND
+             enddo
+             enddo
+             enddo
+
+          case("cu_ntiedtke_wrf381")
+             if(.not.allocated(dx_p)     ) allocate(dx_p(ims:ime,jms:jme)             )
+             if(.not.allocated(rqvften_p)) allocate(rqvften_p(ims:ime,kms:kme,jms:jme))
+             if(.not.allocated(rthften_p)) allocate(rthften_p(ims:ime,kms:kme,jms:jme))
+
+             do i = its,ite
+             do k = kts,kte
+             do j = jts,jte
+                rqvften_p(i,k,j) = 0._RKIND
+                rthften_p(i,k,j) = 0._RKIND
+             enddo
+             enddo
+             enddo
+
+           case default
+
+       end select cu_tiedtke_select
 
     case default
 
@@ -272,14 +305,27 @@
        if(allocated(rqrcuten_p)   ) deallocate(rqrcuten_p   )
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381")
+    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
-       if(allocated(rqvdynten_p)  ) deallocate(rqvdynten_p  )
-       if(allocated(rqvdynblten_p)) deallocate(rqvdynblten_p)
        if(allocated(rucuten_p)    ) deallocate(rucuten_p    )
        if(allocated(rvcuten_p)    ) deallocate(rvcuten_p    )
+
+       cu_tiedtke_select: select case(convection_scheme)
+
+          case ("cu_tiedtke","cu_tiedtke_wrf381")
+             if(allocated(rqvdynten_p)  ) deallocate(rqvdynten_p  )
+             if(allocated(rqvdynblten_p)) deallocate(rqvdynblten_p)
+
+          case ("cu_ntiedtke_wrf381")
+             if(allocated(dx_p)     ) deallocate(dx_p)
+             if(allocated(rqvften_p)) deallocate(rqvften_p)
+             if(allocated(rthften_p)) deallocate(rthften_p)
+
+          case default
+
+       end select cu_tiedtke_select
 
     case default
 
@@ -375,8 +421,8 @@
  real(kind=RKIND):: min_rthcuten
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
+ write(0,*)
+ write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
 
  call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
  call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
@@ -563,6 +609,33 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                     )
 
+    case("cu_ntiedtke_wrf381")
+       write(0,*) '--- enter subroutine cu_ntiedtke_wrf381:'
+       call cu_ntiedtke_wrf381( &
+             pcps      = pres_hyd_p  , p8w         = pres2_hyd_p ,                   &
+             t3d       = t_p         , dz8w        = dz_p        ,                   &
+             dt        = dt_dyn      , itimestep   = itimestep   ,                   &
+             stepcu    = n_cu        , raincv      = raincv_p    ,                   & 
+             pratec    = pratec_p    , qfx         = qfx_p       ,                   &
+             hfx       = hfx_p       , xland       = xland_p     ,                   &
+             dx        = dx_p        , u3d         = u_p         ,                   &
+             v3d       = v_p         , w           = w_p         ,                   &
+             qv3d      = qv_p        , qc3d        = qc_p        ,                   &
+             qi3d      = qi_p        , pi3d        = pi_p        ,                   &
+             rho3d     = rho_p       , qvften      = rqvften_p   ,                   &
+             thften    = rthften_p   , cu_act_flag = cu_act_flag ,                   &
+             f_qv      = f_qv        , f_qc        = f_qc        ,                   &
+             f_qr      = f_qr        , f_qi        = f_qi        ,                   &
+             f_qs      = f_qs        , rthcuten    = rthcuten_p  ,                   &
+             rqvcuten  = rqvcuten_p  , rqccuten    = rqccuten_p  ,                   &
+             rqicuten  = rqicuten_p  , rucuten     = rucuten_p   ,                   &
+             rvcuten   = rvcuten_p   ,                                               &
+             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
+             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
+             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
+                              )
+       write(0,*) '--- end subroutine cu_ntiedtke_wrf381.'
+
     case default
 
  end select convection_select
@@ -571,7 +644,8 @@
 !specific to convection parameterization back to the dynamics grid:
  call convection_to_MPAS(diag_physics,tend_physics)
 
-!write(0,*) '--- end subroutine convection_driver'
+ write(0,*) '--- end subroutine convection_driver'
+ write(0,*)
 
  end subroutine driver_convection
 
@@ -604,8 +678,6 @@
  real(kind=RKIND),pointer:: len_disp
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine convection_from_MPAS:'
 
  call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
  call mpas_pool_get_array(diag_physics,'raincv',raincv)
@@ -735,7 +807,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381")
+    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        call mpas_pool_get_array(sfc_input,'xland',xland)
        call mpas_pool_get_array(diag_physics,'hfx',hfx)
        call mpas_pool_get_array(diag_physics,'qfx',qfx)
@@ -754,14 +826,53 @@
 
        do k = kts,kte
        do i = its,ite
-          rqvdynblten_p(i,k,j) = rqvblten(k,i) 
-          rqvdynten_p(i,k,j)   = rqvdynten(k,i)
-          rucuten_p(i,k,j)     = rucuten(k,i)
-          rvcuten_p(i,k,j)     = rvcuten(k,i)
+          rucuten_p(i,k,j) = rucuten(k,i)
+          rvcuten_p(i,k,j) = rvcuten(k,i)
        enddo
        enddo
        enddo
+
+       cu_tiedtke_select: select case(convection_scheme)
+
+          case ("cu_tiedtke","cu_tiedtke_wrf381")
+             do j = jts,jte
+             do k = kts,kte
+             do i = its,ite
+                rqvdynblten_p(i,k,j) = rqvblten(k,i) 
+                rqvdynten_p(i,k,j)   = rqvdynten(k,i)
+             enddo
+             enddo
+             enddo
  
+          case("cu_ntiedtke_wrf381")
+             call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+             call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
+
+             call mpas_pool_get_array(tend_physics,'rqvdynten' ,rqvdynten )
+             call mpas_pool_get_array(tend_physics,'rqvblten'  ,rqvblten  )
+             call mpas_pool_get_array(tend_physics,'rthdynten' ,rthdynten )
+             call mpas_pool_get_array(tend_physics,'rthblten'  ,rthblten  )
+             call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
+             call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
+             
+             do j = jts,jte
+             do i = its,ite
+                dx_p(i,j) = len_disp / meshDensity(i)**0.25
+             enddo
+
+             do k = kts,kte
+             do i = its,ite
+                rqvften_p(i,k,j) = rqvdynten(k,i) + rqvblten(k,i)
+                rthften_p(i,k,j) = (rthdynten(k,i) + rthblten(k,i) &
+                                 + rthratenlw(k,i) + rthratensw(k,i)) * pi_p(i,k,j) 
+             enddo
+             enddo
+             enddo
+
+          case default
+
+       end select cu_tiedtke_select
+
     case default
 
  end select convection_select
@@ -866,7 +977,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381")
+    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
        call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
 

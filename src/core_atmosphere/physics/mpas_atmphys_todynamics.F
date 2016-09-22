@@ -53,6 +53,9 @@
 ! * added the option cu_tiedtke_wrf381 in the calculation of tend_u when we run the Tiedtke parameterization of
 !   convection from WRF version 3.8.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-08-18. 
+! * added the option cu_ntiedtke_wrf381 in the calculation of tend_u when we run the "new" Tiedtke parameterization
+!   of convection from WRF version 3.8.1.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-09-20. 
 
 
  contains
@@ -235,7 +238,7 @@
 
     convection_select: select case(convection_scheme)
     
-       case('cu_grell_freitas','cu_grell_freitas_momentum','cu_tiedtke','cu_tiedtke_wrf381')
+       case('cu_grell_freitas','cu_grell_freitas_momentum','cu_tiedtke','cu_tiedtke_wrf381','cu_ntiedtke_wrf381')
           allocate(rucuten_Edge(nVertLevels,nEdges))
           rucuten_Edge(:,:) = 0.
           call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)

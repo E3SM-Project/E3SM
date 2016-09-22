@@ -60,6 +60,9 @@
 ! * added the variables qvrad_p,qcrad_p,qirad_p, and qsrad_p which are the water vapor,cloud water,cloud ice,
 !   and snow mixing ratios local to the calculation of the cloud fraction, and used in the radiation codes.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * added the variables rqvften and rthften which are the forcing tendencies needed to run the "new" Tiedtke
+!   parameterization of convection.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-09-20.
 
 
 !=================================================================================================================
@@ -301,6 +304,11 @@
     rqvdynten_p,      &!
     rqvdynblten_p,    &!
     rthdynblten_p      !
+
+!... ntiedtke specific arrays:
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rqvften_p,        &!
+    rthften_p          !
 
 !=================================================================================================================
 !... variables and arrays related to parameterization of pbl:
