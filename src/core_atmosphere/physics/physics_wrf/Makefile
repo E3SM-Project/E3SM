@@ -19,6 +19,7 @@ OBJS = \
 	module_cu_kfeta.o              \
 	module_cu_tiedtke.o            \
 	module_cu_tiedtke.wrf-3.8.1.o  \
+	module_cu_ntiedtke.wrf-3.8.1.o \
 	module_mp_kessler.o            \
 	module_mp_radar.o              \
 	module_mp_thompson.o           \
@@ -60,6 +61,9 @@ module_cu_tiedtke.o: \
 	../mpas_atmphys_constants.o
 
 module_cu_tiedtke.wrf-3.8.1.o: \
+	../mpas_atmphys_constants.o
+
+module_cu_ntiedtke.wrf-3.8.1.o: \
 	../mpas_atmphys_constants.o
 
 module_mp_radar.o: \
