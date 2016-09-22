@@ -1662,15 +1662,15 @@ module mpas_timekeeping
       ! reached.
       more = 0
       rem = target_time - updated_time
-      do while (rem >= den)
+      do while (rem > den)
+         m = m / 2
          temp = den * m
          if (updated_time + temp <= target_time) then
             more = more + m
             updated_time = updated_time + temp
             rem = target_time - updated_time
          end if
-         if (m == 1) exit
-         m = m / 2
+         if (m==1) exit
       end do
 
       ! Final number of intervals is n + more
