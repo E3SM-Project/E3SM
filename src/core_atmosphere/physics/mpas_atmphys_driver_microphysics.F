@@ -247,16 +247,16 @@
  type(mpas_pool_type),intent(inout):: state
 
 !-----------------------------------------------------------------------------------------------------------------
-  write(0,*)
-  write(0,*) '--- enter cloud microphysics initialization:'
+! write(0,*)
+! write(0,*) '--- enter cloud microphysics initialization:'
 
   microp_select: select case(microp_scheme)
 
      case("mp_thompson")
-        write(0,*) '--- enter subroutine thompson_init:'
+!       write(0,*) '--- enter subroutine thompson_init:'
         call thompson_init
         call init_thompson_clouddroplets_forMPAS(mesh,sfc_input,diag_physics)
-        write(0,*) '--- end subroutine thompson'
+!       write(0,*) '--- end subroutine thompson'
 
      case("mp_thompson_aerosols")
         call thompson_init
@@ -272,7 +272,7 @@
     
   end select microp_select
 
-  write(0,*) '--- end cloud microphysics initialization'
+ !write(0,*) '--- end cloud microphysics initialization'
 
  end subroutine microphysics_init
 
@@ -366,7 +366,6 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme           , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
                            )
-          write(0,*) '--- end mp_thompson:',istep
           istep = istep + 1
           enddo
 

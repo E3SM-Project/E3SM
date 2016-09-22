@@ -482,8 +482,8 @@
  integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine microphysics_from_MPAS:'
+!write(0,*)
+!write(0,*) '--- enter subroutine microphysics_from_MPAS:'
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -622,7 +622,7 @@
 
  end select microp_select_init
 
- write(0,*) '--- end subroutine microphysics_from_MPAS.'
+!write(0,*) '--- end subroutine microphysics_from_MPAS.'
 
 !formats:
  201 format(2i6,10(1x,e15.8))

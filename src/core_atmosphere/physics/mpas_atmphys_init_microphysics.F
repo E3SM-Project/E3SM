@@ -61,8 +61,8 @@
  integer:: iCell
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine init_thompson_clouddroplets_forMPAS:'
+!write(0,*)
+!write(0,*) '--- enter subroutine init_thompson_clouddroplets_forMPAS:'
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
@@ -82,7 +82,7 @@
     mu_c(iCell) = MIN(15., (1000.e6/nt_c(iCell) + 2.))
  enddo
 
- write(0,*) '--- end subroutine init_thompson_clouddroplets_forMPAS.'
+!write(0,*) '--- end subroutine init_thompson_clouddroplets_forMPAS.'
 
  end subroutine init_thompson_clouddroplets_forMPAS 
 
