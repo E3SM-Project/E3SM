@@ -579,7 +579,9 @@ module atm_time_integration
          call mpas_pool_get_array(state, 'scalars', scalars_2, 2)
          call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
-         if(config_convection_scheme=='cu_tiedtke' .or. config_convection_scheme=='cu_tiedtke_wrf381') then
+         if(config_convection_scheme == 'cu_tiedtke'          .or. &
+            config_convection_scheme == 'cu_tiedtke_wrf381'   .or. &
+            config_convection_scheme == 'cu_ntiedtke_wrf381') then
             call mpas_pool_get_array(tend_physics, 'rqvdynten', rqvdynten)
 
             !NOTE: The calculation of the tendency due to horizontal and vertical advection for the water vapor mixing ratio
