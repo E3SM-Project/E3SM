@@ -4601,7 +4601,7 @@
       activ_ncloud = NCCN*fraction
 
       end function activ_ncloud
-
+#if !defined(mpas)
 !+---+-----------------------------------------------------------------+
 !+---+-----------------------------------------------------------------+
       SUBROUTINE GCF(GAMMCF,A,X,GLN)
@@ -4671,7 +4671,6 @@
  1    GAMSER=SUM*EXP(-X+A*LOG(X)-GLN)
       END SUBROUTINE GSER
 !  (C) Copr. 1986-92 Numerical Recipes Software 2.02
-#if !defined(mpas)
 !+---+-----------------------------------------------------------------+
       REAL FUNCTION GAMMLN(XX)
 !     --- RETURNS THE VALUE LN(GAMMA(XX)) FOR XX > 0.
@@ -4750,6 +4749,7 @@
 
 !      ESL=612.2*EXP(17.67*X/(T-29.65))
       ESL=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      ESL=MIN(ESL, P*0.15)        ! Even with P=1050mb and T=55C, the sat. vap. pres only contributes to ~15% of total pres.
       RSLF=.622*ESL/(P-ESL)
 
 !    ALTERNATIVE
@@ -4782,6 +4782,7 @@
 
       X=MAX(-80.,T-273.16)
       ESI=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      ESI=MIN(ESI, P*0.15)
       RSIF=.622*ESI/(P-ESI)
 
 !    ALTERNATIVE
