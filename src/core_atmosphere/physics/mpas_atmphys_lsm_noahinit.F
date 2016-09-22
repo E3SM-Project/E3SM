@@ -125,9 +125,11 @@
  call mpas_pool_get_array(sfc_input,'snowh' , snowh )
 
 !reads the NOAH LSM tables:
- call physics_message( '    initialize NOAH LSM tables' )
+ write(0,*)
+ call physics_message('--- initialize NOAH LSM tables' )
  call soil_veg_gen_parm(dminfo,mminlu,mminsl)
- call physics_message( '    end initialize NOAH LSM tables' )
+ call physics_message('--- end initialize NOAH LSM tables' )
+ write(0,*)
 
  if(.not.restart) then
 
