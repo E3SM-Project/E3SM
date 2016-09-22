@@ -746,7 +746,7 @@
 
 !-----------------------------------------------------------------------------------------------------------------
  call mpas_timer_start("radiation_lw")
-! write(0,100)
+!write(0,100)
 
 !formats:
  100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
@@ -761,21 +761,8 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case ("rrtmg_lw")
-       write(0,*) '--- enter subroutine rrtmg_lwrad:'
        o3input = 0
        if(config_o3climatology) o3input = 2
-!      201 format(2i7,10(1x,e15.8))
-!      do j = jts,jte
-!      do i = its,ite
-!      do k = kts,kte
-!         if(cldfrac_p(i,k,j) .gt. 0._RKIND) then
-!            write(0,201) i,k,cldfrac_p(i,k,j),qc_p(i,k,j),qcrad_p(i,k,j),qi_p(i,k,j),qirad_p(i,k,j), &
-!                         qs_p(i,k,j),qsrad_p(i,k,j)
-!         endif
-!      enddo
-!      enddo
-!      enddo
-!      stop
 
        call rrtmg_lwrad( &
             p3d        = pres_hyd_p    , p8w       = pres2_hyd_p , pi3d     = pi_p     , &
