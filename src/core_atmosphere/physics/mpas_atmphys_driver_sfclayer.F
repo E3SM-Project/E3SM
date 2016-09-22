@@ -131,7 +131,6 @@
        if(.not.allocated(fm_p)) allocate(fm_p(ims:ime,jms:jme))
 
     case("sf_mynn","sf_mynn_wrf38")
-       write(0,*) '--- allocate sf_mynn or sf_mynn_wrf38:'
        if(.not.allocated(snowh_p)) allocate(snowh_p(ims:ime,jms:jme))
        if(.not.allocated(ch_p)   ) allocate(ch_p(ims:ime,jms:jme)   )
        if(.not.allocated(qcg_p)  ) allocate(qcg_p(ims:ime,jms:jme)  )
@@ -143,7 +142,6 @@
        if(.not.allocated(elpbl_p)   ) allocate(elpbl_p(ims:ime,kms:kme,jms:jme)   )
        if(.not.allocated(qcbl_p)    ) allocate(qcbl_p(ims:ime,kms:kme,jms:jme)    )
        if(.not.allocated(cldfrabl_p)) allocate(cldfrabl_p(ims:ime,kms:kme,jms:jme))
-       write(0,*) '--- end allocate sf_mynn or sf_mynn_wrf38:'
 
     case default
 
@@ -200,7 +198,6 @@
        if(allocated(fm_p)) deallocate(fm_p)
 
     case("sf_mynn","sf_mynn_wrf38")
-       write(0,*) '--- deallocate sf_mynn or sf_mynn_wrf38:'
        if(allocated(snowh_p)) deallocate(snowh_p)
        if(allocated(ch_p)   ) deallocate(ch_p   )
        if(allocated(qcg_p)  ) deallocate(qcg_p  )
@@ -212,7 +209,6 @@
        if(allocated(elpbl_p)   ) deallocate(elpbl_p   )
        if(allocated(qcbl_p)    ) deallocate(qcbl_p    )
        if(allocated(cldfrabl_p)) deallocate(cldfrabl_p)
-       write(0,*) '--- end deallocate sf_mynn or sf_mynn_wrf38:'
 
     case default
 
@@ -340,7 +336,6 @@
        enddo
 
     case("sf_mynn","sf_mynn_wrf38")
-       write(0,*) '--- sf_mynn from_MPAS or sf_mynn_wrf38:'
        !input variables:
        call mpas_pool_get_array(diag_physics,'qcg'   ,qcg   )
        call mpas_pool_get_array(sfc_input   ,'snowh' ,snowh )
@@ -376,7 +371,6 @@
        enddo
        enddo
        enddo
-       write(0,*) '--- end sf_mynn or sf_mynn_wrf38 from_MPAS:'
 
     case default
 
@@ -505,7 +499,6 @@
        enddo
 
     case("sf_mynn","sf_mynn_wrf38")
-       write(0,*) '--- sf_mynn or sf_mynn_wrf38 to_MPAS:'
        call mpas_pool_get_array(diag_physics,'ch',ch)
 
        do j = jts,jte
@@ -513,7 +506,6 @@
           ch(i) = ch_p(i,j)
        enddo
        enddo
-       write(0,*) '--- end sf_mynn or sf_mynn_wrf38 to_MPAS:'
 
     case default
 
@@ -540,9 +532,9 @@
 !       write(0,*) '    end monin_obukhov initialization'
 
     case("sf_mynn")
-       write(0,*) '    enter mynn surface layer initialization:'
+!      write(0,*) '    enter mynn surface layer initialization:'
        call mynn_sf_init_driver(allowed_to_read)
-       write(0,*) '    end mynn surface layer initialization:'
+!      write(0,*) '    end mynn surface layer initialization:'
 
     case("sf_mynn_wrf38")
        write(0,*) '    enter mynn surface layer initialization (wrf 3.8):'
@@ -578,8 +570,8 @@
  real(kind=RKIND):: dx
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_sfclayer:'
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_sfclayer:'
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
@@ -625,7 +617,6 @@
                   )
         
     case("sf_mynn")
-       write(0,*) '--- enter subroutine sf_mynn:'
        call sfclay_mynn( &
                    p3d      = pres_hyd_p , pi3d     = pi_p       , psfcpa    = psfc_p     , &
                    th3d     = th_p       , t3d      = t_p        , u3d       = u_p        , &
@@ -656,17 +647,8 @@
                    ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                        )
-       write(0,*) '--- end subroutine sf_mynn:'
 
     case("sf_mynn_wrf38")
-       write(0,*) '--- enter subroutine sf_mynn_wrf38:'
-!      201 format(i3,i7,10(1x,e15.8))
-!      do j = jts,jte
-!      do i = its,ite
-!         write(0,201) j,i,dx_p(i,j)
-!      enddo
-!      enddo
-!      stop
        call sfclay_mynn_wrf38( &
                    p3d       = pres_hyd_p , pi3d      = pi_p       , psfcpa    = psfc_p     , &
                    th3d      = th_p       , t3d       = t_p        , u3d       = u_p        , &
@@ -698,7 +680,6 @@
                    ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme    , &
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte      &
                        )
-       write(0,*) '--- end subroutine sf_mynn_wrf38:'
 
     case default
 
@@ -707,7 +688,7 @@
 !copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(diag_physics)
 
- write(0,*) '--- end subroutine driver_sfclayer'
+!write(0,*) '--- end subroutine driver_sfclayer'
 
  end subroutine driver_sfclayer
 
