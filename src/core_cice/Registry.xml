@@ -1671,7 +1671,7 @@
 		<var name="seaSurfaceTiltV"                   type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTiltV"/>
 		<var name="oceanMixedLayerDepth"              type="real"     dimensions="nCells Time"              name_in_code="oceanMixedLayerDepth"       default_value="20.0"/>
 		<var name="oceanHeatFluxConvergence"          type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFluxConvergence"/>
-		<var name="landIceMask"                       type="real"     dimensions="nCells Time"              name_in_code="landIceMask"/>
+		<var name="landIceMask"                       type="integer"  dimensions="nCells Time"              name_in_code="landIceMask"/>
 		<var name="landIceMaskVertex"                 type="integer"  dimensions="nVertices Time"           name_in_code="landIceMaskVertex"/>
 	</var_struct>
 

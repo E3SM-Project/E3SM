@@ -4242,8 +4242,7 @@ contains
          albedoVisibleDirectOcean, &
          albedoIRDirectOcean, &
          albedoVisibleDiffuseOcean, &
-         albedoIRDiffuseOcean, &
-         landIceMask
+         albedoIRDiffuseOcean
 
     real(kind=RKIND) :: &
          sensibleTransferCoefficient, &
@@ -4259,6 +4258,9 @@ contains
 
     integer, pointer :: &
          nCellsSolve
+
+    integer, dimension(:), pointer :: &
+           landIceMask
 
     logical, pointer :: &
          config_use_test_ice_shelf
@@ -4397,7 +4399,7 @@ contains
 
           do iCell = 1, nCellsSolve
 
-             if (landIceMask(iCell) == 1.0_RKIND) then
+             if (landIceMask(iCell) == 1) then
                 freezingMeltingPotential(iCell) = 0.0_RKIND
              endif
 

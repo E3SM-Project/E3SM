@@ -557,8 +557,10 @@ contains
          latCell, &
          airTemperature, &
          seaSurfaceTemperature, &
-         seaFreezingTemperature, &
-         landIceMask
+         seaFreezingTemperature
+
+      integer, dimension(:), pointer :: &
+           landIceMask
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          initialSalinityProfile, &
@@ -636,7 +638,7 @@ contains
        if (seaSurfaceTemperature(iCell) <= seaFreezingTemperature(iCell) + 0.2_RKIND .and. &
           (latCell(iCell) > config_initial_latitude_north * ciceDegreesToRadians .or. &
            latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians) .and. &
-          landIceMask(iCell) == 0.0_RKIND) then
+          landIceMask(iCell) == 0) then
 
           ! has ice
           do iCategory = 1, nCategories
@@ -1981,11 +1983,11 @@ contains
                  lonCell(iCell) < lonLimitEast * ciceDegreesToRadians .and. &
                  latCell(iCell) < latLimit     * ciceDegreesToRadians) then
 
-                landIceMask(iCell) = 1.0_RKIND
+                landIceMask(iCell) = 1
 
              else
 
-                landIceMask(iCell) = 0.0_RKIND
+                landIceMask(iCell) = 0
 
              endif
 

@@ -267,9 +267,11 @@ contains
            iceAreaOverIceShelves
 
       real(kind=RKIND), dimension(:), pointer :: &
-           landIceMask, &
            iceAreaCell, &
            areaCell
+
+      integer, dimension(:), pointer :: &
+           landIceMask
 
       real(kind=RKIND) :: &
            iceAreaOverIceShelvesThisProc
@@ -297,7 +299,7 @@ contains
          
          do iCell = 1, nCellsSolve
 
-            if (landIceMask(iCell) == 1.0_RKIND) then
+            if (landIceMask(iCell) == 1) then
             
                iceAreaOverIceShelvesThisProc = iceAreaOverIceShelvesThisProc + iceAreaCell(iCell) * areaCell(iCell)
 
