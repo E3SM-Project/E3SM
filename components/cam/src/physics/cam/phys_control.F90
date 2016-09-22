@@ -155,6 +155,7 @@ subroutine phys_ctl_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use cam_control_mod, only: cam_ctrl_set_physics_type
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -256,6 +257,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(prc_exp1,                        1 , mpir8,   0, mpicom)
    call mpibcast(cld_sed,                         1 , mpir8,   0, mpicom)
 #endif
+
+   call cam_ctrl_set_physics_type(cam_physpkg)
 
    ! Error checking:
 
