@@ -187,7 +187,7 @@ You also have a one-line file called restart_timestamp, which is overwritten at 
 Say the timestamp is '10000-01-01_00:00:00'. Then you would edit namelist.landice:
 
      config_do_restart = .true.
-     config_start_time = '10000-01-01_00:00:00'
+     config_start_time = 'file'
 
 Continue restarting as needed until the Spinup is complete.
 
