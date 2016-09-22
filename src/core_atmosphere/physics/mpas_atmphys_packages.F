@@ -128,7 +128,9 @@
     cu_grell_freitas_in = .true.
  elseif(config_convection_scheme == 'cu_kain_fritsch') then
     cu_kain_fritsch_in = .true.
- elseif(config_convection_scheme == 'cu_tiedtke' .or. config_convection_scheme=="cu_tiedtke_wrf381") then
+ elseif(config_convection_scheme == 'cu_tiedtke'        .or. &
+        config_convection_scheme == 'cu_tiedtke_wrf381' .or. &
+        config_convection_scheme == 'cu_ntiedtke_wrf381') then
     cu_tiedtke_in = .true.
  endif
 
@@ -168,6 +170,7 @@
  write(0,*) '--- pbl_scheme              = ', trim(config_pbl_scheme)
  write(0,*) '--- bl_mynn_in              = ', bl_mynn_in
  write(0,*) '--- bl_ysu_in               = ', bl_ysu_in
+ write(0,*)
 
  end function atmphys_setup_packages
 
