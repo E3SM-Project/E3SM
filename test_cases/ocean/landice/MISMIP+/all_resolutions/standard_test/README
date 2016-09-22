@@ -1,6 +1,0 @@
-This directory contains config*xml files for each supported resolution of the MISMIP+ experiments.
-
-Note that the files at each resolution are nearly identical, except that each one
-points to a difference namelist.input file. It would be better to have a single
-config*xml file for all resolutions. But at least for now, any config change at
-one resolution must be repeated at the other resolutions.

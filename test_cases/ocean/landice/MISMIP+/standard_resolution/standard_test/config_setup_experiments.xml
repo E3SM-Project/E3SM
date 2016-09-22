@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="8000m">
+<config case="2000m">
 
         <!-- Set up needed files and executables -->
         <add_executable source="periodic_hex" dest="periodic_grid"/>
@@ -14,7 +14,7 @@
         <add_link source_path="script_configuration_dir" source="mismip+WriteGL.py" dest="."/> -->
         <add_link source_path="script_configuration_dir" source="mismip+PlotGL.py" dest="."/> -->
         <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
-        <add_link source_path="script_test_dir" source="namelist.input.8000m" dest="namelist.input"/>
+        <add_link source_path="script_test_dir" source="namelist.input" dest="namelist.input"/>
         <add_link source_path="work_case_dir" source="culled_graph.info" dest="graph.info"/>
 
 
@@ -28,9 +28,7 @@
 
         <namelist name="namelist.landice.Ice0" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
-                <option name="config_do_restart">.true.</option>
-                <option name="config_start_time">15000-01-01_00:00:00</option>
-                <option name="config_stop_time">15100-01-01_00:00:00</option>
+                <option name="config_stop_time">00100-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
         </namelist>
 
@@ -46,9 +44,7 @@
 
         <namelist name="namelist.landice.Ice1r" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
-                <option name="config_do_restart">.true.</option>
-                <option name="config_start_time">15000-01-01_00:00:00</option>
-                <option name="config_stop_time">15100-01-01_00:00:00</option>
+                <option name="config_stop_time">00100-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
 		<option name="config_basal_mass_bal_float">'mismip'</option>
         </namelist>
@@ -66,8 +62,8 @@
         <namelist name="namelist.landice.Ice1ra" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15100-01-01_00:00:00</option>
-                <option name="config_stop_time">15200-01-01_00:00:00</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
         </namelist>
 
@@ -84,8 +80,8 @@
         <namelist name="namelist.landice.Ice1rax" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15200-01-01_00:00:00</option>
-                <option name="config_stop_time">16000-01-01_00:00:00</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
         </namelist>
 
@@ -102,8 +98,8 @@
         <namelist name="namelist.landice.Ice1rr" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15100-01-01_00:00:00</option>
-                <option name="config_stop_time">15200-01-01_00:00:00</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
 		<option name="config_basal_mass_bal_float">'mismip'</option>
         </namelist>
@@ -121,8 +117,8 @@
         <namelist name="namelist.landice.Ice1rrx" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15200-01-01_00:00:00</option>
-                <option name="config_stop_time">16000-01-01_00:00:00</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
 		<option name="config_basal_mass_bal_float">'mismip'</option>
         </namelist>
@@ -139,9 +135,7 @@
 
         <namelist name="namelist.landice.Ice2r" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
-                <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15000-01-01_00:00:00</option>
-                <option name="config_stop_time">15100-01-01_00:00:00</option>
+                <option name="config_stop_time">00100-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
 		<option name="config_basal_mass_bal_float">'constant'</option>
 		<option name="config_bmlt_float_flux">975.17</option>
@@ -161,8 +155,8 @@
         <namelist name="namelist.landice.Ice2ra" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15100-01-01_00:00:00</option>
-                <option name="config_stop_time">15200-01-01_00:00:00</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
         </namelist>
 
@@ -179,8 +173,8 @@
         <namelist name="namelist.landice.Ice2rax" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15200-01-01_00:00:00</option>
-                <option name="config_stop_time">16000-01-01_00:00:00</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
         </namelist>
 
@@ -197,8 +191,8 @@
         <namelist name="namelist.landice.Ice2rr" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15100-01-01_00:00:00</option>
-                <option name="config_stop_time">15200-01-01_00:00:00</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
 		<option name="config_basal_mass_bal_float">'constant'</option>
 		<option name="config_bmlt_float_flux">975.17</option>
@@ -218,8 +212,8 @@
         <namelist name="namelist.landice.Ice2rrx" mode="forward">
                 <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
                 <option name="config_do_restart">.true.</option>
-		<option name="config_start_time">15200-01-01_00:00:00</option>
-                <option name="config_stop_time">16000-01-01_00:00:00</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
 		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
 		<option name="config_basal_mass_bal_float">'constant'</option>
 		<option name="config_bmlt_float_flux">975.17</option>
@@ -261,6 +255,7 @@
                         <argument flag="-l">10</argument>
                         <argument flag="--diri"></argument>
                         <argument flag="--beta"></argument>
+                        <argument flag="--thermal"></argument>
                 </step>
 
                 <!-- Set up initial condition on to landice mesh -->

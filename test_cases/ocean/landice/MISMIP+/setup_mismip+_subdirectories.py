@@ -12,10 +12,6 @@
 import sys, os
 import shutil
 
-# Set length of Spinup experiment (integer number of years).
-# The number of years is used to form the name of the restart file.
-yearsSpinup = 15000
-
 # Parse options
 from optparse import OptionParser
 parser = OptionParser()
@@ -84,31 +80,38 @@ for expt in experiments:
     #       Ice1ra and Ice1rr must follow Ice1r; Ice2ra and Ice2rr must follow Ice2r.
     #       Ice1rax must follow Ice1ra, and similiary for the other Ice*x.
 
-    if expt == 'Spinup':   # start from landice_grid.nc
+    if expt == 'Spinup':
+        # Start from landice_grid.nc
         gridfile = 'landice_grid.nc'
         griddir = '../'
         os.symlink(griddir + gridfile, gridfile)
-    else:   # start from restart file
-        if expt=='Ice0' or expt=='Ice1r' or expt=='Ice2r':
-            restartYear = yearsSpinup
-            restartdir = '../Spinup/'
-        elif expt=='Ice1ra' or expt=='Ice1rr':
-            restartYear = yearsSpinup + 100
+    elif expt =='Ice0' or expt=='Ice1r' or expt=='Ice2r':
+        # Start from restart file at the end of Spinup, but call it landice_grid.nc,
+        #  so the run is treated as a cold start
+        # Note: This requires a one-line NCO command to rename the Spinup restart file
+        #       while removing the xtime variable
+        gridfile = 'landice_grid.nc'
+        griddir = '../Spinup/'
+        os.symlink(griddir + gridfile, gridfile)    
+    else:
+        # Start from the appropriate restart file
+        if expt=='Ice1ra' or expt=='Ice1rr':
+            restartYear = 100
             restartdir = '../Ice1r/'
         elif expt=='Ice1rax':
-            restartYear = yearsSpinup + 200
+            restartYear = 200
             restartdir = '../Ice1ra/'
         elif expt=='Ice1rrx':
-            restartYear = yearsSpinup + 200
+            restartYear = 200
             restartdir = '../Ice1rr/'
         elif expt=='Ice2ra' or expt=='Ice2rr':
-            restartYear = yearsSpinup + 100
+            restartYear = 100
             restartdir = '../Ice2r/'
         elif expt=='Ice2rax':
-            restartYear = yearsSpinup + 200
+            restartYear = 200
             restartdir = '../Ice2ra/'
         elif expt=='Ice2rrx':
-            restartYear = yearsSpinup + 200
+            restartYear = 200
             restartdir = '../Ice2rr/'
 
         # Link to the restart file
