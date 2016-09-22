@@ -538,9 +538,9 @@
 			<var_array name="scalars"/>
 			<var name="rainprod" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
 			<var name="evapprod" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="re_cloud" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="re_ice" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="re_snow" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+			<var name="re_cloud" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+			<var name="re_ice" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+			<var name="re_snow" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 			<var name="nt_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
 			<var name="mu_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
 			<var name="nwfa2d" packages="mp_thompson_aerosols_in"/>
@@ -1936,15 +1936,15 @@
 
                 <var name="re_cloud" type="real" dimensions="nVertLevels nCells Time" units="m"
                      description="effective radius of cloud water droplets"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="re_ice"  type="real" dimensions="nVertLevels nCells Time"  units="m"
                      description="effective radius of cloud ice crystals"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="re_snow" type="real" dimensions="nVertLevels nCells Time"  units="m"
                      description="effective radius of snow crystals"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="nt_c" type="real" dimensions="nCells" units="nb kg^{-1}"
                      description="one-moment constant cloud water droplet concentration"
@@ -2798,6 +2798,7 @@
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
+<<<<<<< 60c2cab5c407a1c455fab36efa7d294f0b22ca06
                 <!-- rthdynten : tendency of temperature due to horizontal and vertical advections             (K/s-1) -->
 
                 <var name="rqvdynten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
@@ -2817,6 +2818,15 @@
                      packages="cu_grell_freitas_in;cu_tiedtke_in"/>
 
 
+=======
+                <!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->
+
+                <var name="rqvdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+                <var name="rthdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+                <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+                <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+
+>>>>>>> * In ./src/core_atmosphere/Registry.xml, added the variables re_cloud, re_ice, and re_snow to
                 <!-- ================================================================================================== -->
                 <!-- ... TENDENCIES FROM PARAMETERIZATION OF PLANETARY BOUNDARY LAYER PROCESSES:                        -->
                 <!-- ================================================================================================== -->
