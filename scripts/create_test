@@ -281,6 +281,7 @@ OR
 
         mach_obj = Machines(machine=machine_name)
         if args.testargs:
+            args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
             test_names = update_acme_tests.get_full_test_names(args.testargs,
                                                                mach_obj.get_machine_name(), args.compiler)
         else:
