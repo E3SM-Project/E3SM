@@ -326,10 +326,10 @@ CONTAINS
         ENDDO
 
         IF (itimestep==1) THEN
-           write(0,*)
-           write(0,*) '--- sfc_mynn itimestep = ', itimestep
-           write(0,*) '--- initialize vt1, vq1, ust, mol, qsfc, qstar'
-           write(0,*)
+!          write(0,*)
+!          write(0,*) '--- sfc_mynn itimestep = ', itimestep
+!          write(0,*) '--- initialize vt1, vq1, ust, mol, qsfc, qstar'
+!          write(0,*)
            DO i=its,ite
               vt1(i)=0.
               vq1(i)=0.
@@ -339,10 +339,10 @@ CONTAINS
               qstar(i,j)=0.0
            ENDDO
         ELSE
-           write(0,*)
-           write(0,*) '--- sfc_mynn itimestep = ', itimestep
-           write(0,*) '--- call mym_condensation:'
-           write(0,*)
+!          write(0,*)
+!          write(0,*) '--- sfc_mynn itimestep = ', itimestep
+!          write(0,*) '--- call mym_condensation:'
+!          write(0,*)
            DO i=its,ite
               do k = kts,kts+1
                 ql = qc3d(i,k,j)/(1.+qc3d(i,k,j))

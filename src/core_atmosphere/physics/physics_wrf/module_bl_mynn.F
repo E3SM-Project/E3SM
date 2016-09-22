@@ -2542,11 +2542,11 @@ ENDIF
     levflag=mynn_level
 
     IF (initflag > 0) THEN
-       write(0,*)
-       write(0,*) '--- bl_mynn initflag = ', initflag
-       write(0,*) '--- bl_mynn mynn_level = ', levflag
-       write(0,*) '--- initialize sh3d, el_pbl, tsq, qsq, cov'
-       write(0,*)
+!      write(0,*)
+!      write(0,*) '--- bl_mynn initflag = ', initflag
+!      write(0,*) '--- bl_mynn mynn_level = ', levflag
+!      write(0,*) '--- initialize sh3d, el_pbl, tsq, qsq, cov'
+!      write(0,*)
        Sh3D(its:ite,kts:kte,jts:jte)=0.
        el_pbl(its:ite,kts:kte,jts:jte)=0.
        tsq(its:ite,kts:kte,jts:jte)=0.
