@@ -50,7 +50,6 @@ parser = OptionParser()
 
 parser.add_option("-f", "--file", dest="filename", type='string', default='output_00000.nc', help="output file to analyze", metavar="FILE")
 parser.add_option("-x", "--expt", dest="experiment", type='string', default = 'all', help="MISMIP+ experiment(s) to set up", metavar="EXPT")
-parser.add_option("-y", "--years", dest="yearsSpinup", type='float', default = '15000.0', help="Number of years in Spinup")
 
 for option in parser.option_list:
     if option.default != ("NO", "DEFAULT"):
@@ -66,11 +65,6 @@ if options.experiment:
         experiments = [options.experiment]
 else:
     sys.exit('Error: No experiment specified.  Please specify experiment(s) with the -x option')
-
-if options.yearsSpinup:
-    yearsSpinup = options.yearsSpinup
-else:
-    yearsSpinup = 15000.
 
 ################### DEFINE FUNCTIONS ######################
 
@@ -150,13 +144,8 @@ for expt in experiments:
     nVertLevels = len(ncfile.dimensions['nVertLevels'])
     nVertInterfaces = nVertLevels + 1
 
-#    print 'nTime =', nTime
-#    print 'nCells =', nCells
-#    print 'nEdges =', nEdges
-
     xtime = ncfile.variables['xtime'][:]
     years = xtimeGetYear(xtime)
-    print 'years =', years[:]
 
     # Get mesh fields
     layerThicknessFractions = ncfile.variables['layerThicknessFractions'][:]
@@ -219,7 +208,7 @@ for expt in experiments:
     # Loop over time slices
     for iTime in range(nTime):
 
-        time[iTime] = years[iTime] - yearsSpinup
+        time[iTime] = years[iTime]
         print 'iTime, time =', iTime, time[iTime] 
 
         # Loop over edges to gather GL info

@@ -115,7 +115,7 @@ for expt in experiments:
             restartdir = '../Ice2rr/'
 
         # Link to the restart file
-        restartfile = 'restart_' + str(restartYear) + '.nc'
+        restartfile = 'restart_00' + str(restartYear) + '.nc'
         os.symlink(restartdir + restartfile, restartfile)
 
         # Create the restart_timestamp file

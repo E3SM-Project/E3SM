@@ -55,7 +55,7 @@ First decide what resolution you would like to run. The resolution is set by the
 files namelist.input and config_setup_experiments.xml in the lowest-level directory.
 The default is 2000 m. To change the default (say, to 1000 m):
 
-   > cp namelist.input.1000m namelist.input
+    > cp namelist.input.1000m namelist.input
 
 Then change "2000m" to "1000m" in the second line of config_setup_experiments.xml.
 
@@ -69,11 +69,11 @@ https://docs.google.com/document/d/1aURr4UdEm0AMeYlc478yL_46biD19naVp3nCMYgrYLI/
 
 List the available tests:
 
-> ./list_testcases.py
+     > ./list_testcases.py
 
 The MISMIP+ test should be listed with a number (say, 26). To set up the tests:
 
-> ./setup_testcase.py -o landice -n 26 -f general.config.landice --work_dir myWorkDir
+     > ./setup_testcase.py -o landice -n 26 -f general.config.landice --work_dir myWorkDir
 
 Go to your work directory (myWorkDir).  Say you set up a test with 2000m resolution.
 You should have a directory structure like this:
@@ -93,7 +93,7 @@ Note: The executable must have been built with support for the Albany first-orde
 
 Run the setup script:
 
-> python setup_test.py
+     > python setup_test.py
 
 This script will create the required input file, landice_grid.nc.
 The grid information for this resolution is contained in namelist.input.
@@ -172,8 +172,8 @@ Note 4: The MISMIP+ protocols allow one of three kinds of basal sliding law.
 
 Once you are satisfied with the configuration, you can launch the Spinup run. For example:
 
-> cd Spinup
-> mpirun -n 16 landice_model
+     > cd Spinup
+     > mpirun -n 16 landice_model
 
 Or alternatively, you can submit a batch job with a simple run script. (I usually use msub on LANL IC machines.)
 
@@ -214,7 +214,7 @@ to the file you just created.
 
 Then go to the Ice0 directory. Simply launch the run, e.g.:
 
-> mpirun -n 16 landice_model
+     > mpirun -n 16 landice_model
 
 Continue in the required order (as described above) until the MISMIP+ run suite is complete.
 
@@ -224,7 +224,7 @@ every 100 years to year 1000). These files need to be converted to the format
 specified by Asay-Davis et al. (2016). To do this, go to the main directory
 (e.g., .../standard_test/8000m) and run a python script:
 
-> python mismip+WriteGL.py -x all
+     > python mismip+WriteGL.py -x all
 
 For each experiment, you should get a netCDF file in MISMIP+ format and a test plot.
 For example, the Ice0 directory should contain the files Ice0_MPASLI.nc
@@ -240,7 +240,7 @@ The script will not work if the output file does not contain all the expected ti
 Finally, there is another python script that makes two plots (in one file,
 called mismip+PlotGL.pdf) synthesizing the results of all the experiments:
 
-> python mismip+PlotGL.py
+     > python mismip+PlotGL.py
 
 The upper plot shows the GL location at the start and end of different experiments.
 The lower plot shows the total grounded area over time for each experiment, in analogy 
