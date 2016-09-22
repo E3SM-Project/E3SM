@@ -1,15 +1,17 @@
 module prep_rof_mod
 
-  use shr_kind_mod,     only: r8 => SHR_KIND_R8
+#include "shr_assert.h"
+  use shr_kind_mod,     only: r8 => SHR_KIND_R8 
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_kind_mod,     only: cxx => SHR_KIND_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc
   use seq_comm_mct,     only: CPLID, ROFID, logunit
-  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
-  use seq_map_type_mod
+  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs 
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
+  use shr_log_mod     , only: errMsg => shr_log_errMsg
+  use seq_map_type_mod 
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -44,6 +46,7 @@ module prep_rof_mod
 
   private :: prep_rof_merge
   private :: prep_rof_map_irrig
+  private :: prep_rof_map_volr_r2l
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -66,6 +69,9 @@ module prep_rof_mod
   character(len=*), parameter :: irrig_flux_field = 'Flrl_irrig'
   ! fluxes mapped from lnd to rof that don't need any special handling
   character(CXX) :: lnd2rof_normal_fluxes
+
+  character(len=*), parameter, private :: sourcefile = &
+       __FILE__
   !================================================================================================
 
 contains
@@ -466,7 +472,6 @@ contains
     !
     ! In addition, it uses the following fields from other attribute vectors:
     ! - r2x_rx (obtained via component_get_c2x_cx(rof(eri))): Flrr_volrmch
-    ! - x2l_lx (obtained via component_get_x2c_cx(lnd(eli))): Flrr_volrmch
     !
     ! Arguments
     integer, intent(in) :: eri  ! rof instance index
@@ -478,10 +483,9 @@ contains
     integer :: i
     integer :: lsize_l  ! number of land points
     integer :: lsize_r  ! number of rof points
-    type(mct_avect), pointer :: x2l_lx
     type(mct_avect), pointer :: r2x_rx
     type(mct_avect) :: irrig_l_av  ! temporary attribute vector holding irrigation fluxes on the land grid
-    type(mct_avect) :: irrig_r_av  ! temporary attribute vector holding irrigation_fluxes on the rof grid
+    type(mct_avect) :: irrig_r_av  ! temporary attribute vector holding irrigation fluxes on the rof grid
 
     ! The following need to be pointers to satisfy the MCT interface:
     real(r8), pointer :: volr_r(:)             ! river volume on the rof grid
@@ -518,14 +522,14 @@ contains
     allocate(volr_r(lsize_r))
     call mct_aVect_exportRattr(r2x_rx, volr_field, volr_r)
 
-    ! TODO(wjs, 2016-09-09) Currently we're getting the already-mapped VOLR on the land
-    ! grid. I think it would be more robust (to possible changes in driver sequencing) if
-    ! we computed volr_l here, by remapping volr_r from rof -> lnd - rather than relying
-    ! on the already-mapped volr_l, which may be out-of-sync with the latest volr in ROF,
-    ! depending on when rof -> lnd mapping happens relative to this routine.
-    x2l_lx => component_get_x2c_cx(lnd(eli))
+    ! ------------------------------------------------------------------------
+    ! Adjust volr_r, and map it to the land grid
+    ! ------------------------------------------------------------------------
+
+    ! FIXME(wjs, 2016-09-22) Set volr_r to 0 where it is < 0
+
     allocate(volr_l(lsize_l))
-    call mct_aVect_exportRattr(x2l_lx, volr_field, volr_l)
+    call prep_rof_map_volr_r2l(volr_r, volr_l)
 
     ! ------------------------------------------------------------------------
     ! Determine irrigation normalized by volr
@@ -602,6 +606,78 @@ contains
     call mct_aVect_clean(irrig_r_av)
 
   end subroutine prep_rof_map_irrig
+
+  !================================================================================================
+
+  subroutine prep_rof_map_volr_r2l(volr_r, volr_l)
+    !---------------------------------------------------------------
+    ! Description
+    ! Map volr from the rof grid to the lnd grid.
+    !
+    ! This is needed for the volr-normalization that is done in prep_rof_map_irrig.
+    !
+    ! Note that this mapping is also done in the course of mapping all rof -> lnd fields
+    ! in prep_lnd_calc_r2x_lx. However, we do this mapping ourselves here for two reasons:
+    !
+    ! (1) For the sake of this normalization, we change all volr < 0 values to 0; this is
+    !     not done for the standard rof -> lnd mapping.
+    !
+    ! (2) It's possible that the driver sequencing would be changed such that this rof ->
+    !     lnd mapping happens before the lnd -> rof mapping. If that happened, then volr_l
+    !     (i.e., volr that has been mapped to the land grid by prep_lnd_calc_r2x_lx) would
+    !     be inconsistent with volr_r, which would be a Bad Thing for the
+    !     volr-normalizated mapping (this mapping would no longer be conservative). So we
+    !     do the rof -> lnd remapping here to ensure we have a volr_l that is consistent
+    !     with volr_r.
+    !
+    ! The pointer arguments to this routine should already be allocated to be the
+    ! appropriate size.
+    !
+    use prep_lnd_mod, only : prep_lnd_get_mapper_Fr2l
+    !
+    ! Arguments
+    real(r8), pointer, intent(in)    :: volr_r(:) ! river volume on the rof grid (input)
+    real(r8), pointer, intent(inout) :: volr_l(:) ! river volume on the lnd grid (output) (technically intent(in) since intent gives the association status of a pointer, but given as intent(inout) to avoid confusion, since its data are modified)
+    !
+    ! Local variables
+    integer :: lsize_r  ! number of rof points
+    integer :: lsize_l  ! number of lnd points
+    type(mct_avect) :: volr_r_av   ! temporary attribute vector holding volr on the rof grid
+    type(mct_avect) :: volr_l_av   ! temporary attribute vector holding volr on the land grid
+    type(seq_map), pointer :: mapper_Fr2l  ! flux mapper for mapping rof -> lnd
+
+    ! This volr field name does not need to agree with the volr field name used in the
+    ! 'real' attribute vectors
+    character(len=*), parameter :: volr_field = 'volr'
+    !---------------------------------------------------------------
+
+    SHR_ASSERT(associated(volr_r), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT(associated(volr_l), errMsg(sourcefile, __LINE__))
+
+    lsize_r = size(volr_r)
+    lsize_l = size(volr_l)
+
+    call mct_aVect_init(volr_r_av, rList = volr_field, lsize = lsize_r)
+    call mct_aVect_importRattr(volr_r_av, volr_field, volr_r)
+    call mct_aVect_init(volr_l_av, rList = volr_field, lsize = lsize_l)
+
+    mapper_Fr2l => prep_lnd_get_mapper_Fr2l()
+
+    ! This mapping uses the same options as the standard rof -> lnd mapping done in
+    ! prep_lnd_calc_r2x_lx. If that mapping ever changed (e.g., introducing an avwts_s
+    ! argument), then it's *possible* that we'd want this mapping to change, too.
+    call seq_map_map(mapper = mapper_Fr2l, &
+         av_s = volr_r_av, &
+         av_d = volr_l_av, &
+         fldlist = volr_field, &
+         norm = .true.)
+
+    call mct_aVect_exportRattr(volr_l_av, volr_field, volr_l)
+
+    call mct_aVect_clean(volr_r_av)
+    call mct_aVect_clean(volr_l_av)
+
+  end subroutine prep_rof_map_volr_r2l
 
   !================================================================================================
 
