@@ -439,7 +439,18 @@ contains
   subroutine prep_rof_map_irrig(eri, eli, avwts_s, avwtsfld_s)
     !---------------------------------------------------------------
     ! Description
-    ! Do custom mapping for the irrigation flux, from land -> rof
+    ! Do custom mapping for the irrigation flux, from land -> rof.
+    !
+    ! The basic idea is that we want to pull irrigation out of ROF cells proportionally to
+    ! the river volume (volr) in each cell. This is important in cases where the various
+    ! ROF cells overlapping a CLM cell have very different volr: If we didn't do this
+    ! volr-normalized remapping, we'd try to extract the same amount of water from each
+    ! of the ROF cells, which would be more likely to have withdrawals exceeding
+    ! available volr.
+    !
+    ! (Both RTM and MOSART have code to handle excess withdrawals, by pulling the excess
+    ! directly out of the ocean, but we'd like to avoid resorting to this as much as
+    ! possible.)
     !
     ! This mapping works by:
     !
