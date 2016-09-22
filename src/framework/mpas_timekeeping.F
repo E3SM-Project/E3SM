@@ -1598,8 +1598,9 @@ module mpas_timekeeping
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
       integer :: m, more
+      character (len=StrKIND) :: datestring
       type (MPAS_Time_type) :: target_time
-      type (MPAS_Time_type) :: updated_time
+      type (MPAS_Time_type) :: updated_time, mid_time
 
       type (MPAS_TimeInterval_type) :: temp, mid_int
       type (MPAS_TimeInterval_type) :: zero
@@ -1611,7 +1612,7 @@ module mpas_timekeeping
       ! Avoid division by zero
       !
       if (den == zero) then
-         write(stderrUnit,*) 'Error: Attempting to divide by zero.'
+         write(stderrUnit,*) 'Error: Attempting to divide by zero.\n'
          n = 0
          rem = zero
          return
@@ -1663,21 +1664,22 @@ module mpas_timekeeping
       more = 0
       rem = target_time - updated_time
       do while (rem > den)
-         m = m / 2
+         m  = m / 2
          temp = den * m
          if (updated_time + temp <= target_time) then
             more = more + m
             updated_time = updated_time + temp
             rem = target_time - updated_time
          end if
-         if (m==1) exit
+         if(m==1) exit
       end do
 
       ! Final number of intervals is n + more
       n = n + more
 
-   end subroutine mpas_interval_division
+      return
 
+   end subroutine mpas_interval_division
 
    logical function eq_t_t(t1, t2)
 
