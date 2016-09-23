@@ -83,7 +83,7 @@ contains
     type(mct_aVect)  , intent(inout) :: l2r_r            ! lnd -> rof fields on the rof grid
     !
     ! Local variables
-    integer :: i
+    integer :: r, l
     integer :: lsize_l  ! number of land points
     integer :: lsize_r  ! number of rof points
     type(mct_avect) :: irrig_l_av  ! temporary attribute vector holding irrigation fluxes on the land grid
@@ -96,14 +96,14 @@ contains
     real(r8), pointer :: irrig_flux_r(:)       ! irrigation flux on the rof grid [kg m-2 s-1]
     real(r8), pointer :: irrig_normalized_l(:) ! irrigation normalized by volr, land grid
     real(r8), pointer :: irrig_normalized_r(:) ! irrigation normalized by volr, rof grid
-    real(r8), pointer :: irrig_excess_l(:)     ! irrigation where volr <= 0, land grid
-    real(r8), pointer :: irrig_excess_r(:)     ! irrigation where volr <= 0, rof grid
+    real(r8), pointer :: irrig_volr0_l(:)      ! irrigation where volr <= 0, land grid
+    real(r8), pointer :: irrig_volr0_r(:)      ! irrigation where volr <= 0, rof grid
 
     character(len=*), parameter :: volr_field             = 'Flrr_volrmch'
     character(len=*), parameter :: irrig_normalized_field = 'Flrl_irrig_normalized'
-    character(len=*), parameter :: irrig_excess_field     = 'Flrl_irrig_excess'
+    character(len=*), parameter :: irrig_volr0_field      = 'Flrl_irrig_volr0'
     character(len=*), parameter :: fields_to_remap = &
-         irrig_normalized_field // ':' // irrig_excess_field
+         irrig_normalized_field // ':' // irrig_volr0_field
     !---------------------------------------------------------------
 
     ! ------------------------------------------------------------------------
@@ -127,7 +127,15 @@ contains
     ! Adjust volr_r, and map it to the land grid
     ! ------------------------------------------------------------------------
 
-    ! FIXME(wjs, 2016-09-22) Set volr_r to 0 where it is < 0
+    ! Treat any rof point with volr < 0 as if it had volr = 0. Negative volr values can
+    ! arise in RTM. This fix is needed to avoid mapping negative irrigation to those
+    ! cells: while conservative, this would be unphysical (it would mean that irrigation
+    ! actually adds water to those cells).
+    do r = 1, lsize_r
+       if (volr_r(r) < 0._r8) then
+          volr_r(r) = 0._r8
+       end if
+    end do
 
     allocate(volr_l(lsize_l))
     call map_rof2lnd_volr(volr_r, mapper_Fr2l, volr_l)
@@ -139,21 +147,21 @@ contains
     ! volr on the land grid, we divide the land's irrigation flux into two separate flux
     ! components: a component where we have positive volr on the land grid (put in
     ! irrig_normalized_l, which is mapped using volr-normalization) and a component where
-    ! we have zero or negative volr on the land grid (put in irrig_excess_l, which is
+    ! we have zero or negative volr on the land grid (put in irrig_volr0_l, which is
     ! mapped as a standard flux). We then remap both of these components to the rof grid,
     ! and then finally add the two components to determine the total irrigation flux on
     ! the rof grid.
     ! ------------------------------------------------------------------------
 
     allocate(irrig_normalized_l(lsize_l))
-    allocate(irrig_excess_l(lsize_l))
-    do i = 1, lsize_l
-       if (volr_l(i) > 0._r8) then
-          irrig_normalized_l(i) = irrig_flux_l(i) / volr_l(i)
-          irrig_excess_l(i)     = 0._r8
+    allocate(irrig_volr0_l(lsize_l))
+    do l = 1, lsize_l
+       if (volr_l(l) > 0._r8) then
+          irrig_normalized_l(l) = irrig_flux_l(l) / volr_l(l)
+          irrig_volr0_l(l)      = 0._r8
        else
-          irrig_normalized_l(i) = 0._r8
-          irrig_excess_l(i)     = irrig_flux_l(i)
+          irrig_normalized_l(l) = 0._r8
+          irrig_volr0_l(l)      = irrig_flux_l(l)
        end if
     end do
 
@@ -163,7 +171,7 @@ contains
 
     call mct_aVect_init(irrig_l_av, rList = fields_to_remap, lsize = lsize_l)
     call mct_aVect_importRattr(irrig_l_av, irrig_normalized_field, irrig_normalized_l)
-    call mct_aVect_importRattr(irrig_l_av, irrig_excess_field, irrig_excess_l)
+    call mct_aVect_importRattr(irrig_l_av, irrig_volr0_field, irrig_volr0_l)
     call mct_aVect_init(irrig_r_av, rList = fields_to_remap, lsize = lsize_r)
 
     ! This mapping uses the same options (such as avwts) as is used for mapping all other
@@ -177,9 +185,9 @@ contains
          avwtsfld_s = avwtsfld_s)
 
     allocate(irrig_normalized_r(lsize_r))
-    allocate(irrig_excess_r(lsize_r))
+    allocate(irrig_volr0_r(lsize_r))
     call mct_aVect_exportRattr(irrig_r_av, irrig_normalized_field, irrig_normalized_r)
-    call mct_aVect_exportRattr(irrig_r_av, irrig_excess_field, irrig_excess_r)
+    call mct_aVect_exportRattr(irrig_r_av, irrig_volr0_field, irrig_volr0_r)
 
     ! ------------------------------------------------------------------------
     ! Convert to a total irrigation flux on the ROF grid, and put this in the l2r_rx
@@ -187,8 +195,8 @@ contains
     ! ------------------------------------------------------------------------
 
     allocate(irrig_flux_r(lsize_r))
-    do i = 1, lsize_r
-       irrig_flux_r(i) = (irrig_normalized_r(i) * volr_r(i)) + irrig_excess_r(i)
+    do r = 1, lsize_r
+       irrig_flux_r(r) = (irrig_normalized_r(r) * volr_r(r)) + irrig_volr0_r(r)
     end do
 
     call mct_aVect_importRattr(l2r_r, irrig_flux_field, irrig_flux_r)
@@ -203,8 +211,8 @@ contains
     deallocate(irrig_flux_r)
     deallocate(irrig_normalized_l)
     deallocate(irrig_normalized_r)
-    deallocate(irrig_excess_l)
-    deallocate(irrig_excess_r)
+    deallocate(irrig_volr0_l)
+    deallocate(irrig_volr0_r)
     call mct_aVect_clean(irrig_l_av)
     call mct_aVect_clean(irrig_r_av)
 

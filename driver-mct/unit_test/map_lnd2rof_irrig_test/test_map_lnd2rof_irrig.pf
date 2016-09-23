@@ -173,18 +173,73 @@ contains
     @assertEqual(irrig_l(1), sum_irrig_r, tolerance=tol)
   end subroutine test_standardCase_oneLand_twoRof
 
-  ! FIXME(wjs, 2016-09-22) write a test with 2 source cells, 3 dest cells, which tests <=
-  ! volr, like this:
-  !
-  ! L (2 cells): AAABBB
-  ! R (3 cells): 112233
-  ! R1 has volr = 0
-  ! R2 has volr = -1000
-  ! R3 has volr = 1
-  !
-  ! Then Irrig_A should be mapped evenly to R1 and R2 (regular mapping); Irrig_B should
-  ! be mapped entirely to R3 (because R2 should be reset to 0, then it should use
-  ! normalized mapping).
+  @Test
+  subroutine test_zero_and_negative(this)
+    ! This tests the handling of rof cells with 0 or negative volr. It includes two land
+    ! (source) points, to ensure that each land cell gets its own handling and to ensure
+    ! that R2 (which overlaps L1 and L2) gets the appropriate value.
+    !
+    ! This has the following setup:
+    !
+    ! L (2 cells): 111222
+    ! R (3 cells): 112233
+    ! R1 has volr = 0
+    ! R2 has volr = -10
+    ! R3 has volr = 2
+    !
+    ! Then Irrig_L(1) should be mapped evenly to R1 and R2 (regular mapping); Irrig_L(2)
+    ! should be mapped entirely to R3 (because R2 should be reset to 0, then it should use
+    ! normalized mapping).
+    class(TestMapL2RIrrig), intent(inout) :: this
+    integer, parameter :: nlnd = 2
+    integer, parameter :: nrof = 3
+    real(r8), parameter :: irrig_l(nlnd) = [10._r8, 100._r8]
+    real(r8), parameter :: volr_r(nrof) = [0._r8, -10._r8, 2._r8]
+    real(r8) :: irrig_r(nrof)
+    real(r8) :: expected_irrig_r2
+    type(simple_map_type) :: map_l2r
+    type(simple_map_type) :: map_r2l
+    real(r8) :: sum_irrig_l
+    real(r8) :: sum_irrig_r
+
+    ! Setup
+    map_l2r = simple_map_type( &
+         source_indices  = [1,     1,      2,      2], &
+         dest_indices    = [1,     2,      2,      3], &
+         overlap_weights = [1._r8, 0.5_r8, 0.5_r8, 1._r8])
+
+    map_r2l = simple_map_type( &
+         source_indices  = [1,           2,           2,           3], &
+         dest_indices    = [1,           1,           2,           2], &
+         overlap_weights = [2._r8/3._r8, 1._r8/3._r8, 1._r8/3._r8, 2._r8/3._r8])
+
+    call this%setup_inputs( &
+         irrig_l = irrig_l, &
+         volr_r = volr_r, &
+         map_l2r = map_l2r, &
+         map_r2l = map_r2l)
+
+    ! Exercise
+    call this%run_map_lnd2rof_irrig()
+
+    ! Verify
+    irrig_r = aVect_exportRattr(this%l2r_r, irrig_flux_field)
+    ! L1 is mapped without normalization, so the flux in R1 is simply the flux in L1
+    @assertEqual(irrig_l(1), irrig_r(1), tolerance=tol)
+    ! L2 is mapped with normalization; all of its irrigation goes into R3
+    @assertEqual(irrig_l(2) * 3._r8/2._r8, irrig_r(3), tolerance=tol)
+    ! R2 overlaps L1 and L2, with 50% in each. From L1 it gets the irrigation flux mapped
+    ! directly; from L2 it gets 0 (since L2 is mapped with normalization, and R2's volr <
+    ! 0).
+    @assertEqual(irrig_l(1) * 0.5_r8, irrig_r(2), tolerance=tol)
+    ! Also make sure this is conservative
+    sum_irrig_l = 3._r8 * irrig_l(1) + 3._r8 * irrig_l(2)
+    sum_irrig_r = 2._r8 * irrig_r(1) + 2._r8 * irrig_r(2) + 2._r8 * irrig_r(3)
+    @assertEqual(sum_irrig_l, sum_irrig_r)
+
+  end subroutine test_zero_and_negative
+
+
 
   ! FIXME(wjs, 2016-09-22) Think about whether any other tests are warranted (look
   ! through SUT)
