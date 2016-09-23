@@ -67,7 +67,7 @@
        <arg flag="-A" name="PROJECT"/>
        <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
        <!-- space required at beginning of name -->
-       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+       <arg flag="-n" name=" $TOTALPES / $PES_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
        <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
@@ -89,8 +89,8 @@
       <arg flag="-P" name="$PROJECT"/>
     </submit_args>
     <directives>
-      <directive                       > -n {{ totaltasks }} </directive>
-      <directive                       > -R "span[ptile={{ ptile }}]"</directive>
+      <directive                       > -n {{ total_tasks }} </directive>
+      <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
       <directive default="cesm.stdout" > -o {{ output_error_path }}.%J  </directive>

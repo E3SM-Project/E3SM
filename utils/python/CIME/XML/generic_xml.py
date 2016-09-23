@@ -187,11 +187,15 @@ class GenericXML(object):
         >>> os.environ["BAZ"] = "BARF"
         >>> obj.get_resolved_value("one $ENV{FOO} two $ENV{BAZ} three")
         'one BAR two BARF three'
+        >>> obj.get_resolved_value("2 + 3 - 1")
+        '4'
+        >>> obj.get_resolved_value("0001-01-01")
+        '0001-01-01'
         """
         logger.debug("raw_value %s" % raw_value)
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
-        math_re = re.compile(r'[+-/*]')
+        math_re = re.compile(r'\s[+-/*]\s')
         item_data = raw_value
 
         if item_data is None:
