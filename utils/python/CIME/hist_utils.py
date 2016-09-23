@@ -277,7 +277,7 @@ def compare_baseline(case, baseline_dir=None):
 
     for bdir in dirs_to_check:
         if not os.path.isdir(bdir):
-            return False, "ERROR baseline directory '%s' does not exist" % bdir
+            return False, "ERROR BFAIL baseline directory '%s' does not exist" % bdir
 
     return _compare_hists(case, rundir, basecmp_dir)
 

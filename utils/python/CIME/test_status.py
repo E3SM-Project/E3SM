@@ -18,21 +18,23 @@ ALL_PHASE_STATUSES = [TEST_PENDING_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
 # Special statuses that the overall test can be in
 TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in one of the COMPARE phases
 NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
+TEST_BFAIL_STATUS    = "BFAIL"  # Implies baselines are missing
 
 # The valid phases
-INITIAL_PHASE         = "INIT"
-CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
-XML_PHASE             = "XML"
-SETUP_PHASE           = "SETUP"
-NAMELIST_PHASE        = "NLCOMP"
-SHAREDLIB_BUILD_PHASE = "SHAREDLIB_BUILD"
-MODEL_BUILD_PHASE     = "MODEL_BUILD"
-RUN_PHASE             = "RUN"
-THROUGHPUT_PHASE      = "TPUTCOMP"
-MEMCOMP_PHASE         = "MEMCOMP"
-MEMLEAK_PHASE         = "MEMLEAK"
-COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
-GENERATE_PHASE        = "GENERATE"
+INITIAL_PHASE          = "INIT"
+CREATE_NEWCASE_PHASE   = "CREATE_NEWCASE"
+XML_PHASE              = "XML"
+SETUP_PHASE            = "SETUP"
+NAMELIST_PHASE         = "NLCOMP"
+SHAREDLIB_BUILD_PHASE  = "SHAREDLIB_BUILD"
+MODEL_BUILD_PHASE      = "MODEL_BUILD"
+RUN_PHASE              = "RUN"
+THROUGHPUT_PHASE       = "TPUTCOMP"
+MEMCOMP_PHASE          = "MEMCOMP"
+MEMLEAK_PHASE          = "MEMLEAK"
+COMPARE_PHASE          = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
+COMPARE_BASELINE_PHASE = "COMPARE_baseline"
+GENERATE_PHASE         = "GENERATE"
 
 ALL_PHASES = [INITIAL_PHASE,
               CREATE_NEWCASE_PHASE,
@@ -121,24 +123,22 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self):
+    def phase_statuses_dump(self, fd):
+        """
+        Args:
+            fd: file open for writing
+        """
         if self._phase_statuses:
             for phase, data in self._phase_statuses.iteritems():
                 status, comments = data
                 if not comments:
-                    logging.info("%s %s %s" % (status, self._test_name, phase))
+                    fd.write("%s %s %s\n" % (status, self._test_name, phase))
                 else:
-                    logging.info("%s %s %s %s" % (status, self._test_name, phase, comments))
+                    fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
 
     def flush(self):
-        if self._phase_statuses:
-            with open(self._filename, "w") as fd:
-                for phase, data in self._phase_statuses.iteritems():
-                    status, comments = data
-                    if not comments:
-                        fd.write("%s %s %s\n" % (status, self._test_name, phase))
-                    else:
-                        fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
+        with open(self._filename, "w") as fd:
+            self.phase_statuses_dump(fd)
 
     def _parse_test_status(self, file_contents):
         """
@@ -222,7 +222,8 @@ class TestStatus(object):
         rv = TEST_PASS_STATUS
         run_phase_found = False
         for phase, data in self._phase_statuses.iteritems():
-            status = data[0]
+            status  = data[0]
+            comment = data[1]
             if phase == RUN_PHASE:
                 run_phase_found = True
 
@@ -241,7 +242,10 @@ class TestStatus(object):
                         rv = NAMELIST_FAIL_STATUS
 
                 elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase.startswith(COMPARE_PHASE)):
-                    rv = TEST_DIFF_STATUS
+                    if (phase.startswith(COMPARE_BASELINE_PHASE) and TEST_BFAIL_STATUS in comment):
+                        rv = TEST_BFAIL_STATUS
+                    else:
+                        rv = TEST_DIFF_STATUS
 
                 else:
                     rv = TEST_FAIL_STATUS
