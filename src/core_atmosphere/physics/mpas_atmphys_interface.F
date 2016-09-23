@@ -67,6 +67,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 ! * corrected the calculation of the surface pressure, mainly extrapolation of the air density to the surface.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-25.
+! * added the option mp_wsm6_wrf381 for the WSM6 parameterization of cloud microphysics from WRF version 3.8.1.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-09-16.
 
 
  contains
@@ -556,7 +558,7 @@
 !additional initialization as function of cloud microphysics scheme:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6","mp_wsm6_wrf381")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -769,7 +771,7 @@
 !variables specific to different cloud microphysics schemes:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6","mp_wsm6_wrf381")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
