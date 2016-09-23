@@ -229,3 +229,10 @@ class GenericXML(object):
                 tmp = item_data
             item_data = str(tmp)
         return item_data
+
+    def add_sub_node(self, node, subnode_name, subnode_text):
+        expect(node is not None," Bad value passed")
+        subnode = ET.Element(subnode_name)
+        subnode.text = subnode_text
+        node.append(subnode)
+        return node
