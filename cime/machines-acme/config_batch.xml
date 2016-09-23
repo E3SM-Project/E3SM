@@ -173,12 +173,12 @@
     </directives>
    </batch_system>
 
-   <batch_system MACH="mustang" version="x.y">
-   <batch_directive>#MSUB</batch_directive>
-   <directives>
-     <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-   </directives>
-   </batch_system>
+   <batch_system MACH="grizzly" version="x.y">
+     <batch_directive>#MSUB</batch_directive>
+	<directives>
+		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+	</directives>
+    </batch_system>
 
    <batch_system MACH="wolf" version="x.y">
      <batch_directive>#MSUB</batch_directive>
