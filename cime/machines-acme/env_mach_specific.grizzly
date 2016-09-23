@@ -17,7 +17,7 @@ endif
 
 
 module load netcdf/4.4.1
-module load parallel-netcdf/1.6.1grizzly
+module load parallel-netcdf/1.5.0grizzly
 module load cmake/3.5.2
 
 #if ( $COMPILER == "gnu" && $MPILIB == "openmpi" ) then
