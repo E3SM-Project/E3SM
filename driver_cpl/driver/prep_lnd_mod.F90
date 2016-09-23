@@ -415,9 +415,10 @@ contains
        r2x_rx => component_get_c2x_cx(rof(eri))
 
        ! Note that one of these fields (a volr field) is remapped from rof -> lnd in
-       ! prep_rof, because it is needed as a normalization term. So, if the details of
-       ! this mapping call are changed in the future, it's possible that the equivalent
-       ! r2l mapping in prep_rof should be changed to keep the two equivalent.
+       ! map_lnd2rof_irrig_mod, because it is needed as a normalization term. So, if the
+       ! details of this mapping call are changed in the future, it's possible that the
+       ! equivalent r2l mapping in map_lnd2rof_irrig_mod should be changed to keep the two
+       ! equivalent.
        call seq_map_map(mapper_Fr2l, r2x_rx, r2x_lx(eri), &
             fldlist=seq_flds_r2x_fluxes, norm=.true.)
     enddo
