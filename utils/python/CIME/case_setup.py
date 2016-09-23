@@ -6,9 +6,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
-from CIME.task_maker        import TaskMaker
 from CIME.XML.env_mach_pes  import EnvMachPes
-from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
 from CIME.utils             import append_status, parse_test_name
 from CIME.user_mod_support  import apply_user_mods
@@ -138,9 +136,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
-        drv_comp = Component()
-        models = drv_comp.get_valid_model_components()
-        models.remove("DRV")
+        models = case.get_value("COMP_CLASSES").split(",")
 
         mach, compiler, debug, mpilib = \
             case.get_value("MACH"), case.get_value("COMPILER"), case.get_value("DEBUG"), case.get_value("MPILIB")
@@ -165,6 +161,8 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
         # Save ninst in a dict to use later in apply_user_mods
         ninst = dict()
         for comp in models:
+            if comp == "DRV":
+                continue
             comp_model = case.get_value("COMP_%s" % comp)
             ninst[comp_model]  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
@@ -187,25 +185,14 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
             case.flush()
             check_lockedfiles()
-
-            tm = TaskMaker(case)
-            mtpn = case.get_value("MAX_TASKS_PER_NODE")
-            pespn = case.get_value("PES_PER_NODE")
-            # This is hardcoded because on yellowstone by default we
-            # run with 15 pes per node
-            # but pay for 16 pes per node.  See github issue #518
-            if case.get_value("MACH") == "yellowstone":
-                pespn = 16
-            pestot = tm.totaltasks
-            if mtpn > pespn and pestot > pespn:
-                pestot = pestot * (mtpn // pespn)
-                case.set_value("COST_PES", tm.num_nodes*pespn)
-            else:
-                # reset cost_pes to totalpes
-                case.set_value("COST_PES", 0)
-
+            env_mach_pes = case.get_env("mach_pes")
+            pestot = env_mach_pes.get_total_tasks(models)
             logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
+            thread_count = env_mach_pes.get_max_thread_count(models)
+            cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
+            case.set_value("COST_PES", cost_pes)
+
 
             # Compute cost based on PE count
             pval = 1
@@ -242,6 +229,8 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             # Use BatchFactory to get the appropriate instance of a BatchMaker,
             # use it to create our batch scripts
             env_batch = case.get_env("batch")
+            num_nodes = env_mach_pes.get_total_nodes(pestot, thread_count)
+            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
@@ -249,10 +238,10 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
-                        env_batch.make_batch_script(input_batch_script, job, case)
+                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
                 elif job != "case.test":
-                    logger.info("Writing %s script" % job)
-                    env_batch.make_batch_script(input_batch_script, job, case)
+                    logger.info("Writing %s script from input template %s" % (job, input_batch_script))
+                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
