@@ -16,15 +16,16 @@ OBJS = \
 	module_cam_support.o           \
 	module_cu_gf.mpas.o            \
 	module_cu_gf_momentum.mpas.o   \
-	module_cu_kfeta.o              \
-	module_cu_tiedtke.o            \
 	module_cu_tiedtke.wrf-3.8.1.o  \
 	module_cu_ntiedtke.wrf-3.8.1.o \
+	module_cu_kfeta.o              \
+	module_cu_tiedtke.o            \
 	module_mp_kessler.o            \
 	module_mp_radar.o              \
 	module_mp_thompson.o           \
 	module_mp_thompson_cldfra3.o   \
 	module_mp_wsm6.o               \
+	module_mp_wsm6.wrf-3.8.1.o     \
 	module_ra_cam.o                \
 	module_ra_cam_support.o        \
 	module_ra_rrtmg_lw.o           \
