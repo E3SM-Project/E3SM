@@ -81,19 +81,15 @@ def run_model(case):
 
     # Set OMP_NUM_THREADS
     env_mach_pes = case.get_env("mach_pes")
-    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case._component_classes))
+    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_value("COMP_CLASSES").split(',')))
 
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-
     cmd = case.get_mpirun_cmd(job="case.run")
     cmd = case.get_resolved_value(cmd)
-
-
-
-
     logger.info("run command is %s " %cmd)
+
     rundir = case.get_value("RUNDIR")
     run_cmd_no_fail(cmd, from_dir=rundir)
     logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))

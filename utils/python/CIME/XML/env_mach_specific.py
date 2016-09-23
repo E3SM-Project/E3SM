@@ -4,7 +4,7 @@ Interface to the env_mach_specific.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
-
+from CIME.utils import transform_vars
 import string
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class EnvMachSpecific(EnvBase):
                     else:
                         value =  default_run_misc_suffix_node.text
                 else:
-                    value = node[0].text
+                    value = nodes[0].text
                 newnode.set("value", value)
                 newnode = self.add_sub_node(newnode, "type", "char")
                 if item == "run_exe":
@@ -383,7 +383,12 @@ class EnvMachSpecific(EnvBase):
         if arg_node is not None:
             arg_nodes = self.get_nodes("arg", root=arg_node)
             for arg_node in arg_nodes:
-                args[arg_node.get("name")] = arg_node.text
+                arg_value = transform_vars(arg_node.text,
+                                           case=case,
+                                           subgroup=job,
+                                           check_members=check_members,
+                                           default=arg_node.get("default"))
+                args[arg_node.get("name")] = arg_value
 
         executable = self.get_node("executable", root=the_match)
 
