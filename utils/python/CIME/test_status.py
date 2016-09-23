@@ -18,7 +18,7 @@ ALL_PHASE_STATUSES = [TEST_PENDING_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
 # Special statuses that the overall test can be in
 TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in one of the COMPARE phases
 NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
-TEST_BFAIL_STATUS    = "BFAIL"  # Implies baselines are missing
+TEST_BFAIL_STATUS    = "BFAIL"  # Implies baselines are missing in the COMPARE_baseline phase
 
 # The valid phases
 INITIAL_PHASE          = "INIT"
