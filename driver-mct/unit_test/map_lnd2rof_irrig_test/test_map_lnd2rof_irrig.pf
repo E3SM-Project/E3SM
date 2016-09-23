@@ -239,9 +239,4 @@ contains
 
   end subroutine test_zero_and_negative
 
-
-
-  ! FIXME(wjs, 2016-09-22) Think about whether any other tests are warranted (look
-  ! through SUT)
-
 end module test_map_lnd2rof_irrig
