@@ -250,7 +250,7 @@
           deallocate(rucuten_Edge)
 
           convection2_select: select case(convection_scheme)
-             case('cu_grell_freitas','cu_grell_freitas_momentum')
+             case('cu_grell_freitas','cu_grell_freitas_momentum','cu_ntiedtke_wrf381')
                 do i = 1, nCellsSolve
                 do k = 1, nVertLevels
                    coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
