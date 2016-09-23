@@ -56,7 +56,7 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
 ! * added the options cu_grell_freitas and cu_grell_freitas_momentum.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
-! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF versions 3.6.1.
+! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF version 3.6.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 ! * added the options sf_mynn_wrf38 and bl_mynn_wrf38 for the MYNN parameterization from WRF version 3.8.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
@@ -65,6 +65,8 @@
 ! * added the option cu_ntiedtke_wrf381 for the "new" Tiedtke parameterization of convection from WRF
 !   version 3.8.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
+! * added the option mp_wsm6_wrf381 for the WSM6 parameterization of cloud microphysics from WRF version 3.8.1.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-09-16.
 
 
  contains
@@ -145,7 +147,8 @@
            config_microp_scheme .eq. 'mp_kessler'           .or. &
            config_microp_scheme .eq. 'mp_thompson_aerosols' .or. &
            config_microp_scheme .eq. 'mp_thompson'          .or. &
-           config_microp_scheme .eq. 'mp_wsm6'     )) then
+           config_microp_scheme .eq. 'mp_wsm6'              .or. &
+           config_microp_scheme .eq. 'mp_wsm6_wrf381')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_microp_scheme:', &
           trim(config_microp_scheme)

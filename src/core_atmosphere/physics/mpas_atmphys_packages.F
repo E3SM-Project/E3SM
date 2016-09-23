@@ -89,6 +89,8 @@
     mp_thompson_in = .true.
  elseif(config_microp_scheme == 'mp_wsm6') then
     mp_wsm6_in = .true. 
+ elseif(config_microp_scheme == 'mp_wsm6_wrf381') then
+    mp_wsm6_in = .true.
  endif
 
  write(0,*) '--- microp_scheme           = ', trim(config_microp_scheme)
