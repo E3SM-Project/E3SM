@@ -2931,11 +2931,11 @@ end subroutine cesm_init
          call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
          call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
          if (lnd_present) then
-            call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), &
-                 do_l2x=.true., do_x2l=.true., infodata=infodata)
+            call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, &
+                 do_l2x=.true., do_x2l=.true.)
          endif
          if (rof_present) then
-            call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata=infodata)
+            call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
          endif
          if (ocn_present .and. &
             (trim(cpl_seq_option) == 'CESM1_ORIG'       .or. &
@@ -2944,12 +2944,12 @@ end subroutine cesm_init
              trim(cpl_seq_option) == 'CESM1_MOD_TIGHT'  .or. &
              trim(cpl_seq_option) == 'RASM_OPTION1' )) then
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), &
-                 do_o2x=.true., do_x2o=.true., do_xao=.true., infodata=infodata)
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
          endif
          if (ice_present) then
-            call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), &
-                 do_x2i=.true., infodata=infodata)
+            call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, &
+                 do_x2i=.true.)
          endif
          call t_drvstopf  ('CPL:BUDGET1',cplrun=.true.,budget=.true.)
       endif
@@ -3399,16 +3399,16 @@ end subroutine cesm_init
          if (ocn_present .and. &
             (trim(cpl_seq_option) == 'RASM_OPTION2' )) then
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), &
-                 do_o2x=.true., do_x2o=.true., do_xao=.true., infodata=infodata)
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
          endif
          if (atm_present) then
-            call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), &
-                 do_a2x=.true., do_x2a=.true., infodata=infodata)
+            call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, &
+                 do_a2x=.true., do_x2a=.true.)
          endif
          if (ice_present) then
-            call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), &
-                 do_i2x=.true., infodata=infodata)
+            call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, &
+                 do_i2x=.true.)
          endif
          call t_drvstopf  ('CPL:BUDGET2',cplrun=.true.,budget=.true.)
 
