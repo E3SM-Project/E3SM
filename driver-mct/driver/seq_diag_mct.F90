@@ -578,15 +578,15 @@ end subroutine seq_diag_sum0_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_atm_mct( atm, frac_a, do_a2x, do_x2a, infodata)
+subroutine seq_diag_atm_mct( atm, frac_a, infodata, do_a2x, do_x2a)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-   type(component_type), intent(in) :: atm    ! component type for instance1
-   type(mct_aVect)     , intent(in) :: frac_a ! frac bundle
-   logical, optional   , intent(in) :: do_a2x
-   logical, optional   , intent(in) :: do_x2a
-   type(seq_infodata_type), optional, intent(in) :: infodata
+   type(component_type)    , intent(in)           :: atm    ! component type for instance1
+   type(mct_aVect)         , intent(in)           :: frac_a ! frac bundle
+   type(seq_infodata_type) , intent(in)           :: infodata
+   logical                 , intent(in), optional :: do_a2x
+   logical                 , intent(in), optional :: do_x2a
 
 !EOP
 
@@ -795,13 +795,13 @@ end subroutine seq_diag_atm_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l, infodata)
+subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
 
-   type(component_type), intent(in) :: lnd    ! component type for instance1
-   type(mct_aVect)     , intent(in) :: frac_l ! frac bundle
-   logical, optional   , intent(in) :: do_l2x
-   logical, optional   , intent(in) :: do_x2l
-   type(seq_infodata_type), optional, intent(in) :: infodata
+   type(component_type)    , intent(in)           :: lnd    ! component type for instance1
+   type(mct_aVect)         , intent(in)           :: frac_l ! frac bundle
+   type(seq_infodata_type) , intent(in)           :: infodata
+   logical                 , intent(in), optional :: do_l2x
+   logical                 , intent(in), optional :: do_x2l
 
 !EOP
 
@@ -1017,9 +1017,9 @@ end subroutine seq_diag_lnd_mct
 
 subroutine seq_diag_rof_mct( rof, frac_r, infodata)
 
-   type(component_type), intent(in) :: rof    ! component type for instance1
-   type(mct_aVect)     , intent(in) :: frac_r ! frac bundle
-   type(seq_infodata_type), optional, intent(in) :: infodata
+   type(component_type)    , intent(in) :: rof    ! component type for instance1
+   type(mct_aVect)         , intent(in) :: frac_r ! frac bundle
+   type(seq_infodata_type) , intent(in) :: infodata
 
 !EOP
 
@@ -1189,9 +1189,9 @@ end subroutine seq_diag_rof_mct
 
 subroutine seq_diag_glc_mct( glc, frac_g, infodata)
 
-   type(component_type), intent(in) :: glc    ! component type for instance1
-   type(mct_aVect)     , intent(in) :: frac_g ! frac bundle
-   type(seq_infodata_type), optional, intent(in) :: infodata
+   type(component_type)    , intent(in) :: glc    ! component type for instance1
+   type(mct_aVect)         , intent(in) :: frac_g ! frac bundle
+   type(seq_infodata_type) , intent(in) :: infodata
 
 !EOP
 
@@ -1256,15 +1256,15 @@ end subroutine seq_diag_glc_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao, infodata)
+subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xao)
 
-   type(component_type) , intent(in)          :: ocn    ! component type for instance1
-   type(mct_aVect)      , intent(in)          :: frac_o ! frac bundle
-   type(mct_aVect)      , intent(in)          :: xao_o
-   logical              , intent(in),optional :: do_o2x
-   logical              , intent(in),optional :: do_x2o
-   logical              , intent(in),optional :: do_xao
-   type(seq_infodata_type), optional, intent(in) :: infodata
+   type(component_type)    , intent(in)          :: ocn    ! component type for instance1
+   type(mct_aVect)         , intent(in)          :: frac_o ! frac bundle
+   type(mct_aVect)         , intent(in)          :: xao_o
+   type(seq_infodata_type) , intent(in)          :: infodata
+   logical                 , intent(in),optional :: do_o2x
+   logical                 , intent(in),optional :: do_x2o
+   logical                 , intent(in),optional :: do_xao
 
 !EOP
 
@@ -1332,9 +1332,9 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao, infodat
             if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
          end if
       end do
-      if (index_o2x_Fioo_frazil /= 0) then
+      if (trim(cime_model) == 'acme') then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX * shr_const_rhoice * shr_const_latice
-      else if (index_o2x_Fioo_q /= 0) then
+      else if (trim(cime_model) == 'cesm') then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
       end if
    end if
@@ -1511,13 +1511,13 @@ end subroutine seq_diag_ocn_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i, infodata)
+subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
 
-   type(component_type), intent(in)           :: ice    ! component type for instance1
-   type(mct_aVect)     , intent(in)           :: frac_i ! frac bundle
-   logical             , intent(in), optional :: do_i2x
-   logical             , intent(in), optional :: do_x2i
-   type(seq_infodata_type), optional, intent(in) :: infodata
+   type(component_type)    , intent(in)           :: ice    ! component type for instance1
+   type(mct_aVect)         , intent(in)           :: frac_i ! frac bundle
+   type(seq_infodata_type) , intent(in)           :: infodata
+   logical                 , intent(in), optional :: do_i2x
+   logical                 , intent(in), optional :: do_x2i
 
 !EOP
 
@@ -1542,6 +1542,8 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i, infodata)
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
+
+   call seq_infodata_GetData(infodata, cime_model=cime_model)
 
    !---------------------------------------------------------------------------
    ! add values found in this bundle to the budget table

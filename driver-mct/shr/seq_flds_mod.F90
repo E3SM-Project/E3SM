@@ -631,9 +631,11 @@ module seq_flds_mod
 
      ! pressure at the lowest model level (Pa)
      call seq_flds_add(a2x_states,"Sa_pbot")
-     call seq_flds_add(x2o_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
+     if (cime_model == 'acme') then
+        call seq_flds_add(x2o_states,"Sa_pbot")
+     end if
      longname = 'Pressure at the lowest model level'
      stdname  = 'air_pressure'
      units    = 'Pa'
@@ -1362,14 +1364,16 @@ module seq_flds_mod
      attname  = 'Fioo_q'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Ocean melt (q<0) potential
-     call seq_flds_add(o2x_fluxes,"Fioo_meltp")
-     call seq_flds_add(x2i_fluxes,"Fioo_meltp")
-     longname = 'Ocean melt (q<0) potential'
-     stdname  = 'surface_snow_and_ice_melt_heat_flux'
-     units    = 'W m-2'
-     attname  = 'Fioo_meltp'
-     call metadata_set(attname, longname, stdname, units)
+     if (trim(cime_model) == 'acme') then
+        ! Ocean melt (q<0) potential
+        call seq_flds_add(o2x_fluxes,"Fioo_meltp")
+        call seq_flds_add(x2i_fluxes,"Fioo_meltp")
+        longname = 'Ocean melt (q<0) potential'
+        stdname  = 'surface_snow_and_ice_melt_heat_flux'
+        units    = 'W m-2'
+        attname  = 'Fioo_meltp'
+        call metadata_set(attname, longname, stdname, units)
+     end if
 
      if (trim(cime_model) == 'acme') then
         ! Ocean frazil production
@@ -1507,7 +1511,7 @@ module seq_flds_mod
      !------------------------------
      ! ice<->ocn only exchange - BGC
      !------------------------------
-     if (flds_bgc) then
+     if (trim(cime_model) == 'acme' .and. flds_bgc) then
 
         ! Ocean algae concentration 1 - diatoms?
         call seq_flds_add(o2x_states,"So_algae1")
