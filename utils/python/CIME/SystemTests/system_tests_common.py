@@ -251,6 +251,9 @@ class SystemTestsCommon(object):
                     m = meminfo.match(line)
                     if m:
                         memlist.append((float(m.group(1)), float(m.group(2))))
+        # Remove the last mem record, it's sometimes artificially high
+        if len(memlist) > 0:
+            memlist.pop()
         return memlist
 
     def _get_throughput(self, cpllog):
