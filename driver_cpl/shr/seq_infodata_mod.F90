@@ -66,6 +66,7 @@ MODULE seq_infodata_mod
       private     ! This type is opaque
 
       !--- set via namelist and held fixed ----
+      character(SHR_KIND_CS)  :: cime_model      ! acme or cesm
       character(SHR_KIND_CL)  :: start_type      ! Type of startup
       character(SHR_KIND_CL)  :: case_name       ! Short case identification
       character(SHR_KIND_CL)  :: case_desc       ! Long description of this case
@@ -292,6 +293,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     integer :: unitn              ! Namelist unit number to read
 
     !------ namelist -----
+    character(SHR_KIND_CS) :: cime_model         ! acme or cesm
     character(SHR_KIND_CL) :: case_desc          ! Case long description
     character(SHR_KIND_CL) :: case_name          ! Case short name
     character(SHR_KIND_CL) :: model_version      ! Model version
@@ -391,7 +393,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
 
     namelist /seq_infodata_inparm/  &
-         case_desc, case_name, start_type, tchkpt_dir,     &
+         cime_model, case_desc, case_name, start_type, tchkpt_dir,     &
          model_version, username, hostname, timing_dir,    &
          atm_adiabatic, atm_ideal_phys, aqua_planet,aqua_planet_sst, &
          brnch_retain_casename, info_debug, bfbflag,       &
@@ -433,6 +435,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        !---------------------------------------------------------------------------
        ! Set namelist defaults
        !---------------------------------------------------------------------------
+       cime_model            = 'unknown'
        case_desc             = ' '
        case_name             = ' '
        model_version         = 'unknown'
@@ -545,6 +548,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        !---------------------------------------------------------------------------
        ! Set infodata on root pe
        !---------------------------------------------------------------------------
+       infodata%cime_model            = cime_model
        infodata%case_desc             = case_desc
        infodata%case_name             = case_name
        infodata%model_version         = model_version
@@ -849,7 +853,7 @@ END SUBROUTINE seq_infodata_Init
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_GetData_explicit( infodata, case_name, case_desc, timing_dir,  &
+SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_desc, timing_dir,  &
            model_version, username, hostname, rest_case_name, tchkpt_dir,     &
            start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
            aqua_planet,aqua_planet_sst, atm_ideal_phys, atm_adiabatic, brnch_retain_casename, &
@@ -892,6 +896,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, case_name, case_desc, timing
 ! !INPUT/OUTPUT PARAMETERS:
 
    type(seq_infodata_type),       intent(IN)  :: infodata      ! Input CCSM structure
+   character(len=*),    optional, intent(OUT) :: cime_model    ! CIME model (acme or cesm)
    character(len=*),    optional, intent(OUT) :: start_type    ! Start type
    character(len=*),    optional, intent(OUT) :: case_name     ! Short case identification
    character(len=*),    optional, intent(OUT) :: case_desc     ! Long case description
@@ -1052,6 +1057,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, case_name, case_desc, timing
 
 !-------------------------------------------------------------------------------
 
+    if ( present(cime_model)     ) cime_model     = infodata%cime_model
     if ( present(start_type)     ) start_type     = infodata%start_type
     if ( present(case_name)      ) case_name      = infodata%case_name
     if ( present(case_desc)      ) case_desc      = infodata%case_desc
@@ -1329,7 +1335,7 @@ SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_PutData_explicit( infodata, case_name, case_desc, timing_dir,  &
+SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_desc, timing_dir,  &
            model_version, username, hostname, rest_case_name, tchkpt_dir,     &
            start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
            aqua_planet,aqua_planet_sst, atm_ideal_phys, atm_adiabatic, brnch_retain_casename, &
@@ -1371,6 +1377,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, case_name, case_desc, timing
 ! !INPUT/OUTPUT PARAMETERS:
 
    type(seq_infodata_type),    intent(INOUT) :: infodata      ! Input CCSM structure
+   character(len=*),    optional, intent(IN) :: cime_model    ! CIME model (acme or cesm)
    character(len=*),    optional, intent(IN) :: start_type    ! Start type
    character(len=*),    optional, intent(IN) :: case_name     ! Short case identification
    character(len=*),    optional, intent(IN) :: case_desc     ! Long case description
@@ -1531,6 +1538,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, case_name, case_desc, timing
 
 !-------------------------------------------------------------------------------
 
+    if ( present(cime_model)     ) infodata%cime_model     = cime_model
     if ( present(start_type)     ) infodata%start_type     = start_type
     if ( present(case_name)      ) infodata%case_name      = case_name
     if ( present(case_desc)      ) infodata%case_desc      = case_desc
@@ -1806,6 +1814,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
 ! Notes:
 !-------------------------------------------------------------------------------
 
+    call shr_mpi_bcast(infodata%cime_model,            mpicom)
     call shr_mpi_bcast(infodata%start_type,            mpicom)
     call shr_mpi_bcast(infodata%case_desc,             mpicom)
     call shr_mpi_bcast(infodata%model_version,         mpicom)
@@ -2296,6 +2305,11 @@ subroutine seq_infodata_Check( infodata )
 ! Notes:
 !-------------------------------------------------------------------------------
 
+    ! --- CIME model ------
+    if ( trim(infodata%cime_model) /= 'acme' .and. trim(infodata%cime_model) /= 'cesm') then
+       call shr_sys_abort( subname//': cime_model must be set to acme or cesm, aborting')
+    end if
+
     ! --- Case name ------
     lastchar = len(infodata%case_name)
     if ( len_trim(infodata%case_name) == 0) then
@@ -2428,6 +2442,7 @@ SUBROUTINE seq_infodata_print( infodata )
 !-------------------------------------------------------------------------------
 
 !    if (loglevel > 0) then
+       write(logunit,F0A) subname,'CIME model               = ', trim(infodata%cime_model)
        write(logunit,F0A) subname,'Start type               = ', trim(infodata%start_type)
        write(logunit,F0A) subname,'Case name                = ', trim(infodata%case_name)
        write(logunit,F0A) subname,'Case description         = ', trim(infodata%case_desc)

@@ -4,7 +4,7 @@ Interface to the env_mach_specific.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
-
+from CIME.utils import transform_vars
 import string
 
 logger = logging.getLogger(__name__)
@@ -22,11 +22,35 @@ class EnvMachSpecific(EnvBase):
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
-        items = ("module_system", "environment_variables", "mpirun")
+        items = ("module_system", "environment_variables", "mpirun", "run_exe","run_misc_suffix")
+        default_run_exe_node = machobj.get_node("default_run_exe")
+        default_run_misc_suffix_node = machobj.get_node("default_run_misc_suffix")
+
         for item in items:
             nodes = machobj.get_first_child_nodes(item)
-            for node in nodes:
-                self.add_child(node)
+            if item == "run_exe" or item == "run_misc_suffix":
+                newnode = ET.Element(item)
+                newnode.tag = "entry"
+                newnode.set("id", item)
+                if len(nodes) == 0:
+                    if item == "run_exe":
+                        value = default_run_exe_node.text
+                    else:
+                        value =  default_run_misc_suffix_node.text
+                else:
+                    value = nodes[0].text
+                newnode.set("value", value)
+                newnode = self.add_sub_node(newnode, "type", "char")
+                if item == "run_exe":
+                    newnode = self.add_sub_node(newnode, "desc", "executable name")
+                else:
+                    newnode = self.add_sub_node(newnode, "desc", "redirect for job output")
+
+                self.add_child(newnode)
+            else:
+                for node in nodes:
+                    self.add_child(node)
+
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
@@ -303,4 +327,70 @@ class EnvMachSpecific(EnvBase):
     def get_module_system_cmd_path(self, lang):
         cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
         return cmd_nodes.text if cmd_nodes is not None else None
+
+    def get_mpirun(self, case, attribs, check_members=None, job="case.run"):
+        """
+        Find best match, return (executable, {arg_name : text})
+        """
+        mpirun_nodes = self.get_nodes("mpirun")
+        best_match = None
+        best_num_matched = -1
+        default_match = None
+        best_num_matched_default = -1
+        args = {}
+        for mpirun_node in mpirun_nodes:
+            xml_attribs = mpirun_node.attrib
+            all_match = True
+            matches = 0
+            is_default = False
+            for key, value in attribs.iteritems():
+                if key in xml_attribs:
+                    if xml_attribs[key].lower() == "false":
+                        xml_attrib = False
+                    elif xml_attribs[key].lower() == "true":
+                        xml_attrib = True
+                    else:
+                        xml_attrib = xml_attribs[key]
+
+                    if xml_attrib == value:
+                        matches += 1
+                    elif key == "mpilib" and xml_attrib == "default":
+                        is_default = True
+                    else:
+                        all_match = False
+                        break
+
+            for key in xml_attribs:
+                expect(key in attribs, "Unhandled MPI property '%s'" % key)
+
+            if all_match:
+                if is_default:
+                    if matches > best_num_matched_default:
+                        default_match = mpirun_node
+                        best_num_matched_default = matches
+                else:
+                    if matches > best_num_matched:
+                        best_match = mpirun_node
+                        best_num_matched = matches
+
+        expect(best_match is not None or default_match is not None,
+               "Could not find a matching MPI for attributes: %s" % attribs)
+
+        the_match = best_match if best_match is not None else default_match
+
+        # Now that we know the best match, compute the arguments
+        arg_node = self.get_optional_node("arguments", root=the_match)
+        if arg_node is not None:
+            arg_nodes = self.get_nodes("arg", root=arg_node)
+            for arg_node in arg_nodes:
+                arg_value = transform_vars(arg_node.text,
+                                           case=case,
+                                           subgroup=job,
+                                           check_members=check_members,
+                                           default=arg_node.get("default"))
+                args[arg_node.get("name")] = arg_value
+
+        executable = self.get_node("executable", root=the_match)
+
+        return executable.text, args
 
