@@ -3,14 +3,14 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
 import stat
 import time
+import re
+import math
 from CIME.XML.standard_module_setup import *
-from CIME.task_maker import TaskMaker
 from CIME.utils import convert_to_type
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root
 from copy import deepcopy
 
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -216,38 +216,21 @@ class EnvBatch(EnvBase):
         if batchobj.machine_node is not None:
             self.root.append(deepcopy(batchobj.machine_node))
 
-    def make_batch_script(self, input_template, job, case):
+    def make_batch_script(self, input_template, job, case, total_tasks, tasks_per_node, num_nodes):
         expect(os.path.exists(input_template), "input file '%s' does not exist" % input_template)
-        task_maker = TaskMaker(case)
 
-        self.maxthreads = task_maker.maxthreads
-        self.taskgeometry = task_maker.taskgeometry
-        self.threadgeometry = task_maker.threadgeometry
-        self.taskcount = task_maker.taskcount
-        self.thread_count = task_maker.thread_count
-        self.pedocumentation = task_maker.document()
-        self.ptile = task_maker.ptile
-        self.tasks_per_node = task_maker.tasks_per_node
-        self.max_tasks_per_node = task_maker.MAX_TASKS_PER_NODE
-        self.tasks_per_numa = task_maker.tasks_per_numa
-        self.num_tasks = task_maker.totaltasks
+        self.tasks_per_node = tasks_per_node
+        self.num_tasks = total_tasks
+        self.tasks_per_numa = tasks_per_node / 2
 
         task_count = self.get_value("task_count", subgroup=job)
         if task_count == "default":
-            self.sumpes = task_maker.fullsum
-            self.totaltasks = task_maker.totaltasks
-            self.fullsum = task_maker.fullsum
-            self.sumtasks = task_maker.totaltasks
-            self.task_count = task_maker.fullsum
-            self.num_nodes = task_maker.num_nodes
+            self.total_tasks = total_tasks
+            self.num_nodes = num_nodes
         else:
-            self.sumpes = task_count
-            self.totaltasks = task_count
-            self.fullsum = task_count
-            self.sumtasks = task_count
-            self.task_count = task_count
-            self.num_nodes = task_count
-            self.pedocumentation = ""
+            self.total_tasks = task_count
+            self.num_nodes = math.ceil(float(task_count)/float(tasks_per_node))
+        self.pedocumentation = ""
         self.job_id = case.get_value("CASE") + os.path.splitext(job)[1]
         if "pleiades" in case.get_value("MACH"):
             # pleiades jobname needs to be limited to 15 chars
@@ -335,7 +318,7 @@ class EnvBatch(EnvBase):
                 if val is None:
                     val = case.get_resolved_value(name)
 
-                if val is not None and len(val) > 0 and val != "None":
+                if val is not None and len(str(val)) > 0 and val != "None":
                     # Try to evaluate val
                     try:
                         rval = eval(val)

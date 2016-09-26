@@ -184,6 +184,15 @@ Modify user_nl_cpl to edit this.
 <!-- =========================== -->
 
 <entry
+id="cime_model"
+type="char*8"
+category="expdef"
+group="seq_infodata_inparm"
+valid_values="acme,cesm">
+cime model 
+</entry>
+
+<entry
 id="atm_adiabatic"
 type="logical"
 category="expdef"

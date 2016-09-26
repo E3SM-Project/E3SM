@@ -1,10 +1,8 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.XML.machines              import Machines
 from CIME.utils                     import append_status, gzip_existing_file
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.preview_namelists         import preview_namelists
-from CIME.task_maker                import TaskMaker
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 
@@ -82,18 +80,16 @@ def run_model(case):
 ###############################################################################
 
     # Set OMP_NUM_THREADS
-    tm = TaskMaker(case)
-    num_threads = tm.thread_count
-    os.environ["OMP_NUM_THREADS"] = str(num_threads)
+    env_mach_pes = case.get_env("mach_pes")
+    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_value("COMP_CLASSES").split(',')))
 
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-    machine = Machines(machine=case.get_value("MACH"))
-    cmd = machine.get_full_mpirun(tm, case, "case.run")
+    cmd = case.get_mpirun_cmd(job="case.run")
     cmd = case.get_resolved_value(cmd)
-
     logger.info("run command is %s " %cmd)
+
     rundir = case.get_value("RUNDIR")
     run_cmd_no_fail(cmd, from_dir=rundir)
     logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
