@@ -10,6 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
+from CIME.utils                     import get_build_threaded
 from CIME.XML.build                 import Build
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -695,7 +696,6 @@ class Case(object):
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
-                    os.path.join(toolsdir, "taskmaker"),
                     os.path.join(toolsdir, "archive_metadata.sh"),
                     os.path.join(toolsdir, "xmlchange"),
                     os.path.join(toolsdir, "xmlquery"))
@@ -920,3 +920,27 @@ class Case(object):
     def submit_jobs(self, no_batch=False, job=None):
         env_batch = self.get_env('batch')
         env_batch.submit_jobs(self, no_batch=no_batch, job=job)
+
+    def get_mpirun_cmd(self, job="case.run"):
+        env_mach_specific = self.get_env('mach_specific')
+        run_exe = env_mach_specific.get_value("run_exe")
+        run_misc_suffix = env_mach_specific.get_value("run_misc_suffix")
+        run_misc_suffix = "" if run_misc_suffix is None else run_misc_suffix
+        run_suffix = run_exe + run_misc_suffix
+
+        # Things that will have to be matched against mpirun element attributes
+        mpi_attribs = {
+            "compiler" : self.get_value("COMPILER"),
+            "mpilib"   : self.get_value("MPILIB"),
+            "threaded" : get_build_threaded(self)
+            }
+
+        executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+
+        mpi_arg_string = " ".join(args.values())
+
+
+        if self.get_value("BATCH_SYSTEM") == "cobalt":
+            mpi_arg_string += " : "
+
+        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
