@@ -30,13 +30,13 @@ int GPTLprint_memusage (const char *str)
   static const int nbytes = 1024*1024*10; /* allocate 10 MB */
   static double blockstomb;               /* convert blocks to MB */
   void *space;                            /* allocated space */
-
+  
   if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
     return -1;
 
 #if (defined HAVE_SLASHPROC || defined __APPLE__)
   /*
-  ** Determine size in bytes of memory usage info presented by the OS. Method: allocate a
+  ** Determine size in bytes of memory usage info presented by the OS. Method: allocate a 
   ** known amount of memory and see how much bigger the process becomes.
   */
 
@@ -47,7 +47,7 @@ int GPTLprint_memusage (const char *str)
 	/*
 	** Estimate bytes per block, then refine to nearest power of 2.
 	** The assumption is that the OS presents memory usage info in
-	** units that are a power of 2.
+	** units that are a power of 2. 
 	*/
 	bytesperblock = (int) ((nbytes / (double) (size2 - size)) + 0.5);
 	bytesperblock = nearest_powerof2 (bytesperblock);
@@ -57,19 +57,19 @@ int GPTLprint_memusage (const char *str)
     }
     free (space);
   }
-
+  
   if (bytesperblock > 0)
-    printf ("%s size=%.1f MB rss=%.1f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n",
-	    str, size*blockstomb, rss*blockstomb, share*blockstomb,
+    printf ("%s size=%.1f MB rss=%.1f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n", 
+	    str, size*blockstomb, rss*blockstomb, share*blockstomb, 
 	    text*blockstomb, datastack*blockstomb);
   else
-    printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n",
+    printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n", 
 	    str, size, rss, share, text, datastack);
 
 #else
 
   /*
-  ** Use max rss as returned by getrusage. If someone knows how to
+  ** Use max rss as returned by getrusage. If someone knows how to 
   ** get the process size under AIX please tell me.
   */
 
@@ -85,7 +85,7 @@ int GPTLprint_memusage (const char *str)
 }
 
 /*
-** nearest_powerof2:
+** nearest_powerof2: 
 **   Determine nearest integer which is a power of 2.
 **   Note: algorithm can't use anything that requires -lm because this is a library,
 **   and we don't want to burden the user with having to add extra libraries to the
@@ -112,7 +112,7 @@ static int nearest_powerof2 (const int val)
 
   delta1 = val - lower;
   delta2 = higher - val;
-
+  
   if (delta1 < delta2)
     return lower;
   else

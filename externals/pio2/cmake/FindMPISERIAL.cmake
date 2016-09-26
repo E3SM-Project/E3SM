@@ -1,6 +1,6 @@
 # - Try to find MPISERIAL
 #
-# This can be controlled by setting the MPISERIAL_PATH (or, equivalently, the
+# This can be controlled by setting the MPISERIAL_PATH (or, equivalently, the 
 # MPISERIAL environment variable).
 #
 # Once done, this will define:
@@ -38,7 +38,7 @@ foreach (MPISERIAL_comp IN LISTS MPISERIAL_FIND_VALID_COMPONENTS)
 
         # Search for the package
         find_package_component(MPISERIAL COMPONENT ${MPISERIAL_comp})
-
+        
     endif ()
 
 endforeach ()

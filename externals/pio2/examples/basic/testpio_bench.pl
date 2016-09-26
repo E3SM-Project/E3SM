@@ -275,7 +275,7 @@ foreach(keys %attributes){
 	if($attributes{NETCDF_PATH} =~ /netcdf-4/){
 	    $enablenetcdf4="--enable-netcdf4";
 	}
-    }
+    }    
 }
 
 if(defined $suites){
@@ -314,7 +314,7 @@ my %configuration = ( ldx => 0,
                       ldz => 0,
                       partfile => 'null',
                       partdir  => 'foo',
-                      iofmt => 'pnc',
+                      iofmt => 'pnc', 
                       rearr => 'box',
                       numprocsIO => 10,
    		      stride => -1,
@@ -435,7 +435,7 @@ foreach my $child (@list ) {
 	   $configuration{$name}=$value;
      }
      $found = 1;
-  }
+  } 
 }
 #my $suffix = $bname . "-" . $pecount;
 my $suffix = $bname . "_PE-" . $pecount . "_IO-" . $iofmt . "-" . $numIO;
@@ -587,8 +587,8 @@ foreach(keys %attributes){
     }elsif(/ENV_(.*)/){
         print "set $1 $attributes{$_}\n";
 	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
-    }
-
+    }	
+    
 }
 
 
@@ -659,7 +659,7 @@ foreach \$suite (qw(@testsuites)){
     my \@testlist = \"$suffix";
 #    unlink("../pio/Makefile.conf");
 #    copy("testpio_in","$tstdir"); # copy the namelist file into test directory
-
+    
     chdir ("$tstdir");
     my \$test;
     my \$run = "$attributes{run}";
@@ -709,7 +709,7 @@ foreach \$suite (qw(@testsuites)){
 	    open(LOG,\$log);
 	    my \@logout = <LOG>;
 	    close(LOG);
-
+	    
 	    my \$cnt = grep /testpio completed successfully/ , \@logout;
             open(T,">TestStatus");
 	    if(\$cnt>0){
@@ -724,7 +724,7 @@ foreach \$suite (qw(@testsuites)){
 	    close(T);
 	}
     }else{
-	print "suite \$suite FAILED to configure or build\\n";
+	print "suite \$suite FAILED to configure or build\\n";	
     }
 }
 print "test complete on $host \$passcnt tests PASS, \$failcnt tests FAIL\\n";

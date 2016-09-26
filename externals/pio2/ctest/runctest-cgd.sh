@@ -29,7 +29,7 @@ echo "\$CTESTCMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.sh
 chmod +x runctest.sh
 
 # Submit the job to the queue
-jobid=`/usr/local/bin/qsub -l nodes=1:ppn=4 runctest.sh -q short`
+jobid=`/usr/local/bin/qsub -l nodes=1:ppn=4 runctest.sh`
 
 # Wait for the job to complete before exiting
 while true; do

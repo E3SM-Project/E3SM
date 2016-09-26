@@ -26,10 +26,6 @@ Program pio_unit_test_driver
 #if defined( _NETCDF4) && defined(LOGGING)
   integer, external :: nc_set_log_level2
 #endif
-  integer ret_val
-  character(len=80) :: errmsg
-  character(len=80) :: expected
-  
   ! Set up MPI
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
@@ -66,7 +62,7 @@ Program pio_unit_test_driver
 
      ! Ignore namelist values if PIO not built with correct options
      ! (i.e. don't test pnetcdf if not built with pnetcdf)
-     ret_val = PIO_set_log_level(2)
+
 #ifndef _NETCDF
      if (ltest_netcdf) then
         write(*,"(A,1x,A)") "WARNING: can not test netcdf files because PIO", &
@@ -125,16 +121,6 @@ Program pio_unit_test_driver
   fail_cnt = 0
   test_cnt = 0
 
-  ! Test pio_strerror.
-  ret_val = PIO_strerror(-33, errmsg);
-  print *, 'errcode =', -33, ' strerror = ', errmsg
-  expected = 'NetCDF: Not a valid ID'
-  if (trim(errmsg) .ne. expected) then
-     err_msg = 'expected ' // trim(expected) // ' and got ' // trim(errmsg)
-     print *, err_msg
-     call parse(err_msg, fail_cnt)
-  end if
-     
   do test_id=1,ntest
      if (ltest(test_id)) then
         ! Make sure i is a valid test number
@@ -159,7 +145,6 @@ Program pio_unit_test_driver
 #if defined( _NETCDF4) && defined(LOGGING)
         if(master_task) ierr = nc_set_log_level2(3)
 #endif
-        
         ! test_create()
         if (master_task) write(*,"(3x,A,1x)") "testing PIO_createfile..."
         call test_create(test_id, err_msg)

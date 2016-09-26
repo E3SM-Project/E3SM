@@ -1,8 +1,8 @@
 The system is: Linux - 3.10.0-123.el7.x86_64 - x86_64
 Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
-Compiler: /usr/mpi/intel/mvapich2-1.8.1-qlc/bin/mpicc
-Build flags:
-Id flags:
+Compiler: /usr/mpi/intel/mvapich2-1.8.1-qlc/bin/mpicc 
+Build flags: 
+Id flags: 
 
 The output was:
 0
@@ -14,9 +14,9 @@ Compilation of the C compiler identification source "CMakeCCompilerId.c" produce
 The C compiler identification is Intel, found in "/scratch/cluster/katec/ParallelIO/doc/CMakeFiles/3.2.3/CompilerIdC/a.out"
 
 Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
-Compiler: /usr/bin/c++
-Build flags:
-Id flags:
+Compiler: /usr/bin/c++ 
+Build flags: 
+Id flags: 
 
 The output was:
 0
@@ -38,7 +38,7 @@ Building C object CMakeFiles/cmTryCompileExec1905307408.dir/testCCompiler.c.o
 icc: command line remark #10148: option '-i-dynamic' not supported
 Linking C executable cmTryCompileExec1905307408
 /home/katec/cmake/cmake-3.2.3/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1905307408.dir/link.txt --verbose=1
-/usr/mpi/intel/mvapich2-1.8.1-qlc/bin/mpicc       CMakeFiles/cmTryCompileExec1905307408.dir/testCCompiler.c.o  -o cmTryCompileExec1905307408 -rdynamic
+/usr/mpi/intel/mvapich2-1.8.1-qlc/bin/mpicc       CMakeFiles/cmTryCompileExec1905307408.dir/testCCompiler.c.o  -o cmTryCompileExec1905307408 -rdynamic 
 icc: command line remark #10148: option '-i-dynamic' not supported
 gmake[1]: Leaving directory `/scratch/cluster/katec/ParallelIO/doc/CMakeFiles/CMakeTmp'
 
@@ -55,7 +55,7 @@ Building C object CMakeFiles/cmTryCompileExec3327212404.dir/CMakeCCompilerABI.c.
 icc: command line remark #10148: option '-i-dynamic' not supported
 Linking C executable cmTryCompileExec3327212404
 /home/katec/cmake/cmake-3.2.3/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3327212404.dir/link.txt --verbose=1
-/usr/mpi/intel/mvapich2-1.8.1-qlc/bin/mpicc      -v CMakeFiles/cmTryCompileExec3327212404.dir/CMakeCCompilerABI.c.o  -o cmTryCompileExec3327212404 -rdynamic
+/usr/mpi/intel/mvapich2-1.8.1-qlc/bin/mpicc      -v CMakeFiles/cmTryCompileExec3327212404.dir/CMakeCCompilerABI.c.o  -o cmTryCompileExec3327212404 -rdynamic  
 mpicc for MVAPICH2 version 1.8.1
 icc: command line remark #10148: option '-i-dynamic' not supported
 icc version 15.0.2 (gcc version 4.8.3 compatibility)
@@ -190,7 +190,7 @@ Building CXX object CMakeFiles/cmTryCompileExec2556829595.dir/testCXXCompiler.cx
 /usr/bin/c++     -o CMakeFiles/cmTryCompileExec2556829595.dir/testCXXCompiler.cxx.o -c /scratch/cluster/katec/ParallelIO/doc/CMakeFiles/CMakeTmp/testCXXCompiler.cxx
 Linking CXX executable cmTryCompileExec2556829595
 /home/katec/cmake/cmake-3.2.3/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2556829595.dir/link.txt --verbose=1
-/usr/bin/c++        CMakeFiles/cmTryCompileExec2556829595.dir/testCXXCompiler.cxx.o  -o cmTryCompileExec2556829595 -rdynamic
+/usr/bin/c++        CMakeFiles/cmTryCompileExec2556829595.dir/testCXXCompiler.cxx.o  -o cmTryCompileExec2556829595 -rdynamic 
 gmake[1]: Leaving directory `/scratch/cluster/katec/ParallelIO/doc/CMakeFiles/CMakeTmp'
 
 
@@ -205,14 +205,14 @@ Building CXX object CMakeFiles/cmTryCompileExec1080422183.dir/CMakeCXXCompilerAB
 /usr/bin/c++     -o CMakeFiles/cmTryCompileExec1080422183.dir/CMakeCXXCompilerABI.cpp.o -c /home/katec/cmake/cmake-3.2.3/Modules/CMakeCXXCompilerABI.cpp
 Linking CXX executable cmTryCompileExec1080422183
 /home/katec/cmake/cmake-3.2.3/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1080422183.dir/link.txt --verbose=1
-/usr/bin/c++       -v CMakeFiles/cmTryCompileExec1080422183.dir/CMakeCXXCompilerABI.cpp.o  -o cmTryCompileExec1080422183 -rdynamic
+/usr/bin/c++       -v CMakeFiles/cmTryCompileExec1080422183.dir/CMakeCXXCompilerABI.cpp.o  -o cmTryCompileExec1080422183 -rdynamic  
 Using built-in specs.
 COLLECT_GCC=/usr/bin/c++
 COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/4.8.3/lto-wrapper
 Target: x86_64-redhat-linux
 Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu --enable-languages=c,c++,objc,obj-c++,java,fortran,ada,go,lto --enable-plugin --enable-initfini-array --disable-libgcj --with-isl=/builddir/build/BUILD/gcc-4.8.3-20140911/obj-x86_64-redhat-linux/isl-install --with-cloog=/builddir/build/BUILD/gcc-4.8.3-20140911/obj-x86_64-redhat-linux/cloog-install --enable-gnu-indirect-function --with-tune=generic --with-arch_32=x86-64 --build=x86_64-redhat-linux
 Thread model: posix
-gcc version 4.8.3 20140911 (Red Hat 4.8.3-9) (GCC)
+gcc version 4.8.3 20140911 (Red Hat 4.8.3-9) (GCC) 
 COMPILER_PATH=/usr/local/intel-cluster-15.0.2.164/:/usr/libexec/gcc/x86_64-redhat-linux/4.8.3/:/usr/libexec/gcc/x86_64-redhat-linux/4.8.3/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/4.8.3/:/usr/lib/gcc/x86_64-redhat-linux/
 LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.3/:/usr/lib/gcc/x86_64-redhat-linux/4.8.3/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.3/../../../:/lib/:/usr/lib/
 COLLECT_GCC_OPTIONS='-v' '-o' 'cmTryCompileExec1080422183' '-rdynamic' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
@@ -301,7 +301,7 @@ Building CXX object CMakeFiles/cmTryCompileExec2444100226.dir/feature_tests.cxx.
 /usr/bin/c++    -std=c++1y -o CMakeFiles/cmTryCompileExec2444100226.dir/feature_tests.cxx.o -c /scratch/cluster/katec/ParallelIO/doc/CMakeFiles/feature_tests.cxx
 Linking CXX executable cmTryCompileExec2444100226
 /home/katec/cmake/cmake-3.2.3/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2444100226.dir/link.txt --verbose=1
-/usr/bin/c++        CMakeFiles/cmTryCompileExec2444100226.dir/feature_tests.cxx.o  -o cmTryCompileExec2444100226 -rdynamic
+/usr/bin/c++        CMakeFiles/cmTryCompileExec2444100226.dir/feature_tests.cxx.o  -o cmTryCompileExec2444100226 -rdynamic 
 gmake[1]: Leaving directory `/scratch/cluster/katec/ParallelIO/doc/CMakeFiles/CMakeTmp'
 
 
@@ -375,7 +375,7 @@ Building CXX object CMakeFiles/cmTryCompileExec295155124.dir/feature_tests.cxx.o
 /usr/bin/c++    -std=c++11 -o CMakeFiles/cmTryCompileExec295155124.dir/feature_tests.cxx.o -c /scratch/cluster/katec/ParallelIO/doc/CMakeFiles/feature_tests.cxx
 Linking CXX executable cmTryCompileExec295155124
 /home/katec/cmake/cmake-3.2.3/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec295155124.dir/link.txt --verbose=1
-/usr/bin/c++        CMakeFiles/cmTryCompileExec295155124.dir/feature_tests.cxx.o  -o cmTryCompileExec295155124 -rdynamic
+/usr/bin/c++        CMakeFiles/cmTryCompileExec295155124.dir/feature_tests.cxx.o  -o cmTryCompileExec295155124 -rdynamic 
 gmake[1]: Leaving directory `/scratch/cluster/katec/ParallelIO/doc/CMakeFiles/CMakeTmp'
 
 
@@ -449,7 +449,7 @@ Building CXX object CMakeFiles/cmTryCompileExec3307289814.dir/feature_tests.cxx.
 /usr/bin/c++    -std=c++98 -o CMakeFiles/cmTryCompileExec3307289814.dir/feature_tests.cxx.o -c /scratch/cluster/katec/ParallelIO/doc/CMakeFiles/feature_tests.cxx
 Linking CXX executable cmTryCompileExec3307289814
 /home/katec/cmake/cmake-3.2.3/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3307289814.dir/link.txt --verbose=1
-/usr/bin/c++        CMakeFiles/cmTryCompileExec3307289814.dir/feature_tests.cxx.o  -o cmTryCompileExec3307289814 -rdynamic
+/usr/bin/c++        CMakeFiles/cmTryCompileExec3307289814.dir/feature_tests.cxx.o  -o cmTryCompileExec3307289814 -rdynamic 
 gmake[1]: Leaving directory `/scratch/cluster/katec/ParallelIO/doc/CMakeFiles/CMakeTmp'
 
 

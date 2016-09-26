@@ -44,7 +44,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
    %> module load git/2.3.0<br>
    %> module load cmake/3.0.2<br>
    %> module load netcdf-mpi/4.3.3.1<br>
-   %> module load pnetcdf/1.6.1<br>
+   %> module load pnetcdf/1.6.0<br>
 
 + GNU
 
@@ -54,7 +54,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
    %> module load git/2.3.0<br>
    %> module load cmake/3.0.2<br>
    %> module load netcdf-mpi/4.3.3.1<br>
-   %> module load pnetcdf/1.6.1<br>
+   %> module load pnetcdf/1.6.0<br>
 
 + PGI
 
@@ -64,7 +64,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
    %> module load git/2.3.0<br>
    %> module load cmake/3.0.2<br>
    %> module load netcdf-mpi/4.3.3.1<br>
-   %> module load pnetcdf/1.6.1<br>
+   %> module load pnetcdf/1.6.0<br>
 
 <li>Environment Variables
 
@@ -103,7 +103,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
   %> module load cmake/3.0.0<br>
   %> module load cray-hdf5-parallel/1.8.14<br>
   %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
-  %> module load cray-parallel-netcdf/1.6.1<br>
+  %> module load cray-parallel-netcdf/1.6.0<br>
 
 + GNU
 
@@ -117,7 +117,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
   %> module load cmake/3.0.0<br>
   %> module load cray-hdf5-parallel/1.8.14<br>
   %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
-  %> module load cray-parallel-netcdf/1.6.1<br>
+  %> module load cray-parallel-netcdf/1.6.0<br>
 
 + Cray
 
@@ -132,7 +132,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
   %> module load cmake/3.0.0<br>
   %> module load cray-hdf5-parallel/1.8.14<br>
   %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
-  %> module load cray-parallel-netcdf/1.6.1<br>
+  %> module load cray-parallel-netcdf/1.6.0<br>
 
 <li>Environment Variables
 
@@ -178,7 +178,7 @@ And then set the following environment variables to add in the rest of the libra
   %> setenv LIBZ /soft/libraries/alcf/current/xl/ZLIB<br>
   %> setenv HDF5 /soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213<br>
   %> setenv NETCDF /soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/V1R2M2-20150213<br>
-  %> setenv PNETCDF /soft/libraries/pnetcdf/1.6.1/cnk-xl/V1R2M2-20150213<br>
+  %> setenv PNETCDF /soft/libraries/pnetcdf/1.6.0/cnk-xl/V1R2M2-20150213<br>
   %> setenv CC /soft/compilers/wrappers/xl/mpixlc_r<br>
   %> setenv FC /soft/compilers/wrappers/xl/mpixlf90_r<br>
 
@@ -209,7 +209,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
   %> module load cmake<br>
   %> module load cray-hdf5-parallel/1.8.14<br>
   %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
-  %> module load cray-parallel-netcdf/1.6.1<br>
+  %> module load cray-parallel-netcdf/1.6.0<br>
 
 + PGI
 
@@ -219,7 +219,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
   %> module load cmake<br>
   %> module load cray-hdf5-parallel/1.8.14<br>
   %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
-  %> module load cray-parallel-netcdf/1.6.1<br>
+  %> module load cray-parallel-netcdf/1.6.0<br>
 
 <li>Environment Variables
 
@@ -477,5 +477,5 @@ variables to these tests will increase the time significantly.
 
 </ol>
 
-_Last updated: 05-16-2016_
+_Last updated: 11-18-2015_
 */
