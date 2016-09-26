@@ -80,7 +80,7 @@
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+      <arg name="num_tasks" > -n $TOTALPES</arg>
       <arg name="thread_count" > -c {{ thread_count }}</arg>
 
     </arguments>
@@ -196,7 +196,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+	<arg name="num_tasks" > -n $TOTALPES</arg>
 	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
     </mpirun>
@@ -325,7 +325,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
 </machine>
@@ -357,7 +357,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -411,7 +411,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -467,7 +467,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
@@ -520,8 +520,8 @@
     <executable>mpiexec</executable>
     <arguments>
       <arg name="bind"> --bind-to-core</arg>
-      <arg name="num_tasks"> --n {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks"> --n $TOTALPES</arg>
+      <arg name="tasks_per_node"> --npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -590,8 +590,8 @@
     <executable>mpiexec</executable>
     <arguments>
       <arg name="bind"> --bind-to-core</arg>
-      <arg name="num_tasks"> --n {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks"> --n $TOTALPES</arg>
+      <arg name="tasks_per_node"> --npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -656,7 +656,7 @@
          <mpirun mpilib="mvapich">
            <executable>mpiexec</executable>
            <arguments>
-             <arg name="num_tasks"> -n {{ num_tasks }} </arg>
+             <arg name="num_tasks"> -n $TOTALPES </arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mpi-serial">
@@ -952,7 +952,7 @@
 	   <executable>srun</executable>
 	   <arguments>
 	     <arg name="mpinone"> --mpi=none</arg>
-	     <arg name="num_tasks"> --ntasks={{ num_tasks }}</arg>
+	     <arg name="num_tasks"> --ntasks=$TOTALPES</arg>
 	     <arg name="cpubind"> --cpu_bind=sockets</arg>
 	     <arg name="cpubind"> --cpu_bind=verbose</arg>
              <arg name="killonbadexit"> --kill-on-bad-exit</arg>
@@ -985,7 +985,7 @@
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
 	      <arguments>
-			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -np $TOTALPES</arg>
 			<arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
 	      </arguments>
          </mpirun>
@@ -1033,7 +1033,7 @@
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
 	      <arguments>
-			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -np $TOTALPES</arg>
                         <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
 	      </arguments>
          </mpirun>
@@ -1069,7 +1069,7 @@
       <mpirun mpilib="openmpi" compiler="gnu">
         <executable args="default">/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/openmpi-1.10.2-w26llp27jmybo7wlgoqxjrtptltmripg/bin/mpirun</executable>
         <arguments>
-          <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+          <arg name="num_tasks"> -np $TOTALPES</arg>
           <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
         </arguments>
       </mpirun>
@@ -1126,8 +1126,8 @@
       <arguments>
 	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-        <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-        <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
+        <arg name="num_tasks" > -n $TOTALPES</arg>
+        <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
         <arg name="thread_count" > -d {{ thread_count }}</arg>
         <arg name="numa_node" > -cc numa_node </arg>
       </arguments>
@@ -1293,8 +1293,8 @@
            <arguments>
              <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-             <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
+             <arg name="num_tasks" > -n $TOTALPES</arg>
+             <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
              <arg name="thread_count" > -d {{ thread_count }}</arg>
              <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
@@ -1419,19 +1419,19 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mvapich">
 		<executable>srun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
@@ -1503,19 +1503,19 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mvapich">
 		<executable>srun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
@@ -1657,9 +1657,9 @@
          <mpirun mpilib="default">
            <executable>aprun</executable>
              <arguments>
-                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+                <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
-                <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
+                <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
                 <arg name="thread_count"> -d {{ thread_count }}</arg>
              </arguments>
          </mpirun>
@@ -1696,9 +1696,9 @@
          <mpirun mpilib="default">
            <executable>aprun</executable>
              <arguments>
-                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+                <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
-                <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
+                <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
                 <arg name="thread_count"> -d {{ thread_count }}</arg>
              </arguments>
          </mpirun>
@@ -1726,15 +1726,15 @@
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
 </machine>
@@ -1762,15 +1762,15 @@
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
 </machine>
