@@ -25,10 +25,10 @@ options, args = parser.parse_args()
 if not options.exp:
     sys.exit('Error: No experiment specified.  Please specify an experiment to visualize with the -e option')
 experiment = options.exp.lower()  # allow lower or upper case to be input, but use lower case in the script logic
-if experiment in ('a','b','c','d','f'):
+if experiment in ('a','b','c','d','f', 'g'):
     print 'Visualizing EISMINT2 Experiment ' + experiment
 else:
-    sys.exit("Error: Invalid experiment specified.  Please specify an experiment between 'a' and 'f', excluding 'd'")
+    sys.exit("Error: Invalid experiment specified.  Please specify an experiment between 'a' and 'g', excluding 'e'")
 
 
 
@@ -237,9 +237,11 @@ fig.suptitle('Payne et al. Fig. 5, 7, or 8', fontsize=14, fontweight='bold')
 
 # get indices for given time
 if experiment =='b':
-  endTime = 40000.0
+    endTime = 40000.0
+elif experiment == 'g':
+    endTime = 40000.0   #WHL - Might change later to 80000
 else:
-  endTime = 80000.0
+    endTime = 80000.0
 
 # get index at divide - we set this up to be 750,750
 divideIndex = np.logical_and( xCell == 750.0, yCell == 750.0)
@@ -269,8 +271,9 @@ b_bench = {'stattype':'relative', 'volume':(-2.589, -3.079, -2.132), 'area':(0.0
 c_bench = {'stattype':'relative', 'volume':(-28.505, -29.226, -28.022), 'area':(-19.515, -20.369, -16.815), 'meltfraction':(-27.806, -39.353, -7.982), 'dividethickness':(-12.928, -13.948, -12.447), 'dividebasaltemp':(3.707, 3.389, 4.004)}
 d_bench = {'stattype':'relative', 'volume':(-12.085, -12.890, -11.654), 'area':(-9.489, -10.184, -6.924), 'meltfraction':(-1.613, -4.744, 1.001), 'dividethickness':(-2.181, -2.517, -1.985), 'dividebasaltemp':(-0.188, -0.209, -0.149)}
 f_bench = {'stattype':'absolute', 'volume':(0.0, 0.0, 0.0), 'area':(0.0, 0.0, 0.0), 'meltfraction':(0.0, 0.0, 0.0), 'dividethickness':(0.0, 0.0, 0.0), 'dividebasaltemp':(0.0, 0.0, 0.0)}
+g_bench = {'stattype':'absolute', 'volume':(1.589, 1.503, 2.205), 'area':(1.032, 1.016, 1.087), 'meltfraction':(0.352, 0.250, 0.780), 'dividethickness':(2365.206, 2212.550, 3681.431), 'dividebasaltemp':(249.134, 247.700, 255.381)}
 # Setup dictionary of dictionaries for each experiment
-benchmarks = {'a':a_bench, 'b':b_bench, 'c':c_bench, 'd':d_bench, 'f':f_bench}
+benchmarks = {'a':a_bench, 'b':b_bench, 'c':c_bench, 'd':d_bench, 'f':f_bench, 'g':g_bench}
 
 
 bench = benchmarks[experiment]  # Get the benchmark dictionary

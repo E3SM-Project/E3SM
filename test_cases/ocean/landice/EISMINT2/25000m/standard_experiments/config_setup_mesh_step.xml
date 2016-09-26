@@ -27,6 +27,7 @@
                         <argument flag="-o">landice_grid.nc</argument>
                         <argument flag="-l">10</argument>
                         <argument flag="--thermal"></argument>
+                        <argument flag="--beta"></argument>
                 </step>
 
                 <!-- Set up needed graph file -->
