@@ -193,36 +193,6 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
-
-            # Compute cost based on PE count
-            pval = 1
-            pcnt = 0
-            while pval < pestot:
-                pval *= 2
-                pcnt += 6 # (scaling like sqrt(6/10))
-            pcost = 3 - pcnt / 10 # (3 is 64 with 6)
-
-            # Compute cost based on DEBUG
-            dcost = 3 if debug else 0
-
-            # Compute cost based on run length
-            # For simplicity, we use a heuristic just based on STOP_OPTION (not considering
-            # STOP_N), and only deal with options longer than ndays
-            lcost = 0
-            if "nmonth" in case.get_value("STOP_OPTION"):
-                # N months costs 30x as much as N days; since cost is based on log-base-2, add 5
-                lcost = 5
-            elif "nyear" in case.get_value("STOP_OPTION"):
-                # N years costs 365x as much as N days; since cost is based on log-base-2, add 9
-                lcost = 9
-
-            estcost = pcost + dcost + lcost
-            for cost in ["CCSM_CCOST", "CCSM_GCOST", "CCSM_TCOST", "CCSM_CCOST"]:
-                estcost += case.get_value(cost)
-
-            case.set_value("CCSM_PCOST", pcost)
-            case.set_value("CCSM_ESTCOST", estcost)
-
             # create batch file
             logger.info("Creating batch script case.run")
 
