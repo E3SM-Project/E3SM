@@ -23,19 +23,19 @@ NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
 TEST_NO_BASELINES_COMMENT = "BFAIL" # Implies baseline directory is missing in the baseline comparison phase
 
 # The valid phases
-INITIAL_PHASE          = "INIT"
-CREATE_NEWCASE_PHASE   = "CREATE_NEWCASE"
-XML_PHASE              = "XML"
-SETUP_PHASE            = "SETUP"
-NAMELIST_PHASE         = "NLCOMP"
-SHAREDLIB_BUILD_PHASE  = "SHAREDLIB_BUILD"
-MODEL_BUILD_PHASE      = "MODEL_BUILD"
-RUN_PHASE              = "RUN"
-THROUGHPUT_PHASE       = "TPUTCOMP"
-MEMCOMP_PHASE          = "MEMCOMP"
-MEMLEAK_PHASE          = "MEMLEAK"
-COMPARE_PHASE          = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
-GENERATE_PHASE         = "GENERATE"
+INITIAL_PHASE         = "INIT"
+CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
+XML_PHASE             = "XML"
+SETUP_PHASE           = "SETUP"
+NAMELIST_PHASE        = "NLCOMP"
+SHAREDLIB_BUILD_PHASE = "SHAREDLIB_BUILD"
+MODEL_BUILD_PHASE     = "MODEL_BUILD"
+RUN_PHASE             = "RUN"
+THROUGHPUT_PHASE      = "TPUTCOMP"
+MEMCOMP_PHASE         = "MEMCOMP"
+MEMLEAK_PHASE         = "MEMLEAK"
+COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
+GENERATE_PHASE        = "GENERATE"
 
 ALL_PHASES = [INITIAL_PHASE,
               CREATE_NEWCASE_PHASE,
@@ -223,7 +223,7 @@ class TestStatus(object):
         rv = TEST_PASS_STATUS
         run_phase_found = False
         for phase, data in self._phase_statuses.iteritems():
-            status  = data[0]
+            status = data[0]
             if phase == RUN_PHASE:
                 run_phase_found = True
 
