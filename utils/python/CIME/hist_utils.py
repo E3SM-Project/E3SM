@@ -3,6 +3,7 @@ Functions for actions pertaining to history files.
 """
 
 from CIME.XML.standard_module_setup import *
+from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
 import logging, glob, os, shutil, re
 logger = logging.getLogger(__name__)
@@ -277,7 +278,7 @@ def compare_baseline(case, baseline_dir=None):
 
     for bdir in dirs_to_check:
         if not os.path.isdir(bdir):
-            return False, "ERROR BFAIL baseline directory '%s' does not exist" % bdir
+            return False, "ERROR %s baseline directory '%s' does not exist" % TEST_NO_BASELINES_COMMENT,bdir
 
     return _compare_hists(case, rundir, basecmp_dir)
 
