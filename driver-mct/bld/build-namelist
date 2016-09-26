@@ -35,6 +35,7 @@ OPTIONS
      -help [or -h]         Print usage to STDOUT.
      -silent               Turn on silent mode
      -verbose              Turn on verbose echoing of informational messages.
+     -cime_model           CIME_MODEL (acme or cesm)
      -caseroot             CASEROOT directory variable
      -cimeroot             CIMEROOT directory variable
      -grid                 GRID variable
@@ -74,6 +75,7 @@ if ($ProgDir) {
 
 my %opts = ( help        => 0,
 	     silent      => 0,
+	     cime_model  => 0,
 	     caseroot    => 0,
 	     cimeroot    => 0,
 	     grid        => 0,
@@ -89,6 +91,7 @@ GetOptions(
     "infile=s"      => \$opts{'infile'},
     "s|silent"      => \$opts{'silent'},
     "v|verbose"     => \$opts{'verbose'},
+    "cime_model=s"  => \$opts{'cime_model'},
     "caseroot=s"    => \$opts{'caseroot'},
     "cimeroot=s"    => \$opts{'cimeroot'},
     "grid=s"        => \$opts{'grid'},
@@ -118,6 +121,7 @@ if ($opts{'silent'})  { $print = 0; }
 if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
 
+my $CIME_MODEL  = $opts{'cime_model'};
 my $CASEROOT    = $opts{'caseroot'};
 my $CIMEROOT    = $opts{'cimeroot'};
 my $GRID        = $opts{'grid'};
@@ -368,6 +372,8 @@ add_default($nl, 'cplflds_custom', 'val'=>'');
 #############################################
 # namelist group: seq_infodata_inparm       #
 #############################################
+
+add_default($nl, 'cime_model', 'val'=>$CIME_MODEL);
 
 my $PTS_MODE = "$xmlvars{'PTS_MODE'}";
 
