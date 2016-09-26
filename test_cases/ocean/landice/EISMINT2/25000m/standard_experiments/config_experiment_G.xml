@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<config case="experiment_G">
+        <!-- add needed files/executables -->
+        <add_link source="../setup_mesh/graph.info" dest="."/>
+        <add_link source="../setup_mesh/graph.info.part.4" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_executable source="model" dest="landice_model"/>
+        <!-- link in scripts that the user will need -->
+        <add_link source_path="script_configuration_dir" source="setup_initial_conditions_EISMINT2.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="visualize_output_EISMINT2.py" dest="."/>
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="EISMINT2_25000m_template.xml" path_base="script_resolution_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="EISMINT2_25000m_template.xml" path_base="script_resolution_dir"/>
+        </streams>
+
+</config>
+
