@@ -252,19 +252,21 @@ module seq_flds_mod
  contains
 !----------------------------------------------------------------------------
 
-   subroutine seq_flds_set(nmlfile, ID)
+   subroutine seq_flds_set(nmlfile, ID, infodata)
 
 ! !USES:
      use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
      use shr_string_mod, only : shr_string_listIntersect
      use shr_mpi_mod,    only : shr_mpi_bcast
      use glc_elevclass_mod, only : glc_elevclass_init
+     use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
 
 ! !INPUT/OUTPUT PARAMETERS:
      character(len=*), intent(in) :: nmlfile   ! Name-list filename
      integer         , intent(in) :: ID        ! seq_comm ID
+     type(seq_infodata_type), intent(in) :: infodata
 
-     !----- local -----
+! !LOCAL VARIABLES:
      integer :: mpicom             ! MPI communicator
      integer :: ierr               ! I/O error code
      integer :: unitn              ! Namelist unit number to read
@@ -276,6 +278,7 @@ module seq_flds_mod
      integer            :: num
      character(len=  2) :: cnum
      character(len=CSS) :: name
+     character(len=CSS) :: cime_model
 
      character(CXX) :: dom_coord  = ''
      character(CXX) :: dom_other  = ''
@@ -351,6 +354,8 @@ module seq_flds_mod
 !-------------------------------------------------------------------------------
 
      call seq_comm_setptrs(ID,mpicom=mpicom)
+
+     call seq_infodata_GetData(infodata, cime_model=cime_model)
 
      !---------------------------------------------------------------------------
      ! Read in namelist for use cases
@@ -626,9 +631,11 @@ module seq_flds_mod
 
      ! pressure at the lowest model level (Pa)
      call seq_flds_add(a2x_states,"Sa_pbot")
-     call seq_flds_add(x2o_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
+     if (cime_model == 'acme') then
+        call seq_flds_add(x2o_states,"Sa_pbot")
+     end if
      longname = 'Pressure at the lowest model level'
      stdname  = 'air_pressure'
      units    = 'Pa'
@@ -1337,16 +1344,18 @@ module seq_flds_mod
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Sea ice basal pressure (ACME only)
-     call seq_flds_add(i2x_states,"Si_bpress")
-     call seq_flds_add(x2o_states,"Si_bpress")
-     longname = 'Sea ice basal pressure'
-     stdname  = 'cice_basal_pressure'
-     units    = 'Pa'
-     attname  = 'Si_bpress'
-     call metadata_set(attname, longname, stdname, units)
+     if (trim(cime_model) == 'acme') then
+        ! Sea ice basal pressure 
+        call seq_flds_add(i2x_states,"Si_bpress")
+        call seq_flds_add(x2o_states,"Si_bpress")
+        longname = 'Sea ice basal pressure'
+        stdname  = 'cice_basal_pressure'
+        units    = 'Pa'
+        attname  = 'Si_bpress'
+        call metadata_set(attname, longname, stdname, units)
+     end if
 
-     ! Ocean melt and freeze potential -- ONLY used by data models
+     ! Ocean melt and freeze potential 
      call seq_flds_add(o2x_fluxes,"Fioo_q")
      call seq_flds_add(x2i_fluxes,"Fioo_q")
      longname = 'Ocean melt and freeze potential'
@@ -1355,23 +1364,27 @@ module seq_flds_mod
      attname  = 'Fioo_q'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Ocean melt (q<0) potential
-     call seq_flds_add(o2x_fluxes,"Fioo_meltp")
-     call seq_flds_add(x2i_fluxes,"Fioo_meltp")
-     longname = 'Ocean melt (q<0) potential'
-     stdname  = 'surface_snow_and_ice_melt_heat_flux'
-     units    = 'W m-2'
-     attname  = 'Fioo_meltp'
-     call metadata_set(attname, longname, stdname, units)
+     if (trim(cime_model) == 'acme') then
+        ! Ocean melt (q<0) potential
+        call seq_flds_add(o2x_fluxes,"Fioo_meltp")
+        call seq_flds_add(x2i_fluxes,"Fioo_meltp")
+        longname = 'Ocean melt (q<0) potential'
+        stdname  = 'surface_snow_and_ice_melt_heat_flux'
+        units    = 'W m-2'
+        attname  = 'Fioo_meltp'
+        call metadata_set(attname, longname, stdname, units)
+     end if
 
-     ! Ocean frazil production
-     call seq_flds_add(o2x_fluxes,"Fioo_frazil")
-     call seq_flds_add(x2i_fluxes,"Fioo_frazil")
-     longname = 'Ocean frazil production'
-     stdname  = 'ocean_frazil_ice_production'
-     units    = 'kg m-2 s-1'
-     attname  = 'Fioo_frazil'
-     call metadata_set(attname, longname, stdname, units)
+     if (trim(cime_model) == 'acme') then
+        ! Ocean frazil production
+        call seq_flds_add(o2x_fluxes,"Fioo_frazil")
+        call seq_flds_add(x2i_fluxes,"Fioo_frazil")
+        longname = 'Ocean frazil production'
+        stdname  = 'ocean_frazil_ice_production'
+        units    = 'kg m-2 s-1'
+        attname  = 'Fioo_frazil'
+        call metadata_set(attname, longname, stdname, units)
+     end if
 
      ! Heat flux from melting
      call seq_flds_add(i2x_fluxes,"Fioi_melth")
@@ -1498,7 +1511,7 @@ module seq_flds_mod
      !------------------------------
      ! ice<->ocn only exchange - BGC
      !------------------------------
-     if (flds_bgc) then
+     if (trim(cime_model) == 'acme' .and. flds_bgc) then
 
         ! Ocean algae concentration 1 - diatoms?
         call seq_flds_add(o2x_states,"So_algae1")
