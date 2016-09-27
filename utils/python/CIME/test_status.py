@@ -138,8 +138,9 @@ class TestStatus(object):
                     fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
 
     def flush(self):
-        with open(self._filename, "w") as fd:
-            self.phase_statuses_dump(fd)
+        if self._phase_statuses:
+            with open(self._filename, "w") as fd:
+                self.phase_statuses_dump(fd)
 
     def _parse_test_status(self, file_contents):
         """
