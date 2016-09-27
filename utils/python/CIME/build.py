@@ -4,7 +4,7 @@ functions for building CIME models
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status
 from CIME.preview_namelists     import preview_namelists
-from CIME.check_input_data      import check_input_data
+from CIME.check_input_data      import check_all_input_data
 from CIME.provenance            import save_build_provenance
 
 import glob, shutil, time, threading, gzip, subprocess
@@ -313,69 +313,6 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     logger.info("Time spent building: %f sec" % (t3 - t2))
 
     return True
-
-###############################################################################
-def check_all_input_data(case):
-###############################################################################
-
-    success = check_input_data(case=case, download=True)
-    expect(success, "Failed to download input data")
-
-    get_refcase  = case.get_value("GET_REFCASE")
-    run_type     = case.get_value("RUN_TYPE")
-    continue_run = case.get_value("CONTINUE_RUN")
-
-    # We do not fully populate the inputdata directory on every
-    # machine and do not expect every user to download the 3TB+ of
-    # data in our inputdata repository. This code checks for the
-    # existence of inputdata in the local inputdata directory and
-    # attempts to download data from the server if it's needed and
-    # missing.
-    if get_refcase and run_type != "startup" and not continue_run:
-        din_loc_root = case.get_value("DIN_LOC_ROOT")
-        run_refdate  = case.get_value("RUN_REFDATE")
-        run_refcase  = case.get_value("RUN_REFCASE")
-        run_refdir   = case.get_value("RUN_REFDIR")
-        rundir       = case.get_value("RUNDIR")
-
-        refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
-        expect(os.path.isdir(refdir),
-"""
-*****************************************************************
-prestage ERROR: $refdir is not on local disk
-obtain this data from the svn input data repository
-> mkdir -p %s
-> cd %s
-> cd ..
-> svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/%s
-or set GET_REFCASE to FALSE in env_run.xml
-and prestage the restart data to $RUNDIR manually
-*****************************************************************""" % (refdir, refdir, refdir))
-
-        logger.info(" - Prestaging REFCASE (%s) to %s" % (refdir, rundir))
-
-        # prestage the reference case's files.
-
-        if (not os.path.exists(rundir)):
-            logger.debug("Creating run directory: %s"%rundir)
-            os.makedirs(rundir)
-
-        for rcfile in glob.iglob(os.path.join(refdir,"*%s*"%run_refcase)):
-            logger.debug("Staging file %s"%rcfile)
-            rcbaseline = os.path.basename(rcfile)
-            if not os.path.exists("%s/%s" % (rundir, rcbaseline)):
-                os.symlink(rcfile, "%s/%s" % ((rundir, rcbaseline)))
-
-        # copy the refcases' rpointer files to the run directory
-        for rpointerfile in  glob.iglob(os.path.join("%s","*rpointer*") % (refdir)):
-            logger.debug("Copy rpointer %s"%rpointerfile)
-            shutil.copy(rpointerfile, rundir)
-
-
-        for cam2file in  glob.iglob(os.path.join("%s","*.cam2.*") % rundir):
-            camfile = cam2file.replace("cam2", "cam")
-            os.symlink(cam2file, camfile)
-
 
 ###############################################################################
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,

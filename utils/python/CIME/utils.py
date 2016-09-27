@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob
+import logging, gzip, sys, os, time, re, shutil, glob, string, random
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -24,6 +24,9 @@ def expect(condition, error_msg, exc_type=SystemExit):
         #import pdb
         #pdb.set_trace()
         raise exc_type("ERROR: %s" % error_msg)
+
+def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
