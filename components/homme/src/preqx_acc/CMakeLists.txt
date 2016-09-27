@@ -15,6 +15,11 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                             ${UTILS_TIMING_DIR} )
 
 SET(PREQX_SRCS_F90
+  ${SRC_DIR}/test_src/asp_tests.F90
+  ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
+  ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
+  ${SRC_DIR}/test_src/dcmip2012_test4.F90
+  ${SRC_DIR}/test_src/dcmip2012_test5.F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
   ${SRC_SHARE_DIR}/derivative_mod_base.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90
@@ -22,6 +27,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/solver_init_mod_base.F90
   ${SRC_SHARE_DIR}/vertremap_mod_base.F90
   ${SRC_SHARE_DIR}/viscosity_mod_base.F90
+  ${SRC_DIR}/preqx/dcmip_tests.F90
   ${SRC_DIR}/preqx_acc/bndry_mod.F90
   ${SRC_DIR}/preqx_acc/derivative_mod.F90
   ${SRC_DIR}/preqx_acc/edge_mod.F90
@@ -87,11 +93,9 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/namelist_mod.F90 
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_DIR}/checksum_mod.F90 
-  ${SRC_DIR}/baroclinic_inst_mod.F90 
   ${SRC_SHARE_DIR}/diffusion_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_DIR}/asp_tests.F90 
-  ${SRC_SHARE_DIR}/prim_state_mod.F90 
+  ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_DIR}/prim_restart_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90 
   ${SRC_SHARE_DIR}/prim_advance_mod.F90 

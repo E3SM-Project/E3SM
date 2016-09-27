@@ -6,22 +6,22 @@
 #define _DBG_
 module prim_driver_mod
 
-  use kinds,            only: real_kind, iulog, longdouble_kind
-  use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc
   use cg_mod,           only: cg_t
-  use hybrid_mod,       only: hybrid_t
-  use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
-  use prim_si_ref_mod,  only: ref_state_t
-  use solver_mod,       only: blkjac_t
-  use filter_mod,       only: filter_t
   use derivative_mod,   only: derivative_t
-  use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
-                              red_sum, red_sum_int, red_flops, initreductionbuffer
+  use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc
   use element_mod,      only: element_t, timelevels,  allocate_element_desc
-  use thread_mod,       only: nThreadsHoriz, omp_get_num_threads
-  use perf_mod,         only: t_startf, t_stopf
+  use filter_mod,       only: filter_t
   use fvm_mod,          only: fvm_init1,fvm_init2, fvm_init3
   use fvm_control_volume_mod, only: fvm_struct
+  use hybrid_mod,       only: hybrid_t
+  use kinds,            only: real_kind, iulog, longdouble_kind
+  use perf_mod,         only: t_startf, t_stopf
+  use prim_si_ref_mod,  only: ref_state_t
+  use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
+  use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
+                              red_sum, red_sum_int, red_flops, initreductionbuffer
+  use solver_mod,       only: blkjac_t
+  use thread_mod,       only: nThreadsHoriz, omp_get_num_threads
 
 #ifndef CAM
   use column_types_mod, only : ColumnModel_t
@@ -561,46 +561,42 @@ contains
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
   end subroutine prim_init1
-!=======================================================================================================!
 
+  !_____________________________________________________________________
   subroutine prim_init2(elem, fvm, hybrid, nets, nete, tl, hvcoord)
 
-    use parallel_mod, only : parallel_t, haltmp, syncmp, abortmp
-    use time_mod, only : timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
-    use prim_state_mod, only : prim_printstate, prim_diag_scalars
-    use filter_mod, only : filter_t, fm_filter_create, taylor_filter_create, &
-         fm_transfer, bv_transfer
-    use control_mod, only : runtype, integration, filter_mu, filter_mu_advection, test_case, &
-         debug_level, vfile_int, filter_freq, filter_freq_advection, &
-         transfer_type, vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, &
-         s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
-         sub_case, &
-         limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-         hypervis_subcycle_q
-    use control_mod, only : tracer_transport_type
-    use fvm_control_volume_mod, only : fvm_supercycling
+    use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
+    use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
+    use prim_state_mod,       only: prim_printstate, prim_diag_scalars
+    use filter_mod,           only: filter_t, fm_filter_create, taylor_filter_create, fm_transfer, bv_transfer
+    use control_mod,          only: runtype, integration, filter_mu, filter_mu_advection, test_case, &
+                                    debug_level, vfile_int, filter_freq, filter_freq_advection,  transfer_type,&
+                                    vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, s_bv, &
+                                    topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
+                                    sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
+                                    hypervis_subcycle_q, tracer_transport_type
+    use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
+    use thread_mod,           only: nthreads
+    use derivative_mod,       only: derivinit, interpolate_gll2fvm_points, v2pinit
+    use global_norms_mod,     only: test_global_integral, print_cfl
+    use hybvcoord_mod,        only: hvcoord_t
+    use prim_advection_mod,   only: prim_advec_init2, prim_advec_init_deriv, deriv
+    use solver_init_mod,      only: solver_init2
+    use fvm_control_volume_mod, only : n0_fvm, np1_fvm,fvm_supercycling
+
 #ifndef CAM
-    use control_mod, only : pertlim                     !used for homme temperature perturbations
+    use control_mod,          only: pertlim                     !used for homme temperature perturbations
+    use column_model_mod,     only: InitColumnModel
+    use held_suarez_mod,      only: hs0_init_state
+    use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
+    use asp_tests,            only: asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
+    use dcmip_tests,          only: dcmip2012_test3
 #endif
-    use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
+
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
 #endif
-    use thread_mod, only : nthreads
-    use derivative_mod, only : derivinit, interpolate_gll2fvm_points, v2pinit
-    use global_norms_mod, only : test_global_integral, print_cfl
-    use hybvcoord_mod, only : hvcoord_t
-    use prim_advection_mod, only: prim_advec_init2, prim_advec_init_deriv, deriv
-    use solver_init_mod, only: solver_init2
-#ifdef CAM
-#else
-    use column_model_mod, only : InitColumnModel
-    use held_suarez_mod, only : hs0_init_state
-    use baroclinic_inst_mod, only : binst_init_state, jw_baroclinic
-    use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
-#endif
-    use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 
     type (element_t),   intent(inout) :: elem(:)
     type (fvm_struct),  intent(inout) :: fvm(:)
@@ -614,22 +610,21 @@ contains
     ! Local variables
     ! ==================================
 
-    real (kind=real_kind) :: dt              ! "timestep dependent" timestep
-!   variables used to calculate CFL
-    real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
-    real (kind=real_kind) :: dt_dyn_vis      ! viscosity timestep used in dynamics
+    real (kind=real_kind) :: dt                 ! timestep
+
+    ! variables used to calculate CFL
+    real (kind=real_kind) :: dtnu               ! timestep*viscosity parameter
+    real (kind=real_kind) :: dt_dyn_vis         ! viscosity timestep used in dynamics
     real (kind=real_kind) :: dt_tracer_vis      ! viscosity timestep used in tracers
 
     real (kind=real_kind) :: dp
-
-
-    real (kind=real_kind) :: ps(np,np)       ! surface pressure
+    real (kind=real_kind) :: ps(np,np)          ! surface pressure
 
     character(len=80)     :: fname
     character(len=8)      :: njusn
     character(len=4)      :: charnum
 
-    real (kind=real_kind) :: Tp(np)     ! transfer function
+    real (kind=real_kind) :: Tp(np)             ! transfer function
 
     integer :: simday
     integer :: i,j,k,ie,iptr,t,q
@@ -640,17 +635,17 @@ contains
 #ifdef TRILINOS
      integer :: lenx
     real (c_double) ,allocatable, dimension(:) :: xstate(:)
-! state_object is a derived data type passed thru noxinit as a pointer
+    ! state_object is a derived data type passed thru noxinit as a pointer
     type(derived_type) ,target         :: state_object
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 
     type(derived_type) ,target         :: pre_object
-    type(derived_type) ,pointer         :: pptr=>NULL()
+    type(derived_type) ,pointer        :: pptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_pre
 
     type(derived_type) ,target         :: jac_object
-    type(derived_type) ,pointer         :: jptr=>NULL()
+    type(derived_type) ,pointer        :: jptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_jac
 
 !    type(element_t)                    :: pc_elem(size(elem))
@@ -674,13 +669,9 @@ contains
   end interface
 #endif
 
-    ! ==========================
-    ! begin executable code
-    ! ==========================
     if (topology == "cube") then
        call test_global_integral(elem, hybrid,nets,nete)
     end if
-
 
     ! compute most restrictive dt*nu for use by variable res viscosity:
     if (tstep_type == 0) then
@@ -779,8 +770,6 @@ contains
        flt_advection = fm_filter_create(Tp, filter_mu_advection, gp)
     end if
 
-
-
     if (hybrid%masterthread) then
        if (filter_freq>0 .or. filter_freq_advection>0) then
           write(iulog,*) "transfer function type in preq=",transfer_type
@@ -807,16 +796,20 @@ contains
     endif
 
 #ifndef CAM
+
     ! =================================
     ! HOMME stand alone initialization
     ! =================================
 
     call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
+
     if(runtype >= 1) then
+
        ! ===========================================================
        ! runtype==1   Exact Restart
        ! runtype==2   Initial run, but take inital condition from Restart file
        ! ===========================================================
+
        if (hybrid%masterthread) then
           write(iulog,*) 'runtype: RESTART of primitive equations'
        end if
@@ -824,25 +817,38 @@ contains
        call ReadRestart(elem,hybrid%ithr,nets,nete,tl)
 
        ! scale PS to achieve prescribed dry mass
-       if (runtype /= 1) &
-            call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
+       if (runtype /= 1) call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
 
        if (runtype==2) then
-          ! copy prognostic variables:  tl%n0 into tl%nm1
+          ! copy prognostic variables: tl%n0 into tl%nm1
           do ie=nets,nete
-             elem(ie)%state%v(:,:,:,:,tl%nm1)=elem(ie)%state%v(:,:,:,:,tl%n0)
-             elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0) 
-             elem(ie)%state%ps_v(:,:,tl%nm1)=elem(ie)%state%ps_v(:,:,tl%n0)
-             elem(ie)%state%lnps(:,:,tl%nm1)=elem(ie)%state%lnps(:,:,tl%n0)
+             elem(ie)%state%v(:,:,:,:,tl%nm1) = elem(ie)%state%v(:,:,:,:,tl%n0)
+             elem(ie)%state%T(:,:,:,tl%nm1)   = elem(ie)%state%T(:,:,:,tl%n0)
+             elem(ie)%state%ps_v(:,:,tl%nm1)  = elem(ie)%state%ps_v(:,:,tl%n0)
+             elem(ie)%state%lnps(:,:,tl%nm1)  = elem(ie)%state%lnps(:,:,tl%n0)
           enddo
        endif ! runtype==2
     else  ! initial run  RUNTYPE=0
-       ! ===========================================================
-       ! Initial Run  - compute initial condition
-       ! ===========================================================
-       if (hybrid%masterthread) then
-          write(iulog,*) ' runtype: INITIAL primitive equations'
-       endif
+
+       ! initial run - compute initial condition
+       if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
+
+       ! set initial conditions for HOMME stand-alone tests cases
+
+       select case(test_case)
+          case('asp_baroclinic');     call asp_baroclinic   (elem, hybrid,hvcoord,nets,nete,fvm)
+          case('asp_gravity_wave');   call asp_gravity_wave (elem, hybrid,hvcoord,nets,nete, sub_case)
+          case('asp_mountain');       call asp_mountain     (elem, hybrid,hvcoord,nets,nete)
+          case('asp_rossby');         call asp_rossby       (elem, hybrid,hvcoord,nets,nete)
+          case('asp_tracer');         call asp_tracer       (elem, hybrid,hvcoord,nets,nete)
+          case('baroclinic');         call binst_init_state (elem, hybrid, nets, nete, hvcoord)
+          case('dcmip2012_test3');    call dcmip2012_test3  (elem, hybrid,hvcoord,nets,nete)
+          case('held_suarez0');       call hs0_init_state   (elem, hvcoord,nets,nete,300.0_real_kind)
+          case('jw_baroclinic');      call jw_baroclinic    (elem, hybrid,hvcoord,nets,nete)
+          case default;               call abortmp('unrecognized test case')
+       endselect
+
+#if 0
        ! ========================================================
        ! Initialize the test cases
        ! ========================================================
@@ -899,6 +905,7 @@ contains
        if (hybrid%masterthread) then
           write(iulog,*) '...done'
        end if
+#endif
 
        ! scale PS to achieve prescribed dry mass
        call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
@@ -915,6 +922,7 @@ contains
        ! Print state and movie output
        ! ========================================
     end if  ! runtype
+
 #endif
 !$OMP MASTER
     tl%nstep0=2                   ! compute diagnostics starting with step 2 if LEAPFROG
