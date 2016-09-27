@@ -42,7 +42,6 @@ class ERI(SystemTestsCommon):
         clone1, clone2 = [self._case.create_clone(clone_path, keepexe=True) for clone_path in [clone1_path, clone2_path]]
         orig_case = self._case
         orig_casevar = orig_case.get_value("CASE")
-        orig_runtype = orig_case.get_value("RUN_TYPE")
         #
         # determine run lengths needed below
         #
