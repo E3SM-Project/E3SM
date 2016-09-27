@@ -532,14 +532,23 @@
       <valid_values>X,Y</valid_values>
       <desc>rof2ocn flux mapping file decomp type</desc>
     </entry>
-    <entry id="ROF2OCN_RMAPNAME" value="idmap">
+    <entry id="ROF2OCN_LIQ_RMAPNAME" value="idmap">
       <type>char</type>
-      <desc>rof2ocn runoff mapping file</desc>
+      <desc>rof2ocn runoff liquid mapping file</desc>
     </entry>
-    <entry id="ROF2OCN_RMAPTYPE" value="Y">
+    <entry id="ROF2OCN_ICE_RMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>rof2ocn runoff ice mapping file</desc>
+    </entry>
+    <entry id="ROF2OCN_LIQ_RMAPTYPE" value="Y">
       <type>char</type>
       <valid_values>X,Y</valid_values>
-      <desc>rof2ocn runoff mapping file decomp type</desc>
+      <desc>rof2ocn runoff liq mapping file decomp type</desc>
+    </entry>
+    <entry id="ROF2OCN_ICE_RMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>rof2ocn runoff ice mapping file decomp type</desc>
     </entry>
     <entry id="GLC2LND_FMAPNAME" value="idmap">
       <type>char</type>
