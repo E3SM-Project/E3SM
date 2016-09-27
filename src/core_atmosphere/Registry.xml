@@ -1913,6 +1913,51 @@
                 </var_array>
         </var_struct>
 
+        <!-- ===================================================================================== -->
+        <!-- Storage for lateral boundary conditions:                                              -->
+        <!-- Time-level 1 contains tendencies for variables                                        -->
+        <!-- Time-level 2 contains values for variables valid at the end of the boundary interval  -->
+        <!-- ===================================================================================== -->
+        <var_struct name="lbc" time_levs="2">
+                <var name="lbc_u" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}"
+                     description="Lateral boundary tendency of u"/>
+
+                <var name="lbc_w" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
+                     description="Lateral boundary tendency of w"/>
+
+                <var name="lbc_rho_zz" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
+                     description="Lateral boundary tendency of rho_zz"/>
+
+                <var name="lbc_theta_m" type="real" dimensions="nVertLevels nCells Time" units="K s^{-2}"
+                     description="Lateral boundary tendency of theta_m"/>
+
+                <var_array name="lbc_scalars" type="real" dimensions="nVertLevels nCells Time">
+                        <var name="lbc_qv" name_in_code="qv" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of water vapor mixing ratio"/>
+
+                        <var name="lbc_qc" name_in_code="qc" array_group="moist"  packages="bl_mynn_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of cloud water mixing ratio"/>
+
+                        <var name="lbc_qr" name_in_code="qr" array_group="moist"  packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of rain water mixing ratio"/>
+
+                        <var name="lbc_qi" name_in_code="qi" array_group="moist"  packages="bl_mynn_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of ice mixing ratio"/>
+
+                        <var name="lbc_qs" name_in_code="qs" array_group="moist"  packages="mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of snow mixing ratio"/>
+
+                        <var name="lbc_qg" name_in_code="qg" array_group="moist"  packages="mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of graupel mixing ratio"/>
+
+                        <var name="lbc_nr" name_in_code="nr" array_group="number" packages="mp_thompson_in" units="m^{-3} s^{-1}"
+                             description="Lateral boundary tendency of rain number concentration"/>
+
+                        <var name="lbc_ni" name_in_code="ni" array_group="number" packages="bl_mynn_in;mp_thompson_in" units="m^{-3} s^{-1}"
+                             description="Lateral boundary tendency of ice number concentration"/>
+                </var_array>
+        </var_struct>
+
 
 <!-- ================================================================================================== -->
 <!--  DECLARATIONS OF ALL PHYSICS VARIABLES (will need to be moved to a Physics Registry shared by the  -->
