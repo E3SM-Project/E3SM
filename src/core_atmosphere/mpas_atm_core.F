@@ -1515,6 +1515,161 @@ module atm_core
 
    end function calc_vertDeriv_one
    
+   subroutine floodFill_strato(mesh, diag, pvuVal, stratoPV)
+      !Searching down each column from TOA to find 2pvu surface is buggy with stratospheric wave breaking,
+      !since will find 2 pvu at a higher level than "tropopause". This looks to be worse as mesh gets finer and vertical vorticity jumps.
+      !Note that stratospheric blobs may persist for long times w/ slow mixing downstream of mountains or deep convection.
+      !A few quicker fixes (make sure <2pvu for a number of layers; search down from 10PVU instead of TOA) are hacky and not robust.
+      
+      !To alleviate the (hopefully) pockets of wave breaking, we can flood fill from a known
+      !stratosphere region (e.g., model top > 2pvu) and hopefully filter down around any trouble regions.
+      !The problem w/ using only the flood fill is that strong surface PV anomalies can connect to 2pvu, 
+      !and the resulting "flood-filled 2 pvu" can have sizeable areas that are just at the surface while there is clearly a tropopause above (e.g., in a cross-section).
+      !To address large surface blobs, take the flood fill mask and try to go up from the surface to 10 pvu w/in column. If can, all stratosphere. Else, disconnect "surface blob".
+      
+      !The "output" is iLev_DT, which is the vertical index for the level >= pvuVal. If >nVertLevels, pvuVal above column. If <2, pvuVal below column.
+      !Communication between blocks during the flood fill may be needed to treat some edge cases appropriately.
+     
+      implicit none
+      
+      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(inout) :: diag
+      real(kind=RKIND), intent(in) :: pvuVal, stratoPV
+      
+      integer :: iCell, k, nChanged, iNbr, iCellNbr
+      integer, pointer :: nCells, nVertLevels
+      integer, dimension(:), pointer :: nEdgesOnCell, iLev_DT
+      integer, dimension(:,:), pointer :: cellsOnCell
+      
+      real(kind=RKIND) :: sgnHemi, sgn
+      real(kind=RKIND),dimension(:),pointer:: latCell
+      real(kind=RKIND), dimension(:,:), pointer :: ertel_pv
+      
+      integer, dimension(:,:), allocatable :: candInStrato, inStrato
+      
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'latCell', latCell)
+
+      call mpas_pool_get_array(diag, 'ertel_pv', ertel_pv)
+      call mpas_pool_get_array(diag, 'iLev_DT', iLev_DT)
+      
+      allocate(candInStrato(nVertLevels, nCells))
+      allocate(inStrato(nVertLevels, nCells))
+      candInStrato(:,:) = 0
+      inStrato(:,:) = 0
+      !store whether each level above DT to avoid repeating logic. we'll use candInStrato as a isVisited marker further below.
+      do iCell=1,nCells
+         sgnHemi = sign(1.0_RKIND, latCell(iCell)) !at the equator, sign(0)=0
+         if (sgnHemi .EQ. 0.0) sgnHemi = 1.0_RKIND
+         do k=1,nVertLevels
+            sgn = ertel_pv(k,iCell)*sgnHemi-pvuVal
+            if (sgn .GE. 0) candInStrato(k,iCell) = 1
+         end do
+      end do
+      
+      !seed flood fill with model top that's above DT.
+      !can have model top below 2pvu (eg, tropics)
+      nChanged = 0
+      do iCell=1,nCells
+         do k=nVertLevels-5,nVertLevels
+            if (candInStrato(k,iCell) .GT. 0) then
+               inStrato(k,iCell) = 1
+               candInStrato(k,iCell) = 0
+               nChanged = nChanged+1
+            end if
+         end do
+      end do
+      
+      !flood fill from the given seeds. since I don't know enough fortran,
+      !we'll just brute force a continuing loop rather than queue.
+      do while(nChanged .GT. 0)
+        nChanged = 0
+        do iCell=1,nCells
+          do k=nVertLevels,1,-1
+             !update if candidate and neighbor in strato
+             if (candInStrato(k,iCell) .GT. 0) then
+                !nbr above
+                if (k .LT. nVertLevels) then
+                  if (inStrato(k+1,iCell) .GT. 0) then
+                    inStrato(k,iCell) = 1
+                    candInStrato(k,iCell) = 0
+                    nChanged = nChanged+1
+                    cycle
+                  end if
+                end if
+                
+                !side nbrs
+                do iNbr = 1, nEdgesOnCell(iCell)
+                  iCellNbr = cellsOnCell(iNbr,iCell)
+                  if (inStrato(k,iCellNbr) .GT. 0) then
+                    inStrato(k,iCell) = 1
+                    candInStrato(k,iCell) = 0
+                    nChanged = nChanged+1
+                    cycle
+                  end if
+                end do
+                
+                !nbr below
+                if (k .GT. 1) then
+                  if (inStrato(k-1,iCell) .GT. 0) then
+                    inStrato(k,iCell) = 1
+                    candInStrato(k,iCell) = 0
+                    nChanged = nChanged+1
+                    cycle
+                  end if
+                end if
+             end if !candInStrato
+          end do !levels
+        end do !cells
+      end do !while
+      
+      !Detach high surface PV blobs w/o vertical connection to "stratosphere"
+      do iCell=1,nCells
+        if (inStrato(1,iCell) .GT. 0) then
+          !see how high up we can walk in the column
+          do k=2,nVertLevels
+            if (inStrato(k,iCell) .LT. 1) then
+              exit
+            end if !k is highest connected level to sfc
+            sgnHemi = sign(1.0_RKIND, latCell(iCell)) !at the equator, sign(0)=0
+            if (sgnHemi .EQ. 0.0) sgnHemi = 1.0_RKIND
+            sgn = ertel_pv(k,iCell)*sgnHemi-stratoPV
+            if (sgn .LT. 0) then !not actually connected to "stratosphere"
+              inStrato(1:k,iCell) = 0
+            end if
+          end do !k
+        end if !inStrato at sfc
+      end do !iCell
+      
+      !Fill iLev_DT with the lowest level above the tropopause (If DT above column, iLev>nVertLevels. If DT below column, iLev=0.
+      nChanged = 0
+      do iCell=1,nCells
+        do k=1,nVertLevels
+          if (inStrato(k,iCell) .GT. 0) then
+            nChanged = 1
+            exit
+          end if
+        end do !k
+        if (nChanged .GT. 0) then !found lowest level
+          if (k .EQ. 1) then 
+            sgnHemi = sign(1.0_RKIND, latCell(iCell))
+            sgn = ertel_pv(k,iCell)*sgnHemi-pvuVal
+            if (sgn .GT. 0) then !whole column above DT
+              iLev_DT(iCell) = 0
+            end if
+          else
+            iLev_DT(iCell) = k
+          end if
+        else !whole column below DT
+          iLev_DT(iCell) = nVertLevels+2
+        end if
+      end do !iCell
+     
+   end subroutine floodFill_strato
+   
    subroutine interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
       !compute various fields on 2pvu surface using calculated PVU field
       !potential temperature, uZonal, uMeridional, vertical vorticity
@@ -1527,7 +1682,7 @@ module atm_core
       
       integer :: iCell, k
       integer, pointer :: nCells, nVertLevels
-      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:), pointer :: nEdgesOnCell, iLev_DT
       integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, edgesOnCell, verticesOnCell, &
                                           cellsOnVertex
                                           
@@ -1557,15 +1712,16 @@ module atm_core
       call mpas_pool_get_array(diag, 'v_pv', v_pv)
       call mpas_pool_get_array(diag, 'theta_pv', theta_pv)
       call mpas_pool_get_array(diag, 'vort_pv', vort_pv)
+      call mpas_pool_get_array(diag, 'iLev_DT', iLev_DT)
       
       !write(0,*) 'Interpolating u,v,theta,vort to pv '
       
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
-                     ertel_pv, uZonal, u_pv, missingVal)
+                     ertel_pv, uZonal, u_pv, missingVal, iLev_DT)
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
-                     ertel_pv, uMeridional, v_pv, missingVal)
+                     ertel_pv, uMeridional, v_pv, missingVal, iLev_DT)
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
-                     ertel_pv, theta, theta_pv, missingVal)
+                     ertel_pv, theta, theta_pv, missingVal, iLev_DT)
                      
       allocate(vVort(nVertLevels, nCells))
       do iCell=1,nCells
@@ -1575,7 +1731,7 @@ module atm_core
          end do
       end do
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
-                     ertel_pv, vVort, vort_pv, missingVal)
+                     ertel_pv, vVort, vort_pv, missingVal, iLev_DT)
       deallocate(vVort)
       !write(0,*) 'Done interpolating '
    end subroutine interp_pv_diagnostics     
@@ -1592,6 +1748,7 @@ module atm_core
       
       integer :: iCell, k
       integer, pointer :: nCells, nVertLevels
+      integer, dimension(:), pointer :: iLev_DT
                                           
       real(kind=RKIND),dimension(:),pointer:: latCell, depv_dt_diab_pv, depv_dt_fric_pv
       real(kind=RKIND),dimension(:,:),pointer:: depv_dt_diab, depv_dt_fric, ertel_pv
@@ -1606,29 +1763,29 @@ module atm_core
       call mpas_pool_get_array(diag, 'depv_dt_fric', depv_dt_fric)
       call mpas_pool_get_array(diag, 'depv_dt_diab_pv', depv_dt_diab_pv)
       call mpas_pool_get_array(diag, 'depv_dt_fric_pv', depv_dt_fric_pv)
+      call mpas_pool_get_array(diag, 'iLev_DT', iLev_DT)
       
       !write(0,*) 'Interpolating u,v,theta,vort to pv '
       
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
-                     ertel_pv, depv_dt_diab, depv_dt_diab_pv, missingVal)
+                     ertel_pv, depv_dt_diab, depv_dt_diab_pv, missingVal, iLev_DT)
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
-                     ertel_pv, depv_dt_fric, depv_dt_fric_pv, missingVal)
+                     ertel_pv, depv_dt_fric, depv_dt_fric_pv, missingVal, iLev_DT)
       !write(0,*) 'Done interpolating '
    end subroutine interp_pvBudget_diagnostics
    
    subroutine interp_pv( nCells, nLevels, interpVal, &
                          latCell, field0, field1,field, &
-                         missingVal)
+                         missingVal, iLev_DT)
 
       implicit none
-      ! interpolate columns of field1 to where field0 is interpVal*sign(lat) such that
-      ! vals in cells above index are above interpVal and cells below index are below interpVal.
-      ! to limit higher level spikes (eg from mixing ~17km), require change in sign to persist >1 levels.
-      !if whole column is above value, use surface value.
+      !linear-in-PV interpolate columns of field1 to where field0 is interpVal*sign(lat)
+      !using level above tropopause already diagnosed
       
       ! input
 
       integer :: nCells, nLevels
+      integer, intent(in) :: iLev_DT(nCells)
       real(kind=RKIND) ::  interpVal, missingVal
       real(kind=RKIND), intent(in) ::latCell(nCells)
       real(kind=RKIND), intent(in) :: field0(nLevels,nCells), field1(nLevels,nCells)
@@ -1647,33 +1804,31 @@ module atm_core
         sgnHemi = sign(1.0_RKIND, latCell(iCell)) !problem at the equator...is sign(0)=0?
         if (sgnHemi .EQ. 0.0) sgnHemi = 1.0
         valInterpCell = interpVal*sgnHemi
-        do iLev = nLevels,2,-1
-        !do iLev = 2,nLevels-1,1
+        
+        iLev = iLev_DT(iCell)
+        if (iLev .GT. nLevels) then
+          levInd = -1
+          sgnl = -1.0
+        else if (iLev .LT. 1) then
+          levInd = -1
+          sgnl = 1.0
+        else
           valh = field0(iLev,iCell)
           vall = field0(iLev-1,iCell)
-          indlNbr = max(iLev-2,1)
-          vallNbr = field0(indlNbr, iCell)
-          sgnh = (valh-valInterpCell)*sgnHemi
-          sgnl = (vall-valInterpCell)*sgnHemi
-          sgnlNbr = (vallNbr-valInterpCell)*sgnHemi
-          if (sgnh>= 0.0 .AND. sgnl<=0.0 .AND. sgnlNbr<=0.0) then
-            !sandwiched value. equal in case val0 is a vals[l].
-            !get linear interpolation: val0 = vals[l]+dvals/dl * dl
-            !Avoid divide by 0 by just assuming value is 
-            !halfway between...
-     
-            dv_dl = valh-vall;
-            if (abs(dv_dl)<1.e-6) then
-              levFrac = 0.5;
-            else
-              levFrac = (valInterpCell-vall)/dv_dl
-            end if
-            
-            levInd = iLev-1
-            
-            exit !once found, stop searching column
+          !sandwiched value. equal in case val0 is a vals[l].
+          !get linear interpolation: val0 = vals[l]+dvals/dl * dl
+          !Avoid divide by 0 by just assuming value is 
+          !halfway between...
+   
+          dv_dl = valh-vall;
+          if (abs(dv_dl)<1.e-6) then
+            levFrac = 0.5;
+          else
+            levFrac = (valInterpCell-vall)/dv_dl
           end if
-        end do ! done searching column
+          
+          levInd = iLev-1
+        end if !iLev in column
 
         !find value of field using index we just found
         if (levInd<0) then !didn't trap value
@@ -2023,7 +2178,7 @@ module atm_core
    
       integer :: iCell, k
       integer, pointer :: nCells, nVertLevels, index_qv
-      real (kind=RKIND) :: pvuVal, missingVal
+      real (kind=RKIND) :: pvuVal, missingVal, stratoPV
       real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz, dtheta_dt_mix, tend_theta_euler
       type (field2DReal), pointer :: theta_f, uReconstructX_f, uReconstructY_f, uReconstructZ_f, w_f
       type (field2DReal), pointer :: rthratenlw_f, rthratensw_f, rthcuten_f, rthblten_f, dtheta_dt_mp_f, theta_euler_f, dtheta_dt_mix_f
@@ -2069,6 +2224,8 @@ module atm_core
       
       pvuVal = 2.0_RKIND
       missingVal = -99999.0_RKIND
+      stratoPV = 10.0_RKIND
+      call floodFill_strato(mesh, diag, pvuVal, stratoPV)
       call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
    
    end subroutine atm_compute_pv_diagnostics
