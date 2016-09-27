@@ -5,7 +5,7 @@ API for checking input for testcase
 from CIME.XML.standard_module_setup import *
 from CIME.utils import get_model
 
-import fnmatch, glob
+import fnmatch, glob, shutil
 
 logger = logging.getLogger(__name__)
 
