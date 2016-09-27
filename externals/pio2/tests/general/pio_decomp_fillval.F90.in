@@ -49,7 +49,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_explicit_fval
     write(filename,'(a,i1)') "test_pio_decomp_fillval_tests.testfile",i
 
     PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
-    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
     PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
 
     ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
@@ -110,7 +110,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
 
   ! compdof is only specified for valid data values, the data holes are
   ! implicitly stated (by not specifying them rather than filling it with 0s)
-  wcompdof_sz = min(pio_tf_world_rank_+1, VEC_LOCAL_SZ)
+  wcompdof_sz = min(pio_tf_world_rank_+1, VEC_LOCAL_SZ) 
   allocate(wcompdof(wcompdof_sz))
   allocate(wbuf(wcompdof_sz))
 
@@ -122,7 +122,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
   do i=1,wcompdof_sz
     wcompdof(i) = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps(i)
   end do
-  ! Read everything - including fillvalues that should have been
+  ! Read everything - including fillvalues that should have been 
   ! written for locations unspecified in wcompdof(:) i.e.,
   ! wcompdof(wcompdof_sz:VEC_LOCAL_SZ]
   rcompdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
@@ -133,7 +133,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
     wbuf(i) = wcompdof(i)
     exp_val(i) = wbuf(i)
   end do
-  ! We expect the values (wcompdof_sz:VEC_LOCAL_SZ] to be read as
+  ! We expect the values (wcompdof_sz:VEC_LOCAL_SZ] to be read as 
   ! user specified fill values
   do i=wcompdof_sz+1,VEC_LOCAL_SZ
     exp_val(i) = BUF_FILLVAL
@@ -148,7 +148,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
   filename = "test_pio_decomp_fillval_tests.testfile"
   do i=1,num_iotypes
     PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
-    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
     PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
 
     ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
@@ -195,7 +195,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_explicit_fval
   character(len=PIO_TF_MAX_STR_LEN) :: filename
   type(io_desc_t) :: wiodesc, riodesc
   integer, dimension(VEC_LOCAL_SZ) :: wcompdof, rcompdof, compdof_rel_disps
-  ! Compdof value to suggest that data point is a hole
+  ! Compdof value to suggest that data point is a hole 
   integer, parameter :: PIO_COMPDOF_FILLVAL = 0
   PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: wbuf, rbuf, exp_val
   ! The buffer fillvalue used to initialize data
@@ -234,7 +234,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_explicit_fval
   filename = "test_pio_decomp_fillval_tests.testfile"
   do i=1,num_iotypes
     PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
-    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
     PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
 
     ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
@@ -294,7 +294,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_implicit_fval
 
   ! compdof is only specified for valid data values, the data holes are
   ! implicitly stated (by not specifying them rather than filling it with 0s)
-  rcompdof_sz = min(pio_tf_world_rank_+1, VEC_LOCAL_SZ)
+  rcompdof_sz = min(pio_tf_world_rank_+1, VEC_LOCAL_SZ) 
   allocate(rcompdof(rcompdof_sz))
   allocate(rbuf(rcompdof_sz))
   allocate(exp_val(rcompdof_sz))
@@ -324,7 +324,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_implicit_fval
   filename = "test_pio_decomp_fillval_tests.testfile"
   do i=1,num_iotypes
     PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
-    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
     PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
 
     ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)

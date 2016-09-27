@@ -77,7 +77,7 @@ function (define_package_component PKG)
     else ()
         set (PKGCOMP ${PKG})
     endif ()
-
+    
     # Set return values
     if (${PKG}_COMPONENT)
         if (${PKG}_DEFAULT)
@@ -96,7 +96,7 @@ endfunction ()
 #______________________________________________________________________________
 # - Function to find valid package components
 #
-#   Assumes pre-defined variables:
+#   Assumes pre-defined variables: 
 #     ${PKG}_FIND_COMPONENTS        (LIST)
 #     ${PKG}_DEFAULT_COMPONENT      (STRING)
 #     ${PKG}_VALID_COMPONENTS       (LIST)
@@ -109,7 +109,7 @@ function (find_valid_components PKG)
     if (NOT ${PKG}_FIND_COMPONENTS)
         set (${PKG}_FIND_COMPONENTS ${${PKG}_DEFAULT_COMPONENT})
     endif ()
-
+    
     set (FIND_VALID_COMPONENTS)
     foreach (comp IN LISTS ${PKG}_FIND_COMPONENTS)
         if (";${${PKG}_VALID_COMPONENTS};" MATCHES ";${comp};")
@@ -118,7 +118,7 @@ function (find_valid_components PKG)
     endforeach ()
 
     set (${PKG}_FIND_VALID_COMPONENTS ${FIND_VALID_COMPONENTS} PARENT_SCOPE)
-
+    
 endfunction ()
 
 
@@ -137,7 +137,7 @@ function (initialize_paths PATHLIST)
     # Parse the input arguments
     set (multiValueArgs INCLUDE_DIRECTORIES LIBRARIES)
     cmake_parse_arguments (INIT "" "" "${multiValueArgs}" ${ARGN})
-
+    
     set (paths)
     foreach (inc IN LISTS INIT_INCLUDE_DIRECTORIES)
         list (APPEND paths ${inc})
@@ -156,7 +156,7 @@ function (initialize_paths PATHLIST)
             list (APPEND paths ${prefx})
         endif ()
     endforeach ()
-
+    
     set (${PATHLIST} ${paths} PARENT_SCOPE)
 
 endfunction ()
@@ -180,7 +180,7 @@ function (find_package_component PKG)
     set (options)
     set (oneValueArgs COMPONENT)
     set (multiValueArgs HINTS PATHS)
-    cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
     set (COMP ${${PKG}_COMPONENT})
     if (COMP)
         set (PKGCOMP ${PKG}_${COMP})
@@ -189,10 +189,10 @@ function (find_package_component PKG)
     endif ()
     string (TOUPPER ${PKG} PKGUP)
     string (TOUPPER ${PKGCOMP} PKGCOMPUP)
-
+    
     # Only continue if package not found already
     if (NOT ${PKGCOMP}_FOUND)
-
+    
         # Handle QUIET and REQUIRED arguments
         if (${${PKG}_FIND_QUIETLY})
             set (${PKGCOMP}_FIND_QUIETLY TRUE)
@@ -200,7 +200,7 @@ function (find_package_component PKG)
         if (${${PKG}_FIND_REQUIRED})
             set (${PKGCOMP}_FIND_REQUIRED TRUE)
         endif ()
-
+        
         # Determine search order
         set (SEARCH_DIRS)
         if (${PKG}_HINTS)
@@ -224,13 +224,13 @@ function (find_package_component PKG)
         if (${PKG}_PATHS)
             list (APPEND SEARCH_DIRS ${${PKG}_PATHS})
         endif ()
-
+        
         # Start the search for the include file and library file
         set (${PKGCOMP}_PREFIX ${PKGCOMP}_PREFIX-NOTFOUND)
         set (${PKGCOMP}_INCLUDE_DIR ${PKGCOMP}_INCLUDE_DIR-NOTFOUND)
         set (${PKGCOMP}_LIBRARY ${PKGCOMP}_LIBRARY-NOTFOUND)
         foreach (dir IN LISTS SEARCH_DIRS)
-
+        
             # Search for include file names in current dirrectory
             foreach (iname IN LISTS ${PKGCOMP}_INCLUDE_NAMES)
                 if (EXISTS ${dir}/${iname})
@@ -244,7 +244,7 @@ function (find_package_component PKG)
                     break ()
                 endif ()
             endforeach ()
-
+    
             # Search for library file names in the found prefix only!
             if (${PKGCOMP}_PREFIX)
                 find_library (${PKGCOMP}_LIBRARY
@@ -252,12 +252,12 @@ function (find_package_component PKG)
                               PATHS ${${PKGCOMP}_PREFIX}
                               PATH_SUFFIXES lib
                               NO_DEFAULT_PATH)
-
-                # If found, check if library is static or dynamic
+                              
+                # If found, check if library is static or dynamic 
                 if (${PKGCOMP}_LIBRARY)
                     is_shared_library (${PKGCOMP}_IS_SHARED ${${PKGCOMP}_LIBRARY})
-
-                    # If we want only shared libraries, and it isn't shared...
+    
+                    # If we want only shared libraries, and it isn't shared...                
                     if (PREFER_SHARED AND NOT ${PKGCOMP}_IS_SHARED)
                         find_shared_library (${PKGCOMP}_SHARED_LIBRARY
                                              NAMES ${${PKGCOMP}_LIBRARY_NAMES}
@@ -268,7 +268,7 @@ function (find_package_component PKG)
                             set (${PKGCOMP}_LIBRARY ${${PKGCOMP}_SHARED_LIBRARY})
                             set (${PKGCOMP}_IS_SHARED TRUE)
                         endif ()
-
+    
                     # If we want only static libraries, and it is shared...
                     elseif (PREFER_STATIC AND ${PKGCOMP}_IS_SHARED)
                         find_static_library (${PKGCOMP}_STATIC_LIBRARY
@@ -282,11 +282,11 @@ function (find_package_component PKG)
                         endif ()
                     endif ()
                 endif ()
-
+                              
                 # If include dir and library both found, then we're done
                 if (${PKGCOMP}_INCLUDE_DIR AND ${PKGCOMP}_LIBRARY)
                     break ()
-
+                    
                 # Otherwise, reset the search variables and continue
                 else ()
                     set (${PKGCOMP}_PREFIX ${PKGCOMP}_PREFIX-NOTFOUND)
@@ -294,19 +294,19 @@ function (find_package_component PKG)
                     set (${PKGCOMP}_LIBRARY ${PKGCOMP}_LIBRARY-NOTFOUND)
                 endif ()
             endif ()
-
+            
         endforeach ()
-
-        # handle the QUIETLY and REQUIRED arguments and
+        
+        # handle the QUIETLY and REQUIRED arguments and 
         # set NetCDF_C_FOUND to TRUE if all listed variables are TRUE
         find_package_handle_standard_args (${PKGCOMP} DEFAULT_MSG
-                                           ${PKGCOMP}_LIBRARY
+                                           ${PKGCOMP}_LIBRARY 
                                            ${PKGCOMP}_INCLUDE_DIR)
         mark_as_advanced (${PKGCOMP}_INCLUDE_DIR ${PKGCOMP}_LIBRARY)
-
+        
         # HACK For bug in CMake v3.0:
         set (${PKGCOMP}_FOUND ${${PKGCOMPUP}_FOUND})
-
+    
         # Set return variables
         if (${PKGCOMP}_FOUND)
             set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIR})
@@ -320,7 +320,7 @@ function (find_package_component PKG)
         set (${PKGCOMP}_LIBRARY      ${${PKGCOMP}_LIBRARY}       PARENT_SCOPE)
         set (${PKGCOMP}_LIBRARIES    ${${PKGCOMP}_LIBRARIES}     PARENT_SCOPE)
         set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}     PARENT_SCOPE)
-
+        
     endif ()
 
 endfunction ()

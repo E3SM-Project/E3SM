@@ -47,8 +47,8 @@ foreach(keys %attributes){
     }elsif(/ENV_(.*)/){
         print "set $1 $attributes{$_}\n";
 	$ENV{$1}="$attributes{$_}";
-    }
-
+    }	
+    
 }
 
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 #==============================================================================
 #
-#  This script defines how to run CTest on the National Center for
+#  This script defines how to run CTest on the National Center for 
 #  Supercomputing Applications system (blue waters).
 #
 #  This assumes the CTest model name (e.g., "Nightly") is passed to it when

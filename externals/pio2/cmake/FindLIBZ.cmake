@@ -1,6 +1,6 @@
 # - Try to find LIBZ
 #
-# This can be controlled by setting the LIBZ_DIR (or, equivalently, the
+# This can be controlled by setting the LIBZ_DIR (or, equivalently, the 
 # LIBZ environment variable).
 #
 # Once done, this will define:
@@ -22,7 +22,7 @@ define_package_component (LIBZ
 # SEARCH FOR PACKAGE
 if (NOT LIBZ_FOUND)
 
-    # Manually add the MPI include and library dirs to search paths
+    # Manually add the MPI include and library dirs to search paths 
     # and search for the package component
     if (MPI_C_FOUND)
         initialize_paths (LIBZ_PATHS

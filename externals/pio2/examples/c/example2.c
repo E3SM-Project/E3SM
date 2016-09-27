@@ -48,8 +48,8 @@
  * responsibilty for writing and reading them will be spread between
  * all the processors used to run this example. */
 /**@{*/
-#define X_DIM_LEN 20
-#define Y_DIM_LEN 30
+#define X_DIM_LEN 400
+#define Y_DIM_LEN 400
 /**@}*/
 
 /** The number of timesteps of data to write. */

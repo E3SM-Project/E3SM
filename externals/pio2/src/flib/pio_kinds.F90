@@ -1,6 +1,6 @@
 !>
 !! @file pio_kinds.F90
-!! @brief basic data types
+!! @brief basic data types 
 !!
 !<
  module pio_kinds
@@ -38,10 +38,10 @@
       r4        = selected_real_kind(6)  ,&
       r8        = selected_real_kind(13)
 !
-!  MPI defines MPI_OFFSET_KIND as the byte size of the
+!  MPI defines MPI_OFFSET_KIND as the byte size of the 
 !  type, which is not nessasarily the type kind
 !
-
+   
    integer, parameter, public :: PIO_OFFSET_KIND=MPI_OFFSET_KIND
 
 !EOP

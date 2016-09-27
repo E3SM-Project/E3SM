@@ -12,14 +12,14 @@ set (PIO_Fortran_SRCS pio_nf.F90
                       pio.F90
                       pio_kinds.F90
                       pio_types.F90
-                      piolib_mod.F90
+                      piolib_mod.F90 
                       pio_support.F90)
-
+                      
 set (PIO_GenF90_SRCS pionfatt_mod.F90
                      pionfput_mod.F90
                      pionfget_mod.F90
                      piodarray.F90)
-
+                     
 set (PIO_Fortran_MODS ${CMAKE_CURRENT_BINARY_DIR}/pio.mod
                       ${CMAKE_CURRENT_BINARY_DIR}/pio_nf.mod
                       ${CMAKE_CURRENT_BINARY_DIR}/pio_types.mod
@@ -46,7 +46,7 @@ target_compile_definitions (piof
     PUBLIC ${CMAKE_SYSTEM_DIRECTIVE})
 target_compile_definitions (piof
     PUBLIC ${CMAKE_Fortran_COMPILER_DIRECTIVE})
-
+    
 # Compiler-specific compile options
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
@@ -99,7 +99,7 @@ install (FILES ${PIO_Fortran_MODS} DESTINATION include)
 #===== pioc =====
 target_link_libraries(piof
     PUBLIC pioc)
-
+    
 #===== genf90 =====
 if (DEFINED GENF90_PATH)
     add_custom_target(genf90
@@ -194,7 +194,7 @@ endif ()
 if (PIO_ENABLE_TIMING)
     if (GPTL_Fortran_Perf_FOUND)
         message (STATUS "Found GPTL Fortran Perf: ${GPTL_Fortran_Perf_LIBRARIES}")
-        target_include_directories (piof
+        target_include_directories (piof 
             PUBLIC ${GPTL_Fortran_INCLUDE_DIRS})
         target_link_libraries (piof
             PUBLIC ${GPTL_Fortran_LIBRARIES})
@@ -208,9 +208,9 @@ endif ()
 #===== NetCDF-Fortran =====
 find_package (NetCDF "4.3.3" COMPONENTS Fortran)
 if (NetCDF_Fortran_FOUND)
-    target_include_directories (piof
+    target_include_directories (piof 
         PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
-    target_compile_definitions (piof
+    target_compile_definitions (piof 
         PUBLIC _NETCDF)
     target_link_libraries (piof
         PUBLIC ${NetCDF_Fortran_LIBRARIES})
@@ -219,7 +219,7 @@ if (NetCDF_Fortran_FOUND)
             PUBLIC _NETCDF4)
     endif ()
 else ()
-    target_compile_definitions (piof
+    target_compile_definitions (piof 
         PUBLIC _NONETCDF)
 endif ()
 
@@ -228,9 +228,9 @@ if (WITH_PNETCDF)
     find_package (PnetCDF "1.6" COMPONENTS Fortran REQUIRED)
 endif ()
 if (PnetCDF_Fortran_FOUND)
-    target_include_directories (piof
+    target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
-    target_compile_definitions (piof
+    target_compile_definitions (piof 
         PUBLIC _PNETCDF)
     target_link_libraries (piof
         PUBLIC ${PnetCDF_Fortran_LIBRARIES})
@@ -242,9 +242,9 @@ if (PnetCDF_Fortran_FOUND)
         target_compile_definitions(piof
             PUBLIC USE_PNETCDF_VARN
             PUBLIC USE_PNETCDF_VARN_ON_READ)
-    endif()
+    endif()  
 else ()
-    target_compile_definitions (piof
+    target_compile_definitions (piof 
         PUBLIC _NOPNETCDF)
 endif ()
 
@@ -258,7 +258,7 @@ target_compile_options (piof
 target_compile_definitions (piof
     PUBLIC ${PIO_Fortran_EXTRA_COMPILE_DEFINITIONS})
 if (PIO_Fortran_EXTRA_LINK_FLAGS)
-    set_target_properties(piof PROPERTIES
+    set_target_properties(piof PROPERTIES 
         LINK_FLAGS ${PIO_Fortran_EXTRA_LINK_FLAGS})
 endif ()
 
@@ -266,4 +266,4 @@ endif ()
 if (NOT PnetCDF_Fortran_FOUND AND NOT NetCDF_Fortran_FOUND)
     message (FATAL_ERROR "Must have PnetCDF and/or NetCDF Fortran libraries")
 endif ()
-
+     

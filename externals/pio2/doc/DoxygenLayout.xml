@@ -6,7 +6,7 @@
       <tab type="namespacemembers" visible="yes" title="Symbol Index"/>
       <tab type="modules" visible="yes" title="Modules"/>
       <tab type="classes" visible="yes" title="Data Types"/>
-      <tab type="examples" visible="yes" title="Examples"/>
+      <tab type="examples" visible="yes" title="Examples"/>  
       <tab type="pages" visible="yes" title="Page Index"/>
       <tab type="namespaces" visible="no" title="Namespaces (JMD)">
         <tab type="namespaces" visible="yes" title=""/>
