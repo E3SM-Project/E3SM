@@ -80,7 +80,7 @@ class TestScheduler(object):
             self._test_root = self._test_root.replace("$PROJECT", self._project)
 
         self._test_root = os.path.abspath(self._test_root)
-        self._test_id   = test_id
+        self._test_id   = test_id if test_id is not None else CIME.utils.get_timestamp()
 
         self._compiler = self._machobj.get_default_compiler() if compiler is None else compiler
 

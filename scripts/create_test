@@ -178,8 +178,8 @@ OR
     parser.add_argument("-t", "--test-id",
                         help="Specify an 'id' for the test. This is simply a"
                         "string that is appended to the end of a test name."
-                        "If no testid is specified, then a time stamp will be"
-                        "used.")
+                        "If no testid is specified, then a time stamp plus random number"
+                        "will be used.")
 
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
@@ -257,7 +257,7 @@ OR
         args.no_batch = True
 
     if args.test_id is None:
-        args.test_id = "%s.%s"%(CIME.utils.get_timestamp(), random.randrange(0,99,1))
+        args.test_id = "%s.%s"%(CIME.utils.get_timestamp(), random.randrange(0,9999,1))
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:
