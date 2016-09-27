@@ -90,9 +90,9 @@ class ERI(SystemTestsCommon):
         clone1.set_value("REST_N", rest_n1)
         clone1.set_value("HIST_OPTION", "never")
         clone1.flush()
+
         # if the initial case is hybrid this will put the reference data in the correct location
-        if orig_runtype == "hybrid":
-            check_all_input_data(clone1)
+        check_all_input_data(clone1)
 
         dout_sr1 = clone1.get_value("DOUT_S_ROOT")
 
