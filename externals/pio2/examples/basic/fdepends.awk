@@ -19,9 +19,9 @@ BEGIN { IGNORECASE=1
 
 
 #
-# awk reads each line of the filename argument $2 until it finds
+# awk reads each line of the filename argument $2 until it finds 
 # a "use" or "#include"
-#
+# 
 
 
 /^[ \t]*use[ \t]+/ {
@@ -30,7 +30,7 @@ BEGIN { IGNORECASE=1
         if ( $0 ~ /_EXTERNAL/ ) next
 
         # Assume the second field is the F90 module name,
-        # remove any comma at the end of the second field (due to
+        # remove any comma at the end of the second field (due to 
         # ONLY or rename), and print it in a dependency line.
 
         sub(/,$/,"",$2)
@@ -49,8 +49,8 @@ BEGIN { IGNORECASE=1
          if ( $0 ~ /_EXTERNAL/ ) next
 
          # Remove starting or ending quote or angle bracket
-         sub(/^["<']/,"",$2)
-         sub(/[">']$/,"",$2)
+         sub(/^["<']/,"",$2) 
+         sub(/[">']$/,"",$2) 
          print PRLINE $2
-
+ 
       }

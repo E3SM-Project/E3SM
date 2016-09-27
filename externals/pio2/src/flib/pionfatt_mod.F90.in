@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "pionfatt_mod.F90"
 !>
-!! @file
+!! @file 
 !! @brief NetCDF attribute interface to PIO
 !<
 module pionfatt_mod
@@ -37,14 +37,14 @@ module pionfatt_mod
   end interface
 
   !>
-  !!  @public
+  !!  @public 
   !!  @defgroup PIO_put_att PIO_put_att
-  !!  @brief Writes an netcdf attribute to a file
+  !!  @brief Writes an netcdf attribute to a file 
   !<
   !>
-  !! @public
+  !! @public 
   !! @defgroup PIO_get_att PIO_get_att
-  !! @brief Reads  an netcdf attribute from a file
+  !! @brief Reads  an netcdf attribute from a file 
   !<
 
   private :: modName
@@ -121,7 +121,7 @@ module pionfatt_mod
        integer(C_INT), intent(out)   :: op
      end function PIOc_get_att_int
   end interface
-
+    
   interface
      integer(C_INT) function PIOc_get_att_float (ncid, varid, name, op) &
           bind(C,name="PIOc_get_att_float")
@@ -132,7 +132,7 @@ module pionfatt_mod
        real(C_FLOAT), intent(out) :: op
      end function PIOc_get_att_float
   end interface
-
+    
   interface
      integer(C_INT) function PIOc_get_att_double (ncid, varid, name, op) &
           bind(C,name="PIOc_get_att_double")
@@ -143,19 +143,19 @@ module pionfatt_mod
        real(C_DOUBLE), intent(out)   :: op
      end function PIOc_get_att_double
   end interface
-
+    
 
 contains
 
   !>
-  !! @public
+  !! @public 
   !! @ingroup PIO_put_att
   !! @brief Writes an netcdf attribute to a file
   !! @details
   !! @param File @copydoc file_desc_t
   !! @param varid : The netcdf variable identifier
   !! @param name : name of the attribute to add
-  !! @param var : The value for the netcdf attribute
+  !! @param var : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
   integer function put_att_desc_{TYPE} (File, vdesc, name, values) result(ierr)
@@ -208,7 +208,7 @@ contains
     deallocate(cvar)
   end function put_att_id_text
 
-  integer function put_att_1d_id_text (ncid, varid, name, value) result(ierr)
+  integer function put_att_1d_id_text (ncid, varid, name, value) result(ierr)  
     use iso_c_binding
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -220,8 +220,8 @@ contains
     slen = len(value(1))
     alen = size(value)
     allocate(nvalue(slen*alen))
-
-    do i=1,alen
+    
+    do i=1,alen 
        j= len_trim(value(i))
        do k=1,j
           nvalue(k+(i-1)*slen) = value(i)(k:k)
@@ -244,9 +244,9 @@ contains
     character(len=*), intent(in) :: values(arrlen)
     integer :: vallen
 
-
+    
     ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values(1))
-
+        
 
   end function put_att_1d_id_text_internal
 
@@ -267,14 +267,14 @@ contains
   !pl The next line is needed by genf90.pl, do not remove it.
   ! TYPE real,double,int
   !>
-  !! @public
+  !! @public 
   !! @ingroup PIO_put_att
   !! @brief Writes an netcdf attribute to a file
   !! @details
   !! @param File @copydoc file_desc_t
   !! @param varid : The netcdf variable identifier
   !! @param name : name of the attribute to add
-  !! @param values : The value for the netcdf attribute
+  !! @param values : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
   integer function put_att_1d_id_{TYPE} (ncid, varid, name, values) result(ierr)
@@ -305,14 +305,14 @@ contains
 
   ! TYPE real,int,double
   !>
-  !! @public
+  !! @public 
   !! @ingroup PIO_put_att
   !! @brief Writes an netcdf attribute to a file
   !! @details
   !! @param File @copydoc file_desc_t
   !! @param varDesc @copydoc var_desc_t
   !! @param name : name of the attribute to add
-  !! @param var : The value for the netcdf attribute
+  !! @param var : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
   integer function put_att_1d_desc_{TYPE} (File,varDesc,name,values) result(ierr)
@@ -339,14 +339,14 @@ contains
 
 
   !>
-  !! @public
+  !! @public 
   !! @ingroup PIO_get_att
   !! @brief Reads an netcdf attribute from a  file
   !! @details
   !! @param File @copydoc file_desc_t
   !! @param varDesc @copydoc var_desc_t
   !! @param name : name of the attribute to get
-  !! @param values : The value for the netcdf attribute
+  !! @param values : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
   integer function get_att_desc_{TYPE} (File,varDesc,name,values) result(ierr)
@@ -361,14 +361,14 @@ contains
   end function get_att_desc_{TYPE}
 
   !>
-  !! @public
+  !! @public 
   !! @ingroup PIO_get_att
   !! @brief Reads an netcdf attribute from a  file
   !! @details
   !! @param File @copydoc file_desc_t
   !! @param varDesc @copydoc var_desc_t
   !! @param name : name of the attribute to get
-  !! @param values : The value for the netcdf attribute
+  !! @param values : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
   ! TYPE int,real,double
@@ -386,14 +386,14 @@ contains
   end function get_att_desc_1d_{TYPE}
 
   !>
-  !! @public
+  !! @public 
   !! @ingroup PIO_get_att
   !! @brief Reads an netcdf attribute from a  file
   !! @details
   !! @param File @copydoc file_desc_t
   !! @param varid : The netcdf variable identifier
   !! @param name : name of the attribute to get
-  !! @param values : The value for the netcdf attribute
+  !! @param values : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
   ! TYPE int,real,double
@@ -410,7 +410,7 @@ contains
   end function get_att_id_{TYPE}
 
 
-
+  
   integer function get_att_{TYPE} (File,varid,name,values) result(ierr)
     type (File_desc_t), intent(in) , target :: File
     integer(i4), intent(in)        :: varid
@@ -425,14 +425,14 @@ contains
 
   ! TYPE real,int,double
   !>
-  !! @public
+  !! @public 
   !! @ingroup PIO_get_att
   !! @brief Reads an netcdf attribute from a  file
   !! @details
   !! @param File @copydoc file_desc_t
   !! @param varid : The netcdf variable identifier
   !! @param name : name of the attribute to get
-  !! @param values : The value for the netcdf attribute
+  !! @param values : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
   integer function get_att_1d_{TYPE} (File,varid,name,values) result(ierr)

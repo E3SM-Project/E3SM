@@ -13,7 +13,7 @@
 #   MPE_<lang>_LIBRARY      (FILE) - Path to the C library file
 #   MPE_<lang>_LIBRARIES    (LIST) - link these to use MPE
 #
-# The available COMPONENTS are: C
+# The available COMPONENTS are: C 
 include (LibFind)
 include (LibCheck)
 
@@ -46,5 +46,5 @@ foreach (NCDFcomp IN LISTS MPE_FIND_VALID_COMPONENTS)
     endif ()
 
   endif ()
-
+  
 endforeach ()

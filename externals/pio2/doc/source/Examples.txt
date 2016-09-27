@@ -41,8 +41,6 @@ The Fortran examples are in the examples/f03 subdirectory.
 
 - examplePio.f90 A simple example showing a write, then read, of a 1D variable.
 
-### Other Examples
-
   PIO has been implemented in several geophysical component models, including the 
 Community Atmosphere Model (CAM), the Community Land Model (CLM), the Parallel Ocean Program 
 (POP), the Community Ice CodE (CICE), and coupler for used by CCSM4.0 (CPL7).  We also provide 

@@ -43,20 +43,10 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
         PRIVATE -ffree-line-length-none)
 endif()
 
-if (PIO_ENABLE_ASYNC AND NOT PIO_USE_MPI_SERIAL)
-  add_executable (test_intercomm EXCLUDE_FROM_ALL test_intercomm.c)
-  target_link_libraries (test_intercomm pioc)
-  add_dependencies (tests test_intercomm)
-  add_executable (test_darray_async EXCLUDE_FROM_ALL test_darray_async.c)
-  target_link_libraries (test_darray_async pioc)
-  add_dependencies (tests test_darray_async)
-endif ()
 add_executable (test_names EXCLUDE_FROM_ALL test_names.c)
 target_link_libraries (test_names pioc)
 add_executable (test_nc4 EXCLUDE_FROM_ALL test_nc4.c)
 target_link_libraries (test_nc4 pioc)
-add_executable (test_darray EXCLUDE_FROM_ALL test_darray.c)
-target_link_libraries (test_darray pioc)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
    set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all" )
@@ -65,7 +55,6 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
 endif ()
 
 add_dependencies (tests test_names)
-add_dependencies (tests test_darray)
 add_dependencies (tests test_nc4)
 add_dependencies (tests pio_unit_test)
 
@@ -82,16 +71,6 @@ if (PIO_USE_MPISERIAL)
     set_tests_properties(pio_unit_test
         PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 else ()
-    add_mpi_test(test_darray
-        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/test_darray
-        NUMPROCS 4
-        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-  if (PIO_ENABLE_ASYNC)
-    add_mpi_test(test_intercomm
-        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/test_intercomm
-        NUMPROCS 4
-        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-  endif ()
     add_mpi_test(test_names
         EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/test_names
         NUMPROCS 4

@@ -17,7 +17,7 @@
 #include <assert.h>
 
 #ifndef HAVE_C99_INLINE
-#define inline
+#define inline 
 #endif
 
 #ifdef HAVE_PAPI
@@ -134,7 +134,7 @@ static char **timerlist;         /* list of all timers */
 typedef struct {
   int val;                       /* depth in calling tree */
   int padding[31];               /* padding is to mitigate false cache sharing */
-} Nofalse;
+} Nofalse; 
 static Timer ***callstack;       /* call stack */
 static Nofalse *stackidx;        /* index into callstack: */
 
@@ -260,7 +260,7 @@ int GPTLsetoption (const int option,  /* option */
   switch (option) {
   case GPTLcpu:
 #ifdef HAVE_TIMES
-    cpustats.enabled = (bool) val;
+    cpustats.enabled = (bool) val; 
     if (verbose)
       printf ("%s: cpustats = %d\n", thisfunc, val);
 #else
@@ -268,56 +268,56 @@ int GPTLsetoption (const int option,  /* option */
       return GPTLerror ("%s: times() not available\n", thisfunc);
 #endif
     return 0;
-  case GPTLwall:
-    wallstats.enabled = (bool) val;
+  case GPTLwall:     
+    wallstats.enabled = (bool) val; 
     if (verbose)
       printf ("%s: boolean wallstats = %d\n", thisfunc, val);
     return 0;
-  case GPTLoverhead:
-    overheadstats.enabled = (bool) val;
+  case GPTLoverhead: 
+    overheadstats.enabled = (bool) val; 
     if (verbose)
       printf ("%s: boolean overheadstats = %d\n", thisfunc, val);
     return 0;
-  case GPTLdepthlimit:
-    depthlimit = val;
+  case GPTLdepthlimit: 
+    depthlimit = val; 
     if (verbose)
       printf ("%s: depthlimit = %d\n", thisfunc, val);
     return 0;
-  case GPTLverbose:
-    verbose = (bool) val;
+  case GPTLverbose: 
+    verbose = (bool) val; 
 #ifdef HAVE_PAPI
     (void) GPTL_PAPIsetoption (GPTLverbose, val);
 #endif
     if (verbose)
       printf ("%s: boolean verbose = %d\n", thisfunc, val);
     return 0;
-  case GPTLpercent:
-    percent = (bool) val;
+  case GPTLpercent: 
+    percent = (bool) val; 
     if (verbose)
       printf ("%s: boolean percent = %d\n", thisfunc, val);
     return 0;
-  case GPTLdopr_preamble:
-    dopr_preamble = (bool) val;
+  case GPTLdopr_preamble: 
+    dopr_preamble = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_preamble = %d\n", thisfunc, val);
     return 0;
-  case GPTLdopr_threadsort:
-    dopr_threadsort = (bool) val;
+  case GPTLdopr_threadsort: 
+    dopr_threadsort = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_threadsort = %d\n", thisfunc, val);
     return 0;
-  case GPTLdopr_multparent:
-    dopr_multparent = (bool) val;
+  case GPTLdopr_multparent: 
+    dopr_multparent = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_multparent = %d\n", thisfunc, val);
     return 0;
-  case GPTLdopr_collision:
-    dopr_collision = (bool) val;
+  case GPTLdopr_collision: 
+    dopr_collision = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_collision = %d\n", thisfunc, val);
     return 0;
   case GPTLprint_method:
-    method = (Method) val;
+    method = (Method) val; 
     if (verbose)
       printf ("%s: print_method = %s\n", thisfunc, methodstr (method));
     return 0;
@@ -338,8 +338,8 @@ int GPTLsetoption (const int option,  /* option */
       printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
     return 0;
 
-  /*
-  ** Allow GPTLmultiplex to fall through because it will be handled by
+  /* 
+  ** Allow GPTLmultiplex to fall through because it will be handled by 
   ** GPTL_PAPIsetoption()
   */
 
@@ -405,7 +405,7 @@ int GPTLsetutr (const int option)
 ** GPTLinitialize (): Initialization routine must be called from single-threaded
 **   region before any other timing routines may be called.  The need for this
 **   routine could be eliminated if not targetting timing library for threaded
-**   capability.
+**   capability. 
 **
 ** return value: 0 (success) or GPTLerror (failure)
 */
@@ -469,12 +469,12 @@ int GPTLinitialize (void)
     return GPTLerror ("%s: Failure from GPTL_PAPIinitialize\n", thisfunc);
 #endif
 
-  /*
+  /* 
   ** Call init routine for underlying timing routine.
   */
 
   if ((*funclist[funcidx].funcinit)() < 0) {
-    fprintf (stderr, "%s: Failure initializing %s. Reverting underlying timer to %s\n",
+    fprintf (stderr, "%s: Failure initializing %s. Reverting underlying timer to %s\n", 
 	     thisfunc, funclist[funcidx].name, funclist[0].name);
     funcidx = 0;
   }
@@ -620,12 +620,12 @@ int GPTLstart_instr (void *self)
 
   ptr = getentry_instr (hashtable[t], self, &indx);
 
-  /*
-  ** Recursion => increment depth in recursion and return.  We need to return
+  /* 
+  ** Recursion => increment depth in recursion and return.  We need to return 
   ** because we don't want to restart the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-
+  
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
     return 0;
@@ -662,7 +662,7 @@ int GPTLstart_instr (void *self)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
 
   return (0);
-}
+}  
 
 /*
 ** GPTLstart: start a timer
@@ -700,15 +700,15 @@ int GPTLstart (const char *name)               /* timer name */
     return 0;
   }
 
-  /*
+  /* 
   ** ptr will point to the requested timer in the current list,
-  ** or NULL if this is a new entry
+  ** or NULL if this is a new entry 
   */
 
   ptr = getentry (hashtable[t], name, &indx);
 
-  /*
-  ** Recursion => increment depth in recursion and return.  We need to return
+  /* 
+  ** Recursion => increment depth in recursion and return.  We need to return 
   ** because we don't want to restart the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
@@ -786,7 +786,7 @@ int GPTLstart_handle (const char *name,  /* timer name */
   }
 
   /*
-  ** If on input, handle references a non-zero value, assume it's a previously returned Timer*
+  ** If on input, handle references a non-zero value, assume it's a previously returned Timer* 
   ** passed in by the user. If zero, generate the hash entry and return it to the user.
   */
 
@@ -795,9 +795,9 @@ int GPTLstart_handle (const char *name,  /* timer name */
   } else {
     ptr = getentry (hashtable[t], name, &indx);
   }
-
-  /*
-  ** Recursion => increment depth in recursion and return.  We need to return
+    
+  /* 
+  ** Recursion => increment depth in recursion and return.  We need to return 
   ** because we don't want to restart the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
@@ -869,7 +869,7 @@ static int update_ll_hash (Timer *ptr, const int t, const unsigned int indx)
   last[t] = ptr;
   ++hashtable[t][indx].nument;
   nument = hashtable[t][indx].nument;
-
+  
   eptr = (Timer **) realloc (hashtable[t][indx].entries, nument * sizeof (Timer *));
   if ( ! eptr)
     return GPTLerror ("update_ll_hash: realloc error\n");
@@ -898,7 +898,7 @@ static inline int update_ptr (Timer *ptr, const int t)
 
   if (cpustats.enabled && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
     return GPTLerror ("update_ptr: get_cpustamp error");
-
+  
   if (wallstats.enabled) {
     tp2 = (*ptr2wtimefunc) ();
     ptr->wall.last = tp2;
@@ -922,9 +922,9 @@ static inline int update_ptr (Timer *ptr, const int t)
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 
-static inline int update_parent_info (Timer *ptr,
-				      Timer **callstackt,
-				      int stackidxt)
+static inline int update_parent_info (Timer *ptr, 
+				      Timer **callstackt, 
+				      int stackidxt) 
 {
   int n;             /* loop index through known parents */
   Timer *pptr;       /* pointer to parent in callstack */
@@ -941,7 +941,7 @@ static inline int update_parent_info (Timer *ptr,
 
   callstackt[stackidxt] = ptr;
 
-  /*
+  /* 
   ** If the region has no parent, bump its orphan count
   ** (should never happen since "GPTL_ROOT" added).
   */
@@ -1010,7 +1010,7 @@ int GPTLstop_instr (void *self)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
-
+    
   if (wallstats.enabled) {
     tp1 = (*ptr2wtimefunc) ();
   }
@@ -1033,7 +1033,7 @@ int GPTLstop_instr (void *self)
 
   ptr = getentry_instr (hashtable[t], self, &indx);
 
-  if ( ! ptr)
+  if ( ! ptr) 
     return GPTLerror ("%s: timer for %p had not been started.\n", thisfunc, self);
 
   if ( ! ptr->onflg )
@@ -1041,7 +1041,7 @@ int GPTLstop_instr (void *self)
 
   ++ptr->count;
 
-  /*
+  /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
@@ -1085,7 +1085,7 @@ int GPTLstop (const char *name)               /* timer name */
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
-
+    
   if (wallstats.enabled) {
     tp1 = (*ptr2wtimefunc) ();
   }
@@ -1114,7 +1114,7 @@ int GPTLstop (const char *name)               /* timer name */
 
   ++ptr->count;
 
-  /*
+  /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
@@ -1160,7 +1160,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
-
+    
   if (wallstats.enabled) {
     tp1 = (*ptr2wtimefunc) ();
   }
@@ -1182,7 +1182,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
   }
 
   /*
-  ** If on input, handle references a non-zero value, assume it's a previously returned Timer*
+  ** If on input, handle references a non-zero value, assume it's a previously returned Timer* 
   ** passed in by the user. If zero, generate the hash entry and return it to the user.
   */
 
@@ -1198,7 +1198,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
 
   ++ptr->count;
 
-  /*
+  /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
@@ -1224,7 +1224,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
 }
 
 /*
-** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_instr,
+** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_instr, 
 **               GPTLstop_handle
 **
 ** Input arguments:
@@ -1237,9 +1237,9 @@ int GPTLstop_handle (const char *name,     /* timer name */
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 
-static inline int update_stats (Timer *ptr,
-				const double tp1,
-				const long usr,
+static inline int update_stats (Timer *ptr, 
+				const double tp1, 
+				const long usr, 
 				const long sys,
 				const int t)
 {
@@ -1375,7 +1375,7 @@ int GPTLreset (void)
   return 0;
 }
 
-/*
+/* 
 ** GPTLpr_set_append: set GPTLpr_file and GPTLpr_summary_file
 ** to use append mode
 */
@@ -1386,20 +1386,20 @@ int GPTLpr_set_append (void)
   return 0;
 }
 
-/*
+/* 
 ** GPTLpr_query_append: query whether GPTLpr_file and GPTLpr_summary_file
 ** use append mode
 */
 
 int GPTLpr_query_append (void)
 {
-  if (pr_append)
+  if (pr_append) 
     return 1;
-  else
+  else 
     return 0;
 }
 
-/*
+/* 
 ** GPTLpr_set_write: set GPTLpr_file and GPTLpr_summary_file
 ** to use write mode
 */
@@ -1410,20 +1410,20 @@ int GPTLpr_set_write (void)
   return 0;
 }
 
-/*
+/* 
 ** GPTLpr_query_write: query whether GPTLpr_file and GPTLpr_summary_file
 ** use write mode
 */
 
 int GPTLpr_query_write (void)
 {
-  if (pr_append)
+  if (pr_append) 
     return 0;
-  else
+  else 
     return 1;
 }
 
-/*
+/* 
 ** GPTLpr: Print values of all timers
 **
 ** Input arguments:
@@ -1448,7 +1448,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   return 0;
 }
 
-/*
+/* 
 ** GPTLpr_file: Print values of all timers
 **
 ** Input arguments:
@@ -1500,9 +1500,9 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   /* 2 is for "/" plus null */
   if (outdir)
-    totlen = strlen (outdir) + strlen (outfile) + 2;
+    totlen = strlen (outdir) + strlen (outfile) + 2; 
   else
-    totlen = strlen (outfile) + 2;
+    totlen = strlen (outfile) + 2; 
 
   outpath = (char *) GPTLallocate (totlen);
 
@@ -1619,11 +1619,11 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   }
 
   sum = (float *) GPTLallocate (nthreads * sizeof (float));
-
+  
   for (t = 0; t < nthreads; ++t) {
 
     /*
-    ** Construct tree for printing timers in parent/child form. get_max_depth() must be called
+    ** Construct tree for printing timers in parent/child form. get_max_depth() must be called 
     ** AFTER construct_tree() because it relies on the per-parent children arrays being complete.
     */
 
@@ -1671,7 +1671,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
     printself_andchildren (timers[t], fp, t, -1, tot_overhead);
 
-    /*
+    /* 
     ** Sum of overhead across timers is meaningful.
     ** Factor of 2 is because there are 2 utr calls per start/stop pair.
     */
@@ -1721,8 +1721,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     /* Start at next to skip dummy */
 
     for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
-
-      /*
+      
+      /* 
       ** To print sum stats, first create a new timer then copy thread 0
       ** stats into it. then sum using "add", and finally print.
       */
@@ -1874,7 +1874,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     totmem += gptlmem;
     fprintf (fp, "\n");
     fprintf (fp, "Thread %d total memory usage = %g KB\n", t, gptlmem*.001);
-    fprintf (fp, "  Hashmem                   = %g KB\n"
+    fprintf (fp, "  Hashmem                   = %g KB\n" 
 	         "  Regionmem                 = %g KB (papimem portion = %g KB)\n"
 	         "  Parent/child arrays       = %g KB\n",
 	     hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001);
@@ -1892,7 +1892,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   return 0;
 }
 
-/*
+/* 
 ** construct_tree: Build the parent->children tree starting with knowledge of
 **                 parent list for each child.
 **
@@ -1944,7 +1944,7 @@ int construct_tree (Timer *timerst, Method method)
       }
       break;
     case GPTLfull_tree:
-      /*
+      /* 
       ** Careful: this one can create *lots* of output!
       */
       for (n = 0; n < ptr->nparent; ++n) {
@@ -1959,7 +1959,7 @@ int construct_tree (Timer *timerst, Method method)
   return 0;
 }
 
-/*
+/* 
 ** methodstr: Return a pointer to a string which represents the method
 **
 ** Input arguments:
@@ -1980,9 +1980,9 @@ static char *methodstr (Method method)
     return "Unknown";
 }
 
-/*
+/* 
 ** newchild: Add an entry to the children list of parent. Use function
-**   is_descendant() to prevent infinite loops.
+**   is_descendant() to prevent infinite loops. 
 **
 ** Input arguments:
 **   parent: parent node
@@ -2017,7 +2017,7 @@ static int newchild (Timer *parent, Timer *child)
   }
 
   /*
-  ** To guarantee no loops, ensure that proposed parent isn't already a descendant of
+  ** To guarantee no loops, ensure that proposed parent isn't already a descendant of 
   ** proposed child
   */
 
@@ -2040,13 +2040,13 @@ static int newchild (Timer *parent, Timer *child)
   return 0;
 }
 
-/*
+/* 
 ** get_max_depth: Determine the maximum call tree depth by traversing the
 **   tree recursively
 **
 ** Input arguments:
 **   ptr:        Starting timer
-**   startdepth: current depth when function invoked
+**   startdepth: current depth when function invoked 
 **
 ** Return value: maximum depth
 */
@@ -2064,7 +2064,7 @@ static int get_max_depth (const Timer *ptr, const int startdepth)
   return maxdepth;
 }
 
-/*
+/* 
 ** num_descendants: Determine the number of descendants of a timer by traversing
 **   the tree recursively. This function is not currently used. It could be
 **   useful in a pruning algorithm
@@ -2086,7 +2086,7 @@ static int num_descendants (Timer *ptr)
   return ptr->num_desc;
 }
 
-/*
+/* 
 ** is_descendant: Determine whether node2 is in the descendant list for
 **   node1
 **
@@ -2114,7 +2114,7 @@ static int is_descendant (const Timer *node1, const Timer *node2)
   return 0;
 }
 
-/*
+/* 
 ** printstats: print a single timer
 **
 ** Input arguments:
@@ -2224,7 +2224,7 @@ static void printstats (const Timer *timer,
   else
     fprintf (fp, "%13.3e ", timer->nbytes / timer->count);
 #endif
-
+  
 #ifdef HAVE_PAPI
   GPTL_PAPIpr (fp, &timer->aux, t, timer->count, timer->wall.accum);
 #endif
@@ -2232,13 +2232,13 @@ static void printstats (const Timer *timer,
   fprintf (fp, "\n");
 }
 
-/*
-** print_multparentinfo:
+/* 
+** print_multparentinfo: 
 **
 ** Input arguments:
 ** Input/output arguments:
 */
-void print_multparentinfo (FILE *fp,
+void print_multparentinfo (FILE *fp, 
 			   Timer *ptr)
 {
   int n;
@@ -2263,7 +2263,7 @@ void print_multparentinfo (FILE *fp,
     fprintf (fp, "%8.1e   %-32s\n\n", (float) ptr->count, ptr->name);
 }
 
-/*
+/* 
 ** add: add the contents of tin to tout
 **
 ** Input arguments:
@@ -2272,14 +2272,14 @@ void print_multparentinfo (FILE *fp,
 **   tout: output timer summed into
 */
 
-static void add (Timer *tout,
+static void add (Timer *tout,   
 		 const Timer *tin)
 {
   tout->count += tin->count;
 
   if (wallstats.enabled) {
     tout->wall.accum += tin->wall.accum;
-
+    
     tout->wall.max = MAX (tout->wall.max, tin->wall.max);
     tout->wall.min = MIN (tout->wall.min, tin->wall.min);
   }
@@ -2293,8 +2293,8 @@ static void add (Timer *tout,
 #endif
 }
 
-/*
-** GPTLpr_summary: Gather and print summary stats across
+/* 
+** GPTLpr_summary: Gather and print summary stats across 
 **                 threads and MPI tasks
 **
 ** Input arguments:
@@ -2315,10 +2315,10 @@ int GPTLpr_summary (int comm)
 }
 
 #ifdef HAVE_MPI
-int GPTLpr_summary_file (MPI_Comm comm,
+int GPTLpr_summary_file (MPI_Comm comm, 
                          const char *outfile)
 #else
-int GPTLpr_summary_file (int comm,
+int GPTLpr_summary_file (int comm, 
                          const char *outfile)
 #endif
 {
@@ -2362,7 +2362,7 @@ int GPTLpr_summary_file (int comm,
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   /*
-  ** Each process gathers stats for its threads.
+  ** Each process gathers stats for its threads. 
   ** Binary tree used combine results.
   ** Master prints results.
   */
@@ -2411,7 +2411,7 @@ int GPTLpr_summary_file (int comm,
     /* allocate storage for data for all timers */
     if( !( storage = malloc( sizeof(Summarystats) * count ) ) && count )
       return GPTLerror ("%s: memory allocation failed\n", thisfunc);
-
+  
     if ( (ret = collect_data( iam, comm, &count, &storage) ) != 0 )
       return GPTLerror ("%s: master collect_data failed\n", thisfunc);
 
@@ -2526,7 +2526,7 @@ static int merge_thread_data()
 
     /* count timers for thread 0 */
     count_r = 0;
-    for (ptr = timers[0]->next; ptr; ptr = ptr->next) count_r++;
+    for (ptr = timers[0]->next; ptr; ptr = ptr->next) count_r++; 
 
     timerlist    = (char **) GPTLallocate( sizeof (char *));
     if( !( timerlist[0] = (char *)malloc( count_r * length * sizeof (char)) ) && count_r)
@@ -2551,7 +2551,7 @@ static int merge_thread_data()
 
     /* count timers for thread */
     count[t] = 0;
-    for (ptr = timers[t]->next; ptr; ptr = ptr->next) count[t]++;
+    for (ptr = timers[t]->next; ptr; ptr = ptr->next) count[t]++; 
 
     if( count[t] > max_count || max_count == 0 ) max_count = count[t];
 
@@ -2587,24 +2587,24 @@ static int merge_thread_data()
     k = 0;
     n = 0;
     num_newtimers = 0;
-    while( k < count[0] && n < count[t] ) {
+    while( k < count[0] && n < count[t] ) { 
       /* linear comparison of timers */
       compare = strcmp( sort[0][k], sort[t][n]  );
 
-      if( compare == 0 ) {
+      if( compare == 0 ) { 
         /* both have, nothing needs to be done */
         k++;
         n++;
         continue;
       }
 
-      if( compare < 0 ) {
+      if( compare < 0 ) { 
         /* event that only master has, nothing needs to be done */
         k++;
         continue;
       }
 
-      if( compare > 0 ) {
+      if( compare > 0 ) { 
         /* event that only slave thread has, need to add */
         newtimers[num_newtimers] = sort[t][n];
         n++;
@@ -2612,8 +2612,8 @@ static int merge_thread_data()
       }
     }
 
-    while( n < count[t] ) {
-      /* adds any remaining timers, since we know that all the rest
+    while( n < count[t] ) { 
+      /* adds any remaining timers, since we know that all the rest 
          are new since have checked all master thread timers */
       newtimers[num_newtimers] = sort[t][n];
       num_newtimers++;
@@ -2622,7 +2622,7 @@ static int merge_thread_data()
 
     if( num_newtimers ) {
       /* sorts by memory address to restore original order */
-      qsort( newtimers, num_newtimers, sizeof(char*), ncmp );
+      qsort( newtimers, num_newtimers, sizeof(char*), ncmp ); 
 
       /* reallocate memory to hold additional timers */
       if( !( sort[0] = realloc( sort[0], (count[0] + num_newtimers) * sizeof (char *)) ) )
@@ -2631,7 +2631,7 @@ static int merge_thread_data()
         return GPTLerror ("%s: memory reallocation failed\n", thisfunc);
 
       k = count[0];
-      for (n = 0; n < num_newtimers; n++) {
+      for (n = 0; n < num_newtimers; n++) { 
         /* add new found timers */
         memcpy( timerlist[0] + (count[0] + n) *  length, newtimers[n], length * sizeof (char) );
       }
@@ -2639,7 +2639,7 @@ static int merge_thread_data()
       count[0] += num_newtimers;
 
       /* reassign pointers in sort since realloc will have broken them if it moved the memory. */
-      x = 0;
+      x = 0; 
       for (k = 0; k < count[0]; k++) {
         sort[0][k] = timerlist[0] + x;
         x += length;
@@ -2649,7 +2649,7 @@ static int merge_thread_data()
     }
   }
 
-  free(sort[0]);
+  free(sort[0]); 
   /* don't free timerlist[0], since needed for subsequent steps in gathering global statistics */
   for (t = 1; t < nthreads; t++) {
     free(sort[t]);
@@ -2679,14 +2679,14 @@ static int merge_thread_data()
 */
 
 #ifdef HAVE_MPI
-static int collect_data(const int iam,
+static int collect_data(const int iam, 
                         MPI_Comm comm,
-                        int *count,
+                        int *count, 
                         Summarystats **summarystats_cumul )
 #else
-static int collect_data(const int iam,
+static int collect_data(const int iam, 
                         int comm,
-                        int *count,
+                        int *count, 
                         Summarystats **summarystats_cumul )
 #endif
 {
@@ -2809,11 +2809,11 @@ static int collect_data(const int iam,
           {
             compare = strcmp(sort_master[k], sort_slave[n]);
 
-            if (compare == 0) {
+            if (compare == 0) { 
               /* matching timers found */
 
               /* find element number of the name in original timerlist so that it can be matched with its summarystats */
-              m_index = get_index( timerlist[0], sort_master[k] );
+              m_index = get_index( timerlist[0], sort_master[k] ); 
 
               s_index = get_index( timers_slave, sort_slave[n] );
               get_summarystats (&summarystats[m_index], &summarystats_slave[s_index]);
@@ -2822,7 +2822,7 @@ static int collect_data(const int iam,
               continue;
             }
 
-            if (compare > 0) {
+            if (compare > 0) { 
               /* s1 >s2 . slave has event; master does not */
               newtimers[num_newtimers] = sort_slave[n];
               num_newtimers++;
@@ -2834,7 +2834,7 @@ static int collect_data(const int iam,
               k++;
           }
 
-          while (n < count_slave) {
+          while (n < count_slave) { 
             /* add all remaining timers which only the slave has */
             newtimers[num_newtimers] = sort_slave[n];
             num_newtimers++;
@@ -2842,7 +2842,7 @@ static int collect_data(const int iam,
           }
 
           /* sort by memory address to get original order */
-          qsort (newtimers, num_newtimers, sizeof(char*), ncmp);
+          qsort (newtimers, num_newtimers, sizeof(char*), ncmp); 
 
           /* reallocate to hold new timer names and summary stats from slave */
           if (!(timerlist[0] = realloc( timerlist[0], length * (*count + num_newtimers) * sizeof (char) ) ))
@@ -2922,7 +2922,7 @@ static int collect_data(const int iam,
 ** Return value: index of element in list
 */
 
-int get_index( const char * list,
+int get_index( const char * list, 
                const char * element )
 {
   return (( element - list ) / ( MAX_CHARS  + 1 ));
@@ -2955,7 +2955,7 @@ static int ncmp( const char **x, const char **y )
     GPTLerror("%s: shared memory address between timers\n", thisfunc);
 }
 
-/*
+/* 
 ** get_threadstats: gather stats for timer "name" over all threads
 **
 ** Input arguments:
@@ -2965,7 +2965,7 @@ static int ncmp( const char **x, const char **y )
 **   summarystats: max/min stats over all threads
 */
 
-void get_threadstats (const int iam,
+void get_threadstats (const int iam, 
                       const char *name,
 		      Summarystats *summarystats)
 {
@@ -3017,7 +3017,7 @@ void get_threadstats (const int iam,
 	  summarystats->papimax[n]   = value;
 	  summarystats->papimax_t[n] = t;
 	}
-
+	
 	if (value < summarystats->papimin[n] || summarystats->papimin[n] == 0.) {
 	  summarystats->papimin[n]   = value;
 	  summarystats->papimin_t[n] = t;
@@ -3030,7 +3030,7 @@ void get_threadstats (const int iam,
   if ( summarystats->count ) summarystats->processes = 1;
 }
 
-/*
+/* 
 ** get_summarystats: write max/min stats into mpistats based on comparison
 **                   with  summarystats_slave
 **
@@ -3040,7 +3040,7 @@ void get_threadstats (const int iam,
 **   summarystats:       stats (starts out as master stats)
 */
 
-void get_summarystats (Summarystats *summarystats,
+void get_summarystats (Summarystats *summarystats, 
 		       const Summarystats *summarystats_slave)
 {
   if (summarystats_slave->count == 0) return;
@@ -3051,7 +3051,7 @@ void get_summarystats (Summarystats *summarystats,
     summarystats->wallmax_t = summarystats_slave->wallmax_t;
   }
 
-  if ((summarystats_slave->wallmin < summarystats->wallmin) ||
+  if ((summarystats_slave->wallmin < summarystats->wallmin) || 
       (summarystats->count == 0)){
     summarystats->wallmin   = summarystats_slave->wallmin;
     summarystats->wallmin_p = summarystats_slave->wallmin_p;
@@ -3068,7 +3068,7 @@ void get_summarystats (Summarystats *summarystats,
 	summarystats->papimax_t[n] = summarystats_slave->papimax_t[n];
       }
 
-      if ((summarystats_slave->papimin[n] < summarystats->papimin[n]) ||
+      if ((summarystats_slave->papimin[n] < summarystats->papimin[n]) || 
           (summarystats->count == 0)){
 	summarystats->papimin[n]   = summarystats_slave->papimin[n];
 	summarystats->papimin_p[n] = summarystats_slave->papimin_p[n];
@@ -3085,7 +3085,7 @@ void get_summarystats (Summarystats *summarystats,
   summarystats->threads   += summarystats_slave->threads;
 }
 
-/*
+/* 
 ** GPTLbarrier: When MPI enabled, set and time an MPI barrier
 **
 ** Input arguments:
@@ -3138,10 +3138,10 @@ static inline int get_cpustamp (long *usr, long *sys)
 }
 
 /*
-** GPTLquery: return current status info about a timer. If certain stats are not
+** GPTLquery: return current status info about a timer. If certain stats are not 
 ** enabled, they should just have zeros in them. If PAPI is not enabled, input
 ** counter info is ignored.
-**
+** 
 ** Input args:
 **   name:        timer name
 **   maxcounters: max number of PAPI counters to get info for
@@ -3156,7 +3156,7 @@ static inline int get_cpustamp (long *usr, long *sys)
 **   papicounters_out: accumulated PAPI counters
 */
 
-int GPTLquery (const char *name,
+int GPTLquery (const char *name, 
 	       int t,
 	       int *count,
 	       int *onflg,
@@ -3169,14 +3169,14 @@ int GPTLquery (const char *name,
   Timer *ptr;                /* linked list pointer */
   unsigned int indx;         /* linked list index returned from getentry (unused) */
   static const char *thisfunc = "GPTLquery";
-
+  
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
+  
   /*
   ** If t is < 0, assume the request is for the current thread
   */
-
+  
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -3184,7 +3184,7 @@ int GPTLquery (const char *name,
     if (t >= maxthreads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
-
+  
   ptr = getentry (hashtable[t], name, &indx);
   if ( !ptr)
     return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
@@ -3203,7 +3203,7 @@ int GPTLquery (const char *name,
 /*
 ** GPTLquerycounters: return current PAPI counters for a timer.
 ** THIS ROUTINE ID DEPRECATED. USE GPTLget_eventvalue() instead
-**
+** 
 ** Input args:
 **   name: timer name
 **   t:    thread number (if < 0, the request is for the current thread)
@@ -3212,21 +3212,21 @@ int GPTLquery (const char *name,
 **   papicounters_out: accumulated PAPI counters
 */
 
-int GPTLquerycounters (const char *name,
+int GPTLquerycounters (const char *name, 
 		       int t,
 		       long long *papicounters_out)
 {
   Timer *ptr;            /* linked list pointer */
   unsigned int indx;     /* hash index returned from getentry */
   static const char *thisfunc = "GPTLquery_counters";
-
+  
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
+  
   /*
   ** If t is < 0, assume the request is for the current thread
   */
-
+  
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -3234,7 +3234,7 @@ int GPTLquerycounters (const char *name,
     if (t >= maxthreads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
-
+  
   ptr = getentry (hashtable[t], name, &indx);
   if ( !ptr)
     return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
@@ -3248,7 +3248,7 @@ int GPTLquerycounters (const char *name,
 
 /*
 ** GPTLget_wallclock: return wallclock accumulation for a timer.
-**
+** 
 ** Input args:
 **   timername: timer name
 **   t:         thread number (if < 0, the request is for the current thread)
@@ -3265,17 +3265,17 @@ int GPTLget_wallclock (const char *timername,
   Timer *ptr;          /* linked list pointer */
   unsigned int indx;   /* hash index returned from getentry (unused) */
   static const char *thisfunc = "GPTLget_wallclock";
-
+  
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   if ( ! wallstats.enabled)
     return GPTLerror ("%s: wallstats not enabled\n", thisfunc);
-
+  
   /*
   ** If t is < 0, assume the request is for the current thread
   */
-
+  
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
@@ -3283,9 +3283,9 @@ int GPTLget_wallclock (const char *timername,
     if (t >= maxthreads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
-
-  /*
-  ** Don't know whether hashtable entry for timername was generated with
+  
+  /* 
+  ** Don't know whether hashtable entry for timername was generated with 
   ** *_instr() or not, so try both possibilities
   */
 
@@ -3305,7 +3305,7 @@ int GPTLget_wallclock (const char *timername,
 /*
 ** GPTLget_eventvalue: return PAPI-based event value for a timer. All values will be
 **   returned as doubles, even if the event is not derived.
-**
+** 
 ** Input args:
 **   timername: timer name
 **   eventname: event name (must be currently enabled)
@@ -3324,14 +3324,14 @@ int GPTLget_eventvalue (const char *timername,
   Timer *ptr;          /* linked list pointer */
   unsigned int indx;   /* hash index returned from getentry (unused) */
   static const char *thisfunc = "GPTLget_eventvalue";
-
+  
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
+  
   /*
   ** If t is < 0, assume the request is for the current thread
   */
-
+  
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -3339,9 +3339,9 @@ int GPTLget_eventvalue (const char *timername,
     if (t >= maxthreads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
-
-  /*
-  ** Don't know whether hashtable entry for timername was generated with
+  
+  /* 
+  ** Don't know whether hashtable entry for timername was generated with 
   ** *_instr() or not, so try both possibilities
   */
 
@@ -3357,13 +3357,13 @@ int GPTLget_eventvalue (const char *timername,
 #ifdef HAVE_PAPI
   return GPTL_PAPIget_eventvalue (eventname, &ptr->aux, value);
 #else
-  return GPTLerror ("%s: PAPI not enabled\n", thisfunc);
+  return GPTLerror ("%s: PAPI not enabled\n", thisfunc); 
 #endif
 }
 
 /*
 ** GPTLget_nregions: return number of regions (i.e. timer names) for this thread
-**
+** 
 ** Input args:
 **   t:    thread number (if < 0, the request is for the current thread)
 **
@@ -3371,7 +3371,7 @@ int GPTLget_eventvalue (const char *timername,
 **   nregions: number of regions
 */
 
-int GPTLget_nregions (int t,
+int GPTLget_nregions (int t, 
 		      int *nregions)
 {
   Timer *ptr;     /* walk through linked list */
@@ -3379,11 +3379,11 @@ int GPTLget_nregions (int t,
 
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
+  
   /*
   ** If t is < 0, assume the request is for the current thread
   */
-
+  
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -3391,9 +3391,9 @@ int GPTLget_nregions (int t,
     if (t >= maxthreads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
-
+  
   *nregions = 0;
-  for (ptr = timers[t]->next; ptr; ptr = ptr->next)
+  for (ptr = timers[t]->next; ptr; ptr = ptr->next) 
     ++*nregions;
 
   return 0;
@@ -3401,7 +3401,7 @@ int GPTLget_nregions (int t,
 
 /*
 ** GPTLget_regionname: return region name for this thread
-**
+** 
 ** Input args:
 **   t:      thread number (if < 0, the request is for the current thread)
 **   region: region number
@@ -3423,11 +3423,11 @@ int GPTLget_regionname (int t,      /* thread number */
 
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
+  
   /*
   ** If t is < 0, assume the request is for the current thread
   */
-
+  
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -3435,7 +3435,7 @@ int GPTLget_regionname (int t,      /* thread number */
     if (t >= maxthreads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
-
+  
   ptr = timers[t]->next;
   for (i = 0; i < region; i++) {
     if ( ! ptr)
@@ -3446,7 +3446,7 @@ int GPTLget_regionname (int t,      /* thread number */
   if (ptr) {
     ncpy = MIN (nc, strlen (ptr->name));
     strncpy (name, ptr->name, ncpy);
-
+    
     /*
     ** Adding the \0 is only important when called from C
     */
@@ -3523,7 +3523,7 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   const unsigned char *c;     /* pointer to elements of "name" */
   Timer *ptr = 0;             /* return value when entry not found */
 
-  /*
+  /* 
   ** Hash value is sum of: chars times their 1-based position index, modulo tablesize
   */
 
@@ -3535,7 +3535,7 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 
   *indx %= tablesize;
 
-  /*
+  /* 
   ** If nument exceeds 1 there was a hash collision and we must search
   ** linearly through an array for a match
   */
@@ -3723,7 +3723,7 @@ static int init_papitime ()
   return GPTLerror ("%s: not enabled\n", thisfunc);
 #endif
 }
-
+  
 static inline double utr_papitime ()
 {
 #ifdef HAVE_PAPI
@@ -3735,8 +3735,8 @@ static inline double utr_papitime ()
 #endif
 }
 
-/*
-** Probably need to link with -lrt for this one to work
+/* 
+** Probably need to link with -lrt for this one to work 
 */
 
 static int init_clock_gettime ()
@@ -3831,7 +3831,7 @@ static inline double utr_gettimeofday ()
 #endif
 }
 
-/*
+/* 
 ** Determine underlying timing routine overhead: call it 1000 times.
 */
 
@@ -3852,7 +3852,7 @@ static double utr_getoverhead ()
 */
 
 static void printself_andchildren (const Timer *ptr,
-				   FILE *fp,
+				   FILE *fp, 
 				   const int t,
 				   const int depth,
 				   const double tot_overhead)
@@ -3868,9 +3868,9 @@ static void printself_andchildren (const Timer *ptr,
 
 #ifdef ENABLE_PMPI
 /*
-** GPTLgetentry: called ONLY from pmpi.c (i.e. not a public entry point). Returns a pointer to the
+** GPTLgetentry: called ONLY from pmpi.c (i.e. not a public entry point). Returns a pointer to the 
 **               requested timer name by calling internal function getentry()
-**
+** 
 ** Return value: 0 (NULL) or the return value of getentry()
 */
 
@@ -3894,7 +3894,7 @@ Timer *GPTLgetentry (const char *name)
 }
 
 /*
-** GPTLpr_file_has_been_called: Called ONLY from pmpi.c (i.e. not a public entry point). Return
+** GPTLpr_file_has_been_called: Called ONLY from pmpi.c (i.e. not a public entry point). Return 
 **                              whether GPTLpr_file has been called. MPI_Finalize wrapper needs
 **                              to know whether it needs to call GPTLpr.
 */
@@ -3917,7 +3917,7 @@ int GPTLpr_has_been_called (void)
 ** $Id: gptl.c,v 1.157 2011-03-28 20:55:18 rosinski Exp $
 **
 ** Author: Jim Rosinski
-**
+** 
 ** Utility functions handle thread-based GPTL needs.
 */
 
@@ -3925,7 +3925,7 @@ int GPTLpr_has_been_called (void)
 #define MAX_THREADS 128
 
 /**********************************************************************************/
-/*
+/* 
 ** 3 sets of routines: OMP threading, PTHREADS, unthreaded
 */
 
@@ -3951,13 +3951,13 @@ static int threadinit (void)
   if (omp_get_thread_num () != 0)
     return GPTLerror ("OMP %s: MUST only be called by the master thread\n", thisfunc);
 
-  /*
-  ** Allocate the threadid array which maps physical thread IDs to logical IDs
+  /* 
+  ** Allocate the threadid array which maps physical thread IDs to logical IDs 
   ** For OpenMP this will be just threadid_omp[iam] = iam;
   */
 
-  if (threadid_omp)
-    return GPTLerror ("OMP %s: has already been called.\nMaybe mistakenly called by multiple threads?",
+  if (threadid_omp) 
+    return GPTLerror ("OMP %s: has already been called.\nMaybe mistakenly called by multiple threads?", 
 		      thisfunc);
 
   maxthreads = MAX ((1), (omp_get_max_threads ()));
@@ -3975,7 +3975,7 @@ static int threadinit (void)
 #ifdef VERBOSE
   printf ("OMP %s: Set maxthreads=%d\n", thisfunc, maxthreads);
 #endif
-
+  
   return 0;
 }
 
@@ -4018,7 +4018,7 @@ static inline int get_thread_num (void)
   if (t == threadid_omp[t])
     return t;
 
-  /*
+  /* 
   ** Thread id not found. Modify threadid_omp with our ID, then start PAPI events if required.
   ** Due to the setting of threadid_omp, everything below here will only execute once per thread.
   */
@@ -4049,7 +4049,7 @@ static inline int get_thread_num (void)
   /*
   ** nthreads = maxthreads based on setting in threadinit
   */
-
+  
   nthreads = maxthreads;
 #ifdef VERBOSE
   printf ("OMP %s: nthreads=%d\n", thisfunc, nthreads);
@@ -4069,7 +4069,7 @@ static void print_threadmapping (FILE *fp)
 }
 
 /**********************************************************************************/
-/*
+/* 
 ** PTHREADS
 */
 
@@ -4096,7 +4096,7 @@ static int threadinit (void)
   static const char *thisfunc = "threadinit";
 
   /*
-  ** The following test is not rock-solid, but it's pretty close in terms of guaranteeing that
+  ** The following test is not rock-solid, but it's pretty close in terms of guaranteeing that 
   ** threadinit gets called by only 1 thread. Problem is, mutex hasn't yet been initialized
   ** so we can't use it.
   */
@@ -4112,7 +4112,7 @@ static int threadinit (void)
   ** Previously, t_mutex = PTHREAD_MUTEX_INITIALIZER on the static declaration line was
   ** adequate to initialize the mutex. But this failed in programs that invoked
   ** GPTLfinalize() followed by GPTLinitialize().
-  ** "man pthread_mutex_init" indicates that passing NULL as the second argument to
+  ** "man pthread_mutex_init" indicates that passing NULL as the second argument to 
   ** pthread_mutex_init() should appropriately initialize the mutex, assuming it was
   ** properly destroyed by a previous call to pthread_mutex_destroy();
   */
@@ -4121,16 +4121,16 @@ static int threadinit (void)
   if ((ret = pthread_mutex_init ((pthread_mutex_t *) &t_mutex, NULL)) != 0)
     return GPTLerror ("PTHREADS %s: mutex init failure: ret=%d\n", thisfunc, ret);
 #endif
-
-  /*
-  ** Allocate the threadid array which maps physical thread IDs to logical IDs
+  
+  /* 
+  ** Allocate the threadid array which maps physical thread IDs to logical IDs 
   */
 
-  if (threadid)
+  if (threadid) 
     return GPTLerror ("PTHREADS %s: threadid not null\n", thisfunc);
   else if ( ! (threadid = (pthread_t *) GPTLallocate (MAX_THREADS * sizeof (pthread_t))))
     return GPTLerror ("PTHREADS %s: malloc failure for %d elements of threadid\n", thisfunc, MAX_THREADS);
-
+  
   maxthreads = MAX_THREADS;
 
   /*
@@ -4175,7 +4175,7 @@ static void threadfinalize ()
 **
 ** Output results:
 **   nthreads: Updated number of threads
-**   threadid: Our thread id added to list on 1st call
+**   threadid: Our thread id added to list on 1st call 
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
@@ -4210,7 +4210,7 @@ static inline int get_thread_num (void)
       return t;
 #endif
 
-  /*
+  /* 
   ** Thread id not found. Define a critical region, then start PAPI counters if
   ** necessary and modify threadid[] with our id.
   */
@@ -4234,7 +4234,7 @@ static inline int get_thread_num (void)
   threadid[nthreads] = mythreadid;
 
 #ifdef VERBOSE
-  printf ("PTHREADS %s: 1st call threadid=%lu maps to location %d\n",
+  printf ("PTHREADS %s: 1st call threadid=%lu maps to location %d\n", 
 	  thisfunc, (unsigned long) mythreadid, nthreads);
 #endif
 
@@ -4247,14 +4247,14 @@ static inline int get_thread_num (void)
 
   if (GPTLget_npapievents () > 0) {
 #ifdef VERBOSE
-    printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n",
+    printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n", 
 	    (unsigned long) mythreadid, nthreads);
 #endif
     if (GPTLcreate_and_start_events (nthreads) < 0) {
       if (unlock_mutex () < 0)
 	fprintf (stderr, "PTHREADS %s: mutex unlock failure\n", thisfunc);
 
-      return GPTLerror ("PTHREADS %s: error from GPTLcreate_and_start_events for thread %d\n",
+      return GPTLerror ("PTHREADS %s: error from GPTLcreate_and_start_events for thread %d\n", 
 			thisfunc, nthreads);
     }
   }
