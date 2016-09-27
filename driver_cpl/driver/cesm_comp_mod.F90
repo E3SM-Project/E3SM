@@ -2289,7 +2289,7 @@ end subroutine cesm_init
             call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), &
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
             call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
          endif
@@ -2789,7 +2789,7 @@ end subroutine cesm_init
             call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), &
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
             call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
          endif
@@ -3122,7 +3122,7 @@ end subroutine cesm_init
             call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), &
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
             call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
          endif
