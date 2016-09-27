@@ -1540,7 +1540,7 @@
     <desc>rof2ocn flux mapping file decomp type</desc>
   </entry>
 
-  <entry id="ROF2OCN_RMAPNAME">
+  <entry id="ROF2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
     <group>run_domain</group>
@@ -1548,7 +1548,24 @@
     <desc>rof2ocn runoff mapping file</desc>
   </entry>
 
-  <entry id="ROF2OCN_RMAPTYPE">
+  <entry id="ROF2OCN_LIQ_RMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn runoff mapping file decomp type</desc>
+  </entry>
+
+  <entry id="ROF2OCN_ICE_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn runoff mapping file</desc>
+  </entry>
+
+  <entry id="ROF2OCN_ICE_RMAPTYPE">
     <type>char</type>
     <valid_values>X,Y</valid_values>
     <default_value>Y</default_value>
