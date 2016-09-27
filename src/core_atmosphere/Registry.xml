@@ -1021,6 +1021,19 @@
 			<var name="sst"/>
 			<var name="xice"/>
 		</stream>
+
+                <stream name="lbc_in"
+                        type="input"
+                        filename_template="lbc.$Y-$M-$D_$h.$m.$s.nc"
+                        filename_interval="input_interval"
+                        input_interval="3:00:00" 
+                        runtime_format="single_file"
+                        immutable="true">
+
+                        <var name="xtime" />
+                        <var_struct name="lbc" />
+                </stream>
+
 	</streams>
 
 
