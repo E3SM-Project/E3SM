@@ -15,10 +15,18 @@ module mpas_atm_boundaries
     use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_timeInterval, mpas_set_time, operator(-)
     use mpas_stream_manager, only : mpas_stream_mgr_read
 
+    ! Important note: At present, the code in mpas_atm_setup_bdy_masks for
+    ! deriving the nearestRelaxationCell field assumes that nSpecZone == 2
+    integer, parameter :: nSpecZone = 2
+    integer, parameter :: nRelaxZone = 5
+    integer, parameter :: nBdyZone = nSpecZone + nRelaxZone
+
     public :: mpas_atm_update_bdy_tend, &
               mpas_atm_get_bdy_tend, &
               mpas_atm_get_bdy_state, &
               mpas_atm_setup_bdy_masks
+
+    public :: nBdyZone, nSpecZone, nRelaxZone
 
     private
 
@@ -323,25 +331,28 @@ module mpas_atm_boundaries
         call mpas_pool_get_array(mesh, 'zCell', zCell)
 
         !
-        ! For now, hard-code mask based on assumption that we have 7 layers, the first 
-        ! two of which are the specified zone
+        ! Setup mask identifying cells in the specified zone
         !
-        specifiedZoneMask(:) = 0.0_RKIND
-        where (bdyMaskCell(:) == 7) specifiedZoneMask(:) = 1.0_RKIND
-        where (bdyMaskCell(:) == 6) specifiedZoneMask(:) = 1.0_RKIND
+        do iCell=1,nCells
+            if (bdyMaskCell(iCell) > nRelaxZone) then
+                specifiedZoneMask(iCell) = 1.0_RKIND
+            else
+                specifiedZoneMask(iCell) = 0.0_RKIND
+            end if
+        end do
 
         nearestRelaxationCell(:) = nCells+1
 
         !
-        ! For nearest relaxation cell to inner specified zone (6), just search
-        ! all cellsOnCell with bdyMaskCell == 5
+        ! For nearest relaxation cell to inner specified zone, just search
+        ! all cellsOnCell with bdyMaskCell == nRelaxZone
         !
         do iCell=1,nCells
-            if (bdyMaskCell(iCell) == 6) then
+            if (bdyMaskCell(iCell) == (nRelaxZone+1)) then
                 dmin = 1.0e36
                 do j=1,nEdgesOnCell(iCell)
                     i = cellsOnCell(j,iCell)
-                    if (bdyMaskCell(i) == 5) then
+                    if (bdyMaskCell(i) == nRelaxZone) then
                         d = (xCell(i) - xCell(iCell))**2 + (yCell(i) - yCell(iCell))**2 + (zCell(i) - zCell(iCell))**2
                         if (d < dmin) then
                             dmin = d
@@ -353,19 +364,19 @@ module mpas_atm_boundaries
         end do
 
         !
-        ! For nearest relaxation cell to outer specified zone (7), search
+        ! For nearest relaxation cell to outer specified zone, search
         ! all cellsOnCell of cellsOnCell
         !
         do iCell=1,nCells
-            if (bdyMaskCell(iCell) == 7) then
+            if (bdyMaskCell(iCell) == (nRelaxZone+2)) then
                 dmin = 1.0e36
                 do j=1,nEdgesOnCell(iCell)
                     i = cellsOnCell(j,iCell)
-                    if (bdyMaskCell(i) == 6) then
+                    if (bdyMaskCell(i) == (nRelaxZone+1)) then
 
                         do jj=1,nEdgesOnCell(i)
                             ii = cellsOnCell(jj,i)
-                            if (bdyMaskCell(ii) == 5) then
+                            if (bdyMaskCell(ii) == nRelaxZone) then
 
                                 d = (xCell(ii) - xCell(iCell))**2 + (yCell(ii) - yCell(iCell))**2 + (zCell(ii) - zCell(iCell))**2
                                 if (d < dmin) then
