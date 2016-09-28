@@ -18,7 +18,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
 #        PRIVATE -mismatch_all)
 endif ()
 
-if (PIO_HDF5_LOGGING)
-    target_compile_definitions (pioperf
+if (PIO_HDF5_LOGGING) 
+    target_compile_definitions (pioperf 
         PUBLIC LOGGING)
 endif ()

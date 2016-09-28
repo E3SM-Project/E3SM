@@ -1,6 +1,6 @@
 # - Try to find LIBRT
 #
-# This can be controlled by setting the LIBRT_DIR (or, equivalently, the
+# This can be controlled by setting the LIBRT_DIR (or, equivalently, the 
 # LIBRT environment variable).
 #
 # Once done, this will define:
@@ -21,7 +21,7 @@ define_package_component (LIBRT
 
 # SEARCH FOR PACKAGE
 if (NOT LIBRT_FOUND)
-
+    
     # Search for the package
     find_package_component(LIBRT)
 

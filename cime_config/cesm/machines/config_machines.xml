@@ -758,11 +758,18 @@
       <modules compiler="gnu">
 	<command name="load">gnu/6.2.0</command>
       </modules>
-      <modules>
-	<command name="load">mpt/2.14</command>
-	<command name="load">ncarcompilers/0.3.1</command>
+      <modules mpilib="mpi-serial">
 	<command name="load">netcdf/4.4.1</command>
       </modules>
+      <modules mpilib="mpt">
+	<command name="load">netcdf-mpi/4.4.1</command>
+	<command name="load">pnetcdf/1.7.0</command>
+      </modules>
+      <modules>
+	<command name="load">mpt/2.15</command>
+	<command name="load">ncarcompilers/0.3.2</command>
+      </modules>
+
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>

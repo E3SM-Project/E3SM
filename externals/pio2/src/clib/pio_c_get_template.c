@@ -18,7 +18,7 @@ int PIO_function()
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -53,7 +53,7 @@ int PIO_function()
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }

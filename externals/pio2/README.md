@@ -15,7 +15,7 @@ cdash site at [http://my.cdash.org/index.php?project=PIO](http://my.cdash.org/in
 
 PIO can use NetCDF (version 4.3.3+) and/or PnetCDF (version 1.6.0+) for I/O.
 Ideally, the NetCDF version should be built with MPI, which requires that it
-be linked with an MPI-enabled version of HDF5.  Optionally, NetCDF can be
+be linked with an MPI-enabled version of HDF5.  Optionally, NetCDF can be 
 built with DAP support, which introduces a dependency on CURL.  Additionally,
 HDF5, itself, introduces dependencies on LIBZ and (optionally) SZIP.
 
@@ -32,10 +32,10 @@ where `mpicc` and `mpif90` are the appropriate MPI-enabled compiler wrappers
 for your system.
 
 The `OPTIONS` section typically should consist of pointers to the install
-locations for various dependencies, assuming these dependencies are not
-located in *canonical* search locations.
+locations for various dependencies, assuming these dependencies are not 
+located in *canonical* search locations.  
 
-For each dependency `XXX`, one can specify the location of its
+For each dependency `XXX`, one can specify the location of its 
 installation path with the CMake variable `XXX_PATH`.  If the `C` and
 `Fortran` libraries for the dependency are installed in different locations
 (such as can be done with NetCDF), then you can specify individually
@@ -64,14 +64,14 @@ libraries are already installed on the system, the user can point PIO to the
 location of these libraries with the `GPTL_PATH` variable (or, individually,
 `GPTL_C_PATH` and `GPTL_Fortran_Perf_PATH` variables).  However, if these
 GPTL libraries are not installed on the system, and GPTL cannot be found,
-then PIO will build its own internal version of GPTL.
+then PIO will build its own internal version of GPTL.  
 
 If PnetCDF is not installed on the system, the user can disable its use by
 setting `-DWITH_PNETCDF=OFF`.  This will disable the search for PnetCDF on the
 system and disable the use of PnetCDF from within PIO.
 
 If the user wishes to disable the PIO tests, then the user can set the
-variable `-DPIO_ENABLE_TESTS=OFF`.  This will entirely disable the CTest
+variable `-DPIO_ENABLE_TESTS=OFF`.  This will entirely disable the CTest 
 testing suite, as well as remove all of the test build targets.
 
 If you wish to install PIO in a safe location for use later with other
@@ -107,7 +107,7 @@ ctest
 If you have not run `make tests` before you run `ctest`, then you will see
 all of the tests fail.
 
-Alternatively, you may build the test executables and then run tests
+Alternatively, you may build the test executables and then run tests 
 immediately with:
 
 ```
@@ -117,7 +117,7 @@ make check
 (similar to the typical `make check` Autotools target).
 
 **NOTE:** It is important to note that these tests are designed to run in parallel.
-If you are on one of the supported supercomputing platforms (i.e., NERSC, NWSC, ALCF,
+If you are on one of the supported supercomputing platforms (i.e., NERSC, NWSC, ALCF, 
 etc.), then the `ctest` command will assume that the tests will be run in an appropriately
 configured and scheduled parallel job.  This can be done by requesting an interactive
 session from the login nodes and then running `ctest` from within the interactive

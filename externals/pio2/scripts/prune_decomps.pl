@@ -44,15 +44,15 @@ for(my $i=0; $i<= $#decompfiles; $i++){
     open(F1,">$file");
     foreach(@file1){
 	if(/\[(.*)\]/){
-	    my $decode = `addr2line -e ../bld/${CIME_MODEL}.exe $1`;
+	    my $decode = `addr2line -e ../bld/cesm.exe $1`;
 	    print F1 "$decode\n";
 	    print  "$decode\n";
 	}else{
 	    print F1 $_;
 	}
-
+	    
     }
     close(F1);
 
 }
-
+    

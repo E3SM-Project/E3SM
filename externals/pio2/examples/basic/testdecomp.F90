@@ -7,7 +7,7 @@
    use gdecomp_mod
 
    implicit none
-
+   
    integer, pointer  :: compDOF(:), ioDOF(:)
    integer :: startcomp(3),cntcomp(3)
    integer :: startio(3),cntio(3),gdims(3)
@@ -23,7 +23,7 @@
    num_tasks = 192
    gdims(1) = 3600
    gdims(2) = 2400
-   gdims(3) = 40
+   gdims(3) = 40 
 
 !   call gdecomp_read_nml(gdecomp,fin,'comp',my_task)
 !   print  *,'after gdecomp_read_nml'

@@ -151,19 +151,19 @@ my \f(CW$elm\fR = \f(CW$xml\fR->elements_by_name( 'element_name' );
 print \f(CW$elm\fR->get_attribute( 'attribute_name' );
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\f(CW\*(C`XML::Lite::Element\*(C'\fR objects contain rudimentary methods for querying \s-1XML\s0
-elements in an \s-1XML\s0 document as parsed by \s-1XML:\s0:Lite. Usually these objects
+\&\f(CW\*(C`XML::Lite::Element\*(C'\fR objects contain rudimentary methods for querying \s-1XML\s0 
+elements in an \s-1XML\s0 document as parsed by \s-1XML:\s0:Lite. Usually these objects 
 are returned by method calls in \s-1XML:\s0:Lite.
 .SH "METHODS"
 .IX Header "METHODS"
-The following methods are available. All methods like 'get_name' can be
+The following methods are available. All methods like 'get_name' can be 
 abbeviated as 'name.'
 .Ip "my \f(CW$element\fR = new \s-1XML:\s0:Lite::Element( \f(CW$owner_document\fR, \e@pointers );" 4
 .IX Item "my $element = new XML::Lite::Element( $owner_document, @pointers );"
 Creates a new \s-1XML:\s0:Lite::Element object from the \s-1XML:\s0:Lite object, \f(CW\*(C`$owner_document\*(C'\fR.
 .Sp
-Currently, you must not call this manually. You can create an object with one of
-the 'factory' methods in \s-1XML:\s0:Lite, such as \f(CW\*(C`element_by_name\*(C'\fR or \f(CW\*(C`root_element\*(C'\fR
+Currently, you must not call this manually. You can create an object with one of 
+the 'factory' methods in \s-1XML:\s0:Lite, such as \f(CW\*(C`element_by_name\*(C'\fR or \f(CW\*(C`root_element\*(C'\fR 
 or with one of the \s-1XML:\s0:Lite::Element 'factory' methods below, like \f(CW\*(C`get_children\*(C'\fR.
 .Ip "my \f(CW$content\fR = \f(CW$element\fR->\fIget_content()\fR" 4
 .IX Item "my $content = $element->get_content()"
@@ -180,9 +180,9 @@ Returns the value of the named attribute for this element.
 Returns the name of the element tag
 .Ip "my \f(CW@children\fR = \f(CW$element\fR->\fIget_children()\fR" 4
 .IX Item "my @children = $element->get_children()"
-Returns a list of \s-1XML:\s0:Lite::Element objects for each element contained
-within the current element. This does not return any text or \s-1CDATA\s0 in
-the content of this element. You can parse that through the the get_content manpage
+Returns a list of \s-1XML:\s0:Lite::Element objects for each element contained 
+within the current element. This does not return any text or \s-1CDATA\s0 in 
+the content of this element. You can parse that through the the get_content manpage 
 method.
 .Sp
 If no child elements exist then an empty list is returned.

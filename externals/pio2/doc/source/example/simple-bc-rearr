@@ -1,6 +1,6 @@
 
  type (iosystem_desc_t)     :: iosystem
- integer (i4)               :: dims(1)
+ integer (i4)               :: dims(1) 
  integer (kind=PIO_OFFSET)  :: compstart(1), compcount(1)
  integer (kind=PIO_OFFSET)  :: iostart(1), iocount(1)
  type (io_desc_t)           :: iodesc

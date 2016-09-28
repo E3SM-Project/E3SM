@@ -90,7 +90,7 @@ if (ENABLE_LIBRT)
             PUBLIC ${LIBRT_INCLUDE_DIRECTORIES})
         target_link_libraries (gptl
             PUBLIC ${LIBRT_LIBRARIES})
-    endif ()
+    endif () 
 endif ()
 
 #===== MPI =====
@@ -116,7 +116,7 @@ else ()
             PUBLIC HAVE_MPI)
     endif ()
 endif ()
-
+            
 # Check MPI library for Comm_f2c function
 set (CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARIES})
 check_function_exists (MPI_Comm_f2c MPI_HAS_COMM_F2C)
@@ -141,7 +141,7 @@ else ()
     target_compile_definitions (gptl
             PUBLIC NO_MPIMOD)
 endif ()
-
+        
 #===== GetTimeOfDay =====
 if (NOT DEFINED SYSTEM_HAS_GETTIMEOFDAY)
     get_target_property (GPTL_LINK_LIBRARIES gptl LINK_LIBRARIES)

@@ -2,7 +2,7 @@
 ** $Id: f_wrappers.c,v 1.56 2010-12-29 18:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
-**
+** 
 ** Fortran wrappers for timing library routines
 */
 
@@ -175,12 +175,12 @@ int gptlsetoption (int *option, int *val);
 int gptlenable (void);
 int gptldisable (void);
 int gptlsetutr (int *option);
-int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock,
-		      double *usr, double *sys, long long *papicounters_out, int *maxcounters,
+int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
+		      double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
 		      int nc);
 int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
 int gptlget_wallclock (const char *name, int *t, double *value, int nc);
-int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value,
+int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
 			int nc1, int nc2);
 int gptlget_nregions (int *t, int *nregions);
 int gptlget_regionname (int *t, int *region, char *name, int nc);
@@ -258,7 +258,7 @@ int gptlpr_summary (int *fcomm)
 #endif
 #else
   int ccomm = 0;
-#endif
+#endif 
 
   return GPTLpr_summary (ccomm);
 }
@@ -278,7 +278,7 @@ int gptlpr_summary_file (int *fcomm, char *file, int nc1)
 #endif
 #else
   int ccomm = 0;
-#endif
+#endif 
 
   if ( ! (locfile = (char *) malloc (nc1+1)))
     return GPTLerror ("gptlpr_summary_file: malloc error\n");
@@ -304,7 +304,7 @@ int gptlbarrier (int *fcomm, char *name, int nc1)
 #endif
 #else
   int ccomm = 0;
-#endif
+#endif 
 
   numchars = MIN (nc1, MAX_CHARS);
   strncpy (cname, name, numchars);
@@ -394,8 +394,8 @@ int gptlsetutr (int *option)
   return GPTLsetutr (*option);
 }
 
-int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock,
-	       double *usr, double *sys, long long *papicounters_out, int *maxcounters,
+int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
+	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
 	       int nc)
 {
   char cname[MAX_CHARS+1];
@@ -430,7 +430,7 @@ int gptlget_wallclock (const char *name, int *t, double *value, int nc)
   return GPTLget_wallclock (cname, *t, value);
 }
 
-int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value,
+int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
 			int nc1, int nc2)
 {
   char ctimername[MAX_CHARS+1];

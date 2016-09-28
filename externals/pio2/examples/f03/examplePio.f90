@@ -10,7 +10,7 @@ module pioExample
     use pio, only : PIO_nowrite, PIO_openfile
 
     implicit none
-
+    save
     private
 
     include 'mpif.h'
