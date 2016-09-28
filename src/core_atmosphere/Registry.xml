@@ -1319,6 +1319,9 @@
                 <var name="bdyMaskVertex" type="integer" dimensions="nVertices" units="-"
                      description="Limited-area specified/relaxation zone index for vertices"/>
 
+                <var name="specifiedZoneMask" type="real" dimensions="nCells" units="-"
+                     description="0/1 mask on cells, defined as 1 for cells in the limited-area specified zone"/>
+
         </var_struct>
 
         <var_struct name="state" time_levs="2">

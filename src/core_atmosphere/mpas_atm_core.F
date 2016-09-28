@@ -226,6 +226,7 @@ module atm_core
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use mpas_stream_manager
+      use mpas_atm_boundaries, only : mpas_atm_setup_bdy_masks
 #ifdef DO_PHYSICS
 !     use mpas_atmphys_aquaplanet
       use mpas_atmphys_control
@@ -388,6 +389,11 @@ module atm_core
       call atm_compute_damping_coefs(mesh, block % configs)
 
       call atm_compute_pgf_coefs(mesh, block % configs)
+
+      !
+      ! Set up mask fields used in limited-area simulations
+      !
+      call mpas_atm_setup_bdy_masks(mesh, block % configs)
 
       call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)

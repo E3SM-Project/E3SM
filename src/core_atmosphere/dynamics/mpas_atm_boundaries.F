@@ -16,7 +16,8 @@ module mpas_atm_boundaries
     use mpas_stream_manager, only : mpas_stream_mgr_read
 
     public :: mpas_atm_update_bdy_tend, &
-              mpas_atm_get_bdy_tend
+              mpas_atm_get_bdy_tend, &
+              mpas_atm_setup_bdy_masks
 
     private
 
@@ -207,5 +208,41 @@ module mpas_atm_boundaries
         scalars(:,:,:) = lbc_scalars(:,:,:) - dt * lbc_tend_scalars(:,:,:)
 
     end subroutine mpas_atm_get_bdy_tend
+
+
+    !***********************************************************************
+    !
+    !  routine mpas_atm_setup_bdy_masks
+    !
+    !> \brief   Prepares mask fields for boundaries of limited-area
+    !> \author  Michael Duda
+    !> \date    28 September 2016
+    !> \details 
+    !>  This routine prepares mask fields needed to distinguish cells in 
+    !>  the specified zone from those in the relaxation zone.
+    !
+    !-----------------------------------------------------------------------
+    subroutine mpas_atm_setup_bdy_masks(mesh, configs)
+
+        implicit none
+
+        type (mpas_pool_type), intent(inout) :: mesh
+        type (mpas_pool_type), intent(in) :: configs
+
+        integer, dimension(:), pointer :: bdyMaskCell
+        real (kind=RKIND), dimension(:), pointer :: specifiedZoneMask
+
+        call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
+        call mpas_pool_get_array(mesh, 'specifiedZoneMask', specifiedZoneMask)
+
+        !
+        ! For now, hard-code mask based on assumption that we have 7 layers, the first 
+        ! two of which are the specified zone
+        !
+        specifiedZoneMask(:) = 0.0_RKIND
+        where (bdyMaskCell(:) == 7) specifiedZoneMask(:) = 1.0_RKIND
+        where (bdyMaskCell(:) == 6) specifiedZoneMask(:) = 1.0_RKIND
+
+    end subroutine mpas_atm_setup_bdy_masks
 
 end module mpas_atm_boundaries
