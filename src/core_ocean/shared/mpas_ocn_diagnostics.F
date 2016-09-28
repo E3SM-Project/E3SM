@@ -1745,7 +1745,7 @@ contains
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
          landIceFrictionVelocity(iCell) = sqrt(config_land_ice_flux_topDragCoeff * (2.0_RKIND * kineticEnergyCell(1,iCell) &
-                                   + config_land_ice_flux_rms_tidal_velocity))
+                                   + config_land_ice_flux_rms_tidal_velocity**2))
       end do
       !$omp end do
 
