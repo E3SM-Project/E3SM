@@ -239,10 +239,8 @@
   <batch_system MACH="laramie" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
-    <submit_args>
-       <arg flag="-l select=" name="$TOTALPES"/>
-    </submit_args>
     <queues>
       <queue walltimemin="0" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
     </queues>
@@ -268,7 +266,7 @@
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads=$OMP_NUM_THREADS:model=has</directive>
+      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=has</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -282,7 +280,7 @@
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads=$OMP_NUM_THREADS:model=ivy</directive>
+      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=ivy</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -302,7 +300,7 @@
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads=$OMP_NUM_THREADS:model=san</directive>
+      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=san</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -316,7 +314,7 @@
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads=$OMP_NUM_THREADS:model=wes</directive>
+      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=wes</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
