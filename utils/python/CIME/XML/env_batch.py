@@ -229,7 +229,8 @@ class EnvBatch(EnvBase):
             self.num_nodes = num_nodes
         else:
             self.total_tasks = task_count
-            self.num_nodes = math.ceil(float(task_count)/float(tasks_per_node))
+            self.num_nodes = int(math.ceil(float(task_count)/float(tasks_per_node)))
+
         self.pedocumentation = ""
         self.job_id = case.get_value("CASE") + os.path.splitext(job)[1]
         if "pleiades" in case.get_value("MACH"):

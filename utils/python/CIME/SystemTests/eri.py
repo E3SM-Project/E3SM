@@ -191,7 +191,7 @@ class ERI(SystemTestsCommon):
             newfile = os.path.basename(newfile)
             os.symlink(item, os.path.join(rundir, newfile))
 
-        self._component_compare_move("hybrid")
+        self._component_compare_copy("hybrid")
 
         # run branch case (short term archiving is off)
         self.run_indv()
