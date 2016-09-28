@@ -81,7 +81,7 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+      <arg name="thread_count" > -c {{ thread_count }}</arg>
 
     </arguments>
   </mpirun>
@@ -197,7 +197,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-	<arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -740,7 +740,7 @@
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -862,7 +862,7 @@
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1128,7 +1128,7 @@
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
         <arg name="num_tasks" > -n $TOTALPES</arg>
         <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-        <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
+        <arg name="thread_count" > -d {{ thread_count }}</arg>
         <arg name="numa_node" > -cc numa_node </arg>
       </arguments>
 
@@ -1295,7 +1295,7 @@
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
              <arg name="num_tasks" > -n $TOTALPES</arg>
              <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-             <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
+             <arg name="thread_count" > -d {{ thread_count }}</arg>
              <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
          </mpirun>
@@ -1660,7 +1660,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
+                <arg name="thread_count"> -d {{ thread_count }}</arg>
              </arguments>
          </mpirun>
 </machine>
@@ -1699,7 +1699,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d $OMP_NUM_THREADS </arg>
+                <arg name="thread_count"> -d {{ thread_count }} </arg>
              </arguments>
          </mpirun>
 </machine>
