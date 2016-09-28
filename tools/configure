@@ -96,7 +96,7 @@ def parse_command_line(args):
            "Invalid compiler vendor given in COMPILER environment variable: %s"
            % compiler)
     opts['compiler'] = compiler
-
+    opts['os'] = machobj.get_value('OS')
     # Set MPI library.
     if "MPILIB" in os.environ:
         mpilib = os.environ["MPILIB"]
@@ -121,7 +121,7 @@ def parse_command_line(args):
 
     return opts
 
-def configure(machobj, output_dir, macros_format, compiler, mpilib, debug):
+def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos):
     """Add Macros, Depends, and env_mach_specific files to a directory.
 
     Arguments:
@@ -163,14 +163,21 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug):
         ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
         with open(shell_path, 'a') as shell_file:
-            shell_file.write("\nexport COMPILER=%s\n" % compiler)
-            shell_file.write("export MPILIB=%s\n" % mpilib)
-            shell_file.write("export DEBUG=%s\n" % repr(debug).upper())
+            if shell == 'sh':
+                shell_file.write("\nexport COMPILER=%s\n" % compiler)
+                shell_file.write("export MPILIB=%s\n" % mpilib)
+                shell_file.write("export DEBUG=%s\n" % repr(debug).upper())
+                shell_file.write("export OS=%s\n" % sysos)
+            else:
+                shell_file.write("\nsetenv COMPILER %s\n" % compiler)
+                shell_file.write("setenv MPILIB %s\n" % mpilib)
+                shell_file.write("setenv DEBUG %s\n" % repr(debug).upper())
+                shell_file.write("setenv OS %s\n" % sysos)
 
 def _main():
     opts = parse_command_line(sys.argv)
     configure(opts['machobj'], opts['output_dir'], opts['macros_format'],
-              opts['compiler'], opts['mpilib'], opts['debug'])
+              opts['compiler'], opts['mpilib'], opts['debug'], opts['os'])
 
 if __name__ == "__main__":
     _main()
