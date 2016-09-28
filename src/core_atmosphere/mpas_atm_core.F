@@ -411,6 +411,7 @@ module atm_core
       use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
       use mpas_atm_soundings, only : mpas_atm_soundings_write
+      use mpas_atm_boundaries, only : mpas_atm_update_bdy_tend
    
       implicit none
    
@@ -497,6 +498,17 @@ module atm_core
       call mpas_atm_soundings_write(mesh, state, diag, diag_physics)
       call mpas_timer_stop('write_soundings')
 
+      !
+      ! Read initial boundary state
+      !
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+         block_ptr => domain % blocklist
+         do while (associated(block_ptr))
+            call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .true.)
+            block_ptr => block_ptr % next
+         end do
+      end if
+
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       itimestep = 1
@@ -507,6 +519,19 @@ module atm_core
 
          write(0,*) ' '
          write(0,*) 'Begin timestep ', trim(timeStamp)
+
+         !
+         ! Read future boundary state and compute boundary tendencies
+         !
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+            block_ptr => domain % blocklist
+            do while (associated(block_ptr))
+               call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .false.)
+               block_ptr => block_ptr % next
+            end do
+         end if
+         call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)
+
 
          !
          ! Read external field updates
