@@ -17,6 +17,7 @@ module mpas_atm_boundaries
 
     public :: mpas_atm_update_bdy_tend, &
               mpas_atm_get_bdy_tend, &
+              mpas_atm_get_bdy_state, &
               mpas_atm_setup_bdy_masks
 
     private
@@ -125,46 +126,124 @@ module mpas_atm_boundaries
     !
     !  routine mpas_atm_get_bdy_tend
     !
-    !> \brief   Retrieves LBC tendencies or state at a specified delta-t in the future
+    !> \brief   Returns LBC tendencies a specified delta-t in the future
     !> \author  Michael Duda
-    !> \date    27 September 2016
+    !> \date    28 September 2016
     !> \details 
-    !>  This routine provides example code to obtain tendencies for all fields
-    !>  in the lbc pool, or to obtain the state valid at the specified delta-t in
-    !>  the future for all fields in the lbc pool.
+    !>  This function returns an array providing the tendency for the requested
+    !>  progostic variable delta_t in the future from the current time known
+    !>  by the simulation clock (which is typically the time at the start of
+    !>  the current timestep).
+    !>
+    !>  The vertDim and horizDim should match the nominal block dimensions of
+    !>  the field to be returned by the call; for example, a call to retrieve
+    !>  the tendency for the 'u' field would set vertDim=nVertLevels and 
+    !>  horizDim=nEdges. This function internally adds 1 to the horizontal
+    !>  dimension to account for the "garbage" element.
+    !>
+    !>  The field is identified by the 'field' argument, and this argument is
+    !>  prefixed with 'lbc_' before attempting to retrieve the field from
+    !>  the 'lbc' pool. For scalars, the field argument should give the name 
+    !>  of the constituent, e.g., 'qv'.
+    !>
+    !>  Example calls to this function:
+    !>  
+    !>   tend_u(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nEdges, 'u', 0.0_RKIND)
+    !>   tend_w(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels+1, nCells, 'w', 0.0_RKIND)
+    !>   tend_rho_zz(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nCells, 'rho_zz', 0.0_RKIND)
+    !>   tend_theta_m(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nCells, 'theta_m', 0.0_RKIND)
+    !>   tend_scalars(1,:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nCells, 'qv', 0.0_RKIND)
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_atm_get_bdy_tend(clock, block, delta_t)
+    function mpas_atm_get_bdy_tend(clock, block, vertDim, horizDim, field, delta_t) result(return_tend)
 
         implicit none
 
         type (mpas_clock_type), intent(in) :: clock
         type (block_type), intent(inout) :: block
+        integer, intent(in) :: vertDim, horizDim
+        character(len=*), intent(in) :: field
         real (kind=RKIND), intent(in) :: delta_t
 
-        type (mpas_pool_type), pointer :: state
+        real (kind=RKIND), dimension(vertDim,horizDim+1) :: return_tend
+
         type (mpas_pool_type), pointer :: lbc
+        integer, pointer :: idx
+        real (kind=RKIND), dimension(:,:), pointer :: tend
+        real (kind=RKIND), dimension(:,:,:), pointer :: tend_scalars
+        integer :: ierr
 
 
-        real (kind=RKIND), dimension(:,:), pointer :: u
-        real (kind=RKIND), dimension(:,:), pointer :: w
-        real (kind=RKIND), dimension(:,:), pointer :: theta_m
-        real (kind=RKIND), dimension(:,:), pointer :: rho_zz
-        real (kind=RKIND), dimension(:,:,:), pointer :: scalars
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_u
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_w
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_theta_m
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_rho_zz
-        real (kind=RKIND), dimension(:,:,:), pointer :: lbc_scalars
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_u
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_w
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_theta_m
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_zz
-        real (kind=RKIND), dimension(:,:,:), pointer :: lbc_tend_scalars
+        call mpas_pool_get_subpool(block % structs, 'lbc', lbc)
 
+        nullify(tend)
+        call mpas_pool_get_array(lbc, 'lbc_'//trim(field), tend, 1)
+
+        if (associated(tend)) then
+            return_tend(:,:) = tend(:,:)
+        else
+            call mpas_pool_get_array(lbc, 'lbc_scalars', tend_scalars, 1)
+            call mpas_pool_get_dimension(lbc, 'index_'//trim(field), idx)
+
+            return_tend(:,:) = tend_scalars(idx,:,:)
+        end if
+
+    end function mpas_atm_get_bdy_tend
+
+
+    !***********************************************************************
+    !
+    !  routine mpas_atm_get_bdy_state
+    !
+    !> \brief   Returns LBC state at a specified delta-t in the future
+    !> \author  Michael Duda
+    !> \date    28 September 2016
+    !> \details 
+    !>  This function returns an array providing the state for the requested
+    !>  progostic variable delta_t in the future from the current time known
+    !>  by the simulation clock (which is typically the time at the start of
+    !>  the current timestep).
+    !>
+    !>  The vertDim and horizDim should match the nominal block dimensions of
+    !>  the field to be returned by the call; for example, a call to retrieve
+    !>  the state of the 'u' field would set vertDim=nVertLevels and 
+    !>  horizDim=nEdges. This function internally adds 1 to the horizontal
+    !>  dimension to account for the "garbage" element.
+    !>
+    !>  The field is identified by the 'field' argument, and this argument is
+    !>  prefixed with 'lbc_' before attempting to retrieve the field from
+    !>  the 'lbc' pool. For scalars, the field argument should give the name 
+    !>  of the constituent, e.g., 'qv'.
+    !>
+    !>  Example calls to this function:
+    !>  
+    !>   u(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nEdges, 'u', 0.0_RKIND)
+    !>   w(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels+1, nCells, 'w', 0.0_RKIND)
+    !>   rho_zz(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nCells, 'rho_zz', 0.0_RKIND)
+    !>   theta_m(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nCells, 'theta_m', 0.0_RKIND)
+    !>   scalars(1,:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nCells, 'qv', 0.0_RKIND)
+    !
+    !-----------------------------------------------------------------------
+    function mpas_atm_get_bdy_state(clock, block, vertDim, horizDim, field, delta_t) result(return_state)
+
+        implicit none
+
+        type (mpas_clock_type), intent(in) :: clock
+        type (block_type), intent(inout) :: block
+        integer, intent(in) :: vertDim, horizDim
+        character(len=*), intent(in) :: field
+        real (kind=RKIND), intent(in) :: delta_t
+
+        real (kind=RKIND), dimension(vertDim,horizDim+1) :: return_state
+
+        type (mpas_pool_type), pointer :: lbc
+        integer, pointer :: idx
+        real (kind=RKIND), dimension(:,:), pointer :: tend
+        real (kind=RKIND), dimension(:,:), pointer :: state
+        real (kind=RKIND), dimension(:,:,:), pointer :: tend_scalars
+        real (kind=RKIND), dimension(:,:,:), pointer :: state_scalars
         type (MPAS_Time_Type) :: currTime
         type (MPAS_TimeInterval_Type) :: lbc_interval
-
         integer :: dd_intv, s_intv, sn_intv, sd_intv
         real (kind=RKIND) :: dt
         integer :: ierr
@@ -180,34 +259,24 @@ module mpas_atm_boundaries
 
         dt = dt - delta_t
 
-        call mpas_pool_get_subpool(block % structs, 'state', state)
         call mpas_pool_get_subpool(block % structs, 'lbc', lbc)
 
-        call mpas_pool_get_array(state, 'u', u, 1)
-        call mpas_pool_get_array(state, 'w', w, 1)
-        call mpas_pool_get_array(state, 'theta_m', theta_m, 1)
-        call mpas_pool_get_array(state, 'rho_zz', rho_zz, 1)
-        call mpas_pool_get_array(state, 'scalars', scalars, 1)
+        nullify(tend)
+        nullify(state)
+        call mpas_pool_get_array(lbc, 'lbc_'//trim(field), tend, 1)
+        call mpas_pool_get_array(lbc, 'lbc_'//trim(field), state, 2)
 
-        call mpas_pool_get_array(lbc, 'lbc_u', lbc_tend_u, 1)
-        call mpas_pool_get_array(lbc, 'lbc_w', lbc_tend_w, 1)
-        call mpas_pool_get_array(lbc, 'lbc_theta_m', lbc_tend_theta_m, 1)
-        call mpas_pool_get_array(lbc, 'lbc_rho_zz', lbc_tend_rho_zz, 1)
-        call mpas_pool_get_array(lbc, 'lbc_scalars', lbc_tend_scalars, 1)
+        if (associated(tend) .and. associated(state)) then
+            return_state(:,:) = state(:,:) - dt * tend(:,:)
+        else
+            call mpas_pool_get_array(lbc, 'lbc_scalars', tend_scalars, 1)
+            call mpas_pool_get_array(lbc, 'lbc_scalars', state_scalars, 2)
+            call mpas_pool_get_dimension(lbc, 'index_'//trim(field), idx)
 
-        call mpas_pool_get_array(lbc, 'lbc_u', lbc_u, 2)
-        call mpas_pool_get_array(lbc, 'lbc_w', lbc_w, 2)
-        call mpas_pool_get_array(lbc, 'lbc_theta_m', lbc_theta_m, 2)
-        call mpas_pool_get_array(lbc, 'lbc_rho_zz', lbc_rho_zz, 2)
-        call mpas_pool_get_array(lbc, 'lbc_scalars', lbc_scalars, 2)
+            return_state(:,:) = state_scalars(idx,:,:) - dt * tend_scalars(idx,:,:)
+        end if
 
-        u(:,:) = lbc_u(:,:) - dt * lbc_tend_u(:,:)
-        w(:,:) = lbc_w(:,:) - dt * lbc_tend_w(:,:)
-        theta_m(:,:) = lbc_theta_m(:,:) - dt * lbc_tend_theta_m(:,:)
-        rho_zz(:,:) = lbc_rho_zz(:,:) - dt * lbc_tend_rho_zz(:,:)
-        scalars(:,:,:) = lbc_scalars(:,:,:) - dt * lbc_tend_scalars(:,:,:)
-
-    end subroutine mpas_atm_get_bdy_tend
+    end function mpas_atm_get_bdy_state
 
 
     !***********************************************************************
