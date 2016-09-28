@@ -39,7 +39,7 @@
      <batch_directive></batch_directive>
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
-     <walltime_format>%M</walltime_format>
+     <walltime_format>%H:%M:%S</walltime_format>
      <submit_args>
        <arg flag="--cwd" name="CASEROOT"/>
        <arg flag="-A" name="PROJECT"/>
@@ -194,21 +194,21 @@
 
     <batch_system MACH="mira" type="cobalt">
       <queues>
-        <queue walltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
+        <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
       </queues>
       <walltimes>
-        <walltime default="true">30</walltime>
-        <walltime ccsm_estcost="-3">60</walltime>
-        <walltime ccsm_estcost="0">60</walltime>
+        <walltime default="true">00:30:00</walltime>
+        <walltime ccsm_estcost="-3">01:00:00</walltime>
+        <walltime ccsm_estcost="0">01:00:00</walltime>
       </walltimes>
     </batch_system>
 
     <batch_system MACH="cetus" type="cobalt">
       <queues>
-        <queue walltimemin="5" walltimemax="59" jobmin="64" jobmax="2048" default="true">default</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="4096" default="true">default</queue>
       </queues>
       <walltimes>
-        <walltime default="true">59</walltime>
+        <walltime default="true">01:00:00</walltime>
       </walltimes>
     </batch_system>
 

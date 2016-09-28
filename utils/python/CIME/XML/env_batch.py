@@ -282,7 +282,6 @@ class EnvBatch(EnvBase):
             if walltime is None:
                 logger.warn("Could not find a queue matching task count %d, falling back to depreciated default walltime parameter"%task_count)
                 walltime = self.get_default_walltime()
-
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
             logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
 
