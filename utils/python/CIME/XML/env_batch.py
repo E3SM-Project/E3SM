@@ -216,12 +216,13 @@ class EnvBatch(EnvBase):
         if batchobj.machine_node is not None:
             self.root.append(deepcopy(batchobj.machine_node))
 
-    def make_batch_script(self, input_template, job, case, total_tasks, tasks_per_node, num_nodes):
+    def make_batch_script(self, input_template, job, case, total_tasks, tasks_per_node, num_nodes, thread_count):
         expect(os.path.exists(input_template), "input file '%s' does not exist" % input_template)
 
         self.tasks_per_node = tasks_per_node
         self.num_tasks = total_tasks
         self.tasks_per_numa = tasks_per_node / 2
+        self.thread_count = thread_count
 
         task_count = self.get_value("task_count", subgroup=job)
         if task_count == "default":

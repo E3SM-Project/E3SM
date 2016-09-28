@@ -239,10 +239,8 @@
   <batch_system MACH="laramie" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
-    <submit_args>
-       <arg flag="-l select=" name="$TOTALPES"/>
-    </submit_args>
     <queues>
       <queue walltimemin="0" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
     </queues>
