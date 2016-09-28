@@ -398,6 +398,9 @@
 			<var name="fEdge"/>
 			<var name="fVertex"/>
 			<var name="meshDensity"/>
+			<var name="bdyMaskCell"/>
+			<var name="bdyMaskEdge"/>
+			<var name="bdyMaskVertex"/>
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
@@ -527,6 +530,9 @@
 			<var name="meshDensity"/>
 			<var name="meshScalingDel2"/>
 			<var name="meshScalingDel4"/>
+			<var name="bdyMaskCell"/>
+			<var name="bdyMaskEdge"/>
+			<var name="bdyMaskVertex"/>
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
@@ -1303,6 +1309,16 @@
 
                 <var name="z_iso_levels" type="real" dimensions="nIsoLevelsZ" units="Pa"
                      description="Levels for vertical interpolation of height to isobaric surfaces"/>
+
+                <var name="bdyMaskCell" type="integer" dimensions="nCells" units="-"
+                     description="Limited-area specified/relaxation zone index for cells"/>
+
+                <var name="bdyMaskEdge" type="integer" dimensions="nEdges" units="-"
+                     description="Limited-area specified/relaxation zone index for edges"/>
+
+                <var name="bdyMaskVertex" type="integer" dimensions="nVertices" units="-"
+                     description="Limited-area specified/relaxation zone index for vertices"/>
+
         </var_struct>
 
         <var_struct name="state" time_levs="2">
