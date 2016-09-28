@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<config case="init_step1">
+
+	<get_file hash="kpqjir3tne" dest_path="mesh_database" file_name="doubly_periodic_5km_100x20km_planar.160926.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="Ocean1_input_geom_v1.01.nc">
+		<mirror protocol="wget" url="http://portal.nersc.gov/project/iceocean/isomip+/inputGeometry/"/>
+	</get_file>
+
+	<add_link source_path="mesh_database" source="doubly_periodic_5km_100x20km_planar.160926.nc" dest="base_mesh.nc"/>
+	<add_link source_path="initial_condition_database" source="Ocean1_input_geom_v1.01.nc" dest="input_geometry.nc"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+	<add_link source_path="script_configuration_dir" source="processInputGeometry.py" dest="processInputGeometry.py"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="template_init.xml" path_base="script_configuration_dir"/>
+		<option name="config_write_cull_cell_mask">.true.</option>
+		<option name="config_isomip_plus_init_bot_temp">1.0</option>
+		<option name="config_isomip_plus_init_bot_sal">34.7</option>
+		<option name="config_isomip_plus_restore_evap_rate">200.0</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="template_init.xml" path_base="script_configuration_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./processInputGeometry.py">
+			<argument flag="">input_geometry.nc</argument>
+			<argument flag="">input_geometry_processed.nc</argument>
+			<argument flag="">5.0</argument>
+			<argument flag="">100.0</argument>
+		</step>
+
+		<step executable="./MpasMeshConverter.x">
+			<argument flag="">base_mesh.nc</argument>
+			<argument flag="">mesh.nc</argument>
+		</step>
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+
+		<step executable="./MpasCellCuller.x">
+			<argument flag="">ocean.nc</argument>
+		</step>
+	</run_script>
+</config>
