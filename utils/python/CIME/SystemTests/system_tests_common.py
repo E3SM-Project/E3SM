@@ -206,7 +206,7 @@ class SystemTestsCommon(object):
             expect(False, "Coupler did not indicate run passed")
 
         if suffix is not None:
-            self._component_compare_move(suffix)
+            self._component_compare_copy(suffix)
 
         if st_archive:
             case_st_archive(self._case)
@@ -222,8 +222,8 @@ class SystemTestsCommon(object):
             logger.info("%s is not compressed, assuming run failed"%newestcpllogfile)
         return False
 
-    def _component_compare_move(self, suffix):
-        comments = move(self._case, suffix)
+    def _component_compare_copy(self, suffix):
+        comments = copy(self._case, suffix)
         append_status(comments, sfile="TestStatus.log")
 
     def _component_compare_test(self, suffix1, suffix2):

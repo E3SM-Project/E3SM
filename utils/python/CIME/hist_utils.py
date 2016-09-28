@@ -49,11 +49,11 @@ def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
     return histlist
 
 
-def move(case, suffix):
-    """
-    Change the suffix for the most recent batch of hist files in a case. This can
-    allow you to temporarily "save" these files so they won't be blown away if you
-    re-run the case.
+def copy(case, suffix):
+    """Copy the most recent batch of hist files in a case, adding the given suffix.
+
+    This can allow you to temporarily "save" these files so they won't be blown
+    away if you re-run the case.
 
     case - The case containing the files you want to save
     suffix - The string suffix you want to add to saved files, this can be used to find them later.
@@ -62,21 +62,34 @@ def move(case, suffix):
     testcase = case.get_value("CASE")
 
     # Loop over models
-    comments = "Moving hist files to suffix '%s'\n" % suffix
-    num_moved = 0
+    comments = "Copying hist files to suffix '%s'\n" % suffix
+    num_copied = 0
     for model in _iter_model_file_substrs(case):
-        comments += "  Moving hist files for model '%s'\n" % model
+        comments += "  Copying hist files for model '%s'\n" % model
         test_hists = _get_latest_hist_files(testcase, model, rundir)
-        num_moved += len(test_hists)
+        num_copied += len(test_hists)
         for test_hist in test_hists:
             new_file = "%s.%s" % (test_hist, suffix)
             if os.path.exists(new_file):
                 os.remove(new_file)
 
             comments += "    Copying '%s' to '%s'\n" % (test_hist, new_file)
+
+            # Need to copy rather than move in case there are some history files
+            # that will need to continue to be filled on the next phase; this
+            # can be the case for a restart run.
+            #
+            # (If it weren't for that possibility, a move/rename would be more
+            # robust here: The problem with a copy is that there can be
+            # confusion after the second run as to which files were created by
+            # the first run and which by the second. For example, if the second
+            # run fails to output any history files, the test will still pass,
+            # because the test system will think that run1's files were output
+            # by run2. But we live with that downside for the sake of the reason
+            # noted above.)
             shutil.copy(test_hist, new_file)
 
-    expect(num_moved > 0, "move failed: no hist files found in rundir '%s'" % rundir)
+    expect(num_copied > 0, "copy failed: no hist files found in rundir '%s'" % rundir)
 
     return comments
 
