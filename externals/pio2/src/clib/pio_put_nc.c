@@ -4,11 +4,11 @@
 ///
 /// PIO interface to nc_put_vars_uchar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned char *op)
+int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned char *op) 
 {
   int ierr;
   int msg;
@@ -28,7 +28,7 @@ int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARS_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -55,7 +55,7 @@ int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -82,11 +82,11 @@ int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_vars_ushort
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned short *op)
+int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned short *op) 
 {
   int ierr;
   int msg;
@@ -106,7 +106,7 @@ int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_PUT_VARS_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -133,7 +133,7 @@ int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -160,11 +160,11 @@ int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
 ///
 /// PIO interface to nc_put_vars_ulonglong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned long long *op)
+int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned long long *op) 
 {
   int ierr;
   int msg;
@@ -184,7 +184,7 @@ int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   msg = PIO_MSG_PUT_VARS_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -211,7 +211,7 @@ int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -238,11 +238,11 @@ int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 ///
 /// PIO interface to nc_put_varm
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -262,7 +262,7 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   msg = PIO_MSG_PUT_VARM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -289,7 +289,7 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -316,11 +316,11 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 ///
 /// PIO interface to nc_put_vars_uint
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned int *op)
+int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned int *op) 
 {
   int ierr;
   int msg;
@@ -340,7 +340,7 @@ int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARS_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -367,7 +367,7 @@ int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -394,11 +394,11 @@ int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_varm_uchar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned char *op)
+int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned char *op) 
 {
   int ierr;
   int msg;
@@ -418,7 +418,7 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARM_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -445,7 +445,7 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -472,11 +472,11 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_var_ushort
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
+int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op) 
 {
   int ierr;
   int msg;
@@ -496,7 +496,7 @@ int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
   msg = PIO_MSG_PUT_VAR_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -523,7 +523,7 @@ int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -550,11 +550,11 @@ int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
 ///
 /// PIO interface to nc_put_var1_longlong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const long long *op)
+int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const long long *op) 
 {
   int ierr;
   int msg;
@@ -574,7 +574,7 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
   msg = PIO_MSG_PUT_VAR1_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -601,7 +601,7 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -628,11 +628,11 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
 ///
 /// PIO interface to nc_put_vara_uchar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned char *op)
+int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned char *op) 
 {
   int ierr;
   int msg;
@@ -652,7 +652,7 @@ int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARA_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -679,7 +679,7 @@ int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -706,11 +706,11 @@ int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_varm_short
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const short *op)
+int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const short *op) 
 {
   int ierr;
   int msg;
@@ -730,7 +730,7 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARM_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -757,7 +757,7 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -784,11 +784,11 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_var1_long
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const long *ip)
+int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const long *ip) 
 {
   int ierr;
   int msg;
@@ -808,7 +808,7 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
   msg = PIO_MSG_PUT_VAR1_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -835,7 +835,7 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -862,11 +862,11 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
 ///
 /// PIO interface to nc_put_vars_long
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long *op)
+int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long *op) 
 {
   int ierr;
   int msg;
@@ -886,7 +886,7 @@ int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARS_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -913,7 +913,7 @@ int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -940,11 +940,11 @@ int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_var_short
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_short (int ncid, int varid, const short *op)
+int PIOc_put_var_short (int ncid, int varid, const short *op) 
 {
   int ierr;
   int msg;
@@ -964,7 +964,7 @@ int PIOc_put_var_short (int ncid, int varid, const short *op)
   msg = PIO_MSG_PUT_VAR_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -991,7 +991,7 @@ int PIOc_put_var_short (int ncid, int varid, const short *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1018,11 +1018,11 @@ int PIOc_put_var_short (int ncid, int varid, const short *op)
 ///
 /// PIO interface to nc_put_vara_int
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const int *op)
+int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const int *op) 
 {
   int ierr;
   int msg;
@@ -1042,7 +1042,7 @@ int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   msg = PIO_MSG_PUT_VARA_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1069,7 +1069,7 @@ int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1096,11 +1096,11 @@ int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 ///
 /// PIO interface to nc_put_var1_ushort
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const unsigned short *op)
+int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const unsigned short *op) 
 {
   int ierr;
   int msg;
@@ -1120,7 +1120,7 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
   msg = PIO_MSG_PUT_VAR1_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1147,7 +1147,7 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1174,11 +1174,11 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
 ///
 /// PIO interface to nc_put_vara_text
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const char *op)
+int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const char *op) 
 {
   int ierr;
   int msg;
@@ -1198,7 +1198,7 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARA_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1225,7 +1225,7 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1252,11 +1252,11 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_varm_text
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const char *op)
+int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const char *op) 
 {
   int ierr;
   int msg;
@@ -1276,7 +1276,7 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARM_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1303,7 +1303,7 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1330,11 +1330,11 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_varm_ushort
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned short *op)
+int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned short *op) 
 {
   int ierr;
   int msg;
@@ -1354,7 +1354,7 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_PUT_VARM_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1381,7 +1381,7 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1408,11 +1408,11 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
 ///
 /// PIO interface to nc_put_var_ulonglong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
+int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op) 
 {
   int ierr;
   int msg;
@@ -1432,7 +1432,7 @@ int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
   msg = PIO_MSG_PUT_VAR_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1459,7 +1459,7 @@ int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1486,11 +1486,11 @@ int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
 ///
 /// PIO interface to nc_put_var_int
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_int (int ncid, int varid, const int *op)
+int PIOc_put_var_int (int ncid, int varid, const int *op) 
 {
   int ierr;
   int msg;
@@ -1510,7 +1510,7 @@ int PIOc_put_var_int (int ncid, int varid, const int *op)
   msg = PIO_MSG_PUT_VAR_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1537,7 +1537,7 @@ int PIOc_put_var_int (int ncid, int varid, const int *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1564,11 +1564,11 @@ int PIOc_put_var_int (int ncid, int varid, const int *op)
 ///
 /// PIO interface to nc_put_var_longlong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
+int PIOc_put_var_longlong (int ncid, int varid, const long long *op) 
 {
   int ierr;
   int msg;
@@ -1588,7 +1588,7 @@ int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
   msg = PIO_MSG_PUT_VAR_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1615,7 +1615,7 @@ int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1642,11 +1642,11 @@ int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
 ///
 /// PIO interface to nc_put_var_schar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
+int PIOc_put_var_schar (int ncid, int varid, const signed char *op) 
 {
   int ierr;
   int msg;
@@ -1666,7 +1666,7 @@ int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
   msg = PIO_MSG_PUT_VAR_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1693,7 +1693,7 @@ int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1720,11 +1720,11 @@ int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
 ///
 /// PIO interface to nc_put_var_uint
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
+int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op) 
 {
   int ierr;
   int msg;
@@ -1744,7 +1744,7 @@ int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
   msg = PIO_MSG_PUT_VAR_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1771,7 +1771,7 @@ int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1798,11 +1798,11 @@ int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
 ///
 /// PIO interface to nc_put_var
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -1822,7 +1822,7 @@ int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI
   msg = PIO_MSG_PUT_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1849,7 +1849,7 @@ int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1876,11 +1876,11 @@ int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI
 ///
 /// PIO interface to nc_put_vara_ushort
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned short *op)
+int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned short *op) 
 {
   int ierr;
   int msg;
@@ -1900,7 +1900,7 @@ int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_PUT_VARA_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1927,7 +1927,7 @@ int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -1954,11 +1954,11 @@ int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
 ///
 /// PIO interface to nc_put_vars_short
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const short *op)
+int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const short *op) 
 {
   int ierr;
   int msg;
@@ -1978,7 +1978,7 @@ int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARS_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2005,7 +2005,7 @@ int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2032,11 +2032,11 @@ int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_vara_uint
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned int *op)
+int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned int *op) 
 {
   int ierr;
   int msg;
@@ -2056,7 +2056,7 @@ int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARA_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2083,7 +2083,7 @@ int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2110,11 +2110,11 @@ int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_vara_schar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const signed char *op)
+int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const signed char *op) 
 {
   int ierr;
   int msg;
@@ -2134,7 +2134,7 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARA_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2161,7 +2161,7 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2188,11 +2188,11 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_varm_ulonglong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned long long *op)
+int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned long long *op) 
 {
   int ierr;
   int msg;
@@ -2212,7 +2212,7 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   msg = PIO_MSG_PUT_VARM_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2239,7 +2239,7 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2266,11 +2266,11 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 ///
 /// PIO interface to nc_put_var1_uchar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const unsigned char *op)
+int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const unsigned char *op) 
 {
   int ierr;
   int msg;
@@ -2290,7 +2290,7 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
   msg = PIO_MSG_PUT_VAR1_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2317,7 +2317,7 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2344,11 +2344,11 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
 ///
 /// PIO interface to nc_put_varm_int
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const int *op)
+int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const int *op) 
 {
   int ierr;
   int msg;
@@ -2368,7 +2368,7 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   msg = PIO_MSG_PUT_VARM_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2395,7 +2395,7 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2422,11 +2422,11 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 ///
 /// PIO interface to nc_put_vars_schar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const signed char *op)
+int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const signed char *op) 
 {
   int ierr;
   int msg;
@@ -2446,7 +2446,7 @@ int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARS_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2473,7 +2473,7 @@ int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2500,11 +2500,11 @@ int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_var1
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -2524,7 +2524,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
   msg = PIO_MSG_PUT_VAR1;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2551,7 +2551,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2578,11 +2578,11 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
 ///
 /// PIO interface to nc_put_vara_float
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const float *op)
+int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const float *op) 
 {
   int ierr;
   int msg;
@@ -2602,7 +2602,7 @@ int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARA_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2629,7 +2629,7 @@ int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2656,11 +2656,11 @@ int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_var1_float
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const float *op)
+int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const float *op) 
 {
   int ierr;
   int msg;
@@ -2680,7 +2680,7 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
   msg = PIO_MSG_PUT_VAR1_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2707,7 +2707,7 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2734,11 +2734,11 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
 ///
 /// PIO interface to nc_put_varm_float
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const float *op)
+int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const float *op) 
 {
   int ierr;
   int msg;
@@ -2758,7 +2758,7 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARM_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2785,7 +2785,7 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2812,11 +2812,11 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_var1_text
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const char *op)
+int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const char *op) 
 {
   int ierr;
   int msg;
@@ -2836,7 +2836,7 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
   msg = PIO_MSG_PUT_VAR1_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2863,7 +2863,7 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2890,11 +2890,11 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
 ///
 /// PIO interface to nc_put_vars_text
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const char *op)
+int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const char *op) 
 {
   int ierr;
   int msg;
@@ -2914,7 +2914,7 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARS_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2941,7 +2941,7 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -2968,11 +2968,11 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_varm_long
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const long *op)
+int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const long *op) 
 {
   int ierr;
   int msg;
@@ -2992,7 +2992,7 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARM_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3019,7 +3019,7 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3046,11 +3046,11 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_vars_double
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const double *op)
+int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const double *op) 
 {
   int ierr;
   int msg;
@@ -3070,7 +3070,7 @@ int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_PUT_VARS_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3097,7 +3097,7 @@ int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const P
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3124,11 +3124,11 @@ int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const P
 ///
 /// PIO interface to nc_put_vara_longlong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const long long *op)
+int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const long long *op) 
 {
   int ierr;
   int msg;
@@ -3148,7 +3148,7 @@ int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
   msg = PIO_MSG_PUT_VARA_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3175,7 +3175,7 @@ int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3202,11 +3202,11 @@ int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
 ///
 /// PIO interface to nc_put_var_double
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_double (int ncid, int varid, const double *op)
+int PIOc_put_var_double (int ncid, int varid, const double *op) 
 {
   int ierr;
   int msg;
@@ -3226,7 +3226,7 @@ int PIOc_put_var_double (int ncid, int varid, const double *op)
   msg = PIO_MSG_PUT_VAR_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3253,7 +3253,7 @@ int PIOc_put_var_double (int ncid, int varid, const double *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3280,11 +3280,11 @@ int PIOc_put_var_double (int ncid, int varid, const double *op)
 ///
 /// PIO interface to nc_put_var_float
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_float (int ncid, int varid, const float *op)
+int PIOc_put_var_float (int ncid, int varid, const float *op) 
 {
   int ierr;
   int msg;
@@ -3304,7 +3304,7 @@ int PIOc_put_var_float (int ncid, int varid, const float *op)
   msg = PIO_MSG_PUT_VAR_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3331,7 +3331,7 @@ int PIOc_put_var_float (int ncid, int varid, const float *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3358,11 +3358,11 @@ int PIOc_put_var_float (int ncid, int varid, const float *op)
 ///
 /// PIO interface to nc_put_var1_ulonglong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], const unsigned long long *op)
+int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], const unsigned long long *op) 
 {
   int ierr;
   int msg;
@@ -3382,7 +3382,7 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
   msg = PIO_MSG_PUT_VAR1_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3409,7 +3409,7 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3436,11 +3436,11 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
 ///
 /// PIO interface to nc_put_varm_uint
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned int *op)
+int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned int *op) 
 {
   int ierr;
   int msg;
@@ -3460,7 +3460,7 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARM_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3487,7 +3487,7 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3514,11 +3514,11 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_var1_uint
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const unsigned int *op)
+int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const unsigned int *op) 
 {
   int ierr;
   int msg;
@@ -3538,7 +3538,7 @@ int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const uns
   msg = PIO_MSG_PUT_VAR1_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3565,7 +3565,7 @@ int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const uns
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3592,11 +3592,11 @@ int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const uns
 ///
 /// PIO interface to nc_put_var1_int
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int *op)
+int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int *op) 
 {
   int ierr;
   int msg;
@@ -3616,7 +3616,7 @@ int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int 
   msg = PIO_MSG_PUT_VAR1_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3643,7 +3643,7 @@ int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int 
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3670,11 +3670,11 @@ int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int 
 ///
 /// PIO interface to nc_put_vars_float
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const float *op)
+int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const float *op) 
 {
   int ierr;
   int msg;
@@ -3694,7 +3694,7 @@ int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARS_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3721,7 +3721,7 @@ int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3748,11 +3748,11 @@ int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_vara_short
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const short *op)
+int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const short *op) 
 {
   int ierr;
   int msg;
@@ -3772,7 +3772,7 @@ int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARA_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3799,7 +3799,7 @@ int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3826,11 +3826,11 @@ int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_var1_schar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const signed char *op)
+int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const signed char *op) 
 {
   int ierr;
   int msg;
@@ -3850,7 +3850,7 @@ int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const si
   msg = PIO_MSG_PUT_VAR1_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3877,7 +3877,7 @@ int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const si
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3904,11 +3904,11 @@ int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const si
 ///
 /// PIO interface to nc_put_vara_ulonglong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned long long *op)
+int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned long long *op) 
 {
   int ierr;
   int msg;
@@ -3928,7 +3928,7 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   msg = PIO_MSG_PUT_VARA_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3955,7 +3955,7 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -3982,11 +3982,11 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 ///
 /// PIO interface to nc_put_varm_double
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const double *op)
+int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const double *op) 
 {
   int ierr;
   int msg;
@@ -4006,7 +4006,7 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_PUT_VARM_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4033,7 +4033,7 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4060,11 +4060,11 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
 ///
 /// PIO interface to nc_put_vara
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -4084,7 +4084,7 @@ int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   msg = PIO_MSG_PUT_VARA;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4111,7 +4111,7 @@ int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4138,11 +4138,11 @@ int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 ///
 /// PIO interface to nc_put_vara_long
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const long *op)
+int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const long *op) 
 {
   int ierr;
   int msg;
@@ -4162,7 +4162,7 @@ int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_PUT_VARA_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4189,7 +4189,7 @@ int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4216,11 +4216,11 @@ int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
 ///
 /// PIO interface to nc_put_var1_double
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const double *op)
+int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const double *op) 
 {
   int ierr;
   int msg;
@@ -4240,7 +4240,7 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
   msg = PIO_MSG_PUT_VAR1_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4267,7 +4267,7 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4294,11 +4294,11 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
 ///
 /// PIO interface to nc_put_varm_schar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const signed char *op)
+int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const signed char *op) 
 {
   int ierr;
   int msg;
@@ -4318,7 +4318,7 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_PUT_VARM_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4345,7 +4345,7 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4372,11 +4372,11 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
 ///
 /// PIO interface to nc_put_var_text
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_text (int ncid, int varid, const char *op)
+int PIOc_put_var_text (int ncid, int varid, const char *op) 
 {
   int ierr;
   int msg;
@@ -4396,7 +4396,7 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
   msg = PIO_MSG_PUT_VAR_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4423,7 +4423,7 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4450,11 +4450,11 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
 ///
 /// PIO interface to nc_put_vars_int
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const int *op)
+int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const int *op) 
 {
   int ierr;
   int msg;
@@ -4474,7 +4474,7 @@ int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   msg = PIO_MSG_PUT_VARS_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4501,7 +4501,7 @@ int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4528,11 +4528,11 @@ int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 ///
 /// PIO interface to nc_put_var1_short
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const short *op)
+int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const short *op) 
 {
   int ierr;
   int msg;
@@ -4552,7 +4552,7 @@ int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const sh
   msg = PIO_MSG_PUT_VAR1_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4579,7 +4579,7 @@ int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const sh
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4606,11 +4606,11 @@ int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const sh
 ///
 /// PIO interface to nc_put_vars_longlong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long long *op)
+int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long long *op) 
 {
   int ierr;
   int msg;
@@ -4630,7 +4630,7 @@ int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
   msg = PIO_MSG_PUT_VARS_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4657,7 +4657,7 @@ int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4684,11 +4684,11 @@ int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
 ///
 /// PIO interface to nc_put_vara_double
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const double *op)
+int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const double *op) 
 {
   int ierr;
   int msg;
@@ -4708,7 +4708,7 @@ int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_PUT_VARA_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4735,7 +4735,7 @@ int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const P
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4762,11 +4762,11 @@ int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const P
 ///
 /// PIO interface to nc_put_vars
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -4786,7 +4786,7 @@ int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   msg = PIO_MSG_PUT_VARS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4813,7 +4813,7 @@ int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4840,11 +4840,11 @@ int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 ///
 /// PIO interface to nc_put_var_uchar
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
+int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op) 
 {
   int ierr;
   int msg;
@@ -4864,7 +4864,7 @@ int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
   msg = PIO_MSG_PUT_VAR_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4891,7 +4891,7 @@ int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4918,11 +4918,11 @@ int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
 ///
 /// PIO interface to nc_put_var_long
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_var_long (int ncid, int varid, const long *op)
+int PIOc_put_var_long (int ncid, int varid, const long *op) 
 {
   int ierr;
   int msg;
@@ -4942,7 +4942,7 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
   msg = PIO_MSG_PUT_VAR_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4969,7 +4969,7 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
@@ -4996,11 +4996,11 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
 ///
 /// PIO interface to nc_put_varm_longlong
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
-int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const long long *op)
+int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const long long *op) 
 {
   int ierr;
   int msg;
@@ -5020,7 +5020,7 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   msg = PIO_MSG_PUT_VARM_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -5047,7 +5047,7 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;

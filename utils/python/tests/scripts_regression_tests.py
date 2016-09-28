@@ -11,7 +11,7 @@ sys.path.append(LIB_DIR)
 import subprocess
 subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 
-from CIME.utils import run_cmd, run_cmd_no_fail, get_lids
+from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit
 import update_acme_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
@@ -50,6 +50,14 @@ ERRPUT: %s
     test_obj.assertEqual(stat, expected_stat, msg=msg)
 
     return output
+
+###############################################################################
+class AA_ReportCommit(unittest.TestCase):
+###############################################################################
+
+    def test_report_tested_commit(self):
+        curr_commit = get_current_commit(repo=LIB_DIR)
+        logging.info("\nTesting commit %s" % curr_commit)
 
 ###############################################################################
 class A_RunUnitTests(unittest.TestCase):

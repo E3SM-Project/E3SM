@@ -1,6 +1,6 @@
 # - Try to find GPTL
 #
-# This can be controlled by setting the GPTL_DIR (or, equivalently, the
+# This can be controlled by setting the GPTL_DIR (or, equivalently, the 
 # GPTL environment variable), or GPTL_<lang>_DIR CMake variables, where
 # <lang> is the COMPONENT language one needs.
 #
@@ -55,7 +55,7 @@ foreach (GPTL_comp IN LISTS GPTL_FIND_VALID_COMPONENTS)
             set (mpilibs ${MPI_Fortran_LIBRARIES})
             set (mpifound ${MPI_Fortran_FOUND})
         endif ()
-
+        
         # Search for the package component
         if (mpifound)
             initialize_paths (GPTL_${GPTL_comp}_PATHS
@@ -68,5 +68,5 @@ foreach (GPTL_comp IN LISTS GPTL_FIND_VALID_COMPONENTS)
         endif ()
 
     endif ()
-
+    
 endforeach ()

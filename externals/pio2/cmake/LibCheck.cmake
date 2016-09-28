@@ -14,17 +14,17 @@ include (CMakeParseArguments)
 #                          HINTS <path> <path> ...
 #                          DEFINITIONS <definition1> <definition> ...
 #                          COMMENT <string_comment>)
-#
+#                         
 function (check_macro VARIABLE)
 
     # Parse the input arguments
     set (oneValueArgs COMMENT NAME)
     set (multiValueArgs HINTS DEFINITIONS)
-    cmake_parse_arguments (${VARIABLE} "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
+    cmake_parse_arguments (${VARIABLE} "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
+    
     # If the return variable is defined, already, don't continue
     if (NOT DEFINED ${VARIABLE})
-
+        
         message (STATUS "Checking ${${VARIABLE}_COMMENT}")
         find_file (${VARIABLE}_TRY_FILE
                    NAMES ${${VARIABLE}_NAME}
@@ -40,17 +40,17 @@ function (check_macro VARIABLE)
             else ()
                 message (STATUS "Checking ${${VARIABLE}_COMMENT} - no")
             endif ()
-
+            
             set (${VARIABLE} ${COMPILE_RESULT}
                  CACHE BOOL "${${VARIABLE}_COMMENT}")
-
+                 
         else ()
             message (STATUS "Checking ${${VARIABLE}_COMMENT} - failed")
         endif ()
-
+     
         unset (${VARIABLE}_TRY_FILE CACHE)
     endif ()
-
+            
 endfunction ()
 
 #______________________________________________________________________________
@@ -60,17 +60,17 @@ endfunction ()
 #                         NAME <try_version_file>
 #                         HINTS <path> <path> ...
 #                         DEFINITIONS <definition1> <definition> ...)
-#
+#  
 function (check_version PKG)
 
     # Parse the input arguments
     set (oneValueArgs NAME MACRO_REGEX)
     set (multiValueArgs HINTS)
-    cmake_parse_arguments (${PKG} "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    cmake_parse_arguments (${PKG} "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
 
     # If the return variable is defined, already, don't continue
     if (NOT DEFINED ${PKG}_VERSION)
-
+        
         message (STATUS "Checking ${PKG} version")
         find_file (${PKG}_VERSION_HEADER
                    NAMES ${${PKG}_NAME}
@@ -96,9 +96,9 @@ function (check_version PKG)
         else ()
             message (STATUS "Checking ${PKG} version - failed")
         endif ()
-
+        
         unset (${PKG}_VERSION_HEADER CACHE)
-
+     
     endif ()
 
 endfunction ()

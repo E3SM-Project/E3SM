@@ -7,7 +7,7 @@ for most things you need to do with XML files.
 
 It is not dependent on any other modules or external programs for installation.
 
-NOTE that this parser will do many things that you want with XML but
+NOTE that this parser will do many things that you want with XML but 
 not everything. It is not a validating parser! It will not handle
 international characters (unless run on those systems). Use
 at your own risk.

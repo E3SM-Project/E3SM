@@ -1,6 +1,6 @@
 /**
- * @file Tests for names of vars, atts, and dims. Also test the
- * PIOc_strerror() function.
+ * @file 
+ * Tests for names of vars, atts, and dims.
  *
  */
 #include <pio.h>
@@ -148,52 +148,6 @@ check_att_name(int my_rank, int ncid, int verbose)
     return 0;
 }
 
-/** Check the PIOc_strerror() function. 
- *
- * @param my_rank the rank of this process.
- * @param verbose true to get printfs on stdout.
- *
- * @return 0 for success, error code otherwise.
- */
-int
-check_strerror(int my_rank, int verbose) {
-    
-#define NUM_TRIES 6
-    char errstr[PIO_MAX_NAME + 1];
-    int errcode[NUM_TRIES] = {PIO_EBADID,
-			      NC_ENOTNC3, NC4_LAST_ERROR - 1, 0, 1,
-			      PIO_EBADIOTYPE};
-    const char *expected[NUM_TRIES] = {"NetCDF: Not a valid ID",
-				       "NetCDF: Attempting netcdf-3 operation on netcdf-4 file",
-				       "unknown PIO error", "No error",
-				       nc_strerror(1), "Bad IO type"};
-    int ret = PIO_NOERR;
-
-    for (int try = 0; try < NUM_TRIES; try++)
-    {
-	char result[PIO_MAX_NAME];
-	
-	/* Get the error string for this errcode. */
-	PIOc_strerror(errcode[try], errstr);	
-
-	/* Check that it was as expected. */
-	if (strcmp(errstr, expected[try]))
-	    ret = ERR_AWFUL;
-
-	/* Print some output to stdout if required. */
-	if (verbose)
-	{
-	    printf("%d: PIO strerror(%d) = %s\n", my_rank, errcode[try],
-		   errstr);
-	    strcpy(errstr, nc_strerror(errcode[try]));
-	    printf("%d: netCDF strerror(%d) = %s\n", my_rank, errcode[try],
-		   errstr);
-	}
-    }
-
-    return ret;
-}
-
 /** Run Tests for NetCDF-4 Functions.
  *
  * @param argc argument count
@@ -334,10 +288,6 @@ main(int argc, char **argv)
     if (verbose)
 	printf("%d: ParallelIO Library example1 running on %d processors.\n",
 	       my_rank, ntasks);
-
-    /* Check the error string function. */
-    if ((ret = check_strerror(my_rank, verbose)))
-	ERR(ret);
 
     /* keep things simple - 1 iotask per MPI process */    
     niotasks = ntasks; 
