@@ -943,30 +943,6 @@
     </desc>
   </entry>
 
-  <entry id="CCSM_PCOST">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>cost relative to 64 pes (DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="CCSM_TCOST">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>relative cost of test where ERS is 1 (DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="CCSM_ESTCOST">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>relative total cost of case (DO NOT EDIT)</desc>
-  </entry>
-
   <entry id="COST_PES">
     <type>integer</type>
     <default_value>0</default_value>
@@ -1564,7 +1540,7 @@
     <desc>rof2ocn flux mapping file decomp type</desc>
   </entry>
 
-  <entry id="ROF2OCN_RMAPNAME">
+  <entry id="ROF2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
     <group>run_domain</group>
@@ -1572,7 +1548,24 @@
     <desc>rof2ocn runoff mapping file</desc>
   </entry>
 
-  <entry id="ROF2OCN_RMAPTYPE">
+  <entry id="ROF2OCN_LIQ_RMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn runoff mapping file decomp type</desc>
+  </entry>
+
+  <entry id="ROF2OCN_ICE_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn runoff mapping file</desc>
+  </entry>
+
+  <entry id="ROF2OCN_ICE_RMAPTYPE">
     <type>char</type>
     <valid_values>X,Y</valid_values>
     <default_value>Y</default_value>
@@ -3440,48 +3433,6 @@
     If set to on, this component set/ grid specification is scientifically supported</desc>
   </entry>
 
-  <entry id="CCSM_CCOST">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>0</default_value>
-    <values>
-      <!-- estimated cost (used only for development purposes) -->
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>-3</value> <!-- A -->
-      <value compset="_DATM.*_DICE.*_DOCN.*_WW3"				>-3</value> <!-- A_WAV -->
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- C -->
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- CECO -->
-      <value compset="_DATM.*_SLND.*_CICE.*_DOCN%SOM_DROF.*_SGLC_SWAV"		> 1</value> <!-- D -->
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- G,H -->
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- GECO -->
-      <value compset="_DATM.*_CLM.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-2</value> <!-- I -->
-      <value compset="_SATM_DLND.*_SICE_SOCN_SROF_CISM_SWAV"			>-5</value> <!-- TG -->
-      <value compset="_SATM_DLND.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-5</value> <!-- U -->
-      <value compset="_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV"			>-6</value> <!-- U -->
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>0</value>  <!-- E -->
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- F -->
-      <value compset="_CAM4.*_CLM.*_DICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- K -->
-      <value compset="_CAM4.*_DLND.*_DICE.*_DOCN.*_SROF_SGLC_SWAV"		>0</value>  <!-- L -->
-      <value compset="_CAM4%TMOZ.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"		>1</value>  <!-- FMOZ -->
-      <value compset="GEOS_CAM4%TBAM.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"	>3</value>  <!-- FSDBAM -->
-      <value compset="_CAM5"							>1</value>
-      <value compset="_CAM[45]%W"						>3</value>
-      <value compset="_CAM[45]%WCSC"						>1</value>
-      <value compset="_CAM5%MOZM"						>3</value>
-      <value compset="_CAM4%MOZS"						>3</value>
-      <value compset="_CAM4%SMA[37]"						>3</value>
-      <value compset="_CAM4%SSOA"						>3</value>
-      <value compset="_CAM4%TMOZ"						>1</value>
-      <value compset="_CAM4.*_BGC%BDRD"						>2</value>
-      <value compset="_CAM4.*_BGC%BPRP"						>2</value>
-      <value compset="CAM.*_CLM.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>2</value> <!-- BDAR -->
-      <value compset="DATM.*_DLND.*_DICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- CDAR -->
-      <value compset="DATM.*_DLND.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- GDAR -->
-    </values>
-    <group>case_cost</group>
-    <file>env_case.xml</file>
-    <desc>2**n relative cost of compset where B is 1 (DO NOT EDIT)</desc>
-  </entry>
-
   <entry id="GLC_NEC">
     <type>integer</type>
     <valid_values>0,1,3,5,10,36</valid_values>
@@ -3557,24 +3508,6 @@
       Note that this is set to TRUE by default for TG compsets - even though there are
       no feedbacks for TG compsets, this enables extra coupler diagnostics for these
       compsets.</desc>
-  </entry>
-
-  <entry id="CCSM_GCOST">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>0</default_value>
-    <group>case_cost</group>
-    <file>env_case.xml</file>
-    <desc>2**n relative cost of grid where f19_g15 is 1 (DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="CCSM_MCOST">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>0</default_value>
-    <group>case_cost</group>
-    <file>env_case.xml</file>
-    <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
   </entry>
 
   <!-- Data Assimilation type stuff -->
