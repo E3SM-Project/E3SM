@@ -78,7 +78,7 @@ ifeq ($(OPT),$(null))
 endif
 
 ifeq ($(OPT),TRUE)
-  CPPDEFS := -DOPT
+  CPPDEFS += -DOPT
 endif
 
 # Load dependency search path.
