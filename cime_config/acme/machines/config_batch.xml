@@ -201,21 +201,21 @@
 
   <batch_system MACH="skybridge" type="slurm" version="x.y">
     <queues>
-      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+      <queue jobmin="1" jobmax="480" walltimemax="01:00:00" default="true">ec</queue>
     </queues>
   </batch_system>
+
   <batch_system MACH="redsky" type="slurm" version="x.y">
     <queues>
-      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+      <queue jobmin="1" jobmax="480" walltimemax="01:00:00" default="true">ec</queue>
     </queues>
   </batch_system>
 
-
-   <batch_system MACH="mustang" type="moab" version="x.y">
-   <directives>
-     <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-   </directives>
-   </batch_system>
+  <batch_system MACH="mustang" type="moab" version="x.y">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+  </batch_system>
 
    <batch_system MACH="wolf" type="moab" version="x.y">
 	<directives>
