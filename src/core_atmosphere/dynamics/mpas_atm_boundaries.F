@@ -10,7 +10,7 @@ module mpas_atm_boundaries
     use mpas_derived_types, only : mpas_pool_type, mpas_clock_type, block_type, mpas_time_type, mpas_timeInterval_type, MPAS_NOW, &
                                    MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_EARLIEST_STRICTLY_AFTER, &
                                    MPAS_streamManager_type
-    use mpas_pool_routines, only : mpas_pool_get_array, mpas_pool_get_subpool, mpas_pool_shift_time_levels
+    use mpas_pool_routines, only : mpas_pool_get_array, mpas_pool_get_dimension, mpas_pool_get_subpool, mpas_pool_shift_time_levels
     use mpas_kind_types, only : RKIND, StrKIND
     use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_timeInterval, mpas_set_time, operator(-)
     use mpas_stream_manager, only : mpas_stream_mgr_read
@@ -214,12 +214,14 @@ module mpas_atm_boundaries
     !
     !  routine mpas_atm_setup_bdy_masks
     !
-    !> \brief   Prepares mask fields for boundaries of limited-area
+    !> \brief   Prepares various fields for boundaries of limited-area
     !> \author  Michael Duda
     !> \date    28 September 2016
     !> \details 
-    !>  This routine prepares mask fields needed to distinguish cells in 
-    !>  the specified zone from those in the relaxation zone.
+    !>  This routine prepares (1) the mask field needed to distinguish cells in 
+    !>  the specified zone from those in the relaxation zone, and (2) a field
+    !>  of indices identifying the closest relaxation cell to each cell in 
+    !>  the specified zone..
     !
     !-----------------------------------------------------------------------
     subroutine mpas_atm_setup_bdy_masks(mesh, configs)
@@ -229,11 +231,27 @@ module mpas_atm_boundaries
         type (mpas_pool_type), intent(inout) :: mesh
         type (mpas_pool_type), intent(in) :: configs
 
+        integer :: iCell, i, j, ii, jj
+        real (kind=RKIND) :: d, dmin
+
+        integer, pointer :: nCells
         integer, dimension(:), pointer :: bdyMaskCell
+        integer, dimension(:), pointer :: nearestRelaxationCell
+        integer, dimension(:), pointer :: nEdgesOnCell
+        integer, dimension(:,:), pointer :: cellsOnCell
         real (kind=RKIND), dimension(:), pointer :: specifiedZoneMask
+        real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+
+        call mpas_pool_get_dimension(mesh, 'nCells', nCells)
 
         call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
         call mpas_pool_get_array(mesh, 'specifiedZoneMask', specifiedZoneMask)
+        call mpas_pool_get_array(mesh, 'nearestRelaxationCell', nearestRelaxationCell)
+        call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+        call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+        call mpas_pool_get_array(mesh, 'xCell', xCell)
+        call mpas_pool_get_array(mesh, 'yCell', yCell)
+        call mpas_pool_get_array(mesh, 'zCell', zCell)
 
         !
         ! For now, hard-code mask based on assumption that we have 7 layers, the first 
@@ -242,6 +260,57 @@ module mpas_atm_boundaries
         specifiedZoneMask(:) = 0.0_RKIND
         where (bdyMaskCell(:) == 7) specifiedZoneMask(:) = 1.0_RKIND
         where (bdyMaskCell(:) == 6) specifiedZoneMask(:) = 1.0_RKIND
+
+        nearestRelaxationCell(:) = nCells+1
+
+        !
+        ! For nearest relaxation cell to inner specified zone (6), just search
+        ! all cellsOnCell with bdyMaskCell == 5
+        !
+        do iCell=1,nCells
+            if (bdyMaskCell(iCell) == 6) then
+                dmin = 1.0e36
+                do j=1,nEdgesOnCell(iCell)
+                    i = cellsOnCell(j,iCell)
+                    if (bdyMaskCell(i) == 5) then
+                        d = (xCell(i) - xCell(iCell))**2 + (yCell(i) - yCell(iCell))**2 + (zCell(i) - zCell(iCell))**2
+                        if (d < dmin) then
+                            dmin = d
+                            nearestRelaxationCell(iCell) = i
+                        end if
+                    end if
+                end do
+            end if
+        end do
+
+        !
+        ! For nearest relaxation cell to outer specified zone (7), search
+        ! all cellsOnCell of cellsOnCell
+        !
+        do iCell=1,nCells
+            if (bdyMaskCell(iCell) == 7) then
+                dmin = 1.0e36
+                do j=1,nEdgesOnCell(iCell)
+                    i = cellsOnCell(j,iCell)
+                    if (bdyMaskCell(i) == 6) then
+
+                        do jj=1,nEdgesOnCell(i)
+                            ii = cellsOnCell(jj,i)
+                            if (bdyMaskCell(ii) == 5) then
+
+                                d = (xCell(ii) - xCell(iCell))**2 + (yCell(ii) - yCell(iCell))**2 + (zCell(ii) - zCell(iCell))**2
+                                if (d < dmin) then
+                                    dmin = d
+                                    nearestRelaxationCell(iCell) = ii
+                                end if
+
+                            end if
+                        end do
+
+                    end if
+                end do
+            end if
+        end do
 
     end subroutine mpas_atm_setup_bdy_masks
 
