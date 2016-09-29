@@ -800,6 +800,8 @@ END SUBROUTINE test1_advection_orography
 !=========================================================================
 SUBROUTINE test2_steady_state_mountain (lon,lat,p,z,zcoords,hybrid_eta,hyam,hybm,u,v,w,t,phis,ps,rho,q)
 
+  use control_mod, only: dcmip2_0_h0, dcmip2_0_rm, dcmip2_0_zetam
+
 IMPLICIT NONE
 
 	real(8),  intent(in)    :: lon        ! Longitude (radians)
@@ -831,17 +833,24 @@ IMPLICIT NONE
       gamma   = 0.0065d0,     & ! temperature lapse rate (K/m)
       lambdam = 3.d0*pi/2.d0,	&	! mountain longitude center point (radians)
       phim    = 0.d0,         &	! mountain latitude center point (radians)
-      h0      = 2000.d0,      &	! peak height of the mountain range (m)
-      Rm      = 3.d0*pi/4.d0,	&	! mountain radius (radians)
-      zetam   = pi/16.d0,     &	! mountain oscillation half-width (radians)
-      !zetam   = Rm,           &	! mountain oscillation half-width (radians)
       ztop    = 12000.d0        ! model top (m)
-                            
-  real(8) :: height         ! Model level heights (m)
-  real(8) :: r							! Great circle distance (radians)
-  real(8) :: zs							! Surface elevation (m)
-  real(8) :: exponent       ! exponent: g/(Rd * gamma)
-  real(8) :: exponent_rev   ! reversed exponent
+      !h0      = 2000.d0,      &! peak height of the mountain range (m)
+      !Rm      = 3.d0*pi/4.d0, &! mountain radius (radians)
+      !zetam   = pi/16.d0,     &! mountain oscillation half-width (radians)
+
+  real(8) :: h0                 ! peak height of the mountain range (m)
+  real(8) :: Rm                 ! mountain radius (radians)
+  real(8) :: zetam              ! mountain oscillation half-width (radians)
+
+  real(8) :: height             ! Model level heights (m)
+  real(8) :: r                  ! Great circle distance (radians)
+  real(8) :: zs                 ! Surface elevation (m)
+  real(8) :: exponent           ! exponent: g/(Rd * gamma)
+  real(8) :: exponent_rev       ! reversed exponent
+
+  h0    = dcmip2_0_h0
+  Rm    = dcmip2_0_rm
+  zetam = dcmip2_0_zetam
 
   exponent     = g/(Rd*gamma)
   exponent_rev = 1.d0/exponent
