@@ -99,7 +99,10 @@ module namelist_mod
     TRACERTRANSPORT_FLUXFORM_FVM,     &
     tracer_grid_type,                 &
     TRACER_GRIDTYPE_GLL,              &
-    TRACER_GRIDTYPE_FVM
+    TRACER_GRIDTYPE_FVM,              &
+    dcmip2_0_h0,                      &
+    dcmip2_0_rm,                      &
+    dcmip2_0_zetam  
 #else
   use control_mod, only:              &
     se_met_nudge_u,                   &
@@ -302,6 +305,16 @@ module namelist_mod
       tstep,           &             ! tracer time step
       columnpackage,   &
       moisture
+#endif
+
+
+#ifndef CAM
+
+    ! control parameters for dcmip stand-alone tests
+    namelist /ctl_nl/     &
+      dcmip2_0_h0,        & !dcmip2-0 mountain height           (meters)
+      dcmip2_0_rm,        & !dcmip2-0 mountain range radius     (radians)
+      dcmip2_0_zetam        !dcmip2-0 mountain range half width (radians)
 #endif
 
     namelist /solver_nl/precon_method, &
@@ -715,8 +728,11 @@ module namelist_mod
 
     call MPI_bcast(omega,         1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(rearth,        1, MPIreal_t,    par%root,par%comm,ierr)
-
     rrearth = 1.0d0/rearth
+
+    call MPI_bcast(dcmip2_0_h0,   1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_0_rm,   1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_0_zetam,1, MPIreal_t,    par%root,par%comm,ierr)
 
     call MPI_bcast(smooth,        1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(phys_tscale,   1,MPIreal_t   ,par%root,par%comm,ierr)

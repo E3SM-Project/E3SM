@@ -55,83 +55,55 @@ contains
 
   subroutine prim_init1(elem, fvm, par, dom_mt, Tl)
 
-    ! --------------------------------
-    use thread_mod, only : nthreads, omp_get_thread_num, vert_num_threads
-    ! --------------------------------
-    use control_mod, only : runtype, restartfreq, filter_counter, integration, topology, &
-         partmethod, while_iter, use_semi_lagrange_transport
-    ! --------------------------------
-    use prim_state_mod, only : prim_printstate_init
-    ! --------------------------------
-    use namelist_mod, only : readnl
-    ! --------------------------------
-    use mesh_mod, only : MeshUseMeshFile
-    ! --------------------------------
-    use time_mod, only : nmax, time_at, timelevel_init, timelevel_t
-    ! --------------------------------
-    use element_mod, only : setup_element_pointers
-    ! --------------------------------
-    use mass_matrix_mod, only : mass_matrix
-    ! --------------------------------
-    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
-    ! --------------------------------
-    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
-         MeshCubeElemCount, MeshCubeEdgeCount
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
-    ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
-    ! --------------------------------
-    use derivative_mod, only : allocate_subcell_integration_matrix
-    ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
-    ! --------------------------------
-    use schedtype_mod, only : schedule
-    ! --------------------------------
-    use schedule_mod, only : genEdgeSched,  PrintSchedule
-    ! --------------------------------
+    use bndry_mod,          only: sort_neighbor_buffer_mapping
+    use control_mod,        only: runtype, restartfreq, filter_counter, integration, &
+                                  topology, partmethod, while_iter, use_semi_lagrange_transport
+    use cube_mod,           only: cubeedgecount , cubeelemcount, cubetopology, &
+                                  cube_init_atomic, rotation_init_atomic,&
+                                  set_corner_coordinates, assign_node_numbers_to_elem
+    use derivative_mod,     only: allocate_subcell_integration_matrix
+    use diffusion_mod,      only: diffusion_init
+    use dof_mod,            only: global_dof, CreateUniqueIndex, SetElemOffset
+    use domain_mod,         only: domain1d_t, decompose
+    use element_mod,        only: setup_element_pointers
+    use gridgraph_mod,      only: gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
+    use mass_matrix_mod,    only: mass_matrix
+    use mesh_mod,           only: MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
+                                  MeshCubeElemCount, MeshCubeEdgeCount, MeshUseMeshFile
+    use metagraph_mod,      only: metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
+    use metis_mod,          only: genmetispart
+    use namelist_mod,       only: readnl
+    use parallel_mod,       only: iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars, &
+                                  mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
+    use params_mod,         only: sfcurve
+    use physical_constants, only: dd_pi
     use prim_advection_mod, only: prim_advec_init1
-    ! --------------------------------
-    use prim_advance_mod, only: prim_advance_init
-    ! --------------------------------
-#ifdef TRILINOS
-    use prim_implicit_mod, only : prim_implicit_init
-#endif
-    ! --------------------------------
-    use diffusion_mod, only      : diffusion_init
-    ! --------------------------------
-    use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
-#ifdef _MPI
-    use parallel_mod, only : mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
-#endif
-    ! --------------------------------
-    use metis_mod, only : genmetispart
-    ! --------------------------------
-    use spacecurve_mod, only : genspacepart
-    ! --------------------------------
-    use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
-    ! --------------------------------
-    use params_mod, only : SFCURVE
-    ! --------------------------------
-    use domain_mod, only : domain1d_t, decompose
-    ! --------------------------------
-    use physical_constants, only : dd_pi
-    ! --------------------------------
-    use bndry_mod, only : sort_neighbor_buffer_mapping
-    ! --------------------------------
+    use prim_advance_mod,   only: prim_advance_init
+    use prim_state_mod,     only: prim_printstate_init
+    use schedtype_mod,      only: schedule
+    use schedule_mod,       only: genEdgeSched,  PrintSchedule
+    use spacecurve_mod,     only: genspacepart
+    use thread_mod,         only: nthreads, omp_get_thread_num, vert_num_threads
+    use time_mod,           only: nmax, time_at, timelevel_init, timelevel_t
+
 #ifndef CAM
-    use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
-         repro_sum_setopts
+    use repro_sum_mod,      only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
 #else
-    use infnan,           only: nan, assignment(=)
-    use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
+    use infnan,             only: nan, assignment(=)
+    use shr_reprosum_mod,   only: repro_sum => shr_reprosum_calc
 #endif
+
+#ifdef TRILINOS
+    use prim_implicit_mod,  only : prim_implicit_init
+#endif
+
     implicit none
-    type (element_t),  pointer    :: elem(:)
-    type (fvm_struct), pointer    :: fvm(:)
-    type (parallel_t), intent(in) :: par
-    type (domain1d_t), pointer    :: dom_mt(:)
+
+    type (element_t),   pointer     :: elem(:)
+    type (fvm_struct),  pointer     :: fvm(:)
+    type (parallel_t),  intent(in)  :: par
+    type (domain1d_t),  pointer     :: dom_mt(:)
     type (timelevel_t), intent(out) :: Tl
-    ! Local Variables
 
     type (GridVertex_t), target,allocatable :: GridVertex(:)
     type (GridEdge_t),   target,allocatable :: Gridedge(:)
@@ -158,11 +130,11 @@ contains
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
 
-
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
     real(kind=real_kind) :: repro_sum_rel_diff_max
 #endif
+
     ! =====================================
     ! Read in model control information
     ! =====================================
@@ -219,7 +191,6 @@ contains
     end if
 #endif
 
-
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
@@ -260,7 +231,6 @@ contains
 
     !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
 
-
     if(partmethod .eq. SFCURVE) then
        if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
        call genspacepart(GridEdge,GridVertex)
@@ -274,7 +244,6 @@ contains
     ! ===========================================================
     allocate(MetaVertex(1))
     allocate(Schedule(1))
-
 
     nelem_edge=SIZE(GridEdge)
 
@@ -290,7 +259,6 @@ contains
     ! ====================================================
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
 
-
     nelemd = LocalElemCount(MetaVertex(1))
     if(par%masterproc .and. Debug) then 
         call PrintMetaVertex(MetaVertex(1))
@@ -305,7 +273,6 @@ contains
 #else
     nelemdmax=nelemd
 #endif
-
 
     if (nelemd>0) then
        allocate(elem(nelemd))
@@ -364,7 +331,6 @@ contains
     call InitReductionBuffer(red_min,1)
     call initReductionBuffer(red_flops,1)
 
-
     gp=gausslobatto(np)  ! GLL points
 
     ! fvm nodes are equally spaced in alpha/beta
@@ -419,10 +385,8 @@ contains
        enddo
     end if
 
-
     if(par%masterproc) write(iulog,*) 're-running mass_matrix'
     call mass_matrix(par,elem)
-
 
     ! =================================================================
     ! Determine the global degree of freedome for each gridpoint
@@ -447,11 +411,8 @@ contains
     !JMD call PrintDofP(elem)
     !JMD call PrintDofV(elem)
 
-
-
     call prim_printstate_init(par)
     ! Initialize output fields for plotting...
-
 
     while_iter = 0
     filter_counter = 0
@@ -489,7 +450,6 @@ contains
        elem(ie)%derived%Ttnd=0.D0
 #endif
     enddo
-
 
     ! ==========================================================
     !  This routines initalizes a Restart file.  This involves:
@@ -560,37 +520,38 @@ contains
 
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
+
   end subroutine prim_init1
 
   !_____________________________________________________________________
   subroutine prim_init2(elem, fvm, hybrid, nets, nete, tl, hvcoord)
 
-    use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
-    use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
-    use prim_state_mod,       only: prim_printstate, prim_diag_scalars
-    use filter_mod,           only: filter_t, fm_filter_create, taylor_filter_create, fm_transfer, bv_transfer
     use control_mod,          only: runtype, integration, filter_mu, filter_mu_advection, test_case, &
                                     debug_level, vfile_int, filter_freq, filter_freq_advection,  transfer_type,&
                                     vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, s_bv, &
                                     topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, tracer_transport_type
-    use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
-    use thread_mod,           only: nthreads
     use derivative_mod,       only: derivinit, interpolate_gll2fvm_points, v2pinit
+    use filter_mod,           only: filter_t, fm_filter_create, taylor_filter_create, fm_transfer, bv_transfer
+    use fvm_control_volume_mod, only: n0_fvm, np1_fvm,fvm_supercycling
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
+    use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
+    use prim_state_mod,       only: prim_printstate, prim_diag_scalars
+    use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
     use prim_advection_mod,   only: prim_advec_init2, prim_advec_init_deriv, deriv
     use solver_init_mod,      only: solver_init2
-    use fvm_control_volume_mod, only : n0_fvm, np1_fvm,fvm_supercycling
+    use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
+    use thread_mod,           only: nthreads
 
 #ifndef CAM
-    use control_mod,          only: pertlim                     !used for homme temperature perturbations
-    use column_model_mod,     only: InitColumnModel
-    use held_suarez_mod,      only: hs0_init_state
-    use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
     use asp_tests,            only: asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
-    use dcmip_tests,          only: dcmip2012_test3
+    use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
+    use column_model_mod,     only: InitColumnModel
+    use control_mod,          only: pertlim                     !used for homme temperature perturbations
+    use dcmip_tests,          only: dcmip2012_test2_0, dcmip2012_test3
+    use held_suarez_mod,      only: hs0_init_state
 #endif
 
 #ifdef TRILINOS
@@ -843,6 +804,9 @@ contains
           case('asp_tracer');         call asp_tracer       (elem, hybrid,hvcoord,nets,nete)
           case('baroclinic');         call binst_init_state (elem, hybrid, nets, nete, hvcoord)
           case('dcmip2012_test3');    call dcmip2012_test3  (elem, hybrid,hvcoord,nets,nete)
+          case('dcmip2012_test2_0');  call dcmip2012_test2_0(elem, hybrid,hvcoord,nets,nete)
+          case('dcmip2012_test2_1'); !call dcmip2012_test2_1(elem, hybrid,hvcoord,nets,nete)
+          case('dcmip2012_test2_2'); !call dcmip2012_test2_2(elem, hybrid,hvcoord,nets,nete)
           case('held_suarez0');       call hs0_init_state   (elem, hvcoord,nets,nete,300.0_real_kind)
           case('jw_baroclinic');      call jw_baroclinic    (elem, hybrid,hvcoord,nets,nete)
           case default;               call abortmp('unrecognized test case')
