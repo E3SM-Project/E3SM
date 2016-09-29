@@ -124,6 +124,8 @@ contains
           have_irrig_field = .true.
        end if
     else
+       ! If rof_present is false, have_irrig_field should be irrelevant; we arbitrarily
+       ! set it to false in this case.
        have_irrig_field = .false.
     end if
 
