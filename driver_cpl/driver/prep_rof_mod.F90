@@ -115,12 +115,16 @@ contains
 
     allocate(mapper_Fl2r)
 
-    x2r_rx => component_get_x2c_cx(rof(1))
-    index_irrig = mct_aVect_indexRA(x2r_rx, irrig_flux_field, perrWith='quiet')
-    if (index_irrig == 0) then
-       have_irrig_field = .false.
+    if (rof_present) then
+       x2r_rx => component_get_x2c_cx(rof(1))
+       index_irrig = mct_aVect_indexRA(x2r_rx, irrig_flux_field, perrWith='quiet')
+       if (index_irrig == 0) then
+          have_irrig_field = .false.
+       else
+          have_irrig_field = .true.
+       end if
     else
-       have_irrig_field = .true.
+       have_irrig_field = .false.
     end if
 
     if (rof_present .and. lnd_present) then
