@@ -164,12 +164,9 @@ ENDIF()
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroC)
   ADD_SUBDIRECTORY(baroCam)
-ENDIF()
-
-IF(${BUILD_HOMME_PREQX_ACC} AND ${BUILD_HOMME_PREQX})
-  ADD_SUBDIRECTORY(baroCam-acc)
-  # add a test dependency here:
-  set_property(TEST baroCamMoist-acc APPEND PROPERTY DEPENDS baroCamMoist)
+  IF(${BUILD_HOMME_PREQX_ACC})
+    ADD_SUBDIRECTORY(baroCam-acc)
+  ENDIF()
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -188,6 +185,11 @@ INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 #  replaceBaselineResults target
 SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
+
+IF(${BUILD_HOMME_PREQX} AND ${BUILD_HOMME_PREQX_ACC})
+  # add a test dependency here:
+  set_property(TEST baroCamMoist-acc APPEND PROPERTY DEPENDS baroCamMoist)
+ENDIF()
 
 # End the file with the total number of test files
 FILE (APPEND ${HOMME_TEST_LIST} "\n")
