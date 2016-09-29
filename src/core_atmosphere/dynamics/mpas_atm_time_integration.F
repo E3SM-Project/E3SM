@@ -71,6 +71,10 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_edge
 
+   type (MPAS_Clock_type), pointer, private :: clock
+   type (block_type), pointer, private :: blocklist
+
+
    contains
 
 
@@ -100,6 +104,9 @@ module atm_time_integration
       type (mpas_pool_type), pointer :: state
       character (len=StrKIND), pointer :: config_time_integration
 
+
+      clock => domain % clock
+      blocklist => domain % blocklist
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_time_integration', config_time_integration)
 
