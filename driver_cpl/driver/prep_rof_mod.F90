@@ -117,7 +117,7 @@ contains
 
     x2r_rx => component_get_x2c_cx(rof(1))
     index_irrig = mct_aVect_indexRA(x2r_rx, irrig_flux_field, perrWith='quiet')
-    if (irrig_index == 0) then
+    if (index_irrig == 0) then
        have_irrig_field = .false.
     else
        have_irrig_field = .true.
