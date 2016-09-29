@@ -379,6 +379,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
 
                 logger.debug("Found multiinstance hist file %s"%hist)
             shutil.copy(hist, baseline)
+            os.chmod(baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
 
     expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
