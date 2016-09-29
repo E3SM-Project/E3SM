@@ -168,6 +168,7 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroC)
   ADD_SUBDIRECTORY(baroCam)
   ADD_SUBDIRECTORY(baroCam-acc)
+  ADD_SUBDIRECTORY(preqx-nlev20)
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
