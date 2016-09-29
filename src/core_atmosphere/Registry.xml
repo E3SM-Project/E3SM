@@ -1319,8 +1319,14 @@
                 <var name="bdyMaskVertex" type="integer" dimensions="nVertices" units="-"
                      description="Limited-area specified/relaxation zone index for vertices"/>
 
-                <var name="specifiedZoneMask" type="real" dimensions="nCells" units="-"
+                <var name="specZoneMaskCell" type="real" dimensions="nCells" units="-"
                      description="0/1 mask on cells, defined as 1 for cells in the limited-area specified zone"/>
+
+                <var name="specZoneMaskEdge" type="real" dimensions="nEdges" units="-"
+                     description="0/1 mask on edges, defined as 1 for edges in the limited-area specified zone"/>
+
+                <var name="specZoneMaskVertex" type="real" dimensions="nVertices" units="-"
+                     description="0/1 mask on vertices, defined as 1 for vertices in the limited-area specified zone"/>
 
                 <var name="nearestRelaxationCell" type="integer" dimensions="nCells" units="-"
                      description="For cells in the specified zone, gives the index of the nearest cell in the relaxation zone"/>

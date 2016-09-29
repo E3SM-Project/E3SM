@@ -312,17 +312,21 @@ module mpas_atm_boundaries
         real (kind=RKIND) :: d, dmin
 
         integer, pointer :: nCells
-        integer, dimension(:), pointer :: bdyMaskCell
+        integer, dimension(:), pointer :: bdyMaskCell, bdyMaskEdge, bdyMaskVertex
         integer, dimension(:), pointer :: nearestRelaxationCell
         integer, dimension(:), pointer :: nEdgesOnCell
         integer, dimension(:,:), pointer :: cellsOnCell
-        real (kind=RKIND), dimension(:), pointer :: specifiedZoneMask
+        real (kind=RKIND), dimension(:), pointer :: specZoneMaskCell, specZoneMaskEdge, specZoneMaskVertex
         real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
 
         call mpas_pool_get_dimension(mesh, 'nCells', nCells)
 
         call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
-        call mpas_pool_get_array(mesh, 'specifiedZoneMask', specifiedZoneMask)
+        call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)
+        call mpas_pool_get_array(mesh, 'bdyMaskVertex', bdyMaskVertex)
+        call mpas_pool_get_array(mesh, 'specZoneMaskCell', specZoneMaskCell)
+        call mpas_pool_get_array(mesh, 'specZoneMaskEdge', specZoneMaskEdge)
+        call mpas_pool_get_array(mesh, 'specZoneMaskVertex', specZoneMaskVertex)
         call mpas_pool_get_array(mesh, 'nearestRelaxationCell', nearestRelaxationCell)
         call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
         call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
@@ -331,15 +335,17 @@ module mpas_atm_boundaries
         call mpas_pool_get_array(mesh, 'zCell', zCell)
 
         !
-        ! Setup mask identifying cells in the specified zone
+        ! Setup mask identifying cells/edges/vertices in the specified zone
         !
-        do iCell=1,nCells
-            if (bdyMaskCell(iCell) > nRelaxZone) then
-                specifiedZoneMask(iCell) = 1.0_RKIND
-            else
-                specifiedZoneMask(iCell) = 0.0_RKIND
-            end if
-        end do
+        specZoneMaskCell(:) = 0.0_RKIND
+        where (bdyMaskCell(:) > nRelaxZone) specZoneMaskCell(:) = 1.0_RKIND
+
+        specZoneMaskEdge(:) = 0.0_RKIND
+        where (bdyMaskEdge(:) > nRelaxZone) specZoneMaskEdge(:) = 1.0_RKIND
+
+        specZoneMaskVertex(:) = 0.0_RKIND
+        where (bdyMaskVertex(:) > nRelaxZone) specZoneMaskVertex(:) = 1.0_RKIND
+
 
         nearestRelaxationCell(:) = nCells+1
 
