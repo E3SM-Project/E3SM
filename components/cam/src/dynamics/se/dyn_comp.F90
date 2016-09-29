@@ -89,19 +89,19 @@ CONTAINS
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
-    use native_mapping,      only: create_native_mapping_files, native_mapping_readnl
+    use native_mapping,      only: create_native_mapping_files, &
+                                   native_mapping_readnl
     use time_manager,        only: get_nstep, dtime
 
-    use dimensions_mod,   only: globaluniquecols, nelem, nelemd, nelemdmax
-    use prim_driver_mod,  only: prim_init1
-    use parallel_mod,     only: par, initmp
-    use namelist_mod,     only: readnl
-    use control_mod,      only: runtype, qsplit, rsplit
-    use time_mod,         only: tstep
-    use phys_control,     only: use_gw_front
-    use physics_buffer,   only: pbuf_add_field, dtype_r8
-    use ppgrid,           only: pcols, pver
-    use cam_abortutils,   only : endrun
+    use dimensions_mod,      only: globaluniquecols, nelem, nelemd, nelemdmax
+    use prim_driver_mod,     only: prim_init1
+    use parallel_mod,        only: par, initmp
+    use namelist_mod,        only: readnl
+    use control_mod,         only: runtype, qsplit, rsplit
+    use time_mod,            only: tstep
+    use phys_control,        only: use_gw_front
+    use physics_buffer,      only: pbuf_add_field, dtype_r8
+    use ppgrid,              only: pcols, pver
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -175,25 +175,18 @@ CONTAINS
        write(iulog,*) " "
     endif
 #endif
-    if(iam < par%nprocs) then
-       call prim_init1(elem,fvm,par,dom_mt,TimeLevel)
+    call prim_init1(elem,fvm,par,dom_mt,TimeLevel)
 
-       dyn_in%elem => elem
-       dyn_out%elem => elem
-       dyn_in%fvm => fvm
-       dyn_out%fvm => fvm
-    
-       call set_horiz_grid_cnt_d(GlobalUniqueCols)
+    dyn_in%elem => elem
+    dyn_out%elem => elem
+    dyn_in%fvm => fvm
+    dyn_out%fvm => fvm
+ 
+    call set_horiz_grid_cnt_d(GlobalUniqueCols)
 
-       neltmp(1) = nelemdmax
-       neltmp(2) = nelem
-       neltmp(3) = get_dyn_grid_parm('plon')
-    else
-       nelemd = 0
-       neltmp(1) = 0
-       neltmp(2) = 0
-       neltmp(3) = 0
-    endif
+    neltmp(1) = nelemdmax
+    neltmp(2) = nelem
+    neltmp(3) = get_dyn_grid_parm('plon')
 
     dyndecomp_set = .true.
 
@@ -202,11 +195,6 @@ CONTAINS
 #ifdef SPMD
        call mpibcast(neltmp, 3, mpi_integer, 0, mpicom)
 #endif
-       if (iam .ge. par%nprocs) then
-          nelemdmax = neltmp(1)
-          nelem     = neltmp(2)
-          call set_horiz_grid_cnt_d(neltmp(3))
-       endif
     endif
 
 
@@ -277,80 +265,78 @@ CONTAINS
     do k=1,nlev
        hvcoord%hybd(k) = hvcoord%hybi(k+1) - hvcoord%hybi(k)
     end do
-    if(iam < par%nprocs) then
 
 #ifdef HORIZ_OPENMP
-       if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
-                                   "max_threads=",omp_get_max_threads()
-       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+    if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
+                                "max_threads=",omp_get_max_threads()
+    !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
 #endif
 #ifdef COLUMN_OPENMP
-       call omp_set_num_threads(vthreads)
+    call omp_set_num_threads(vthreads)
 #endif
-       ithr=omp_get_thread_num()
-       nets=dom_mt(ithr)%start
-       nete=dom_mt(ithr)%end
-       hybrid = hybrid_create(par,ithr,NThreads)
+    ithr=omp_get_thread_num()
+    nets=dom_mt(ithr)%start
+    nete=dom_mt(ithr)%end
+    hybrid = hybrid_create(par,ithr,NThreads)
 
-       moisture='moist'
+    moisture='moist'
 
-       if(adiabatic) then
-          moisture='dry'
-          if(runtype == 0) then
-             do ie=nets,nete
-                elem(ie)%state%q(:,:,:,:)=0.0_r8
-                elem(ie)%derived%fq(:,:,:,:,:)=0.0_r8
-             end do
-          end if
-       else if(ideal_phys) then
-          moisture='dry'
-          if(runtype == 0) then
-             do ie=nets,nete
-                elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-
-                elem(ie)%state%ps_v(:,:,:) =dyn_ps0
-
-                elem(ie)%state%phis(:,:)=0.0_r8
-
-                elem(ie)%state%T(:,:,:,:) =Tinit
-
-                elem(ie)%state%v(:,:,:,:,:) =0.0_r8
-
-                elem(ie)%state%q(:,:,:,:)=0.0_r8
-
-             end do
-          end if
-       else if(aqua_planet .and. runtype==0)  then
+    if(adiabatic) then
+      moisture='dry'
+      if(runtype == 0) then
           do ie=nets,nete
-             !          elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-             !          elem(ie)%state%ps_v(:,:,:) =dyn_ps0
-             elem(ie)%state%phis(:,:)=0.0_r8
+            elem(ie)%state%q(:,:,:,:)=0.0_r8
+            elem(ie)%derived%fq(:,:,:,:,:)=0.0_r8
           end do
-          if(allocated(landm)) landm=0.0_r8
-          if(allocated(sgh)) sgh=0.0_r8
-          if(allocated(sgh30)) sgh30=0.0_r8
-       end if
+      end if
+    else if(ideal_phys) then
+      moisture='dry'
+      if(runtype == 0) then
+          do ie=nets,nete
+            elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
 
-       do ie=nets,nete
-          elem(ie)%derived%FM=0.0_r8
-          elem(ie)%derived%FT=0.0_r8
-          elem(ie)%derived%FQ=0.0_r8
-       end do
+            elem(ie)%state%ps_v(:,:,:) =dyn_ps0
 
-       ! scale PS to achieve prescribed dry mass
-       if (runtype == 0) then
-          ! new run, scale mass to value given in namelist, if needed
-          call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
-       endif
-       call prim_init2(elem,fvm,hybrid,nets,nete, TimeLevel, hvcoord)
-       !
-       ! This subroutine is used to create nc_topo files, if requested
-       ! 
-       call nctopo_util_driver(elem,hybrid,nets,nete)
-#ifdef HORIZ_OPENMP
-       !$OMP END PARALLEL 
-#endif
+            elem(ie)%state%phis(:,:)=0.0_r8
+
+            elem(ie)%state%T(:,:,:,:) =Tinit
+
+            elem(ie)%state%v(:,:,:,:,:) =0.0_r8
+
+            elem(ie)%state%q(:,:,:,:)=0.0_r8
+
+          end do
+      end if
+    else if(aqua_planet .and. runtype==0)  then
+      do ie=nets,nete
+          !          elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
+          !          elem(ie)%state%ps_v(:,:,:) =dyn_ps0
+          elem(ie)%state%phis(:,:)=0.0_r8
+      end do
+      if(allocated(landm)) landm=0.0_r8
+      if(allocated(sgh)) sgh=0.0_r8
+      if(allocated(sgh30)) sgh30=0.0_r8
     end if
+
+    do ie=nets,nete
+      elem(ie)%derived%FM=0.0_r8
+      elem(ie)%derived%FT=0.0_r8
+      elem(ie)%derived%FQ=0.0_r8
+    end do
+
+    ! scale PS to achieve prescribed dry mass
+    if (runtype == 0) then
+      ! new run, scale mass to value given in namelist, if needed
+      call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
+    endif
+    call prim_init2(elem,fvm,hybrid,nets,nete, TimeLevel, hvcoord)
+    !
+    ! This subroutine is used to create nc_topo files, if requested
+    ! 
+    call nctopo_util_driver(elem,hybrid,nets,nete)
+#ifdef HORIZ_OPENMP
+    !$OMP END PARALLEL 
+#endif
 
     if (inst_index == 1) then
        call write_grid_mapping(par, elem)
@@ -385,34 +371,32 @@ CONTAINS
 
     ! !DESCRIPTION:
     !
-    if(iam < par%nprocs) then
 #ifdef HORIZ_OPENMP
-       !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
-       !                            "max_threads=",omp_get_max_threads()
-       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+    !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
+    !                            "max_threads=",omp_get_max_threads()
+    !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
 #endif
 #ifdef COLUMN_OPENMP
-       ! nested threads
-       call omp_set_num_threads(vthreads)
+    ! nested threads
+    call omp_set_num_threads(vthreads)
 #endif
-       ithr=omp_get_thread_num()
-       nets=dom_mt(ithr)%start
-       nete=dom_mt(ithr)%end
-       hybrid = hybrid_create(par,ithr,NThreads)
+    ithr=omp_get_thread_num()
+    nets=dom_mt(ithr)%start
+    nete=dom_mt(ithr)%end
+    hybrid = hybrid_create(par,ithr,NThreads)
 
-       do n=1,se_nsplit
-          ! forward-in-time RK, with subcycling
-          call t_startf("prim_run_sybcycle")
-          call prim_run_subcycle(dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
-               tstep, TimeLevel, hvcoord, n)
-          call t_stopf("prim_run_sybcycle")
-       end do
+    do n=1,se_nsplit
+      ! forward-in-time RK, with subcycling
+      call t_startf("prim_run_sybcycle")
+      call prim_run_subcycle(dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
+            tstep, TimeLevel, hvcoord, n)
+      call t_stopf("prim_run_sybcycle")
+    end do
 
 
 #ifdef HORIZ_OPENMP
-       !$OMP END PARALLEL
+    !$OMP END PARALLEL
 #endif
-    end if
     rc = DYN_RUN_SUCCESS
 
     !EOC
