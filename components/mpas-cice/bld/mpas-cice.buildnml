@@ -486,7 +486,18 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
+	print $stream_file '<stream name="landIceMasks"' . "\n";
+	print $stream_file '       type="input"' . "\n";
+	print $stream_file '       input_interval="initial_only"' . "\n";
+	print $stream_file "       filename_template=" . '"'
+                                                . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
+                                                . '">' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '       <var name="landIceMask"/>' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
 	print $stream_file '</streams>' . "\n";
+
 
 }
 
