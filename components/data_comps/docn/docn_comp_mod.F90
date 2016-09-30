@@ -165,7 +165,6 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     integer(IN)   :: yearLast    ! last  year to use in data stream
     integer(IN)   :: yearAlign   ! data year that aligns with yearFirst
 
-    character(CL) :: ocn_in      ! dshr ocn namelist
     character(CL) :: decomp      ! decomp strategy
     character(CL) :: rest_file   ! restart filename
     character(CL) :: rest_file_strm   ! restart filename for stream
@@ -178,7 +177,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     !----- define namelist -----
     namelist / docn_nml / &
-        ocn_in, decomp, restfilm, restfils, &
+        decomp, restfilm, restfils, &
         force_prognostic_true
 
     !--- formats ---
@@ -249,7 +248,6 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     call t_startf('docn_readnml')
 
     filename = "docn_in"//trim(inst_suffix)
-    ocn_in = "unset"
     decomp = "1d"
     restfilm = trim(nullstr)
     restfils = trim(nullstr)
@@ -264,13 +262,11 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' ocn_in = ',trim(ocn_in)
        write(logunit,F00)' decomp = ',trim(decomp)
        write(logunit,F00)' restfilm = ',trim(restfilm)
        write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
-    call shr_mpi_bcast(ocn_in,mpicom,'ocn_in')
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
@@ -288,7 +284,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     ! Read dshr namelist
     !----------------------------------------------------------------------------
 
-    call shr_strdata_readnml(SDOCN,trim(ocn_in),mpicom=mpicom)
+    call shr_strdata_readnml(SDOCN,trim(filename),mpicom=mpicom)
 
     !----------------------------------------------------------------------------
     ! Validate mode

@@ -293,7 +293,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
 
     !----- define namelist -----
     namelist / datm_nml / &
-        atm_in, decomp, iradsw, factorFn, restfilm, restfils, presaero, bias_correct, &
+        decomp, iradsw, factorFn, restfilm, restfils, presaero, bias_correct, &
         anomaly_forcing, force_prognostic_true
 
     !--- formats ---
@@ -365,7 +365,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     call t_startf('datm_readnml')
 
     filename = "datm_in"//trim(inst_suffix)
-    atm_in = "unset"
     decomp = "1d"
     iradsw = 0
     factorFn = 'null'
@@ -384,7 +383,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' atm_in   = ',trim(atm_in)
        write(logunit,F00)' decomp   = ',trim(decomp)
        write(logunit,F01)' iradsw   = ',iradsw
        write(logunit,F00)' factorFn = ',trim(factorFn)
@@ -397,7 +395,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
        write(logunit,F00) 'inst_suffix =  ',trim(inst_suffix)
        call shr_sys_flush(logunit)
     endif
-    call shr_mpi_bcast(atm_in,mpicom,'atm_in')
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(iradsw,mpicom,'iradsw')
     call shr_mpi_bcast(factorFn,mpicom,'factorFn')
@@ -417,7 +414,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     ! Read dshr namelist
     !----------------------------------------------------------------------------
 
-    call shr_strdata_readnml(SDATM,trim(atm_in),mpicom=mpicom)
+    call shr_strdata_readnml(SDATM,trim(filename),mpicom=mpicom)
     call shr_sys_flush(shrlogunit)
 
     !----------------------------------------------------------------------------
