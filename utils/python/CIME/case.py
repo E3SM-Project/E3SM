@@ -131,6 +131,10 @@ class Case(object):
         self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
 
+    def get_case_root(self):
+        """Returns the root directory for this case."""
+        return self._caseroot
+
     def get_env(self, short_name):
         full_name = "env_%s.xml" % (short_name)
         for env_file in self._files:
