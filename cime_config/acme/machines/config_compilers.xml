@@ -664,13 +664,6 @@ for mct, etc.
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-<compiler COMPILER="gnu" MACH="penn">
-  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas </ADD_SLIBS>
-  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
-</compiler>
-
 <compiler COMPILER="pgi" MACH="sierra">
   <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
   <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
