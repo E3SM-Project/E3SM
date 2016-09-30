@@ -80,9 +80,14 @@ class Testlist(GenericXML):
                         else:
                             this_test[key] = value
 
+                    optionnodes = self.get_nodes("option", root=tnode)
+                    for onode in optionnodes:
+                        this_test[onode.get('name')] = onode.text
                     optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
                         this_test[onode.get('name')] = onode.text
+
+
                     tests.append(this_test)
 
         return tests

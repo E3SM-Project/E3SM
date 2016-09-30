@@ -372,6 +372,8 @@ class TestScheduler(object):
         envtest.set_value("TESTCASE", test_case)
         envtest.set_value("TEST_TESTID", self._test_id)
         envtest.set_value("CASEBASEID", test)
+        if test in self._test_data and "memleak_tolerance" in self._test_data[test]:
+            envtest.set_value("TEST_MEMLEAK_TOLERANCE", self._test_data[test]['memleak_tolerance'])
 
         test_argv = "-testname %s -testroot %s" % (test, self._test_root)
         if self._baseline_gen_name:
