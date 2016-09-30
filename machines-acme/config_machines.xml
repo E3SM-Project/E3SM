@@ -556,12 +556,11 @@
          </mpirun>
 </machine>
 
-<machine MACH="blues-bro">
+<machine MACH="anvil">
          <DESC>ANL/LCRC Linux Cluster with ACME queue</DESC>
-         <NODENAME_REGEX>blogin</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
-         <COMPILERS>intel</COMPILERS>
-         <MPILIBS>mvapich,openmpi</MPILIBS>
+         <COMPILERS>intel,gnu</COMPILERS>
+         <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
@@ -593,6 +592,7 @@
          <mpirun mpilib="mpi-serial">
              <executable></executable>
          </mpirun>
+</machine>
 
 <machine MACH="cetus">
          <DESC>ANL IBM BG/Q, os is BGP, 16 cores/node, batch system is cobalt</DESC>
