@@ -600,8 +600,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </griddom>
 
 <griddom grid="oQU240wLI" mask="oQU240wLI">
-  <ICE_DOMAIN_FILE>domain.ocn.oQU240wLI_mask.160830.nc</ICE_DOMAIN_FILE>
-  <OCN_DOMAIN_FILE>domain.ocn.oQU240wLI_mask.160830.nc</OCN_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.oQU240wLI_mask.160929.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.oQU240wLI_mask.160929.nc</OCN_DOMAIN_FILE>
 </griddom>
 
 <griddom grid="oQU120" mask="oQU120">
@@ -1438,8 +1438,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </griddom>
 
 <griddom grid="T62" mask="oQU240wLI"> <!--- datm/slnd/drof only -->
-  <ATM_DOMAIN_FILE>domain.lnd.T62_oQU240wLI_mask.160830.nc</ATM_DOMAIN_FILE>
-  <LND_DOMAIN_FILE>domain.lnd.T62_oQU240wLI_mask.160830.nc</LND_DOMAIN_FILE>
+  <ATM_DOMAIN_FILE>domain.lnd.T62_oQU240wLI_mask.160929.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.T62_oQU240wLI_mask.160929.nc</LND_DOMAIN_FILE>
 </griddom>
 
 <griddom grid="T62" mask="oQU120"> <!--- datm/slnd/drof only -->
@@ -1513,11 +1513,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 
 <gridmap atm_grid="T62" ocn_grid="oQU240wLI">
-  <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240wLI_aave.160830.nc</ATM2OCN_FMAPNAME>
-  <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240wLI_nm_aave.160830.nc</ATM2OCN_SMAPNAME>
-  <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240wLI_patc.160830.nc</ATM2OCN_VMAPNAME>
-  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU240wLI/map_oQU240wLI_TO_T62_aave.160830.nc</OCN2ATM_FMAPNAME>
-  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU240wLI/map_oQU240wLI_TO_T62_aave.160830.nc</OCN2ATM_SMAPNAME>
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240wLI_mask_aave.160929.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240wLI_nomask_aave.160929.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240wLI_mask_patc.160929.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU240wLI/map_oQU240wLI_mask_TO_T62_aave.160929.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU240wLI/map_oQU240wLI_mask_TO_T62_aave.160929.nc</OCN2ATM_SMAPNAME>
 </gridmap>
 
 <gridmap atm_grid="T62" ocn_grid="oQU120">
@@ -1830,7 +1830,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oQU240_nn.160527.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oQU240wLI" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oQU240wLI_nn.160830.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oQU240wLI_nn.160929.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oQU120" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oQU120_nn.160527.nc</ROF2OCN_RMAPNAME>
@@ -1868,7 +1868,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU240_nn.160714.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oQU240wLI" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU240wLI_nn.160830.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU240wLI_nn.160929.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oQU120" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oQU120_nn.160718.nc</ROF2OCN_RMAPNAME>
