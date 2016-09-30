@@ -257,7 +257,7 @@ OR
         args.no_batch = True
 
     if args.test_id is None:
-        args.test_id = "%s.%s"%(CIME.utils.get_timestamp(), CIME.utils.id_generator())
+        args.test_id = "%s_%s"%(CIME.utils.get_timestamp(), CIME.utils.id_generator())
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:
