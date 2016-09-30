@@ -5,7 +5,7 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
-import logging, glob, os, shutil, re
+import logging, glob, os, shutil, re, stat
 logger = logging.getLogger(__name__)
 
 def _iter_model_file_substrs(case):
@@ -382,5 +382,9 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
 
     expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
+    #make sure permissions are open in baseline directory
+    for root,dirs,files in os.walk(basegen_dir):
+        for name in files:
+            os.chmod(os.path.join(root,name), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)        
 
     return True, comments
