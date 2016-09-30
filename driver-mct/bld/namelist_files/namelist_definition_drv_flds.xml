@@ -4,111 +4,109 @@
 
 <namelist_definition>
 
-<entry id="drv_flds_in_files" type="char*256(10)" category="drv_physics"
-       group="default_settings" valid_values="" >
-List of files to merge together that contains drv_flds_in namelists
-The paths are relative to the case directory. drv_flds_in include the namelists that
-the driver reads and gives information on additional fields to be passed to different
-components that need to look at the same data.
-</entry>
+  <version>1.0</version> 
 
-<!-- ========================================================================================  -->
-<!-- MEGAN VOC emissions namelist options                                                      -->
-<!-- ========================================================================================  -->
+  <entry id="drv_flds_in_files" type="char*256(10)" category="drv_physics"
+	 group="default_settings" valid_values="" >
+    List of files to merge together that contains drv_flds_in namelists
+    The paths are relative to the case directory. drv_flds_in include the namelists that
+    the driver reads and gives information on additional fields to be passed to different
+    components that need to look at the same data.
+  </entry>
 
-<entry id="megan_factors_file" type="char*256" input_pathname="abs" category="drv_physics"
-       group="megan_emis_nl" valid_values="" >
-File containing MEGAN emissions factors. Includes the list of MEGAN compounds that can be
-used in the Comp_Name variable on the file.
-</entry>
+  <!-- ========================================================================================  -->
+  <!-- MEGAN VOC emissions namelist options                                                      -->
+  <!-- ========================================================================================  -->
 
-<entry id="megan_specifier" type="char*1024(100)" category="drv_physics"
-       group="megan_emis_nl" valid_values="" >
-MEGAN specifier. This is in the form of: Chem-compound = megan_compound(s)
-where megan_compound(s) can be the sum of megan compounds with a "+" between them.
-In each equation, the item to the left of the equal sign is a CAM chemistry compound, the
-items to the right are compounds known to the MEGAN model (single or combinations).
-For example,
-megan_specifier = 'ISOP = isoprene',
-                  'C10H16 = pinene_a + carene_3 + thujene_a'
-</entry>
+  <entry id="megan_factors_file" type="char*256" input_pathname="abs" category="drv_physics"
+	 group="megan_emis_nl" valid_values="" >
+    File containing MEGAN emissions factors. Includes the list of MEGAN compounds that can be
+    used in the Comp_Name variable on the file.
+  </entry>
+  
+  <entry id="megan_specifier" type="char*1024(100)" category="drv_physics"
+	 group="megan_emis_nl" valid_values="" >
+    MEGAN specifier. This is in the form of: Chem-compound = megan_compound(s)
+    where megan_compound(s) can be the sum of megan compounds with a "+" between them.
+    In each equation, the item to the left of the equal sign is a CAM chemistry compound, the
+    items to the right are compounds known to the MEGAN model (single or combinations).
+    For example: megan_specifier = 'ISOP = isoprene', 'C10H16 = pinene_a + carene_3 + thujene_a'
+  </entry>
 
-<entry id="megan_mapped_emisfctrs" type="logical" category="drv_physics"
-       group="megan_emis_nl" >
-MEGAN mapped isoprene emissions factors switch
-If TRUE then use mapped MEGAN emissions factors for isoprene.
-</entry>
+  <entry id="megan_mapped_emisfctrs" type="logical" category="drv_physics"
+	 group="megan_emis_nl" >
+    MEGAN mapped isoprene emissions factors switch
+    If TRUE then use mapped MEGAN emissions factors for isoprene.
+  </entry>
 
-<entry id="megan_cmpds" type="char*32(150)" category="drv_physics"
-       group="drv_physics"
-       valid_values=
-"isoprene,myrcene,sabinene,limonene,carene_3,ocimene_t_b,pinene_b,pinene_a,2met_styrene,cymene_p,cymene_o,phellandrene_a,thujene_a,terpinene_a,terpinene_g,terpinolene,phellandrene_b,camphene,bornene,fenchene_a,ocimene_al,ocimene_c_b,tricyclene,estragole,camphor,fenchone,piperitone,thujone_a,thujone_b,cineole_1_8,borneol,linalool,terpineol_4,terpineol_a,linalool_OXD_c,linalool_OXD_t,ionone_b,bornyl_ACT,farnescene_a,caryophyllene_b,acoradiene,aromadendrene,bergamotene_a,bergamotene_b,bisabolene_a,bisabolene_b,bourbonene_b,cadinene_d,cadinene_g,cedrene_a,copaene_a,cubebene_a,cubebene_b,elemene_b,farnescene_b,germacrene_B,germacrene_D,gurjunene_b,humulene_a,humulene_g,isolongifolene,longifolene,longipinene,muurolene_a,muurolene_g,selinene_b,selinene_d,nerolidol_c,nerolidol_t,cedrol,MBO_2m3e2ol,methanol,acetone,methane,ammonia,nitrous_OXD,nitric_OXD,acetaldehyde,ethanol,formic_acid,formaldehyde,acetic_acid,MBO_3m2e1ol,MBO_3m3e1ol,benzaldehyde,butanone_2,decanal,dodecene_1,geranyl_acetone,heptanal,heptane,hexane,met_benzoate,met_heptenone,neryl_acetone,nonanal,nonenal,octanal,octanol,octenol_1e3ol,oxopentanal,pentane,phenyl_CCO,pyruvic_acid,terpinyl_ACT_a,tetradecene_1,toluene,carbon_monoxide,butene,ethane,ethene,hydrogen_cyanide,propane,propene,carbon_2s,carbonyl_s,diallyl_2s,2met_2s,2met_s,met_chloride,met_bromide,met_iodide,hydrogen_s,met_mercaptan,met_propenyl_2s,PPPP_2s,2met_nonatriene,met_salicylate,indole,jasmone,met_jasmonate,3met_3DCTT,hexanal,hexanol_1,hexenal_c3,hexenal_t2,hexenol_c3,hexenyl_ACT_c3,homosalate,Ehsalate,pentanal,heptanone,anisole,verbenene,benzyl-acetate,myrtenal,benzyl-alcohol,meta-cymenene,ipsenol,Napthalene"
->
-List of possible MEGAN compounds to use
-  (the list used by the simulation is on the megan_factors_file as the Comp_Name)
-</entry>
+  <entry id="megan_cmpds" type="char*32(150)" category="drv_physics"
+	 group="drv_physics"
+	 valid_values=
+"isoprene,myrcene,sabinene,limonene,carene_3,ocimene_t_b,pinene_b,pinene_a,2met_styrene,cymene_p,cymene_o,phellandrene_a,thujene_a,terpinene_a,terpinene_g,terpinolene,phellandrene_b,camphene,bornene,fenchene_a,ocimene_al,ocimene_c_b,tricyclene,estragole,camphor,fenchone,piperitone,thujone_a,thujone_b,cineole_1_8,borneol,linalool,terpineol_4,terpineol_a,linalool_OXD_c,linalool_OXD_t,ionone_b,bornyl_ACT,farnescene_a,caryophyllene_b,acoradiene,aromadendrene,bergamotene_a,bergamotene_b,bisabolene_a,bisabolene_b,bourbonene_b,cadinene_d,cadinene_g,cedrene_a,copaene_a,cubebene_a,cubebene_b,elemene_b,farnescene_b,germacrene_B,germacrene_D,gurjunene_b,humulene_a,humulene_g,isolongifolene,longifolene,longipinene,muurolene_a,muurolene_g,selinene_b,selinene_d,nerolidol_c,nerolidol_t,cedrol,MBO_2m3e2ol,methanol,acetone,methane,ammonia,nitrous_OXD,nitric_OXD,acetaldehyde,ethanol,formic_acid,formaldehyde,acetic_acid,MBO_3m2e1ol,MBO_3m3e1ol,benzaldehyde,butanone_2,decanal,dodecene_1,geranyl_acetone,heptanal,heptane,hexane,met_benzoate,met_heptenone,neryl_acetone,nonanal,nonenal,octanal,octanol,octenol_1e3ol,oxopentanal,pentane,phenyl_CCO,pyruvic_acid,terpinyl_ACT_a,tetradecene_1,toluene,carbon_monoxide,butene,ethane,ethene,hydrogen_cyanide,propane,propene,carbon_2s,carbonyl_s,diallyl_2s,2met_2s,2met_s,met_chloride,met_bromide,met_iodide,hydrogen_s,met_mercaptan,met_propenyl_2s,PPPP_2s,2met_nonatriene,met_salicylate,indole,jasmone,met_jasmonate,3met_3DCTT,hexanal,hexanol_1,hexenal_c3,hexenal_t2,hexenol_c3,hexenyl_ACT_c3,homosalate,Ehsalate,pentanal,heptanone,anisole,verbenene,benzyl-acetate,myrtenal,benzyl-alcohol,meta-cymenene,ipsenol,Napthalene">
+    List of possible MEGAN compounds to use
+    (the list used by the simulation is on the megan_factors_file as the Comp_Name)
+  </entry>
 
-<!-- ========================================================================================  -->
-<!-- drydep Namelists                                                                          -->
-<!-- ========================================================================================  -->
+  <!-- ========================================================================================  -->
+  <!-- drydep Namelists                                                                          -->
+  <!-- ========================================================================================  -->
+  
+  <entry id="drydep_method" type="char*16" category="dry-deposition"
+	 group="drydep_inparm"
+	 valid_values="xactive_lnd,xactive_atm,table">
+    Where dry deposition is calculated (from land, atmosphere, or from a table)
+    This specifies the method used to calculate dry
+    deposition velocities of gas-phase chemical species.  The available methods
+    are:
+    'table'       - prescribed method in CAM
+    'xactive_atm' - interactive method in CAM
+    'xactive_lnd' - interactive method in CLM
+  </entry>
 
-<entry id="drydep_method" type="char*16" category="dry-deposition"
-       group="drydep_inparm"
-       valid_values="xactive_lnd,xactive_atm,table">
-Where dry deposition is calculated (from land, atmosphere, or from a table)
-This specifies the method used to calculate dry
-deposition velocities of gas-phase chemical species.  The available methods
-are:
- 'table'       - prescribed method in CAM
- 'xactive_atm' - interactive method in CAM
- 'xactive_lnd' - interactive method in CLM
-</entry>
-
-<!-- Valid values is list of all of the potential Chemical species that can be use for Dry-Deposition
-     Anything NOT in this list - can NOT be used. As species are added in
+  <!-- Valid values is list of all of the potential Chemical species that can be use for Dry-Deposition
+       Anything NOT in this list - can NOT be used. As species are added in
        seq_drydep_mod.F90 this list needs to be updated.
-     Note: Species from H2 and thereafter are species that "map"
-           to other previous species in the list. The mapping is laid
-           out in seq_drydep_mod.F90.
--->
-<entry id="drydep_list" type="char*32(100)" category="dry-deposition"
+       Note: Species from H2 and thereafter are species that "map"
+       to other previous species in the list. The mapping is laid
+       out in seq_drydep_mod.F90.
+  -->
+<entry id="drydep_list" type="char*32(300)" category="dry-deposition"
        group="drydep_inparm"
-       valid_values=
-"OX,H2O2,OH,HO2,CO,CH4,CH3O2,CH3OOH,CH2O,CHOOH,NO,NO2,HNO3,CO2,NH3,N2O5,NO3,CH3OH,HO2NO2,O1D,C2H6,C2H5O2,PO2,MACRO2,ISOPO2,C4H10,CH3CHO,C2H5OOH,C3H6,POOH,C2H4,PAN,CH3COOOH,C10H16,CHOCHO,CH3COCHO,GLYALD,CH3CO3,C3H8,C3H7O2,CH3COCH3,C3H7OOH,RO2,ROOH,Rn,ISOP,MVK,MACR,C2H5OH,ONITR,ONIT,ISOPNO3,HYDRALD,HCN,CH3CN,H2,'HYAC','CH3COOH','O3S','O3INERT','MPAN','ISOPOOH','MACROOH','Pb','XOOH','H2SO4','ALKOOH','MEKOOH','TOLOOH','BENOOH','XYLOOH','TERPOOH','SOGM','SOGI','SOGT','SOGB','SOGX','SOA','SO2','SO4','CB1','CB2','OC1','OC2','NH3','NH4','SA1','SA2','SA3','SA4','HCN','CH3CN','HCOOH','SOAM','SOAI','SOAT','SOAB','SOAX','O3A','XMPAN','XPAN','XNO','XNO2','XHNO3','XONIT','XONITR',XHO2NO2','XNH4NO3','COhc','COme','CO01','CO02','CO03','CO04','CO05','CO06','CO07','CO08','CO09','CO10','CO11','CO12','CO13','CO14','CO15','CO16','CO17','CO18','CO19','CO20','CO21','CO22','CO23','CO24','CO25','CO26','CO27','CO28','CO29','CO30','CO31','CO32','CO33','CO34','CO35','CO36','CO37','CO38','CO39','CO40','CO41','CO42','CO43','CO44','CO45','CO46','CO47','CO48','CO49','CO50','NH4NO3'"
->
-List of species that undergo dry deposition.
-</entry>
+       valid_values="OX,H2O2,OH,HO2,CO,CH4,CH3O2,CH3OOH,CH2O,CHOOH,NO,NO2,HNO3,CO2,NH3,N2O5,NO3,CH3OH,HO2NO2,O1D,C2H6,C2H5O2,PO2,MACRO2,ISOPO2,C4H10,CH3CHO,C2H5OOH,C3H6,POOH,C2H4,PAN,CH3COOOH,C10H16,CHOCHO,CH3COCHO,GLYALD,CH3CO3,C3H8,C3H7O2,CH3COCH3,C3H7OOH,RO2,ROOH,Rn,ISOP,MVK,MACR,C2H5OH,ONITR,ONIT,ISOPNO3,HYDRALD,HCN,CH3CN,H2,HYAC,CH3COOH,O3S,O3INERT,MPAN,ISOPOOH,MACROOH,Pb,XOOH,H2SO4,ALKOOH,MEKOOH,TOLOOH,BENOOH,XYLOOH,TERPOOH,SOGM,SOGI,SOGT,SOGB,SOGX,SOA,SO2,SO4,CB1,CB2,OC1,OC2,NH3,NH4,SA1,SA2,SA3,SA4,HCN,CH3CN,HCOOH,SOAM,SOAI,SOAT,SOAB,SOAX,O3A,XMPAN,XPAN,XNO,XNO2,XHNO3,XONIT,XONITR,XHO2NO2,XNH4NO3,COhc,COme,CO01,CO02,CO03,CO04,CO05,CO06,CO07,CO08,CO09,CO10,CO11,CO12,CO13,CO14,CO15,CO16,CO17,CO18,CO19,CO20,CO21,CO22,CO23,CO24,CO25,CO26,CO27,CO28,CO29,CO30,CO31,CO32,CO33,CO34,CO35,CO36,CO37,CO38,CO39,CO40,CO41,CO42,CO43,CO44,CO45,CO46,CO47,CO48,CO49,CO50,NH4NO3,EOOH,O3">
+    List of species that undergo dry deposition.
+  </entry>
 
-<!-- ========================================================================================  -->
-<!-- Fire emissions fluxes                                                                     -->
-<!-- ========================================================================================  -->
 
-<entry id="fire_emis_factors_file" type="char*256" input_pathname="abs" category="Fire_emissions"
-       group="fire_emis_nl" valid_values="" >
-File containing fire emissions factors.
-Default: none
-</entry>
-
-<entry id="fire_emis_specifier" type="char*1024(100)" category="Fire_emissions"
-       group="fire_emis_nl" valid_values="" >
-Fire emissions specifier.
-Default: none
-</entry>
-
-<entry id="fire_emis_elevated" type="logical" category="Fire_emissions"
-       group="fire_emis_nl" valid_values="" >
-If ture fire emissions are input into atmosphere as elevated forcings.
-Otherwise they are treated as surface emissions.
-Default: TRUE
-</entry>
-
-<!-- ========================================================================================  -->
-<!-- CARMA fields                                                                              -->
-<!-- ========================================================================================  -->
-
-<entry id="carma_fields" type="char*256" category="carma"
-       group="carma_inparm" valid_values="" >
-List of fluxes needed by the CARMA model, from CLM to CAM.
-</entry>
-
+  <!-- ========================================================================================  -->
+  <!-- Fire emissions fluxes                                                                     -->
+  <!-- ========================================================================================  -->
+  
+  <entry id="fire_emis_factors_file" type="char*256" input_pathname="abs" category="Fire_emissions"
+	 group="fire_emis_nl" valid_values="" >
+    File containing fire emissions factors.
+    Default: none
+  </entry>
+  
+  <entry id="fire_emis_specifier" type="char*1024(100)" category="Fire_emissions"
+	 group="fire_emis_nl" valid_values="" >
+    Fire emissions specifier.
+    Default: none
+  </entry>
+  
+  <entry id="fire_emis_elevated" type="logical" category="Fire_emissions"
+	 group="fire_emis_nl" valid_values="" >
+    If ture fire emissions are input into atmosphere as elevated forcings.
+    Otherwise they are treated as surface emissions.
+    Default: TRUE
+  </entry>
+  
+  <!-- ========================================================================================  -->
+  <!-- CARMA fields                                                                              -->
+  <!-- ========================================================================================  -->
+  
+  <entry id="carma_fields" type="char*256" category="carma"
+	 group="carma_inparm" valid_values="" >
+    List of fluxes needed by the CARMA model, from CLM to CAM.
+  </entry>
+  
 </namelist_definition>
