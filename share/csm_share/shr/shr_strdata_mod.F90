@@ -32,6 +32,7 @@ module shr_strdata_mod
                           shr_cal_noleap, shr_cal_gregorian, &
                           shr_cal_date2ymd, shr_cal_ymd2date
    use shr_orb_mod, only: shr_orb_decl, shr_orb_cosz, shr_orb_undef_real
+   use shr_nl_mod , only: shr_nl_find_group_name
    use shr_tinterp_mod
 
    use shr_dmodel_mod    ! shr data model stuff
@@ -78,68 +79,71 @@ module shr_strdata_mod
   real(R8),parameter,private :: dtlimit_default = 1.5_R8
 
   type shr_strdata_type
-    ! --- set by input ---
-    character(CL) :: dataMode          ! flags physics options wrt input data
-    character(CL) :: domainFile        ! file   containing domain info
-    character(CL) :: streams (nStrMax) ! stream description file names
-    character(CL) :: taxMode (nStrMax) ! time axis cycling mode
-    real(R8)      :: dtlimit (nStrMax) ! dt max/min limit
-    character(CL) :: vectors (nVecMax) ! define vectors to vector map
-    character(CL) :: fillalgo(nStrMax) ! fill algorithm
-    character(CL) :: fillmask(nStrMax) ! fill mask
-    character(CL) :: fillread(nStrMax) ! fill mapping file to read
-    character(CL) :: fillwrit(nStrMax) ! fill mapping file to write
-    character(CL) :: mapalgo (nStrMax) ! scalar map algorithm
-    character(CL) :: mapmask (nStrMax) ! scalar map mask
-    character(CL) :: mapread(nStrMax)  ! regrid mapping file to read
-    character(CL) :: mapwrit(nStrMax)  ! regrid mapping file to write
-    character(CL) :: tintalgo(nStrMax) ! time interpolation algorithm
-    integer(IN)   :: io_type
+     ! --- set by input ---
+    character(CL)                  :: dataMode          ! flags physics options wrt input data
+    character(CL)                  :: domainFile        ! file   containing domain info
+    character(CL)                  :: streams (nStrMax) ! stream description file names
+    character(CL)                  :: taxMode (nStrMax) ! time axis cycling mode
+    real(R8)                       :: dtlimit (nStrMax) ! dt max/min limit
+    character(CL)                  :: vectors (nVecMax) ! define vectors to vector map
+    character(CL)                  :: fillalgo(nStrMax) ! fill algorithm
+    character(CL)                  :: fillmask(nStrMax) ! fill mask
+    character(CL)                  :: fillread(nStrMax) ! fill mapping file to read
+    character(CL)                  :: fillwrit(nStrMax) ! fill mapping file to write
+    character(CL)                  :: mapalgo (nStrMax) ! scalar map algorithm
+    character(CL)                  :: mapmask (nStrMax) ! scalar map mask
+    character(CL)                  :: mapread (nStrMax) ! regrid mapping file to read
+    character(CL)                  :: mapwrit (nStrMax) ! regrid mapping file to write
+    character(CL)                  :: tintalgo(nStrMax) ! time interpolation algorithm
+    integer(IN)                    :: io_type
+
     !--- data required by cosz t-interp method, set by user ---
-    real(R8)      :: eccen
-    real(R8)      :: mvelpp
-    real(R8)      :: lambm0
-    real(R8)      :: obliqr
-    integer(IN)   :: modeldt ! model dt in seconds
+    real(R8)                       :: eccen
+    real(R8)                       :: mvelpp
+    real(R8)                       :: lambm0
+    real(R8)                       :: obliqr
+    integer(IN)                    :: modeldt           ! model dt in seconds
+
     ! --- internal, public ---
-    integer(IN)   :: nxg
-    integer(IN)   :: nyg
-    integer(IN)   :: nzg
-    integer(IN)   :: lsize
-    type(mct_gsmap) :: gsmap
-    type(mct_ggrid) :: grid
-    type(mct_avect) :: avs(nStrMax)
+    integer(IN)                    :: nxg               ! model grid lon size
+    integer(IN)                    :: nyg               ! model grid lat size
+    integer(IN)                    :: nzg               ! model grid vertical size
+    integer(IN)                    :: lsize             ! model grid local size
+    type(mct_gsmap)                :: gsmap             ! model grid global seg map
+    type(mct_ggrid)                :: grid              ! model grid ggrid
+    type(mct_avect)                :: avs(nStrMax)      ! model grid stream attribute vectors
+
     ! --- internal ---
-    type(shr_stream_streamType) :: stream(nStrMax)
+    type(shr_stream_streamType)    :: stream(nStrMax)
     type(iosystem_desc_t), pointer :: pio_subsystem => null()
-    type(io_desc_t)             :: pio_iodesc(nStrMax)
-    integer(IN)     :: nstreams      ! number of streams
-    integer(IN)     :: strnxg(nStrMax)
-    integer(IN)     :: strnyg(nStrMax)
-    integer(IN)     :: strnzg(nStrMax)
-    logical         :: dofill(nStrMax)
-    logical         :: domaps(nStrMax)
-    integer(IN)     :: lsizeR(nStrMax)
-    type(mct_gsmap) :: gsmapR(nStrMax)
-    type(mct_rearr) :: rearrR(nStrMax)
-    type(mct_ggrid) :: gridR(nStrMax)
-    type(mct_avect) :: avRLB(nStrMax)       ! Read attrvect
-    type(mct_avect) :: avRUB(nStrMax)       ! Read attrvect
-    type(mct_avect) :: avFUB(nStrMax)       ! Final attrvect
-    type(mct_avect) :: avFLB(nStrMax)       ! Final attrvect
-    type(mct_avect) :: avCoszen(nStrMax)    ! data assocaited with coszen time interp
-    type(mct_sMatP) :: sMatPf(nStrMax)
-    type(mct_sMatP) :: sMatPs(nStrMax)
-    integer(IN)     :: ymdLB(nStrMax),todLB(nStrMax)
-    integer(IN)     :: ymdUB(nStrMax),todUB(nStrMax)
-    real(R8)        :: dtmin(nStrMax)
-    real(R8)        :: dtmax(nStrMax)
-    integer(IN)     :: ymd  ,tod
-    character(CL)   :: calendar          ! model calendar for ymd,tod
-    integer(IN)     :: nvectors          ! number of vectors
-    integer(IN)     :: ustrm (nVecMax)
-    integer(IN)     :: vstrm (nVecMax)
-    character(CL)   :: allocstring
+    type(io_desc_t)                :: pio_iodesc(nStrMax)
+    integer(IN)                    :: nstreams          ! number of streams
+    integer(IN)                    :: strnxg(nStrMax)
+    integer(IN)                    :: strnyg(nStrMax)
+    integer(IN)                    :: strnzg(nStrMax)
+    logical                        :: dofill(nStrMax)
+    logical                        :: domaps(nStrMax)
+    integer(IN)                    :: lsizeR(nStrMax)
+    type(mct_gsmap)                :: gsmapR(nStrMax)
+    type(mct_rearr)                :: rearrR(nStrMax)
+    type(mct_ggrid)                :: gridR(nStrMax)
+    type(mct_avect)                :: avRLB(nStrMax)    ! Read attrvect
+    type(mct_avect)                :: avRUB(nStrMax)    ! Read attrvect
+    type(mct_avect)                :: avFUB(nStrMax)    ! Final attrvect
+    type(mct_avect)                :: avFLB(nStrMax)    ! Final attrvect
+    type(mct_avect)                :: avCoszen(nStrMax) ! data assocaited with coszen time interp
+    type(mct_sMatP)                :: sMatPf(nStrMax)
+    type(mct_sMatP)                :: sMatPs(nStrMax)
+    integer(IN)                    :: ymdLB(nStrMax),todLB(nStrMax)
+    integer(IN)                    :: ymdUB(nStrMax),todUB(nStrMax)
+    real(R8)                       :: dtmin(nStrMax)
+    real(R8)                       :: dtmax(nStrMax)
+    integer(IN)                    :: ymd  ,tod
+    character(CL)                  :: calendar          ! model calendar for ymd,tod
+    integer(IN)                    :: nvectors          ! number of vectors
+    integer(IN)                    :: ustrm (nVecMax)
+    integer(IN)                    :: vstrm (nVecMax)
+    character(CL)                  :: allocstring
   end type shr_strdata_type
 
   real(R8),parameter,private :: deg2rad = SHR_CONST_PI/180.0_R8
@@ -1175,13 +1179,17 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
       call shr_sys_flush(logunit)
       nUnit = shr_file_getUnit() ! get unused fortran i/o unit number
       open (nUnit,file=trim(file),status="old",action="read")
-      read (nUnit,nml=shr_strdata_nml,iostat=rCode)
+      call shr_nl_find_group_name(nUnit, 'shr_strdata_nml', status=rCode)
+      if (rCode == 0) then
+         read (nUnit, nml=shr_strdata_nml, iostat=rCode)
+         if (rCode /= 0) then
+            write(logunit,F01) 'ERROR: reading input namelist shr_strdata_input from file, &
+                 '//trim(file)//' iostat=',rCode
+            call shr_sys_abort(subName//": namelist read error "//trim(file))
+         end if
+      end if
       close(nUnit)
       call shr_file_freeUnit(nUnit)
-      if (rCode > 0) then
-         write(logunit,F01) 'ERROR: reading input namelist, '//trim(file)//' iostat=',rCode
-         call shr_sys_abort(subName//": namelist read error "//trim(file))
-      end if
    endif
 
    !----------------------------------------------------------------------------

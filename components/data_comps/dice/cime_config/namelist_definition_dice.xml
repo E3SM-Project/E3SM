@@ -1,0 +1,603 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+  <version>2.0</version>
+
+  <!--
+      Values to use by default for creation of DICE model namelists.
+      The element names are the same as the corresponding namelist
+      variables.
+
+      strm_year_first is the first year of the stream data that will be used
+      strm_year_last  is the last  year of the stream data that will be used
+      strm_year_align is the model year that will be aligned with stream data for year_first
+
+      Replace any instance of the following substring indicators with the appropriate values:
+      %y    = year from the range yearfirst to yearlast
+      %ym   = year-month from the range yearfirst to yearlast with all 12 months
+      %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
+
+      In dice_in,  streams namelist input has the form
+      streams = 'stream1.txt year_align year_first year_last ',
+      'stream2.txt year_align year_first year_last ',
+      ...
+      'streamN.txt year_align year_first year_last '
+
+      Currently the following datamode values are supported
+      SSMI
+      SSMI_IAF
+      NULL
+  -->
+
+  <!-- ========================================================================================  -->
+  <!-- Stream file variables                                                                     -->
+  <!-- ========================================================================================  -->
+
+  <entry id="streamslist">
+    <type>char*1024(100)</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>List of streams used for the given dice_mode.</description>
+    <streamslist dice_mode="null"      >NULL</streamslist>
+    <streamslist dice_mode="ssmi"      >SSMI</streamslist>
+    <streamslist dice_mode="ssmi_iaf"  >SSMI_IAF</streamslist>
+    <streamslist dice_mode="prescribed">prescribed</streamslist>
+    <streamslist dice_mode="copyall"   >copyall</streamslist>
+  </entry>
+
+  <entry id="strm_grid_file">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>derived</group>
+    <description>does not appear in namelist - only used to set domain and data information</description>
+    <strm_grid_file stream="copyall">$SSTICE_GRID_FILENAME</strm_grid_file>
+    <strm_grid_file stream="prescribed">$SSTICE_GRID_FILENAME</strm_grid_file>
+  </entry>
+
+  <entry id="strm_data_file">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>derived</group>
+    <description>does not appear in namelist - only used to set domain and data information</description>
+    <strm_data_file stream="copyall">$SSTICE_GRID_FILENAME</strm_data_file>
+    <strm_data_file stream="prescribed">$SSTICE_GRID_FILENAME</strm_data_file>
+  </entry>
+
+  <entry id="strm_domdir">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain file directory.</description>
+    <strm_domdir stream="SSMI">$DIN_LOC_ROOT/ice/dice7</strm_domdir>
+    <strm_domdir stream="SSMI_IAF">$DIN_LOC_ROOT/ice/dice7</strm_domdir>
+  </entry>
+
+  <entry id="strm_domfil">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain file path(s).</description>
+    <strm_domfil stream="SSMI">domain.ocn.x0.5.090227.nc</strm_domfil>
+    <strm_domfil stream="SSMI_IAF">domain.ocn.x0.5.090227.nc</strm_domfil>
+  </entry>
+
+  <entry id="strm_domvar">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain variable name(s).</description>
+    <strm_domvar>
+      time    time
+      xc      lon
+      yc      lat
+      area    area
+      mask    mask
+    </strm_domvar>
+    <strm_domvar stream="copyall" sstice_stream="WW3">
+      time    time
+      gridLon lon
+      gridLat lat
+    </strm_domvar>
+  </entry>
+
+  <entry id="strm_datdir">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data file directory.</description>
+    <strm_datdir stream="SSMI">$DIN_LOC_ROOT/ice/dice7/SSMI</strm_datdir>
+    <strm_datdir stream="SSMI_IAF">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+  </entry>
+
+  <entry id="strm_datfil">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data file path(s).</description>
+    <strm_datfil stream="SSMI">ssmi_ifrac.clim.x0.5.090319.nc</strm_datfil>
+    <strm_datfil stream="SSMI_IAF">
+      ssmi.ifrac.0.5x0.5.1948.nc
+      ssmi.ifrac.0.5x0.5.1949.nc
+      ssmi.ifrac.0.5x0.5.1950.nc
+      ssmi.ifrac.0.5x0.5.1951.nc
+      ssmi.ifrac.0.5x0.5.1952.nc
+      ssmi.ifrac.0.5x0.5.1953.nc
+      ssmi.ifrac.0.5x0.5.1954.nc
+      ssmi.ifrac.0.5x0.5.1955.nc
+      ssmi.ifrac.0.5x0.5.1956.nc
+      ssmi.ifrac.0.5x0.5.1957.nc
+      ssmi.ifrac.0.5x0.5.1958.nc
+      ssmi.ifrac.0.5x0.5.1959.nc
+      ssmi.ifrac.0.5x0.5.1960.nc
+      ssmi.ifrac.0.5x0.5.1961.nc
+      ssmi.ifrac.0.5x0.5.1962.nc
+      ssmi.ifrac.0.5x0.5.1963.nc
+      ssmi.ifrac.0.5x0.5.1964.nc
+      ssmi.ifrac.0.5x0.5.1965.nc
+      ssmi.ifrac.0.5x0.5.1966.nc
+      ssmi.ifrac.0.5x0.5.1967.nc
+      ssmi.ifrac.0.5x0.5.1968.nc
+      ssmi.ifrac.0.5x0.5.1969.nc
+      ssmi.ifrac.0.5x0.5.1970.nc
+      ssmi.ifrac.0.5x0.5.1971.nc
+      ssmi.ifrac.0.5x0.5.1972.nc
+      ssmi.ifrac.0.5x0.5.1973.nc
+      ssmi.ifrac.0.5x0.5.1974.nc
+      ssmi.ifrac.0.5x0.5.1975.nc
+      ssmi.ifrac.0.5x0.5.1976.nc
+      ssmi.ifrac.0.5x0.5.1977.nc
+      ssmi.ifrac.0.5x0.5.1978.nc
+      ssmi.ifrac.0.5x0.5.1979.nc
+      ssmi.ifrac.0.5x0.5.1980.nc
+      ssmi.ifrac.0.5x0.5.1981.nc
+      ssmi.ifrac.0.5x0.5.1982.nc
+      ssmi.ifrac.0.5x0.5.1983.nc
+      ssmi.ifrac.0.5x0.5.1984.nc
+      ssmi.ifrac.0.5x0.5.1985.nc
+      ssmi.ifrac.0.5x0.5.1986.nc
+      ssmi.ifrac.0.5x0.5.1987.nc
+      ssmi.ifrac.0.5x0.5.1988.nc
+      ssmi.ifrac.0.5x0.5.1989.nc
+      ssmi.ifrac.0.5x0.5.1990.nc
+      ssmi.ifrac.0.5x0.5.1991.nc
+      ssmi.ifrac.0.5x0.5.1992.nc
+      ssmi.ifrac.0.5x0.5.1993.nc
+      ssmi.ifrac.0.5x0.5.1994.nc
+      ssmi.ifrac.0.5x0.5.1995.nc
+      ssmi.ifrac.0.5x0.5.1996.nc
+      ssmi.ifrac.0.5x0.5.1997.nc
+      ssmi.ifrac.0.5x0.5.1998.nc
+      ssmi.ifrac.0.5x0.5.1999.nc
+      ssmi.ifrac.0.5x0.5.2000.nc
+      ssmi.ifrac.0.5x0.5.2001.nc
+      ssmi.ifrac.0.5x0.5.2002.nc
+      ssmi.ifrac.0.5x0.5.2003.nc
+      ssmi.ifrac.0.5x0.5.2004.nc
+      ssmi.ifrac.0.5x0.5.2005.nc
+      ssmi.ifrac.0.5x0.5.2006.nc
+      ssmi.ifrac.0.5x0.5.2007.nc
+      ssmi.ifrac.0.5x0.5.2008.20120420.nc
+      ssmi.ifrac.0.5x0.5.2009.20120420.nc
+    </strm_datfil>
+  </entry>
+
+  <entry id="strm_datvar">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data variable name(s).</description>
+    <strm_datvar>
+      ifrac  ifrac
+    </strm_datvar>
+    <strm_datvar stream="copyall" sstice_stream="WW3">
+      iceCon  ifrac
+    </strm_datvar>
+  </entry>
+
+  <entry id="strm_offset">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream offset.</description>
+    <strm_offset>0</strm_offset> 
+  </entry>
+
+  <entry id="strm_year_align">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Simulation year to align stream to.</description>
+    <strm_year_align stream="SSMI">1 </strm_year_align>
+    <strm_year_align stream="SSMI_IAF">1</strm_year_align>
+    <strm_year_align stream="prescribed">$SSTICE_YEAR_ALIGN</strm_year_align>
+    <strm_year_align stream="copyall">$SSTICE_YEAR_ALIGN</strm_year_align>
+  </entry>
+
+  <entry id="strm_year_start">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>First year of stream.</description>
+    <strm_year_start stream="SSMI">1 </strm_year_start>
+    <strm_year_start stream="SSMI_IAF">1948</strm_year_start>
+    <strm_year_start stream="prescribed">$SSTICE_YEAR_START</strm_year_start>
+    <strm_year_start stream="copyall">$SSTICE_YEAR_START</strm_year_start>
+  </entry>
+
+  <entry id="strm_year_end">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Last year of stream.</description>
+<strm_year_end   stream="SSMI">1 </strm_year_end>
+<strm_year_end   stream="SSMI_IAF">2009</strm_year_end>
+<strm_year_end   stream="prescribed">$SSTICE_YEAR_END</strm_year_end>
+<strm_year_end   stream="copyall">$SSTICE_YEAR_END</strm_year_end>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- DICE Namelists                                                                            -->
+  <!-- ========================================================================================  -->
+
+  <!-- =========================================  -->
+  <!--- shr_strmdata_nml (file dice_ice_in)       -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char*256</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>NULL,SSTDATA,COPYALL</valid_values>
+    <description>
+      general method that operates on the data.  this is generally
+      implemented in the data models but is set in the strdata method for
+      convenience.  valid options are dependent on the data model and will
+      be described elsewhere.  NULL is always a valid option and means no
+      data will be generated.  default='NULL'
+      datamode = "NULL"
+      Turns off the data model as a provider of data to the coupler.  The
+      ice_present flag will be set to false and the coupler will assume no
+      exchange of data to or from the data model.
+      dataMode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      dataMode = "SSTDATA"
+      Is a prognostic mode. It requires data be sent to the ice
+      model. Ice fraction (extent) data is read from an input stream,
+      atmosphere state variables are received from the coupler, and then
+      an atmosphere-ice surface flux is computed and sent to the
+      coupler. It is called "SSTDATA" mode because normally the ice
+      fraction data is found in the same data files that provide SST
+      data to the data ocean model. They are normally found in the same
+      file because the SST and ice fraction data are derived from the
+      same observational data sets and are consistent with each other.
+      Set by the xml variable DICE_MODE in env_run.xml
+      Currently, DICE_MODE can be [ssmi, ssmi_iaf, null]
+      If DICE_MODE is set to ssmi or ssmi_iaf, datamode will be set to SSTDATA
+      If DICE_MODE is set to null, datamodel will be set to NULL
+    </description>
+    <datamode dice_mode="null"      >NULL</datamode>
+    <datamode dice_mode="ssmi"      >SSTDATA</datamode>
+    <datamode dice_mode="ssmi_iaf"  >SSTDATA</datamode>
+    <datamode dice_mode="prescribed">SSTDATA</datamode>
+    <datamode dice_mode="copyall"   >COPYALL</datamode>
+  </entry>
+
+  <entry id="domainfile">
+    <type>char*256</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>shr_strdata_nml</group>
+    <description>
+      spatial gridfile associated with the strdata.  grid information will
+      be read from this file and that grid will serve as the target grid
+      for all input data for this strdata input.
+    </description>
+    <domainfile>$ICE_DOMAIN_PATH/$ICE_DOMAIN_FILE</domainfile>
+    <domainfile stream="prescribed">$SSTICE_GRID_FILENAME</domainfile>
+    <domainfile stream="copyall">$SSTICE_GRID_FILENAME</domainfile>
+  </entry>
+
+  <entry id="fillalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <description>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are just copy (ie. no fill), special value,
+      nearest neighbor, nearest neighbor in "i" direction, or nearest
+      neighbor in "j" direction.
+      valid values:  'copy','spval','nn','nnoni','nnonj'
+      default: "nn".
+    </description>
+    <fillalgo>nn</fillalgo>
+  </entry>
+
+  <entry id="fillmask">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
+    <description>
+      plays no role is fill algorithm at the present time.
+      valid values: "nomask,srcmask,dstmask,bothmask"
+      default: "nomask"
+    </description>
+    <fillmask>nomask</fillmask>
+  </entry>
+
+  <entry id="fillread">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read in instead of computing the
+      weights on the fly for the fill operation.  if this is set, fillalgo
+      and fillmask are ignored.
+      default: unset
+    </description>
+  </entry>
+
+  <entry id="fillwrite">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements)  of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the fill operation.  this allows a user to
+      save and reuse a set of weights later.
+      default="unset".
+    </description>
+  </entry>
+
+  <entry id="mapmask">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
+    <description>
+      array (up to 30 elements) of masking algorithms for mapping input data
+      associated with the array of streams.  valid options are map only from
+      valid src points, map only to valid destination points, ignore all
+      masks, map only from valid src points to valid destination points.
+      valid values: srcmask, dstmask, nomask,bothmask
+      default: dstmask
+    </description>
+  </entry>
+
+  <entry id="mapalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <description>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are copy by index, set to special value,
+      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
+      in "j" direction, or bilinear.
+      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      default: bilinear
+    </description>
+    <mapalgo>bilinear</mapalgo>
+  </entry>
+
+  <entry id="mapread">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read instead of computing
+      weights on the fly for the mapping (interpolation) operation.  if this
+      is set, mapalgo and mapmask are ignored.  default="unset".
+    </description>
+    <mapmask>dstmask</mapmask>
+  </entry>
+
+  <entry id="mapwrite">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the mapping (interpolation) operation.  this
+      allows a user to save and reuse a set of weights later.
+      default="unset".
+    </description>
+  </entry>
+
+  <entry id="tintalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>coszen,nearest,linear,lower,upper</valid_values>
+    <description>
+      array (up to 30 elements) of time interpolation options associated with the array of
+      streams.
+      valid values: lower,upper,nearest,linear,coszen
+      lower   = Use lower time-value
+      upper   = Use upper time-value
+      nearest = Use the nearest time-value
+      linear  = Linearly interpolate between the two time-values
+      coszen  = Scale according to the cosine of the solar zenith angle (for solar)
+      default="linear".
+    </description>
+    <tintalgo>linear</tintalgo>
+  </entry>
+
+  <entry id="taxmode">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>extend,cycle,limit</valid_values>
+    <description>
+      array of time axis modes associated with the array of streams for
+      handling data outside the specified stream time axis.
+      valid options are to cycle the data based on the first, last, and
+      align settings associated with the stream dataset, to extend the first
+      and last valid value indefinitely, or to limit the interpolated data
+      to fall only between the least and greatest valid value of the time array.
+      valid values: cycle,extend,limit
+      extend = extrapolate before and after the period by using the first or last value.
+      cycle  = cycle between the range of data
+      limit  = restrict to the period for which the data is valid
+      default="cycle".
+    </description>
+    <taxmode>cycle</taxmode>
+  </entry>
+
+  <entry id="dtlimit">
+    <type>real(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of delta time ratio limits placed on the
+      time interpolation associated with the array of streams.  this real
+      value causes the model to stop if the ratio of the running maximum
+      delta time divided by the minimum delta time is greater than the
+      dtlimit for that stream.  for instance, with daily data, the delta
+      time should be exactly one day throughout the dataset and the computed
+      maximum divided by minimum delta time should always be 1.0.  for
+      monthly data, the delta time should be between 28 and 31 days and the
+      maximum ratio should be about 1.1.  the running value of the delta
+      time is computed as data is read and any wraparound or cycling is also
+      included.  this input helps trap missing data or errors in cycling.
+      to turn off trapping, set the value to 1.0e30 or something similar.
+      default=1.5.
+    </description>
+    <dtlimit>1.5e0</dtlimit>
+  </entry>
+
+  <entry id="streams">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      character array (up to 30 elements) of stream input files.  this
+      string is actually parsed by a stream method and so the format is
+      specified by the stream module.  this string consists of a
+      "stream_input_filename year_align year_first year_last".  the
+      stream_input_filename is a stream text input file and the format and
+      options are described elsewhere.  year_align, year_first, and
+      year_last provide information about the time axis of the file and how
+      to relate the input time axis to the model time axis.
+      default="null".
+    </description>
+  </entry>
+
+  <!-- =========================================  -->
+  <!--- dice_nml -->
+  <!-- =========================================  -->
+
+  <entry id="decomp">
+    <type>char*4</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <valid_values>1d,root</valid_values>
+    <description>
+      set the decomposition option for the data model.  valid options are
+      placing the global array on the root task or a simple stride-one
+      load balanced one-dimensional decomposition.  other decompositions
+      may be added in the future.
+      valid values are ['root','1d'].
+      1d   = Vector decomposition
+      root = run only on the master task
+      default='1d'.
+    </description>
+  </entry>
+
+  <entry id="flux_qacc">
+    <type>logical</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <description>
+      activates water accumulation/melt wrt Q
+      default: .false.
+    </description>
+    <flux_qacc>.true.</flux_qacc>
+  </entry>
+
+  <entry id="flux_qacc0">
+    <type>real</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <description>
+      initial water accumulation value
+      default: 0.
+    </description>
+  </entry>
+
+  <entry id="flux_qmin">
+    <type>real</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <description>
+      bound on melt rate
+      default: -300.0e0
+    </description>
+  </entry>
+
+  <entry id="flux_swpf">
+    <type>real</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <description>
+      short-wave penatration factor
+      default: 0.
+    </description>
+  </entry>
+
+  <entry id="restfilm">
+    <type>char*256</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <description>
+      Model restart filename for the data ice model data.  This is optional.
+      If both restfils and restfilm are undefined, the restart filename will
+      be read from the ICE restart pointer file (or files for multiple instances).
+      default='undefined'.
+    </description>
+  </entry>
+
+  <entry id="restfils">
+    <type>char*256</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <description>
+      Stream restart filename for the data ice stream data.  This is
+      optional.  If both restfils and restfilm are undefined, the restart
+      filename will be read from the DICE restart pointer file (or files for
+      multiple instances).
+      default: 'undefined'
+    </description>
+  </entry>
+
+  <entry id="force_prognostic_true">
+    <type>logical</type>
+    <category>dice</category>
+    <group>dice_nml</group>
+    <description>
+      If TRUE, prognostic is forced to true.
+      default=false
+    </description>
+  </entry>
+
+  <!-- =========================================  -->
+  <!--- modelio (in file ice_modeio.nml)          -->
+  <!-- =========================================  -->
+
+  <entry id="logfile">
+    <type>char*256</type>
+    <category>dice</category>
+    <group>modelio</group>
+    <description>DICE logfile name (default: 'ice.log')</description>
+  </entry>
+
+</namelist_definition>

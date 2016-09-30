@@ -1541,14 +1541,14 @@
 
     <domain name="gx1v6">
       <nx>320</nx>  <ny>384</ny>
-      <file lnd_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
-      <file ocn_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
+      <file lnd_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
+      <file ocn_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
       <desc>gx1v6 is displaced Greenland pole v6 1-deg grid:</desc>
     </domain>
 
     <domain name="gx3v7">
       <nx>100</nx> <ny>116</ny>
-      <file ocn_mask="gx3v7">domain.ocn.gx3v7.120323.nc </file>
+      <file ocn_mask="gx3v7">domain.ocn.gx3v7.120323.nc</file>
       <desc>gx3v7 is displaced Greenland pole v7 3-deg grid:</desc>
     </domain>
 
@@ -1561,7 +1561,7 @@
 
     <domain name="tx1v1">
       <nx>360</nx> <ny>240</ny>
-      <file ocn_mask="tx1v1">domain.ocn.tx1v1.090122.nc </file>
+      <file ocn_mask="tx1v1">domain.ocn.tx1v1.090122.nc</file>
       <desc>tripole v1 1-deg grid: testing proxy for high-res tripole ocean grids- do not use for scientific experiments</desc>
       <support>Experimental tripole ocean grid</support>
     </domain>
@@ -1575,12 +1575,16 @@
 
     <domain name="rx1">
       <nx>360</nx> <ny>180</ny>
+      <file>UNSET</file>
+      <path>UNSET</path>
       <desc>rx1 is 1 degree river routing grid (only valid for DROF):</desc>
       <support>Can only be used by DROF</support>
     </domain>
 
     <domain name="r05">
       <nx>720</nx> <ny>360</ny>
+      <file>UNSET</file>
+      <path>UNSET</path>
       <desc>r05 is 1/2 degree river routing grid:</desc>
     </domain>
 

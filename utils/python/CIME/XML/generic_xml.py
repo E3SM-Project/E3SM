@@ -125,7 +125,8 @@ class GenericXML(object):
 
             for key, value in attributes.iteritems():
                 if value is not None:
-                    expect(isinstance(value, str), " Bad value passed for key %s"%key)
+                    expect(isinstance(value, str) or isinstance(value, unicode),
+                           " Bad value passed for key %s"%key)
                     xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
                     logger.debug("xpath is %s"%xpath)
 

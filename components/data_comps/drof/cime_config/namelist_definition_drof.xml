@@ -1,0 +1,458 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+  <version>2.0</version>
+
+  <!--
+      Values to use by default for creation of DOCN model docn namelists.
+      The element names are the same as the corresponding namelist
+      variables.  Values that depend on the model configuration use
+      attributes to express the dependency.  The recognized attributes
+      are: grid.attributes from the config_cache.xml file (with keys converted to upper-case).
+
+      strm_year_first is the first year of the stream data that will be used
+      strm_year_last  is the last  year of the stream data that will be used
+      strm_year_align is the model year that will be aligned with stream data for year_first
+
+      For cplhist forcing - the following substitutions will be made belwo
+      Replace any instance of the following substring indicators with the appropriate values:
+      %y    => year from the range yearfirst to yearlast
+               obtained from values of <strm_year_start> -> <strm_year_end> below
+      %ym   => year-month from the range yearfirst to yearlast with all 12 months
+               obtained from values of <strm_year_start> -> <strm_year_end> below
+      %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
+               obtained from values of <strm_year_start> -> <strm_year_end> below
+
+      Replace any instance of $VARNAME with the xml variable value obtained from any
+      of the $CASEROOT/env*xml files
+
+      In drof_in,  streams namelist input has the form
+      streams = 'stream1.txt year_align year_first year_last ',
+                'stream2.txt year_align year_first year_last ',
+                ...
+                'streamN.txt year_align year_first year_last '
+
+     Currently the following streams are supported
+        rof.cplhist
+	rof.diatren_ann_rx1
+	rof.diatren_iaf_rx1
+  -->
+
+  <!-- ========================================================================================  -->
+  <!-- Stream file variables                                                                     -->
+  <!-- ========================================================================================  -->
+
+  <entry id="streamslist">
+    <type>char*1024(100)</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>List of streams used for the given drof_mode.</description>
+    <streamslist drof_mode="NULL"           >NULL</streamslist>
+    <streamslist drof_mode="CPLHIST"        >rof.cplhist</streamslist>
+    <streamslist drof_mode="DIATREN_ANN_RX1">rof.diatren_ann_rx1</streamslist>
+    <streamslist drof_mode="DIATREN_IAF_RX1">rof.diatren_iaf_rx1</streamslist>
+  </entry>
+
+  <entry id="strm_domdir">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain file directory.</description>
+    <strm_domdir     stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_domdir>
+    <strm_domdir     stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_domdir>
+    <strm_domdir     stream="rof.cplhist">$ROF_DOMAIN_PATH</strm_domdir>
+  </entry>
+
+  <entry id="strm_domfil">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain file path(s).</description>
+    <strm_domfil     stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</strm_domfil>
+    <strm_domfil     stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</strm_domfil>
+    <strm_domfil     stream="rof.cplhist">$ROF_DOMAIN_FILE</strm_domfil>
+  </entry>
+
+  <entry id="strm_domvar">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain variable name(s).</description>
+    <strm_domvar>
+      time   time
+      xc     lon
+      yc     lat
+      area   area
+      mask   mask
+    </strm_domvar>
+    <strm_domvar stream="rof.diatren_iaf_rx1">
+      time   time
+      xc     lon
+      yc     lat
+      arear  area
+      mask   mask
+    </strm_domvar>
+  </entry>
+
+  <entry id="strm_datdir">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data file directory.</description>
+    <strm_datdir     stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_datdir>
+    <strm_datdir     stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_datdir>
+    <strm_datdir     stream="rof.cplhist">$DROF_CPLHIST_DIR</strm_datdir>
+  </entry>
+
+  <entry id="strm_datfil">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data file path(s).</description>
+    <strm_datfil     stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</strm_datfil>
+    <strm_datfil     stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</strm_datfil>
+    <strm_datfil     stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2xacc.%y.nc</strm_datfil>
+  </entry>
+
+  <entry id="strm_datvar">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data variable name(s).</description>
+    <strm_datvar     stream="rof.diatren_ann_rx1">
+      runoff rofl
+    </strm_datvar>
+    <strm_datvar     stream="rof.diatren_iaf_rx1">
+      runoff rofl
+    </strm_datvar>
+    <strm_datvar     stream="rof.cplhist">
+      r2xacc_Forr_roff  rofl
+      r2xacc_Forr_ioff  rofi
+    </strm_datvar>
+  </entry>
+
+  <entry id="strm_offset">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream offset.</description>
+    <strm_offset>0</strm_offset>
+    <strm_offset stream="rof.cplhist">-43200</strm_offset>
+  </entry>
+
+  <entry id="strm_year_align">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Simulation year to align stream to.</description>
+    <strm_year_align stream="rof.diatren_ann_rx1">1</strm_year_align>
+    <strm_year_align stream="rof.diatren_iaf_rx1">1</strm_year_align>
+    <strm_year_align stream="rof.cplhist">$DROF_CPLHIST_YR_ALIGN</strm_year_align>
+  </entry>
+
+  <entry id="strm_year_start">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>First year of stream.</description>
+    <strm_year_start stream="rof.diatren_ann_rx1">1</strm_year_start>
+    <strm_year_start stream="rof.diatren_iaf_rx1">1948</strm_year_start>
+    <strm_year_start stream="rof.cplhist">$DROF_CPLHIST_YR_START</strm_year_start>
+  </entry>
+
+  <entry id="strm_year_end">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Last year of stream.</description>
+    <strm_year_end   stream="rof.diatren_ann_rx1">1</strm_year_end>
+    <strm_year_end   stream="rof.diatren_iaf_rx1">2009</strm_year_end>
+    <strm_year_end   stream="rof.cplhist">$DROF_CPLHIST_YR_END</strm_year_end>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- DROF Namelists                                                                            -->
+  <!-- ========================================================================================  -->
+
+  <!-- =========================================  -->
+  <!--- shr_strmdata_nml       -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char*256</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>NULL,CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1</valid_values>
+    <description>
+      The runoff data is associated with the river model.
+      datamode = "NULL"
+      NULL is always a valid option and means no data will be generated.
+      Turns off the data model as a provider of data to the coupler.  The
+      rof_present flag will be set to false and the coupler will assume no
+      exchange of data to or from the data model.
+      dataMode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      datamode = "CPLHIST"
+      Reads in data from coupler history files generated by a previous run
+      datamode = DIATREN_ANN_RX1
+      Reads in annual forcing river data used for CORE2 forcing runs
+      datamode = DIATREN_ANN_RX1,DIATREN_IAF_RX1
+      Reads in intra-annual forcing river data used for CORE2 forcing runs
+      Set by the the DROF_MODE xml variables in env_run.xml
+      specifies values for rof mode: CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL
+      default value: DIATREN_ANN_RX1
+    </description>
+    <datamode drof_mode="NULL"           >NULL</datamode>
+    <datamode drof_mode="CPLHIST"        >CPLHIST</datamode>
+    <datamode drof_mode="DIATREN_ANN_RX1">DIATREN_ANN_RX1</datamode>
+    <datamode drof_mode="DIATREN_IAF_RX1">DIATREN_IAF_RX1</datamode>
+  </entry>
+
+  <entry id="domainfile">
+    <type>char*256</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>shr_strdata_nml</group>
+    <description>
+      spatial gridfile associated with the strdata.  grid information will
+      be read from this file and that grid will serve as the target grid
+      for all input data for this strdata input.
+    </description>
+  </entry>
+
+  <entry id="fillalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <description>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are just copy (ie. no fill), special value,
+      nearest neighbor, nearest neighbor in "i" direction, or nearest
+      neighbor in "j" direction.
+      valid values:  'copy','spval','nn','nnoni','nnonj'
+      default: "nn".
+    </description>
+  </entry>
+
+  <entry id="fillmask">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    valid_values="nomask,srcmask,dstmask,bothmask">
+    <description>
+      plays no role is fill algorithm at the present time.
+      valid values: "nomask,srcmask,dstmask,bothmask"
+      default: "nomask"
+    </description>
+    <fillmask>nomask</fillmask>
+  </entry>
+
+  <entry id="fillread">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read in instead of computing the
+      weights on the fly for the fill operation.  if this is set, fillalgo
+      and fillmask are ignored.
+      default: unset
+    </description>
+    <fillalgo>nn</fillalgo>
+  </entry>
+
+  <entry id="fillwrite">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements)  of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the fill operation.  this allows a user to
+      save and reuse a set of weights later.
+      default="unset".
+    </description>
+  </entry>
+
+  <entry id="mapmask">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    valid_values="nomask,srcmask,dstmask,bothmask">
+    <description>
+      array (up to 30 elements) of masking algorithms for mapping input data
+      associated with the array of streams.  valid options are map only from
+      valid src points, map only to valid destination points, ignore all
+      masks, map only from valid src points to valid destination points.
+      valid values: srcmask, dstmask, nomask,bothmask
+      default: dstmask
+    </description>
+    <mapmask>dstmask</mapmask>
+  </entry>
+
+  <entry id="mapalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    valid_values="copy,bilinear,nn,nnoni,nnonj,spval">
+    <description>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are copy by index, set to special value,
+      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
+      in "j" direction, or bilinear.
+      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      default: bilinear
+    </description>
+    <mapalgo>bilinear</mapalgo>
+  </entry>
+
+  <entry id="mapread">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read instead of computing
+      weights on the fly for the mapping (interpolation) operation.  if this
+      is set, mapalgo and mapmask are ignored.  default="unset".
+    </description>
+  </entry>
+
+  <entry id="mapwrite">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the mapping (interpolation) operation.  this
+      allows a user to save and reuse a set of weights later.
+      default="unset".
+    </description>
+  </entry>
+
+  <entry id="tintalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    valid_values="coszen,nearest,linear,lower,upper">
+    <description>
+      array (up to 30 elements) of time interpolation options associated with the array of
+      streams.
+      valid values: lower,upper,nearest,linear,coszen
+      lower   = Use lower time-value
+      upper   = Use upper time-value
+      nearest = Use the nearest time-value
+      linear  = Linearly interpolate between the two time-values
+      coszen  = Scale according to the cosine of the solar zenith angle (for solar)
+      default="linear".
+    </description>
+    <tintalgo>linear</tintalgo>
+    <tintalgo stream="rof.diatren_ann_rx1">upper</tintalgo>
+    <tintalgo stream="rof.diatren_iaf_rx1">upper</tintalgo>
+    <tintalgo stream="rof.cplhist">lower</tintalgo>
+  </entry>
+
+  <entry id="taxmode">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    valid_values="extend,cycle,limit">
+    <description>
+      array of time axis modes associated with the array of streams for
+      handling data outside the specified stream time axis.
+      valid options are to cycle the data based on the first, last, and
+      align settings associated with the stream dataset, to extend the first
+      and last valid value indefinitely, or to limit the interpolated data
+      to fall only between the least and greatest valid value of the time array.
+      valid values: cycle,extend,limit
+      extend = extrapolate before and after the period by using the first or last value.
+      cycle  = cycle between the range of data
+      limit  = restrict to the period for which the data is valid
+      default="cycle".
+    </description>
+    <taxmode>cycle</taxmode>
+  </entry>
+
+  <entry id="dtlimit">
+    <type>real(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of delta time ratio limits placed on the
+      time interpolation associated with the array of streams.  this real
+      value causes the model to stop if the ratio of the running maximum
+      delta time divided by the minimum delta time is greater than the
+      dtlimit for that stream.  for instance, with daily data, the delta
+      time should be exactly one day throughout the dataset and the computed
+      maximum divided by minimum delta time should always be 1.0.  for
+      monthly data, the delta time should be between 28 and 31 days and the
+      maximum ratio should be about 1.1.  the running value of the delta
+      time is computed as data is read and any wraparound or cycling is also
+      included.  this input helps trap missing data or errors in cycling.
+      to turn off trapping, set the value to 1.0e30 or something similar.
+      default=1.5.
+    </description>
+    <dtlimit>1.5e0</dtlimit>
+  </entry>
+
+  <entry id="streams">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      character array (up to 30 elements) of stream input files.  this
+      string is actually parsed by a stream method and so the format is
+      specified by the stream module.  this string consists of a
+      "stream_input_filename year_align year_first year_last".  the
+      stream_input_filename is a stream text input file and the format and
+      options are described elsewhere.  year_align, year_first, and
+      year_last provide information about the time axis of the file and how
+      to relate the input time axis to the model time axis.
+      default="null".
+    </description>
+  </entry>
+
+  <!-- =========================================  -->
+  <!--- drof_nml                -->
+  <!-- =========================================  -->
+
+  <entry id="decomp">
+    <type>char*4</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <valid_values>1d,root</valid_values>
+    <description>
+      DROF Decomposition strategy
+      1d   = Vector decomposition
+      root = run only on the master task
+    </description>
+  </entry>
+
+  <entry id="restfilm">
+    <type>char*256</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <description>Master restart file name for drof model</description>
+  </entry>
+
+  <entry id="restfils">
+    <type>char*256</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <description>Stream restart file name for drof model, needed for branch simulations</description>
+  </entry>
+
+  <entry id="force_prognostic_true">
+    <type>logical</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <description>If TRUE, prognostic is forced to true.  (default=false)</description>
+  </entry>
+
+</namelist_definition>
