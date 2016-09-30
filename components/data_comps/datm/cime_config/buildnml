@@ -1,17 +1,297 @@
 #!/usr/bin/env python
 
-"""
-build data model library
+"""Namelist creator for CIME's data atmosphere model.
 """
 
-import sys, os
+# Typically ignore this.
+# pylint: disable=invalid-name
 
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
+# Disable these because this is our standard setup
+# pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
+
+import os
+import shutil
+import sys
+import glob
+
+CIMEROOT = os.environ.get("CIMEROOT")
+if CIMEROOT is None:
     raise SystemExit("ERROR: must set CIMEROOT environment variable")
-sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
+sys.path.append(os.path.join(CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
-from CIME.buildnml import build_data_nml
+from CIME.case import Case
+from CIME.nmlgen import NamelistGenerator
+from CIME.utils import expect
+from CIME.utils import handle_standard_logging_options
+from CIME.utils import setup_standard_logging_options
+from CIME.buildnml import create_namelist_infile
 
-build_data_nml(sys.argv, 'atm')
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def _parse_input(argv):
+###############################################################################
+
+    if "--test" in argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    parser = argparse.ArgumentParser()
+
+    setup_standard_logging_options(parser)
+
+    parser.add_argument("caseroot", 
+                        help="case directory")
+
+    args = parser.parse_args()
+
+    handle_standard_logging_options(args)
+
+    return args.caseroot
+
+# pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+####################################################################################
+def _create_namelists(case, confdir, inst_string, infile, definition_file):
+####################################################################################
+    """Write out the namelist for this component.
+
+    Most arguments are the same as those for `NamelistGenerator`. The
+    `inst_string` argument is used as a suffix to distinguish files for
+    different instances. The `confdir` argument is used to specify the directory
+    in which output files will be placed.
+    """
+
+    #----------------------------------------------------
+    # Get a bunch of information from the case.
+    #----------------------------------------------------
+    din_loc_root = case.get_value("DIN_LOC_ROOT")
+    atm_domain_file = case.get_value("ATM_DOMAIN_FILE")
+    atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
+    datm_mode = case.get_value("DATM_MODE")
+    datm_presaero = case.get_value("DATM_PRESAERO")
+    datm_topo = case.get_value("DATM_TOPO")
+    datm_co2_tseries = case.get_value("DATM_CO2_TSERIES")
+    atm_grid = case.get_value("ATM_GRID")
+    grid = case.get_value("GRID")
+    clm_usrdat_name = case.get_value("CLM_USRDAT_NAME")
+
+    #----------------------------------------------------
+    # Check for incompatible options.
+    #----------------------------------------------------
+    if "CLM" in datm_mode:
+        expect(datm_presaero != "none",
+               "A DATM_MODE for CLM is incompatible with DATM_PRESAERO=none.")
+        expect(datm_topo != "none",
+               "A DATM_MODE for CLM is incompatible with DATM_TOPO=none.")
+    expect(grid != "CLM_USRDAT" or clm_usrdat_name in ("", "UNSET"),
+           "GRID=CLM_USRDAT and CLM_USRDAT_NAME is NOT set.")
+
+    #----------------------------------------------------
+    # Log some settings.
+    #----------------------------------------------------
+    logger.info("DATM mode is %s", datm_mode)
+    logger.info("DATM grid is %s", atm_grid)
+    logger.info("DATM presaero mode is %s", datm_presaero)
+    logger.info("DATM topo mode is %s", datm_topo)
+
+    #----------------------------------------------------
+    # Clear out old data.
+    #----------------------------------------------------
+    data_list_path = os.path.join(case.get_case_root(), "Buildconf",
+                                  "datm.input_data_list")
+    if os.path.exists(data_list_path):
+        os.remove(data_list_path)
+
+    #----------------------------------------------------
+    # Create configuration information.
+    #----------------------------------------------------
+    config = {}
+    config['grid'] = grid
+    config['atm_grid'] = atm_grid
+    config['datm_mode'] = datm_mode
+    config['datm_co2_tseries'] = datm_co2_tseries
+    config['presaero_mode'] = datm_presaero
+    if datm_presaero == 'none':
+        config['presaero_flag'] = "none"
+    else:
+        config['presaero_flag'] = "active"
+
+    #----------------------------------------------------
+    # Construct the namelist generator.
+    #----------------------------------------------------
+    nmlgen = NamelistGenerator(case, infile, definition_file, definition_file,  config)
+
+    #----------------------------------------------------
+    # Construct the list of streams.
+    #----------------------------------------------------
+    streams = nmlgen.get_streams()
+
+    if datm_presaero == "pt1_pt1":
+        streams.append("presaero.%s.%s" % (datm_presaero, atm_grid))
+    elif datm_presaero != "none":
+        streams.append("presaero.%s" % datm_presaero)
+
+    if datm_topo != "none":
+        streams.append("topo.%s" % datm_topo)
+
+    if datm_co2_tseries != "none":
+        streams.append("co2tseries.%s" % datm_co2_tseries)
+
+    # Add bias correction stream if given in namelist.
+    bias_correct = nmlgen.get_value("bias_correct")
+    streams.append(bias_correct)
+
+    # Add all anomaly forcing streams given in namelist.
+    anomaly_forcing = nmlgen.get_value("anomaly_forcing")
+    streams += anomaly_forcing
+
+    #----------------------------------------------------
+    # For each stream, create stream text file and update input data list.
+    #----------------------------------------------------
+    for stream in streams:
+
+        # Ignore null values.
+        if stream is None or stream in ("NULL", ""):
+            continue
+
+        if "presaero" in stream:
+            if datm_presaero == "none":
+                # Ignore aerosol streams when they are disabled.
+                continue
+            config = {'ispresaerostream': 'TRUE'}
+        else:
+            config = {'ispresaerostream': 'FALSE'}
+
+        inst_stream = stream + inst_string
+        logger.info("DATM stream is %s", inst_stream)
+        stream_path = os.path.join(confdir, "datm.streams.txt." + inst_stream)
+        user_stream_path = os.path.join(case.get_case_root(), "user_datm.streams.txt." + inst_stream)
+
+        # Use the user's stream file, or create one if necessary.
+        if os.path.exists(user_stream_path):
+            shutil.copyfile(user_stream_path, stream_path)
+        else:
+            nmlgen.create_stream_file(config, stream, stream_path, data_list_path)
+
+    #----------------------------------------------------
+    # Create namelist
+    #----------------------------------------------------
+    # Create namelist `shr_strdata_nml` namelist group.
+    nmlgen.create_shr_strdata_nml()
+    nmlgen.add_default("decomp")
+    nmlgen.add_default("force_prognostic_true")
+    nmlgen.add_default("restfilm")
+    nmlgen.add_default("restfils")
+    if atm_domain_file != "UNSET":
+        full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
+        nmlgen.add_default("domainfile", value=full_domain_path)
+
+    # Specific to datm only
+    nmlgen.add_default("vectors")
+    presaero = ".false." if datm_presaero == "none" else ".true."
+    nmlgen.add_default("presaero", value=presaero)
+    nmlgen.add_default("iradsw")
+    if datm_mode.startswith("CORE"):
+        factorfn = "atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc"
+        nmlgen.add_default("factorfn", os.path.join(din_loc_root, factorfn))
+    else:
+        nmlgen.add_default("factorfn")
+
+    #----------------------------------------------------
+    # Finally, write out all the namelists.
+    #----------------------------------------------------
+    namelist_file = os.path.join(confdir, "datm_in")
+    nmlgen.write_output_file(namelist_file, data_list_path)
+
+###############################################################################
+def _main_func():
+###############################################################################
+
+    # Build the component namelist and required stream txt files
+
+    compname = "datm"
+    caseroot = _parse_input(sys.argv)
+
+    with Case(caseroot) as case:
+        cimeroot = case.get_value("CIMEROOT")
+        rundir = case.get_value("RUNDIR")
+        ninst = case.get_value("NINST_ATM")
+        din_loc_root = case.get_value("DIN_LOC_ROOT")
+
+        if not os.path.isdir(din_loc_root):
+            os.makedirs(din_loc_root)
+            logger.info("Created input root directory %s" %din_loc_root)
+
+        # determine directory for user modified namelist_definitions.xml and namelist_defaults.xml
+        user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
+        expect (os.path.isdir(user_xml_dir),
+                "user_xml_dir %s does not exist " %user_xml_dir)
+
+        # NOTE: User definition *replaces* existing definition.
+        namelist_xml_dir = os.path.join(cimeroot, "components", "data_comps", compname, "cime_config")
+        definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_datm.xml")]
+        user_definition = os.path.join(user_xml_dir, "namelist_definition_datm.xml")
+        if os.path.isfile(user_definition):
+            definition_file = [user_definition]
+
+        # Checkout if definition file exists
+        for file_ in definition_file:
+            expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
+
+        confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
+        if not os.path.isdir(confdir):
+            os.makedirs(confdir)
+
+        # Loop over instances
+        inst_string = ""
+        inst_counter = 1
+        while (inst_counter <= ninst):
+
+            # determine instance string
+            inst_string = ""
+            if ninst > 1:
+                inst_string = '_' + '%04d' % inst_counter
+
+            # If multi-instance case does not have restart file, use
+            # single-case restart for each instance
+            rpointer = "rpointer." + compname
+            if (os.path.isfile(os.path.join(rundir,rpointer)) and
+                (not os.path.isfile(os.path.join(rundir,rpointer + inst_string)))):
+                shutil.copy(os.path.join(rundir, rpointer),
+                            os.path.join(rundir, rpointer + inst_string))
+
+            inst_string_label = inst_string
+            if not inst_string_label:
+                inst_string_label = "\"\""
+
+            # create namelist output infile using user_nl_file as input
+            user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
+            expect(os.path.isfile(user_nl_file),
+                   "Missing required user_nl_file %s " %(user_nl_file))
+            infile = os.path.join(confdir, "namelist_infile")
+            create_namelist_infile(case, user_nl_file, infile)
+            namelist_infile = [infile]
+
+            # create namelist and stream file(s) data component
+            _create_namelists(case, confdir, inst_string, namelist_infile, definition_file)
+
+            # copy namelist files and stream text files, to rundir
+            if os.path.isdir(rundir):
+                filename = compname + "_in"
+                file_src  = os.path.join(confdir, filename)
+                file_dest = os.path.join(rundir, filename)
+                if inst_string:
+                    file_dest += inst_string
+                shutil.copy(file_src,file_dest)
+
+                for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
+                    shutil.copy(txtfile, rundir)
+
+            # increment instance counter
+            inst_counter = inst_counter + 1
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()

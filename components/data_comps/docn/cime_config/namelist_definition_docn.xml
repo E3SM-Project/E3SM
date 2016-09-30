@@ -1,0 +1,545 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+  <version>2.0</version>
+
+  <!--
+      Values to use by default for creation of DOCN model docn namelists.
+      The element names are the same as the corresponding namelist
+      variables.  Values that depend on the model configuration use
+      attributes to express the dependency.  The recognized attributes
+      are: grid, docn_presaero and all configuration
+      attributes from the config_cache.xml file (with keys converted to upper-case).
+      
+      strm_year_first is the first year of the stream data that will be used
+      strm_year_last  is the last  year of the stream data that will be used
+      strm_year_align is the model year that will be aligned with stream data for year_first
+
+      Replace any instance of the following substring indicators with the appropriate values:
+      %y    = year from the range yearfirst to yearlast
+      %ym   = year-month from the range yearfirst to yearlast with all 12 months
+      %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
+
+      In docn_in,  streams namelist input has the form
+      streams = 'stream1.txt year_align year_first year_last ',
+      'stream2.txt year_align year_first year_last ',
+      ...
+      'streamN.txt year_align year_first year_last '
+      Each mode below, except for presaero, has a set of streams associated with it
+      The presaero stream, is associated with all modes
+
+      Currently the following datamods are supported
+      prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
+      som           SOM         (Slab ocean model)
+      null          NULL        (NULL mode)
+      copyall       COPYALL     (Copy fields only)
+  -->
+
+  <!-- ========================================================================================  -->
+  <!-- Stream file variables                                                                     -->
+  <!-- ========================================================================================  -->
+
+  <entry id="streamslist">
+    <type>char*1024(100)</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>List of streams used for the given dice_mode.</description>
+    <streamslist docn_mode="prescribed" >prescribed</streamslist>
+    <streamslist docn_mode="som"        >som</streamslist>
+    <streamslist docn_mode="interannual">interannual</streamslist>
+    <streamslist docn_mode="copyall"    >copyall</streamslist>
+  </entry>
+
+  <entry id="strm_grid_file">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>derived</group>
+    <description>does not appear in namelist - only used to set domain and data information</description>
+    <strm_grid_file stream="copyall">$SSTICE_GRID_FILENAME</strm_grid_file>
+    <strm_grid_file stream="prescribed">$SSTICE_GRID_FILENAME</strm_grid_file>
+  </entry>
+
+  <entry id="strm_data_file">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>derived</group>
+    <description>does not appear in namelist - only used to set domain and data information</description>
+    <strm_data_file stream="copyall">$SSTICE_GRID_FILENAME</strm_data_file>
+    <strm_data_file stream="prescribed">$SSTICE_GRID_FILENAME</strm_data_file>
+  </entry>
+
+  <entry id="strm_domdir">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain file directory.</description>
+    <strm_domdir stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</strm_domdir>
+    <strm_domdir stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</strm_domdir>
+  </entry>
+
+  <entry id="strm_domfil">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain file path(s).</description>
+    <strm_domfil stream="som">$DOCN_SOM_FILENAME</strm_domfil>
+    <strm_domfil stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</strm_domfil>
+  </entry>
+
+  <entry id="strm_domvar">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream domain variable name(s).</description>
+    <strm_domvar>
+      time    time
+      xc      lon
+      yc      lat
+      area    area
+      mask    mask
+    </strm_domvar>
+    <strm_domvar stream="copyall" sstice_stream="WW3">
+      time    time
+      gridLon lon
+      gridLat lat
+    </strm_domvar>
+    <strm_domvar stream="interannual">
+      time    time
+      lon      lon
+      lat      lat
+    </strm_domvar>
+  </entry>
+
+  <entry id="strm_datdir">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data file directory.</description>
+    <strm_datdir stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</strm_datdir>
+    <strm_datdir stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</strm_datdir>
+  </entry>
+
+  <entry id="strm_datfil">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data file path(s).</description>
+    <strm_datfil  stream="prescribed" sstice_stream="WRFDATA_wus12">
+      sst_wus12_110111.2003-10.nc
+      sst_wus12_110111.2003-11.nc
+      sst_wus12_110111.2003-12.nc
+      sst_wus12_110111.2004-01.nc
+      sst_wus12_110111.2004-02.nc
+      sst_wus12_110111.2004-03.nc
+      sst_wus12_110111.2004-04.nc
+      sst_wus12_110111.2004-05.nc
+      sst_wus12_110111.2004-06.nc
+      sst_wus12_110111.2004-07.nc
+      sst_wus12_110111.2004-08.nc
+      sst_wus12_110111.2004-09.nc
+    </strm_datfil>
+    <strm_datfil stream="som">$DOCN_SOM_FILENAME</strm_datfil>
+    <strm_datfil stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</strm_datfil>
+  </entry>
+
+  <entry id="strm_datvar">
+    <type>char*4096</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream data variable name(s).</description>
+    <strm_datvar>
+      sst    t
+    </strm_datvar>
+    <strm_datvar stream="copyall" sstice_stream="WW3">
+      iceCon  s
+    </strm_datvar>
+    <strm_datvar stream="som">
+      T     t
+      S     s
+      U     u
+      V     v
+      dhdx  dhdx
+      dhdy  dhdy
+      hblt  h
+      qdp   qbot
+    </strm_datvar>
+    <strm_datvar stream="interannual">
+      SST_cpl  t
+    </strm_datvar>
+    <strm_datvar stream="prescribed" sstice_stream="CAMDATA">
+      SST_cpl    t
+    </strm_datvar>
+  </entry>
+
+  <entry id="strm_offset">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Stream offset.</description>
+    <strm_offset>0</strm_offset> 
+  </entry>
+
+  <entry id="strm_year_align">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Simulation year to align stream to.</description>
+    <strm_year_align stream="prescribed">$SSTICE_YEAR_ALIGN</strm_year_align>
+    <strm_year_align stream="copyall">$SSTICE_YEAR_ALIGN</strm_year_align>
+    <strm_year_align stream="som">1</strm_year_align>
+    <strm_year_align stream="interannual">1</strm_year_align>
+  </entry>
+
+  <entry id="strm_year_start">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>First year of stream.</description>
+  <strm_year_start stream="prescribed">$SSTICE_YEAR_START</strm_year_start>
+  <strm_year_start stream="copyall">$SSTICE_YEAR_START</strm_year_start>
+  <strm_year_start stream="som">1</strm_year_start>
+  <strm_year_start stream="interannual">1850</strm_year_start>
+  </entry>
+
+  <entry id="strm_year_end">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <description>Last year of stream.</description>
+  <strm_year_end   stream="prescribed">$SSTICE_YEAR_END</strm_year_end>
+  <strm_year_end   stream="copyall">$SSTICE_YEAR_END</strm_year_end>
+  <strm_year_end   stream="som">1</strm_year_end>
+  <strm_year_end   stream="interannual">2014</strm_year_end>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- DOCN Namelists                                                                            -->
+  <!-- ========================================================================================  -->
+
+  <!-- =========================================  -->
+  <!--- shr_strmdata_nml       -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char*256</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>SSTDATA,SOM,IAF,NULL,COPYALL</valid_values>
+    <datamode docn_mode="null"       >NULL</datamode>
+    <datamode docn_mode="prescribed" >SSTDATA</datamode>
+    <datamode docn_mode="som"        >SOM</datamode>
+    <datamode docn_mode="interannual">IAF</datamode>
+    <datamode docn_mode="copyall"    >COPYALL</datamode>
+    <description>
+      General method that operates on the data. This is generally
+      implemented in the data models but is set in the strdata method for
+      convenience.
+
+      datamode = "NULL"
+      NULL is always a valid option and means no data will be generated.
+      Turns off the data model as a provider of data to the coupler.  The
+      ice_present flag will be set to false and the coupler will assume no
+      exchange of data to or from the data model.
+      dataMode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      dataMode = "SSTDATA"
+      SSTDATA mode assumes the only field in the input stream is SST.
+      It also assumes the SST is in Celsius and must be converted to Kelvin.
+      All other fields are set to zero except for ocean salinity, which
+      is set to a constant reference salinity value.
+      Normally the ice fraction data is found in the same data files that
+      provide SST data to the data ocean model. They are normally found in
+      the same file because the SST and ice fraction data are derived from
+      the same observational data sets and are consistent with each other.
+      to the data ocean model. They are normally found in the same file
+      because the SST and ice fraction data are derived from the same
+      observational data sets and are consistent with each other.
+      dataMode = "IAF"
+      IAF is the interannually varying version of SSTDATA
+      dataMode = "SOM"
+      SOM ("slab ocean model") mode is a prognostic mode.  This mode
+      computes a prognostic sea surface temperature and a freeze/melt
+      potential (surface Q-flux) used by the sea ice model.  This
+      calculation requires an external SOM forcing data file that includes
+      ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
+      Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
+      ocean resolution dependent and are derived from the ocean model output
+      of a fully coupled CCSM run.  Note that while this mode runs out of
+      the box, the default SOM forcing file is not scientifically
+      appropriate and is provided for testing and development purposes only.
+      Users must create scientifically appropriate data for their particular
+      application.  A tool is available to derive valid SOM forcing.
+
+      Set by the xml variable DOCN_MODE in env_run.xml
+      Currently, DOCN_MODE can be [prescribed,som,interannual,null]
+      If DOCN_MODE is prescribed, datamode will be set to SSTDATA
+      If DOCN_MODE is interannual, datamode will be set to IAF
+      If DOCN_MODE is som , datamode will be set to SOM
+      If DOCN_MODE is null, datamode will be set to NULL
+
+      default: SSTDATA (prescribed setting for DOCN_MODE)'
+    </description>
+  </entry>
+
+  <entry id="domainfile">
+    <type>char*256</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>shr_strdata_nml</group>
+    <description>
+      spatial gridfile associated with the strdata.  grid information will
+      be read from this file and that grid will serve as the target grid
+      for all input data for this strdata input.
+    </description>
+  </entry>
+
+  <entry id="fillalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>copy,none,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <description>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are just copy (ie. no fill), special value,
+      nearest neighbor, nearest neighbor in "i" direction, or nearest
+      neighbor in "j" direction.
+      valid values:  'copy','none','spval','nn','nnoni','nnonj'
+      default: "nn".
+    </description>
+  </entry>
+
+  <entry id="fillmask">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
+    <description>
+      plays no role is fill algorithm at the present time.
+      valid values: "nomask,srcmask,dstmask,bothmask"
+      default: "nomask"
+    </description>
+    <fillmask>nomask</fillmask>
+  </entry>
+
+  <entry id="fillread">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read in instead of computing the
+      weights on the fly for the fill operation.  if this is set, fillalgo
+      and fillmask are ignored.
+      default: unset
+    </description>
+    <fillalgo>nn</fillalgo>
+  </entry>
+
+  <entry id="fillwrite">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements)  of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the fill operation.  this allows a user to
+      save and reuse a set of weights later.
+      default="unset".
+    </description>
+  </entry>
+
+  <entry id="mapmask">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
+    <description>
+      array (up to 30 elements) of masking algorithms for mapping input data
+      associated with the array of streams.  valid options are map only from
+      valid src points, map only to valid destination points, ignore all
+      masks, map only from valid src points to valid destination points.
+      valid values: srcmask, dstmask, nomask,bothmask
+      default: dstmask
+    </description>
+    <mapmask>dstmask</mapmask>
+  </entry>
+
+  <entry id="mapalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <description>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are copy by index, set to special value,
+      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
+      in "j" direction, or bilinear.
+      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      default: bilinear
+    </description>
+    <mapalgo>bilinear</mapalgo>
+  </entry>
+
+  <entry id="mapread">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read instead of computing
+      weights on the fly for the mapping (interpolation) operation.  if this
+      is set, mapalgo and mapmask are ignored.  default="unset".
+    </description>
+  </entry>
+
+  <entry id="mapwrite">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the mapping (interpolation) operation.  this
+      allows a user to save and reuse a set of weights later.
+      default="unset".
+    </description>
+  </entry>
+
+  <entry id="tintalgo">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>coszen,nearest,linear,lower,upper</valid_values>
+    <description>
+      array (up to 30 elements) of time interpolation options associated with the array of
+      streams.
+      valid values: lower,upper,nearest,linear,coszen
+      lower   = Use lower time-value
+      upper   = Use upper time-value
+      nearest = Use the nearest time-value
+      linear  = Linearly interpolate between the two time-values
+      coszen  = Scale according to the cosine of the solar zenith angle (for solar)
+      default="linear".
+    </description>
+    <tintalgo>linear</tintalgo>
+  </entry>
+
+  <entry id="taxmode">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>extend,cycle,limit</valid_values>
+    <description>
+      array of time axis modes associated with the array of streams for
+      handling data outside the specified stream time axis.
+      valid options are to cycle the data based on the first, last, and
+      align settings associated with the stream dataset, to extend the first
+      and last valid value indefinitely, or to limit the interpolated data
+      to fall only between the least and greatest valid value of the time array.
+      valid values: cycle,extend,limit
+      extend = extrapolate before and after the period by using the first or last value.
+      cycle  = cycle between the range of data
+      limit  = restrict to the period for which the data is valid
+      default="cycle".
+    </description>
+    <taxmode>cycle</taxmode>
+    <taxmode stream="prescribed" sstice_stream="WRFDATA_wus12">limit</taxmode>
+    <taxmode stream="prescribed" sstice_stream="WRFDATA">limit</taxmode>
+  </entry>
+
+  <entry id="dtlimit">
+    <type>real(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      array (up to 30 elements) of delta time ratio limits placed on the
+      time interpolation associated with the array of streams.  this real
+      value causes the model to stop if the ratio of the running maximum
+      delta time divided by the minimum delta time is greater than the
+      dtlimit for that stream.  for instance, with daily data, the delta
+      time should be exactly one day throughout the dataset and the computed
+      maximum divided by minimum delta time should always be 1.0.  for
+      monthly data, the delta time should be between 28 and 31 days and the
+      maximum ratio should be about 1.1.  the running value of the delta
+      time is computed as data is read and any wraparound or cycling is also
+      included.  this input helps trap missing data or errors in cycling.
+      to turn off trapping, set the value to 1.0e30 or something similar.
+      default=1.5.
+    </description>
+    <dtlimit>1.5e0</dtlimit>
+  </entry>
+
+  <entry id="streams">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      character array (up to 30 elements) of stream input files.  this
+      string is actually parsed by a stream method and so the format is
+      specified by the stream module.  this string consists of a
+      "stream_input_filename year_align year_first year_last".  the
+      stream_input_filename is a stream text input file and the format and
+      options are described elsewhere.  year_align, year_first, and
+      year_last provide information about the time axis of the file and how
+      to relate the input time axis to the model time axis.
+      default="null".
+    </description>
+  </entry>
+
+  <!-- =========================================  -->
+  <!--- docn_nml                -->
+  <!-- =========================================  -->
+
+  <entry id="decomp">
+    <type>char*4</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <valid_values>1d,root</valid_values>
+    <description>
+      DOCN Decomposition strategy
+      1d   = Vector decomposition
+      root = run only on the master task
+    </description>
+  </entry>
+
+  <entry id="restfilm">
+    <type>char*256</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <description>
+      Master restart file name for docn model
+    </description>
+  </entry>
+
+  <entry id="restfils">
+    <type>char*256</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <description>
+      Stream restart file name for docn model, needed for branch simulations
+    </description>
+  </entry>
+
+  <entry id="force_prognostic_true">
+    <type>logical</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <description>If TRUE, prognostic is forced to true. (default=false)</description>
+  </entry>
+
+  <!-- =========================================  -->
+  <!--- modelio (in file ocn_modeio.nml)          -->
+  <!-- =========================================  -->
+
+  <entry id="logfile">
+    <type>char*256</type>
+    <category>docn</category>
+    <group>modelio</group>
+    <description>DOCN logfile name (default: 'ocn.log')</description>
+  </entry>
+
+</namelist_definition>
