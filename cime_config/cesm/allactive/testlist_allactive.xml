@@ -78,9 +78,9 @@
   <test name="ERS" grid="f09_g16" compset="BRCP45C4L40CNRBDRD" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prebeta"/>
-	<options>
-	  <option name="wallclock"> 00:20 </option>
-	</options>
+      <options>
+	<option name="wallclock"> 00:20 </option>
+      </options>
     </machines>
   </test>
   <test name="ERS" grid="f09_g16" compset="BRCP85C5L45BGCR" testmods="allactive/defaultio">
@@ -328,11 +328,6 @@
   </test>
   <test name="SMS_Ld5" grid="T31_g37_gl20" compset="B1850C5L45BGCRG2" testmods="allactive/defaultio">
     <machines>
-      <machine name="yellowstone" compiler="intel" category="jimtest">
-      <options>
-	<option name="memleak_tolerance"> 0.005 </option>
-      </options>
-      </machine>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <machine name="yellowstone" compiler="intel" category="prebeta"/>
       <options>
