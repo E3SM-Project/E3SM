@@ -89,14 +89,14 @@ if ($NTHRDS_LND == 1) then
     @ nthrd = $NTHRDS_LND * 2
     ./xmlchange -file env_mach_pes.xml -id NTHRDS_LND -val $nthrd
 endif
-#if ($NTHRDS_ICE == 1) then
-#    @ nthrd = $NTHRDS_ICE * 2
-#    ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val $nthrd
-#endif
-#if ($NTHRDS_OCN == 1) then
-#    @ nthrd = $NTHRDS_OCN * 2
-#    ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val $nthrd
-#endif
+if ($NTHRDS_ICE == 1) then
+    @ nthrd = $NTHRDS_ICE * 2
+    ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val $nthrd
+endif
+if ($NTHRDS_OCN == 1) then
+    @ nthrd = $NTHRDS_OCN * 2
+    ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val $nthrd
+endif
 if ($NTHRDS_CPL == 1) then
     @ nthrd = $NTHRDS_CPL * 2
     ./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val $nthrd

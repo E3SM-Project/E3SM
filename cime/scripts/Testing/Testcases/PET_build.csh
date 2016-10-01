@@ -36,14 +36,14 @@ if ( $NTHRDS_ROF <= 1) then
   echo "WARNING: component ROF is not threaded, changing NTHRDS_ROF to 2" 
   ./xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val 2
 endif
-#if ( $NTHRDS_ICE <= 1) then
-#  echo "WARNING: component ICE is not threaded, changing NTHRDS_ICE to 2"
-#  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 2
-#endif
-#if ( $NTHRDS_OCN <= 1) then
-#  echo "WARNING: component OCN is not threaded, changing NTHRDS_OCN to 2"
-#  ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 2
-#endif
+if ( $NTHRDS_ICE <= 1) then
+  echo "WARNING: component ICE is not threaded, changing NTHRDS_ICE to 2"
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 2
+endif
+if ( $NTHRDS_OCN <= 1) then
+  echo "WARNING: component OCN is not threaded, changing NTHRDS_OCN to 2"
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 2
+endif
 if ( $NTHRDS_GLC <= 1) then
   echo "WARNING: component GLC is not threaded, changing NTHRDS_GOC to 2" 
   ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val 2
