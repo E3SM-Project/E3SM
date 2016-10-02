@@ -190,7 +190,7 @@ def _create_group_seq_infodata_inparm(case, cime_model, nmlgen):
     nmlgen.add_default('timing_dir')
     nmlgen.add_default('tchkpt_dir')
 
-    if case.get_value('PTS_MODE')  == "TRUE":
+    if case.get_value('PTS_MODE'):
         nmlgen.add_default('single_column', ".true.")
         nmlgen.add_default('scmlat', value=case.get_value('PTS_LAT'))
         nmlgen.add_default('scmlon', value=case.get_value('PTS_LON'))
@@ -368,33 +368,41 @@ def _create_group_seq_maps(case, nmlgen):
 ###############################################################################
 
     config = {}
-    config['BFBFLAG'] = case.get_value('BFBFLAG')
-
-    items = ['atm2ocn_fmapname', 'atm2ocn_smapname', 'atm2ocn_vmapname', 
-             'ocn2atm_fmapname', 'ocn2atm_smapname', 
-             'atm2lnd_fmapname', 'atm2lnd_smapname', 
-             'lnd2atm_fmapname', 'lnd2atm_smapname', 
-             'lnd2rof_fmapname', 'rof2lnd_fmapname', 
-             'rof2ocn_fmapname', 'rof2ocn_liq_rmapname', 'rof2ocn_ice_rmapname', 
-             'glc2ocn_rmapname', 'glc2ice_rmapname', 
-             'lnd2glc_fmapname', 'lnd2glc_smapname', 
-             'glc2lnd_fmapname', 'glc2lnd_smapname', 
-             'atm2wav_smapname', 'ocn2wav_smapname', 
-             'ice2wav_smapname', 'wav2ocn_smapname', 
-             'atm2ice_fmapname', 'atm2ice_smapname', 'atm2ice_vmapname', 
-             'ice2atm_fmapname', 'ice2atm_smapname', 
-             'atm2ocn_fmaptype', 'atm2ocn_smaptype', 'atm2ocn_vmaptype', 
-             'ocn2atm_fmaptype', 'ocn2atm_smaptype', 
-             'atm2lnd_fmaptype', 'atm2lnd_smaptype', 
-             'lnd2atm_fmaptype', 'lnd2atm_smaptype', 
-             'lnd2rof_fmaptype', 'rof2lnd_fmaptype', 
-             'rof2ocn_fmaptype', 'rof2ocn_liq_rmaptype', 'rof2ocn_ice_rmaptype', 
-             'glc2ocn_rmaptype', 'glc2ice_rmaptype', 
-             'lnd2glc_fmaptype', 'lnd2glc_smaptype', 
-             'glc2lnd_fmaptype', 'glc2lnd_smaptype', 
-             'atm2wav_smaptype', 'ocn2wav_smaptype', 'ice2wav_smaptype', 
-             'wav2ocn_smaptype']
-
+    if case.get_value('BFBFLAG'):
+        config['bfbflag'] = 'on'
+    else:
+        config['bfbflag'] = 'off'
+        
+    items = ['atm2ocn_fmapname'     , 'atm2ocn_fmaptype'     , 
+             'atm2ocn_smapname'     , 'atm2ocn_smaptype'     , 
+             'atm2ocn_vmapname'     , 'atm2ocn_vmaptype'     , 
+             'ocn2atm_fmapname'     , 'ocn2atm_fmaptype'     , 
+             'ocn2atm_smapname'     , 'ocn2atm_smaptype'     , 
+             'atm2lnd_fmapname'     , 'atm2lnd_fmaptype'     , 
+             'atm2lnd_smapname'     , 'atm2lnd_smaptype'     , 
+             'lnd2atm_fmapname'     , 'lnd2atm_fmaptype'     , 
+             'lnd2atm_smapname'     , 'lnd2atm_smaptype'     , 
+             'lnd2rof_fmapname'     , 'lnd2rof_fmaptype'     , 
+             'rof2lnd_fmapname'     , 'rof2lnd_fmaptype'     , 
+             'rof2ocn_fmapname'     , 'rof2ocn_fmaptype'     , 
+             'rof2ocn_liq_rmapname' , 'rof2ocn_liq_rmaptype' , 
+             'glc2ocn_rmapname'     , 'glc2ocn_rmaptype'     , 
+             'glc2ice_rmapname'     , 'glc2ice_rmaptype'     , 
+             'lnd2glc_fmapname'     , 'lnd2glc_fmaptype'     , 
+             'lnd2glc_smapname'     , 'lnd2glc_smaptype'     , 
+             'glc2lnd_fmapname'     , 'glc2lnd_fmaptype'     , 
+             'glc2lnd_smapname'     , 'glc2lnd_smaptype'     , 
+             'atm2wav_smapname'     , 'atm2wav_smaptype'     , 
+             'ocn2wav_smapname'     , 'ocn2wav_smaptype'     , 
+             'ice2wav_smapname'     , 'ice2wav_smaptype'     , 
+             'wav2ocn_smapname'     , 'wav2ocn_smaptype'     , 
+             'atm2ice_fmapname'     , 'atm2ice_fmaptype'     , 
+             'atm2ice_smapname'     , 'atm2ice_smaptype'     , 
+             'atm2ice_vmapname'     , 'atm2ice_vmaptype'     , 
+             'ice2atm_fmapname'     , 'ice2atm_fmaptype'     , 
+             'ice2atm_smapname'     , 'ice2atm_smaptype'     , 
+             'rof2ocn_ice_rmapname' , 'rof2ocn_ice_rmaptype' ] 
+    
     for item in items:
         nmlgen.add_default(item, nmlgen.get_default(item, config=config))
 
@@ -403,15 +411,17 @@ def _create_component_modelio_namelists(case, confdir, definition_file):
 ###############################################################################
 
     # will need to create a new namelist generator
+    cimeroot = case.get_value('CIMEROOT')
     infiles = []
     config = {}
-    nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
-
-    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
-
+    definition_file = [os.path.join(cimeroot, "driver_cpl", "cime_config", "namelist_definition_modelio.xml")]
     lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
 
+    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
     for model in models:
+
+        config['component'] = model
+        nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
         moddiri = case.get_value('EXEROOT') + "/" + model
         moddiro = case.get_value('RUNDIR')
 
@@ -437,17 +447,18 @@ def _create_component_modelio_namelists(case, confdir, definition_file):
                 modelio_file = model + "_modelio.nml"
                 logfile = model + ".log." + str(lid)
 
-            nmlgen.add_default('diri',    value=moddiri)
-            nmlgen.add_default('diro',    value=moddiro)
-            nmlgen.add_default('logfile', value=logfile)
-            
-            nmlgen.add_default('pio_stride',    case.get_value(model.upper() + '_PIO_STRIDE'))
-            nmlgen.add_default('pio_root',      case.get_value(model.upper() + '_PIO_ROOT'))
-            nmlgen.add_default('pio_numiotasks',case.get_value(model.upper() + '_PIO_NUMTASKS'))
-            nmlgen.add_default('pio_typename',  case.get_value(model.upper() + '_PIO_TYPENAME'))
-            nmlgen.add_default('pio_rearranger',case.get_value(model.upper() + '_PIO_REARRANGER'))
+            nmlgen.set_value('diri',    value=moddiri)
+            nmlgen.set_value('diro',    value=moddiro)
+            nmlgen.set_value('logfile', value=logfile)
 
-            nmlgen.write_modelio_file(modelio_file)
+            nmlgen.add_default('pio_stride')
+            nmlgen.add_default('pio_root')
+            nmlgen.add_default('pio_numiotasks')
+            nmlgen.add_default('pio_typename')
+            nmlgen.add_default('pio_rearranger')
+
+            nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
+
             inst_index = inst_index + 1
 
 ####################################################################################
@@ -491,7 +502,6 @@ def _create_namelists(case, cime_model, confdir, infiles, definition_file):
         os.remove(data_list_path)
 
     namelist_file = os.path.join(confdir, "drv_in")
-    modelio_file = os.path.join(confdir, "drv_modelio.nml")
     nmlgen.write_output_file(namelist_file, data_list_path )
 
     #-----------------------------------------------------------------------------------------------
@@ -575,12 +585,18 @@ def _main_func():
         _create_namelists(case, cime_model, confdir, infile, definition_file)
         _create_component_modelio_namelists(case, confdir, definition_file)
 
-        # copy drv_in, drv_flds_in, seq_maps.rc and all *modio* files to rundir
+        # copy drv_in to rundir
         shutil.copy(os.path.join(confdir,"drv_in"), rundir)
+
+        # copy drv_flds_in to rundir
         drv_flds_in = os.path.join(confdir, "drv_flds_in")
         if os.path.isfile(drv_flds_in):
             shutil.copy(drv_flds_in, rundir)  
+
+        # copy seq_maps.rc to rundir
         shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
+
+        # copy all *modio* files to rundir
         for filename in glob.glob(os.path.join(confdir, "*modelio*")):
             shutil.copy(filename, rundir)
 

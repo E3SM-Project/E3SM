@@ -8,30 +8,19 @@
 
   <!-- Each namelist variable is defined in an <entry> element.  The
      content of the element is the documentation of how the variable is
-     used.  Other aspects of the variable's definition are expressed as
-     attributes of the <entry> element.  Note that it is an XML requirement
-     that the attribute values are enclosed in quotes.  The attributes are:
-
+     used.  Other elements  are:
      id
           The variable's name.  *** N.B. *** The name must be lower case.
           The module convert all namelist variable names to lower case
           since Fortran is case insensitive.
-
      type
           An abbreviation of the fortran declaration for the variable.
 	  Valid declarations are:
-
-          char*n
-	  integer
-	  logical
-	  real
-
+             char*n, integer, logical, real
 	  Any of these types may be followed by a comma separated list of
 	  integers enclosed in parenthesis to indicate an array.
-
 	  The current namelist validation code only distinquishes between
 	  string and non-string types.
-
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
@@ -44,13 +33,10 @@
 	    root directory.
            "mapping" - the absolute inputdata path is specified and
             will be included in the cpl.inputdata_list
-
      category
           A category assigned for organizing the documentation.
-
      group
           The namelist group that the variable is declared in.
-
      valid_values
           This is an optional attribute that is mainly useful for variables
           that have only a small number of allowed values.
@@ -59,16 +45,6 @@
 <!-- =========================== -->
 <!-- group seq_cplflds_inparm    -->
 <!-- =========================== -->
-
-<entry id="cime_model">
-   <type>char*8</type>
-   <category>expdef</category>
-   <group>seq_infodata_inparm</group>
-   <unmodifiable_via_user_nl>must be set via xml variable CIME_MODEL</unmodifiable_via_user_nl>
-   <valid_values>acme,cesm</valid_values>
-   <description>cime model</description>
-   <cime_model>unset</cime_model>
-</entry>
 
 <entry id="flds_co2a">
   <type>logical</type>
@@ -214,12 +190,22 @@
     vector field.
     Modify user_nl_cpl to edit this.
   </description>
-  <cplflds_custom>' '</cplflds_custom>
+  <cplflds_custom>''</cplflds_custom>
 </entry>
 
 <!-- =========================== -->
 <!--  group seq_infodata_inparm  -->
 <!-- =========================== -->
+
+<entry id="cime_model">
+   <type>char*8</type>
+   <category>expdef</category>
+   <group>seq_infodata_inparm</group>
+   <unmodifiable_via_user_nl>must be set via xml variable CIME_MODEL</unmodifiable_via_user_nl>
+   <valid_values>acme,cesm</valid_values>
+   <description>cime model</description>
+   <cime_model>unset</cime_model>
+</entry>
 
 <entry id="atm_adiabatic">
   <type>logical</type>
@@ -2648,34 +2634,6 @@
 </entry>
 
 <!-- =========================== -->
-<!-- group modelio               -->
-<!-- =========================== -->
-
-<entry id="diri">
-  <type>char*256</type>
-  <category>modelio</category>
-  <group>modelio</group>
-  <description>
-  </description>
-</entry>
-
-<entry id="diro">
-  <type>char*256</type>
-  <category>modelio</category>
-  <group>modelio</group>
-  <description>
-  </description>
-</entry>
-
-<entry id="logfile">
-  <type>char*256</type>
-  <category>modelio</category>
-  <group>modelio</group>
-  <description>
-  </description>
-</entry>
-
-<!-- =========================== -->
 <!-- group seq_maps              -->
 <!-- =========================== -->
 
@@ -2704,7 +2662,7 @@
     grid.
   </description>
   <atm2ocn_fmaptype>$ATM2OCN_FMAPTYPE</atm2ocn_fmaptype>
-  <atm2ocn_fmaptype BFBFLAG="TRUE">X</atm2ocn_fmaptype>
+  <atm2ocn_fmaptype bfbflag="on">X</atm2ocn_fmaptype>
 </entry>
 
 <entry id="atm2ocn_smapname">
@@ -2732,7 +2690,7 @@
     grid.
   </description>
   <atm2ocn_smaptype>$ATM2OCN_SMAPTYPE</atm2ocn_smaptype>
-  <atm2ocn_smaptype BFBFLAG="TRUE">X</atm2ocn_smaptype>
+  <atm2ocn_smaptype bfbflag="on">X</atm2ocn_smaptype>
 </entry>
 
 <entry id="atm2ocn_vmapname">
@@ -2760,7 +2718,7 @@
     grid.
   </description>
   <atm2ocn_vmaptype>$ATM2OCN_VMAPTYPE</atm2ocn_vmaptype>
-  <atm2ocn_vmaptype BFBFLAG="TRUE">X</atm2ocn_vmaptype>
+  <atm2ocn_vmaptype bfbflag="on">X</atm2ocn_vmaptype>
 </entry>
 
 <entry id="ocn2atm_fmapname">
@@ -2788,7 +2746,7 @@
     grid.
   </description>
   <ocn2atm_fmaptype>$OCN2ATM_FMAPTYPE</ocn2atm_fmaptype>
-  <ocn2atm_fmaptype BFBFLAG="TRUE">X</ocn2atm_fmaptype>
+  <ocn2atm_fmaptype bfbflag="on">X</ocn2atm_fmaptype>
 </entry>
 
 <entry id="ocn2atm_smapname">
@@ -2816,7 +2774,7 @@
     grid.
   </description>
   <ocn2atm_smaptype>$OCN2ATM_SMAPTYPE</ocn2atm_smaptype>
-  <ocn2atm_smaptype BFBFLAG="TRUE">X</ocn2atm_smaptype>
+  <ocn2atm_smaptype bfbflag="on">X</ocn2atm_smaptype>
 </entry>
 
 <entry id="atm2ice_fmapname">
@@ -2843,6 +2801,8 @@
     on the source grid and then rearrangement and sum to the destination
     grid.
   </description>
+  <atm2ice_fmaptype>$ATM2OCN_FMAPTYPE</atm2ice_fmaptype>
+  <atm2ice_fmaptype bfbflag="on">X</atm2ice_fmaptype>
 </entry>
 
 <entry id="atm2ice_smapname">
@@ -2861,7 +2821,7 @@
   <type>char*256</type>
   <category>mapping</category>
   <group>seq_maps</group>
-  <unmodifiable_via_user_nl>must be set via xml variable ATM2ICE_SMAPTYPE</unmodifiable_via_user_nl>
+  <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_SMAPTYPE</unmodifiable_via_user_nl>
   <description>
     The type of mapping desired, either "source" or "destination" mapping.
     X is associated with rearrangement of the source grid to the
@@ -2869,6 +2829,8 @@
     on the source grid and then rearrangement and sum to the destination
     grid.
   </description>
+  <atm2ice_smaptype>$ATM2OCN_SMAPTYPE</atm2ice_smaptype>
+  <atm2ice_smaptype bfbflag="on">X</atm2ice_smaptype>
 </entry>
 
 <entry id="atm2ice_vmapname">
@@ -2887,7 +2849,7 @@
   <type>char*256</type>
   <category>mapping</category>
   <group>seq_maps</group>
-  <unmodifiable_via_user_nl>must be set via xml variable ATM2ICE_VMAPTYPE</unmodifiable_via_user_nl>
+  <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_VMAPTYPE</unmodifiable_via_user_nl>
   <description>
     The type of mapping desired, either "source" or "destination" mapping.
     X is associated with rearrangement of the source grid to the
@@ -2895,6 +2857,8 @@
     on the source grid and then rearrangement and sum to the destination
     grid.
   </description>
+  <atm2ice_vmaptype>$ATM2OCN_VMAPTYPE</atm2ice_vmaptype>
+  <atm2ice_vmaptype bfbflag="on">X</atm2ice_vmaptype>
 </entry>
 
 <entry id="ice2atm_fmapname">
@@ -2913,7 +2877,7 @@
   <type>char*256</type>
   <category>mapping</category>
   <group>seq_maps</group>
-  <unmodifiable_via_user_nl>must be set via xml variable ICE2ATM_FMAPTYPE</unmodifiable_via_user_nl>
+  <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_FMAPTYPE</unmodifiable_via_user_nl>
   <description>
     The type of mapping desired, either "source" or "destination" mapping.
     X is associated with rearrangement of the source grid to the
@@ -2921,6 +2885,8 @@
     on the source grid and then rearrangement and sum to the destination
     grid.
   </description>
+  <ice2atm_fmaptype>$OCN2ATM_FMAPTYPE</ice2atm_fmaptype>
+  <ice2atm_fmaptype bfbflag="on">X</ice2atm_fmaptype>
 </entry>
 
 <entry id="ice2atm_smapname">
@@ -2938,7 +2904,7 @@
 <entry id="ice2atm_smaptype">
   <type>char*256</type>
   <category>mapping</category>
-  <unmodifiable_via_user_nl>must be set via xml variable ICE2ATM_FMAPTYPE</unmodifiable_via_user_nl>
+  <unmodifiable_via_user_nl>must be set via xml variable ICE2ATM_SMAPTYPE</unmodifiable_via_user_nl>
   <group>seq_maps</group>
   <description>
     The type of mapping desired, either "source" or "destination" mapping.
@@ -2947,6 +2913,8 @@
     on the source grid and then rearrangement and sum to the destination
     grid.
   </description>
+  <ice2atm_smaptype>$OCN2ATM_SMAPTYPE</ice2atm_smaptype>
+  <ice2atm_smaptype bfbflag="on">X</ice2atm_smaptype>
 </entry>
 
 <entry id="atm2lnd_fmapname">
@@ -2974,7 +2942,7 @@
     grid.
   </description>
   <atm2lnd_fmaptype>$ATM2LND_FMAPTYPE</atm2lnd_fmaptype>
-  <atm2lnd_fmaptype BFBFLAG="TRUE">X</atm2lnd_fmaptype>
+  <atm2lnd_fmaptype bfbflag="on">X</atm2lnd_fmaptype>
 </entry>
 
 <entry id="atm2lnd_smapname">
@@ -3002,7 +2970,7 @@
     grid.
   </description>
   <atm2lnd_smaptype>$ATM2LND_SMAPTYPE</atm2lnd_smaptype>
-  <atm2lnd_smaptype BFBFLAG="TRUE">X</atm2lnd_smaptype>
+  <atm2lnd_smaptype bfbflag="on">X</atm2lnd_smaptype>
 </entry>
 
 <entry id="lnd2atm_fmapname">
@@ -3030,7 +2998,7 @@
     grid.
   </description>
   <lnd2atm_fmaptype>$LND2ATM_FMAPTYPE</lnd2atm_fmaptype>
-  <lnd2atm_fmaptype BFBFLAG="TRUE">X</lnd2atm_fmaptype>
+  <lnd2atm_fmaptype bfbflag="on">X</lnd2atm_fmaptype>
 </entry>
 
 <entry id="lnd2atm_smapname">
@@ -3058,7 +3026,7 @@
     grid.
   </description>
   <lnd2atm_smaptype>$LND2ATM_SMAPTYPE</lnd2atm_smaptype>
-  <lnd2atm_smaptype BFBFLAG="TRUE">X</lnd2atm_smaptype>
+  <lnd2atm_smaptype bfbflag="on">X</lnd2atm_smaptype>
 </entry>
 
 <entry id="lnd2rof_fmapname">
@@ -3086,7 +3054,7 @@
     grid.
   </description>
   <lnd2rof_fmaptype>$LND2ROF_FMAPTYPE</lnd2rof_fmaptype>
-  <lnd2rof_fmaptype BFBFLAG="TRUE">X</lnd2rof_fmaptype>
+  <lnd2rof_fmaptype bfbflag="on">X</lnd2rof_fmaptype>
 </entry>
 
 <entry id="rof2lnd_fmapname">
@@ -3114,7 +3082,7 @@
     grid.
   </description>
   <rof2lnd_fmaptype>$ROF2LND_FMAPTYPE</rof2lnd_fmaptype>
-  <rof2lnd_fmaptype BFBFLAG="TRUE">X</rof2lnd_fmaptype>
+  <rof2lnd_fmaptype bfbflag="on">X</rof2lnd_fmaptype>
 </entry>
 
 <entry id="rof2ocn_fmapname">
@@ -3142,7 +3110,7 @@
     grid.
   </description>
   <rof2ocn_fmaptype>$ROF2OCN_FMAPTYPE</rof2ocn_fmaptype>
-  <rof2ocn_fmaptype BFBFLAG="TRUE">X</rof2ocn_fmaptype>
+  <rof2ocn_fmaptype bfbflag="on">X</rof2ocn_fmaptype>
 </entry>
 
 <entry id="glc2ocn_rmapname">
@@ -3170,7 +3138,7 @@
     grid.
   </description>
   <glc2ocn_rmaptype>$GLC2OCN_RMAPTYPE</glc2ocn_rmaptype>
-  <glc2ocn_rmaptype BFBFLAG="TRUE">X</glc2ocn_rmaptype>
+  <glc2ocn_rmaptype bfbflag="on">X</glc2ocn_rmaptype>
 </entry>
 
 <entry id="glc2ice_rmapname">
@@ -3198,7 +3166,7 @@
     grid.
   </description>
   <glc2ice_rmaptype>$GLC2ICE_RMAPTYPE</glc2ice_rmaptype>
-  <glc2ice_rmaptype BFBFLAG="TRUE">X</glc2ice_rmaptype>
+  <glc2ice_rmaptype bfbflag="on">X</glc2ice_rmaptype>
 </entry>
 
 <entry id="rof2ocn_liq_rmapname">
@@ -3226,7 +3194,7 @@
     grid.
   </description>
   <rof2ocn_liq_rmaptype>$ROF2OCN_LIQ_RMAPTYPE</rof2ocn_liq_rmaptype>
-  <rof2ocn_liq_rmaptype BFBFLAG="TRUE">X</rof2ocn_liq_rmaptype>
+  <rof2ocn_liq_rmaptype bfbflag="on">X</rof2ocn_liq_rmaptype>
 </entry>
 
 <entry id="rof2ocn_ice_rmapname">
@@ -3254,7 +3222,7 @@
     grid.
   </description>
   <rof2ocn_ice_rmaptype>$ROF2OCN_ICE_RMAPTYPE</rof2ocn_ice_rmaptype>
-  <rof2ocn_ice_rmaptype BFBFLAG="TRUE">X</rof2ocn_ice_rmaptype>
+  <rof2ocn_ice_rmaptype bfbflag="on">X</rof2ocn_ice_rmaptype>
 </entry>
 
 
@@ -3283,7 +3251,7 @@
     grid.
   </description>
   <lnd2glc_fmaptype>$LND2GLC_FMAPTYPE</lnd2glc_fmaptype>
-  <lnd2glc_fmaptype BFBFLAG="TRUE">X</lnd2glc_fmaptype>
+  <lnd2glc_fmaptype bfbflag="on">X</lnd2glc_fmaptype>
 </entry>
 
 <entry id="lnd2glc_smapname">
@@ -3311,7 +3279,7 @@
     grid.
   </description>
   <lnd2glc_smaptype>$LND2GLC_SMAPTYPE</lnd2glc_smaptype>
-  <lnd2glc_smaptype BFBFLAG="TRUE">X</lnd2glc_smaptype>
+  <lnd2glc_smaptype bfbflag="on">X</lnd2glc_smaptype>
 </entry>
 
 <entry id="glc2lnd_fmapname">
@@ -3339,7 +3307,7 @@
     grid.
   </description>
   <glc2lnd_fmaptype>$GLC2LND_FMAPTYPE</glc2lnd_fmaptype>
-  <glc2lnd_fmaptype BFBFLAG="TRUE">X</glc2lnd_fmaptype>
+  <glc2lnd_fmaptype bfbflag="on">X</glc2lnd_fmaptype>
 </entry>
 
 <entry id="glc2lnd_smapname">
@@ -3367,7 +3335,7 @@
     grid.
   </description>
   <glc2lnd_smaptype>$GLC2LND_SMAPTYPE</glc2lnd_smaptype>
-  <glc2lnd_smaptype BFBFLAG="TRUE">X</glc2lnd_smaptype>
+  <glc2lnd_smaptype bfbflag="on">X</glc2lnd_smaptype>
 </entry>
 
 <entry id="atm2wav_smapname">
@@ -3395,7 +3363,7 @@
     grid.
   </description>
   <atm2wav_smaptype>$ATM2WAV_SMAPTYPE</atm2wav_smaptype>
-  <atm2wav_smaptype BFBFLAG="TRUE">X</atm2wav_smaptype>
+  <atm2wav_smaptype bfbflag="on">X</atm2wav_smaptype>
 </entry>
 
 <entry id="ocn2wav_smapname">
@@ -3423,7 +3391,7 @@
     grid.
   </description>
   <ocn2wav_smaptype>$OCN2WAV_SMAPTYPE</ocn2wav_smaptype>
-  <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
+  <ocn2wav_smaptype bfbflag="on">X</ocn2wav_smaptype>
 </entry>
 
 <entry id="ice2wav_smapname">
@@ -3451,7 +3419,7 @@
     grid.
   </description>
   <ice2wav_smaptype>$ICE2WAV_SMAPTYPE</ice2wav_smaptype>
-  <ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>
+  <ice2wav_smaptype bfbflag="on">X</ice2wav_smaptype>
 </entry>
 
 <entry id="wav2ocn_smapname">
@@ -3479,7 +3447,7 @@
     grid.
   </description>
   <wav2ocn_smaptype>$WAV2OCN_SMAPTYPE</wav2ocn_smaptype>
-  <wav2ocn_smaptype BFBFLAG="TRUE">X</wav2ocn_smaptype>
+  <wav2ocn_smaptype bfbflag="on">X</wav2ocn_smaptype>
 </entry>
 
   <entry id="drv_flds_in_files">
