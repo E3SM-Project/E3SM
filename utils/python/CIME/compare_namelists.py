@@ -67,6 +67,8 @@ def parse_namelists(namelist_lines, filename):
     comment_re = re.compile(r'^[#!]')
     namelist_re = re.compile(r'^&(\S+)$')
     name_re = re.compile(r"^([^\s=']+)\s*=\s*(.+)$")
+   #name_re = re.compile(r"^([^\s=':]+)\s*=\s*(.+)$")
+    rcline_re = re.compile(r"^([^&\s':]+)\s*:\s*(.+)$")
     dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
     comma_re = re.compile(r'\s*,\s*')
 
@@ -79,11 +81,25 @@ def parse_namelists(namelist_lines, filename):
 
         logger.debug("Parsing line: '%s'" % line)
 
-        if (line == "" or comment_re.match(line)):
+        if (line == "" or comment_re.match(line) is not None):
             logger.debug("  Line was whitespace or comment, skipping.")
             continue
 
-        if (current_namelist is None):
+        rcline = rcline_re.match(line)
+        if (rcline is not None):
+            # Defining a variable (AKA name)
+            name, value = rcline.groups()
+
+            value = value.replace('"',"'")
+            logger.debug("  Parsing variable '%s' with data '%s'" % (name, value))
+
+            if 'seq_maps.rc' not in rv:
+                rv['seq_maps.rc'] = {}
+
+            expect(name not in rv['seq_maps.rc'], "In file '%s', Duplicate name: '%s'" % (filename, name))
+            rv['seq_maps.rc'][name] = value
+
+        elif (current_namelist is None):
             # Must start a namelist
             expect(multiline_variable is None,
                    "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
@@ -118,6 +134,7 @@ def parse_namelists(namelist_lines, filename):
             # Defining a variable (AKA name)
             name, value = name_re.match(line).groups()
 
+            value = value.replace('"',"'")
             logger.debug("  Parsing variable '%s' with data '%s'" % (name, value))
 
             expect(multiline_variable is None,
@@ -207,8 +224,12 @@ def normalize_string_value(name, value, case):
         items = [normalize_string_value(name, item, case) for item in items]
         return ":".join(items)
     elif ("/" in value):
-        # File path, just return the basename
-        return os.path.basename(value)
+        # File path, just return the basename unless its a seq_maps.rc mapping
+        # mapname or maptype
+        if "mapname" not in name and "maptype" not in name:
+            return os.path.basename(value)
+        else:
+            return value
     else:
         return value
 

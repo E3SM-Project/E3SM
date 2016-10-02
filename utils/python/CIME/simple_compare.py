@@ -91,7 +91,9 @@ def compare_data(gold_lines, comp_lines, case):
             return False
 
         gold_value = gold_lines[gidx].strip()
+        gold_value = gold_value.replace('"',"'")
         comp_value = comp_lines[cidx].strip()
+        comp_value = comp_value.replace('"',"'")
 
         norm_gold_value = normalize_string_value(gold_value, case)
         norm_comp_value = normalize_string_value(comp_value, case)
