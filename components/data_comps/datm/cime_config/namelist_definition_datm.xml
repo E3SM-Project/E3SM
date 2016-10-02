@@ -402,6 +402,41 @@
       area    area
       mask    mask
     </strm_domvar>
+    <strm_domvar stream="co2tseries.20tr">
+      time    time
+      lonc    lon
+      latc    lat
+      area    area
+      mask    mask
+    </strm_domvar>
+    <strm_domvar stream="co2tseries.rcp2.6">
+      time    time
+      lonc    lon
+      latc    lat
+      area    area
+      mask    mask
+    </strm_domvar>
+    <strm_domvar stream="co2tseries.rcp4.5">
+      time    time
+      lonc    lon
+      latc    lat
+      area    area
+      mask    mask
+    </strm_domvar>
+    <strm_domvar stream="co2tseries.rcp6.0">
+      time    time
+      lonc    lon
+      latc    lat
+      area    area
+      mask    mask
+    </strm_domvar>
+    <strm_domvar stream="co2tseries.rcp8.5">
+      time    time
+      lonc    lon
+      latc    lat
+      area    area
+      mask    mask
+    </strm_domvar>
   </entry>
 
   <entry id="strm_datdir">
@@ -2185,10 +2220,10 @@
       filename containing correction factors for use only with CORE2 modes (CORE2_IAF and CORE2_NYF).
       default='unused'.
     </description>
-    <factorfn>UNSET</factorfn>
+    <factorfn>null</factorfn>
     <factorfn stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
     <factorfn stream="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
-    <factorfn stream="CORE2_IAF" atm_grid="01col">UNSET</factorfn>
+    <factorfn stream="CORE2_IAF" atm_grid="01col">null</factorfn>
   </entry>
 
   <entry id="presaero">
