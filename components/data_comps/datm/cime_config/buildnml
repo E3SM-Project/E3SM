@@ -192,11 +192,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     presaero = ".false." if datm_presaero == "none" else ".true."
     nmlgen.add_default("presaero", value=presaero)
     nmlgen.add_default("iradsw")
-    if datm_mode.startswith("CORE"):
-        factorfn = "atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc"
-        nmlgen.add_default("factorfn", os.path.join(din_loc_root, factorfn))
-    else:
-        nmlgen.add_default("factorfn")
+    nmlgen.add_default("factorfn")
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
