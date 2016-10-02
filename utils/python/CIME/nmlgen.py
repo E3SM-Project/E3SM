@@ -595,6 +595,6 @@ class NamelistGenerator(object):
         """ Write out seq_maps.rc"""
         self._namelist.write(filename, groups=["seq_maps"], format_="rc")
 
-    def write_modelio_file(self, filename ):
-        """ Append to  component modelio files"""
-        self._namelist.write(filename, groups=["modelio", "pio_default_inparm"], format_="nml")
+    def write_modelio_file(self, filename):
+        """ Write  component modelio files"""
+        self._namelist.write(filename, groups=["modelio", "pio_inparm"], format_="nml")

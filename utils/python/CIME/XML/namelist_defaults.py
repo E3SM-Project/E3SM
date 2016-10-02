@@ -95,9 +95,11 @@ class NamelistDefaults(GenericXML):
                    all_attributes[attribute] != node.get(attribute):
                     score = -1
                     break
+
             # Add valid matches to the list.
             if score >= 0:
                 matches.append((score, node))
+
         if not matches:
             return None
 
