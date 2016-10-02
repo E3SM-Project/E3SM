@@ -1,0 +1,182 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition.xsl"?>
+
+<namelist_definition>
+
+  <version>2.0</version>
+
+    <!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other elements  are:
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+     type
+          An abbreviation of the fortran declaration for the variable.
+	  Valid declarations are:
+             char*n, integer, logical, real
+	  Any of these types may be followed by a comma separated list of
+	  integers enclosed in parenthesis to indicate an array.
+	  The current namelist validation code only distinquishes between
+	  string and non-string types.
+     input_pathname
+          Only include this attribute to indicate that the variable
+          contains the pathname of an input dataset that resides in the
+          CIME inputdata directory tree.
+
+	  The recognized values are
+           "abs"  - an absolute  pathname is required
+	   "rel:var_name"  - the  pathname is relative and that
+            the namelist variable "var_name" contains the absolute
+	    root directory.
+           "mapping" - the absolute inputdata path is specified and
+            will be included in the cpl.inputdata_list
+     category
+          A category assigned for organizing the documentation.
+     group
+          The namelist group that the variable is declared in.
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+    -->
+
+  <!-- =========================== -->
+  <!-- group pio_inparm               -->
+  <!-- =========================== -->
+
+  <entry id="pio_stride">
+    <type>integer</type>
+    <category>pio</category>
+    <group>pio_inparm</group>
+    <unmodifiable_via_user_nl>
+      must be set via xml variable XXX_PIO_STRIDE, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
+    </unmodifiable_via_user_nl>
+    <description>
+      stride of tasks in pio used generically, component based value takes precedent.
+    </description>
+    <pio_stride component="cpl">$CPL_PIO_STRIDE</pio_stride>
+    <pio_stride component="atm">$ATM_PIO_STRIDE</pio_stride>
+    <pio_stride component="lnd">$LND_PIO_STRIDE</pio_stride>
+    <pio_stride component="ocn">$OCN_PIO_STRIDE</pio_stride>
+    <pio_stride component="ice">$ICE_PIO_STRIDE</pio_stride>
+    <pio_stride component="rof">$ROF_PIO_STRIDE</pio_stride>
+    <pio_stride component="glc">$GLC_PIO_STRIDE</pio_stride>
+    <pio_stride component="wav">$WAV_PIO_STRIDE</pio_stride>
+    <pio_stride component="esp">-99</pio_stride>
+  </entry>
+
+  <entry id="pio_root">
+    <type>integer</type>
+    <category>pio</category>
+    <group>pio_inparm</group>
+    <unmodifiable_via_user_nl>
+      must be set via xml variable XXX_PIO_ROOT, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
+    </unmodifiable_via_user_nl>
+    <description>
+      io task root in pio used generically, component based value takes precedent.
+    </description>
+    <pio_root component="cpl">$CPL_PIO_ROOT</pio_root>
+    <pio_root component="atm">$ATM_PIO_ROOT</pio_root>
+    <pio_root component="lnd">$LND_PIO_ROOT</pio_root>
+    <pio_root component="ocn">$OCN_PIO_ROOT</pio_root>
+    <pio_root component="ice">$ICE_PIO_ROOT</pio_root>
+    <pio_root component="rof">$ROF_PIO_ROOT</pio_root>
+    <pio_root component="glc">$GLC_PIO_ROOT</pio_root>
+    <pio_root component="wav">$WAV_PIO_ROOT</pio_root>
+    <pio_root component="esp">-99</pio_root>
+  </entry>
+
+  <entry id="pio_rearranger">
+    <type>integer</type>
+    <category>pio</category>
+    <group>pio_inparm</group>
+    <unmodifiable_via_user_nl>
+      must be set via xml variable XXX_PIO_REARRANGER, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
+    </unmodifiable_via_user_nl>
+    <valid_values>-99,1,2</valid_values>
+    <description>
+      Rearranger method for pio 1=box, 2=subset.
+    </description>
+    <pio_rearranger component="cpl">$CPL_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="atm">$ATM_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="lnd">$LND_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="ocn">$OCN_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="ice">$ICE_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="rof">$ROF_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="glc">$GLC_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="wav">$WAV_PIO_REARRANGER</pio_rearranger>
+    <pio_rearranger component="esp">-99</pio_rearranger>
+  </entry>
+
+  <entry id="pio_numiotasks">
+    <type>integer</type>
+    <category>pio</category>
+    <group>pio_inparm</group>
+    <unmodifiable_via_user_nl>
+      must be set via xml variable XXX_PIO_NUMTASKS, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
+    </unmodifiable_via_user_nl>
+    <description>
+      number of io tasks in pio used generically, component based value takes precedent.
+    </description>
+    <pio_numiotasks component="cpl">$CPL_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="atm">$ATM_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="lnd">$LND_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="ocn">$OCN_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="ice">$ICE_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="rof">$ROF_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="glc">$GLC_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="wav">$WAV_PIO_NUMTASKS</pio_numiotasks>
+    <pio_numiotasks component="esp">-99</pio_numiotasks>
+  </entry>
+
+  <entry id="pio_typename">
+    <type>char*64</type>
+    <category>pio</category>
+    <group>pio_inparm</group>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
+    <unmodifiable_via_user_nl>
+      must be set via xml variable XXX_PIO_TYPENAME, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
+    </unmodifiable_via_user_nl>
+    <description>
+      io type in pio used generically, component based value takes precedent.
+      valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
+    </description>
+    <pio_typename component="cpl">$CPL_PIO_TYPENAME</pio_typename>
+    <pio_typename component="atm">$ATM_PIO_TYPENAME</pio_typename>
+    <pio_typename component="lnd">$LND_PIO_TYPENAME</pio_typename>
+    <pio_typename component="ocn">$OCN_PIO_TYPENAME</pio_typename>
+    <pio_typename component="ice">$ICE_PIO_TYPENAME</pio_typename>
+    <pio_typename component="rof">$ROF_PIO_TYPENAME</pio_typename>
+    <pio_typename component="glc">$GLC_PIO_TYPENAME</pio_typename>
+    <pio_typename component="wav">$WAV_PIO_TYPENAME</pio_typename>
+    <pio_typename component="esp">nothing</pio_typename>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- group modelio               -->
+  <!-- =========================== -->
+
+  <entry id="diri">
+    <type>char*256</type>
+    <category>modelio</category>
+    <group>modelio</group>
+    <description>input directory (no longer needed)</description>
+  </entry>
+
+  <entry id="diro">
+    <type>char*256</type>
+    <category>modelio</category>
+    <group>modelio</group>
+    <description>directory for output log files</description>
+  </entry>
+
+  <entry id="logfile">
+    <type>char*256</type>
+    <category>modelio</category>
+    <group>modelio</group>
+    <description>name of component output log file</description>
+  </entry>
+
+</namelist_definition>
