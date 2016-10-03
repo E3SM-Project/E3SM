@@ -172,10 +172,6 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst[comp_model], comp, ntasks))
 
-        expect(not case.get_value("BUILD_THREADED")  and compiler == "nag",
-                   "it is not possible to run with OpenMP if using the NAG Fortran compiler")
-
-
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
         else:
@@ -191,6 +187,12 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
+            if thread_count > 1:
+                case.set_value("BUILD_THREADED", True)
+
+            expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
+                   "it is not possible to run with OpenMP if using the NAG Fortran compiler")
+
 
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
