@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+
+"""
+Script to query xml test lists.
+"""
+from __future__ import print_function
+from Tools.standard_script_setup import *
+from CIME.test_utils import get_tests_from_xml
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def parse_command_line(description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        description=description)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--xml-machine",
+                        help="Use this machine key in the lookup in testlist.xml, default is all")
+
+    parser.add_argument("--xml-compiler",
+                        help="Use this compiler key in the lookup in testlist.xml, default is all")
+
+    parser.add_argument("--xml-category",
+                        help="Use this category key in the lookup in testlist.xml, default is all")
+
+    parser.add_argument("--xml-testlist",
+                        help="Use this testlist to lookup tests, default specified in config_files.xml")
+
+    args = parser.parse_args()
+
+    return args
+
+###############################################################################
+def print_test_data(test_data, query_all_categories):
+    """
+    Args:
+        test_data (dict): dictionary of test data, containing at least these keys:
+            - name: full test name
+            - category: test category
+        query_all_categories (bool): if the query was for all categories
+            (as opposed to being for a single category)
+    """
+
+    if query_all_categories:
+        # If we're aggregating across all categories, then do some extra work to
+        # report tests separated by category
+        categories = sorted(set([item['category'] for item in test_data]))
+        max_category_len = max([len(category) for category in categories])
+        for category in categories:
+            test_subset = [one_test for one_test in test_data if
+                           one_test['category'] == category]
+            for one_test in test_subset:
+                print("%-*s: %s"%(max_category_len, category, one_test['name']))
+                # FIXME(wjs, 2016-10-02) User logger.info instead of print???
+    else:
+        # FIXME(wjs, 2016-10-02) Actually, probably delete this, just printing
+        # the category always (and so also delete the query_all_categories
+        # argument)
+        for one_test in test_data:
+            print("%s"%(one_test['name']))
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    args = parse_command_line(description)
+
+    test_data = get_tests_from_xml(args.xml_machine, args.xml_category,
+                                   args.xml_compiler, args.xml_testlist)
+
+    query_all_categories = (args.xml_category is None)
+    print_test_data(test_data, query_all_categories)
+    
+if __name__ == "__main__":
+    _main_func(__doc__)
