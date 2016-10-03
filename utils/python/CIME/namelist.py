@@ -650,11 +650,17 @@ def compress_literal_list(literals):
             # Otherwise, write out the previous literal and start tracking the
             # new one.
             rep_str = str(num_reps) + '*' if num_reps > 1 else ''
-            compressed.append(rep_str + str(old_literal))
+            if isinstance(old_literal, basestring):
+                compressed.append(rep_str + old_literal)
+            else:
+                compressed.append(rep_str + str(old_literal))
             old_literal = literal
             num_reps = 1
     rep_str = str(num_reps) + '*' if num_reps > 1 else ''
-    compressed.append(rep_str + str(old_literal))
+    if isinstance(old_literal, basestring):
+        compressed.append(rep_str + old_literal)
+    else:
+        compressed.append(rep_str + str(old_literal))
     return compressed 
 
 def merge_literal_lists(default, overwrite):
