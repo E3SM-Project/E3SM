@@ -349,7 +349,13 @@ class EnvBatch(EnvBase):
                 continue
             try:
                 prereq = case.get_resolved_value(self.get_value('prereq', subgroup=job))
-                prereq = eval(prereq)
+                # convert these to python logical
+                if prereq == 'TRUE':
+                    prereq = True
+                elif prereq == 'FALSE':
+                    prereq = False
+                else:
+                    prereq = eval(prereq)
             except:
                 expect(False,"Unable to evaluate prereq expression '%s' for job '%s'"%(self.get_value('prereq',subgroup=job), job))
             if prereq:
