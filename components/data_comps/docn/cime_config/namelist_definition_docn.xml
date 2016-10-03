@@ -67,8 +67,8 @@
     <category>streams</category>
     <group>derived</group>
     <description>does not appear in namelist - only used to set domain and data information</description>
-    <strm_data_file stream="copyall">$SSTICE_GRID_FILENAME</strm_data_file>
-    <strm_data_file stream="prescribed">$SSTICE_GRID_FILENAME</strm_data_file>
+    <strm_data_file stream="copyall">$SSTICE_DATA_FILENAME</strm_data_file>
+    <strm_data_file stream="prescribed">$SSTICE_DATA_FILENAME</strm_data_file>
   </entry>
 
   <entry id="strm_domdir">

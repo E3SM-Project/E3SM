@@ -116,6 +116,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
         config['presaero_flag'] = "none"
     else:
         config['presaero_flag'] = "active"
+    config['datamode'] = datm_mode
 
     #----------------------------------------------------
     # Construct the namelist generator.
@@ -147,7 +148,8 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     streams += anomaly_forcing
 
     #----------------------------------------------------
-    # For each stream, create stream text file and update input data list.
+    # For each stream, create stream text file and update  
+    # shr_strdata_nml group and input data list.
     #----------------------------------------------------
     for stream in streams:
 
@@ -172,12 +174,11 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
         if os.path.exists(user_stream_path):
             shutil.copyfile(user_stream_path, stream_path)
         else:
-            nmlgen.create_stream_file(config, stream, stream_path, data_list_path)
+            nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
 
     #----------------------------------------------------
-    # Create namelist
+    # Create `datm_nml` namelist group.
     #----------------------------------------------------
-    # Create namelist `shr_strdata_nml` namelist group.
     nmlgen.create_shr_strdata_nml()
     nmlgen.add_default("decomp")
     nmlgen.add_default("force_prognostic_true")

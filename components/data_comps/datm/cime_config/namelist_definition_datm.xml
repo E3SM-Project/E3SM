@@ -1815,6 +1815,7 @@
     <strm_offset stream="CPLHIST3HrWx.Solar">-10800</strm_offset>
     <strm_offset stream="CPLHIST3HrWx.Precip">-5400</strm_offset>
     <strm_offset stream="CPLHIST3HrWx.nonSolarNonPrecip">-5400</strm_offset>
+    <strm_offset presaero_flag="active" ispresaerostream="TRUE">0</strm_offset>
   </entry>
 
   <!-- ========================================================================================  -->
@@ -2221,9 +2222,9 @@
       default='unused'.
     </description>
     <factorfn>null</factorfn>
-    <factorfn stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
-    <factorfn stream="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
-    <factorfn stream="CORE2_IAF" atm_grid="01col">null</factorfn>
+    <factorfn datamode="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
+    <factorfn datamode="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
+    <factorfn datamode="CORE2_IAF" atm_grid="01col">null</factorfn>
   </entry>
 
   <entry id="presaero">
