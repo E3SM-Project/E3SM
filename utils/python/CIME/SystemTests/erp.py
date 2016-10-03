@@ -31,8 +31,10 @@ class ERP(SystemTestsCommon):
         with different numbers of mpi tasks.
         """
         if sharedlib_only:
-            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-            return
+            return self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+
+        import pdb
+        pdb.set_trace()
 
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
