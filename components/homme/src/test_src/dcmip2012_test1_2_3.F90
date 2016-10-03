@@ -980,12 +980,10 @@ IMPLICIT NONE
   real(8) :: d                ! Mountain Half-Width
   real(8) :: xi               ! Mountain Wavelength
 
-stop
-  ! Set orography parameters from namelist variables
-  !ueq = dcmip2_ueq
-  !h0  = dcmip2_h0
-  !d   = dcmip2_d
-  !xi  = dcmip2_xi
+  ueq =   20.0d0
+  h0  =  250.0d0
+  d   = 5000.0d0
+  xi  = 4000.0d0
 
   !-----------------------------------------------------------------------
   !    PHIS (surface geopotential)
