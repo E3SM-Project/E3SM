@@ -1730,6 +1730,10 @@ class S_TestManageAndQuery(unittest.TestCase):
         """Make sure that query_testlists runs successfully with the --count argument"""
         self._run_and_assert_query_testlist(extra_args="--count")
 
+    def test_query_testlists_list_runs(self):
+        """Make sure that query_testlists runs successfully with the --list argument"""
+        self._run_and_assert_query_testlist(extra_args="--list categories")
+
 ###############################################################################
 
 
