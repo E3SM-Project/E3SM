@@ -291,7 +291,7 @@ class SystemTestsCommon(object):
                 tolerance = self._case.get_value("TEST_MEMLEAK_TOLERANCE")
                 if tolerance is None:
                     tolerance = 0.1
-                expect(tolerance > 0.0 and tolerance < 1.0, "Bad value for memleak tolerance in test")
+                expect(tolerance > 0.0, "Bad value for memleak tolerance in test")
                 if memdiff < 0:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
                 elif memdiff < tolerance:

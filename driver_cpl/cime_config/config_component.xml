@@ -2896,7 +2896,7 @@
     <default_value>0.10</default_value>
     <group>test</group>
     <file>env_test.xml</file>
-    <desc>Expected memory usage growth for test</desc>
+    <desc>Expected relative memory usage growth for test</desc>
   </entry>
 
   <entry id="GENERATE_BASELINE">
