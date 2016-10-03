@@ -1,10 +1,15 @@
+; plot_z_lon
+;
+; Plots vertical cross section from interpolated data
+;
+; usage plot_z_lon t=(time_index) n=(variable_number)
+; n = (0,1,2) => (omega,u,v)
+
+
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"   
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"   
-
-; usage plot_z_lon t=(time_index) n=(variable_number)
-; n = (0,1,2) => (omega,u,v)
 
 begin
 

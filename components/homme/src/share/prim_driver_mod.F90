@@ -549,8 +549,8 @@ contains
     use asp_tests,            only: asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
     use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
     use column_model_mod,     only: InitColumnModel
-    use control_mod,          only: pertlim                     !used for homme temperature perturbations
-    use dcmip_tests,          only: dcmip2012_test2_0, dcmip2012_test3
+    use control_mod,          only: pertlim                     
+    use dcmip_tests,          only: dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3
     use held_suarez_mod,      only: hs0_init_state
 #endif
 
@@ -803,10 +803,10 @@ contains
           case('asp_rossby');         call asp_rossby       (elem, hybrid,hvcoord,nets,nete)
           case('asp_tracer');         call asp_tracer       (elem, hybrid,hvcoord,nets,nete)
           case('baroclinic');         call binst_init_state (elem, hybrid, nets, nete, hvcoord)
-          case('dcmip2012_test3');    call dcmip2012_test3  (elem, hybrid,hvcoord,nets,nete)
           case('dcmip2012_test2_0');  call dcmip2012_test2_0(elem, hybrid,hvcoord,nets,nete)
-          case('dcmip2012_test2_1'); !call dcmip2012_test2_1(elem, hybrid,hvcoord,nets,nete)
-          case('dcmip2012_test2_2'); !call dcmip2012_test2_2(elem, hybrid,hvcoord,nets,nete)
+          case('dcmip2012_test2_1');  call dcmip2012_test2_x(elem, hybrid,hvcoord,nets,nete,0)
+          case('dcmip2012_test2_2');  call dcmip2012_test2_x(elem, hybrid,hvcoord,nets,nete,1)
+          case('dcmip2012_test3');    call dcmip2012_test3  (elem, hybrid,hvcoord,nets,nete)
           case('held_suarez0');       call hs0_init_state   (elem, hvcoord,nets,nete,300.0_real_kind)
           case('jw_baroclinic');      call jw_baroclinic    (elem, hybrid,hvcoord,nets,nete)
           case default;               call abortmp('unrecognized test case')

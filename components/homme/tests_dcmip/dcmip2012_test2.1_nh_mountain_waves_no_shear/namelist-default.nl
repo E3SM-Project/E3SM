@@ -1,24 +1,26 @@
 !
-! namelist for dcmip2012 test2-0: steady-state atmosphere with orography
+! namelist for dcmip2012 test2-1: nonhydro mountain waves without shear
 !_______________________________________________________________________
 &ctl_nl
   nthreads          = 1
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
-  test_case         = "dcmip2012_test2_0"       ! test identifier
-  ne                = 30                        ! number of elements per cube face
+  test_case         = "dcmip2012_test2_1"       ! test identifier
+  ne                = 20                        ! number of elements per cube face
   qsize             = 1                         ! num tracer fields
-  ndays             = 6                         ! num simulation days: 0 = use nmax steps
-  statefreq         = 100                       ! number of steps between screen dumps
+  ndays             = 0                         ! num simulation days: 0 => use nmax steps
+  nmax              = 72000                     ! 7200s / 0.1s per step = 72000 steps
+  statefreq         = 2100                      ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
-  runtype           = 0                         ! 0 = new run
-  tstep             = 20                        ! largest timestep in seconds
+  runtype           = 0                         ! 0 => new run
+  tstep             = 0.1                       ! largest timestep in seconds
   integration       = 'explicit'
-  smooth            = 0                         ! timestep smooting
-  nu                = 3e14                      ! hyperviscosity
-  nu_s              = 3e14
+  smooth            = 0.05                      ! timestep smooting
+  nu                = 8e6                       ! reduced planet hyperviscosity hv/500^3
+  nu_s              = 8e6
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
+  rearth            = 12752.0                   ! reduced planet radius rearth = a/500.0
   omega             = 0.0                       ! earth angular speed = 0.0
 /
 &filter_nl/
@@ -30,12 +32,12 @@
 &vert_nl
   vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
-  vtop              = 2.05e-1                   ! vertical coordinate at top of atm (z=12000m)
+  vtop              = 3.2818e-2                 ! vertical coordinate at top of atm (z=30km)
 /
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
-  output_timeunits  = 2,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 4,                      ! 100 sec / 0.5 sec per step
+  output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
+  output_frequency  = 1000,                     ! 100s /0.1s = 1000 steps between outputs
   output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
