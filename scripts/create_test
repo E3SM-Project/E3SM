@@ -16,7 +16,7 @@ from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_t
 from CIME.XML.machines import Machines
 from CIME.case import Case
 
-import argparse, math, glob
+import argparse, math, glob, random
 
 logger = logging.getLogger(__name__)
 
@@ -178,8 +178,8 @@ OR
     parser.add_argument("-t", "--test-id",
                         help="Specify an 'id' for the test. This is simply a"
                         "string that is appended to the end of a test name."
-                        "If no testid is specified, then a time stamp will be"
-                        "used.")
+                        "If no testid is specified, then a time stamp plus random number"
+                        "will be used.")
 
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
@@ -257,7 +257,7 @@ OR
         args.no_batch = True
 
     if args.test_id is None:
-        args.test_id = CIME.utils.get_timestamp()
+        args.test_id = "%s_%s"%(CIME.utils.get_timestamp(), CIME.utils.id_generator())
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:

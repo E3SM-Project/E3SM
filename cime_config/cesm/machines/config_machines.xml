@@ -75,7 +75,7 @@
 	<arg name="num_tasks"> -n $TOTALPES</arg>
 	<!-- <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg> -->
 	<arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-	<arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
+	<arg name="thread_count"> -d {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -323,7 +323,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-	<arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -489,7 +489,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-     	<arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+     	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -669,7 +669,7 @@
 	<arg name="num_tasks" > -n $TOTALPES</arg>
 	<arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
 	<arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-	<arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
+	<arg name="thread_count" > -d {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -759,9 +759,16 @@
 	<command name="load">gnu/6.2.0</command>
       </modules>
       <modules>
-	<command name="load">mpt/2.14</command>
-	<command name="load">ncarcompilers/0.3.1</command>
+	<command name="load">mpt/2.15</command>
+	<command name="load">ncarcompilers/0.3.2</command>
+      </modules>
+      <modules mpilib="mpi-serial">
 	<command name="load">netcdf/4.4.1</command>
+      </modules>
+      <modules mpilib="mpt">
+	<command name="load">netcdf/4.4.1</command>
+<!--	<command name="load">netcdf-mpi/4.4.1</command> -->
+	<command name="load">pnetcdf/1.7.0</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -856,7 +863,7 @@
 	<arg name="locargs">--block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
 	<arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	<arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
-	<arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+	<arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
@@ -1167,7 +1174,7 @@
       <arguments>
         <arg name="num_tasks"> -n $TOTALPES</arg>
         <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-        <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
+        <arg name="thread_count"> -d {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1242,7 +1249,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-     	<arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+     	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mvapich2">
@@ -1250,7 +1257,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-     	<arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+     	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">

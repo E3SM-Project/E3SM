@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 """
-Change the suffix for the most recent batch of hist files. This allows us
-to save these results if we want to run the case again.
+Copy the most recent batch of hist files in a case, adding the given suffix.
+This allows us to save these results if we want to run the case again.
 """
 
 from standard_script_setup import *
 
 from CIME.case       import Case
-from CIME.hist_utils import move
+from CIME.hist_utils import copy
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -47,7 +47,7 @@ def _main_func(description):
 ###############################################################################
     suffix, caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot) as case:
-        move(case, suffix)
+        copy(case, suffix)
 
 if __name__ == "__main__":
     _main_func(__doc__)

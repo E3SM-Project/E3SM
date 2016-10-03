@@ -75,10 +75,10 @@ else
 endif
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move base" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_copy base" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$SCRIPTSROOT/Tools/component_compare_move base
+$SCRIPTSROOT/Tools/component_compare_copy base
 
 #======================================================================
 # do an initial run test with NINST 2, with the
@@ -117,10 +117,10 @@ else
 endif
 
 echo "moving relevant history files to suffix with commands " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move inst2mod"  >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_copy inst2mod"  >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$SCRIPTSROOT/Tools/component_compare_move inst2mod
+$SCRIPTSROOT/Tools/component_compare_copy inst2mod
 
 #======================================================================
 # Check test status for all relevant component history files

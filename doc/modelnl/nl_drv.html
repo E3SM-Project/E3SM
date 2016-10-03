@@ -2084,16 +2084,37 @@ grid.
 </entry>
 
 <entry
-id="rof2ocn_rmapname"
+id="rof2ocn_liq_rmapname"
 type="char*256"
 category="mapping"
 input_pathname="abs"
 group="seq_maps">
-runoff to ocn nearest neighbor plus smoothing conservative mapping file
+liq runoff to ocn nearest neighbor plus smoothing conservative mapping file
 </entry>
 
 <entry
-id="rof2ocn_rmaptype"
+id="rof2ocn_ice_rmapname"
+type="char*256"
+category="mapping"
+input_pathname="abs"
+group="seq_maps">
+ice runoff to ocn nearest neighbor plus smoothing conservative mapping file
+</entry>
+
+<entry
+id="rof2ocn_liq_rmaptype"
+type="char*256"
+category="mapping"
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry
+id="rof2ocn_ice_rmaptype"
 type="char*256"
 category="mapping"
 group="seq_maps">
@@ -3621,32 +3642,53 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="rof2ocn_rmapname_tr">
-    <td><a name="rof2ocn_rmapname"></a>
-        <img id="rof2ocn_rmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="rof2ocn_liq_rmapname_tr">
+    <td><a name="rof2ocn_liq_rmapname"></a>
+        <img id="rof2ocn_liq_rmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2ocn_rmapname')">rof2ocn_rmapname</a>
+             onclick="toggleHelp('rof2ocn_liq_rmapname')">rof2ocn_liq_rmapname</a>
         </code>
-        <div id="rof2ocn_rmapname_help" style="display: none;
+        <div id="rof2ocn_liq_rmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
 runoff to ocn nearest neighbor plus smoothing conservative mapping file
+
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="rof2ocn_rmaptype_tr">
-    <td><a name="rof2ocn_rmaptype"></a>
-        <img id="rof2ocn_rmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="rof2ocn_ice_rmapname_tr">
+    <td><a name="rof2ocn_ice_rmapname"></a>
+        <img id="rof2ocn_ice_rmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2ocn_rmaptype')">rof2ocn_rmaptype</a>
+             onclick="toggleHelp('rof2ocn_ice_rmapname')">rof2ocn_ice_rmapname</a>
         </code>
-        <div id="rof2ocn_rmaptype_help" style="display: none;
+        <div id="rof2ocn_ice_rmapname_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+runoff to ocn nearest neighbor plus smoothing conservative mapping file
+
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>seq_maps</td>
+  </tr>
+
+  <tr id="rof2ocn_liq_rmaptype_tr">
+    <td><a name="rof2ocn_liq_rmaptype"></a>
+        <img id="rof2ocn_liq_rmaptype_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('rof2ocn_liq_rmaptype')">rof2ocn_liq_rmaptype</a>
+        </code>
+        <div id="rof2ocn_liq_rmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -3661,6 +3703,29 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
+  <tr id="rof2ocn_ice_rmaptype_tr">
+    <td><a name="rof2ocn_ice_rmaptype"></a>
+        <img id="rof2ocn_ice_rmaptype_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('rof2ocn_ice_rmaptype')">rof2ocn_ice_rmaptype</a>
+        </code>
+        <div id="rof2ocn_ice_rmaptype_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>seq_maps</td>
+  </tr>
+
   <tr id="rof_gnam_tr">
     <td><a name="rof_gnam"></a>
         <img id="rof_gnam_arrow" src="./images/arrow_right.gif">

@@ -5,7 +5,9 @@ API for checking input for testcase
 from CIME.XML.standard_module_setup import *
 from CIME.utils import get_model
 
-import fnmatch
+import fnmatch, glob, shutil
+
+logger = logging.getLogger(__name__)
 
 # Should probably be in XML somewhere
 SVN_LOCS = {
@@ -53,6 +55,68 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
             os.chmod(full_path, 0664)
             logging.info("SUCCESS\n")
             return True
+
+###############################################################################
+def check_all_input_data(case):
+###############################################################################
+
+    success = check_input_data(case=case, download=True)
+    expect(success, "Failed to download input data")
+
+    get_refcase  = case.get_value("GET_REFCASE")
+    run_type     = case.get_value("RUN_TYPE")
+    continue_run = case.get_value("CONTINUE_RUN")
+
+    # We do not fully populate the inputdata directory on every
+    # machine and do not expect every user to download the 3TB+ of
+    # data in our inputdata repository. This code checks for the
+    # existence of inputdata in the local inputdata directory and
+    # attempts to download data from the server if it's needed and
+    # missing.
+    if get_refcase and run_type != "startup" and not continue_run:
+        din_loc_root = case.get_value("DIN_LOC_ROOT")
+        run_refdate  = case.get_value("RUN_REFDATE")
+        run_refcase  = case.get_value("RUN_REFCASE")
+        run_refdir   = case.get_value("RUN_REFDIR")
+        rundir       = case.get_value("RUNDIR")
+
+        refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
+        expect(os.path.isdir(refdir),
+"""
+*****************************************************************
+prestage ERROR: $refdir is not on local disk
+obtain this data from the svn input data repository
+> mkdir -p %s
+> cd %s
+> cd ..
+> svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/%s
+or set GET_REFCASE to FALSE in env_run.xml
+and prestage the restart data to $RUNDIR manually
+*****************************************************************""" % (refdir, refdir, refdir))
+
+        logger.info(" - Prestaging REFCASE (%s) to %s" % (refdir, rundir))
+
+        # prestage the reference case's files.
+
+        if (not os.path.exists(rundir)):
+            logger.debug("Creating run directory: %s"%rundir)
+            os.makedirs(rundir)
+
+        for rcfile in glob.iglob(os.path.join(refdir,"*%s*"%run_refcase)):
+            logger.debug("Staging file %s"%rcfile)
+            rcbaseline = os.path.basename(rcfile)
+            if not os.path.exists("%s/%s" % (rundir, rcbaseline)):
+                os.symlink(rcfile, "%s/%s" % ((rundir, rcbaseline)))
+
+        # copy the refcases' rpointer files to the run directory
+        for rpointerfile in  glob.iglob(os.path.join("%s","*rpointer*") % (refdir)):
+            logger.debug("Copy rpointer %s"%rpointerfile)
+            shutil.copy(rpointerfile, rundir)
+
+
+        for cam2file in  glob.iglob(os.path.join("%s","*.cam2.*") % rundir):
+            camfile = cam2file.replace("cam2", "cam")
+            os.symlink(cam2file, camfile)
 
 def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Buildconf", download=False):
     """

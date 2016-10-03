@@ -208,10 +208,10 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
-                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes)
+                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
-                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes)
+                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked

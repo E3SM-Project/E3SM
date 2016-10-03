@@ -19,6 +19,9 @@ ALL_PHASE_STATUSES = [TEST_PENDING_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
 TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in one of the COMPARE phases
 NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
 
+# Special strings that can appear in comments, indicating particular types of failures
+TEST_NO_BASELINES_COMMENT = "BFAIL" # Implies baseline directory is missing in the baseline comparison phase
+
 # The valid phases
 INITIAL_PHASE         = "INIT"
 CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
@@ -121,24 +124,23 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self):
+    def phase_statuses_dump(self, fd):
+        """
+        Args:
+            fd: file open for writing
+        """
         if self._phase_statuses:
             for phase, data in self._phase_statuses.iteritems():
                 status, comments = data
                 if not comments:
-                    logging.info("%s %s %s" % (status, self._test_name, phase))
+                    fd.write("%s %s %s\n" % (status, self._test_name, phase))
                 else:
-                    logging.info("%s %s %s %s" % (status, self._test_name, phase, comments))
+                    fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
 
     def flush(self):
         if self._phase_statuses:
             with open(self._filename, "w") as fd:
-                for phase, data in self._phase_statuses.iteritems():
-                    status, comments = data
-                    if not comments:
-                        fd.write("%s %s %s\n" % (status, self._test_name, phase))
-                    else:
-                        fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
+                self.phase_statuses_dump(fd)
 
     def _parse_test_status(self, file_contents):
         """

@@ -3,8 +3,9 @@ Functions for actions pertaining to history files.
 """
 
 from CIME.XML.standard_module_setup import *
+from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
-import logging, glob, os, shutil, re
+import logging, glob, os, shutil, re, stat
 logger = logging.getLogger(__name__)
 
 def _iter_model_file_substrs(case):
@@ -48,11 +49,11 @@ def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
     return histlist
 
 
-def move(case, suffix):
-    """
-    Change the suffix for the most recent batch of hist files in a case. This can
-    allow you to temporarily "save" these files so they won't be blown away if you
-    re-run the case.
+def copy(case, suffix):
+    """Copy the most recent batch of hist files in a case, adding the given suffix.
+
+    This can allow you to temporarily "save" these files so they won't be blown
+    away if you re-run the case.
 
     case - The case containing the files you want to save
     suffix - The string suffix you want to add to saved files, this can be used to find them later.
@@ -61,21 +62,34 @@ def move(case, suffix):
     testcase = case.get_value("CASE")
 
     # Loop over models
-    comments = "Moving hist files to suffix '%s'\n" % suffix
-    num_moved = 0
+    comments = "Copying hist files to suffix '%s'\n" % suffix
+    num_copied = 0
     for model in _iter_model_file_substrs(case):
-        comments += "  Moving hist files for model '%s'\n" % model
+        comments += "  Copying hist files for model '%s'\n" % model
         test_hists = _get_latest_hist_files(testcase, model, rundir)
-        num_moved += len(test_hists)
+        num_copied += len(test_hists)
         for test_hist in test_hists:
             new_file = "%s.%s" % (test_hist, suffix)
             if os.path.exists(new_file):
                 os.remove(new_file)
 
             comments += "    Copying '%s' to '%s'\n" % (test_hist, new_file)
+
+            # Need to copy rather than move in case there are some history files
+            # that will need to continue to be filled on the next phase; this
+            # can be the case for a restart run.
+            #
+            # (If it weren't for that possibility, a move/rename would be more
+            # robust here: The problem with a copy is that there can be
+            # confusion after the second run as to which files were created by
+            # the first run and which by the second. For example, if the second
+            # run fails to output any history files, the test will still pass,
+            # because the test system will think that run1's files were output
+            # by run2. But we live with that downside for the sake of the reason
+            # noted above.)
             shutil.copy(test_hist, new_file)
 
-    expect(num_moved > 0, "move failed: no hist files found in rundir '%s'" % rundir)
+    expect(num_copied > 0, "copy failed: no hist files found in rundir '%s'" % rundir)
 
     return comments
 
@@ -246,15 +260,15 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False):
     if mstr1 != mstr2:
         mstr = mstr1+mstr2
 
-    stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename, mstr))
+    cpr_stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename, mstr))
     if multiinst_cpl_compare:
         #  In a multiinstance test the cpl hist file will have a different number of
         # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
         # in this case we only want to check that the fields we are able to compare
         # have no differences.
-        return (stat == 0 and " 0 had non-zero differences" in out, out)
+        return (cpr_stat == 0 and " 0 had non-zero differences" in out, out)
     else:
-        return (stat == 0 and "files seem to be IDENTICAL" in out, out)
+        return (cpr_stat == 0 and "files seem to be IDENTICAL" in out, out)
 
 def compare_baseline(case, baseline_dir=None):
     """
@@ -277,7 +291,7 @@ def compare_baseline(case, baseline_dir=None):
 
     for bdir in dirs_to_check:
         if not os.path.isdir(bdir):
-            return False, "ERROR baseline directory '%s' does not exist" % bdir
+            return False, "ERROR %s baseline directory '%s' does not exist" % (TEST_NO_BASELINES_COMMENT,bdir)
 
     return _compare_hists(case, rundir, basecmp_dir)
 
@@ -368,5 +382,9 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
 
     expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
+    #make sure permissions are open in baseline directory
+    for root, _, files in os.walk(basegen_dir):
+        for name in files:
+            os.chmod(os.path.join(root,name), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
 
     return True, comments

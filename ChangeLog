@@ -1,6 +1,67 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 09-27-2016
+Tag: cime5.2.0-alpha01
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies: None
+
+Brief Summary: Bug fixes related to cesm2_0_beta02 testing, EBM liquid and ice mapping files seperated, RASM bug fix
+
+User interface changes: none
+
+Modified files: git diff --name-status
+M       cime_config/acme/config_archive.xml
+M       cime_config/acme/machines/buildlib.csm_share
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/acme/machines/config_pio.xml
+M       cime_config/cesm/machines/config_batch.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/config_tests.xml
+M       driver_cpl/bld/build-namelist
+M       driver_cpl/bld/namelist_files/namelist_definition_drv.xml
+M       driver_cpl/cime_config/buildnml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/driver/cesm_comp_mod.F90
+M       driver_cpl/driver/seq_diag_mct.F90
+M       driver_cpl/shr/seq_flds_mod.F90
+M       driver_cpl/shr/seq_infodata_mod.F90
+M       scripts/Tools/cs_status
+D       scripts/Tools/taskmaker
+M       scripts/Tools/xmlquery
+M       scripts/create_test
+A       utils/data_assimilation/da_no_data_mod.sh
+A       utils/python/CIME/SystemTests/dae.py
+M       utils/python/CIME/SystemTests/eri.py
+M       utils/python/CIME/SystemTests/pet.py
+M       utils/python/CIME/SystemTests/pfs.py
+M       utils/python/CIME/XML/entry_id.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/XML/env_mach_pes.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/XML/machines.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/check_input_data.py
+D       utils/python/CIME/task_maker.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/test_status.py
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 09-08-2016
 Tag: cime5.0.11
 Answer Changes: None
