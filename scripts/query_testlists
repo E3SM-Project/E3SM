@@ -34,33 +34,22 @@ def parse_command_line(description):
     return args
 
 ###############################################################################
-def print_test_data(test_data, query_all_categories):
+def print_test_data(test_data):
     """
     Args:
         test_data (dict): dictionary of test data, containing at least these keys:
             - name: full test name
             - category: test category
-        query_all_categories (bool): if the query was for all categories
-            (as opposed to being for a single category)
     """
 
-    if query_all_categories:
-        # If we're aggregating across all categories, then do some extra work to
-        # report tests separated by category
-        categories = sorted(set([item['category'] for item in test_data]))
-        max_category_len = max([len(category) for category in categories])
-        for category in categories:
-            test_subset = [one_test for one_test in test_data if
-                           one_test['category'] == category]
-            for one_test in test_subset:
-                print("%-*s: %s"%(max_category_len, category, one_test['name']))
-                # FIXME(wjs, 2016-10-02) User logger.info instead of print???
-    else:
-        # FIXME(wjs, 2016-10-02) Actually, probably delete this, just printing
-        # the category always (and so also delete the query_all_categories
-        # argument)
-        for one_test in test_data:
-            print("%s"%(one_test['name']))
+    categories = sorted(set([item['category'] for item in test_data]))
+    max_category_len = max([len(category) for category in categories])
+    for category in categories:
+        test_subset = [one_test for one_test in test_data if
+                       one_test['category'] == category]
+        for one_test in test_subset:
+            print("%-*s: %s"%(max_category_len, category, one_test['name']))
+            # FIXME(wjs, 2016-10-02) User logger.info instead of print???
 
 ###############################################################################
 def _main_func(description):
@@ -70,8 +59,7 @@ def _main_func(description):
     test_data = get_tests_from_xml(args.xml_machine, args.xml_category,
                                    args.xml_compiler, args.xml_testlist)
 
-    query_all_categories = (args.xml_category is None)
-    print_test_data(test_data, query_all_categories)
+    print_test_data(test_data)
     
 if __name__ == "__main__":
     _main_func(__doc__)
