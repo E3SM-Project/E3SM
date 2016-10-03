@@ -1709,16 +1709,26 @@ class I_TestCMakeMacros(H_TestMakeMacros):
 class S_TestManageAndQuery(unittest.TestCase):
     """Tests various scripts to manage and query xml files"""
 
-    def test_query_testlists_runs(self):
-        """Make sure that query_testlists runs successfully"""
+    def _run_and_assert_query_testlist(self, extra_args=""):
+        """Ensure that query_testlist runs successfully with the given extra arguments"""
 
         testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
 
-        # Simply make sure that query_testlists doesn't generate any errors when
-        # it runs. This helps ensure that changes in other utilities don't break
-        # query_testlists.
         run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s"%
                               (SCRIPT_DIR, testlist_allactive))
+
+    def test_query_testlists_runs(self):
+        """Make sure that query_testlists runs successfully
+
+        This simply makes sure that query_testlists doesn't generate any errors
+        when it runs. This helps ensure that changes in other utilities don't
+        break query_testlists.
+        """
+        self._run_and_assert_query_testlist()
+
+    def test_query_testlists_count_runs(self):
+        """Make sure that query_testlists runs successfully with the --count argument"""
+        self._run_and_assert_query_testlist(extra_args="--count")
 
 ###############################################################################
 

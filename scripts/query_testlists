@@ -17,6 +17,9 @@ def parse_command_line(description):
 
     CIME.utils.setup_standard_logging_options(parser)
 
+    parser.add_argument("--count", action="store_true",
+                        help="Rather than listing tests, just give counts by category/machine/compiler")
+
     parser.add_argument("--xml-machine",
                         help="Use this machine key in the lookup in testlist.xml, default is all")
 
@@ -37,6 +40,7 @@ def parse_command_line(description):
 
 ###############################################################################
 def print_test_data(test_data):
+###############################################################################
     """
     Args:
         test_data (dict): dictionary of test data, containing at least these keys:
@@ -53,6 +57,38 @@ def print_test_data(test_data):
             print("%-*s: %s"%(max_category_len, category, one_test['name']))
 
 ###############################################################################
+def count_test_data(test_data):
+###############################################################################
+    """
+    Args:
+        test_data (dict): dictionary of test data, containing at least these keys:
+            - name: full test name
+            - category: test category
+            - machine
+            - compiler
+    """
+
+    tab_stop = ' '*4
+
+    categories = sorted(set([item['category'] for item in test_data]))
+    for category in categories:
+        tests_this_category = [one_test for one_test in test_data if
+                               one_test['category'] == category]
+        print("%s: %d"%(category, len(tests_this_category)))
+
+        machines = sorted(set([item['machine'] for item in tests_this_category]))
+        for machine in machines:
+            tests_this_machine = [one_test for one_test in tests_this_category if
+                                  one_test['machine'] == machine]
+            print("%s%s: %d"%(tab_stop, machine, len(tests_this_machine)))
+
+            compilers = sorted(set([item['compiler'] for item in tests_this_machine]))
+            for compiler in compilers:
+                tests_this_compiler = [one_test for one_test in tests_this_machine if
+                                       one_test['compiler'] == compiler]
+                print("%s%s: %d"%(tab_stop*2, compiler, len(tests_this_compiler)))
+
+###############################################################################
 def _main_func(description):
 ###############################################################################
     args = parse_command_line(description)
@@ -63,7 +99,10 @@ def _main_func(description):
         xml_compiler = args.xml_compiler,
         xml_testlist = args.xml_testlist)
 
-    print_test_data(test_data)
+    if args.count:
+        count_test_data(test_data)
+    else:
+        print_test_data(test_data)
     
 if __name__ == "__main__":
     _main_func(__doc__)
