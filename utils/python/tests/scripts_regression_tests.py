@@ -1705,6 +1705,20 @@ class I_TestCMakeMacros(H_TestMakeMacros):
         test_xml = _wrap_config_build_xml(xml_string)
         return CMakeTester(self, get_macros(self._maker, test_xml, "CMake"))
 
+###############################################################################
+class S_TestManageAndQuery(unittest.TestCase):
+    """Tests various scripts to manage and query xml files"""
+
+    def test_query_testlists_runs(self):
+        """Make sure that query_testlists runs successfully"""
+
+        testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
+
+        # Simply make sure that query_testlists doesn't generate any errors when
+        # it runs. This helps ensure that changes in other utilities don't break
+        # query_testlists.
+        run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s"%
+                              (SCRIPT_DIR, testlist_allactive))
 
 ###############################################################################
 
