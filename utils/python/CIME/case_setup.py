@@ -8,7 +8,7 @@ from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.compilers     import Compilers
-from CIME.utils             import append_status, parse_test_name
+from CIME.utils             import append_status, parse_test_name, get_cime_root
 from CIME.user_mod_support  import apply_user_mods
 from CIME.test_status       import *
 
@@ -82,8 +82,8 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
     os.chdir(caseroot)
     msg = "case.setup starting"
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-
-    cimeroot = os.environ["CIMEROOT"]
+        
+    cimeroot = get_cime_root(case)
 
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
     din_loc_root = case.get_value("DIN_LOC_ROOT")
