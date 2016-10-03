@@ -1714,8 +1714,8 @@ class S_TestManageAndQuery(unittest.TestCase):
 
         testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
 
-        run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s"%
-                              (SCRIPT_DIR, testlist_allactive))
+        run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s %s"%
+                              (SCRIPT_DIR, testlist_allactive, extra_args))
 
     def test_query_testlists_runs(self):
         """Make sure that query_testlists runs successfully

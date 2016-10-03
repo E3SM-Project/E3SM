@@ -103,6 +103,6 @@ def _main_func(description):
         count_test_data(test_data)
     else:
         print_test_data(test_data)
-    
+
 if __name__ == "__main__":
     _main_func(__doc__)
