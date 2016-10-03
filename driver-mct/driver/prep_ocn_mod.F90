@@ -49,14 +49,15 @@ module prep_ocn_mod
   public :: prep_ocn_get_x2oacc_ox
   public :: prep_ocn_get_x2oacc_ox_cnt
 
-  public :: prep_ocn_get_mapper_Sa2o
-  public :: prep_ocn_get_mapper_Va2o
-  public :: prep_ocn_get_mapper_Fa2o
-  public :: prep_ocn_get_mapper_Fr2o
-  public :: prep_ocn_get_mapper_Rr2o
-  public :: prep_ocn_get_mapper_SFi2o
-  public :: prep_ocn_get_mapper_Rg2o
-  public :: prep_ocn_get_mapper_Sw2o
+  public :: prep_ocn_get_mapper_Sa2o  
+  public :: prep_ocn_get_mapper_Va2o  
+  public :: prep_ocn_get_mapper_Fa2o  
+  public :: prep_ocn_get_mapper_Fr2o  
+  public :: prep_ocn_get_mapper_Rr2o_liq  
+  public :: prep_ocn_get_mapper_Rr2o_ice  
+  public :: prep_ocn_get_mapper_SFi2o 
+  public :: prep_ocn_get_mapper_Rg2o  
+  public :: prep_ocn_get_mapper_Sw2o  
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -73,7 +74,8 @@ module prep_ocn_mod
   type(seq_map), pointer :: mapper_Va2o
   type(seq_map), pointer :: mapper_Fa2o
   type(seq_map), pointer :: mapper_Fr2o
-  type(seq_map), pointer :: mapper_Rr2o
+  type(seq_map), pointer :: mapper_Rr2o_liq
+  type(seq_map), pointer :: mapper_Rr2o_ice
   type(seq_map), pointer :: mapper_SFi2o
   type(seq_map), pointer :: mapper_Rg2o
   type(seq_map), pointer :: mapper_Sw2o
@@ -164,7 +166,8 @@ contains
     allocate(mapper_Va2o)
     allocate(mapper_Fa2o)
     allocate(mapper_Fr2o)
-    allocate(mapper_Rr2o)
+    allocate(mapper_Rr2o_liq)
+    allocate(mapper_Rr2o_ice)
     allocate(mapper_SFi2o)
     allocate(mapper_Rg2o)
     allocate(mapper_Sw2o)
@@ -289,11 +292,19 @@ contains
        if (rof_c2_ocn) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Rr2o'
+             write(logunit,F00) 'Initializing mapper_Rr2o_liq'
           end if
-          call seq_map_init_rcfile(mapper_Rr2o, rof(1), ocn(1), &
-               'seq_maps.rc', 'rof2ocn_rmapname:', 'rof2ocn_rmaptype:',samegrid_ro, &
-               'mapper_Rr2o initialization',esmf_map_flag)
+          call seq_map_init_rcfile(mapper_Rr2o_liq, rof(1), ocn(1), &
+               'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
+               'mapper_Rr2o_liq  initialization',esmf_map_flag)
+
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Rr2o_ice'
+          end if
+          call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
+               'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
+               'mapper_Rr2o_ice  initialization',esmf_map_flag)
 
           if (flood_present) then
              if (iamroot_CPLID) then
@@ -1189,16 +1200,19 @@ contains
     do eri = 1,num_inst_rof
        r2x_rx => component_get_c2x_cx(rof(eri))
 
-       call seq_map_map(mapper_Rr2o, r2x_rx, r2x_ox(eri), &
-            fldlist='Forr_rofl:Forr_rofi:                       &
-                    & Forr_rofl_16O:Forr_rofi_16O:Forr_rofl_18O: &
-                    & Forr_rofi_18O:Forr_rofl_HDO:Forr_rofi_HDO', norm=.false.)
+       call seq_map_map(mapper_Rr2o_liq, r2x_rx, r2x_ox(eri), &
+            fldlist='Forr_rofl:Forr_rofl_16O:Forr_rofl_18O:Forr_rofl_HDO', norm=.false.)
+
+       call seq_map_map(mapper_Rr2o_ice, r2x_rx, r2x_ox(eri), &
+            fldlist='Forr_rofi:Forr_rofi_16O:Forr_rofi_18O:Forr_rofi_HDO', norm=.false.)
+
        if (flood_present) then
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
                fldlist='Flrr_flood', norm=.true.)
        endif
     enddo
     call t_drvstopf  (trim(timer))
+
   end subroutine prep_ocn_calc_r2x_ox
 
   !================================================================================================
@@ -1306,10 +1320,15 @@ contains
     prep_ocn_get_mapper_Fr2o => mapper_Fr2o
   end function prep_ocn_get_mapper_Fr2o
 
-  function prep_ocn_get_mapper_Rr2o()
-    type(seq_map), pointer :: prep_ocn_get_mapper_Rr2o
-    prep_ocn_get_mapper_Rr2o => mapper_Rr2o
-  end function prep_ocn_get_mapper_Rr2o
+  function prep_ocn_get_mapper_Rr2o_liq()
+    type(seq_map), pointer :: prep_ocn_get_mapper_Rr2o_liq
+    prep_ocn_get_mapper_Rr2o_liq => mapper_Rr2o_liq  
+  end function prep_ocn_get_mapper_Rr2o_liq
+
+  function prep_ocn_get_mapper_Rr2o_ice()
+    type(seq_map), pointer :: prep_ocn_get_mapper_Rr2o_ice
+    prep_ocn_get_mapper_Rr2o_ice => mapper_Rr2o_ice
+  end function prep_ocn_get_mapper_Rr2o_ice
 
   function prep_ocn_get_mapper_SFi2o()
     type(seq_map), pointer :: prep_ocn_get_mapper_SFi2o

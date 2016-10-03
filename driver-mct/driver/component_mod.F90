@@ -467,9 +467,13 @@ contains
           gsmap_s => component_get_gsmap_cx(rof(1)) ! gsmap_rx
           dom_s   => component_get_dom_cx(rof(1))   ! dom_rx
 
-          call seq_map_readdata('seq_maps.rc', 'rof2ocn_rmapname:',mpicom_CPLID, CPLID, &
+          call seq_map_readdata('seq_maps.rc', 'rof2ocn_liq_rmapname:',mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
-               string='rof2ocn aream initialization')
+               string='rof2ocn liq aream initialization')
+
+          call seq_map_readdata('seq_maps.rc', 'rof2ocn_ice_rmapname:',mpicom_CPLID, CPLID, &
+               gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
+               string='rof2ocn ice aream initialization')
        endif
     end if
 

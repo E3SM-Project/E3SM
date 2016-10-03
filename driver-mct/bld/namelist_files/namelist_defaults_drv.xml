@@ -206,8 +206,9 @@
 <lnd2atm_smapname>$LND2ATM_SMAPNAME</lnd2atm_smapname>
 <lnd2rof_fmapname>$LND2ROF_FMAPNAME</lnd2rof_fmapname>
 <rof2lnd_fmapname>$ROF2LND_FMAPNAME</rof2lnd_fmapname>
-<rof2ocn_rmapname>$ROF2OCN_RMAPNAME</rof2ocn_rmapname>
 <rof2ocn_fmapname>$ROF2OCN_FMAPNAME</rof2ocn_fmapname>
+<rof2ocn_liq_rmapname>$ROF2OCN_LIQ_RMAPNAME</rof2ocn_liq_rmapname>
+<rof2ocn_ice_rmapname>$ROF2OCN_ICE_RMAPNAME</rof2ocn_ice_rmapname>
 <glc2ocn_rmapname>$GLC2OCN_RMAPNAME</glc2ocn_rmapname>
 <glc2ice_rmapname>$GLC2ICE_RMAPNAME</glc2ice_rmapname>
 <lnd2glc_fmapname>$LND2GLC_FMAPNAME</lnd2glc_fmapname>
@@ -231,7 +232,8 @@
 <lnd2rof_fmaptype>X</lnd2rof_fmaptype>
 <rof2lnd_fmaptype>Y</rof2lnd_fmaptype>
 <rof2ocn_fmaptype>Y</rof2ocn_fmaptype>
-<rof2ocn_rmaptype>Y</rof2ocn_rmaptype>
+<rof2ocn_liq_rmaptype>Y</rof2ocn_liq_rmaptype>
+<rof2ocn_ice_rmaptype>Y</rof2ocn_ice_rmaptype>
 <glc2ocn_rmaptype>Y</glc2ocn_rmaptype>
 <glc2ice_rmaptype>Y</glc2ice_rmaptype>
 <lnd2glc_fmaptype>X</lnd2glc_fmaptype>
@@ -255,7 +257,8 @@
 <lnd2rof_fmaptype BFBFLAG="TRUE">X</lnd2rof_fmaptype>
 <rof2lnd_fmaptype BFBFLAG="TRUE">X</rof2lnd_fmaptype>
 <rof2ocn_fmaptype BFBFLAG="TRUE">X</rof2ocn_fmaptype>
-<rof2ocn_rmaptype BFBFLAG="TRUE">X</rof2ocn_rmaptype>
+<rof2ocn_liq_rmaptype BFBFLAG="TRUE">X</rof2ocn_liq_rmaptype>
+<rof2ocn_ice_rmaptype BFBFLAG="TRUE">X</rof2ocn_ice_rmaptype>
 <glc2ocn_rmaptype BFBFLAG="TRUE">X</glc2ocn_rmaptype>
 <glc2ice_rmaptype BFBFLAG="TRUE">X</glc2ice_rmaptype>
 <lnd2glc_fmaptype BFBFLAG="TRUE">X</lnd2glc_fmaptype>
