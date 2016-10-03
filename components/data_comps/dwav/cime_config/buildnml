@@ -111,7 +111,8 @@ def _create_namelists(case, confdir, inst_string, infiles, definition_file):
     streams = nmlgen.get_streams()
 
     #----------------------------------------------------
-    # For each stream, create stream text file and update input data list.
+    # For each stream, create stream text file and update  
+    # shr_strdata_nml group and input data list.
     #----------------------------------------------------
     for stream in streams:
 
@@ -130,12 +131,11 @@ def _create_namelists(case, confdir, inst_string, infiles, definition_file):
         if os.path.exists(user_stream_path):
             shutil.copyfile(user_stream_path, stream_path)
         else:
-            nmlgen.create_stream_file(config, stream, stream_path, data_list_path)
+            nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
 
     #----------------------------------------------------
-    # Create namelist groups
+    # Create dwav_nml namelists group
     #----------------------------------------------------
-    # Create namelist `shr_strdata_nml` namelist group.
     nmlgen.create_shr_strdata_nml()
     nmlgen.add_default("decomp", "1d")
     nmlgen.add_default("force_prognostic_true", ".false.")

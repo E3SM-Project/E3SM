@@ -368,7 +368,7 @@ class NamelistGenerator(object):
                     new_lines.append(new_line)
         return "\n".join(new_lines)
 
-    def create_stream_file(self, config, #pylint:disable=too-many-locals
+    def create_stream_file_and_update_shr_strdata_nml(self, config, #pylint:disable=too-many-locals
                            stream, stream_path, data_list_path):
         """Write the pseudo-XML file corresponding to a given stream.
 
@@ -427,9 +427,9 @@ class NamelistGenerator(object):
                     continue
                 filepath = os.path.join(data_filepath, filename.strip())
                 input_data_list.write("file%d = %s\n" % (i+1, filepath))
-        self.update_streams_namelists(config, stream, stream_path)
+        self.update_shr_strdata_nml(config, stream, stream_path)
 
-    def update_streams_namelists(self, config, stream, stream_path):
+    def update_shr_strdata_nml(self, config, stream, stream_path):
         """Updates values for the `shr_strdata_nml` namelist group.
 
         This should be done once per stream, and it shouldn't usually be called

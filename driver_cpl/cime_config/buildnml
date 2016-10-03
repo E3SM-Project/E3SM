@@ -96,11 +96,16 @@ def _create_group_seq_infodata_inparm(case, cime_model, nmlgen):
     nmlgen.add_default('glc_gnam')
     nmlgen.add_default('wav_gnam')
 
-    start_type = case.get_value('RUN_TYPE')
-    if start_type == 'hybrid':
+    run_type = case.get_value('RUN_TYPE')
+    continue_run = case.get_value('CONTINUE_RUN')
+    if run_type == 'startup':
         start_type = 'startup'
-    if case.get_value('CONTINUE_RUN') == 'TRUE':
-        start_type = "continue"
+    if run_type == 'hybrid':
+        start_type = 'startup'
+    if run_type == 'branch':
+        start_type = 'branch'
+    if continue_run:
+        start_type = 'continue'
     nmlgen.add_default('start_type', value=start_type)
 
     nmlgen.add_default('brnch_retain_casename', value='.false.')
