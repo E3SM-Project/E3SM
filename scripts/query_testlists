@@ -31,6 +31,8 @@ def parse_command_line(description):
 
     args = parser.parse_args()
 
+    CIME.utils.handle_standard_logging_options(args)
+
     return args
 
 ###############################################################################
