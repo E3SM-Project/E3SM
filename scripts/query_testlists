@@ -51,15 +51,17 @@ def print_test_data(test_data):
                        one_test['category'] == category]
         for one_test in test_subset:
             print("%-*s: %s"%(max_category_len, category, one_test['name']))
-            # FIXME(wjs, 2016-10-02) User logger.info instead of print???
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
     args = parse_command_line(description)
 
-    test_data = get_tests_from_xml(args.xml_machine, args.xml_category,
-                                   args.xml_compiler, args.xml_testlist)
+    test_data = get_tests_from_xml(
+        xml_machine = args.xml_machine,
+        xml_category = args.xml_category,
+        xml_compiler = args.xml_compiler,
+        xml_testlist = args.xml_testlist)
 
     print_test_data(test_data)
     
