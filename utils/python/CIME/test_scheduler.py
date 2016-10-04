@@ -148,15 +148,15 @@ class TestScheduler(object):
 
         # Setup phases
         self._phases = list(PHASES)
-        # These will mark the -no phase as PENDING in TestStatus 
+        # These will mark the -no phase as PENDING in TestStatus
         if self._no_setup:
             i = self._phases.index(SETUP_PHASE)
             self._phases.insert(i, INCOMPLETE_PHASE)
-        if self._no_build:
+        elif self._no_build:
             i = self._phases.index(SHAREDLIB_BUILD_PHASE)
             self._phases.insert(i, INCOMPLETE_PHASE)
             self._phases.remove(MODEL_BUILD_PHASE)
-        if self._no_run:
+        elif self._no_run:
             i = self._phases.index(RUN_PHASE)
             self._phases.insert(i, INCOMPLETE_PHASE)
         if not self._baseline_cmp_name and not self._baseline_gen_name:

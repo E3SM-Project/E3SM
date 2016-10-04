@@ -82,7 +82,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
     os.chdir(caseroot)
     msg = "case.setup starting"
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-        
+
     cimeroot = get_cime_root(case)
 
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
