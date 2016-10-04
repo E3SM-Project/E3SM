@@ -1563,19 +1563,21 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
-  use dimensions_mod, only : np, nc, nlev, qsize, ntrac
-  use element_mod, only : element_t
-  use hybvcoord_mod, only : hvcoord_t
-  use control_mod, only : moisture, tracer_grid_type
-  use control_mod, only : TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
+
+  use dimensions_mod, only: np, nc, nlev, qsize, ntrac
+  use element_mod,    only: element_t
+  use hybvcoord_mod,  only: hvcoord_t
+  use control_mod,    only: moisture, tracer_grid_type
+  use control_mod,    only: TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
   use physical_constants, only: Cp
   use fvm_control_volume_mod, only : fvm_struct, n0_fvm
+
   implicit none
-  type (element_t)     , intent(inout) :: elem(:)
-  type(fvm_struct)     , intent(inout) :: fvm(:)
-  real (kind=real_kind), intent(in) :: dt_q
-  type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: np1,nets,nete,np1_qdp
+  type (element_t),       intent(inout) :: elem(:)
+  type(fvm_struct),       intent(inout) :: fvm(:)
+  real (kind=real_kind),  intent(in)    :: dt_q
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
   ! local
   integer :: i,j,k,ie,q
@@ -1680,9 +1682,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      enddo
 #endif
 
-
-
-
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,dp)
@@ -1699,36 +1698,33 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         enddo
      enddo
 
-     elem(ie)%state%T(:,:,:,np1) = elem(ie)%state%T(:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+     elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,np1)   + dt_q*elem(ie)%derived%FT(:,:,:,1)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+
   enddo
   end subroutine applyCAMforcing
 
 
 
   subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
-  use dimensions_mod, only : np, nlev, qsize
-  use element_mod, only : element_t
-  use hybvcoord_mod, only : hvcoord_t
+
+  use dimensions_mod, only: np, nlev, qsize
+  use element_mod,    only: element_t
+  use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
-  type (element_t)     , intent(inout) :: elem(:)
-  real (kind=real_kind), intent(in) :: dt_q
-  type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: np1,nets,nete
+  type (element_t)     ,  intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_q
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
 
-  ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
   logical :: wet
 
   do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1) = elem(ie)%state%T(:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt_q*elem(ie)%derived%FT(:,:,:,1)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
   enddo
   end subroutine applyCAMforcing_dynamics
 

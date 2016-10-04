@@ -925,7 +925,7 @@ END SUBROUTINE test2_steady_state_mountain
 
 SUBROUTINE test2_schaer_mountain (lon,lat,p,z,zcoords,hybrid_eta,hyam,hybm,shear,u,v,w,t,phis,ps,rho,q)
 
- ! use control_mod, only: dcmip2_ueq, dcmip2_h0, dcmip2_d, dcmip2_xi
+  use control_mod, only: dcmip2_x_ueq, dcmip2_x_h0, dcmip2_x_d, dcmip2_x_xi
 
 IMPLICIT NONE
 !-----------------------------------------------------------------------
@@ -980,10 +980,10 @@ IMPLICIT NONE
   real(8) :: d                ! Mountain Half-Width
   real(8) :: xi               ! Mountain Wavelength
 
-  ueq =   20.0d0
-  h0  =  250.0d0
-  d   = 5000.0d0
-  xi  = 4000.0d0
+  ueq = dcmip2_x_ueq
+  h0  = dcmip2_x_h0
+  d   = dcmip2_x_d
+  xi  = dcmip2_x_xi
 
   !-----------------------------------------------------------------------
   !    PHIS (surface geopotential)

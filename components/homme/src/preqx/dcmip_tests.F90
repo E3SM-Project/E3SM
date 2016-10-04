@@ -24,18 +24,24 @@ real(rl), parameter ::              &
   pi      = 3.141592654,            &
   p0      = 100000.0                  ! reference pressure
 
+! storage for dcmip2-x sponge layer
+real(rl), dimension(:,:,:,:), allocatable :: u0, v0
+real(rl):: zi(nlevp), zm(nlev)                                            ! z coordinates
+
 contains
 
 !_____________________________________________________________________
-function evenly_spaced_z(z_b,z_t) result(zi)
+subroutine get_evenly_spaced_z(zi,zm, zb,zt)
 
-  real(rl), intent(in) :: z_b,z_t   ! top and bottom coordinates
-  real(rl)             :: zi(nlevp) ! z at interfaces
+  real(rl), intent(in)    :: zb,zt      ! top and bottom coordinates
+  real(rl), intent(inout) :: zi(nlevp)  ! z at interfaces
+  real(rl), intent(inout) :: zm(nlev)   ! z at midpoints
   integer :: k
 
-  forall(k=1:nlevp) zi(k) = z_t-(k-1)*(z_t-z_b)/(nlevp-1)
+  forall(k=1:nlevp) zi(k) = zt-(k-1)*(zt-zb)/(nlevp-1)
+  zm = 0.5_rl*( zi(2:nlevp) + zi(1:nlev) )
 
-end function
+end subroutine
 
 !_____________________________________________________________________
 subroutine set_hybrid_coefficients(hv, hybrid, eta_t, c)
@@ -84,6 +90,8 @@ end subroutine
 
 !_____________________________________________________________________
 subroutine set_element_state(u,v,T,ps,phis,q, i,j,k,elem,hvcoord)
+
+  ! set element state variables at node i,j,k
 
   real(rl),         intent(in)    :: u,v,T,ps,phis,q
   integer,          intent(in)    :: i,j,k
@@ -135,12 +143,11 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q          ! pointwise field values
-  real(rl):: zi(nlevp)                                                  ! z coords of interfaces
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-0: steady state atmosphere with orography'
 
   ! set analytic vertical coordinates
-  zi            = evenly_spaced_z(0.0_rl, ztop)                         ! get evenly spaced z levels
+  call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                    ! get evenly spaced z levels
   hvcoord%etai  = (1.d0 - gamma/T0*zi)**exponent                        ! set eta levels from z in orography-free region
   call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
@@ -175,15 +182,15 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q          ! pointwise field values
-  real(rl):: zi(nlevp)                                                  ! z coords of interfaces
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-x: steady state atmosphere with orography'
 
   ! set analytic vertical coordinates
-  zi            = evenly_spaced_z(0.0_rl, ztop)                         ! get evenly spaced z levels
+  call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                    ! get evenly spaced z levels
   hvcoord%etai  = exp(-zi/H)                                            ! set eta levels from z in orography-free region
   call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+
 
   ! set initial conditions
   do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
@@ -191,6 +198,52 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
     call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,shear,u,v,w,T,phis,ps,rho,q)
     call set_element_state(u,v,T,ps,phis,q, i,j,k,elem(ie),hvcoord)
   enddo; enddo; enddo; enddo
+
+  ! store initial velocity fields for use in sponge layer
+  allocate( u0(np,np,nlev,nelemd) )
+  allocate( v0(np,np,nlev,nelemd) )
+
+  do ie = nets,nete
+    u0(:,:,:,ie) = elem(ie)%state%v(:,:,1,:,1)
+    v0(:,:,:,ie) = elem(ie)%state%v(:,:,2,:,1)
+  enddo
+
+end subroutine
+
+!_____________________________________________________________________
+subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer,            intent(in)            :: n                        ! time level index
+  real(rl),           intent(in)            :: dt                       ! time-step size
+
+  integer :: ie, k
+
+  real(8), parameter ::   &
+    tau     = 25.0,       &   ! rayleigh function relaxation time
+    ztop    = 30000.d0,		&   ! model top
+    zh      = 20000.d0        ! sponge-layer cutoff height
+
+  real(rl) :: f_d(nlev)                                                 ! damping function
+  real(rl) :: z(np,np,nlev)
+
+  ! Compute damping as a function of layer-midpoint height
+  where(zm .ge. zh)
+    f_d = sin(pi/2 *(zm - zh)/(ztop - zh))**2
+  elsewhere
+    f_d = 0.0d0
+  end where
+
+  ! apply sponge layer forcing to momentum terms
+  do ie=nets,nete
+    do k=1,nlev
+      elem(ie)%derived%FM(:,:,1,k,1) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,1,k,n) - u0(:,:,k,ie) )
+      elem(ie)%derived%FM(:,:,2,k,1) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,2,k,n) - v0(:,:,k,ie) )
+    enddo
+  enddo
 
 end subroutine
 
@@ -217,12 +270,11 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q          ! pointwise field values
   real(rl):: p_np1, p_n, dp                                             ! pressure thickness
-  real(rl):: zi(nlevp)                                                  ! z coords of interfaces
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 3-0: nonhydrostatic gravity waves'
 
   ! set analytic vertical coordinates
-  zi            = evenly_spaced_z(0.0_rl, ztop)                         ! get evenly spaced z levels
+  call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                   ! get evenly spaced z levels
   hvcoord%etai  = ( (bigG/T0)*(exp(-zi*N*N/g) -1 )+1 ) **(1.0/kappa)    ! set eta levels from z at equator
   call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)

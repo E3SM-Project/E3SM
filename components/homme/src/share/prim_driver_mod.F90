@@ -542,16 +542,14 @@ contains
     use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
     use prim_advection_mod,   only: prim_advec_init2, prim_advec_init_deriv, deriv
     use solver_init_mod,      only: solver_init2
+    use test_mod,             only: set_test_initial_conditions
+
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use thread_mod,           only: nthreads
 
 #ifndef CAM
-    use asp_tests,            only: asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
-    use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
     use column_model_mod,     only: InitColumnModel
     use control_mod,          only: pertlim                     
-    use dcmip_tests,          only: dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3
-    use held_suarez_mod,      only: hs0_init_state
 #endif
 
 #ifdef TRILINOS
@@ -789,103 +787,23 @@ contains
              elem(ie)%state%lnps(:,:,tl%nm1)  = elem(ie)%state%lnps(:,:,tl%n0)
           enddo
        endif ! runtype==2
-    else  ! initial run  RUNTYPE=0
 
-       ! initial run - compute initial condition
-       if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
+    else
 
-       ! set initial conditions for HOMME stand-alone tests cases
+      ! runtype=0: initial run
+      if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
+      call set_test_initial_conditions(elem,hybrid,hvcoord,tl,nets,nete,fvm)
+      if (hybrid%masterthread) write(iulog,*) '...done'
 
-       select case(test_case)
-          case('asp_baroclinic');     call asp_baroclinic   (elem, hybrid,hvcoord,nets,nete,fvm)
-          case('asp_gravity_wave');   call asp_gravity_wave (elem, hybrid,hvcoord,nets,nete, sub_case)
-          case('asp_mountain');       call asp_mountain     (elem, hybrid,hvcoord,nets,nete)
-          case('asp_rossby');         call asp_rossby       (elem, hybrid,hvcoord,nets,nete)
-          case('asp_tracer');         call asp_tracer       (elem, hybrid,hvcoord,nets,nete)
-          case('baroclinic');         call binst_init_state (elem, hybrid, nets, nete, hvcoord)
-          case('dcmip2012_test2_0');  call dcmip2012_test2_0(elem, hybrid,hvcoord,nets,nete)
-          case('dcmip2012_test2_1');  call dcmip2012_test2_x(elem, hybrid,hvcoord,nets,nete,0)
-          case('dcmip2012_test2_2');  call dcmip2012_test2_x(elem, hybrid,hvcoord,nets,nete,1)
-          case('dcmip2012_test3');    call dcmip2012_test3  (elem, hybrid,hvcoord,nets,nete)
-          case('held_suarez0');       call hs0_init_state   (elem, hvcoord,nets,nete,300.0_real_kind)
-          case('jw_baroclinic');      call jw_baroclinic    (elem, hybrid,hvcoord,nets,nete)
-          case default;               call abortmp('unrecognized test case')
-       endselect
+      ! scale PS to achieve prescribed dry mass
+      call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
 
-#if 0
-       ! ========================================================
-       ! Initialize the test cases
-       ! ========================================================
-       if (test_case(1:10) == "baroclinic") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing Polvani-Scott-Thomas baroclinic instability test'
-          end if
+      do ie=nets,nete
+        ! set perlim in ctl_nl namelist for temperature field initial perturbation
+        elem(ie)%state%T=elem(ie)%state%T * (1.0_real_kind + pertlim)
+      enddo
 
-          call binst_init_state(elem, hybrid,nets,nete,hvcoord)
-       else if (test_case(1:16) == "asp_gravity_wave") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing ASP gravity wave test'
-          end if
-          call asp_gravity_wave(elem, hybrid,hvcoord,nets,nete, sub_case)
-       else if (test_case(1:12) == "asp_mountain") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing ASP mountain Rossby test'
-          end if
-          call asp_mountain(elem, hybrid,hvcoord,nets,nete)
-       else if (test_case(1:10) == "asp_rossby") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing ASP Rossby Haurwitz test'
-          end if
-          call asp_rossby(elem, hybrid,hvcoord,nets,nete)
-       else if (test_case(1:10) == "asp_tracer") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing pure tracer advection tests'
-          end if
-          call asp_tracer(elem, hybrid,hvcoord,nets,nete)
-       else if (test_case(1:14) == "asp_baroclinic") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
-          end if
-          call asp_baroclinic(elem, hybrid,hvcoord,nets,nete,fvm)
-       else if (test_case(1:13) == "jw_baroclinic") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
-          end if
-          call jw_baroclinic(elem, hybrid,hvcoord,nets,nete)
-       else if (test_case(1:12) == "held_suarez0") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing Held-Suarez primitive equations test'
-          end if
-          call hs0_init_state(elem, hvcoord,nets,nete,300.0_real_kind)
-       else if (test_case(1:12) == "dcmip2_schar") then
-          if (hybrid%masterthread) then
-             write(iulog,*) 'initializing DCMIP2 test 2-0'
-          end if
-          call dcmip2_schar(elem, hybrid,hvcoord,nets,nete)
-       else
-          call abortmp('Error: unrecognized test case')
-       endif
-
-       if (hybrid%masterthread) then
-          write(iulog,*) '...done'
-       end if
-#endif
-
-       ! scale PS to achieve prescribed dry mass
-       call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
-
-       do ie=nets,nete
-
-          elem(ie)%state%T=elem(ie)%state%T &
-                * (1.0_real_kind + pertlim)  ! set perlim in ctl_nl namelist for
-                                             ! temperature field initial
-                                             ! perterbation
-       enddo
- 
-       ! ========================================
-       ! Print state and movie output
-       ! ========================================
-    end if  ! runtype
+    endif !runtype
 
 #endif
 !$OMP MASTER
@@ -1246,80 +1164,75 @@ contains
 
 !=======================================================================================================!
 
-
   subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,nsubstep)
-!
-!   advance all variables (u,v,T,ps,Q,C) from time t to t + dt_q
-!
-!   input:
-!       tl%nm1   not used
-!       tl%n0    data at time t
-!       tl%np1   new values at t+dt_q
-!
-!   then we update timelevel pointers:
-!       tl%nm1 = tl%n0
-!       tl%n0  = tl%np1
-!   so that:
-!       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
-!       tl%n0    time t + dt_q
-!
-!
-    use hybvcoord_mod, only : hvcoord_t
-    use time_mod, only : TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
-    use control_mod, only: statefreq,&
-           energy_fixer, ftype, qsplit, rsplit, test_cfldep, disable_diagnostics
-    use prim_advance_mod, only : applycamforcing, &
-                                 applycamforcing_dynamics
-    use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
-    use parallel_mod, only : abortmp
-    use reduction_mod, only : parallelmax
-    use prim_advection_mod, only : vertical_remap
-    use fvm_control_volume_mod, only : n0_fvm
+
+    !   advance dynamic variables and tracers (u,v,T,ps,Q,C) from time t to t + dt_q
+    !
+    !   input:
+    !       tl%nm1   not used
+    !       tl%n0    data at time t
+    !       tl%np1   new values at t+dt_q
+    !
+    !   then we update timelevel pointers:
+    !       tl%nm1 = tl%n0
+    !       tl%n0  = tl%np1
+    !   so that:
+    !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
+    !       tl%n0    time t + dt_q
+
+    use control_mod,        only: statefreq, energy_fixer, ftype, qsplit, rsplit, test_cfldep, disable_diagnostics
+    use fvm_control_volume_mod, only: n0_fvm
+    use hybvcoord_mod,      only: hvcoord_t
+    use parallel_mod,       only: abortmp
+    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics
+    use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
+    use prim_advection_mod, only: vertical_remap
+    use reduction_mod,      only: parallelmax
+    use test_mod,           only: apply_test_forcing
+    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
+
 #if USE_OPENACC
-    use openacc_utils_mod, only: copy_qdp_h2d, copy_qdp_d2h
+    use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
 
     type (element_t) ,    intent(inout) :: elem(:)
-    type(fvm_struct),     intent(inout) :: fvm(:)
-    type (hybrid_t),      intent(in)    :: hybrid   ! distributed parallel structure (shared)
-    type (hvcoord_t),     intent(in)    :: hvcoord  ! hybrid vertical coordinate struct
-    integer,              intent(in)    :: nets     ! starting thread element number (private)
-    integer,              intent(in)    :: nete     ! ending thread element number   (private)
-    real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
+    type (fvm_struct),    intent(inout) :: fvm(:)
+    type (hybrid_t),      intent(in)    :: hybrid                       ! distributed parallel structure (shared)
+    type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+    integer,              intent(in)    :: nets                         ! starting thread element number (private)
+    integer,              intent(in)    :: nete                         ! ending thread element number   (private)
+    real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
     type (TimeLevel_t),   intent(inout) :: tl
-    integer,              intent(in)    :: nsubstep ! nsubstep = 1 .. nsplit
+    integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
-    real(kind=real_kind) :: st,st1,dp,dt_q,dt_remap
-    integer :: ie,t,q,k,i,j,n
+    real(kind=real_kind) :: dp, dt_q, dt_remap
+    real(kind=real_kind) :: dp_np1(np,np)
+    integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
-
-    real (kind=real_kind) :: maxcflx, maxcfly
-    real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics, compute_energy
 
-    ! ===================================
-    ! Main timestepping loop
-    ! ===================================
-    dt_q = dt*qsplit
-    dt_remap = dt_q
+    ! compute timesteps for tracer transport and vertical remap
+
+    dt_q      = dt*qsplit
+    dt_remap  = dt_q
     nstep_end = tl%nstep + qsplit
     if (rsplit>0) then
-       dt_remap=dt_q*rsplit   ! rsplit=0 means use eulerian code, not vert. lagrange
+       dt_remap  = dt_q*rsplit   ! rsplit=0 means use eulerian code, not vert. lagrange
        nstep_end = tl%nstep + qsplit*rsplit  ! nstep at end of this routine
     endif
 
-    ! compute diagnostics and energy for STDOUT
-    ! compute energy if we are using an energy fixer
-    compute_diagnostics=.false.
-    compute_energy=energy_fixer > 0
+    ! activate energy diagnostics if using an energy fixer
+    compute_energy = energy_fixer > 0
 
+    ! activate diagnostics periodically for display to stdout
+    compute_diagnostics   = .false.
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
-       compute_diagnostics=.true.
-       compute_energy = .true.
+       compute_diagnostics= .true.
+       compute_energy     = .true.
     endif
+    if(disable_diagnostics) compute_diagnostics= .false.
 
-    if(disable_diagnostics) compute_diagnostics=.false.
-
+    ! compute scalar diagnostics if currently active
     if (compute_diagnostics) then
       call t_startf("prim_diag_scalars")
       call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
@@ -1327,21 +1240,30 @@ contains
     endif
 
 #ifdef CAM
-    ! ftype=2  Q was adjusted by physics, but apply u,T forcing here
-    ! ftype=1  forcing was applied time-split in CAM coupling layer
-    ! ftype=0 means forcing apply here
-    ! ftype=-1 do not apply forcing
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp)
+
+    ! Apply CAM Physics forcing
+
+    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
+    !   ftype= 1: forcing was applied time-split in CAM coupling layer
+    !   ftype= 0: apply all forcing here
+    !   ftype=-1: do not apply forcing
+
+    call TimeLevel_Qdp(tl, qsplit, n0_qdp)
+
     if (ftype==0) then
       call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing")
-    end if
-    if (ftype==2) then
+
+    elseif (ftype==2) then
       call t_startf("ApplyCAMForcing_dynamics")
       call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
+#else
+    ! Apply HOMME test case forcing
+    call apply_test_forcing(elem,fvm,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+
 #endif
 
     ! E(1) Energy after CAM forcing
@@ -1360,32 +1282,32 @@ contains
 
     ! initialize dp3d from ps
     if (rsplit>0) then
-    call t_startf("init_dp3d_from_ps")
-    do ie=nets,nete
-       do k=1,nlev
-          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-       enddo
-       ! DEBUGDP step: ps_v should not be used for rsplit>0 code during prim_step
-       ! vertical_remap.  so to this for debugging:
-!       elem(ie)%state%ps_v(:,:,tl%n0)=-9e9 !outcommented so the pre_scribed winds work with rsplit>0
-    enddo
-    call t_stopf("init_dp3d_from_ps")
+      call t_startf("init_dp3d_from_ps")
+      do ie=nets,nete
+         do k=1,nlev
+            elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+                 ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+         enddo
+         ! DEBUGDP step: ps_v should not be used for rsplit>0 code during prim_step
+         ! vertical_remap.  so to this for debugging:
+         ! elem(ie)%state%ps_v(:,:,tl%n0)=-9e9 !outcommented so the pre_scribed winds work with rsplit>0
+      enddo
+      call t_stopf("init_dp3d_from_ps")
     endif
 
 #if (USE_OPENACC)
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
-
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
     call copy_qdp_h2d( elem , n0_qdp )
     call t_stopf("copy_qdp_h2d")
 #endif
 
-    ! loop over rsplit vertically lagrangian timesteps
+    ! Loop over rsplit vertically lagrangian timesteps
     call t_startf("prim_step_rX")
     call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
     call t_stopf("prim_step_rX")
+
     do r=2,rsplit
        call TimeLevel_update(tl,"leapfrog")
        call t_startf("prim_step_rX")
@@ -1395,15 +1317,13 @@ contains
     ! defer final timelevel update until after remap and diagnostics
 
 #if (USE_OPENACC)
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
-
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
     call copy_qdp_d2h( elem , np1_qdp )
     call t_stopf("copy_qdp_h2d")
 #endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
     !  apply vertical remap
     !  always for tracers
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
@@ -1412,7 +1332,6 @@ contains
     ! note: time level update for fvm tracers takes place in fvm_mod
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
-
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
@@ -1437,7 +1356,6 @@ contains
        enddo
     enddo
     call t_stopf("prim_run_subcyle_diags")
-
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_remap - 2*dt
@@ -1483,7 +1401,6 @@ contains
     !   u(n0)    dynamics at  t+dt_remap
     !   u(np1)   undefined
 
-
     ! ============================================================
     ! Print some diagnostic information
     ! ============================================================
@@ -1491,9 +1408,6 @@ contains
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
     end if
   end subroutine prim_run_subcycle
-
-
-
 
 
 
