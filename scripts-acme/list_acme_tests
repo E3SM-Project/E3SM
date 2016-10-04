@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+"""
+List acme test suites. Can be used to show what's being tested. Can just
+list tested grids, compsets, etc.
+"""
+
+import acme_util
+from acme_util import expect
+acme_util.check_minimum_python_version(2, 7)
+
+import update_acme_tests
+
+import sys, argparse, os, doctest
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s <thing-to-list> [<test category> <test category> ...] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# List all tested compsets \033[0m
+    > %s compsets
+    \033[1;32m# List all compsets tested by acme_developer \033[0m
+    > %s compsets acme_developer
+    \033[1;32m# List all grids tested by acme_developer \033[0m
+    > %s grid acme_developer
+""" % ((os.path.basename(args[0]), ) * 6),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("thing_to_list", choices=("compsets", "grids", "testcases", "tests"),
+                        help="The thing you want to list")
+
+    parser.add_argument("categories", nargs="*",
+                        help="The test categories to list. Default will list all. Test categories: %s" % (", ".join(update_acme_tests.get_test_suites())))
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    if (not args.categories):
+        args.categories = update_acme_tests.get_test_suites()
+
+    return args.thing_to_list, args.categories
+
+###############################################################################
+def list_tests(thing_to_list, categories):
+###############################################################################
+    things = set()
+    for category in categories:
+        tests = update_acme_tests.get_test_suite(category)
+        for test in tests:
+            testcase, _, grid, compset = acme_util.parse_test_name(test)[:4]
+            if (thing_to_list == "compsets"):
+                things.add(compset)
+            elif (thing_to_list == "grids"):
+                things.add(grid)
+            elif (thing_to_list == "testcases"):
+                things.add(testcase)
+            elif (thing_to_list == "tests"):
+                things.add(test)
+            else:
+                expect(False, "Unrecognized thing to list '%s'" % thing_to_list)
+
+    print "Tested %s for test categories: %s" % (thing_to_list, ", ".join(categories))
+    for item in sorted(things):
+        print " ", item
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    thing_to_list, categories = parse_command_line(sys.argv, description)
+
+    acme_util.stop_buffering_output()
+
+    list_tests(thing_to_list, categories)
+
+if __name__ == "__main__":
+    _main_func(__doc__)

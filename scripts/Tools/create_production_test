@@ -1,0 +1,131 @@
+#!/usr/bin/env perl 
+#-----------------------------------------------------------------------------------------------
+#
+# create_production_test
+#
+# This utility allows the users to specify configuration
+# cesm tests from an existing case directory
+#
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+
+sub usage {
+    die <<EOF;
+NAME
+
+  create_production_test
+
+  Running this command will create a production restart test for the current case
+  The test case will be created in a parallel directory called "current_case_testname".
+
+  We use the following example to document running this script.
+  If the current case is in
+      /ptmp/user/current_case 
+  the production restart test will be created in
+      /ptmp/user/current_case_testname
+  where testname can be any of the tests currently supported.   The default is an ERS
+
+  possible testnames are 
+     ERS (exact restart from startup, 6 days + 5 days) 
+     ERT (exact restart from startup, 2 months + 1 month, default) 
+     ERI (hybrid/branch/exact restart test, 3+19/10+9/5+4 days) 
+     LAR (long term archive test) 
+     PFS (performance test setup) 
+     NCK (multi-instance validation vs single instance (default length)) 
+     CME (compare mct and esmf interfaces (10 days)) 
+
+  In order to run the test, you will need to
+    - cd to /ptmp/user/current_case_testname
+    - run the build script interactively (current_case_testname.build)
+    - submit the test script(current_case_testname.submit).
+    - The result of the test will be in documented in
+       /ptmp/user/current_case_testname/TestStatus
+
+SYNOPSIS
+
+   create_production_test -help
+
+   create_production_test -test testname
+ 
+   create_production_test 
+
+EOF
+}
+
+my %opts;
+my @allowedtests = qw(ERS ERS_Lm3 ERI LAR PFS NCK CME);
+
+GetOptions(
+	   "test=s" => \$opts{'test'},
+	   "h|help" => \$opts{'help'},) or usage();
+
+usage() if $opts{'help'};
+
+my $test;
+if ($opts{'test'}) {
+    $test = $opts{'test'};
+    my $accepttest;
+    foreach my $allowedtest (@allowedtests) { 
+	if ($test eq $allowedtest) {
+	    $accepttest = 'yes';
+	    last;
+	}
+    }
+    if (! $accepttest) {
+	print " ERROR: allowed supported tests are @allowedtests \n";
+	die "        $test is not part of the allowed supported tests \n";
+    }
+} else {
+    $test = "ERS_Lm3";   # default test
+}
+
+my $caseroot = getcwd();
+
+my $dirs = "$caseroot/Tools";
+unshift @INC, $dirs;
+
+require ConfigCase;
+
+#-----------------------------------------------------------------------------------------------
+# Read $caseroot xml files and 
+#-----------------------------------------------------------------------------------------------
+
+my $cimeroot = `./xmlquery CIMEROOT -value`;
+my $casename = `./xmlquery CASE     -value`;
+my $testroot = "$caseroot/..";
+my $testname = "${casename}_${test}";
+
+print "\nCreating test ${testroot}/${testname}\n";
+
+system("$cimeroot/scripts/create_clone -case $testroot/$testname -clone $caseroot -testname $test");
+
+# Write env_test.xml, needed by the test environment setup 
+my $testenv = ConfigCase->new("${cimeroot}/scripts/Tools/config_definition.xml");
+$testenv->set('TESTCASE', $test);
+my $testid = `date +%y%m%d-%H%M%S`;
+chomp $testid;
+
+$testenv->set('TEST_TESTID'		, $testid);
+$testenv->set('TEST_ARGV'		, 'UNSET');
+$testenv->set('CASEBASEID'		, 'UNSET');
+$testenv->set('BASELINE_NAME_GEN'	, 'UNSET');
+$testenv->set('BASELINE_NAME_CMP'	, 'UNSET');
+$testenv->set('BASEGEN_CASE'		, 'UNSET');
+$testenv->set('BASECMP_CASE'		, 'UNSET');
+$testenv->set('CLEANUP'			, 'FALSE');
+$testenv->set('BASELINE_ROOT'		, 'UNSET');
+$testenv->set('GENERATE_BASELINE'	, 'FALSE');
+$testenv->set('COMPARE_BASELINE'	, 'FALSE');
+$testenv->write_file("$testroot/$testname/env_test.xml");
+
+chdir("$testroot/$testname");
+
+my $caseroot_test = `./xmlquery CASEROOT -value`;
+
+system("$cimeroot/scripts/Tools/testcase_setup -caseroot $caseroot_test");

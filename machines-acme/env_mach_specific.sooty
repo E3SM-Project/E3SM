@@ -1,0 +1,34 @@
+#! /bin/csh -f
+
+#NOTE: "module purge" command doesn't work on Sooty
+#      I am using a script (set_path) to reset path
+
+source /etc/profile.d/modules.csh
+unsetenv LD_LIBRARY_PATH
+unsetenv NETCDF
+source ~sing201/files_cshrc/set_path
+
+module load cmake/3.0.0
+
+
+if ( $COMPILER == "pgi" ) then
+    module load pgi/14.1
+    module load mpi/mvapich2/1.7/pgi/11.10 
+    module load netcdf/4.1.3/pgi/12.2
+endif
+if ( $COMPILER == "intel" ) then
+    module load intel/14.0.2
+    module load mpi/mvapich2/1.7/intel/11.1
+    module load netcdf/4.1.1/intel
+endif
+setenv NETCDF `where ncdump | sed s_/bin/ncdump__`
+
+
+#------------------------------------------
+
+limit coredumpsize 1000000
+limit stacksize unlimited
+
+if ( $?PERL ) then
+  printenv
+endif

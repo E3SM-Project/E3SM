@@ -1,0 +1,3 @@
+This testmods directory should not be used directly. Instead, it can be included
+by any testmods that wants to apply its user_nl changes to multi-instance as
+well as single-intance tests.

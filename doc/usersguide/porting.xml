@@ -1,0 +1,457 @@
+<chapter id="port">
+<title>Porting and Validating CESM on a new platform</title>
+
+<sect1 id="port_overview">
+<title>Porting Overview </title>
+
+<para> One of the first steps many users will have to address is
+getting the CESM model running on their local machine.  This section
+will describe the process of going about that.  In short, you should
+first call <command>create_newcase</command> using a "userdefined"
+machine name and get that case running. Second, you should take the
+results of the previous step and introduce your machine in the
+<filename>$CIMEROOT/machines/</filename> directory
+so that your local machine is supported out-of-the-box.  This greatly
+eases setting up cases and benefits groups of users by requiring the
+port be done only once.  Third you should validate the model on your
+machine.
+</para>
+
+<para>
+It is usually very helpful to assure that you can run a basic mpi parallel 
+program on your machine prior to attempting a CESM port.   Understanding 
+how to compile and run the program fhello_world_mpi.F90 shown here could potentially 
+save many hours of frustration.
+</para>
+<screen>
+program fhello_world_mpi.F90
+  use mpi
+  implicit none
+  integer ( kind = 4 ) error
+  integer ( kind = 4 ) id
+  integer p
+  character(len=MPI_MAX_PROCESSOR_NAME) :: name
+  integer clen
+  integer, allocatable :: mype(:)
+  real ( kind = 8 ) wtime
+
+  call MPI_Init ( error )
+  call MPI_Comm_size ( MPI_COMM_WORLD, p, error )
+  call MPI_Comm_rank ( MPI_COMM_WORLD, id, error )
+  if ( id == 0 ) then
+
+    wtime = MPI_Wtime ( )
+
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) 'HELLO_MPI - Master process:'
+    write ( *, '(a)' ) '  FORTRAN90/MPI version'
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) '  An MPI test program.'
+    write ( *, '(a)' ) ' '
+    write ( *, '(a,i8)' ) '  The number of processes is ', p
+    write ( *, '(a)' ) ' '
+
+  end if
+
+  call MPI_GET_PROCESSOR_NAME(NAME, CLEN, ERROR)
+
+  write ( *, '(a)' ) ' '
+  write ( *, '(a,i8,a,a)' ) '  Process ', id, ' says "Hello, world!" ',name(1:clen)
+
+  call MPI_Finalize ( error )
+
+end program
+</screen>
+
+<para>
+You will want to start with an X (i.e. commonly referred to as dead)
+compset running at a low resolution.  So you could, for instance,
+start with an X compset at resolution f45_g37.  This will allow you to
+determine whether all prerequisite software is in place and working for
+a simple parallel CESM configuration that requires minimal input data.
+Once that is working move to an A compset with resolution f45_g37.
+Once that's working, run a B compset at resolution f45_g37. Finally
+when all the previous steps have run correctly, run your target
+compset and resolution.  
+</para>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="port_createnewcase">
+<title>Step 1: Use create_newcase with a userdefined machine name </title>
+
+<para>
+This section describes how to set up a case using a userdefined machine
+name and then within that case, how to modify the scripts to get that
+case running on a local machine.
+</para>
+
+<orderedlist>
+
+<listitem><para>
+Run &create_newcase; wtih a  "userdefined" machine name. Then run <command>cesm_setup</command>
+in the new case directory.
+</para>
+<screen>
+> cd $CIMEROOT/scripts
+> create_newcase -case test1 \
+                 -res f45_g37 \
+                 -compset X \
+                 -mach userdefined
+> cd test1
+> cesm_setup
+</screen>
+
+<para>
+The output from &cesm_setup; will indicate which xml variables you are
+now required to set.
+</para>
+
+<screen>
+ERROR: must set xml variable OS to generate Macros file 
+ERROR: must set xml variable MAX_TASKS_PER_NODE to build the model 
+ERROR: must set xml variable MPILIB to build the model 
+ERROR: must set xml variable RUNDIR to build the model 
+ERROR: must set xml variable DIN_LOC_ROOT to build the model 
+ERROR: must set xml variable COMPILER to build the model 
+ERROR: must set xml variable EXEROOT to build the model 
+Correct above and issue cesm_setup again 
+</screen>
+
+<para>
+The definition of every env variable can be found on the <ulink url="../modelnl">CASEROOT xml page</ulink>. 
+Enter appropriate settings for the above xml variables
+in &env_build.xml;, &env_mach_pes.xml; and &env_run.xml;. Calling
+<command>cesm_setup</command> again should now produce a
+<filename>Macros</filename> file that can be used as a starting point
+for your port.  In addition build and run scripts will be generated.
+</para></listitem>
+
+<listitem><para> The next step is to edit the <filename>env_mach_specific</filename> and
+<filename>Macros</filename> files to get ready to build the model.
+The string USERDEFINED in these files indicate the locations where modifications
+are likely.  In particular <filename>env_mach_specific</filename> is
+where modules, paths, or machine environment variables need to be 
+set especially related to compilers, mpi, and netcdf.
+<filename>Macros</filename> is where the Makefile variables
+are set.  You can find the <filename>Makefile</filename> in the Tools directory.  In
+the <filename>Macros</filename>, modify SLIBS to include whatever machine specific
+libs are desired and include the netcdf library or libraries.  Then set NETCDF_PATH
+to the path of the netcdf directory.  This might be a hardwired path or it might
+be an env variable set in <filename>env_mach_specfic</filename> or through
+modules. You might need to modify other Macros variables such as MPI_PATH, but
+that depends on your particular system setup.  Often mpi is wrapped in the compiler
+commands like mpif90 automatically.</para>
+
+<para>
+As an example, suppose your machine uses Modules (i.e. the Modules package provides for
+the dynamic modification of a user's environment via modulefiles). 
+The following setting from env_mach_specific.bluewaters sets the compiler and netcdf
+versions.
+</para>
+<screen>
+# invoking modules sets $MPICH_DIR and $NETCDF_DIR
+if ( $COMPILER == "pgi" ) then
+    module load PrgEnv-pgi
+    module switch pgi       pgi/11.10.0        
+endif
+module load torque/2.5.10
+module load netcdf-hdf5parallel/4.1.3
+module load parallel-netcdf/1.2.0
+</screen>
+<para>
+that produces some env variables which can then be used in the generated Macros as follows:
+</para>
+<screen>
+MPI_PATH:= $(MPICH_DIR)
+NETCDF_PATH:= $(NETCDF_DIR)
+</screen>
+
+<para>
+So in this example the system module defines a variable NETCDF_DIR, 
+but CESM expects NETCDF_PATH to be set and that copy is made in the Macros file.
+
+While CESM supports use of pnetcdf in PIO (which requires setting
+PNETCDF_PATH in Macros), it is generally best to ignore that feature
+during initial porting. PIO works well with standard NetCDF.
+</para>
+</listitem>
+
+<listitem><para>
+Build the case
+</para>
+<screen>
+> ./test1.userdefined.build
+</screen>
+<para>
+This step will often fail if paths to compilers, compiler versions, or
+libraries are not set properly, if compiler options are not set
+properly, or if machine environment variables are not set properly.  
+Review and edit the <filename>env_mach_specific</filename> and
+<filename>Macros</filename> files, clean the build,
+</para>
+<screen>
+> ./test1.userdefined.clean_build
+</screen>
+<para>
+and try rebuilding again.
+</para></listitem>
+
+<listitem><para> Finally <filename>/test1.userdefined.run</filename> is the
+job submission or run script.  Modifications are needed to specify
+the local batch environment and the job launch command.  Again, the string
+USERDEFINED will indicate where those changes are needed.  Once the batch and
+launch commands are set, run the model using your local job submission command.  
+qsub is used here for example.
+</para>
+<screen>
+> qsub test1.userdefined.run
+</screen>
+<para>
+The job will fail to submit if the batch commands are not set properly.  The job
+could fail to run if the launch command is incorrect or if the batch commands are
+not set consistent with the job resource needs.  Review the run script and try
+resubmitting.
+</para></listitem>
+</orderedlist>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="port_adding_mach">
+<title>Step 2: Enabling out-of-the box capability for your machine </title>
+
+<para> Once a case is running, then the local setup for the case can
+be converted into a specific set of machine files, so future cases can
+be set up using your local machine name rather than "userdefined". In
+addition, new cases should be able to run out-of-the-box without going
+through step 1 above.  Basically, you will need to add files and
+modify files in the directory
+<filename>$CIMEROOT/machines</filename> to support
+your machine out-of-the-box.  This section describes how to add
+support for your machine to the CESM scripts in order to support your
+machine out-of-the box. </para>
+
+<orderedlist>
+
+<listitem><para> Pick a name that will be associated with your
+machine.  Generally, this will be identical to the name of your
+machine, but it could be anything.  "wilycoyote" will be used in the
+description to follow.  It is also helpful to identify as a starting
+point one or more <ulink url="../modelnl/machines.html">supported
+machines</ulink> that are similar to your machine.  To add wilycoyote
+to the list of supported machines, do the following:
+</para></listitem>
+
+<listitem><para> Edit <filename>config_machines.xml</filename> and add
+a section for "wilycoyote".  You can simply copy one of the existing
+entries and then edit it.  The machine specific env variables that
+need to be set in config_machines.xml for wilycoyote are already set in
+the env files in the test1 case directory that was created from the
+userdefined machine.  You will need to leverage the variables you used
+in the test1 case directory in Step1 above into the
+<filename>config_machines.xml</filename> section for wilycoyote.  While
+the compiler options for a given compiler are pretty consistent across
+machines, invoking the compiler and the local paths for libraries are
+not. There are several variable settings here.  The definition of
+these variables can be found in the <ulink
+url="../modelnl/env_build.html">env_build.xml</ulink>, <ulink
+url="../modelnl/env_run.html">env_run.xml</ulink> and <ulink
+url="../modelnl/env_mach_pes.html">env_mach_pes.xml</ulink> files.  Some
+of the important ones are MACH which should be set to wilycoyote,
+EXEROOT which should be set to a generic working directory like
+/tmp/scratch/$CCSMUSER/$CASE shared by and write accessable to all 
+compute nodes, DIN_LOC_ROOT which should be set to the
+path to the CESM inputdata directory (read accessable to all compute nodes), 
+BATCHQUERY and BATCHJOBS which
+specify the query and submit command lines for batch jobs and are used
+to chain jobs together in production, and MAX_TASKS_PER_NODE which set
+the maximum number of tasks allowed on each hardware node.
+</para></listitem>
+
+<listitem><para> Edit <filename>config_compilers.xml</filename> to
+translate the additions you made to the Macros file to support
+"wilycoyote" specific settings.  </para></listitem>
+
+<listitem><para> Create an <filename>env_mach_specific.wilycoyote</filename> file. This should be a
+copy of the env_mach_specific file from the test1 case directory in
+Step1 above.
+<screen>
+> cd $CIMEROOT/scripts/test1
+> cp env_mach_specific  $CIMEROOT/machines/env_mach_specific.wilycoyote
+</screen>
+</para></listitem>
+
+<listitem><para> Create an <filename>mkbatch.wilycoyote</filename>
+file.  The easiest way to do this is to find a machine closest to your
+machine and copy that file to
+<filename>mkbatch.wilycoyote</filename>. Then edit
+<filename>mkbatch.wilycoyote</filename> to match the changes made in
+the test1.userdefined.run file in the test1 case in Step1.  In
+particular, the batch commands and the job launching will probably
+need to be changed.  The batch commands and setup are the first
+section of the script.  The job launching can be found by searching
+for the string "CSM EXECUTION".  </para></listitem>
+
+<listitem><para>
+Test the new machine setup.  Create a new case based on test1 using the
+wilycoyote machine setup
+<screen>
+> cd $CIMEROOT/scripts
+> create_newcase -case test1_wilycoyote \
+                 -res f45_g37 \
+                 -compset X \
+                 -mach wilycoyote
+> cd test1_wilycoyote
+> ./cesm_setup   
+> ./test1_wilycoyote.build
+> qsub test1_wilycoyote.run
+</screen>
+The point is to confirm that test1_wilycoyote runs fine and is
+consistent with the original test1 case.  Once that works, test other
+configurations then move to port validation, see <xref
+linkend="port_process"/>.  
+You should expect that getting this to work will be an iterative
+process.  Changes will probably be made in both the
+<filename>config_machines.xml</filename> and in
+<filename>config_compilers.xml></filename> Whenever either of these
+machine files are updated, a new case should be set up.  Whenever
+something is changed in the case scripts to fix a problem, that change
+should be migrated back to the wilycoyote settings in the machine
+files.  Once a case is running, those changes in the case need to be
+backed out into the wilycoyote machine files and then those machine
+files can be tested with a new case.
+Eventually, the machine files should work for any user and any configuration
+for wilycoyote.
+</para></listitem>
+
+</orderedlist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="port_process">
+<title>Step 3: Port Validation</title>
+
+<para>The following port validation is recommended for any new
+machine.  Carrying out these steps does not guarantee the model is
+running properly in all cases nor that the model is scientifically
+valid on the new machine.  In addition to these tests, detailed
+validation should be carried out for any new production run.  That
+means verifying that model restarts are bit-for-bit identical with a
+baseline run, that the model is bit-for-bit reproducible when
+identical cases are run for several months, and that production cases
+are monitored very carefully as they integrate forward to identify any
+potential problems as early as possible.  These are recommended steps
+for validating a port and are largely functional tests.  Users are
+responsible for their own validation process, especially with respect
+to science validation.
+</para>
+
+<orderedlist>
+<listitem>
+<para>Verify functionality by performing these <link
+linkend="create_test">functionality tests.</link>
+</para>
+<screen>
+ERS_D.f19_g16.X
+ERS_D.T31_g37.A
+ERS_D.f19_g16.B1850CN
+ERI.ne30_g16.X
+ERI.T31_g37.A
+ERI.f19_g16.B1850CN
+ERS.ne30_ne30.F
+ERS.f19_g16.I
+ERS.T62_g16.C
+ERS.T62_g16.DTEST
+ERT.ne30_g16.B1850CN
+</screen>
+</listitem>
+
+<listitem>
+<para> Verify performance and scaling analysis.</para> 
+<orderedlist>
+
+<listitem><para> 
+Create one or two <link
+linkend="running_ccsm_loadbalance">load-balanced</link> configurations
+to check into <filename>Machines/config_pes.xml</filename> for the new
+machine.  </para></listitem>
+
+<listitem><para>
+Verify that performance and scaling are reasonable.</para></listitem> 
+
+<listitem><para> 
+Review timing summaries in $&CASEROOT; for load balance and throughput.
+</para></listitem> 
+
+<listitem><para> Review coupler "daily" timing output for timing
+inconsistencies.  As has been mentioned in the section on <link
+linkend="running_ccsm_loadbalance"> load balancing a case </link>,
+useful timing information is contained in cpl.log.$date file that is
+produced for every run. The cpl.log file contains the run time for
+each model day during the model run. This diagnostic is output as the
+model runs. You can search for tStamp in this file to see this
+information. This timing information is useful for tracking down
+temporal variability in model cost either due to inherent model
+variability cost (I/O, spin-up, seasonal, etc) or possibly due to
+variability due to hardware. The model daily cost is generally
+pretty constant unless I/O is written intermittently such as at the
+end of the month.
+
+</para></listitem>
+
+</orderedlist>
+</listitem>
+
+<listitem>
+<para> Perform validation (both functional and scientific):</para>
+<orderedlist>
+
+<listitem><para>
+Perform a <ulink url="http://www.cesm.ucar.edu/models/cesm1.1/cam/docs/port/">CAM error growth test</ulink>.
+</para></listitem>
+
+<listitem><para>
+Follow the <ulink
+url="http://www.cesm.ucar.edu/models/cesm1.0/cice/validation/index.html">CCSM4.0
+CICE port-validation procedure.</ulink>
+
+</para></listitem>
+
+<listitem><para>
+Follow the <ulink
+url="http://www.cesm.ucar.edu/models/cesm1.0/pop2/validation/index.html">CCSM4.0
+POP2 port-validation procedure.</ulink>
+</para></listitem>
+
+</orderedlist>
+
+</listitem>
+<listitem>
+<para>Perform two, one-year runs (using the expected load-balanced
+configuration) as separate job submissions and verify that
+atmosphere history files are bfb for the last month. Do this after
+some performance testing is complete; you may also combine this with
+the production test by running the first year as a single run and the
+second year as a multi-submission production run. This will test
+reproducibility, exact restart over the one-year timescale, and
+production capability all in one test.</para>
+</listitem>
+
+<listitem>
+<para>Carry out a 20-30 year 1.9x2.5_gx1v6 resolution, B_1850_CN
+compset simulation and compare the results with the diagnostics plots
+for the 1.9x2.5_gx1v6 Pre-Industrial Control (see the <ulink
+url="http://www.cesm.ucar.edu/experiments/cesm1.0/diagnostics/">
+CCSM4.0 diagnostics </ulink>).  Model output data for these runs will
+be available on the <ulink
+url="http://www.cesm.ucar.edu/models/cesm1.0/model_esg/">Earth System
+Grid (ESG) </ulink> as well. </para>
+</listitem>
+
+</orderedlist>
+
+</sect1>
+
+</chapter>
+

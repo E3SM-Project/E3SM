@@ -1,0 +1,10 @@
+<test_suite_list>
+  <suite name="Examples">
+    <directory relative_to="here" label="circle_area">
+      circle_area/tests
+    </directory>
+    <directory relative_to="here" label="interpolate_1d">
+      interpolate_1d/tests
+    </directory>
+  </suite>
+</test_suite_list>

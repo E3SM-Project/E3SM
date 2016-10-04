@@ -1,0 +1,282 @@
+#!/usr/bin/env python
+
+"""
+Analyze results from a test root area, finding namelist and non-BFB
+changes, and updating baselines. Purpose is, instead of re-running tests
+in generate mode, which is very slow, allow for very fast analsis and
+blessing of diffs.
+
+Be aware that restart test will overwrite the original namelist files
+with versions of the files that you should not bless.
+"""
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+
+import argparse, sys, os, glob, doctest, time
+
+import wait_for_tests, compare_namelists, simple_compare, create_test_impl
+from acme_util import expect, warning, verbose_print, run_cmd
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [-n] [-r <TESTROOT>] [-b <BRANCH>] [-c <COMPILER>] [<TEST> <TEST> ...] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# From most recent run, bless any namelist changes \033[0m
+    > %s -n
+    \033[1;32m# From most recent run, bless all changes \033[0m
+    > %s
+    \033[1;32m# From most recent run, bless changes to test foo and bar only \033[0m
+    > %s foo bar
+    \033[1;32m# From most recent run, bless only namelist changes to test foo and bar only \033[0m
+    > %s -n foo bar
+    \033[1;32m# From most recent run of jenkins, bless history changes for next \033[0m
+    > %s -r /home/jenkins/acme/scratch/jenkins -b next --hist-only
+""" % ((os.path.basename(args[0]), ) * 8),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_cime_root())
+    default_compiler      = acme_util.get_machine_info("COMPILERS")[0]
+    scratch_root          = acme_util.get_machine_info("CESMSCRATCHROOT")
+    default_testroot      = os.path.join(scratch_root)
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    parser.add_argument("-n", "--namelists-only", action="store_true",
+                        help="Only analyze namelists.")
+
+    parser.add_argument("--hist-only", action="store_true",
+                        help="Only analyze history files.")
+
+    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
+                        help="Name of baselines to use, corresponds to branch used.")
+
+    parser.add_argument("-c", "--compiler", default=default_compiler,
+                        help="Compiler of run you want to bless")
+
+    parser.add_argument("--report-only", action="store_true",
+                        help="Only report what files will be overwritten and why. Caution is a good thing when updating baselines")
+
+    parser.add_argument("-r", "--test-root", default=default_testroot,
+                        help="Path to test results that are being blessed")
+
+    parser.add_argument("-t", "--test-id",
+                        help="Limit processes to case dirs matching this test-id. Can be useful if mutiple runs dumped into the same dir.")
+
+    parser.add_argument("-f", "--force", action="store_true",
+                        help="Update every diff without asking. VERY DANGEROUS. Should only be used within testing scripts.")
+
+    parser.add_argument("bless_tests", nargs="*",
+                        help="When blessing, limit the bless to tests matching these regex")
+
+    args = parser.parse_args(args[1:])
+
+    expect(not (args.report_only and args.force),
+           "Makes no sense to use -r and -f simultaneously")
+    expect(not (args.namelists_only and args.hist_only),
+           "Makes no sense to use --namelists-only and --hist-only simultaneously")
+
+    acme_util.set_verbosity(args.verbose)
+
+    return args.baseline_name, args.test_root, args.compiler, args.test_id, args.namelists_only, args.hist_only, args.report_only, args.force, args.bless_tests
+
+###############################################################################
+def bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, report_only, force):
+###############################################################################
+    namelist_files = []
+
+    for root, _, files in os.walk(baseline_dir_for_test):
+        if (root == baseline_dir_for_test):
+            rel_root = ""
+        else:
+            rel_root = root.replace("%s/" % baseline_dir_for_test, "")
+
+        for file_ in files:
+            rel_file = os.path.join(rel_root, file_)
+
+            baseline_file = os.path.join(baseline_dir_for_test, rel_file)
+            testcase_file = os.path.join(testcase_dir_for_test, rel_file)
+
+            if (os.path.isfile(testcase_file) and (rel_root == "CaseDocs" or file_.startswith("user_nl"))):
+                if (compare_namelists.is_namelist_file(baseline_file)):
+                    if (not compare_namelists.compare_namelist_files(baseline_file, testcase_file, test_name)):
+                        print "Namelist files '%s' and '%s' did not match" % (baseline_file, testcase_file)
+                        print
+                        if (not report_only and
+                            (force or raw_input("Update this file (y/n)? ").upper() in ["Y", "YES"])):
+                            namelist_files.append((rel_file, rel_file))
+                else:
+                    if (not simple_compare.compare_files(baseline_file, testcase_file, test_name)):
+                        print "Simple files '%s' and '%s' did not match" % (baseline_file, testcase_file)
+                        print
+                        if (not report_only and
+                            (force or raw_input("Update this file (y/n)? ").upper() in ["Y", "YES"])):
+                            namelist_files.append((rel_file, rel_file))
+
+    # Update namelist files
+    if (namelist_files):
+        acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, namelist_files)
+
+###############################################################################
+def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force):
+###############################################################################
+    # Get user that test was run as (affects loc of hist files)
+    user = run_cmd(r"""grep CCSMUSER %s/env_case.xml | sed -E 's/.+value="(.+)".+/\1/g'""" % testcase_dir_for_test)
+    acme_root = acme_util.get_machine_info("CESMSCRATCHROOT", user=user)
+
+    case = os.path.basename(testcase_dir_for_test)
+    cime_root = acme_util.get_cime_root()
+    compgen = os.path.join(cime_root, "scripts", "Tools", "component_compgen_baseline.sh")
+    machine_env = os.path.join(cime_root, "machines-acme", "env_mach_specific.%s" % acme_util.probe_machine_name())
+    run_dir = os.path.join(acme_root, case, "run")
+    cprnc_loc = acme_util.get_machine_info("CPRNC_ROOT")
+    compgen_cmd = "tcsh -c 'source %s && %s -baseline_dir %s -testcase %s -testcase_base %s -test_dir %s -cprnc_exe %s -generate_tag %s'" % \
+                  (machine_env, compgen, baseline_dir_for_test, case, test_name, run_dir, cprnc_loc, baseline_tag)
+
+    check_compare = os.path.join(cime_root, "scripts", "Tools", "component_write_comparefail.pl")
+    stat, out, _ = run_cmd("%s %s 2>&1" % (check_compare, run_dir), ok_to_fail=True)
+
+    if (stat != 0):
+        # found diff, offer rebless
+        print out
+
+        if (not report_only and
+            (force or raw_input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
+            stat = run_cmd(compgen_cmd, ok_to_fail=True, verbose=True)[0]
+            if (stat != 0):
+                warning("Hist file bless FAILED for test %s" % test_name)
+                return False
+            else:
+                return True
+        else:
+            return True
+    else:
+        warning("Test '%s' was marked as DIFF but cprnc did not find diff?" % test_name)
+        return False
+
+###############################################################################
+def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
+###############################################################################
+    test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
+    test_status_files = glob.glob("%s/%s/TestStatus" % (test_root, test_id_glob))
+    expect(test_status_files, "No matching test cases found in for %s/%s/TestStatus" % (test_root, test_id_glob))
+
+    baseline_root = acme_util.get_machine_info("CCSM_BASELINE")
+    baseline_tag  = os.path.join(compiler, baseline_name)
+    baseline_area = os.path.join(baseline_root, baseline_tag)
+
+    # The env_mach_specific script may need these to be defined
+    os.environ["COMPILER"] = acme_util.get_machine_info("COMPILERS")[0] # this MUST match compiler that cprnc was built with
+    os.environ["MPILIB"] = acme_util.get_machine_info("MPILIBS")[0]
+
+    broken_blesses = []
+    for test_status_file in test_status_files:
+        test_result, test_name = wait_for_tests.parse_test_status_file(test_status_file)
+        if (bless_tests in [[], None] or acme_util.match_any(test_name, bless_tests)):
+            overall_result = wait_for_tests.reduce_stati(test_result)
+
+            # Compute namelists status, False implies it diffed
+            if (not hist_only):
+                if (create_test_impl.NAMELIST_PHASE in test_result):
+                    nl_no_bless = test_result[create_test_impl.NAMELIST_PHASE] == wait_for_tests.TEST_PASS_STATUS
+                else:
+                    warning("Test '%s' did not make it to namelist phase" % test_name)
+                    broken_blesses.append(test_name)
+                    nl_no_bless = True
+            else:
+                nl_no_bless = True
+
+            # Compute hist status, False implies it diffed
+            if (not namelists_only):
+                if (wait_for_tests.RUN_PHASE not in test_result):
+                    broken_blesses.append(test_name)
+                    warning("Test '%s' did not make it to run phase" % test_name)
+                    hist_no_bless = True
+                elif (test_result[wait_for_tests.RUN_PHASE] == wait_for_tests.TEST_PASS_STATUS):
+                    if (wait_for_tests.HIST_COMPARE_PHASE not in test_result):
+                        broken_blesses.append(test_name)
+                        warning("Test '%s' had no history compare phase" % test_name)
+                        hist_no_bless = True
+                    else:
+                        hist_no_bless = test_result[wait_for_tests.HIST_COMPARE_PHASE] == wait_for_tests.TEST_PASS_STATUS
+                else:
+                    broken_blesses.append(test_name)
+                    warning("Test '%s' did not pass, not safe to bless" % test_name)
+                    hist_no_bless = True
+            else:
+                hist_no_bless = True
+
+            # Now, do the bless
+            if ( (nl_no_bless and hist_no_bless) or (nl_no_bless and namelists_only) or (hist_no_bless and hist_only) ):
+                print "Nothing to bless for test:", test_name, " overall status:", overall_result
+            else:
+
+                print "###############################################################################"
+                print "Blessing results for test:", test_name, "most recent result:", overall_result
+                print "###############################################################################"
+                time.sleep(2)
+
+                # Get baseline dir for this test
+                baseline_dir_for_test = os.path.join(baseline_area, test_name)
+                if (not os.path.isdir(baseline_dir_for_test)):
+                    warning("Problem, baseline dir '%s' does not exist" % baseline_dir_for_test)
+                    broken_blesses.append(test_name)
+                    continue
+
+                # Get testcase dir for this test
+                if (test_id is None):
+                    # The full name already contains the compiler, so we just need to glob for the branch name
+                    globs = glob.glob("%s/%s*%s*" % (test_root, test_name, baseline_name))
+                else:
+                    globs = glob.glob("%s/%s%s" % (test_root, test_name, test_id_glob))
+
+                if (len(globs) != 1):
+                    warning("Expected exactly one match for testcase area for test '%s', found '%s'" % (test_name, globs))
+                    broken_blesses.append(test_name)
+                    continue
+
+                testcase_dir_for_test = globs[0]
+
+                # Bless namelists
+                if (not nl_no_bless):
+                    bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, report_only, force)
+
+                # Bless hist files
+                if (not hist_no_bless):
+                    if (not bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force)):
+                        broken_blesses.append(test_name)
+
+    # Make sure user knows that some tests were not blessed
+    for broken_bless in broken_blesses:
+        warning("FAILED TO BLESS TEST: %s" % broken_bless)
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    acme_util.stop_buffering_output()
+
+    baseline_name, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests = \
+        parse_command_line(sys.argv, description)
+
+    bless_test_results(baseline_name, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -1,0 +1,22 @@
+# These routines have problems with stacksize when omp is invoked add -qsmallstack to resolve
+SSOBJS = shr_reprosum_mod.o mo_sethet.o mo_drydep.o
+
+$(SSOBJS): %.o: %.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmallstack $<
+
+time_management.o: time_management.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
+
+# These routines benefit from -qnostrict without violating the bfb test
+PERFOBJS=\
+prim_advection_mod.o \
+edge_mod.o \
+derivative_mod.o \
+bndry_mod.o \
+prim_advance_mod.o \
+uwshcu.o \
+wetdep.o 
+ifeq ($(DEBUG),FALSE)
+  $(PERFOBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -qnostrict  $<
+endif
