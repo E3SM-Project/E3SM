@@ -32,6 +32,7 @@ OBJS = mpas_kind_types.o \
        mpas_field_routines.o \
        mpas_pool_routines.o \
        xml_stream_parser.o \
+       regex_matching.o \
        mpas_field_accessor.o
 
 all: framework $(DEPS)
@@ -90,7 +91,7 @@ mpas_io_units.o: mpas_kind_types.o
 
 mpas_threading.o: mpas_kind_types.o mpas_io_units.o
 
-mpas_stream_list.o: mpas_derived_types.o mpas_kind_types.o mpas_io_units.o mpas_io_streams.o mpas_timekeeping.o
+mpas_stream_list.o: mpas_derived_types.o mpas_kind_types.o mpas_io_units.o mpas_io_streams.o mpas_timekeeping.o regex_matching.o
 
 mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_derived_types.o mpas_io_units.o mpas_kind_types.o mpas_c_interfacing.o mpas_stream_list.o mpas_dmpar.o mpas_io.o mpas_threading.o
 
