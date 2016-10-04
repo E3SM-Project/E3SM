@@ -238,6 +238,11 @@ integer :: &
    frzdep_idx = -1
 
    logical :: allow_sed_supersat  ! allow supersaturated conditions after sedimentation loop
+   real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
+   real(r8) :: prc_coef1_in             = huge(1.0_r8)
+   real(r8) :: prc_exp_in               = huge(1.0_r8)
+   real(r8) :: prc_exp1_in              = huge(1.0_r8)
+   real(r8) :: cld_sed_in               = huge(1.0_r8) !scale fac for cloud sedimentation velocity
 
 interface p
    module procedure p1
@@ -360,7 +365,8 @@ subroutine micro_mg_cam_register
   logical :: save_subcol_microp ! If true, then need to store sub-columnized fields in pbuf
 
   call phys_getopts(use_subcol_microp_out = use_subcol_microp, &
-                    prog_modal_aero_out   = prog_modal_aero )
+                    prog_modal_aero_out   = prog_modal_aero, &
+                    micro_mg_accre_enhan_fac_out = micro_mg_accre_enhan_fac)
 
   ! Register microphysics constituents and save indices.
 
@@ -609,8 +615,12 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    !-----------------------------------------------------------------------
 
-   call phys_getopts(use_subcol_microp_out=use_subcol_microp, &
-                     do_clubb_sgs_out     =do_clubb_sgs)
+   call phys_getopts(use_subcol_microp_out= use_subcol_microp, &
+                     do_clubb_sgs_out     = do_clubb_sgs,      &
+                     prc_coef1_out        = prc_coef1_in,      &
+                     prc_exp_out          = prc_exp_in,        &
+                     prc_exp1_out         = prc_exp1_in,       &
+                     cld_sed_out          = cld_sed_in         )
 
    if (do_clubb_sgs) then
      allow_sed_supersat = .false.
@@ -671,7 +681,8 @@ subroutine micro_mg_cam_init(pbuf2d)
               micro_mg_dcs_tdep,             &
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
-              allow_sed_supersat, ice_sed_ai, errstring)
+              allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
+              prc_exp1_in, cld_sed_in, errstring)
       end select
    end select
 
@@ -994,7 +1005,7 @@ subroutine micro_mg_cam_init(pbuf2d)
       call pbuf_set_field(pbuf2d, acgcme_idx, 0._r8)
       call pbuf_set_field(pbuf2d, acnum_idx,  0)
       call pbuf_set_field(pbuf2d, relvar_idx, 2._r8)
-      call pbuf_set_field(pbuf2d, accre_enhan_idx, 1._r8)
+      call pbuf_set_field(pbuf2d, accre_enhan_idx, micro_mg_accre_enhan_fac)
       call pbuf_set_field(pbuf2d, am_evp_st_idx,  0._r8)
       call pbuf_set_field(pbuf2d, evprain_st_idx, 0._r8)
       call pbuf_set_field(pbuf2d, evpsnow_st_idx, 0._r8)

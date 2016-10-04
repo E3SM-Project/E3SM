@@ -4,7 +4,7 @@ my @groups = qw(run_modes
                 decomposition
                 init_setup
                 cvtgenerator
-                init_ssh_and_ssp
+                init_ssh_and_landicepressure
                 time_integration
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
@@ -68,6 +68,10 @@ my @groups = qw(run_modes
                 am_lagrparttrack
                 am_eliassenpalm
                 am_mixedlayerdepths
+                am_regionalstats
                 am_timeseriesstats
                 am_pointwisestats
+                am_debugdiagnostics
+                am_rpncalculator
+                am_transecttransport
                 );

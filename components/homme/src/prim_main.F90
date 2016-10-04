@@ -3,79 +3,53 @@
 #endif
 
 program prim_main
-  ! -----------------------------------------------
 #ifdef _PRIM
   use prim_driver_mod, only : prim_init1, prim_init2, prim_run, prim_finalize,&
                               leapfrog_bootstrap, prim_run_subcycle
   use hybvcoord_mod, only : hvcoord_t, hvcoord_init
-#else
-! use these for dg3d
-
 #endif
 
-  ! -----------------------------------------------
-  use parallel_mod, only : parallel_t, initmp, syncmp, haltmp, abortmp
-  ! -----------------------------------------------
-  use hybrid_mod, only : hybrid_t
-  ! -----------------------------------------------
-  use thread_mod, only : nthreads, vert_num_threads, omp_get_thread_num, &
-                         omp_set_num_threads, omp_get_nested, &
-                         omp_get_num_threads, omp_get_max_threads
-  ! ----------------------------------------------- 
-  use time_mod, only : tstep, nendstep, timelevel_t, TimeLevel_init
-  ! -----------------------------------------------
-  use dimensions_mod, only : nelemd, qsize, ntrac
-  ! -----------------------------------------------
-  use control_mod, only : restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
-  ! -----------------------------------------------
-  use domain_mod, only : domain1d_t, decompose
-  ! -----------------------------------------------
-  use element_mod, only : element_t
-  !-----------------------------------------------
-  use fvm_control_volume_mod, only : fvm_struct
-  use fvm_control_volume_mod, only : n0_fvm
-  use fvm_mod, only : fvm_init3
-  use spelt_mod, only : spelt_struct
-  ! -----------------------------------------------
-  use common_io_mod, only:  output_dir
-  ! -----------------------------------------------
+  use parallel_mod,     only: parallel_t, initmp, syncmp, haltmp, abortmp
+  use hybrid_mod,       only: hybrid_t
+  use thread_mod,       only: nthreads, vert_num_threads, omp_get_thread_num, &
+                              omp_set_num_threads, omp_get_nested, &
+                              omp_get_num_threads, omp_get_max_threads
+  use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init
+  use dimensions_mod,   only: nelemd, qsize, ntrac
+  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
+  use domain_mod,       only: domain1d_t, decompose
+  use element_mod,      only: element_t
+  use fvm_mod,          only: fvm_init3
+  use common_io_mod,    only: output_dir
+  use common_movie_mod, only: nextoutputstep
+  use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
+  use restart_io_mod ,  only: restartheader_t, writerestart
+  use hybrid_mod,       only: hybrid_create
+  use fvm_control_volume_mod, only: fvm_struct
+  use fvm_control_volume_mod, only: n0_fvm
+
 #ifdef _REFSOLN
   use prim_state_mod, only : prim_printstate_par
-  ! -----------------------------------------------
 #endif
-
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
   use interpolate_driver_mod, only : interpolate_driver
 #else
-  use prim_movie_mod, only : prim_movie_output, prim_movie_finish,prim_movie_init
+  use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
 #endif
-  use common_movie_mod, only : nextoutputstep
-  use perf_mod, only : t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
-
-  !-----------------
-  use restart_io_mod , only : restartheader_t, writerestart
-  !-----------------
-  use hybrid_mod, only : hybrid_create
 
 
-
-	
   implicit none
-  type (element_t), pointer  :: elem(:)
-#if defined(_SPELT)
-    type (spelt_struct), pointer   :: fvm(:)
-#else
-     type (fvm_struct), pointer   :: fvm(:)    
-#endif
 
-  type (hybrid_t)       :: hybrid ! parallel structure for shared memory/distributed memory
-  type (parallel_t)                    :: par  ! parallel structure for distributed memory programming
-  type (domain1d_t), pointer :: dom_mt(:)
-  type (RestartHeader_t)                  :: RestartHeader
-  type (TimeLevel_t)    :: tl             ! Main time level struct
-  type (hvcoord_t)     :: hvcoord         ! hybrid vertical coordinate struct
+  type (element_t),  pointer  :: elem(:)
+  type (fvm_struct), pointer  :: fvm(:)
+  type (hybrid_t)             :: hybrid         ! parallel structure for shared memory/distributed memory
+  type (parallel_t)           :: par            ! parallel structure for distributed memory programming
+  type (domain1d_t), pointer  :: dom_mt(:)
+  type (RestartHeader_t)      :: RestartHeader
+  type (TimeLevel_t)          :: tl             ! Main time level struct
+  type (hvcoord_t)            :: hvcoord        ! hybrid vertical coordinate struct
 
   real*8 timeit, et, st
   integer nets,nete
@@ -83,8 +57,8 @@ program prim_main
   integer ierr
   integer nstep
   
-  character (len=20)                          :: numproc_char
-  character (len=20)                          :: numtrac_char
+  character (len=20) :: numproc_char
+  character (len=20) :: numtrac_char
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
   
@@ -136,9 +110,10 @@ program prim_main
   !$OMP CRITICAL
 #endif
   if (par%rank<100) then 
-     write(6,9) par%rank,ithr,nets,nete 
+     write(6,9) par%rank,ithr,omp_get_max_threads(),nets,nete 
   endif
-9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i5," - ",i5)
+9 format("process: ",i2,1x,"horiz thread id: ",i2,1x,"# vert threads: ",i2,1x,&
+       "element limits: ",i5,"-",i5)
 #if (defined HORIZ_OPENMP)
   !$OMP END CRITICAL
   !$OMP END PARALLEL

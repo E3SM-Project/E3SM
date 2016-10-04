@@ -166,7 +166,9 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
       call cam_read_restart ( cam_in, cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName=filein )
 
-      call hub2atm_alloc( cam_in )
+     ! Commented out the hub2atm_alloc call as it overwrite cam_in, which is undesirable. The fields in cam_in are necessary for getting BFB restarts
+	 ! There are no side effects of commenting out this call as this call allocates cam_in and cam_in allocation has already been done in cam_init
+     !call hub2atm_alloc( cam_in )
 #if (defined BFB_CAM_SCAM_IOP)
       call initialize_iop_history()
 #endif

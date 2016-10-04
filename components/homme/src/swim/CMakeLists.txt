@@ -1,6 +1,7 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
 # and executable swim.
+macro(swim_setup)
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -11,30 +12,30 @@ SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
 SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 
-# Make INCLUDE_DIRS global so the tests can access it
-SET (SWIM_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                       ${UTILS_TIMING_DIR}
-                       ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for swim") 
+
+SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                       ${UTILS_TIMING_DIR} )
+                       
 
 # Make SRCS global so the tests can access it
 SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
-               ${SRC_DIR}/advance_mod.F90
                ${SRC_DIR}/checksum_mod.F90
                ${SRC_DIR}/common_io_mod.F90
                ${SRC_DIR}/common_movie_mod.F90
-               ${SRC_DIR}/init_mod.F90
                ${SRC_DIR}/interp_movie_mod.F90
                ${SRC_DIR}/netcdf_io_mod.F90
                ${SRC_DIR}/pio_io_mod.F90
                ${SRC_DIR}/repro_sum_mod.F90
                ${SRC_DIR}/restart_io_mod.F90
-               ${SRC_DIR}/restart_mod.F90
-               ${SRC_DIR}/rk_mod.F90
-               ${SRC_DIR}/shallow_water_mod.F90
-               ${SRC_DIR}/shal_movie_mod.F90
-               ${SRC_DIR}/state_mod.F90
-               ${SRC_DIR}/sweq_mod.F90
-               ${SRC_DIR}/types_mod.F90
+               ${SRC_DIR}/sweqx/advance_mod.F90
+               ${SRC_DIR}/sweqx/init_mod.F90
+               ${SRC_DIR}/sweqx/restart_mod.F90
+               ${SRC_DIR}/sweqx/rk_mod.F90
+               ${SRC_DIR}/sweqx/shallow_water_mod.F90
+               ${SRC_DIR}/sweqx/shal_movie_mod.F90
+               ${SRC_DIR}/sweqx/state_mod.F90
+               ${SRC_DIR}/sweqx/sweq_mod.F90
+               ${SRC_DIR}/sweqx/types_mod.F90
                ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
                ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
                ${SRC_SHARE_DIR}/bndry_mod.F90
@@ -60,7 +61,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/gridgraph_mod.F90
                ${SRC_SHARE_DIR}/hybrid_mod.F90
                ${SRC_SHARE_DIR}/interpolate_mod.F90
-               ${SRC_SHARE_DIR}/spelt_mod.F90
                ${SRC_SHARE_DIR}/linear_algebra_mod.F90
                ${SRC_SHARE_DIR}/ll_mod.F90
                ${SRC_SHARE_DIR}/mass_matrix_mod.F90
@@ -105,7 +105,7 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 )
 
 
-SET(SWIM_SRCS ${SWIM_SRCS} ${SRC_DIR}/main.F90 CACHE INTERNAL "Sources for swim")
+SET(EXEC_SOURCES ${SWIM_SRCS} ${SRC_DIR}/main.F90 )
 
 #Set up defaults
 IF (NOT SWIM_NP)
@@ -123,19 +123,16 @@ ENDIF ()
 IF (NOT SWIM_USE_ENERGY)
   SET (SWIM_USE_ENERGY FALSE)
 ENDIF ()
+IF (NOT QSIZE_D)
+  SET (QSIZE_D 4)
+ENDIF ()
 
-MESSAGE(STATUS "Building swim with:")
-MESSAGE(STATUS "  NP = ${SWIM_NP}")
-MESSAGE(STATUS "  NC = ${SWIM_NC}")
-MESSAGE(STATUS "  PLEV = ${SWIM_PLEV}")
-MESSAGE(STATUS "  PIO = ${SWIM_USE_PIO}")
-MESSAGE(STATUS "  ENERGY = ${SWIM_USE_ENERGY}")
+endmacro(swim_setup)
 
-# The following macro handles the compilation with the appropriate variables
-############################################################################
+
+swim_setup()
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
-############################################################################
-createTestExec(swim swim ${SWIM_NP} ${SWIM_NC} ${SWIM_PLEV} ${SWIM_USE_PIO} ${SWIM_USE_ENERGY})
+createTestExec(swim swim ${SWIM_NP} ${SWIM_NC} ${SWIM_PLEV} ${SWIM_USE_PIO} ${SWIM_USE_ENERGY} ${QSIZE_D})
 
 SET_PROPERTY(TARGET swim PROPERTY LINKER_LANGUAGE Fortran)
 

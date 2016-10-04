@@ -35,12 +35,12 @@ _MACHINE_PROJECTS = {
     "corip1"    : "acme",
     "blues"     : "ACME",
     "titan"     : "cli115",
-    "mira"      : "HiRes_EarthSys",
-    "cetus"     : "HiRes_EarthSys",
+    "mira"      : "HiRes_EarthSys_2",
+    "cetus"     : "HiRes_EarthSys_2",
 }
 
 # Return this error code if the scripts worked but tests failed
-TESTS_FAILED_ERR_CODE = 165
+TESTS_FAILED_ERR_CODE = 100
 
 ###############################################################################
 def expect(condition, error_msg):
@@ -255,7 +255,7 @@ def probe_machine_name():
     >>> probe_machine_name() is not None
     True
     """
-    hostname = socket.gethostname().split(".")[0]
+    hostname = socket.getfqdn()
 
     machines = get_machines()
     for machine in machines:

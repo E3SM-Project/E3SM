@@ -1,0 +1,296 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_ATM"> 
+    <type>char</type>
+    <valid_values>cam</valid_values>
+    <default_value>cam</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of atmospheric component</desc>
+  </entry>
+
+  <entry id="CAM_DYCORE">
+    <type>char</type>
+    <valid_values>eul,fv,se</valid_values>
+    <default_value>fv</default_value>
+    <values>
+      <value grid="a%T[1-9]" >eul</value>
+      <value grid="a%ne[1-9]">se</value>
+    </values>
+    <group>build_component_cam</group>
+    <file>env_build.xml</file>
+    <desc>CAM dynamical core</desc>
+  </entry>
+
+  <entry id="CAM_TARGET">
+         <type>char</type>
+         <valid_values>preqx,preqx_acc</valid_values>
+         <default_value>preqx</default_value>
+         <group>build_component_cam</group>
+         <file>env_build.xml</file>
+         <desc>CAM-SE cmake target (only used with CAM_DYCORE == 'se')</desc>
+  </entry>
+
+  <entry id="CAM_CONFIG_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values modifier='additive'>
+      <value compset="_CAM4"          >-phys cam4</value>              
+      <value compset="_CAM5"          >-phys cam5</value> 
+      <value compset="_CAM5%MAM4"     >-chem trop_mam4</value>
+      <value compset="_CAM5%ATMMOD"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero</value>
+      <value compset="_CAM5%AV1C"     >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1C-00"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1C-01"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1C-02"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1C-03"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1C-L"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1F"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1F-00"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1F-01"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%ATMMODCOSP" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -cosp</value>
+      <value compset="_CAM5%COSP"     >-cosp</value> 
+      <value compset="_CAM5%CLB"      >-clubb_sgs</value>
+      <value compset="_CAM5%MG2"      >-microphys mg2</value>
+      <value compset="_CAM5%CLBMG2"   >-clubb_sgs -microphys mg2</value>
+      <value compset="_CAM5%CLBMG2L72"   >-clubb_sgs -microphys mg2 -nlev 72</value>
+      <value compset="_CAM5%CLBMG2BCL72" >-clubb_sgs -microphys mg2 -nlev 72</value>
+      <value compset="_CAM5%CLBMG2LINMAM4RESUS" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus -rain_evap_to_coarse_aero</value>
+      <value compset="_CAM5%CLBMG2LINMAM4RESUSMOM" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero</value>
+      <value compset="_CAM5%CLBMG2MAM4"   >-clubb_sgs -microphys mg2 -chem trop_mam4</value>
+      <value compset="_CAM5%CLBMG2MAM4MOM"   >-clubb_sgs -microphys mg2 -chem trop_mam4_mom</value>
+      <value compset="_CAM5%CLBMG2MAM4RESUS"   >-clubb_sgs -microphys mg2 -chem trop_mam4 -rain_evap_to_coarse_aero</value>
+      <value compset="_CAM5%CLBMG2MAM4RESUSMOM"   >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_mom -rain_evap_to_coarse_aero</value>
+      <value compset="_CAM5%CLBMG2MAM4RESUSCOSP"   >-clubb_sgs -microphys mg2 -chem trop_mam4 -rain_evap_to_coarse_aero -cosp</value>
+      <value compset="_CAM5%CLBMG2MAM4RESUSMOMCOSP"   >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_mom -rain_evap_to_coarse_aero -cosp</value>
+      <value compset="_CAM5%CLBMG2LINMAM4RESUSMOMCOSP" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -cosp</value>
+      <value compset="_CAM5%UNI"      >-unicon -cppdefs -DMODIFY_ACTIVATE</value>
+      <value compset="_CAM4%TBAM"     >-chem trop_bam</value>
+      <value compset="_CAM4%TMOZ"     >-chem trop_mozart</value>
+      <value compset="_CAM4%MOZS"     >-chem trop_mozart_soa -age_of_air_trcs</value>
+      <value compset="_CAM5%MOZM"     >-chem trop_mozart_mam3 -age_of_air_trcs</value> 
+      <value compset="_CAM5%PM"       >-chem none</value> 
+      <value compset="_CAM5%SMA3"     >-chem trop_strat_mam3 -age_of_air_trcs</value> 
+      <value compset="_CAM5%SMA7"     >-chem trop_strat_mam7 -age_of_air_trcs</value> 
+      <value compset="_CAM4%SSOA"     >-chem trop_strat_soa -age_of_air_trcs</value> 
+      <!-- Match against "%WC" to set defaults for all WACCM cases. -->
+      <!-- Later settings of "-chem" take precedence over earlier ones. -->
+      <value compset="_CAM4%WC"       >-chem waccm_mozart</value>
+      <value compset="_CAM5%WC"       >-chem waccm_mozart_mam3</value>
+      <value compset="_CAM4%WCSC"     >-chem waccm_ghg</value>
+      <value compset="_CAM[45]%WCBC"  >-carma bc_strat</value>
+      <value compset="_CAM4%WCSF"     >-chem waccm_mozart_sulfur -carma sulfate</value>
+      <value compset="_CAM[45]%WCMX"  >-waccmx</value>
+      <value compset="GEOS_CAM"       >-offline_dyn</value>
+      <value compset="GEOS_CAM4"      >-nlev 56</value>
+      <value compset="GEOS_CAM5"      >-nlev 56</value>
+      <value compset="GEOS_CAM4%WC"   >-nlev 88</value>
+      <value compset="_CAM4%FCHM"     >-chem super_fast_llnl</value>
+      <value compset="20TR_CAM4%FCHM" >-chem super_fast_llnl -age_of_air_trcs</value> 
+      <value compset="_CAM.*_BGC%B"   >-co2_cycle</value> 
+      <value compset="CAM[45]%SCAM"   >-dyn eul -scam</value>
+      <value compset="_CAM.%L60"      >-nlev 60</value>
+      <value compset="_CAM%IDEAL"     >-phys ideal</value>              
+      <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
+      <value compset="_AQUAP"          >-ocn aquaplanet</value>              
+      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+    </values>
+    <group>build_component_cam</group>
+    <file>env_build.xml</file>
+    <desc>
+      CAM configure options, see CAM configure utility for details
+      Provides option(s) for the CAM configure utility. 
+      CAM_CONFIG_OPTS are normally set as compset variables (e.g., -phys  cam3_5_1 -chem waccm_mozart) 
+      and in general should not be modified for supported compsets.  It is recommended that if you want 
+      to modify this value for your experiment, you should use your own user-defined
+      component sets via using create_newcase with a compset_file argument
+    </desc> 
+  </entry>
+
+  <entry id="CAM_NML_USE_CASE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <values>
+      <value compset="2000_CAM4%TMOZ"   >2000_cam4_trop_chem</value> 
+      <value compset="1850_CAM4"        >1850_cam4</value> 
+      <value compset="1850_CAM5"        >1850_cam5</value> 
+      <value compset="20TR_CAM4"        >1850-2005_cam4</value> 
+      <value compset="20TR_CAM5"        >1850-2005_cam5</value> 
+      <value compset="AMIP_CAM5"        >1850-2005_cam5</value> 
+      <value compset="AMIP_CAM4"        >1850-2005_cam4</value> 
+      <value compset="20TR_CAM4.*_BGC%B">1850-2005_cam4_bgc</value> 
+      <value compset="RCP2_CAM4"        >2005-2100_cam4_rcp26</value> 
+      <value compset="RCP4_CAM4"        >2005-2100_cam4_rcp45</value> 
+      <value compset="RCP4_CAM4.*_BGC%B">2005-2100_cam4_rcp45_bgc</value> 
+      <value compset="RCP6_CAM4"        >2005-2100_cam4_rcp60</value> 
+      <value compset="RCP8_CAM4"        >2005-2100_cam4_rcp85</value> 
+      <value compset="RCP8_CAM4.*_BGC%B">2005-2100_cam4_rcp85_bgc</value> 
+      <value compset="RCP2_CAM5"        >2006-2100_cam5_rcp26</value> 
+      <value compset="RCP4_CAM5"        >2006-2100_cam5_rcp45</value> 
+      <value compset="RCP6_CAM5"        >2006-2100_cam5_rcp60</value> 
+      <value compset="RCP8_CAM5"        >2006-2100_cam5_rcp85</value> 
+      <value compset="1850_CAM4%FCHM"   >1850_cam4_super_fast_llnl</value> 
+      <value compset="2000_CAM4%FCHM"   >2000_cam4_super_fast_llnl</value> 
+      <value compset="20TR_CAM4%FCHM"   >1850-2005_cam4_super_fast_llnl</value> 
+      <value compset="2000_CAM5%TMOZ"   >2000_cam4_trop_chem</value> 
+      <value compset="2000_CAM5%MOZM"   >2000_cam5_trop_moz_mam3</value> 
+      <value compset="1850_CAM5%PM"     >1850_cam5_pm</value> 
+      <value compset="2000_CAM5.*PLMOD" >2000_cam5_plmod</value>
+      <value compset="2000_CAM5%CLBMG2MAM4MOM">2000_cam5_plmod</value>
+      <value compset="2000_CAM5%CLBMG2MAM4RESUS*">2000_cam5_plmod_plus_resus</value>
+      <value compset="2000_CAM5%CLBMG2L72">2000_cam5_clubb_mg2_l72</value>
+      <value compset="2000_CAM5%CLBMG2BCL72">2000_cam5_clubb_mg2_bc_l72</value>
+      <value compset="2000_CAM5%CLBMG2LINMAM4RESUS*">2000_cam5_linoz_plmod_plus_resus</value>
+      <value compset="2000_CAM5.*ATMMOD*">2000_cam5_atmmod</value>
+      <value compset="2000_CAM5.*AV1C"   >2000_cam5_av1c</value>
+      <value compset="2000_CAM5.*AV1C-00">2000_cam5_av1c-00</value>
+      <value compset="1850_CAM5.*AV1C-01">1850_cam5_av1c-01</value>
+      <value compset="1850_CAM5.*AV1C-02">1850_cam5_av1c-02</value>
+      <value compset="1850_CAM5.*AV1C-03">1850_cam5_av1c-03</value>
+      <value compset="1850_CAM5.*AV1C-L" >1850_cam5_av1c-03</value>
+      <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
+      <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
+      <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>
+      <value compset="2000_CAM5.*AV1C-L" >2000_cam5_av1c-03</value>
+      <value compset="2000_CAM5.*AV1F"   >2000_cam5_av1f</value>
+      <value compset="2000_CAM5.*AV1F-00">2000_cam5_av1f-00</value>
+      <value compset="2000_CAM5.*AV1F-01">2000_cam5_av1f-01</value>
+      <value compset="2000_CAM5%COSP"   >2000_cam5_cosp</value>
+      <value compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</value>
+      <value compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</value>
+      <value compset="5505_CAM4%WCCM"   >waccm_1955-2005_cam4</value>
+      <value compset="1850_CAM4%WCSC"   >waccm_sc_1850_cam4</value>
+      <value compset="5505_CAM4%WCSC"   >waccm_sc_1955-2005_cam4</value>
+      <value compset="2000_CAM4%WCSC"   >waccm_sc_2000_cam4</value>
+      <value compset="RCP2_CAM4%WCSC"   >waccm_sc_2005-2100_cam4_rcp26</value>
+      <value compset="RCP4_CAM4%WCSC"   >waccm_sc_2005-2100_cam4_rcp45</value>
+      <value compset="RCP8_CAM4%WCSC"   >waccm_sc_2005-2100_cam4_rcp85</value>
+      <value compset="1850_CAM4%WCCM"   >waccm_1850_cam4</value>
+      <value compset="2000_CAM4%WCCM"   >waccm_2000_cam4</value>
+      <value compset="20TR_CAM4%WCCM"   >waccm_1850-2005_cam4</value> 
+      <value compset="RCP2_CAM4%WCCM"   >waccm_2005-2100_cam4_rcp26</value>
+      <value compset="RCP4_CAM4%WCCM"   >waccm_2005-2100_cam4_rcp45</value>
+      <value compset="RCP8_CAM4%WCCM"   >waccm_2005-2100_cam4_rcp85</value>
+      <value compset="1850_CAM5%WCCM"   >waccm_1850_cam5</value>
+      <value compset="2000_CAM5%WCCM"   >waccm_2000_cam5</value>
+      <value compset="2013_CAM4%WCBC"   >waccm_carma_bc_2013_cam4</value>
+      <value compset="GEOS_CAM4%TMOZ"   >cam4_chem_radpsv_geos5</value>
+      <value compset="GEOS_CAM4%TBAM"   >cam4_bam_radpsv_geos5</value>
+      <value compset="GEOS_CAM4%WCCM"   >sd_waccm_geos5</value>
+      <value compset="GEOS_CAM4%WCSF"   >sd_waccm_sulfur</value>
+      <value compset="_CAM4%MOZS"       >soa_chem_megan_emis</value>         
+      <value compset="_CAM5%SMA3"       >2000_cam5_trop_strat_mam3</value>
+      <value compset="_CAM5%SMA7"       >2000_cam5_trop_strat_mam7</value>
+      <value compset="_CAM4%SSOA"       >2000_cam4_trop_strat_soa</value>
+      <value compset="GEOS_CAM5%SMA3"   >sd_cam5_trop_strat_mam3</value>
+      <value compset="GEOS_CAM4%SSOA"   >sd_cam4_trop_strat_soa</value>
+      <value compset="AR95_CAM[45]"     >scam_arm95</value>
+      <value compset="AR97_CAM[45]"     >scam_arm97</value>
+      <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
+    </values>
+    <group>run_component_cam</group>
+    <file>env_run.xml</file>
+    <desc>CAM namelist use_case.  Provides the use_case option for the
+      CAM build-namelist utility (which is called from
+      $CASEROOT/Buildconf/cam.buildnml).  The CAM build-namelist
+      leverages groups of namelist options (use cases) that are often
+      paired with the CAM configure options.  These use cases are xml
+      files located in
+      $CIMEROOT/../components/atm/cam/bld/namelist_files/use_cases.
+      In general, this variable should not be modified for supported
+      component sets (compsets).  Recommendation: If you want to
+      modify this value for your experiment, use your own user-defined
+      component sets.</desc>
+  </entry>
+
+  <entry id="CAM_NAMELIST_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values>
+      <value compset="_CAM.*%RCO2"> scenario_ghg=&apos;RAMP_CO2_ONLY&apos;ramp_co2_annual_rate=1 </value> 
+      <value compset="_BGC%BDRD"> co2_cycle_rad_passive=.true. </value>
+    </values>
+    <group>run_component_cam</group>
+    <file>env_run.xml</file>
+    <desc>CAM specific namelist settings for -namelist option Provides
+      options to the -namelist argument for the CAM build-namelist
+      utility.  This should be reserved for component set
+      specification. Users should modify CAM namelists only via the
+      $CASEROOT/user_nl_cam file.</desc>
+  </entry>
+
+  <description>
+    <desc compset="_CAM4"  >cam4 physics:</desc>
+    <desc compset="_CAM5"  >cam5 physics:</desc>
+    <desc compset="_CAM5%MAM4"   >CAM trop_mam4 chemistry:</desc>
+    <desc compset="_CAM5%COSP"   >CAM with COSP turned on:</desc>
+    <desc compset="_CAM5.*PLMOD" >CAM with all polar mods:</desc>
+    <desc compset="_CAM5.*RESUS" >CAM with polar mods, MAM4 and resuspension:</desc>
+    <desc compset="_CAM5.*ATMMOD">CAM with all ACME atmosphere mods:</desc>
+    <desc compset="_CAM5.*AV1C"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model):</desc>
+    <desc compset="_CAM5.*AV1C-00"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model)- v00:</desc>
+    <desc compset="_CAM5.*AV1C-01"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v01:</desc>
+    <desc compset="_CAM5.*AV1C-02"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v02:</desc>
+    <desc compset="_CAM5.*AV1C-03"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v03:</desc>
+    <desc compset="_CAM5.*AV1C-L"   >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v03:</desc>
+    <desc compset="_CAM5.*AV1F"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model):</desc>
+    <desc compset="_CAM5.*AV1F-00"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model)- v00:</desc>
+    <desc compset="_CAM5.*AV1F-01"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model) and ACES4BGC SOAG emissions- v01:</desc>
+    <desc compset="_CAM5.*ATMMODCOSP">CAM with all ACME atmosphere mods and COSP:</desc>
+    <desc compset="_CAM5%CLB"    >CAM CLUBB:</desc>
+    <desc compset="_CAM5%MG2"    >CAM MG2:</desc>
+    <desc compset="_CAM5%CLBMG2"    >CAM CLUBB MG2:</desc>
+    <desc compset="_CAM5%CLBMG2L72" >CAM CLUBB MG2 with 72 layers:</desc>
+    <desc compset="_CAM5%CLBMG2BCL72" >CAM CLUBB MG2 BC dep on snow with 72 layers:</desc>
+    <desc compset="_CAM5%CLBMG2LINMAM4RESUS"    >CAM CLUBB MG2 Linoz2 MAM4 resuspension:</desc>
+    <desc compset="_CAM5%CLBMG2LINMAM4RESUSMOM" >CAM CLUBB MG2 Linoz2 MAM4 resuspension MOM:</desc>
+    <desc compset="_CAM5%CLBMG2MAM4"    >CAM CLUBB MG2 MAM4:</desc>
+    <desc compset="_CAM5%CLBMG2MAM4MOM"    >CAM CLUBB MG2 MAM4 MOM:</desc>
+    <desc compset="_CAM5%CLBMG2MAM4RESUS"    >CAM CLUBB MG2 MAM4 resuspension:</desc>
+    <desc compset="_CAM5%CLBMG2MAM4RESUSMOM"    >CAM CLUBB MG2 MAM4 resuspension MOM:</desc>
+    <desc compset="_CAM5%CLBMG2MAM4RESUSCOSP"    >CAM CLUBB MG2 MAM4 resuspension COSP:</desc>
+    <desc compset="_CAM5%CLBMG2MAM4RESUSMOMCOSP"    >CAM CLUBB MG2 MAM4 resuspension MOM COSP:</desc>
+    <desc compset="_CAM5%CLBMG2LINMAM4RESUSMOMCOSP" >CAM CLUBB MG2 Linoz2 MAM4 resuspension MOM COSP:</desc>
+    <desc compset="_CAM5%PM"     >CAM prescribed modal aerosols:</desc>
+    <desc compset="_CAM[45]%WCCM">CAM WACCM with daily solar data and SPEs:</desc>
+    <desc compset="_CAM[45]%WCMX">CAM WACCM-X:</desc>
+    <desc compset="_CAM[45]%WCSC">CAM WACCM specified chemistry:</desc>
+    <desc compset="_CAM[45]%WCBC">CAM WACCM with the stratospheric black carbon CARMA model:</desc>
+    <desc compset="_CAM[45]%WCSF">CAM WACCM with sulfur chemistry and the sulfate CARMA model:</desc>
+    <desc compset="_CAM[45]%FCHM">CAM super_fast_llnl chemistry:</desc> 
+    <desc compset="_CAM[45]%TMOZ">CAM trop_mozart chemistry:</desc>
+    <desc compset="_CAM[45]%TBAM">CAM trop_bam chemistry: </desc>
+    <desc compset="_CAM[45]%MOZM">CAM trop_mozart_mam3 chemistry:</desc>
+    <desc compset="_CAM[45]%MOZS">CAM trop_mozart_soa chemistry:</desc>
+    <desc compset="_CAM[45]%SMA3">CAM trop_strat_mam3 chemistry:</desc>
+    <desc compset="_CAM[45]%SMA7">CAM trop_strat_mam7 chemistry:</desc>
+    <desc compset="_CAM[45]%SSOA">CAM trop_strat_soa chemistry: </desc>
+    <desc compset="_CAM[45]%RCO2">CAM CO2 ramp: </desc>
+    <desc compset="AR95_CAM[45]%SCAM">stand-alone single column CAM ARM95 IOP test case:</desc>
+    <desc compset="AR97_CAM[45]%SCAM">stand-alone single column CAM ARM97 IOP test case:</desc>
+    <desc compset="GEOS_CAM[45]%([^W]|W[^C])" >CAM winds and temperature driven by GEOS5 meteorology:</desc>
+    <desc compset="GEOS_CAM[45]%WC" >CAM WACCM winds and temperature nudged toward GEOS5 meteorology each time step:</desc>
+    <desc compset="_CAM.%L60"    >CAM 60 layers and full gravity wave spectrum:</desc>
+    <desc compset="ADIAB"        >CAM adiabatic physics:</desc>
+    <desc compset="IDEAL"        >CAM ideal physics:</desc>
+    <desc compset="AMIP">Atmospheric Model Intercomparison Project protocol: </desc>
+    <desc compset="AQUAP">CAM atmosphere in aquaplanet mode: </desc>
+    <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
+    <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
+    <desc compset="CAM4.*_BGC%B"></desc>
+  </description>
+
+  <help>
+    =========================================
+    CAM naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>

@@ -46,7 +46,7 @@ module restart_physics
     type(var_desc_t) :: bcphidry_desc, bcphodry_desc, ocphidry_desc, ocphodry_desc, &
        dstdry1_desc, dstdry2_desc, dstdry3_desc, dstdry4_desc
 
-    type(var_desc_t) :: cflx_desc(pcnst)
+    type(var_desc_t) :: cflx_desc(pcnst), lhf_desc, shf_desc
 
     type(var_desc_t), allocatable :: abstot_desc(:)
 
@@ -153,6 +153,9 @@ module restart_physics
           write(num,'(i4.4)') i
           ierr = pio_def_var(File, 'CFLX'//num,  pio_double, hdimids, cflx_desc(i))
        end do
+       ! Add LHF and SHF to restart file to fix non-BFB restart issue due to qneg4 correction at the restart time step
+       ierr = pio_def_var(File, 'LHF',  pio_double, hdimids, lhf_desc)
+       ierr = pio_def_var(File, 'SHF',  pio_double, hdimids, shf_desc)
 
     end if
 
@@ -398,6 +401,17 @@ module restart_physics
             end do
             call pio_write_darray(File, cflx_desc(m), iodesc, tmpfield, ierr)
          end do
+
+         do i = begchunk, endchunk
+            ncol = cam_in(i)%ncol
+            tmpfield(:ncol, i) = cam_in(i)%lhf(:ncol)
+         end do
+         call pio_write_darray(File, lhf_desc, iodesc, tmpfield, ierr)
+         do i = begchunk, endchunk
+            ncol = cam_in(i)%ncol
+            tmpfield(:ncol, i) = cam_in(i)%shf(:ncol)
+         end do
+         call pio_write_darray(File, shf_desc, iodesc, tmpfield, ierr)
 
       end if
     !
@@ -700,8 +714,8 @@ module restart_physics
            write(num,'(i4.4)') m
 
            !!XXgoldyXX: This hack should be replaced with the PIO interface
-           err_handling = File%iosystem%error_handling !! Hack
-           call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+           !err_handling = File%iosystem%error_handling !! Hack
+           call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
            ierr = pio_inq_varid(File, 'CFLX'//num, vardesc)
            call pio_seterrorhandling(File, err_handling)
 
@@ -716,6 +730,26 @@ module restart_physics
 
         end do
 
+        ! Add LHF and SHF to restart file to fix non-BFB restart issue due to qneg4 update at the restart time step
+        ! May want to check if LHF and SHF are present (to be back-compatible with restart files from older runs).
+        ! In that case, if any qneg4 correction occurs at the restart time,
+        ! non-BFB for the step needs to be tolerated (because the corrected
+        ! LHF/SHF  not carried over thru restart file)
+        ierr = pio_inq_varid(File, 'LHF', vardesc)
+        call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+        do c= begchunk, endchunk
+           do i = 1, pcols
+              cam_in(c)%lhf(i) = tmpfield2(i, c)
+           end do
+        end do
+        ierr = pio_inq_varid(File, 'SHF', vardesc)
+        call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+        do c= begchunk, endchunk
+           do i = 1, pcols
+              cam_in(c)%shf(i) = tmpfield2(i, c)
+           end do
+        end do
+
         deallocate(tmpfield2)
 
      end if
@@ -727,8 +761,8 @@ module restart_physics
      !
      if ( radiation_do('aeres')  ) then
         !!XXgoldyXX: This hack should be replaced with the PIO interface
-        err_handling = File%iosystem%error_handling !! Hack
-        call pio_seterrorhandling( File, PIO_BCAST_ERROR)
+        !err_handling = File%iosystem%error_handling !! Hack
+        call pio_seterrorhandling( File, PIO_BCAST_ERROR, err_handling)
         ierr = pio_inq_varid(File, 'Emissivity', vardesc)
         call pio_seterrorhandling( File, err_handling)
         if(ierr/=PIO_NOERR) then
@@ -766,8 +800,8 @@ module restart_physics
 
      if (docosp) then
         !!XXgoldyXX: This hack should be replaced with the PIO interface
-        err_handling = File%iosystem%error_handling !! Hack
-        call pio_seterrorhandling( File, PIO_BCAST_ERROR)
+        !err_handling = File%iosystem%error_handling !! Hack
+        call pio_seterrorhandling( File, PIO_BCAST_ERROR, err_handling)
         ierr = pio_inq_varid(File, 'cosp_cnt_init', vardesc)
         call pio_seterrorhandling( File, err_handling)
         if(ierr/=PIO_NOERR) then

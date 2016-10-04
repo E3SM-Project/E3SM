@@ -45,7 +45,7 @@ MODULE WRM_subw_IO_mod
      type(io_desc_t)  :: iodesc_dbl_grd2dam  ! pio io desc, global grid to local dam
      type(io_desc_t)  :: iodesc_int_dam2dam   ! pio io desc, global dam to local dam
      type(io_desc_t)  :: iodesc_dbl_dam2dam   ! pio io desc, global dam to local dam
-     integer(kind=pio_offset) :: frame
+     integer(kind=PIO_OFFSET_KIND) :: frame
      real(r8) :: peak, prorata , mn, mx                  ! peak value to define the start of operationalyr
      integer :: sgn,curr_sgn, nsc, ct, ct_mx, mth_op , idepend      ! number of sign change
      integer, pointer  :: compDOF(:)           ! pio decomp
@@ -536,7 +536,7 @@ MODULE WRM_subw_IO_mod
         do mth = 1,12
            ier = pio_inq_varid (ncid, name='Qmon', vardesc=vardesc)
            frame = mth
-           call pio_setframe(vardesc,frame)
+           call pio_setframe(ncid,vardesc,frame)
            call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthFlow(:,mth), ier)
            if (masterproc) write(iulog,FORMR) trim(subname),' read Qmon',minval(WRMUnit%MeanMthFlow(:,mth)),maxval(WRMUnit%MeanMthFlow(:,mth))
            call shr_sys_flush(iulog)
@@ -550,7 +550,7 @@ MODULE WRM_subw_IO_mod
         do mth = 1,12
            ier = pio_inq_varid (ncid, name='demand', vardesc=vardesc)
            frame = mth
-           call pio_setframe(vardesc,frame)
+           call pio_setframe(ncid,vardesc,frame)
            call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthDemand(:,mth), ier)
            if (masterproc) write(iulog,FORMR) trim(subname),' read demand',minval(WRMUnit%MeanMthDemand(:,mth)),maxval(WRMUnit%MeanMthDemand(:,mth))
            call shr_sys_flush(iulog)

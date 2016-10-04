@@ -1096,6 +1096,26 @@ model.
 Default: 5
 </entry>
 
+<!-- Fixers -->
+
+<entry id="use_mass_borrower" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new mass borrower (instead of QNEG3).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_qqflx_fixer" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new qqflx fixer (instead of QNEG4). 
+Default: set by build-namelist.
+</entry>
+
+<entry id="print_fixer_message" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to printout fixer diagnostic message. 
+Default: set by build-namelist.
+</entry>
+
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -2169,6 +2189,39 @@ Switch to turn on temperature dependent DCS.
 Default: .false.
 </entry>
 
+<entry id="micro_mg_accre_enhan_fac" type="real" category="microphysics"
+       group="phys_ctl_nl" valid_values="" >
+Accretion enhancement factor from namelist
+Default: 1.0_r8
+</entry>
+
+<entry id="prc_coef1" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable coefficient for autoconversion
+Default: 1350.0_r8
+</entry>
+
+<entry id="prc_exp" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable exponent coefficient for autoconversion 
+Default: 2.47_r8
+</entry>
+
+<entry id="prc_exp1" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable exponent coefficient for autoconversion
+Default: -1.79_r8
+</entry>
+
+<entry id="cld_sed" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+scale factor for cloud sedimentation velocity
+Default: 1.0D0
+</entry>
+
+
+
+
 <!-- micro_aero -->
 <entry id="microp_aero_bulk_scale" type="real" category="microphysics"
        group="microp_aero_nl" valid_values="" >
@@ -2209,6 +2262,12 @@ Default: .false.
 <entry id="nucleate_ice_subgrid" type="real" category="microphys"
        group="nucleate_ice_nl" valid_values="" >
 Subgrid scaling factor for relative humidity in ice nucleation code.
+Default: set by build-namelist
+</entry>
+
+<entry id="so4_sz_thresh_icenuc" type="real" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+ice nucleation SO2 size threshold for aitken mode
 Default: set by build-namelist
 </entry>
 
@@ -2362,11 +2421,44 @@ Relaxation time in ZM deep convection scheme.
 Default: set by build-namelist
 </entry>
 
+<entry id="zmconv_dmpdz" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Parcel fractional mass entrainment rate
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_alfa" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Maximum downdraft mass flux fraction
+Default: set by build-namelist
+</entry>
+
 <entry id="zmconv_trigmem" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
 Trigger and memory option in ZM deep convection scheme.
 Default: FALSE
 </entry>
+
+<entry id="zmconv_tiedke_add" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+A ZM deep convection parameter
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_cape_cin" type="integer" category="conv"
+       group="zmconv_nl" valid_values="" >
+Number of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_mx_bot_lyr_adj" type="integer" category="conv"
+       group="zmconv_nl" valid_values="" >
+Bottom layer adjustment for setting "launching" level(mx) (to be at maximum moist static energy)
+Default: set by build-namelist
+</entry>
+
+
+
 
 <!-- Cloud sedimentation -->
 
@@ -2747,6 +2839,17 @@ clubb ice shallow convection factor
 Default: 50.e-6
 </entry>
 
+<entry id="clubb_tk1" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 268.15D0
+</entry>
+
+<entry id="clubb_tk2" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 238.15D0
+</entry>
 
 
 <!-- Clubb tunable parameters -->
@@ -2819,7 +2922,7 @@ Default: 2.4
 
 <entry id="gamma_coef" type="real" category="pblrad"
        group="initvars" valid_values="" >
-Constant of the width of PDF in w-coordinate
+Constant of the width of PDF in w-coordinate Low Skw. gamma coef. Skw. Fnct
 Default: 0.32
 </entry>
 
@@ -2847,6 +2950,18 @@ Default: 1.0. See clubb/parameters_tunable.F90
        group="clubb_param_nl" valid_values="" >
 Constant associated with the dissipation of the variance of total water
 Default: 1.0
+</entry>
+
+<entry id="clubb_C2thl" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+C2 coef. for the thlp2_dp1 term
+Default: 1.0 or clubb_C2rt if it is specified
+</entry>
+
+<entry id="clubb_C2rtthl" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+C2 coef. for the rtpthlp_dp1 term
+Default: 1.3 or 1.3*clubb_C2rt if it is specified
 </entry>
 
 <entry id="clubb_C6rt" type="real" category="pblrad"
@@ -2909,6 +3024,12 @@ Constant of the width of PDF in w-coordinate
 Default: 0.32
 </entry>
 
+<entry id="clubb_gamma_coefb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High Skw. gamma coef. Skw. Fnct.
+Default: 0.32 or clubb_gamma_coef if it is specified
+</entry>
+
 <entry id="clubb_mu" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Fractional parcel entrainment rate per unit height (1/m)
@@ -2924,6 +3045,12 @@ Default: 20.0
        group="clubb_param_nl" valid_values="" >
 Coefficient of Kh_zm
 Default: 0.60
+</entry>
+
+<entry id="clubb_wpxp_L_thresh"  type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Lscale threshold: damp C6 & C7  [m]
+Default: 60.0D0
 </entry>
 
 <!-- CARMA Sectional Microphysics -->
@@ -3506,8 +3633,11 @@ Default: set by build-namelist
 
 <entry id="cam_chempkg" type="char*16" category="build"
        group="phys_ctl_nl" valid_values="waccm_mozart,waccm_ghg,trop_mozart,
-                                         trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_mom,trop_mam7,trop_mam9,
-                                         linoz_mam3,linoz_mam4_resus,linoz_mam4_resus_mom,
+                                         trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus_soag,
+					 trop_mam4_mom,trop_mam7,trop_mam9,
+                                         linoz_mam3,linoz_mam4_resus,
+					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
+					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
@@ -3634,6 +3764,14 @@ Default: .false.
        group="phys_ctl_nl" valid_values="" >
 invokes new microphysics code (single call to amicphys routine) if > 0
 Default: 0
+</entry>
+
+
+<!-- number of so4(+nh4) monolayers needed to "age" a carbon particle -->
+<entry id="n_so4_monolayers_pcage" type="real"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+number of so4(+nh4) monolayers needed to "age" a carbon particle
+Default: Set by namelist
 </entry>
 
 
@@ -3767,6 +3905,12 @@ to make this functionality default
 Default: FALSE
 </entry>
 
+<entry id="raytau0" type="real"  category="physc_test"
+       group="cam_inparm" valid_values="" >
+Approximate value of decay time at model top (days);
+#if 0., no rayleigh friction is applied
+Default: 0.0D0
+</entry>
 
 <entry id="mode_defs" type="char*256(100)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
@@ -5604,6 +5748,12 @@ Default: Set by build-namelist.
 <entry id="max_hypervis_courant" type="real" category="se"
        group="ctl_nl" valid_values="" >
 Default: Set by build-namelist.
+</entry>
+
+<entry id="vthreads" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of vertical threads.
+Default: 1.
 </entry>
 
 

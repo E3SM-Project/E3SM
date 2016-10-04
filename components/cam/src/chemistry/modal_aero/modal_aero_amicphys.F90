@@ -43,12 +43,10 @@
 
   integer, parameter :: pcnstxx = gas_pcnst
 
-! real(r8), parameter, public :: n_so4_monolayers_pcage = 1.0_r8
-  real(r8), parameter, public :: n_so4_monolayers_pcage = 3.0_r8
+  real(r8), public, protected :: n_so4_monolayers_pcage = huge(1.0_r8)
 ! number of so4(+nh4) monolayers needed to "age" a carbon particle
 
-  real(r8), parameter, public :: &
-              dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
+  real(r8), public, protected :: dr_so4_monolayers_pcage = huge(1.0_r8)
 ! thickness of the so4 monolayers (m)
 ! for so4(+nh4), use bi-sulfate mw and 1.77 g/cm3,
 !    --> 1 mol so4(+nh4)  = 65 cm^3 --> 1 molecule = (4.76e-10 m)^3
@@ -92,21 +90,31 @@
 
 #if ( defined MODAL_AERO_3MODE )
   integer, parameter :: max_gas = nsoa + 1
+  ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif (( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#elif ( defined MODAL_AERO_4MODE )
   integer, parameter :: max_gas = nsoa + 1
+  ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
+#elif ( defined MODAL_AERO_4MODE_MOM )
+  integer, parameter :: max_gas = nsoa + 1
+  ! the +4 in max_aer are dst, ncl, so4, mom
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
+  ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
   integer, parameter :: max_aer = nsoa + npoa + nbc + 8
 #elif ( defined MODAL_AERO_7MODE )
   integer, parameter :: max_gas = nsoa + 2
+  ! the +4 in max_aer are dst, ncl, so4, nh4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( defined MODAL_AERO_8MODE )
   integer, parameter :: max_gas = nsoa + 2
+  ! the +4 in max_aer are dst, ncl, so4, mom ???
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( defined MODAL_AERO_9MODE )
   integer, parameter :: max_gas = nsoa + 2
+  ! the +4+5 in max_aer are dst, ncl, so4, nh4 and 5 marine organics
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
@@ -153,7 +161,7 @@
   !    when nbc  > 1, iaer_bc  is index of the first bc  species
   !    when npom > 1, iaer_pom is index of the first pom species
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
-             iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, &
+             iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
@@ -5080,7 +5088,7 @@ agepair_loop1: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-      subroutine modal_aero_amicphys_init( imozart, species_class )
+      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in)
 
 !-----------------------------------------------------------------------
 !
@@ -5118,6 +5126,7 @@ implicit none
 ! arguments
    integer, intent(in)  :: imozart
    integer, intent(in)  :: species_class(:)
+   real(r8), intent(in) :: n_so4_monolayers_pcage_in
 
 !-----------------------------------------------------------------------
 ! local
@@ -5139,6 +5148,10 @@ implicit none
    character(2)                   :: tmpch2
    !-----------------------------------------------------------------------
  
+!namelist variables
+n_so4_monolayers_pcage  = n_so4_monolayers_pcage_in
+dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
+
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
       ldiag82  = .true.  ; lun82  = 82
@@ -5181,7 +5194,7 @@ implicit none
       iaer_ca  = 0 ; iaer_co3 = 0 
       iaer_mpoly = 0 ; iaer_mprot = 0 
       iaer_mlip  = 0 ; iaer_mhum = 0 
-      iaer_mproc = 0 ;
+      iaer_mproc = 0 ; iaer_mom = 0
 
       if (nsoa == 1) then
          name_gas(1) = 'SOAG'
@@ -5278,6 +5291,12 @@ implicit none
       naer = naer + 1
       name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
+#endif
+
+#if ( defined MODAL_AERO_4MODE_MOM )
+      naer = naer + 1
+      name_aerpfx(naer) = 'mom'
+      iaer_mom = naer
 #endif
 
       if (ntot_amode==9) then
@@ -5617,8 +5636,8 @@ implicit none
            'iaer_pom, iaer_bc, iaer_ncl, iaer_dst, iaer_ca, iaer_co3', &
             iaer_pom, iaer_bc, iaer_ncl, iaer_dst, iaer_ca, iaer_co3
          write(iulog,'(/a56,10i5)') &
-           'iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc', &
-            iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc
+           'iaer_mom, ...mpoly, ...mprot, ...mlip, ...mhum, ...mproc', &
+            iaer_mom, iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc
          write(iulog,'(/a)') &
            'fac_eqvso4hyg_aer(1:naer)'
          write(iulog,'(4(a,1pe10.3,3x))') &

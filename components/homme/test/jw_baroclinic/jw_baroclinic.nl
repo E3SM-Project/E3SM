@@ -31,7 +31,7 @@ limiter_option = 8
 vert_remap_q_alg = 1
 hypervis_scaling = 0
 hypervis_order = 2
-hypervis_subcycle=4
+hypervis_subcycle=3
 hypervis_subcycle_q=1
 /
 &solver_nl

@@ -903,7 +903,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           rpdel = 1.0_real_kind/pdel
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vco)
+!$omp parallel do private(k,i,j,v1,v2)
 #endif
           do k=1,nlev
              do j=1,np
@@ -947,9 +947,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
           do k=1,nlev-1
              do j=1,np
                 do i=1,np
@@ -1123,7 +1120,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here.
-!$omp parallel do private(k,i,j,gVscript,deriv)
+!$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
              do j=1,np
@@ -1810,7 +1807,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_p,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -1901,11 +1898,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               enddo
 #endif
            endif
-           nu_scale=1
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
+              nu_scale=1
               ! advace in time.
               ! note: DSS commutes with time stepping, so we can time advance and then DSS.
               ! note: weak operators alreayd have mass matrix "included"
@@ -2111,7 +2108,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_t,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_t,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -2192,7 +2189,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                    eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
            endif
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,dpdn,dpdn0,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp)
+!$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp,laplace_fluxes)
 #endif
            do k=1,nlev
               ! advace in time.
@@ -2436,7 +2433,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_p,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -2935,9 +2932,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! for reference: at mid layers we have:
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
-#if (defined COLUMN_OPENMP)
-        !$omp parallel do private(k)
-#endif
         do k=1,nlev-1
            eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
         end do
@@ -2976,7 +2970,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
+!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2,u_m_umet,v_m_vmet,t_m_tmet)
 #endif
      vertloop: do k=1,nlev
         do j=1,np
@@ -3243,7 +3237,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      if (dt2<0) then
         ! calling program just wanted DSS'd RHS, skip time advance
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,tempflux)
 #endif
         do k=1,nlev
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*vtens1(:,:,k)
@@ -3262,7 +3256,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,tempflux)
 #endif
         do k=1,nlev
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
@@ -3626,6 +3620,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine smooth_phis
 
   subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
+
     use fvm_reconstruction_mod, only: reconstruction
     use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
@@ -3636,21 +3631,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use time_mod, only : TimeLevel_t
     use fvm_control_volume_mod, only : fvm_struct
-    use spelt_mod, only : spelt_struct
 
-
-    type (element_t) , intent(inout)        :: elem(:)
-
-#if defined(_SPELT)
-      type(spelt_struct), intent(inout) :: fvm(:)
-#else
-      type(fvm_struct), intent(inout) :: fvm(:)
-#endif
-    type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
-
-    integer, intent(in)                     :: nets  ! starting thread element number (private)
-    integer, intent(in)                     :: nete  ! ending thread element number   (private)
-    integer, intent(in)                     :: np1
+    type(element_t) , intent(inout) :: elem(:)
+    type(fvm_struct), intent(inout) :: fvm(:)
+    type(hybrid_t),   intent(in)    :: hybrid ! distributed parallel structure (shared)
+    integer,          intent(in)    :: nets   ! starting thread element number (private)
+    integer,          intent(in)    :: nete   ! ending thread element number   (private)
+    integer,          intent(in)    :: np1
     integer :: ie, k
 
     real (kind=real_kind)             :: xp,yp, tmpval, dt_q

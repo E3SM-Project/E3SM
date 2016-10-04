@@ -44,6 +44,7 @@ setenv PATH $NETCDFROOT/bin:$PATH
 setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
 setenv NETCDF_INCLUDES $NETCDFROOT/include
 setenv NETCDF_LIBS $NETCDFROOT/lib
+setenv OMP_STACKSIZE 64M
 
 if ( $?PERL ) then
    printenv

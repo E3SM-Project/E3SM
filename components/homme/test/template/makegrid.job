@@ -36,8 +36,8 @@ set NPTS = 4
 set NC = 4  
 set ne = 0 ; 
 
-set HOMME = ~/codes/homme  # path to HOMME code
-#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set HOMME = `cd ../.. ; pwd`  # path to HOMME code. assume we are running from homme/test/template
+#set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
 #set MACH = $HOMME/cmake/machineFiles/climate.cmake
 #set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
@@ -68,14 +68,12 @@ set hypervis_subcycle = 1
 set HYPERVIS_OPTS = 
 
 if ( $ne == 0 ) then
-#    set meshname = mountain_10_x2.g
-#    set meshfile=$HOMME/test/mesh_refine/grids/$meshname
-
 #    set meshname = kite_grid.g
 #    set meshfile=$HOMME/test/mesh_refine/grids/$meshname
 
-    set meshname = wpacific_v2.g
-    set meshfile=~/work/notes/squadgen/multiscale/$meshname
+    set meshname = mountain_10_x2.g
+#    set meshname = wpacific_v2.g
+    set meshfile=~/codes/mapping/grids/$meshname
 else
    # UNIFORM grids
    set meshfile='none'

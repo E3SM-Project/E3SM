@@ -97,8 +97,9 @@ def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
     # Formulate the create_test command
 
     compare_args = "-c -b %s" % baseline_name if baseline_name is not None else ""
-    bisect_cmd = "/bin/rm -rf %s/*acme_bisect && %s %s --test-root %s -t acme_bisect --compiler %s -p %s %s" % \
-        (testroot, create_test_rel, testname, testroot, compiler, project, compare_args)
+    project_args = "-p %s" % project if project else ""
+    bisect_cmd = "/bin/rm -rf %s/*acme_bisect && %s %s --test-root %s -t acme_bisect --compiler %s %s %s" % \
+        (testroot, create_test_rel, testname, testroot, compiler, project_args, compare_args)
 
     is_batch = acme_util.does_machine_have_batch()
     if (is_batch):

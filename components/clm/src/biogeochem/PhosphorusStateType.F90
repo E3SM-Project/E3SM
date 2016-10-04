@@ -66,6 +66,7 @@ module PhosphorusStateType
 
      ! wood product pools, for dynamic landcover
      real(r8), pointer :: seedp_col                    (:)     ! col (gP/m2) column-level pool for seeding new Patches
+     real(r8), pointer :: prod1p_col                   (:)     ! col (gN/m2) crop product N pool, 1-year lifespan
      real(r8), pointer :: prod10p_col                  (:)     ! col (gP/m2) wood product P pool, 10-year lifespan
      real(r8), pointer :: prod100p_col                 (:)     ! col (gP/m2) wood product P pool, 100-year lifespan
      real(r8), pointer :: totprodp_col                 (:)     ! col (gP/m2) total wood product P
@@ -109,8 +110,6 @@ module PhosphorusStateType
      real(r8), pointer :: actual_livewdcp              (:)     ! dynamic live wood cp ratio
      real(r8), pointer :: actual_deadwdcp              (:)     ! dynamic dead wood cp ratio
      real(r8), pointer :: actual_graincp               (:)     ! dynamic grain cp ratio
-     real(r8), pointer :: pGPP_pleafn_patch            (:)     ! carbon benefit of nitrogen uptake
-     real(r8), pointer :: pGPP_pleafp_patch            (:)     ! carbon benefit of phosphorus uptake
      
      ! debug
      real(r8), pointer :: totpftp_beg_col              (:)
@@ -233,6 +232,7 @@ contains
     allocate(this%sminp_col                (begc:endc))                   ; this%sminp_col                (:)   = nan
     allocate(this%ptrunc_col               (begc:endc))                   ; this%ptrunc_col               (:)   = nan
     allocate(this%seedp_col                (begc:endc))                   ; this%seedp_col                (:)   = nan
+    allocate(this%prod1p_col               (begc:endc))                   ; this%prod1p_col               (:)   = nan
     allocate(this%prod10p_col              (begc:endc))                   ; this%prod10p_col              (:)   = nan
     allocate(this%prod100p_col             (begc:endc))                   ; this%prod100p_col             (:)   = nan
     allocate(this%totprodp_col             (begc:endc))                   ; this%totprodp_col             (:)   = nan
@@ -262,8 +262,6 @@ contains
     allocate(this%actual_livewdcp     (begp:endp)); this%actual_livewdcp     (:) = nan
     allocate(this%actual_deadwdcp     (begp:endp)); this%actual_deadwdcp     (:) = nan
     allocate(this%actual_graincp      (begp:endp)); this%actual_graincp      (:) = nan
-    allocate(this%pGPP_pleafn_patch   (begp:endp)); this%pGPP_pleafn_patch   (:) = nan
-    allocate(this%pGPP_pleafp_patch   (begp:endp)); this%pGPP_pleafp_patch   (:) = nan
     
     ! debug
     allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
@@ -629,6 +627,11 @@ contains
          avgflag='A', long_name='100-yr wood product P', &
          ptr_col=this%prod100p_col, default='inactive')
 
+    this%prod1p_col(begc:endc) = spval
+    call hist_addfld1d (fname='PROD1P', units='gP/m^2', &
+         avgflag='A', long_name='1-yr crop product P', &
+         ptr_col=this%prod1p_col, default='inactive')
+
     this%totprodp_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTPRODP', units='gP/m^2', &
          avgflag='A', long_name='total wood product P', &
@@ -740,15 +743,12 @@ contains
           end if
           
           if (nu_com .ne. 'RD') then
-             if (pft%itype(p) == noveg) then
-                this%frootp_patch(p) = 0._r8
-                this%frootp_storage_patch(p) = 0._r8
-             else
-                this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
-                this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
-             end if
-             this%pGPP_pleafn_patch(p) = 1.0_r8
-             this%pGPP_pleafp_patch(p) = 1.0_r8
+              ! ECA competition calculate root NP uptake as a function of fine root biomass
+              ! better to initialize root CNP pools with a non-zero value
+              if (pft%itype(p) .ne. noveg) then
+                 this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
+                 this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
+              end if
           end if
            
           this%deadstemp_storage_patch(p)  = 0._r8
@@ -832,6 +832,7 @@ contains
 
           ! dynamic landcover state variables
           this%seedp_col(c)         = 0._r8
+          this%prod1p_col(c)        = 0._r8
           this%prod10p_col(c)       = 0._r8
           this%prod100p_col(c)      = 0._r8
           this%totprodp_col(c)      = 0._r8
@@ -845,6 +846,7 @@ contains
        c = special_col(fc)
 
        this%seedp_col(c)    = 0._r8
+       this%prod1p_col(c)   = 0._r8
        this%prod10p_col(c)  = 0._r8	  
        this%prod100p_col(c) = 0._r8	  
        this%totprodp_col(c) = 0._r8	  
@@ -1147,6 +1149,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='prod100p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod100p_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod1p', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod1p_col)
 
     ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
     ! matches what the restart file was generated with.  
@@ -1707,6 +1713,7 @@ contains
 
       ! total wood product phosphorus
       this%totprodp_col(c) = &
+           this%prod1p_col(c) + &
            this%prod10p_col(c) + &
            this%prod100p_col(c)	 
 

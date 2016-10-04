@@ -13,11 +13,9 @@ EXECUTE   = preqx
 # EXECUTE   =  preqxse
 # EXECUTE   =  primdgx
 # EXECUTE   = sweqx
-# EXECUTE    = spelt
-INPUT     = baro.nl 
+INPUT     = baro.nl
 # INPUT     = fvm.nl
 # INPUT     = swtc5.nl
-# INPUT      = spelt.nl
 
 HNAME     = $(shell hostname -s)
 ARCH      = $(shell uname -s)

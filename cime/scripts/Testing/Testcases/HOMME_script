@@ -18,8 +18,7 @@ if ($GEN == "TRUE") then
 else if ($COMP == "TRUE") then
    make -j 4 check  >& $LOG || exit -1
 else
-   echo "HOMME tests current must compare or generate" >& $LOG
-   exit -1
+   make -j 4 baseline >& $LOG || exit -1
 endif
 
 cd -

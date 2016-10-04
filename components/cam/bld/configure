@@ -121,8 +121,10 @@ OPTIONS
                         [ waccm_mozart | waccmx_mozart | waccm_mozart_sulfur | waccm_mozart_mam3 | waccm_sc | 
 			  waccm_sc_mam3 | waccm_tsmlt | waccm_tsmlt_mam3 | waccm_tsmlt_sulfur |
                           trop_mozart | trop_mozart_mam3 | trop_mozart_soa | trop_strat_soa | trop_ghg | trop_bam |
-                          trop_mam3 | trop_mam4 | trop_mam4_mom | trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
-                          linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_mom |
+                          trop_mam3 | trop_mam4 | trop_mam4_resus | trop_mam4_resus_soag | trop_mam4_mom | 
+			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
+                          linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
+			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
                           trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
@@ -220,6 +222,7 @@ OPTIONS
                         Makefile defaults.
      -cosp              Enable the COSP simulator.
      -debug             Switch to turn on building CAM with debugging compiler options.
+     -bc_dep_to_snow_updates  Switch on new treatment of BC/dust deposition to ice/snoe
      -rain_evap_to_coarse_aero   Switch to turn on BC, POM and SOA in the MAM3 and MAM4 coarse mode (mam mode 3)
      -defaults <file>   Specify a configuration file which will be used to supply defaults instead of
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
@@ -321,8 +324,10 @@ GetOptions(
     "cppdefs=s"                 => \$opts{'cppdefs'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
+    "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
     "defaults=s"                => \$opts{'defaults'},
     "dyn=s"                     => \$opts{'dyn'},
+    "dyn_target=s"              => \$opts{'dyn_target'},
     "edit_chem_mech"            => \$opts{'edit_chem_mech'},
     "waccm_phys"                => \$opts{'waccm_phys'},
     "offline_dyn"               => \$opts{'offline_dyn'},
@@ -827,6 +832,13 @@ if (defined $opts{'waccmx'}) {
     $cfg_ref->set('waccmx', $opts{'waccmx'});
 }
 my $waccmx = $cfg_ref->get('waccmx');
+
+# Use new treatment of BC/dust deposition to ice/snow?
+my $bc_dep_to_snow_updates_opt = (defined $opts{'bc_dep_to_snow_updates'}) ? 1 : 0;
+$cfg_ref->set('bc_dep_to_snow_updates', $bc_dep_to_snow_updates_opt);
+my $bc_dep_to_snow_updates = $bc_dep_to_snow_updates_opt ? 1:0;
+
+if ($print>=2) { print "Is bc_dep_to_snow_updates active (0-NO; 1-YES)?: $bc_dep_to_snow_updates$eol"; }
 
 # Use "rain_evap_to_coarse_aero" in MAM3 or MAM4? [BSINGH -  For extra coarse mode species for BC, POM and SOA]
 my $rain_evap_to_coarse_aero_opt = (defined $opts{'rain_evap_to_coarse_aero'}) ? 1 : 0;
@@ -1359,9 +1371,9 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 }
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
-} elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom') {
+} elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
-} elsif ($chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus') {
+} elsif ($chem_pkg =~ '_mam4' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
@@ -1369,7 +1381,11 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_9MODE ';
 }
 
-if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_mom')) {
+if ($bc_dep_to_snow_updates == 1) {
+    $chem_cppdefs = "$chem_cppdefs  -DMODAL_AER"
+}
+
+if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 
@@ -2763,8 +2779,13 @@ sub write_filepath
 
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
-	print $fh "$camsrcdir/homme/src/share\n";
-	print $fh "$camsrcdir/homme/src/share/openacc\n";
+	    print $fh "$camsrcdir/homme/src/share\n";
+      if ($opts{'dyn_target'} eq 'preqx') {
+	      print $fh "$camsrcdir/homme/src/preqx\n";
+      } 
+      elsif($opts{'dyn_target'} eq 'preqx_acc') {
+	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
+      }
     }
 
     # Parallelization utilies

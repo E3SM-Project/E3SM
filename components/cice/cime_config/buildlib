@@ -1,0 +1,73 @@
+#! /usr/bin/env perl
+use strict;
+use File::Compare;
+
+if ($#ARGV == -1) {
+    die " ERROR cice buildlib: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASEBUILD    = `./xmlquery CASEBUILD    -value`;
+my $CASETOOLS    = `./xmlquery CASETOOLS    -value`;
+my $OBJROOT      = `./xmlquery OBJROOT	    -value`;
+my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
+my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
+my $GMAKE        = `./xmlquery GMAKE	    -value`;
+my $MACH         = `./xmlquery MACH         -value`;
+my $CICE_BLCKX   = `./xmlquery CICE_BLCKX   -value`;
+my $CICE_BLCKY   = `./xmlquery CICE_BLCKY   -value`;
+my $CICE_MXBLCKS = `./xmlquery CICE_MXBLCKS -value`;
+
+chdir "${OBJROOT}/ice/obj";
+
+#-------------------------------------------------------
+# Create Filepath in $CASEBUILD/ciceconf
+#-------------------------------------------------------
+
+my $sysmod = "cp $CASEBUILD/ciceconf/Filepath ${OBJROOT}/ice/obj/tmp_filepath";
+system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+
+if (-f "Filepath") {
+    if (compare("tmp_filepath", "Filepath") != 0) {
+	my $sysmod = "mv -f tmp_filepath Filepath";
+	system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+    }
+} else {
+    my $sysmod = "mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+#-------------------------------------------------------------- 
+#  force gmake to recompile if any of the cppdefs are different 
+#-------------------------------------------------------------- 
+my $recompile = 'FALSE';
+if (-e "$OBJROOT/ice/obj/CICE_cppdefs") {
+    if (compare("$OBJROOT/ice/obj/CICE_cppdefs.new", "$OBJROOT/ice/obj/CICE_cppdefs") != 0) {
+        $recompile = 'TRUE'; 
+    }   
+    # NOTE - the following remove statements are what force cice to recompile if
+    # the cppdefs are different
+    print "recompile is $recompile \n";
+    if ($recompile eq 'TRUE') {
+        my $sysmod = "rm -f $OBJROOT/ice/obj/*.o";
+        system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+    }   
+}
+my $sysmod = "cp -f $OBJROOT/ice/obj/CICE_cppdefs.new $OBJROOT/ice/obj/CICE_cppdefs";
+system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
+
+chdir $CASEROOT;
+my $cppdefs = `./xmlquery CICE_CPPDEFS -value`;
+chomp($cppdefs);
+$cppdefs = "$cppdefs -DBLCKX=$CICE_BLCKX -DBLCKY=$CICE_BLCKY -DMXBLCKS=$CICE_MXBLCKS";
+
+#-------------------------------------------------------
+# Build the library
+#-------------------------------------------------------
+
+chdir "${OBJROOT}/ice/obj";
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cice COMPLIB=${LIBROOT}/libice.a MACFILE=${CASEROOT}/Macros.${MACH} USER_CPPDEFS=\"$cppdefs\" -f ${CASETOOLS}/Makefile";
+system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+
+exit(0);
+
+

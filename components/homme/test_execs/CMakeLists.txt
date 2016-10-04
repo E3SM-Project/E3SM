@@ -157,20 +157,18 @@ ENDIF ()
 IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(swtcA)
   ADD_SUBDIRECTORY(swtcB)
-  ADD_SUBDIRECTORY(swtcC)
+  #ADD_SUBDIRECTORY(swtcC)
 ENDIF()
 
-# Add the test exec subdirs for the swdgx executable
-IF(${BUILD_HOMME_SWDGX})
-  ADD_SUBDIRECTORY(swtc-dgA)
-ENDIF()
 
 # Add the test exec subdirs for the preqx executable
 IF(${BUILD_HOMME_PREQX})
-  ADD_SUBDIRECTORY(baroA)
-  ADD_SUBDIRECTORY(baroB)
+#  ADD_SUBDIRECTORY(baroA)
+#  ADD_SUBDIRECTORY(baroB)
   ADD_SUBDIRECTORY(baroC)
   ADD_SUBDIRECTORY(baroCam)
+  ADD_SUBDIRECTORY(baroCam-acc)
+  ADD_SUBDIRECTORY(preqx-nlev20)
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -183,17 +181,15 @@ IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(swim5)
 ENDIF()
 
-# Add a standard executable for performance testing
-IF(${ENABLE_PERFTEST})
-  ADD_SUBDIRECTORY(perfTest)
-ENDIF()
-
 # Read the test-list.cmake file to get the HOMME_TESTS list
 INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 # Need a properly scoped variable to store the test directories for the
 #  replaceBaselineResults target
 SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
+
+# add a test dependency here:
+set_property(TEST baroCamMoist-acc APPEND PROPERTY DEPENDS baroCamMoist)
 
 # End the file with the total number of test files
 FILE (APPEND ${HOMME_TEST_LIST} "\n")

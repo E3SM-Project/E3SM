@@ -115,7 +115,7 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
     	 <PES_PER_NODE>24</PES_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -162,7 +162,7 @@
     <BATCHREDIRECT></BATCHREDIRECT>
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -353,6 +353,44 @@
     </mpirun>
 </machine>
 
+<machine MACH="sandia-srn-sems">
+    <DESC>Linux workstation RHEL6 on sandia SRN with SEMS</DESC>
+    <NODENAME_REGEX>(s999964|climate)</NODENAME_REGEX>
+    <PROXY>wwwproxy.sandia.gov:80</PROXY>
+    <TESTS>acme_developer</TESTS>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/sems-data-store/ACME/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
+    <BATCHQUERY></BATCHQUERY>
+    <BATCHSUBMIT></BATCHSUBMIT>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE_J>32</GMAKE_J>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>32</PES_PER_NODE>
+    <batch_system type="none" version="x.y">
+      <queues>
+      </queues>
+      <walltimes>
+      </walltimes>
+    </batch_system>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
+</machine>
+
 <machine MACH="skybridge">
          <DESC>SNL clust</DESC>
          <NODENAME_REGEX>skybridge-login</NODENAME_REGEX>
@@ -395,6 +433,44 @@
              <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
            </arguments>
          </mpirun>
+</machine>
+
+<machine MACH="anlworkstation">
+    <DESC>Linux workstation for ANL</DESC>
+    <NODENAME_REGEX>compute.*mcs.anl.gov</NODENAME_REGEX>
+    <PROXY></PROXY>
+    <TESTS>acme_developer</TESTS>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/home/climate1/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/climate1/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/home/climate1/acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/home/climate1/acme/cprnc/build/cprnc</CCSM_CPRNC>
+    <BATCHQUERY></BATCHQUERY>
+    <BATCHSUBMIT></BATCHSUBMIT>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>32</GMAKE_J>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <batch_system type="none" version="x.y">
+      <queues>
+      </queues>
+      <walltimes>
+      </walltimes>
+    </batch_system>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
 </machine>
 
 <machine MACH="redsky">
@@ -445,7 +521,7 @@
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
-         <COMPILERS>pgi,intel,gnu,nag</COMPILERS>
+         <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
          <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
@@ -481,7 +557,7 @@
 </machine>
 
 <machine MACH="cetus">
-         <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
+         <DESC>ANL IBM BG/Q, os is BGP, 16 cores/node, batch system is cobalt</DESC>
          <NODENAME_REGEX>cetus</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
@@ -523,7 +599,8 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>
@@ -555,8 +632,48 @@
     <PES_PER_NODE>2</PES_PER_NODE>
 </machine>
 
+<machine MACH="sierra">
+         <DESC>LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab</DESC>
+         <COMPILERS>intel, pgi</COMPILERS>
+         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
+         <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/p/lscratche/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/p/lscratche/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>mshow</BATCHQUERY>
+         <BATCHSUBMIT>msub</BATCHSUBMIT>
+	 <BATCHREDIRECT></BATCHREDIRECT>
+         <SUPPORTED_BY>wlin -at- bnl.gov</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+	 <batch_system type="sierra_slurm" version="x.y">
+	   <queues>
+	     <queue jobmin="1" jobmax="9999" default="true">pbatch</queue>
+	   </queues>
+	   <walltimes>
+	     <walltime default="true">walltime=01:00:00</walltime>
+	   </walltimes>
+	 </batch_system>
+	 <mpirun mpilib="mpich">
+	   <executable>srun</executable>
+	   <arguments>
+	     <arg name="num_nodes"> -N {{ num_nodes }}</arg>
+	   </arguments>
+	 </mpirun>
+	 <mpirun mpilib="mpi-serial">
+           <executable></executable>
+	 </mpirun>
+</machine>
+
 <machine MACH="mira">
-         <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
+         <DESC>ANL IBM BG/Q, os is BGP, 16 cores/node, batch system is cobalt</DESC>
          <NODENAME_REGEX>mira</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
@@ -566,7 +683,7 @@
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/projects/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
          <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
          <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -576,7 +693,7 @@
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
 	 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
+         <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -585,9 +702,7 @@
              <queue walltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
            </queues>
            <walltimes>
-             <walltime default="true">30</walltime>
-             <walltime ccsm_estcost="-3">60</walltime>
-             <walltime ccsm_estcost="0">60</walltime>
+             <walltime default="true">180</walltime>
            </walltimes>
          </batch_system>
          <mpirun mpilib="default">
@@ -600,7 +715,8 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>
@@ -915,6 +1031,7 @@
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>
 
@@ -967,6 +1084,7 @@
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>
 
@@ -1069,6 +1187,96 @@
                 <arg name="thread_count"> -d {{ thread_count }}</arg>
              </arguments>
          </mpirun>
+</machine>
+
+<machine MACH="lawrencium-lr3">
+  <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
+  <OS>LINUX</OS>
+  <COMPILERS>intel</COMPILERS>
+  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+  <CCSM_BASELINE>$CESMSCRATCHROOT/cesm_baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/$CESMSCRATCHROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+  <BATCHQUERY>squeue</BATCHQUERY>
+  <BATCHREDIRECT></BATCHREDIRECT>
+  <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+  <SUPPORTED_BY>gbisht at lbl dot gov </SUPPORTED_BY>
+  <GMAKE_J>4</GMAKE_J>
+  <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <batch_system type="slurm" version="2.0">
+    <queues>
+      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">00:59:00</walltime>
+    </walltimes>
+  </batch_system>
+  <mpirun mpilib="mpi-serial">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+  <mpirun mpilib="default">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+</machine>
+
+<machine MACH="lawrencium-lr2">
+  <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
+  <OS>LINUX</OS>
+  <COMPILERS>intel</COMPILERS>
+  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+  <CCSM_BASELINE>$CESMSCRATCHROOT/cesm_baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/$CESMSCRATCHROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+  <BATCHQUERY>squeue</BATCHQUERY>
+  <BATCHREDIRECT></BATCHREDIRECT>
+  <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+  <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
+  <GMAKE_J>4</GMAKE_J>
+  <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <batch_system type="slurm" version="2.0">
+    <queues>
+      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">00:59:00</walltime>
+    </walltimes>
+  </batch_system>
+  <mpirun mpilib="mpi-serial">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+  <mpirun mpilib="default">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
 </machine>
 
 <default_run_suffix>

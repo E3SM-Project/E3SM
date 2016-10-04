@@ -35,13 +35,41 @@
 <ice_sed_ai>         500.0  </ice_sed_ai>
 <cldfrc_dp1>         0.05D0 </cldfrc_dp1>
 <clubb_ice_deep>     20.e-6 </clubb_ice_deep>
-<clubb_ice_sh>       50.e-6 </clubb_ice_sh
-<clubb_liq_deep>     8.e-6  </clubb_liq_deep  
+<clubb_ice_sh>       50.e-6 </clubb_ice_sh>
+<clubb_liq_deep>     8.e-6  </clubb_liq_deep>  
 <clubb_liq_sh>       10.e-6 </clubb_liq_sh>
 <zmconv_c0_lnd>      0.005  </zmconv_c0_lnd>
 <zmconv_c0_ocn>      0.005  </zmconv_c0_ocn>
 <effgw_oro>          0.25   </effgw_oro>
 <seasalt_emis_scale> 0.5    </seasalt_emis_scale>
 <dust_emis_fact>     0.40D0 </dust_emis_fact>
+<zmconv_mx_bot_lyr_adj   >1</zmconv_mx_bot_lyr_adj>
+<zmconv_dmpdz>      -0.5e-3</zmconv_dmpdz>
+
+<!-- Stratospheric ozone (Linoz) -->
+<chlorine_loading_file      chem="linoz_mam3">atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>
+<chlorine_loading_fixed_ymd chem="linoz_mam3">20000101</chlorine_loading_fixed_ymd>
+<chlorine_loading_type      chem="linoz_mam3">FIXED</chlorine_loading_type>
+<linoz_data_cycle_yr        chem="linoz_mam3">2000</linoz_data_cycle_yr>
+<linoz_data_file            chem="linoz_mam3">linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
+<linoz_data_path            chem="linoz_mam3">atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type            chem="linoz_mam3">CYCLICAL</linoz_data_type>
+
+<chlorine_loading_file      chem="linoz_mam4_resus">atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>
+<chlorine_loading_fixed_ymd chem="linoz_mam4_resus">20000101</chlorine_loading_fixed_ymd>
+<chlorine_loading_type      chem="linoz_mam4_resus">FIXED</chlorine_loading_type>
+<linoz_data_cycle_yr        chem="linoz_mam4_resus">2000</linoz_data_cycle_yr>
+<linoz_data_file            chem="linoz_mam4_resus">linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
+<linoz_data_path            chem="linoz_mam4_resus">atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type            chem="linoz_mam4_resus">CYCLICAL</linoz_data_type>
+
+<chlorine_loading_file      chem="linoz_mam4_resus_mom">atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>
+<chlorine_loading_fixed_ymd chem="linoz_mam4_resus_mom">20000101</chlorine_loading_fixed_ymd>
+<chlorine_loading_type      chem="linoz_mam4_resus_mom">FIXED</chlorine_loading_type>
+<linoz_data_cycle_yr        chem="linoz_mam4_resus_mom">2000</linoz_data_cycle_yr>
+<linoz_data_file            chem="linoz_mam4_resus_mom">linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
+<linoz_data_path            chem="linoz_mam4_resus_mom">atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type            chem="linoz_mam4_resus_mom">CYCLICAL</linoz_data_type>
+
 
 </namelist_defaults>

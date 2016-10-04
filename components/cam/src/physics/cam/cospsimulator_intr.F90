@@ -55,6 +55,7 @@ module cospsimulator_intr
 
    public :: &
         cospsimulator_intr_readnl,    &
+        cospsimulator_intr_register, &
         cospsimulator_intr_init,    &
         cospsimulator_intr_run
 
@@ -783,6 +784,68 @@ end subroutine cospsimulator_intr_readnl
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
 
+subroutine cospsimulator_intr_register
+   use cam_history_support, only: add_hist_coord
+
+   ! register non-standard variable dimensions
+   if (lisccp_sim) then
+      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
+           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
+      call add_hist_coord('cosp_tau', ntau_cosp,                              &
+           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
+           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (llidar_sim) then
+      call add_hist_coord('cosp_ht', nht_cosp,                                &
+           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
+           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
+      call add_hist_coord('cosp_sr', nsr_cosp,                                &
+           'COSP Mean Scattering Ratio for lidar simulator CFAD output', '1', &
+           srmid_cosp, bounds_name='cosp_sr_bnds', bounds=srlim_cosp)
+      call add_hist_coord('cosp_sza', nsza_cosp, 'COSP Parasol SZA',          &
+           'degrees', sza_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (lradar_sim) then
+      call add_hist_coord('cosp_ht', nht_cosp,                                &
+           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
+           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
+      call add_hist_coord('cosp_dbze', ndbze_cosp,                            &
+           'COSP Mean dBZe for radar simulator CFAD output', 'dBZ',           &
+           dbzemid_cosp, bounds_name='cosp_dbze_bnds', bounds=dbzelim_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (lmisr_sim) then
+      call add_hist_coord('cosp_htmisr', nhtmisr_cosp, 'COSP MISR height',    &
+           'km', htmisrmid_cosp,                                              &
+           bounds_name='cosp_htmisr_bnds', bounds=htmisrlim_cosp)
+      call add_hist_coord('cosp_tau', ntau_cosp,                              &
+           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
+           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (lmodis_sim) then
+      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
+           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
+      call add_hist_coord('cosp_tau_modis', ntau_cosp_modis,                  &
+           'COSP Mean MODIS optical depth', '1', taumid_cosp_modis,    &
+           bounds_name='cosp_tau_modis_bnds', bounds=taulim_cosp_modis)
+   end if
+
+end subroutine cospsimulator_intr_register
+
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+
 subroutine cospsimulator_intr_init
 
    use cam_history,         only: addfld, horiz_only, add_default
@@ -791,7 +854,6 @@ subroutine cospsimulator_intr_init
 #endif
    use netcdf,              only : nf90_open, nf90_inq_varid, nf90_get_var, nf90_close, nf90_nowrite
    use error_messages,      only : handle_ncerr, alloc_err
-   use cam_history_support, only: add_hist_coord
    
    use physics_buffer,  only: pbuf_get_index
 #ifdef USE_COSP
@@ -883,15 +945,6 @@ endif
 
 !!! ISCCP OUTPUTS
    if (lisccp_sim) then
-      ! register non-standard variable dimensions
-      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
-           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
-      call add_hist_coord('cosp_tau', ntau_cosp,                              &
-           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
-           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       !! addfld calls for all
       !*cfMon,cfDa* clisccp2 (time,tau,plev,profile), CFMIP wants 7 p bins, 7 tau bins
       call addfld('FISCCP1_COSP',(/'cosp_tau','cosp_prs'/),'A','percent', &
@@ -953,17 +1006,6 @@ endif
 
 !!! LIDAR SIMULATOR OUTPUTS
    if (llidar_sim) then
-      call add_hist_coord('cosp_ht', nht_cosp,                                &
-           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
-           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
-      call add_hist_coord('cosp_sr', nsr_cosp,                                &
-           'COSP Mean Scattering Ratio for lidar simulator CFAD output', '1', &
-           srmid_cosp, bounds_name='cosp_sr_bnds', bounds=srlim_cosp)
-      call add_hist_coord('cosp_sza', nsza_cosp, 'COSP Parasol SZA',          &
-           'degrees', sza_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       !! addfld calls for all
       !*cfMon,cfOff,cfDa,cf3hr* cllcalipso (time,profile)
       call addfld('CLDLOW_CAL',horiz_only,'A','percent','Lidar Low-level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1110,15 +1152,6 @@ endif
 
 !!! RADAR SIMULATOR OUTPUTS
    if (lradar_sim) then
-      call add_hist_coord('cosp_ht', nht_cosp,                                &
-           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
-           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
-      call add_hist_coord('cosp_dbze', ndbze_cosp,                            &
-           'COSP Mean dBZe for radar simulator CFAD output', 'dBZ',           &
-           dbzemid_cosp, bounds_name='cosp_dbze_bnds', bounds=dbzelim_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       !!! addfld calls
       !*cfOff,cf3hr* cfad_dbze94 (time,height,dbze,profile), default is 40 vert levs, 15 dBZ bins 
       call addfld('CFAD_DBZE94_CS',(/'cosp_dbze','cosp_ht  '/),'A','fraction',&
@@ -1159,15 +1192,6 @@ endif
 
 !!! MISR SIMULATOR OUTPUTS
    if (lmisr_sim) then
-      call add_hist_coord('cosp_htmisr', nhtmisr_cosp, 'COSP MISR height',    &
-           'km', htmisrmid_cosp,                                              &
-           bounds_name='cosp_htmisr_bnds', bounds=htmisrlim_cosp)
-      call add_hist_coord('cosp_tau', ntau_cosp,                              &
-           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
-           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       ! clMISR (time,tau,CTH_height_bin,profile)
       call addfld ('CLD_MISR',(/'cosp_tau   ','cosp_htmisr'/),'A','percent','Cloud Fraction from MISR Simulator',&
       flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1177,13 +1201,6 @@ endif
 
 !!! MODIS OUTPUT
    if (lmodis_sim) then
-
-      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
-           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
-      call add_hist_coord('cosp_tau_modis', ntau_cosp_modis,                  &
-           'COSP Mean MODIS optical depth', '1', taumid_cosp_modis,    &
-           bounds_name='cosp_tau_modis_bnds', bounds=taulim_cosp_modis)
-
       ! float cltmodis ( time, loc )
       call addfld ('CLTMODIS',horiz_only,'A','%','MODIS Total Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float clwmodis ( time, loc )

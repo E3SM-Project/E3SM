@@ -100,6 +100,7 @@ module RtmMod
   logical :: do_rtm
 
   character(len=256) :: nlfilename_rof = 'mosart_in' 
+  real(r8), save :: delt_save             ! previous delt 
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -543,11 +544,6 @@ contains
        end if
     end do
 
-!    if (masterproc) then
-!       write(iulog,*) 'tcx rlats = ',rlats
-!       write(iulog,*) 'tcx rlatn = ',rlatn
-!    endif
-
     ! Set edge longitudes
     rlonw(:) = edgew
     rlone(:) = edgee
@@ -557,10 +553,7 @@ contains
        rlone(i-1) = rlonw(i)
     end do
 
-!    if (masterproc) then
-!       write(iulog,*) 'tcx rlonw = ',rlonw
-!       write(iulog,*) 'tcx rlone = ',rlone
-!    endif
+    call t_stopf ('mosarti_grid')
 
     !-------------------------------------------------------
     ! Determine mosart ocn/land mask (global, all procs)
@@ -1140,7 +1133,7 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
-    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
 
@@ -1251,7 +1244,7 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
-    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_direct,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_direct,rList=rList,lsize=rtmCTL%lnumr)
 
@@ -1380,6 +1373,7 @@ contains
 
     if (masterproc) write(iulog,*) subname,' done'
     if (masterproc) call shr_sys_flush(iulog)
+    delt_save = 0.0
 
     call t_stopf('mosarti_histinit')
 
@@ -1432,7 +1426,6 @@ contains
     real(r8) :: delt                        ! delt associated with subcycling
     real(r8) :: delt_coupling               ! real value of coupling_period
     integer , save :: nsub_save             ! previous nsub
-    real(r8), save :: delt_save             ! previous delt
     logical , save :: first_call = .true.   ! first time flag (for backwards compatibility)
     character(len=256) :: filer             ! restart file name
     integer  :: cnt                         ! counter for gridcells
@@ -1660,7 +1653,7 @@ contains
 
     call t_startf('mosartr_subcycling')
 
-    if (first_call) then
+    if (first_call .and. masterproc) then
        do nt = 1,nt_rtm
           write(iulog,'(2a,i6,l4)') trim(subname),' euler_calc for nt = ',nt,TUnit%euler_calc(nt)
        enddo
@@ -2103,6 +2096,7 @@ contains
   type(mct_avect) :: avtmp, avtmpG ! temporary avects
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
   real(r8):: areatot_prev, areatot_tmp, areatot_new
+  real(r8):: hlen_max, rlen_min
   integer :: tcnt
   character(len=16384) :: rList             ! list of fields for SM multiply
   character(len=1000) :: fname
@@ -2458,10 +2452,17 @@ contains
       
         if(TUnit%rlen(iunit) > 0._r8) then
            TUnit%hlen(iunit) = TUnit%area(iunit) / TUnit%rlenTotal(iunit) / 2._r8
-           if(TUnit%hlen(iunit) > 50000_r8) then
-              TUnit%hlen(iunit) = 50000_r8   ! allievate the outlier in drainage density estimation. TO DO
+           hlen_max = max(1000.0_r8, sqrt(TUnit%area(iunit))) ! constrain the hillslope length
+           if(TUnit%hlen(iunit) > hlen_max) then
+              TUnit%hlen(iunit) = hlen_max   ! allievate the outlier in drainage density estimation. TO DO
            end if
-           TUnit%tlen(iunit) = TUnit%area(iunit) / TUnit%rlen(iunit) / 2._r8 - TUnit%hlen(iunit)
+           rlen_min = sqrt(TUnit%area(iunit))
+           if(TUnit%rlen(iunit) < rlen_min) then
+              TUnit%tlen(iunit) = TUnit%area(iunit) / rlen_min / 2._r8 - TUnit%hlen(iunit)
+           else
+              TUnit%tlen(iunit) = TUnit%area(iunit) / TUnit%rlen(iunit) / 2._r8 - TUnit%hlen(iunit)
+           end if
+  
            if(TUnit%twidth(iunit) < 0._r8) then
               TUnit%twidth(iunit) = 0._r8
            end if
@@ -2575,7 +2576,7 @@ contains
      do nt = 2,nt_rtm
         write(rList,'(a,i3.3)') trim(rList)//':tr',nt
      enddo
-     write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
      call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
      call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
 

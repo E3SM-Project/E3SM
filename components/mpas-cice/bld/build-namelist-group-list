@@ -2,6 +2,7 @@ my @groups = qw(cice_model
                 io
                 decomposition
                 restart
+                dimensions
                 initialize
                 use_sections
                 forcing
@@ -18,6 +19,7 @@ my @groups = qw(cice_model
                 ridging
                 atmosphere
                 ocean
+                diagnostics
                 am_highfrequencyoutput
                 am_temperatures
                 am_regionalstatistics
@@ -29,7 +31,9 @@ my @groups = qw(cice_model
                 am_miscellaneous
                 am_areavariables
                 am_ponddiagnostics
+                am_unitconversion
                 am_pointwisestats
+                am_iceshelves
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly

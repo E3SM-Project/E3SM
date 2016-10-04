@@ -226,8 +226,10 @@ contains
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
 
+          call t_set_prefixf(comp(1)%oneletterid//"_i:")
           call comp_init( EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc, &
                NLFilename=NLFilename )
+          call t_unset_prefixf()
           
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
@@ -424,11 +426,13 @@ contains
              !-----------------------------------
              ! *** call into ESMF init method ***
              !-----------------------------------
+             call t_set_prefixf(comp(1)%oneletterid//"_i:")
              call ESMF_GridCompInitialize(comp(eci)%gridcomp_cc, &
                   importState=comp(eci)%x2c_cc_state, exportState=comp(eci)%c2x_cc_state, &
                   clock=EClock, userRc=urc, rc=rc)
              if (urc /= ESMF_SUCCESS) call ESMF_Finalize(rc=urc, endflag=ESMF_END_ABORT)
              if (rc  /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc , endflag=ESMF_END_ABORT)
+             call t_unset_prefixf()
              !-----------------------------------
 
              if (init_phase == 2) then
@@ -1041,7 +1045,9 @@ contains
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
              end if
 
+             call t_set_prefixf(comp(1)%oneletterid//":")
              call comp_run(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
+             call t_unset_prefixf()
 
              if (phase == 1) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
@@ -1162,11 +1168,13 @@ contains
           !----------------------------------------------
           ! *** Run the component on component pes***
           !----------------------------------------------
+          call t_set_prefixf(comp(1)%oneletterid//":")
           call ESMF_GridCompRun(comp(eci)%gridcomp_cc, &
                importState=comp(eci)%x2c_cc_state, exportState=comp(eci)%c2x_cc_state, &
                clock=EClock, userRc=urc, rc=rc)
           if (urc /= ESMF_SUCCESS) call ESMF_Finalize(rc=urc, endflag=ESMF_END_ABORT)
           if (rc  /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc , endflag=ESMF_END_ABORT)
+          call t_unset_prefixf()
           !----------------------------------------------
 
           call ESMF_AttributeSet(comp(eci)%c2x_cc_state, name="ID", value=comp(eci)%compid, rc=rc)
@@ -1233,7 +1241,9 @@ contains
     do eci = 1,num_inst
        if (comp(eci)%iamin_compid) then
           if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
+          call t_set_prefixf(comp(1)%oneletterid//"_f:")
           call comp_final(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
+          call t_unset_prefixf()
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        end if
     end do
@@ -1258,6 +1268,7 @@ contains
     integer             :: num_inst
     character(*), parameter :: subname = '(component_final:esmf)'
     !---------------------------------------------------------------
+    call t_set_prefixf(comp(1)%oneletterid//"_f:")
 
     num_inst = size(comp)
     do eci = 1,num_inst
@@ -1271,6 +1282,7 @@ contains
 
     end do
 
+    call t_unset_prefixf()
   end subroutine component_final
 #endif
 

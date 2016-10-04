@@ -286,7 +286,7 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, file='/dev/null', position='APPEND')
+       open(stdout_shr, status='SCRATCH')
     else
        inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -722,6 +722,12 @@ contains
 
     write(stderrUnit,*) '=== glc_init_mct complete.'
 
+#ifndef MPAS_DEBUG
+    if ( iam /= 0 ) then
+       close(stdout_shr)
+    end if
+#endif
+
 !-----------------------------------------------------------------------
 !EOC
 
@@ -771,8 +777,16 @@ contains
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
-      integer :: err, err_tmp, globalErr, streamDirection
+      integer :: err, err_tmp, globalErr, streamDirection, my_proc_id
       logical :: solveVelo, streamActive
+
+      my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+      if ( my_proc_id /= 0 ) then
+         open(glcStdErrUnit, status='SCRATCH')
+      end if
+#endif
 
       call mpas_io_units_set_stdout(glcStdOutUnit)
       call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -822,7 +836,7 @@ contains
          itimestep = itimestep + 1
 
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
-         write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
+         call shr_sys_flush(stderrUnit)
 
          ! ===
          ! === Perform Timestep
@@ -868,8 +882,17 @@ contains
          ! ===
          call mpas_timer_start("write output")
 
-         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
-         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
+         ! Reset any restart alarms to prevent restart files being written without the coupler requesting it.
+         call mpas_stream_mgr_begin_iteration(domain % streamManager)
+
+         do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
+                    directionProperty=streamDirection, activeProperty=streamActive ) )
+
+            if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=err_tmp)
+               err = ior(err,err_tmp)
+            end if
+         end do
          err = ior(err, err_tmp)
 
          ! These calls will handle ALL output streams that need writing.
@@ -904,6 +927,7 @@ contains
              call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
          endif
 
+         write(stderrUnit,*) 'Completed timestep number ', iTimeStep
          call shr_sys_flush(stderrUnit)
       end do
       err = ior(err, err_tmp)
@@ -969,6 +993,12 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
+#ifndef MPAS_DEBUG
+      if ( my_proc_id /= 0 ) then
+         close(glcStdErrUnit)
+      end if
+#endif
+
 !-----------------------------------------------------------------------
   end subroutine glc_run_mct!}}}
 
@@ -1004,10 +1034,18 @@ contains
 !  local variables
 !
 !-----------------------------------------------------------------------
-    integer :: shrloglev, shrlogunit
+    integer :: shrloglev, shrlogunit, my_proc_id
     integer :: err, err_tmp, iErr
 
 !-----------------------------------------------------------------------
+
+    my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(glcStdErrUnit, status='SCRATCH')
+    end if
+#endif
 
     call mpas_io_units_set_stdout(glcStdOutUnit)
     call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -1030,6 +1068,12 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(glcStdErrUnit)
+    end if
+#endif
 
   end subroutine glc_final_mct!}}}
 

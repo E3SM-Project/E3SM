@@ -424,15 +424,16 @@ contains
 
          else
          
-            ! leaf level nutrient control on photosynthesis rate
+            ! leaf level nutrient control on photosynthesis rate added by Q. Zhu Aug 2015
             
             if ( CNAllocate_Carbon_only() .or. cnallocate_carbonphosphorus_only()) then
 
                lnc(p) = 1._r8 / (slatop(pft%itype(p)) * leafcn(pft%itype(p)))
+               vcmax25top = lnc(p) * flnr(pft%itype(p)) * fnr * act25 * dayl_factor(p)
                vcmax25top = vcmax25top * fnitr(pft%itype(p))
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
-            else if ( cnallocate_carbonnitrogen_only() ) then ! <Bardan's leaf CN physiology control on vcmax>
+            else if ( cnallocate_carbonnitrogen_only() ) then ! only N control, from Kattge 2009 Global Change Biology 15 (4), 976-991
 
                ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
                sum_nscaler = 0.0_r8                                                       
@@ -460,12 +461,13 @@ contains
                   ! dividing by LAI to convert total leaf nitrogen
                   ! from m2 ground to m2 leaf; dividing by sum_nscaler to
                   ! convert total leaf N to leaf N at canopy top
-                  lnc(p) = (leafn(p) + leafn_storage(p) + leafn_xfer(p)) / (total_lai * sum_nscaler)
+                  lnc(p) = leafn(p) / (total_lai * sum_nscaler)
+                  lnc(p) = min(max(lnc(p),0.0_r8),3.0_r8) ! based on TRY database, doi: 10.1002/ece3.1173
                else                                                                    
                   lnc(p) = 0.0_r8                                                      
                end if
 
-               vcmax25top = i_vcmax(pft%itype(p)) + s_vcmax(pft%itype(p)) * lnc(p)
+               vcmax25top = (i_vcmax(pft%itype(p)) + s_vcmax(pft%itype(p)) * lnc(p)) * dayl_factor(p) 
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
             else
@@ -500,17 +502,19 @@ contains
                      ! dividing by LAI to convert total leaf nitrogen
                      ! from m2 ground to m2 leaf; dividing by sum_nscaler to
                      ! convert total leaf N to leaf N at canopy top
-                     lnc(p) = (leafn(p) + leafn_storage(p) + leafn_xfer(p)) / (total_lai * sum_nscaler)
-                     lpc(p) = (leafp(p) + leafp_storage(p) + leafp_xfer(p)) / (total_lai * sum_nscaler)
+                     lnc(p) = leafn(p) / (total_lai * sum_nscaler)
+                     lpc(p) = leafp(p) / (total_lai * sum_nscaler)
+                     lnc(p) = min(max(lnc(p),0.0_r8),3.0_r8) ! based on TRY database, doi: 10.1002/ece3.1173
+                     lpc(p) = min(max(lpc(p),0.0_r8),0.5_r8) ! based on TRY database, doi: 10.1002/ece3.1173
                   else
                      lnc(p) = 0.0_r8
                      lpc(p) = 0.0_r8
                   end if
 
-                  if (lnc(p) >= 0.1 .and. lnc(p) <=3.0 .and. lpc(p) >= 0.05 .and. lpc(p) <= 0.5) then
-                     vcmax25top = exp(3.946 + 0.921*log(lnc(p)) + 0.121*log(lpc(p)) + 0.282*log(lnc(p))*log(lpc(p)))
-                     jmax25top = exp(1.246 + 0.886*log(vcmax25top) + 0.089*log(lpc(p)))
-                  else if (lnc(p) < 0.1 .or. lpc(p) < 0.05) then
+                  if (lnc(p) >= 0.1_r8 .and. lnc(p) <=3.0_r8 .and. lpc(p) >= 0.05_r8 .and. lpc(p) <= 0.5_r8) then
+                     vcmax25top = exp(3.946_r8 + 0.921_r8*log(lnc(p)) + 0.121_r8*log(lpc(p)) + 0.282_r8*log(lnc(p))*log(lpc(p))) * dayl_factor(p)
+                     jmax25top = exp(1.246_r8 + 0.886_r8*log(vcmax25top) + 0.089_r8*log(lpc(p))) * dayl_factor(p)
+                  else if (lnc(p) < 0.1_r8 .or. lpc(p) < 0.05_r8) then
                      vcmax25top = 10.0_r8
                      jmax25top  = 10.0_r8
                   else
@@ -590,6 +594,7 @@ contains
 
             if (nlevcan == 1) then
                nscaler = vcmaxcint(p)
+               if (nu_com_leaf_physiology) nscaler = 1
             else if (nlevcan > 1) then
                nscaler = exp(-kn(p) * laican)
             end if

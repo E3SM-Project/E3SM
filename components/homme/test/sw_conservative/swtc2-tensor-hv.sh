@@ -1,6 +1,6 @@
 #!/bin/bash 
 set -e
-HOMME=~/codes/acme-dev/models/atm/homme
+HOMME=~/codes/acme-dev/components/homme
 wdir=~/scratch1/sweqx
 MACH=$HOMME/cmake/machineFiles/redsky.cmake
 NCPU=0
@@ -14,7 +14,7 @@ nu=1.2e-6 #3.5e-8 for hv_scaling=3.2, 1.2e-6 for hv_scaling=4.0
 hvscaling=4
 test_case=swtc2
 name=${test_case}-tensor
-mesh=~/codes/mapping/grids/mountain_10_x8.g
+mesh=~/codes/mapping/grids/mountain_10_x2.g
 
 #
 # run/build directoryies
@@ -42,7 +42,7 @@ exe=$builddir/src/sweqx/sweqx
 mkdir -p $rundir/movies
 cd $rundir
 rsync $mesh .
-let sfreq=24*3600
+let sfreq=3600
 sfreq=`echo "$sfreq / $tstep" | bc`
 
 sed s/tstep.\*/"tstep = $tstep"/  $input/swtc2-tensor-hv.nl |\

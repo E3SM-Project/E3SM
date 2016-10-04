@@ -1,0 +1,225 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_LND">
+    <type>char</type>
+    <valid_values>clm</valid_values>
+    <default_value>clm</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of land component</desc>
+  </entry>
+
+  <entry id="CLM_CONFIG_OPTS" >
+    <type>char</type>
+    <default_value></default_value>
+    <values modifier='additive'>
+      <value compset="_CLM40"                >-phys clm4_0</value>
+      <value compset="_CLM40%[^_]*CN"        >-bgc cn</value>
+      <value compset="_CLM40%[^_]*CNDV"      >-bgc cndv</value>
+      <value compset="_CLM40%[^_]*CROP"      >-crop on</value>
+      <value compset="_CLM45"                >-phys clm4_5</value>
+      <value compset="_CLM50"                >-phys clm5_0</value>
+      <value compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
+    </values>
+    <group>build_component_clm</group>
+    <file>env_build.xml</file>
+    <desc>Provides option(s) for the CLM configure utility.
+      CLM_CONFIG_OPTS are normally set as compset variables (e.g., -bgc cn)
+      and in general should not be modified for supported compsets.
+      It is recommended that if you want to modify this value for your experiment,
+      you should use your own user-defined component sets via using create_newcase
+      with a compset_file argument.
+      This is an advanced flag and should only be used by expert users.</desc>
+  </entry>
+
+  <entry id="CLM_NML_USE_CASE">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <values>
+      <value compset="2000_DATM.*_CLM"  >2000_control</value> 
+      <value compset="2000_CAM.*_CLM"   >2000_control</value> 
+      <value compset="1996_CAM.*_CLM"   >2000_control</value> 
+      <value compset="5505_CAM.*_CLM"   >1850-2100_rcp4.5_transient</value> 
+      <value compset="2003.*_CLM"       >2000_control</value>       
+      <value compset="1850.*_CLM"       >1850_control</value> 
+      <value compset="20TR.*_CLM"       >20thC_transient</value> 
+      <value compset="RCP6.*_CLM"       >1850-2100_rcp6_transient</value> 
+      <value compset="RCP4.*_CLM"       >1850-2100_rcp4.5_transient</value> 
+      <value compset="RCP2.*_CLM"       >1850-2100_rcp2.6_transient</value> 
+      <value compset="RCP8.*_CLM"       >1850-2100_rcp8.5_transient</value> 
+      <value compset="1850.*_CLM.*_CISM">1850_glacierMEC_control</value> 
+      <value compset="2000.*_CLM.*_CISM">2000_glacierMEC_control</value> 
+      <value compset="2000.*_CLM.*_MPASLI">2000_glacierMEC_control</value>
+      <value compset="PDAY.*_CLM.*_CISM">2000_glacierMEC_control</value> 
+      <value compset="4804.*_CLM.*_CISM">2000_glacierMEC_control</value> 
+      <value compset="20TR.*_CLM.*_CISM">20thC_glacierMEC_transient</value> 
+      <value compset="RCP8.*_CLM.*_CISM">1850-2100_rcp8.5_glacierMEC_transient</value>
+      <value compset="RCP6.*_CLM.*_CISM">1850-2100_rcp6_glacierMEC_transient  </value>
+      <value compset="RCP4.*_CLM.*_CISM">1850-2100_rcp4.5_glacierMEC_transient</value>
+      <value compset="RCP2.*_CLM.*_CISM">1850-2100_rcp2.6_glacierMEC_transient</value>
+      <value compset="2013.*_CLM.*_CISM">1850-2100_rcp4.5_glacierMEC_transient</value>
+      <value compset="GEOS.*_CLM"       >20thC_transient</value> 
+      <value compset="AMIP.*_CLM"       >20thC_transient</value> 
+      <value compset="CLM.*_CISM.*_TEST">glacierMEC_pd</value>
+      <!-- Use rcp4.5 for PI to PDAY so will have data up to the current year available (for WACCM compsets that use PDAY) -->
+      <value compset="PIPD_CAM5"        >1850-2100_rcp4.5_transient</value>
+      <value compset="2013.*_CLM"       >1850-2100_rcp4.5_transient</value> 
+      <value compset="PDAY.*_CLM"       >1850-2100_rcp4.5_transient</value> 
+    </values>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>CLM namelist use_case.
+      Determines the use-case that will be sent to the CLM build-namelist utility.
+      This is normally set by the component set. This is an advanced flag and should only be
+      used by expert users.</desc>
+  </entry>
+
+  <!-- CLM_BLDNML_OPTS is not additive, we must list all possible combinations -->
+  <!-- ERROR: the node below is never matched, see bug 2025 -->
+  <entry id="CLM_BLDNML_OPTS">
+    <type>char</type>
+    <default_value></default_value>
+    <values>
+      <value compset="%CNCR"                 >-ignore_ic_year</value>  <!-- ERROR: Never matched, see bug 2025 -->
+      <value compset="_CLM45%[^_]*SP"        >-bgc sp</value>
+      <value compset="_CLM45%[^_]*SPBC"      >-bgc sp -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+      <value compset="_CLM45%[^_]*CN"        >-bgc cn</value>
+      <value compset="_CLM45%[^_]*BGC"       >-bgc bgc</value>
+      <value compset="_CLM45%[^_]*CN-CROP"   >-bgc cn -crop</value>
+      <value compset="_CLM45%[^_]*BGC-CROP"  >-bgc bgc -crop</value>
+      <value compset="_CLM45%[^_]*CNDV"      >-bgc cn -dynamic_vegetation</value>
+      <value compset="_CLM45%[^_]*BGCDV"     >-bgc bgc -dynamic_vegetation</value>
+      <value compset="_CLM45%[^_]*CNDV-CROP" >-bgc cn -dynamic_vegetation -crop</value>
+      <value compset="_CLM45%[^_]*BGCDV-CROP">-bgc bgc -dynamic_vegetation -crop</value>
+      <value compset="_CLM45%[^_]*CN-ED"     >-bgc cn -ed_mode</value>
+      <value compset="_CLM45%[^_]*BGC-ED"    >-bgc bgc -ed_mode</value>
+      <value compset="_CLM45%[^_]*CRDCTCBC"   >-bgc cn -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+      <value compset="_CLM45%[^_]*CNRDCTCBC"  >-bgc cn -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+      <value compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc cn -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+      <value compset="_CLM45%[^_]*CNECACTCBC" >-bgc cn -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+      <value compset="_CLM45%[^_]*CNPECACTCBC">-bgc cn -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+
+      <value compset="_CLM50%[^_]*SP"        >-bgc sp</value>
+      <value compset="_CLM50%[^_]*BGC"       >-bgc bgc</value>
+    </values>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>CLM build-namelist options</desc>
+  </entry>
+
+  <entry id="CLM_CO2_TYPE">
+    <type>char</type>
+    <valid_values>constant,diagnostic,prognostic</valid_values>
+    <list>1</list>
+    <default_value>constant</default_value>
+    <values>
+      <value compset="_CAM.*_CLM"     >diagnostic</value>
+      <value compset="_CLM.*_BGC%BDRD">diagnostic</value>
+      <value compset="_CLM.*_BGC%BPRP">prognostic</value>
+      <value compset="20TR.*_DATM"    >diagnostic</value>
+      <value compset="RCP.*_DATM"     >diagnostic</value>
+    </values>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>Determines how CLM will determine where CO2 is set.
+      If value is constant, it will be set to CCSM_CO2_PPMV,
+      if value is either diagnostic or prognostic, the atmosphere model
+      MUST send it to CLM. CLM_CO2_TYPE is normally set by the specific
+      compset, since it HAS to be coordinated with settings for the
+      atmospheric model. Do not modify this variable. If you want to modify for
+      your experiment, use your own user-defined component set
+      This is an advanced flag and should only be used by expert users.</desc>
+  </entry>
+
+  <entry id="CLM_NAMELIST_OPTS">
+    <type>char</type>
+    <default_value></default_value>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>CLM-specific namelist settings for -namelist option in the CLM
+      build-namelist. CLM_NAMELIST_OPTS is normally set as a compset variable
+      and in general should not be modified for supported compsets.
+      It is recommended that if you want to modify this value for your experiment,
+      you should use your own user-defined component sets via using create_newcase
+      with a compset_file argument.
+      This is an advanced flag and should only be used by expert users.</desc>
+  </entry>
+
+  <entry id="CLM_ACCELERATED_SPINUP">
+    <type>char</type>
+    <valid_values>on,off</valid_values>
+    <default_value>off</default_value>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>Turn on any settings for accellerating the model spinup.
+    </desc>
+  </entry>
+
+  <entry id="CLM_USRDAT_NAME">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>Dataset name for user-created datasets. This is used as the argument
+      in Buildconf/clm.buildnml to build-namelist -clm_usr_name. An example of
+      such a dataset would be 1x1pt_boulderCO_c090722. The default value is UNSET.
+      This is an advanced flag and should only be used by expert users.</desc>
+  </entry>
+
+  <entry id="CLM_FORCE_COLDSTART">
+    <type>char</type>
+    <valid_values>on,off</valid_values>
+    <default_value>off</default_value>
+    <values>
+      <value compset="_CLM.+CISM"        >on</value>
+      <value compset="4804.*_CLM.*_CISM1">off</value>
+      <value compset="_CLM.+MPASLI"        >on</value>
+    </values>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>Flag to the CLM build-namelist command to force CLM to do a
+      cold start (finidat will be set to blanks).
+      A value of on forces the model to spin up from a cold-start
+      (arbitrary initial conditions). Setting this value in the xml file will take
+      precedence over any settings for finidat in the $CASEROOT/user_clm_clm file.</desc>
+  </entry>
+
+  <description>
+    <desc compset="_CLM40"          >clm4.0 physics:</desc>
+    <desc compset="_CLM40%[^_]*SP"  >clm4.0 Satellite phenology:</desc>
+    <desc compset="_CLM40%[^_]*CN"  >clm4.0 cn:</desc>
+    <desc compset="_CLM40%[^_]*CNDV">clm4.0 cndv:</desc>
+    <desc compset="_CLM40%[^_]*CROP">clm4.0 prognostic crop:</desc>
+    <desc compset="_CLM45"               >clm4.5 physics:</desc>
+    <desc compset="_CLM45%[^_]*SP"       >clm4.5 Satellite phenology:</desc>
+    <desc compset="_CLM45%[^_]*SPBC"     >clm4.5 Satellite phenology with black carbon deposition:</desc>
+    <desc compset="_CLM45%[^_]*CN"       >clm4.5 cn:</desc>
+    <desc compset="_CLM45%[^_]*CNDV"     >clm4.5 cn with dynamic vegetation:</desc>
+    <desc compset="_CLM45%[^_]*BGC"      >clm4.5 bgc (cn and methane):</desc>
+    <desc compset="_CLM45%[^_]*CROP"     >clm4.5 prognostic crop:</desc>
+    <desc compset="_CLM45%[^_]*VIC"      >clm4.5 vic hydrology:</desc>
+    <desc compset="_CLM45%[^_]*ED"       >clm4.5 ED (Ecosystem Demography): (experimental)</desc>
+    <desc compset="_CLM45%[^_]*BGCDV"    >clm4.5 BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg</desc>
+    <desc compset="_CLM45%[^_]*CRDCTCBC"   >alm1.0 C only, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
+    <desc compset="_CLM45%[^_]*CNRDCTCBC"  >alm1.0 C-N, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
+    <desc compset="_CLM45%[^_]*CNPRDCTCBC" >alm1.0 C-N-P, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
+    <desc compset="_CLM45%[^_]*CNECACTCBC" >alm1.0 C-N, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
+    <desc compset="_CLM45%[^_]*CNPECACTCBC">alm1.0 C-N-P, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
+    <desc compset="_CLM50"               >clm5.0 physics:</desc>
+    <desc compset="_CLM50%[^_]*SP"       >clm5.0 Satellite phenology:</desc>
+    <desc compset="_CLM50%[^_]*BGC"      >clm5.0 bgc (cn and methane):</desc>
+  </description>
+
+  <help>
+    =========================================
+    CLM naming conventions
+    =========================================
+    note: [^_]* means match zero or more of any character BUT an underbar.
+    (in other words make sure there is NOT a underbar before the string afterwards)
+  </help>
+
+</definitions_variables>

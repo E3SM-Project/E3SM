@@ -105,18 +105,43 @@ if ( $COMPILER == "pgi" ) then
   endif
 endif
 
-if ( $COMPILER == "gnu" ) then
+if ( $COMPILER == "gnu" || $COMPILER == "gcc-5.3" ) then
+
+  soft add +gcc-5.3.0 
+  #soft add +netcdf-4.4.0-gcc-5.3.0-serial
+  soft add +netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial
+  soft add +pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b
+
+  setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-xezev3j3kyay6obokfjvwfzqc2l6uwh5
+
+  if ( $MPILIB == "mpi-serial") then
+   setenv PNETCDFROOT ""
+  else if ( $MPILIB == "mvapich") then
+
+    soft add +mvapich2-2.2b-gcc-5.3.0
+    setenv PNETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/parallel-netcdf-1.6.1-ldvtzhyio26mpnjxmhdqhuc4dhnspvm4
+	#setenv PNETCDFROOT
+  else
+    # default - mvapich + pnetcdf
+	soft add +mvapich2-2.2b-gcc-5.3.0
+    setenv PNETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/parallel-netcdf-1.6.1-ldvtzhyio26mpnjxmhdqhuc4dhnspvm4
+	
+  endif
+endif
+
+
+if ( $COMPILER == "gcc-5.2" ) then
   soft add +gcc-5.2
   soft add +netcdf-4.3.3.1-gnu5.2-serial
   setenv NETCDFROOT /soft/netcdf_serial/4.3.3.1/gnu-5.2
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mvapich") then
-    soft add +mvapich2-2.2b-gcc-5.2-psm
+    soft add +mvapich2-2.2b-gcc-5.2
     setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   else
     # default - mvapich + pnetcdf
-    soft add +mvapich2-2.2b-gcc-5.2-psm
+    soft add +mvapich2-2.2b-gcc-5.2
     setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   endif
 endif

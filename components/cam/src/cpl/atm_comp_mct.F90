@@ -23,7 +23,7 @@ module atm_comp_mct
   use atm_import_export
   use cam_comp
   use cam_instance     , only: cam_instance_init, inst_suffix
-  use cam_control_mod  , only: nsrest, adiabatic, ideal_phys, aqua_planet, eccen, obliqr, lambm0, mvelpp
+  use cam_control_mod  , only: nsrest, aqua_planet, eccen, obliqr, lambm0, mvelpp
   use radiation        , only: radiation_do, radiation_nextsw_cday
   use phys_grid        , only: get_ncols_p, ngcols, get_gcol_p, get_rlat_all_p, &
 	                       get_rlon_all_p, get_area_all_p
@@ -204,8 +204,6 @@ CONTAINS
        call seq_infodata_GetData( infodata,                                           &
             case_name=caseid, case_desc=ctitle,                                       &
             start_type=starttype,                                                     &
-            atm_adiabatic=adiabatic,                                                  &
-            atm_ideal_phys=ideal_phys,                                                &
             aqua_planet=aqua_planet,                                                  &
             brnch_retain_casename=brnch_retain_casename,                              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
@@ -344,7 +342,9 @@ CONTAINS
           call atm_export( cam_out, a2x_a%rattr )
        else
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
-          call atm_import( x2a_a%rattr, cam_in )
+          ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
+	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
+          call atm_import( x2a_a%rattr, cam_in, .true. )
           call cam_run1 ( cam_in, cam_out ) 
        end if
 
