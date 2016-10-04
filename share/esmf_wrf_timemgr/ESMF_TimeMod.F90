@@ -1080,16 +1080,20 @@ recursive subroutine ESMF_TimeGet(time, YY, MM, DD, D, Dl, H, M, S, MS, &
 
       ! Can either be yr/month based diff if diff is only in year and month
       ! or absolute seconds if diff in day/seconds as well
+      !
+      ! Update: Actually, the timeintcmp() routine in ESMF_TimeIntervalMod.F90 is not capable
+      !    of comparing time intervals when one interval has a different year and month than
+      !    the other. So, it is best here to always compute the interval as day/seconds.
 
-      if (d1 == d2 .and. s1 == s2) then
-!         write(6,*) 'tcx timedifft ym'
-         ESMF_TimeDiff%YR = y1 - y2
-         ESMF_TimeDiff%MM = m1 - m2
-         cmptime%S  = 0
-         cmptime%Sn = 0
-         cmptime%Sd = 0
-         ESMF_TimeDiff%basetime = cmptime
-      else
+!      if (d1 == d2 .and. s1 == s2) then
+!!         write(6,*) 'tcx timedifft ym'
+!         ESMF_TimeDiff%YR = y1 - y2
+!         ESMF_TimeDiff%MM = m1 - m2
+!         cmptime%S  = 0
+!         cmptime%Sn = 0
+!         cmptime%Sd = 0
+!         ESMF_TimeDiff%basetime = cmptime
+!      else
 !         write(6,*) 'tcx timedifft sec'
          ESMF_TimeDiff%YR = 0
          ESMF_TimeDiff%MM = 0
@@ -1105,7 +1109,7 @@ recursive subroutine ESMF_TimeGet(time, YY, MM, DD, D, Dl, H, M, S, MS, &
               ESMF_TimeDiff%basetime%S = ESMF_TimeDiff%basetime%S - nsecondsinyear(yr,time2%calendar%type)
             ENDDO
          ENDIF
-      endif
+!      endif
 
 !      write(6,*) 'tcx timediff5 ',ESMF_TimeDiff%YR, ESMF_TimeDiff%MM, ESMF_TimeDiff%basetime%s
 
