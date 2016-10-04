@@ -27,8 +27,9 @@ if ( $COMPILER == "intel" ) then
 endif
 
 if ( $COMPILER == "pgi" ) then
-  soft add +pgi-15.10
-  setenv NETCDFROOT /soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/pgi-15.10
+  soft add +pgi-16.3
+  soft add +netcdf-c-4.4.0-f77-4.4.3-pgi-16.3-serial
+  setenv NETCDFROOT /soft/spack/opt/spack/linux-x86_64/pgi-16.3-0/netcdf-4.4.0-3jeeee43ip5lcnvdgxssbqhnvylxw5gp
   setenv PATH $NETCDFROOT/bin:$PATH
   setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
   setenv NETCDF_INCLUDES $NETCDFROOT/include
@@ -36,12 +37,14 @@ if ( $COMPILER == "pgi" ) then
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mvapich") then
-   soft add +mvapich2-2.2b-pgi-15.10
-   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/pgi-15.10/mvapich2-2.2b-pgi-15.10
+   soft add +mvapich2-2.2b-pgi-16.3-acme
+   soft add +pnetcdf-1.6.1-pgi-16.3-mvapich2-2.2b-acme
+   setenv PNETCDFROOT /soft/spack/opt/spack/linux-x86_64/pgi-16.3-0/parallel-netcdf-1.6.1-4uarepsh5u2am2bbv2cbct4fl7jombz4
   else
    # default - mvapich+pnetcdf
-   soft add +mvapich2-2.2b-pgi-15.10
-   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/pgi-15.10/mvapich2-2.2b-pgi-15.10
+   soft add +mvapich2-2.2b-pgi-16.3-acme
+   soft add +pnetcdf-1.6.1-pgi-16.3-mvapich2-2.2b-acme
+   setenv PNETCDFROOT /soft/spack/opt/spack/linux-x86_64/pgi-16.3-0/parallel-netcdf-1.6.1-4uarepsh5u2am2bbv2cbct4fl7jombz4
   endif
 endif
 
