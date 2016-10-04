@@ -87,6 +87,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
    >lnd/clm2/mappingdata/grids/SCRIPgrid_360x720_nomask_c120830.nc</scripgriddata>
 <scripgriddata hgrid="0.9x1.25"  lmask="GRDC"
    >lnd/clm2/mappingdata/grids/SCRIPgrid_0.9x1.25_GRDC_c130307.nc</scripgriddata>
+<scripgriddata hgrid="0.5x0.5"  lmask="GSDTG2000"
+   >lnd/clm2/mappingdata/grids/SCRIPgrid_0.5x0.5_GSDTG2000_c161010.nc</scripgriddata>
 
 <!-- Other raw data grids -->
 <!-- Note that the following is a UGRID file rather than a SCRIP grid file -->
@@ -140,6 +142,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <lmask type="topostats"        >HYDRO1K-merge-nomask</lmask>
 <lmask type="vic"              >GRDC</lmask>
 <lmask type="ch4"              >cruncep</lmask>
+<lmask type="pho"              >GSDTG2000</lmask>
 
 <!-- Grid resolutions for different types of mksurfdata_map input files -->
 <hgrid type="lak"              >3x3min</hgrid>
@@ -164,6 +167,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <hgrid type="topostats"        >1km-merge-10min</hgrid>
 <hgrid type="vic"              >0.9x1.25</hgrid>
 <hgrid type="ch4"              >360x720cru</hgrid>
+<hgrid type="pho"              >0.5x0.5</hgrid>
+
 
 <!-- namelist filenames for different types of mksurfdata_map input files -->
 <mksrf_filename type="lak" >mksrf_flakwat</mksrf_filename>
@@ -186,6 +191,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <mksrf_filename type="topostats">mksrf_ftopostats</mksrf_filename>
 <mksrf_filename type="vic" >mksrf_fvic</mksrf_filename>
 <mksrf_filename type="ch4" >mksrf_fch4</mksrf_filename>
+<mksrf_filename type="pho" >mksrf_fphosphorus</mksrf_filename>
+
 
 <!-- mksrf_navyoro Orography -->
 <mksrf_fnavyoro hgrid="0.33x0.33" mask="navy" >lnd/clm2/rawdata/mksrf_navyoro_20min.c010129.nc</mksrf_fnavyoro>
@@ -277,6 +284,10 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <mksrf_fch4 hgrid="360x720cru" lmask="cruncep"
 >lnd/clm2/rawdata/mksrf_ch4inversion_360x720_cruncep_simyr2000.c130322.nc</mksrf_fch4>
+
+<!-- soil phosphorus dataset -->
+<mksrf_fphosphorus hgrid="0.5x0.5" lmask="GSDTG2000"
+>lnd/clm2/rawdata/mksrf_soilphos_0.5x0.5_simyr1850.c161007.nc</mksrf_fphosphorus>
 
 <!-- mksrf_fvegtyp -->
 

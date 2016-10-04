@@ -290,7 +290,8 @@ elif [ "$phys" = "clm4_5" ]; then
            "3x3min_GLOBE-Gardner-mergeGIS" \
            "0.9x1.25_GRDC" \
            "360x720cru_cruncep" \
-           "1km-merge-10min_HYDRO1K-merge-nomask" )
+           "1km-merge-10min_HYDRO1K-merge-nomask" \
+           "0.5x0.5_GSDTG2000" )
 
 else
     echo "ERROR: Unknown value for phys: $phys"
