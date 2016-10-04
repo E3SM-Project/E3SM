@@ -38,6 +38,7 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/restart_io_mod.F90
   ${SRC_DIR}/surfaces_mod.F90
   ${SRC_DIR}/vertical_mod.F90 
+  ${SRC_DIR}/test_mod.F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
   ${SRC_SHARE_DIR}/derivative_mod_base.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90
@@ -80,14 +81,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/fvm_reconstruction_mod.F90
   ${SRC_SHARE_DIR}/time_mod.F90 
   ${SRC_SHARE_DIR}/physics_mod.F90 
-  ${SRC_SHARE_DIR}/hybvcoord_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-  ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_const_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
+  ${SRC_SHARE_DIR}/hybvcoord_mod.F90
   ${SRC_SHARE_DIR}/domain_mod.F90 
   ${SRC_SHARE_DIR}/cg_mod.F90
   ${SRC_SHARE_DIR}/linear_algebra_mod.F90 
@@ -104,6 +98,13 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
   ${SRC_SHARE_DIR}/Manager.F90
+  ${UTILS_SHARE_DIR}/shr_kind_mod.F90
+  ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_file_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_const_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
   ${PHYSICS_DIR}/physics_types_mod.F90
   ${PHYSICS_DIR}/physics_io_mod.F90 
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 

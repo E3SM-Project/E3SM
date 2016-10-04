@@ -102,7 +102,12 @@ module namelist_mod
     TRACER_GRIDTYPE_FVM,              &
     dcmip2_0_h0,                      &
     dcmip2_0_rm,                      &
-    dcmip2_0_zetam  
+    dcmip2_0_zetam,                   &
+    dcmip2_x_ueq,                     &
+    dcmip2_x_h0,                      &
+    dcmip2_x_d,                       &
+    dcmip2_x_xi
+
 #else
   use control_mod, only:              &
     se_met_nudge_u,                   &
@@ -314,7 +319,11 @@ module namelist_mod
     namelist /ctl_nl/     &
       dcmip2_0_h0,        & !dcmip2-0 mountain height           (meters)
       dcmip2_0_rm,        & !dcmip2-0 mountain range radius     (radians)
-      dcmip2_0_zetam        !dcmip2-0 mountain range half width (radians)
+      dcmip2_0_zetam,     & !dcmip2-0 mountain range half width (radians)
+      dcmip2_x_ueq,       & !dcmip2-x windspeed at equator      (m/s)
+      dcmip2_x_h0,        & !dcmip2-x mountain height           (m)
+      dcmip2_x_d,         & !dcmip2-x mountain half-width       (m)
+      dcmip2_x_xi           !dcmip2-x mountain wavelength       (m)
 #endif
 
     namelist /solver_nl/precon_method, &
@@ -726,21 +735,26 @@ module namelist_mod
     nEndStep = nmax
 #endif
 
-    call MPI_bcast(omega,         1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(rearth,        1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(omega,           1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(rearth,          1, MPIreal_t,    par%root,par%comm,ierr)
     rrearth = 1.0d0/rearth
 
-    call MPI_bcast(dcmip2_0_h0,   1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_0_rm,   1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_0_zetam,1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_0_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_0_rm,     1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_0_zetam,  1, MPIreal_t,    par%root,par%comm,ierr)
 
-    call MPI_bcast(smooth,        1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(phys_tscale,   1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(NSPLIT,        1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(limiter_option,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(se_ftype,      1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(energy_fixer,  1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(vert_remap_q_alg,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_x_ueq,    1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_x_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_x_d,      1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_x_xi,     1, MPIreal_t,    par%root,par%comm,ierr)
+
+    call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(energy_fixer,    1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(fine_ne,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
