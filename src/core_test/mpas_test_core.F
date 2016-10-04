@@ -91,6 +91,7 @@ module test_core
       use mpas_vector_operations
       use mpas_geometry_utils
       use test_core_streams, only : test_core_streams_test
+      use test_core_sorting, only : test_core_test_sorting
    
       implicit none
    
@@ -107,6 +108,16 @@ module test_core
       maxThreads = mpas_threading_get_max_threads()
       allocate(threadErrs(maxThreads))
       threadErrs(:) = 0
+
+      !
+      ! Test performance of framework sorting routines
+      !
+      call test_core_test_sorting(domain, iErr)
+      if (iErr == 0) then
+         write(stderrUnit,*) ' * Sorting tests: SUCCESS'
+      else
+         write(stderrUnit,*) ' * Sorting tests: FAILURE'
+      end if
 
       iErr = 0
 
