@@ -52,13 +52,14 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
 
     return listoftests
 
-def test_to_string(test, category_field_width=0, show_options=False):
+def test_to_string(test, category_field_width=0, test_field_width=0, show_options=False):
     """Given a test dictionary, return a string representation suitable for printing
 
     Args:
         test (dict): dictionary for a single test - e.g., one element from the
                      list returned by get_tests_from_xml
         category_field_width (int): minimum amount of space to use for printing the test category
+        test_field_width (int): minimum amount of space to use for printing the test category
         show_options (bool): if True, print test options, too (note that the 'comment'
                              option is always printed, if present)
 
@@ -70,20 +71,20 @@ def test_to_string(test, category_field_width=0, show_options=False):
     Printing comments:
     >>> mytest = {'name': 'SMS.f19_g16.A.yellowstone_intel', 'category': 'prealpha', 'options': {'comment': 'my remarks'}}
     >>> test_to_string(mytest, 10)
-    'prealpha  : SMS.f19_g16.A.yellowstone_intel  # my remarks'
+    'prealpha  : SMS.f19_g16.A.yellowstone_intel # my remarks'
 
     Printing other options, too:
     >>> mytest = {'name': 'SMS.f19_g16.A.yellowstone_intel', 'category': 'prealpha', 'options': {'comment': 'my remarks', 'wallclock': '0:20', 'memleak_tolerance': 0.2}}
     >>> test_to_string(mytest, 10, show_options=True)
-    'prealpha  : SMS.f19_g16.A.yellowstone_intel  # my remarks  # memleak_tolerance: 0.2  # wallclock: 0:20'
+    'prealpha  : SMS.f19_g16.A.yellowstone_intel # my remarks  # memleak_tolerance: 0.2  # wallclock: 0:20'
     """
 
-    mystr = "%-*s: %s"%(category_field_width, test['category'], test['name'])
+    mystr = "%-*s: %-*s"%(category_field_width, test['category'], test_field_width, test['name'])
     if 'options' in test:
         myopts = test['options'].copy()
         comment = myopts.pop('comment', None)
         if comment:
-            mystr += "  # %s"%(comment)
+            mystr += " # %s"%(comment)
         if show_options:
             for one_opt in sorted(myopts):
                 mystr += "  # %s: %s"%(one_opt, myopts[one_opt])

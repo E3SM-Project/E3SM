@@ -86,11 +86,16 @@ def print_test_data(test_data, show_options):
 
     categories = sorted(set([item['category'] for item in test_data]))
     max_category_len = max([len(category) for category in categories])
+    max_test_len = max([len(item['name']) for item in test_data])
     for category in categories:
         test_subset = [one_test for one_test in test_data if
                        one_test['category'] == category]
         for one_test in test_subset:
-            print(test_to_string(one_test, max_category_len, show_options))
+            print(test_to_string(
+                test = one_test,
+                category_field_width = max_category_len,
+                test_field_width = max_test_len,
+                show_options = show_options))
 
 ###############################################################################
 def count_test_data(test_data):
