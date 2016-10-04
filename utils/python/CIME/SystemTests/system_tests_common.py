@@ -31,7 +31,6 @@ class SystemTestsCommon(object):
         self._runstatus = None
         self._casebaseid = self._case.get_value("CASEBASEID")
         self._test_status = TestStatus(test_dir=caseroot, test_name=self._casebaseid)
-
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
         self._init_case_setup()

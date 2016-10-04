@@ -656,7 +656,8 @@ class Case(object):
         model = get_model()
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
-
+        if test:
+            self.set_value("TEST",True)
 
 
     def get_compset_var_settings(self):

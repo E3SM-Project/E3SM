@@ -148,13 +148,17 @@ class TestScheduler(object):
 
         # Setup phases
         self._phases = list(PHASES)
+        # These will mark the -no phase as PENDING in TestStatus
         if self._no_setup:
-            self._phases.remove(SETUP_PHASE)
-        if self._no_build:
-            self._phases.remove(SHAREDLIB_BUILD_PHASE)
+            i = self._phases.index(SETUP_PHASE)
+            self._phases.insert(i, INCOMPLETE_PHASE)
+        elif self._no_build:
+            i = self._phases.index(SHAREDLIB_BUILD_PHASE)
+            self._phases.insert(i, INCOMPLETE_PHASE)
             self._phases.remove(MODEL_BUILD_PHASE)
-        if self._no_run:
-            self._phases.remove(RUN_PHASE)
+        elif self._no_run:
+            i = self._phases.index(RUN_PHASE)
+            self._phases.insert(i, INCOMPLETE_PHASE)
         if not self._baseline_cmp_name and not self._baseline_gen_name:
             self._phases.remove(NAMELIST_PHASE)
 
@@ -259,7 +263,7 @@ class TestScheduler(object):
             expect(status == TEST_PENDING_STATUS,
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
-                   "Skipped phase?")
+                   "Skipped phase? %s %s"%(old_phase, phase_idx))
         # Must be atomic
         self._tests[test] = (phase, status, old_nl_fail)
 
@@ -552,6 +556,7 @@ class TestScheduler(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
+        self._update_test_status_file(self, test, RUN_PHASE, TEST_PENDING_STATUS)
         if self._no_batch:
             cmd = "./case.submit --no-batch"
         else:
@@ -673,6 +678,11 @@ class TestScheduler(object):
                         test_phase, test_status, _ = self._get_test_data(test)
                         expect(test_status != TEST_PENDING_STATUS, test)
                         next_phase = self._phases[self._phases.index(test_phase) + 1]
+                        # indicates create_test was run with a no-phase option
+                        if next_phase is None:
+                            self._update_test_status_file(test, self._phases[self._phases.index(test_phase)+2], TEST_PENDING_STATUS)
+                            work_to_do = False
+                            break
                         procs_needed = self._get_procs_needed(test, next_phase, threads_in_flight)
 
                         if procs_needed <= self._procs_avail:
