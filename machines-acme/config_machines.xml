@@ -559,7 +559,7 @@
 <machine MACH="anvil">
          <DESC>ANL/LCRC Linux Cluster with ACME queue</DESC>
          <TESTS>acme_integration</TESTS>
-         <COMPILERS>intel,gnu</COMPILERS>
+         <COMPILERS>gnu,intel,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
