@@ -576,11 +576,14 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>18</MAX_TASKS_PER_NODE>
+         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <batch_system type="pbs" version="x.y">
+            <queues>
+              <queue default="true">acme</queue>
+            </queues>
            <walltimes>
-             <walltime default="true">59:00</walltime>
+             <walltime default="true">2:00:00</walltime>
            </walltimes>
          </batch_system>
          <mpirun mpilib="default">
