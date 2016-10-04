@@ -36,6 +36,8 @@ module atm_time_integration
    use mpas_atmphys_utilities
 #endif
 
+   use mpas_atm_boundaries, only : nSpecZone, nRelaxZone, nBdyZone  ! regional_MPAS addition
+   
    integer :: timerid, secs, u_secs
 
    ! Used to store physics tendencies for dynamics variables
@@ -218,7 +220,9 @@ module atm_time_integration
 
       real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
 
+      logical, parameter :: regional_mpas = .true.
 
+      
       !
       ! Retrieve configuration options
       !
@@ -826,6 +830,25 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                call mpas_pool_get_field(state, 'scalars', scalars_field, 2)
                call mpas_dmpar_exch_halo_field(scalars_field)
             end if
+
+            ! set the zero-gradient condition on w for regional_MPAS
+            
+            if ( regional_mpas ) then  ! regional_MPAS addition
+              block => domain % blocklist
+              do while (associated(block))
+
+                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+                call mpas_pool_get_subpool(block % structs, 'state', state)
+!$OMP PARALLEL DO
+                do thread=1,block % nThreads
+                   call atm_zero_gradient_w_bdy( state, mesh, &
+                                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread) )
+                end do
+!$OMP END PARALLEL DO
+
+                block => block % next
+              end do
+            end if ! end of regional_MPAS addition 
 
          end do RK3_DYNAMICS
 
@@ -1529,11 +1552,17 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
 
+      integer, dimension(:), pointer :: bdyMaskCell  ! regional_MPAS
+
+
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+
+! regional_MPAS: get specified zone cell mask
+      call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
 
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'zb', zb)
@@ -1573,7 +1602,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, coef_3rd_order, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
-                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, &
+                                   bdyMaskCell, &  ! added for regional_MPAS
+                                   edgesOnCell_sign, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -1584,7 +1615,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
    subroutine atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, coef_3rd_order, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
-                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, &
+                                   bdyMaskCell, &  ! added for regional_MPAS
+                                   edgesOnCell_sign, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -1631,6 +1664,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
       real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
 
+      integer, dimension(nCells+1), intent(in) :: bdyMaskCell  !  added for regional_MPAS
+
       !
       ! Local variables
       !
@@ -1645,6 +1680,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !!      do iCell=cellStart,cellEnd
       do iCell=cellSolveStart,cellSolveEnd
+
+         if (bdyMaskCell(iCell) <= nRelaxZone) then  !  no conversion in specified zone, regional_MPAS
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
 !DIR$ IVDEP
@@ -1658,6 +1695,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          do k = 2, nVertLevels
             w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
          end do
+         end if ! no conversion in specified zone
       end do
 
    end subroutine atm_set_smlstep_pert_variables_work
@@ -2115,6 +2153,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND) :: invNs, rcv, p0, flux
       real (kind=RKIND), pointer :: cf1, cf2, cf3, coef_3rd_order
 
+      integer, dimension(:), pointer :: bdyMaskCell  ! MPAS_regional addition
 
       call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
@@ -2148,6 +2187,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
       call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
 
+      call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)  ! addition for regional_MPAS
+
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'zb', zb)
       call mpas_pool_get_array(mesh, 'zb3', zb3)
@@ -2178,6 +2219,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                              rtheta_base, pressure_p, zz, theta_m, pressure_b, scalars, fzm, fzp, &
                              zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
                              cf1, cf2, cf3, coef_3rd_order, &
+                             bdyMaskCell, &  !  addition for regional_MPAS
                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -2190,6 +2232,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                              rtheta_base, pressure_p, zz, theta_m, pressure_b, scalars, fzm, fzp, &
                              zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
                              cf1, cf2, cf3, coef_3rd_order, &
+                             bdyMaskCell, &  ! addition for regional_MPAS
                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -2205,6 +2248,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       integer, intent(in) :: ns, rk_step
       real (kind=RKIND), intent(in) :: dt
 
+      integer, dimension(nCells+1), intent(in) :: bdyMaskCell
+      
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: wwAvg
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_save
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: w
@@ -2341,6 +2386,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          !  to use the same flux-divergence operator as is used for the horizontal theta transport
          !  (See Klemp et al 2003).
 
+         if (bdyMaskCell(iCell) <= nRelaxZone) then  ! addition for regional_MPAS, no spec zone update
+
          do i=1,nEdgesOnCell(iCell)
             iEdge=edgesOnCell(i,iCell)
 
@@ -2358,10 +2405,14 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          end do
 
          w(1,iCell) = w(1,iCell)/(cf1*rho_zz(1,iCell)+cf2*rho_zz(2,iCell)+cf3*rho_zz(3,iCell))
-!DIR$ IVDEP
+
+
+         !DIR$ IVDEP
          do k = 2, nVertLevels
            w(k,iCell) = w(k,iCell)/(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))
          end do
+
+         end if ! addition for regional_MPAS, no spec zone update
 
       end do
 
@@ -5349,6 +5400,67 @@ MPAS_GPTL_STOP('mono_exch_2')
       end if
 
    end subroutine atm_rk_dynamics_substep_finish
+
+!-------------------------------------------------------------------------
+!
+! these next 2 routines set an approximate zero gradient boundary condition for w for regional_MPAS
+!   
+   subroutine atm_zero_gradient_w_bdy( state, mesh, cellSolveStart, cellSolveEnd )
+
+      ! reconstitute state variables from acoustic-step perturbation variables 
+      ! after the acoustic steps.  The perturbation variables were originally set in
+      ! subroutine atm_set_smlstep_pert_variables prior to their acoustic-steps update.
+      ! we are also computing a few other state-derived variables here.
+
+      implicit none
+
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: cellSolveStart, cellSolveEnd
+
+      real (kind=RKIND), dimension(:,:), pointer :: w
+
+      integer, dimension(:), pointer :: bdyMaskCell, nearestRelaxationCell
+      integer, pointer :: nCells
+
+      call mpas_pool_get_array(state, 'w', w, 2)
+      call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
+      call mpas_pool_get_array(mesh, 'nearestRelaxationCell', nearestRelaxationCell)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      
+      call atm_zero_gradient_w_bdy_work( w, bdyMaskCell, nearestRelaxationCell, nCells, cellSolveStart, cellSolveEnd )
+
+   end subroutine atm_zero_gradient_w_bdy
+
+!-------------------------------------------------------------------------
+
+   subroutine atm_zero_gradient_w_bdy_work( w, bdyMaskCell, nearestRelaxationCell, nCells, cellSolveStart, cellSolveEnd )
+
+      use mpas_atm_dimensions
+
+      implicit none
+
+      !
+      ! Dummy arguments
+      !
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, nCells
+      integer, dimension(nCells+1), intent(in) :: bdyMaskCell, nearestRelaxationCell
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1), intent(inout) :: w
+
+      ! local variables
+
+      integer :: iCell, k
+
+      do iCell=cellSolveStart,cellSolveEnd
+         if (bdyMaskCell(iCell) > nRelaxZone) then  !  no conversion in specified zone, regional_MPAS
+!DIR$ IVDEP
+            do k = 2, nVertLevels
+              w(k,iCell) = w(k,nearestRelaxationCell(iCell))
+            end do
+         end if  
+      end do
+
+   end subroutine atm_zero_gradient_w_bdy_work
 
 !-------------------------------------------------------------------------
 
