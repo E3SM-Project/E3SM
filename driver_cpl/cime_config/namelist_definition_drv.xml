@@ -140,6 +140,7 @@
     Number of cism elevation classes.
     Set by the xml variable GLC_NEC in env_run.xml
   </description>
+  <glc_nec>0</glc_nec>
 </entry>
 
 <entry id="ice_ncat">
@@ -204,7 +205,8 @@
    <unmodifiable_via_user_nl>must be set via xml variable CIME_MODEL</unmodifiable_via_user_nl>
    <valid_values>acme,cesm</valid_values>
    <description>cime model</description>
-   <cime_model>unset</cime_model>
+   <cime_model cime_model='cesm'>cesm</cime_model>
+   <cime_model cime_model='acme'>acme</cime_model>
 </entry>
 
 <entry id="atm_adiabatic">
@@ -214,6 +216,7 @@
   <description>
     true => turn on adiabatic mode in cam
   </description>
+  <atm_adiabatic>.false.</atm_adiabatic>
 </entry>
 
 <entry id="atm_ideal_phys">
@@ -223,6 +226,7 @@
   <description>
     true => turn on ideal physics mode in cam
   </description>
+  <atm_ideal_phys>.false.</atm_ideal_phys>
 </entry>
 
 <entry id="aqua_planet">
@@ -232,6 +236,7 @@
   <description>
     true => turn on aquaplanet mode in cam
   </description>
+  <aqua_planet>.false.</aqua_planet>
 </entry>
 
 <entry id="aqua_planet_sst">
@@ -241,6 +246,7 @@
   <description>
     1 => default sst mode for aquaplanet in cam
   </description>
+  <aqua_planet_sst>1</aqua_planet_sst>
 </entry>
 
 <entry id="case_name">
@@ -273,6 +279,7 @@
   <description>
     model version documentation,
   </description>
+  <model_version>unset</model_version>
 </entry>
 
 <entry id="username">
@@ -327,16 +334,24 @@
     mode to start the run up, [startup,branch,continue],
     automatically derived from RUN_TYPE in env_run.xml
   </description>
+  <start_type run_type="startup" continue_run=".false.">startup</start_type>
+  <start_type run_type="hybrid"  continue_run=".false.">startup</start_type>
+  <start_type run_type="branch"  continue_run=".false.">branch</start_type>
+  <start_type run_type="startup" continue_run=".true.">continue</start_type>
+  <start_type run_type="hybrid"  continue_run=".true.">continue</start_type>
+  <start_type run_type="branch"  continue_run=".true.">continue</start_type>
 </entry>
 
 <entry id="brnch_retain_casename">
   <type>logical</type>
   <category>expdef</category>
   <group>seq_infodata_inparm</group>
-  <unmodifiable_via_user_nl>must be set via xml variable BRNCH_RETAIN_CASENAME</unmodifiable_via_user_nl>
+  <unmodifiable_via_user_nl>this is set automatically xml variables $CASE and $REFCASE</unmodifiable_via_user_nl>
   <description>
-    Allow same branch casename as reference casename
+    Allow same branch casename as reference casename. If $CASE and $REFCASE are the same and the start_type is 
+    not startup, then the value of brnch_retain_casename is set to .true.
   </description>
+  <brnch_retain_casename>.false.</brnch_retain_casename>
 </entry>
 
 <entry id="info_debug">
@@ -409,9 +424,9 @@
   <group>seq_infodata_inparm</group>
   <description>
     eccentricity of orbit, used when orb_mode is fixed_parameters. 
-    (Not currently used in build-namelist)
-    default: SHR_ORB_UNDEF_REAL (1.e36)
+    default: SHR_ORB_UNDEF_REAL (1.e36) (Not currently used in build-namelist) 
   </description>
+  <orb_eccen>1.e36</orb_eccen>
 </entry>
 
 <entry id="orb_mvelp">
@@ -420,9 +435,9 @@
   <group>seq_infodata_inparm</group>
   <description>
     location of vernal equinox in longitude degrees, used when orb_mode is fixed_parameters.
-    default: SHR_ORB_UNDEF_REAL (1.e36)
-    (Not currently used in build-namelist)
+    default: SHR_ORB_UNDEF_REAL (1.e36)(Not currently used in build-namelist)
   </description>
+  <orb_mvelp>1.e36</orb_mvelp>
 </entry>
 
 <entry id="orb_obliq">
@@ -431,9 +446,9 @@
   <group>seq_infodata_inparm</group>
   <description>
     obliquity of orbit in degrees, used when orb_mode is fixed_parameters.
-    default: SHR_ORB_UNDEF_REAL (1.e36)
-    (Not currently used in build-namelist)
+    default: SHR_ORB_UNDEF_REAL (1.e36) (Not currently used in build-namelist)
   </description>
+  <orb_obliq>1.e36</orb_obliq>
 </entry>
 
 <entry id="wv_sat_scheme">
@@ -1144,11 +1159,12 @@
   <type>logical</type>
   <category>seq_infodata_inparm</category>
   <group>seq_infodata_inparm</group>
+  <unmodifiable_via_user_nl>must be set via xml variable PTS_MODE</unmodifiable_via_user_nl>
   <description>
-    turns on single column mode.
-    set by PTS_MODE in env_case.xml,
-    default: false
+    turns on single column mode. set by PTS_MODE in env_case.xml, default: false
   </description>
+  <single_column>.false.</single_column>
+  <single_column single_column=".true">.true.</single_column>
 </entry>
 
 <entry id="scmlat">
@@ -1157,9 +1173,11 @@
   <group>seq_infodata_inparm</group>
   <unmodifiable_via_user_nl>must be set via xml variable PTS_LAT</unmodifiable_via_user_nl>
   <description>
-    grid point latitude associated with single column mode.
-    set by PTS_LAT in env_run.xml.
+    grid point latitude associated with single column mode. set by PTS_LAT in env_run.xml.
+    if set to -999, ignore this value
   </description>
+  <scmlat>-999.</scmlat>
+  <scmlat single_column="true">$PTS_LAT</scmlat>
 </entry>
 
 <entry id="scmlon">
@@ -1171,6 +1189,8 @@
     grid point longitude associated with single column mode.
     set by PTS_LON in env_run.xml.
   </description>
+  <scmlon>-999.</scmlon>
+  <scmlon single_column="true">$PTS_LON</scmlon>
 </entry>
 
 <entry id="reprosum_use_ddpdd">
@@ -1181,6 +1201,7 @@
     Use faster method for reprosum, but one where reproducibility is not always guaranteed.
     default: .false.
   </description>
+  <reprosum_use_ddpdd>.false.</reprosum_use_ddpdd>
 </entry>
 
 <entry id="reprosum_diffmax">
@@ -1191,6 +1212,7 @@
     Tolerance for relative error
     default: -1.0e-8
   </description>
+  <reprosum_diffmax>1.0e-8</reprosum_diffmax>
 </entry>
 
 <entry id="reprosum_recompute">
@@ -1201,6 +1223,7 @@
     Recompute with non-scalable algorithm if reprosum_diffmax is exceeded.
     default: .false.
   </description>
+  <reprosum_recompute>.false.</reprosum_recompute>
 </entry>
 
 <!-- =========================== -->
@@ -1217,8 +1240,9 @@
     set via ATM_NCPL in env_run.xml.
     ATM_NCPL is the number of times the atm is coupled per NCPL_BASE_PERIOD
     NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
-    associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    associated with NCPL coupling frequency, and has valid values: hour,day,year,decade
   </description>
+  <atm_cpl_dt>-999</atm_cpl_dt>
 </entry>
 
 <entry id="lnd_cpl_dt">
@@ -1233,6 +1257,7 @@
     NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
     associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
   </description>
+  <lnd_cpl_dt>-999</lnd_cpl_dt>
 </entry>
 
 <entry id="rof_cpl_dt">
@@ -1245,6 +1270,7 @@
     currently set by default to 10800 seconds.
     default: 10800
   </description>
+  <rof_cpl_dt>10800</rof_cpl_dt>
 </entry>
 
 <entry id="ice_cpl_dt">
@@ -1259,6 +1285,7 @@
     NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
     associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
   </description>
+  <ice_cpl_dt>-999</ice_cpl_dt>
 </entry>
 
 <entry id="ocn_cpl_dt">
@@ -1272,8 +1299,8 @@
     OCN_NCPL is the number of times the ocn is coupled per NCPL_BASE_PERIOD
     NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
     associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    default: 0
   </description>
+  <ocn_cpl_dt>-999</ocn_cpl_dt>
 </entry>
 
 <entry id="glc_cpl_dt">
@@ -1287,8 +1314,8 @@
     GLC_NCPL is the number of times the glc is coupled per NCPL_BASE_PERIOD
     NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
     associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    default: 0
   </description>
+  <glc_cpl_dt>-999</glc_cpl_dt>
 </entry>
 
 <entry id="wav_cpl_dt">
@@ -1302,8 +1329,8 @@
     WAV_NCPL is the number of times the wav is coupled per NCPL_BASE_PERIOD
     NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
     associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    default: 0
   </description>
+  <wav_cpl_dt>-999</wav_cpl_dt>
 </entry>
 
 <entry id="atm_cpl_offset">
@@ -1311,9 +1338,9 @@
   <category>time</category>
   <group>seq_timemgr_inparm</group>
   <description>
-    atm coupling interval offset in seconds
-    default: 0
+    atm coupling interval offset in seconds default: 0
   </description>
+  <atm_cpl_offset>0</atm_cpl_offset>
 </entry>
 
 <entry id="lnd_cpl_offset">
@@ -1321,9 +1348,9 @@
   <category>time</category>
   <group>seq_timemgr_inparm</group>
   <description>
-    lnd coupling interval offset in seconds
-    default: 0
+    lnd coupling interval offset in seconds default: 0
   </description>
+  <lnd_cpl_offset>0</lnd_cpl_offset>
 </entry>
 
 <entry id="ice_cpl_offset">
@@ -1331,9 +1358,9 @@
   <category>time</category>
   <group>seq_timemgr_inparm</group>
   <description>
-    ice coupling interval offset in seconds
-    default: 0
+    ice coupling interval offset in seconds default: 0
   </description>
+  <ice_cpl_offset>0</ice_cpl_offset>
 </entry>
 
 <entry id="ocn_cpl_offset">
@@ -1341,9 +1368,9 @@
   <category>time</category>
   <group>seq_timemgr_inparm</group>
   <description>
-    ocn coupling interval offset in seconds
-    default: 0
+    ocn coupling interval offset in seconds default: 0
   </description>
+  <ocn_cpl_offset>0</ocn_cpl_offset>
 </entry>
 
 <entry id="glc_cpl_offset">
@@ -1351,9 +1378,9 @@
   <category>time</category>
   <group>seq_timemgr_inparm</group>
   <description>
-    glc coupling interval offset in seconds
-    default: 0
+    glc coupling interval offset in seconds default: 0
   </description>
+  <glc_cpl_offset>0</glc_cpl_offset>
 </entry>
 
 <entry id="wav_cpl_offset">
@@ -1361,9 +1388,9 @@
   <category>time</category>
   <group>seq_timemgr_inparm</group>
   <description>
-    wav coupling interval offset in seconds
-    default: 0
+    wav coupling interval offset in seconds default: 0
   </description>
+  <wav_cpl_offset>0</wav_cpl_offset>
 </entry>
 
 <entry id="calendar">
@@ -1376,6 +1403,7 @@
     set by CALENDAR in env_run.xml
     default: "NO_LEAP".
   </description>
+  <calendar>NO_LEAP</calendar>
 </entry>
 
 <entry id="start_ymd">
@@ -1459,6 +1487,7 @@
     Driver restart filename.
     (NOTE: Normally THIS IS NOT USED -- Set with RUN_REFCASE and RUN_REFDATE)
   </description>
+  <restart_file>''</restart_file>
 </entry>
 
 <entry id="restart_option">
@@ -1704,7 +1733,6 @@
   <tprof_ymd>-999</tprof_ymd>
 </entry>
 
-
 <entry id="logfilepostfix">
   <type>char*80</type>
   <category>driver</category>
@@ -1713,6 +1741,7 @@
   <description>
     Ending suffix "postfix" for output log files.
   </description>
+  <logfilepostfix>''</logfilepostfix>
 </entry>
 
 <entry id="outpathroot">
@@ -1723,8 +1752,8 @@
   <description>
     Root directory for driver output files
   </description>
+  <outpathroot>''</outpathroot>
 </entry>
-
 
 <entry id="max_cplstep_time">
   <type>real</type>
@@ -2299,7 +2328,8 @@
   <group>prof_inparm</group>
   <description>
   </description>
-  <profile_disable>.false.</profile_disable>
+  <profile_disable timer_level='pos'>.false.</profile_disable>
+  <profile_disable timer_level='neg'>.true.</profile_disable>
 </entry>
 
 <entry id="profile_barrier">
@@ -2317,7 +2347,8 @@
   <group>prof_inparm</group>
   <description>
   </description>
-  <profile_depth_limit>>20</profile_depth_limit>
+  <profile_depth_limit timer_level='pos'>$TIMER_LEVEL</profile_depth_limit>
+  <profile_depth_limit timer_level='neg'>20</profile_depth_limit>
 </entry>
 
 <entry id="profile_outpe_stride">
@@ -2326,6 +2357,7 @@
   <group>prof_inparm</group>
   <description>
   </description>
+  <profile_outpe_stride>0</profile_outpe_stride>
 </entry>
 
 <entry id="profile_detail_limit">
@@ -2334,7 +2366,8 @@
   <group>prof_inparm</group>
   <description>
   </description>
-  <profile_detail_limit>0</profile_detail_limit>
+  <profile_detail_limit timer_level='neg'>$TIMER_LEVEL</profile_detail_limit>
+  <profile_detail_limit timer_level='pos'>0</profile_detail_limit>
 </entry>
 
 <entry id="profile_timer">
@@ -2445,6 +2478,8 @@
   <group>pio_default_inparm</group>
   <description>
     future asynchronous IO capability (not currently supported).
+    If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99
+    the component variable will be set using the pio_* value.
     default: .false.
   </description>
   <pio_async_interface>$PIO_ASYNC_INTERFACE</pio_async_interface>

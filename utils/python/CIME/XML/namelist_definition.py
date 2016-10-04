@@ -57,6 +57,14 @@ class NamelistDefinition(GenericXML):
             self.root.append(elem)
         self._value_cache = {}
 
+    def get_entries(self):
+        """Return all variables in the namelist definition file"""
+        entries = []
+        nodes = self.get_nodes("entry")
+        for node in nodes:
+            entries.append(node.get("id"))
+        return entries
+
     def get_value(self, item, attribute=None, resolved=False, subgroup=None):
         """Get data about the namelist variable named `item`.
 
