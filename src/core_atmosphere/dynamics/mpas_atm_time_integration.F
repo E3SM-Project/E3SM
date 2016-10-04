@@ -1840,6 +1840,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
       integer, dimension(:), pointer :: nEdgesOnCell
+      real (kind=RKIND), dimension(:), pointer :: specifiedZoneMaskCell, specifiedZoneMaskEdge
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
@@ -1853,6 +1854,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
+      call mpas_pool_get_array(mesh, 'specifiedZoneMaskEdge', specifiedZoneMaskEdge)
+      call mpas_pool_get_array(mesh, 'specifiedZoneMaskCell', specifiedZoneMaskCell)
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
 !      call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
@@ -1926,7 +1929,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
-                                   dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
+                                   dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3, &
+                                   specifiedZoneMaskEdge, specifiedZoneMaskCell &
                                    )
 
    end subroutine atm_advance_acoustic_step
@@ -1938,7 +1942,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
-                                   dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
+                                   dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3, &
+                                   specifiedZoneMaskEdge, specifiedZoneMaskCell &
                                    )
 
       use mpas_atm_dimensions
@@ -2006,6 +2011,10 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       integer, dimension(maxEdges,nCells+1) :: edgesOnCell
       real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
 
+      real (kind=RKIND), dimension(nCells+1) :: specifiedZoneMaskCell
+      real (kind=RKIND), dimension(nEdges+1) :: specifiedZoneMaskEdge
+      
+
       integer, intent(in) :: small_step
       real (kind=RKIND), intent(in) :: dts, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3
 
@@ -2060,8 +2069,10 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                  pgrad = ((rtheta_pp(k,cell2)-rtheta_pp(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = cqu(k,iEdge)*0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
                  pgrad = pgrad + 0.5*zxu(k,iEdge)*gravity*(rho_pp(k,cell1)+rho_pp(k,cell2))
-                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) &
-                                  - smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1))
+!!!                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) &
+!!!                                  - smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1))
+                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*tend_ru(k,iEdge) &
+                      - specifiedZoneMaskEdge(iEdge)*( dts*pgrad + smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1)) )
               end do
 
               ! accumulate ru_p for use later in scalar transport
@@ -2086,7 +2097,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !DIR$ IVDEP
               do k=1,nVertLevels
-                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge) - smdiv*dcEdge(iEdge)*(tend_rho(k,cell2)-tend_rho(k,cell1))
+!!!                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge) - smdiv*dcEdge(iEdge)*(tend_rho(k,cell2)-tend_rho(k,cell1))
+                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge) - specifiedZoneMaskEdge(iEdge)*smdiv*dcEdge(iEdge)*(tend_rho(k,cell2)-tend_rho(k,cell1))
               end do
 !DIR$ IVDEP
               do k=1,nVertLevels
@@ -2095,6 +2107,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
               end do
 
            end if ! end test for block-owned cells
+
         end do ! end loop over edges
 
       end if ! test for first acoustic step
@@ -2102,6 +2115,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 !$OMP BARRIER
 
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
+
+         if(specifiedZoneMaskCell(iCell) == 0.0) then  ! not specified zone, compute...
 
          ts(:,iCell) = 0.0
          rs(:,iCell) = 0.0
@@ -2201,6 +2216,16 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                -coftz(k  ,iCell)*rw_p(k  ,iCell))
             divergence_3d(k,iCell) = (rho_pp(k,iCell) - divergence_3d(k,iCell))*rdts
          end do
+
+         else ! specifed zone in regional_MPAS
+
+            do k=1,nVertLevels
+               rho_pp(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell)
+               rtheta_pp(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell)
+               rw_p(k,iCell) = rw_p(k,iCell) + dts*tend_rw(k,iCell)
+               wwAvg(k,iCell) = wwAvg(k,iCell) + 0.5*(1.0+epssm)*rw_p(k,iCell)
+            end do
+         end if
 
       end do !  end of loop over cells
 
