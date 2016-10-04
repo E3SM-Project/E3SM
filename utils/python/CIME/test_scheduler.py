@@ -556,7 +556,7 @@ class TestScheduler(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
-        self._update_test_status_file(self, test, RUN_PHASE, TEST_PENDING_STATUS)
+        self._update_test_status_file(test, RUN_PHASE, TEST_PENDING_STATUS)
         if self._no_batch:
             cmd = "./case.submit --no-batch"
         else:

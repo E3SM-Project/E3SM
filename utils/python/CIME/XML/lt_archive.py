@@ -4,7 +4,7 @@ Interface to the config_lt_archive.xml file.  This class inherits from GenericXM
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
-from CIME.utils import expect, get_cime_root, get_model
+from CIME.utils import expect
 from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)
