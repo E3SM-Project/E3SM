@@ -77,7 +77,9 @@ class EnvBatch(EnvBase):
             if job_node is not None:
                 node = self.get_optional_node("entry", {"id":item}, root=job_node)
                 if node is not None:
-                    value = self.get_resolved_value(node.get("value"))
+                    value = node.get("value")
+                    if resolved:
+                        value = self.get_resolved_value(value)
 
                     # Return value as right type if we were able to fully resolve
                     # otherwise, we have to leave as string.
@@ -348,8 +350,12 @@ class EnvBatch(EnvBase):
             if index < startindex:
                 continue
             try:
-                prereq = case.get_resolved_value(self.get_value('prereq', subgroup=job))
-                prereq = eval(prereq)
+                prereq = self.get_value('prereq', subgroup=job, resolved=False)
+                if prereq is None:
+                    prereq = True
+                else:
+                    prereq = case.get_resolved_value(prereq)
+                    prereq = eval(prereq)
             except:
                 expect(False,"Unable to evaluate prereq expression '%s' for job '%s'"%(self.get_value('prereq',subgroup=job), job))
             if prereq:

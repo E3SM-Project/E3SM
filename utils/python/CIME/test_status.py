@@ -36,6 +36,7 @@ MEMCOMP_PHASE         = "MEMCOMP"
 MEMLEAK_PHASE         = "MEMLEAK"
 COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
 GENERATE_PHASE        = "GENERATE"
+INCOMPLETE_PHASE    = None
 
 ALL_PHASES = [INITIAL_PHASE,
               CREATE_NEWCASE_PHASE,
@@ -48,7 +49,8 @@ ALL_PHASES = [INITIAL_PHASE,
               THROUGHPUT_PHASE,
               MEMCOMP_PHASE,
               MEMLEAK_PHASE,
-              GENERATE_PHASE]
+              GENERATE_PHASE,
+              INCOMPLETE_PHASE]
 
 def _test_helper1(file_contents):
     ts = TestStatus(test_dir="/", test_name="ERS.foo.A")

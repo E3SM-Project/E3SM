@@ -71,7 +71,7 @@ def get_python_libs_location_within_cime():
     """
     return os.path.join("utils", "python")
 
-def get_cime_root():
+def get_cime_root(case=None):
     """
     Return the absolute path to the root of CIME that contains this script
 
@@ -89,6 +89,11 @@ def get_cime_root():
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
             cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
         cime_config.set('main','CIMEROOT',cimeroot)
+
+    if case is not None:
+        case_cimeroot = os.path.abspath(case.get_value("CIMEROOT"))
+        cimeroot = os.path.abspath(cimeroot)
+        expect(cimeroot == case_cimeroot, "Inconsistant CIMEROOT variable: case %s environment %s"%(case_cimeroot, cimeroot))
 
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot

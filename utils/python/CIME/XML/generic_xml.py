@@ -224,7 +224,7 @@ class GenericXML(object):
                 srcroot = os.path.join(get_cime_root(),"..")
                 item_data = item_data.replace(m.group(), srcroot)
             elif var in os.environ:
-                logging.debug("resolve from env: " + var)
+                logging.warn("Resolved from env: " + var)
                 item_data = item_data.replace(m.group(), os.environ[var])
         if math_re.search(item_data):
             try:
@@ -232,6 +232,7 @@ class GenericXML(object):
             except:
                 tmp = item_data
             item_data = str(tmp)
+
         return item_data
 
     def add_sub_node(self, node, subnode_name, subnode_text):

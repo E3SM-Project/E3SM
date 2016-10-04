@@ -5,17 +5,21 @@ Interface to the config_lt_archive.xml file.  This class inherits from GenericXM
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.utils import expect, get_cime_root, get_model
+from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)
 
 class LTArchive(GenericXML):
 
-    def __init__(self, machine, infile=None):
+    def __init__(self, machine, files=None, infile=None):
         """
         initialize an object
         """
         if (infile is None):
-            infile = os.path.join(get_cime_root(), "cime_config", get_model(), "machines", "config_lt_archive.xml")
+            if files is None:
+                files = Files()
+            infile = files.get_value("LTARCHIVE_SPEC_FILE", resolved=False)
+            infile = files.get_resolved_value(infile)
 
         GenericXML.__init__(self, infile)
 
