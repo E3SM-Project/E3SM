@@ -85,8 +85,8 @@ class Testlist(GenericXML):
                             this_test["machine"] = value
                         else:
                             this_test[key] = value
-
-                    optionnodes = self.get_nodes("option", root=tnode)
+                    # option xpath here gets only the children of tnode and ignores grandchildren
+                    optionnodes = self.get_nodes("option", root=tnode, xpath="options/option")
                     for onode in optionnodes:
                         this_test[onode.get('name')] = onode.text
                     optionnodes = self.get_nodes("option", root=mach)
