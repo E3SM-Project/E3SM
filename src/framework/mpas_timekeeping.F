@@ -2106,12 +2106,14 @@ module mpas_timekeeping
     !>   $m -> minute
     !>   $s -> second
     !>   $g -> multi-grid level
+    !>   $B -> block ID, if blockID == -1, $B -> 'all'
     !-----------------------------------------------------------------------
-    subroutine mpas_expand_string(timeStamp, inString, outString)!{{{
+    subroutine mpas_expand_string(timeStamp, blockID, inString, outString)!{{{
 
         implicit none
 
         character (len=*), intent(in) :: timeStamp
+        integer, intent(in) :: blockID
         character (len=*), intent(in) :: inString
         character (len=StrKIND), intent(out) :: outString
 
@@ -2178,6 +2180,27 @@ module mpas_timekeeping
                          outString = trim(outString) // trim(timePart)
 !                    case ('G')
                         ! Expands to multi-grid level
+                     case ('B')
+                        if ( blockID == -1 ) then
+                           write(timePart, '(a)') 'all'
+                        else if ( blockID < 10 ) then
+                           write(timePart, '(i1)') blockID
+                        else if ( blockID < 100 ) then
+                           write(timePart, '(i2)') blockID
+                        else if ( blockID < 1000 ) then
+                           write(timePart, '(i3)') blockID
+                        else if ( blockID < 10000 ) then
+                           write(timePart, '(i4)') blockID
+                        else if ( blockID < 100000 ) then
+                           write(timePart, '(i5)') blockID
+                        else if ( blockID < 1000000 ) then
+                           write(timePart, '(i6)') blockID
+                        else if ( blockID < 10000000 ) then
+                           write(timePart, '(i7)') blockID
+                        else
+                           call mpas_dmpar_global_abort('ERROR: Block expansion does not yet support block IDs with more than 7 digits')
+                        end if
+                        outString = trim(outString) // trim(timePart)
                      case default
                         write(stderrUnit, *) 'ERROR: mpas_expand_string option $', inString(i:i), ' is not a valid expansion character.'
                         call mpas_dmpar_global_abort('ERROR: mpas_timekeeping')

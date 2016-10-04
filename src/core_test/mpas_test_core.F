@@ -97,6 +97,8 @@ module test_core
       type (domain_type), intent(inout) :: domain
       integer :: iErr
 
+      type (block_type), pointer :: block
+
       type (mpas_pool_type), pointer :: pool
       type (mpas_pool_iterator_type) :: itr
       integer :: numThreads, threadLimit, maxThreads
@@ -140,7 +142,16 @@ module test_core
          write(stderrUnit, *) 'Stream I/O tests: FAILURE'
       end if
 
+
       call test_core_test_intervals(domain, threadErrs, iErr)
+
+      ! Test writing of block write streams, which have the prefix 'block_'
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID="block_.*")
+         call mpas_stream_mgr_block_write(domain % streamManager, block, streamID="block_.*", forceWriteNow=.true.)
+         block => block % next
+      end do
 
       call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true.)
 
