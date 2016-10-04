@@ -3795,7 +3795,8 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc4
       real (kind=RKIND), pointer :: config_visc4_2dsmag
       real (kind=RKIND), pointer :: config_len_disp
-
+      real (kind=RKIND), pointer :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2
+      real (kind=RKIND), pointer :: config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
 
       call mpas_pool_get_config(mesh, 'sphere_radius', r_earth)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
@@ -3804,6 +3805,10 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_config(configs, 'config_del4u_div_factor', config_del4u_div_factor)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc4', config_h_theta_eddy_visc4)
       call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc4', config_h_mom_eddy_visc4)
+      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', config_h_theta_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc2', config_h_mom_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', config_v_theta_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_mom_eddy_visc2', config_v_mom_eddy_visc2)
       call mpas_pool_get_config(configs, 'config_visc4_2dsmag', config_visc4_2dsmag)
       call mpas_pool_get_config(configs, 'config_len_disp', config_len_disp)
       call mpas_pool_get_config(configs, 'config_smagorinsky_coef', c_s)
@@ -3928,6 +3933,7 @@ MPAS_GPTL_STOP('mono_exch_2')
          latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
          rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
          tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+         config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
          config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
          tend_rtheta_adv, rthdynten, &
          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -3949,6 +3955,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
       rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
       tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+      config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
       config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
       tend_rtheta_adv, rthdynten, &
       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -4067,6 +4074,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND) :: config_h_mom_eddy_visc4
       real (kind=RKIND) :: config_visc4_2dsmag
       real (kind=RKIND) :: config_len_disp
+      real (kind=RKIND) :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
 
       integer, intent(in) :: rk_step
       real (kind=RKIND), intent(in) :: dt
@@ -4085,18 +4093,20 @@ MPAS_GPTL_STOP('mono_exch_2')
       !real (kind=RKIND), parameter :: c_s = 0.125
       real (kind=RKIND), dimension( nVertLevels+1 ) :: d_diag, d_off_diag, flux_arr
       real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
-      real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q
+      real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q, u_mix
       real (kind=RKIND) :: theta_turb_flux, w_turb_flux, r
       real (kind=RKIND) :: scalar_weight
       real (kind=RKIND) :: inv_r_earth
 
       real (kind=RKIND) :: invDt, flux, workpv
       real (kind=RKIND) :: edge_sign, pr_scale, r_dc, r_dv, u_mix_scale
-      real (kind=RKIND) :: h_mom_eddy_visc4
-      real (kind=RKIND) :: h_theta_eddy_visc4
+      real (kind=RKIND) :: h_mom_eddy_visc4, v_mom_eddy_visc2
+      real (kind=RKIND) :: h_theta_eddy_visc4, v_theta_eddy_visc2
       real (kind=RKIND) :: u_diffusion
 
-      real (kind=RKIND) :: kdiffu
+      real (kind=RKIND) :: kdiffu, z1, z2, z3, z4, zm, z0, zp
+
+      
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
@@ -4113,6 +4123,9 @@ MPAS_GPTL_STOP('mono_exch_2')
       invDt = 1.0_RKIND / dt
       inv_r_earth = 1.0_RKIND / r_earth
 
+       v_mom_eddy_visc2   = config_v_mom_eddy_visc2
+       v_theta_eddy_visc2 = config_v_theta_eddy_visc2
+
       if (rk_step == 1) then
 
 !         tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
@@ -4120,28 +4133,37 @@ MPAS_GPTL_STOP('mono_exch_2')
          ! Smagorinsky eddy viscosity, based on horizontal deformation (in this case on model coordinate surfaces).
          ! The integration coefficients were precomputed and stored in defc_a and defc_b
 
-         do iCell = cellStart,cellEnd
-            d_diag(1:nVertLevels) = 0.0
-            d_off_diag(1:nVertLevels) = 0.0
-            do iEdge=1,nEdgesOnCell(iCell)
-               do k=1,nVertLevels
-                  d_diag(k)     = d_diag(k)     + defc_a(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
-                                                - defc_b(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
-                  d_off_diag(k) = d_off_diag(k) + defc_b(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
-                                                + defc_a(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
+         if(config_horiz_mixing == "2d_smagorinsky") then
+            do iCell = cellStart,cellEnd
+               d_diag(1:nVertLevels) = 0.0
+               d_off_diag(1:nVertLevels) = 0.0
+               do iEdge=1,nEdgesOnCell(iCell)
+                  do k=1,nVertLevels
+                     d_diag(k)     = d_diag(k)     + defc_a(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
+                                                   - defc_b(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
+                     d_off_diag(k) = d_off_diag(k) + defc_b(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
+                                                   + defc_a(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
+                  end do
+               end do
+!DIR$ IVDEP
+               do k=1, nVertLevels
+                  ! here is the Smagorinsky formulation, 
+                  ! followed by imposition of an upper bound on the eddy viscosity
+                  kdiff(k,iCell) = min((c_s * config_len_disp)**2 * sqrt(d_diag(k)**2 + d_off_diag(k)**2),(0.01*config_len_disp**2) * invDt)
                end do
             end do
-!DIR$ IVDEP
-            do k=1, nVertLevels
-               ! here is the Smagorinsky formulation, 
-               ! followed by imposition of an upper bound on the eddy viscosity
-               kdiff(k,iCell) = min((c_s * config_len_disp)**2 * sqrt(d_diag(k)**2 + d_off_diag(k)**2),(0.01*config_len_disp**2) * invDt)
-            end do
-         end do
 
-         h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
-         h_theta_eddy_visc4 = h_mom_eddy_visc4
+            h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
+            h_theta_eddy_visc4 = h_mom_eddy_visc4
 
+         else if(config_horiz_mixing == "2d_fixed") then
+
+            kdiff(1:nVertLevels,cellStart:cellEnd) = config_h_theta_eddy_visc2
+            h_mom_eddy_visc4 = config_h_mom_eddy_visc4
+            h_theta_eddy_visc4 = config_h_theta_eddy_visc4
+
+         end if
+            
       end if
 
       ! tendency for density.
@@ -4305,61 +4327,128 @@ MPAS_GPTL_STOP('mono_exch_2')
             end do
          end do
 
-!$OMP BARRIER
-
-         do iVertex=vertexStart,vertexEnd
-            delsq_vorticity(1:nVertLevels,iVertex) = 0.0
-            do i=1,vertexDegree
-               iEdge = edgesOnVertex(i,iVertex)
-               edge_sign = invAreaTriangle(iVertex) * dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
-               do k=1,nVertLevels
-                  delsq_vorticity(k,iVertex) = delsq_vorticity(k,iVertex) + edge_sign * delsq_u(k,iEdge)
-               end do
-            end do
-         end do
-
-         do iCell=cellStart,cellEnd
-            delsq_divergence(1:nVertLevels,iCell) = 0.0
-            r = invAreaCell(iCell)
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               edge_sign = r * dvEdge(iEdge) * edgesOnCell_sign(i,iCell)
-               do k=1,nVertLevels
-                  delsq_divergence(k,iCell) = delsq_divergence(k,iCell) + edge_sign * delsq_u(k,iEdge)
-               end do
-            end do
-         end do
+         if (h_mom_eddy_visc4 > 0.0) then  ! 4th order mixing is active
 
 !$OMP BARRIER
 
-         do iEdge=edgeSolveStart,edgeSolveEnd
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            vertex1 = verticesOnEdge(1,iEdge)
-            vertex2 = verticesOnEdge(2,iEdge)
+            do iVertex=vertexStart,vertexEnd
+               delsq_vorticity(1:nVertLevels,iVertex) = 0.0
+               do i=1,vertexDegree
+                  iEdge = edgesOnVertex(i,iVertex)
+                  edge_sign = invAreaTriangle(iVertex) * dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
+                  do k=1,nVertLevels
+                     delsq_vorticity(k,iVertex) = delsq_vorticity(k,iVertex) + edge_sign * delsq_u(k,iEdge)
+                  end do
+               end do
+            end do
 
-            u_mix_scale = meshScalingDel4(iEdge)*h_mom_eddy_visc4
-            r_dc = u_mix_scale * config_del4u_div_factor * invDcEdge(iEdge)
-            r_dv = u_mix_scale * min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
+            do iCell=cellStart,cellEnd
+               delsq_divergence(1:nVertLevels,iCell) = 0.0
+               r = invAreaCell(iCell)
+               do i=1,nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i,iCell)
+                  edge_sign = r * dvEdge(iEdge) * edgesOnCell_sign(i,iCell)
+                  do k=1,nVertLevels
+                     delsq_divergence(k,iCell) = delsq_divergence(k,iCell) + edge_sign * delsq_u(k,iEdge)
+                  end do
+               end do
+            end do
+
+!$OMP BARRIER
+
+            do iEdge=edgeSolveStart,edgeSolveEnd
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               vertex1 = verticesOnEdge(1,iEdge)
+               vertex2 = verticesOnEdge(2,iEdge)
+
+               u_mix_scale = meshScalingDel4(iEdge)*h_mom_eddy_visc4
+               r_dc = u_mix_scale * config_del4u_div_factor * invDcEdge(iEdge)
+               r_dv = u_mix_scale * min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
 
 !DIR$ IVDEP
-            do k=1,nVertLevels
+               do k=1,nVertLevels
 
-               ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
-               !                    only valid for h_mom_eddy_visc4 == constant
-               !
-               ! Here, we scale the diffusion on the divergence part a factor of config_del4u_div_factor 
-               !    relative to the rotational part.  The stability constraint on the divergence component is much less
-               !    stringent than the rotational part, and this flexibility may be useful.
-               !
-               u_diffusion =  rho_edge(k,iEdge) *  ( ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) * r_dc  &
-                                                    -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) * r_dv )
-               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) - u_diffusion
-
-
+                  ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
+                  !                    only valid for h_mom_eddy_visc4 == constant
+                  !
+                  ! Here, we scale the diffusion on the divergence part a factor of config_del4u_div_factor 
+                  !    relative to the rotational part.  The stability constraint on the divergence component is much less
+                  !    stringent than the rotational part, and this flexibility may be useful.
+                  !
+                  u_diffusion =  rho_edge(k,iEdge) *  ( ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) * r_dc  &
+                                                       -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) * r_dv )
+                  tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) - u_diffusion
+                  
+               end do
             end do
-         end do
+         
+         end if ! 4th order mixing is active 
 
+      !
+      !  vertical mixing for u - 2nd order filter in physical (z) space
+      !
+         if ( v_mom_eddy_visc2 > 0.0 ) then
+
+            if (config_mix_full) then  ! mix full state
+
+               do iEdge=1,nEdgesSolve
+
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+
+                  do k=2,nVertLevels-1
+
+                     z1 = 0.5*(zgrid(k-1,cell1)+zgrid(k-1,cell2))
+                     z2 = 0.5*(zgrid(k  ,cell1)+zgrid(k  ,cell2))
+                     z3 = 0.5*(zgrid(k+1,cell1)+zgrid(k+1,cell2))
+                     z4 = 0.5*(zgrid(k+2,cell1)+zgrid(k+2,cell2))
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + rho_edge(k,iEdge) * v_mom_eddy_visc2*(  &
+                                        (u(k+1,iEdge)-u(k  ,iEdge))/(zp-z0)                      &
+                                       -(u(k  ,iEdge)-u(k-1,iEdge))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+            else  ! idealized cases where we mix on the perturbation from the initial 1-D state
+
+               do iEdge=1,nEdgesSolve
+
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+
+                  do k=1,nVertLevels
+#ifdef ROTATED_GRID
+                     u_mix(k) = u(k,iEdge) - u_init(k) * sin( angleEdge(iEdge) )
+#else
+                     u_mix(k) = u(k,iEdge) - u_init(k) * cos( angleEdge(iEdge) )
+#endif
+                  end do
+
+                  do k=2,nVertLevels-1
+
+                     z1 = 0.5*(zgrid(k-1,cell1)+zgrid(k-1,cell2))
+                     z2 = 0.5*(zgrid(k  ,cell1)+zgrid(k  ,cell2))
+                     z3 = 0.5*(zgrid(k+1,cell1)+zgrid(k+1,cell2))
+                     z4 = 0.5*(zgrid(k+2,cell1)+zgrid(k+2,cell2))
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + rho_edge(k,iEdge) * v_mom_eddy_visc2*(  &
+                                        (u_mix(k+1)-u_mix(k  ))/(zp-z0)                      &
+                                       -(u_mix(k  )-u_mix(k-1))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+            end if  ! mix perturbation state
+
+         end if  ! vertical mixing of horizontal momentum
 
       end if ! (rk_step 1 test for computing mixing terms)
 
@@ -4469,23 +4558,27 @@ MPAS_GPTL_STOP('mono_exch_2')
             end do
          end do
 
+         if (h_mom_eddy_visc4 > 0.0) then  ! 4th order mixing is active
+
 !$OMP BARRIER
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
+            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+               r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
+               do i=1,nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i,iCell)
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
 
-               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell) * invDcEdge(iEdge)
+                  edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell) * invDcEdge(iEdge)
 
-               do k=2,nVertLevels
-                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edge_sign * (delsq_w(k,cell2) - delsq_w(k,cell1))
-               end do
+                  do k=2,nVertLevels
+                     tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edge_sign * (delsq_w(k,cell2) - delsq_w(k,cell1))
+                  end do
            
+               end do
             end do
-         end do
+
+         end if ! 4th order mixing is active 
 
       end if ! horizontal mixing for w computed in first rk_step
 
@@ -4532,7 +4625,24 @@ MPAS_GPTL_STOP('mono_exch_2')
 
       end do
 
-! add in mixing terms for w
+      if (rk_step == 1) then
+
+         if ( v_mom_eddy_visc2 > 0.0 ) then
+
+            do iCell = 1, nCellsSolve
+!DIR$ IVDEP
+               do k=2,nVertLevels
+                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + v_mom_eddy_visc2*0.5*(rho_zz(k,iCell)+rho_zz(k-1,iCell))*(  &
+                                           (w(k+1,iCell)-w(k  ,iCell))*rdzw(k)                              &
+                                          -(w(k  ,iCell)-w(k-1,iCell))*rdzw(k-1) )*rdzu(k)
+               end do
+            end do
+
+         end if
+
+      end if ! mixing term computed first rk_step
+
+      ! add in mixing terms for w
 
       do iCell = cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
@@ -4619,26 +4729,29 @@ MPAS_GPTL_STOP('mono_exch_2')
             end do
           end do
             
+         if (h_theta_eddy_visc4 > 0.0) then  ! 4th order mixing is active
+
 !$OMP BARRIER
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            r_areaCell = h_theta_eddy_visc4 * prandtl_inv * invAreaCell(iCell)
-            do i=1,nEdgesOnCell(iCell)
+            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+               r_areaCell = h_theta_eddy_visc4 * prandtl_inv * invAreaCell(iCell)
+               do i=1,nEdgesOnCell(iCell)
 
-               iEdge = edgesOnCell(i,iCell)
-               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)*invDcEdge(iEdge)
+                  iEdge = edgesOnCell(i,iCell)
+                  edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)*invDcEdge(iEdge)
 
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
 
-               do k=1,nVertLevels
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edge_sign*(delsq_theta(k,cell2) - delsq_theta(k,cell1))
+                  do k=1,nVertLevels
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edge_sign*(delsq_theta(k,cell2) - delsq_theta(k,cell1))
+                  end do
                end do
             end do
-         end do
+
+         end if ! 4th order mixing is active 
 
       end if ! theta mixing calculated first rk_step
-
 
       !
       !  vertical advection plus diabatic term
@@ -4668,6 +4781,58 @@ MPAS_GPTL_STOP('mono_exch_2')
             tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
       end do
+
+      !
+      !  vertical mixing for theta - 2nd order 
+      !
+
+      if (rk_step == 1) then
+
+         if ( v_theta_eddy_visc2 > 0.0 ) then  ! vertical mixing for theta_m
+
+            if (config_mix_full) then
+
+               do iCell = 1, nCellsSolve
+                  do k=2,nVertLevels-1
+                     z1 = zgrid(k-1,iCell)
+                     z2 = zgrid(k  ,iCell)
+                     z3 = zgrid(k+1,iCell)
+                     z4 = zgrid(k+2,iCell)
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + v_theta_eddy_visc2*prandtl_inv*rho_zz(k,iCell)*(&
+                                              (theta_m(k+1,iCell)-theta_m(k  ,iCell))/(zp-z0)                 &
+                                             -(theta_m(k  ,iCell)-theta_m(k-1,iCell))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+         else  ! idealized cases where we mix on the perturbation from the initial 1-D state
+
+               do iCell = 1, nCellsSolve
+                  do k=2,nVertLevels-1
+                     z1 = zgrid(k-1,iCell)
+                     z2 = zgrid(k  ,iCell)
+                     z3 = zgrid(k+1,iCell)
+                     z4 = zgrid(k+2,iCell)
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + v_theta_eddy_visc2*prandtl_inv*rho_zz(k,iCell)*(&
+                                              ((theta_m(k+1,iCell)-t_init(k+1,iCell))-(theta_m(k  ,iCell)-t_init(k,iCell)))/(zp-z0)      &
+                                             -((theta_m(k  ,iCell)-t_init(k,iCell))-(theta_m(k-1,iCell)-t_init(k-1,iCell)))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+            end if
+
+         end if
+
+      end if ! compute vertical theta mixing on first rk_step
 
       do iCell = cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
