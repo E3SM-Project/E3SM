@@ -1,7 +1,0 @@
--spmd -nosmp
--chem waccm_ghg
--dyn fv
--res 4x5
--debug
--phys cam4
--s

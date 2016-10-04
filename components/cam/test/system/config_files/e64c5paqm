@@ -1,7 +1,0 @@
--spmd -nosmp
--dyn eul
--res 64x128
--pergro
--ocn aquaplanet
--phys cam5
--s

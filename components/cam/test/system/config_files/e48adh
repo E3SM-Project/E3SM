@@ -1,6 +1,0 @@
--smp -spmd
--dyn eul
--res 48x96
--phys adiabatic
--debug
--s

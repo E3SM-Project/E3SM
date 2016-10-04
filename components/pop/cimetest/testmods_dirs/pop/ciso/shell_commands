@@ -1,2 +1,0 @@
-./xmlchange -a OCN_TRACER_MODULES=ciso
-./xmlchange PIO_TYPENAME=pnetcdf
