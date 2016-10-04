@@ -1831,17 +1831,6 @@
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>CLMNCEP,COPYALL,CPLHIST,CORE2_NYF,CORE2_IAF,NULL</valid_values>
-    <datamode>NULL</datamode>
-    <datamode datm_mode="CLM_QIAN"      >CLMNCEP</datamode>
-    <datamode datm_mode="CLM1PT"        >CLMNCEP</datamode>
-    <datamode datm_mode="CLMCRUNCEP"    >CLMNCEP</datamode>
-    <datamode datm_mode="CLMCRUNCEP_V5" >CLMNCEP</datamode>
-    <datamode datm_mode="CLMGSWP3"      >CLMNCEP</datamode>
-    <datamode datm_mode="CPLHIST3HrWx"  >CPLHIST</datamode>
-    <datamode datm_mode="CORE2_NYF"     >CORE2_NYF</datamode>
-    <datamode datm_mode="CORE2_IAF"     >CORE2_IAF</datamode>
-    <datamode datm_mode="WW3"           >COPYALL</datamode>
-    <datamode datm_mode="NLDAS"         >CLMNCEP</datamode>
     <description>
       general method that operates on the data.  this is generally
       implemented in the data models but is set in the strdata method for
@@ -1887,6 +1876,17 @@
       LMWG started using the CCSM flux coupler and data models to do
       active-land-only simulations.
     </description>
+    <datamode>NULL</datamode>
+    <datamode datm_mode="CLM_QIAN"      >CLMNCEP</datamode>
+    <datamode datm_mode="CLM1PT"        >CLMNCEP</datamode>
+    <datamode datm_mode="CLMCRUNCEP"    >CLMNCEP</datamode>
+    <datamode datm_mode="CLMCRUNCEP_V5" >CLMNCEP</datamode>
+    <datamode datm_mode="CLMGSWP3"      >CLMNCEP</datamode>
+    <datamode datm_mode="CPLHIST3HrWx"  >CPLHIST</datamode>
+    <datamode datm_mode="CORE2_NYF"     >CORE2_NYF</datamode>
+    <datamode datm_mode="CORE2_IAF"     >CORE2_IAF</datamode>
+    <datamode datm_mode="WW3"           >COPYALL</datamode>
+    <datamode datm_mode="NLDAS"         >CLMNCEP</datamode>
   </entry>
 
   <entry id="domainfile">
