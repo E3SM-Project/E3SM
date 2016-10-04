@@ -1,0 +1,160 @@
+#!/usr/bin/env python
+
+"""
+Script to query xml test lists.
+"""
+from __future__ import print_function
+from Tools.standard_script_setup import *
+from CIME.test_utils import get_tests_from_xml
+from CIME.utils import expect
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def parse_command_line(description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        description=description)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--count", action="store_true",
+                        help="Rather than listing tests, just give counts by category/machine/compiler")
+
+    parser.add_argument("--list", dest='list_type',
+                        choices = ['category', 'categories',
+                                   'machine', 'machines',
+                                   'compiler', 'compilers'],
+                        help="Rather than listing tests, list the available options for "
+                        "--xml-category, --xml-machine, or --xml-compiler. "
+                        "(The singular and plural forms are equivalent - so '--list category' "
+                        "is equivalent to '--list categories', etc.)")
+
+    parser.add_argument("--xml-category",
+                        help="Use this category key in the lookup in testlist.xml, default is all")
+
+    parser.add_argument("--xml-machine",
+                        help="Use this machine key in the lookup in testlist.xml, default is all")
+
+    parser.add_argument("--xml-compiler",
+                        help="Use this compiler key in the lookup in testlist.xml, default is all")
+
+    parser.add_argument("--xml-testlist",
+                        help="Use this testlist to lookup tests, default specified in config_files.xml")
+
+    args = parser.parse_args()
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    expect(not(args.count and args.list_type),
+           "Cannot specify both --count and --list arguments.")
+
+    if args.list_type:
+        _process_list_type(args)
+
+    return args
+
+###############################################################################
+def _process_list_type(args):
+###############################################################################
+    """Convert args.list_type into a name that matches one of the keys of the
+    test data dictionaries
+
+    Args:
+        args: object containing list_type string attribute
+    """
+
+    if args.list_type == 'categories':
+        args.list_type = 'category'
+    elif args.list_type == 'machines':
+        args.list_type = 'machine'
+    elif args.list_type == 'compilers':
+        args.list_type = 'compiler'
+
+###############################################################################
+def print_test_data(test_data):
+###############################################################################
+    """
+    Args:
+        test_data (dict): dictionary of test data, containing at least these keys:
+            - name: full test name
+            - category: test category
+    """
+
+    categories = sorted(set([item['category'] for item in test_data]))
+    max_category_len = max([len(category) for category in categories])
+    for category in categories:
+        test_subset = [one_test for one_test in test_data if
+                       one_test['category'] == category]
+        for one_test in test_subset:
+            print("%-*s: %s"%(max_category_len, category, one_test['name']))
+
+###############################################################################
+def count_test_data(test_data):
+###############################################################################
+    """
+    Args:
+        test_data (dict): dictionary of test data, containing at least these keys:
+            - name: full test name
+            - category: test category
+            - machine
+            - compiler
+    """
+
+    tab_stop = ' '*4
+
+    categories = sorted(set([item['category'] for item in test_data]))
+    for category in categories:
+        tests_this_category = [one_test for one_test in test_data if
+                               one_test['category'] == category]
+        print("%s: %d"%(category, len(tests_this_category)))
+
+        machines = sorted(set([item['machine'] for item in tests_this_category]))
+        for machine in machines:
+            tests_this_machine = [one_test for one_test in tests_this_category if
+                                  one_test['machine'] == machine]
+            print("%s%s: %d"%(tab_stop, machine, len(tests_this_machine)))
+
+            compilers = sorted(set([item['compiler'] for item in tests_this_machine]))
+            for compiler in compilers:
+                tests_this_compiler = [one_test for one_test in tests_this_machine if
+                                       one_test['compiler'] == compiler]
+                print("%s%s: %d"%(tab_stop*2, compiler, len(tests_this_compiler)))
+
+###############################################################################
+def list_test_data(test_data, list_type):
+###############################################################################
+    """List categories, machines or compilers
+
+    Args:
+        test_data (dict): dictionary of test data, containing at least these keys:
+            - category
+            - machine
+            - compiler
+        list_type (str): one of 'category', 'machine' or 'compiler'
+    """
+
+    items = sorted(set([one_test[list_type] for one_test in test_data]))
+    for item in items:
+        print(item)
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    args = parse_command_line(description)
+
+    test_data = get_tests_from_xml(
+        xml_machine = args.xml_machine,
+        xml_category = args.xml_category,
+        xml_compiler = args.xml_compiler,
+        xml_testlist = args.xml_testlist)
+
+    if args.count:
+        count_test_data(test_data)
+    elif args.list_type:
+        list_test_data(test_data, args.list_type)
+    else:
+        print_test_data(test_data)
+
+if __name__ == "__main__":
+    _main_func(__doc__)

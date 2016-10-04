@@ -285,7 +285,7 @@
   </test>
   <test name="PFS" grid="f09_g16" compset="B1850" testmods="allactive/default">
     <machines>
-      <machine name="bluewaters" compiler="pgi " category="prebeta"/>
+      <machine name="bluewaters" compiler="pgi" category="prebeta"/>
       <machine name="yellowstone" compiler="intel" category="prealpha"/>
       <machine name="yellowstone" compiler="intel" category="prebeta"/>
       <options>
@@ -303,8 +303,8 @@
   </test>
   <test name="PFS" grid="ne30_g16" compset="B1850" testmods="allactive/default">
     <machines>
-      <machine name="yellowstone" compiler="intel " category="prealpha"/>
-      <machine name="yellowstone" compiler="intel " category="prebeta"/>
+      <machine name="yellowstone" compiler="intel" category="prealpha"/>
+      <machine name="yellowstone" compiler="intel" category="prebeta"/>
       <options>
 	<option name="wallclock"> 00:20 </option>
       </options>
