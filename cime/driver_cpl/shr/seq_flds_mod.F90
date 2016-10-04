@@ -597,6 +597,7 @@ module seq_flds_mod
 
      ! pressure at the lowest model level (Pa)
      call seq_flds_add(a2x_states,"Sa_pbot")
+     call seq_flds_add(x2o_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
      longname = 'Pressure at the lowest model level'

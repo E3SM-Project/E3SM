@@ -50,6 +50,8 @@ OPTIONS
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
+     -ic_mode              variable for initial condition file mode
+                           Options are: spunup, cold_start
 
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -91,6 +93,7 @@ my %opts = ( help        => 0,
              inst_string => undef,
              ice_grid    => undef,
              date_stamp  => undef,
+             ic_mode     => undef,
              cfg_dir     => $cfgdir,
            );
 
@@ -105,6 +108,7 @@ GetOptions(
     "inst_string=s" => \$opts{'inst_string'},	   
     "ice_grid=s"    => \$opts{'ice_grid'},
     "date_stamp=s"  => \$opts{'date_stamp'},
+    "ic_mode=s"     => \$opts{'ic_mode'},
     "cfg_dir=s"     => \$opts{'cfg_dir'},
     "preview"       => \$opts{'preview'},
 )  or usage();
@@ -136,6 +140,7 @@ my $SCRIPTSROOT = $opts{'scriptsroot'};
 my $inst_string = $opts{'inst_string'};
 my $ICE_GRID    = $opts{'ice_grid'};
 my $date_stamp  = $opts{'date_stamp'};
+my $ic_mode     = $opts{'ic_mode'};
 $cfgdir         = $opts{'cfg_dir'};
 
 # Validate some of the commandline option values.
@@ -457,10 +462,22 @@ add_default($nl, 'config_do_restart_zsalinity');
 add_default($nl, 'config_do_restart_bgc');
 
 ##############################
+# Namelist group: dimensions #
+##############################
+
+add_default($nl, 'config_nCategories');
+add_default($nl, 'config_nIceLayers');
+add_default($nl, 'config_nSnowLayers');
+
+##############################
 # Namelist group: initialize #
 ##############################
 
-add_default($nl, 'config_initial_condition_type');
+if ($ic_mode eq 'spunup') {
+        add_default($nl, 'config_initial_condition_type', 'val'=>"restart");
+} else {
+        add_default($nl, 'config_initial_condition_type');
+}
 add_default($nl, 'config_initial_ice_area');
 add_default($nl, 'config_initial_ice_volume');
 add_default($nl, 'config_initial_snow_volume');
@@ -469,6 +486,7 @@ add_default($nl, 'config_initial_latitude_south');
 add_default($nl, 'config_initial_velocity_type');
 add_default($nl, 'config_initial_uvelocity');
 add_default($nl, 'config_initial_vvelocity');
+add_default($nl, 'config_calculate_coriolis');
 
 ################################
 # Namelist group: use_sections #
@@ -500,6 +518,7 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
+add_default($nl, 'config_use_test_ice_shelf');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -581,6 +600,120 @@ add_default($nl, 'config_zsalinity_gravity_drainage_scale');
 add_default($nl, 'config_snow_porosity_at_ice_surface');
 add_default($nl, 'config_new_ice_fraction_biotracer');
 add_default($nl, 'config_fraction_biotracer_in_frazil');
+add_default($nl, 'config_ratio_Si_to_N_diatoms');
+add_default($nl, 'config_ratio_Si_to_N_small_plankton');
+add_default($nl, 'config_ratio_Si_to_N_phaeocystis');
+add_default($nl, 'config_ratio_S_to_N_diatoms');
+add_default($nl, 'config_ratio_S_to_N_small_plankton');
+add_default($nl, 'config_ratio_S_to_N_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_C_diatoms');
+add_default($nl, 'config_ratio_Fe_to_C_small_plankton');
+add_default($nl, 'config_ratio_Fe_to_C_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_N_diatoms');
+add_default($nl, 'config_ratio_Fe_to_N_small_plankton');
+add_default($nl, 'config_ratio_Fe_to_N_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_DON');
+add_default($nl, 'config_ratio_Fe_to_DOC_saccharids');
+add_default($nl, 'config_ratio_Fe_to_DOC_lipids');
+add_default($nl, 'config_respiration_fraction_of_growth');
+add_default($nl, 'config_rapid_mobile_to_stationary_time');
+add_default($nl, 'config_long_mobile_to_stationary_time');
+add_default($nl, 'config_algal_maximum_velocity');
+add_default($nl, 'config_ratio_Fe_to_dust');
+add_default($nl, 'config_solubility_of_Fe_in_dust');
+add_default($nl, 'config_chla_absorptivity_of_diatoms');
+add_default($nl, 'config_chla_absorptivity_of_small_plankton');
+add_default($nl, 'config_chla_absorptivity_of_phaeocystis');
+add_default($nl, 'config_light_attenuation_diatoms');
+add_default($nl, 'config_light_attenuation_small_plankton');
+add_default($nl, 'config_light_attenuation_phaeocystis');
+add_default($nl, 'config_light_inhibition_diatoms');
+add_default($nl, 'config_light_inhibition_small_plankton');
+add_default($nl, 'config_light_inhibition_phaeocystis');
+add_default($nl, 'config_maximum_growth_rate_diatoms');
+add_default($nl, 'config_maximum_growth_rate_small_plankton');
+add_default($nl, 'config_maximum_growth_rate_phaeocystis');
+add_default($nl, 'config_temperature_growth_diatoms');
+add_default($nl, 'config_temperature_growth_small_plankton');
+add_default($nl, 'config_temperature_growth_phaeocystis');
+add_default($nl, 'config_grazed_fraction_diatoms');
+add_default($nl, 'config_grazed_fraction_small_plankton');
+add_default($nl, 'config_grazed_fraction_phaeocystis');
+add_default($nl, 'config_mortality_diatoms');
+add_default($nl, 'config_mortality_small_plankton');
+add_default($nl, 'config_mortality_phaeocystis');
+add_default($nl, 'config_temperature_mortality_diatoms');
+add_default($nl, 'config_temperature_mortality_small_plankton');
+add_default($nl, 'config_temperature_mortality_phaeocystis');
+add_default($nl, 'config_exudation_diatoms');
+add_default($nl, 'config_exudation_small_plankton');
+add_default($nl, 'config_exudation_phaeocystis');
+add_default($nl, 'config_nitrate_saturation_diatoms');
+add_default($nl, 'config_nitrate_saturation_small_plankton');
+add_default($nl, 'config_nitrate_saturation_phaeocystis');
+add_default($nl, 'config_ammonium_saturation_diatoms');
+add_default($nl, 'config_ammonium_saturation_small_plankton');
+add_default($nl, 'config_ammonium_saturation_phaeocystis');
+add_default($nl, 'config_silicate_saturation_diatoms');
+add_default($nl, 'config_silicate_saturation_small_plankton');
+add_default($nl, 'config_silicate_saturation_phaeocystis');
+add_default($nl, 'config_iron_saturation_diatoms');
+add_default($nl, 'config_iron_saturation_small_plankton');
+add_default($nl, 'config_iron_saturation_phaeocystis');
+add_default($nl, 'config_fraction_spilled_to_DON');
+add_default($nl, 'config_degredation_of_DON');
+add_default($nl, 'config_fraction_DON_ammonium');
+add_default($nl, 'config_fraction_loss_to_saccharids');
+add_default($nl, 'config_fraction_loss_to_lipids');
+add_default($nl, 'config_fraction_exudation_to_saccharids');
+add_default($nl, 'config_fraction_exudation_to_lipids');
+add_default($nl, 'config_remineralization_saccharids');
+add_default($nl, 'config_remineralization_lipids');
+add_default($nl, 'config_maximum_brine_temperature');
+add_default($nl, 'config_salinity_dependence_of_growth');
+add_default($nl, 'config_minimum_optical_depth');
+add_default($nl, 'config_slopped_grazing_fraction');
+add_default($nl, 'config_excreted_fraction');
+add_default($nl, 'config_fraction_mortality_to_ammonium');
+add_default($nl, 'config_fraction_iron_remineralized');
+add_default($nl, 'config_nitrification_rate');
+add_default($nl, 'config_desorption_loss_particulate_iron');
+add_default($nl, 'config_maximum_loss_fraction');
+add_default($nl, 'config_maximum_ratio_iron_to_saccharids');
+add_default($nl, 'config_respiration_loss_to_DMSPd');
+add_default($nl, 'config_DMSP_to_DMS_conversion_fraction');
+add_default($nl, 'config_DMSP_to_DMS_conversion_time');
+add_default($nl, 'config_DMS_oxidation_time');
+add_default($nl, 'config_mobility_type_diatoms');
+add_default($nl, 'config_mobility_type_small_plankton');
+add_default($nl, 'config_mobility_type_phaeocystis');
+add_default($nl, 'config_mobility_type_nitrate');
+add_default($nl, 'config_mobility_type_ammonium');
+add_default($nl, 'config_mobility_type_silicate');
+add_default($nl, 'config_mobility_type_DMSPp');
+add_default($nl, 'config_mobility_type_DMSPd');
+add_default($nl, 'config_mobility_type_humics');
+add_default($nl, 'config_mobility_type_saccharids');
+add_default($nl, 'config_mobility_type_lipids');
+add_default($nl, 'config_mobility_type_proteins');
+add_default($nl, 'config_mobility_type_dissolved_iron');
+add_default($nl, 'config_mobility_type_particulate_iron');
+add_default($nl, 'config_mobility_type_black_carbon1');
+add_default($nl, 'config_mobility_type_black_carbon2');
+add_default($nl, 'config_mobility_type_dust1');
+add_default($nl, 'config_mobility_type_dust2');
+add_default($nl, 'config_mobility_type_dust3');
+add_default($nl, 'config_mobility_type_dust4');
+add_default($nl, 'config_ratio_C_to_N_diatoms');
+add_default($nl, 'config_ratio_C_to_N_small_plankton');
+add_default($nl, 'config_ratio_C_to_N_phaeocystis');
+add_default($nl, 'config_ratio_chla_to_N_diatoms');
+add_default($nl, 'config_ratio_chla_to_N_small_plankton');
+add_default($nl, 'config_ratio_chla_to_N_phaeocystis');
+add_default($nl, 'config_scales_absorption_diatoms');
+add_default($nl, 'config_scales_absorption_small_plankton');
+add_default($nl, 'config_scales_absorption_phaeocystis');
+add_default($nl, 'config_ratio_C_to_N_proteins');
 
 #############################
 # Namelist group: shortwave #
@@ -662,6 +795,12 @@ add_default($nl, 'config_use_ocean_mixed_layer');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
+
+###############################
+# Namelist group: diagnostics #
+###############################
+
+add_default($nl, 'config_check_state');
 
 ##########################################
 # Namelist group: AM_highFrequencyOutput #
@@ -778,6 +917,16 @@ add_default($nl, 'config_AM_pondDiagnostics_compute_on_startup');
 add_default($nl, 'config_AM_pondDiagnostics_write_on_startup');
 
 #####################################
+# Namelist group: AM_unitConversion #
+#####################################
+
+add_default($nl, 'config_AM_unitConversion_enable');
+add_default($nl, 'config_AM_unitConversion_compute_interval');
+add_default($nl, 'config_AM_unitConversion_output_stream');
+add_default($nl, 'config_AM_unitConversion_compute_on_startup');
+add_default($nl, 'config_AM_unitConversion_write_on_startup');
+
+#####################################
 # Namelist group: AM_pointwiseStats #
 #####################################
 
@@ -786,6 +935,16 @@ add_default($nl, 'config_AM_pointwiseStats_compute_interval');
 add_default($nl, 'config_AM_pointwiseStats_output_stream');
 add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
 add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
+
+#################################
+# Namelist group: AM_iceShelves #
+#################################
+
+add_default($nl, 'config_AM_iceShelves_enable');
+add_default($nl, 'config_AM_iceShelves_compute_interval');
+add_default($nl, 'config_AM_iceShelves_output_stream');
+add_default($nl, 'config_AM_iceShelves_compute_on_startup');
+add_default($nl, 'config_AM_iceShelves_write_on_startup');
 
 #################################
 # Namelist group: AM_icePresent #
@@ -848,7 +1007,6 @@ add_default($nl, 'config_AM_timeSeriesStatsClimatology_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
 
-
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpas-cice_in) and input dataset list (mpas--cice.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -858,6 +1016,7 @@ my @groups = qw(cice_model
                 io
                 decomposition
                 restart
+                dimensions
                 initialize
                 use_sections
                 forcing
@@ -874,6 +1033,7 @@ my @groups = qw(cice_model
                 ridging
                 atmosphere
                 ocean
+                diagnostics
                 am_highfrequencyoutput
                 am_temperatures
                 am_regionalstatistics
@@ -885,7 +1045,9 @@ my @groups = qw(cice_model
                 am_miscellaneous
                 am_areavariables
                 am_ponddiagnostics
+                am_unitconversion
                 am_pointwisestats
+                am_iceshelves
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly

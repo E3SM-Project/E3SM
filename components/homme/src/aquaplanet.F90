@@ -1095,22 +1095,6 @@ contains
 
     ifirst=0
   end subroutine noise
-#elif defined(_PRIMDG)
-  ! temporary place holder 
-  use kinds, only  : real_kind
-  use physical_constants, only : Cp, omega, rearth, rgas, kappa, G, p0, rwater_vapor, DD_PI
-  use dimensions_mod, only : nlev,np, nelemd
-  implicit none
-  private
-  real (kind=real_kind), allocatable,public :: usf(:,:,:,:)
-  real (kind=real_kind), allocatable,public :: vsf(:,:,:,:)
-  real (kind=real_kind), allocatable,public :: tsf(:,:,:,:)
-  real (kind=real_kind), allocatable,public :: qsf(:,:,:,:)
-  real (kind=real_kind), allocatable,public :: udrag(:,:,:)
-  real (kind=real_kind), allocatable,public :: vdrag(:,:,:)
-  real (kind=real_kind), allocatable,public :: qsflx(:,:,:)
-  real (kind=real_kind), allocatable,public :: tsflx(:,:,:)
-  contains
 #endif
 
 

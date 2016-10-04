@@ -711,7 +711,7 @@ my $rad_prog_bcarb = (($prog_species =~ "BC"   or $aero_chem) and !($chem_rad_pa
 my $rad_prog_sulf  = (($prog_species =~ "SO4"  or $aero_chem or $chem =~ "super_fast_llnl") and !($chem_rad_passive));
 my $rad_prog_dust  = (($prog_species =~ "DST"  or $aero_chem) and !($chem_rad_passive));
 my $rad_prog_sslt  = (($prog_species =~ "SSLT" or $aero_chem) and !($chem_rad_passive));
-my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "super_fast_llnl") and !($chem_rad_passive));
+my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "super_fast_llnl" or $chem =~ "linoz") and !($chem_rad_passive));
 
 # Check for eruptive volcano emissions.  These will be radiatively active by default, but
 # only if using BAM and the camrt radiation package (cam4 physics)
@@ -786,6 +786,10 @@ add_default($nl, 'ncdata', %atts);
 #In default model, solar zenith angle is held constant over time.
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
 add_default($nl,'use_rad_dt_cosz','val'=>'.false.');
+
+#Approximate value of decay time at model top (days);
+#if 0., no rayleigh friction is applied
+add_default($nl, 'raytau0');
 
 
 #
@@ -2491,23 +2495,36 @@ if ($chem eq 'waccm_mozart_mam3') {
 
 }
 
-if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus') {
+if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_resus_soag') {
 
     my %species;
 
     # Surface emission datasets:
     %species = ();
-    %species = ('DMS       -> ' => 'dms_emis_file',
-                'SO2       -> ' => 'so2_emis_file',
-                'SOAG      -> ' => 'soag_emis_file',
-                'bc_a4     -> ' => 'bc_a4_emis_file',
-                'pom_a4    -> ' => 'pom_a4_emis_file',
-                'so4_a1    -> ' => 'so4_a1_emis_file',
-                'so4_a2    -> ' => 'so4_a2_emis_file',
-                'num_a1    -> ' => 'mam7_num_a1_emis_file',
-                'num_a2    -> ' => 'num_a2_emis_file',
-                'num_a4    -> ' => 'mam7_num_a3_emis_file',
-        );
+    if ($chem eq 'trop_mam4_resus_soag') {
+	%species = ('DMS       -> ' => 'dms_emis_file',
+		    'SO2       -> ' => 'so2_emis_file',
+		    'bc_a4     -> ' => 'bc_a4_emis_file',
+		    'pom_a4    -> ' => 'pom_a4_emis_file',
+		    'so4_a1    -> ' => 'so4_a1_emis_file',
+		    'so4_a2    -> ' => 'so4_a2_emis_file',
+		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+		    'num_a2    -> ' => 'num_a2_emis_file',
+		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+	    );
+    } else {
+	%species = ('DMS       -> ' => 'dms_emis_file',
+		    'SO2       -> ' => 'so2_emis_file',
+		    'SOAG      -> ' => 'soag_emis_file',
+		    'bc_a4     -> ' => 'bc_a4_emis_file',
+		    'pom_a4    -> ' => 'pom_a4_emis_file',
+		    'so4_a1    -> ' => 'so4_a1_emis_file',
+		    'so4_a2    -> ' => 'so4_a2_emis_file',
+		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+		    'num_a2    -> ' => 'num_a2_emis_file',
+		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+	    );
+    }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
@@ -2529,14 +2546,26 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus') {
 
     # Vertical emission datasets:
     %species = ();
-    %species = ('SO2         -> ' => 'so2_ext_file',
-                'so4_a1      -> ' => 'so4_a1_ext_file',
-                'so4_a2      -> ' => 'so4_a2_ext_file',
-                'pom_a4      -> ' => 'pom_a4_ext_file',
-                'bc_a4       -> ' => 'bc_a4_ext_file',
-                'num_a1      -> ' => 'mam7_num_a1_ext_file',
-                'num_a2      -> ' => 'num_a2_ext_file',
-                'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    if ($chem eq 'trop_mam4_resus_soag') {
+	%species = ('SO2         -> ' => 'so2_ext_file',
+		    'SOAG        -> ' => 'soag_ext_file',
+		    'so4_a1      -> ' => 'so4_a1_ext_file',
+		    'so4_a2      -> ' => 'so4_a2_ext_file',
+		    'pom_a4      -> ' => 'pom_a4_ext_file',
+		    'bc_a4       -> ' => 'bc_a4_ext_file',
+		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		    'num_a2      -> ' => 'num_a2_ext_file',
+		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    } else {
+	%species = ('SO2         -> ' => 'so2_ext_file',
+		    'so4_a1      -> ' => 'so4_a1_ext_file',
+		    'so4_a2      -> ' => 'so4_a2_ext_file',
+		    'pom_a4      -> ' => 'pom_a4_ext_file',
+		    'bc_a4       -> ' => 'bc_a4_ext_file',
+		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		    'num_a2      -> ' => 'num_a2_ext_file',
+		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    }
     $first = 1;
     $pre = "";
     $val = "";
@@ -2579,23 +2608,36 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus') {
     }
 }
 
-if ($chem eq 'linoz_mam4_resus') {
+if ($chem eq 'linoz_mam4_resus' || $chem eq 'linoz_mam4_resus_soag') {
 
     my %species;
 
     # Surface emission datasets:
     %species = ();
-    %species = ('DMS       -> ' => 'dms_emis_file',
-                'SO2       -> ' => 'so2_emis_file',
-                'SOAG      -> ' => 'soag_emis_file',
-                'bc_a4     -> ' => 'bc_a4_emis_file',
-                'pom_a4    -> ' => 'pom_a4_emis_file',
-                'so4_a1    -> ' => 'so4_a1_emis_file',
-                'so4_a2    -> ' => 'so4_a2_emis_file',
-                'num_a1    -> ' => 'mam7_num_a1_emis_file',
-                'num_a2    -> ' => 'num_a2_emis_file',
-                'num_a4    -> ' => 'mam7_num_a3_emis_file',
-        );
+    if ($chem eq 'linoz_mam4_resus_soag') {
+	%species = ('DMS       -> ' => 'dms_emis_file',
+		    'SO2       -> ' => 'so2_emis_file',
+		    'bc_a4     -> ' => 'bc_a4_emis_file',
+		    'pom_a4    -> ' => 'pom_a4_emis_file',
+		    'so4_a1    -> ' => 'so4_a1_emis_file',
+		    'so4_a2    -> ' => 'so4_a2_emis_file',
+		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+		    'num_a2    -> ' => 'num_a2_emis_file',
+		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+	    );
+    } else {
+	%species = ('DMS       -> ' => 'dms_emis_file',
+		    'SO2       -> ' => 'so2_emis_file',
+		    'SOAG      -> ' => 'soag_emis_file',
+		    'bc_a4     -> ' => 'bc_a4_emis_file',
+		    'pom_a4    -> ' => 'pom_a4_emis_file',
+		    'so4_a1    -> ' => 'so4_a1_emis_file',
+		    'so4_a2    -> ' => 'so4_a2_emis_file',
+		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+		    'num_a2    -> ' => 'num_a2_emis_file',
+		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+	    );
+    }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
@@ -2617,14 +2659,26 @@ if ($chem eq 'linoz_mam4_resus') {
 
     # Vertical emission datasets:
     %species = ();
-    %species = ('SO2         -> ' => 'so2_ext_file',
-                'so4_a1      -> ' => 'so4_a1_ext_file',
-                'so4_a2      -> ' => 'so4_a2_ext_file',
-                'pom_a4      -> ' => 'pom_a4_ext_file',
-                'bc_a4       -> ' => 'bc_a4_ext_file',
-                'num_a1      -> ' => 'mam7_num_a1_ext_file',
-                'num_a2      -> ' => 'num_a2_ext_file',
-                'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    if ($chem eq 'linoz_mam4_resus_soag') {
+	%species = ('SO2         -> ' => 'so2_ext_file',
+		    'SOAG        -> ' => 'soag_ext_file',
+		    'so4_a1      -> ' => 'so4_a1_ext_file',
+		    'so4_a2      -> ' => 'so4_a2_ext_file',
+		    'pom_a4      -> ' => 'pom_a4_ext_file',
+		    'bc_a4       -> ' => 'bc_a4_ext_file',
+		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		    'num_a2      -> ' => 'num_a2_ext_file',
+		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    } else {
+	%species = ('SO2         -> ' => 'so2_ext_file',
+		    'so4_a1      -> ' => 'so4_a1_ext_file',
+		    'so4_a2      -> ' => 'so4_a2_ext_file',
+		    'pom_a4      -> ' => 'pom_a4_ext_file',
+		    'bc_a4       -> ' => 'bc_a4_ext_file',
+		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		    'num_a2      -> ' => 'num_a2_ext_file',
+		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    }
     $first = 1;
     $pre = "";
     $val = "";
@@ -2767,29 +2821,43 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
     my @files = ('mam_mom_specifier', 'mam_mom_filename',
 		 'mam_mom_datapath', 'mam_mom_datatype',
 		 'mam_mom_cycle_yr', 'mam_mom_fixed_ymd',
-		 'mam_mom_fixed_tod' );
+		 'mam_mom_fixed_tod', 'mam_mom_bubble_thickness',
+                 'mam_mom_mixing_state', 'mam_mom_parameterization');
     foreach my $file (@files) {
         add_default($nl, $file);
     }
 }
 
-if ($chem eq 'linoz_mam4_resus_mom') {
+if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
 
     my %species;
 
     # Surface emission datasets:
     %species = ();
-    %species = ('DMS       -> ' => 'dms_emis_file',
-                'SO2       -> ' => 'so2_emis_file',
-                'SOAG      -> ' => 'soag_emis_file',
-                'bc_a4     -> ' => 'bc_a4_emis_file',
-                'pom_a4    -> ' => 'pom_a4_emis_file',
-                'so4_a1    -> ' => 'so4_a1_emis_file',
-                'so4_a2    -> ' => 'so4_a2_emis_file',
-                'num_a1    -> ' => 'mam7_num_a1_emis_file',
-                'num_a2    -> ' => 'num_a2_emis_file',
-                'num_a4    -> ' => 'mam7_num_a3_emis_file',
-        );
+    if ($chem eq 'linoz_mam4_resus_mom_soag') {
+	%species = ('DMS       -> ' => 'dms_emis_file',
+		    'SO2       -> ' => 'so2_emis_file',
+		    'bc_a4     -> ' => 'bc_a4_emis_file',
+		    'pom_a4    -> ' => 'pom_a4_emis_file',
+		    'so4_a1    -> ' => 'so4_a1_emis_file',
+		    'so4_a2    -> ' => 'so4_a2_emis_file',
+		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+		    'num_a2    -> ' => 'num_a2_emis_file',
+		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+	    );
+    } else {
+	%species = ('DMS       -> ' => 'dms_emis_file',
+		    'SO2       -> ' => 'so2_emis_file',
+		    'SOAG      -> ' => 'soag_emis_file',
+		    'bc_a4     -> ' => 'bc_a4_emis_file',
+		    'pom_a4    -> ' => 'pom_a4_emis_file',
+		    'so4_a1    -> ' => 'so4_a1_emis_file',
+		    'so4_a2    -> ' => 'so4_a2_emis_file',
+		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+		    'num_a2    -> ' => 'num_a2_emis_file',
+		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+	    );
+    }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
@@ -2811,14 +2879,26 @@ if ($chem eq 'linoz_mam4_resus_mom') {
 
     # Vertical emission datasets:
     %species = ();
-    %species = ('SO2         -> ' => 'so2_ext_file',
-                'so4_a1      -> ' => 'so4_a1_ext_file',
-                'so4_a2      -> ' => 'so4_a2_ext_file',
-                'pom_a4      -> ' => 'pom_a4_ext_file',
-                'bc_a4       -> ' => 'bc_a4_ext_file',
-                'num_a1      -> ' => 'mam7_num_a1_ext_file',
-                'num_a2      -> ' => 'num_a2_ext_file',
-                'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    if ($chem eq 'linoz_mam4_resus_mom_soag') {
+	%species = ('SO2         -> ' => 'so2_ext_file',
+		    'SOAG        -> ' => 'soag_ext_file',
+		    'so4_a1      -> ' => 'so4_a1_ext_file',
+		    'so4_a2      -> ' => 'so4_a2_ext_file',
+		    'pom_a4      -> ' => 'pom_a4_ext_file',
+		    'bc_a4       -> ' => 'bc_a4_ext_file',
+		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		    'num_a2      -> ' => 'num_a2_ext_file',
+		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    } else {
+	%species = ('SO2         -> ' => 'so2_ext_file',
+		    'so4_a1      -> ' => 'so4_a1_ext_file',
+		    'so4_a2      -> ' => 'so4_a2_ext_file',
+		    'pom_a4      -> ' => 'pom_a4_ext_file',
+		    'bc_a4       -> ' => 'bc_a4_ext_file',
+		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		    'num_a2      -> ' => 'num_a2_ext_file',
+		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    }
     $first = 1;
     $pre = "";
     $val = "";
@@ -3300,6 +3380,7 @@ add_default($nl, 'demott_ice_nuc');
 #BSINGH - ENDS
 
 add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in cam
+add_default($nl, 'n_so4_monolayers_pcage'); #number of so4(+nh4) monolayers needed to "age" a carbon particle
 
 # Microphysics scheme
 add_default($nl, 'use_subcol_microp');
@@ -3311,12 +3392,21 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_sub_version');
     add_default($nl, 'micro_mg_num_steps');
     add_default($nl, 'nucleate_ice_subgrid');
+    add_default($nl, 'so4_sz_thresh_icenuc');
     add_default($nl, 'cld_macmic_num_steps');
     add_default($nl, 'micro_mg_precip_frac_method');
     add_default($nl, 'micro_mg_berg_eff_factor');
+    add_default($nl, 'micro_mg_dcs');
+    add_default($nl, 'ice_sed_ai');
+    add_default($nl, 'micro_mg_accre_enhan_fac');
 }
-add_default($nl, 'micro_mg_dcs');
-add_default($nl, 'ice_sed_ai');
+
+if ($cfg->get('microphys') =~ /^mg2/) {
+    add_default($nl, 'prc_coef1');
+    add_default($nl, 'prc_exp');
+    add_default($nl, 'prc_exp1');
+    add_default($nl, 'cld_sed');
+}
 
 # Sub-column switches for physics packages
 # Check that a subcol_scheme is specified if use_subcol_microp is turned on (true)
@@ -3393,6 +3483,9 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_liq_sh');
    add_default($nl, 'clubb_ice_deep');
    add_default($nl, 'clubb_ice_sh');
+   add_default($nl, 'clubb_tk1');
+   add_default($nl, 'clubb_tk2');
+   add_default($nl, 'clubb_wpxp_L_thresh');
 }
 
 #in-cloud scav tuning for cloud-borne aerosol
@@ -3455,6 +3548,10 @@ add_default($nl, 'zmconv_c0_lnd');
 add_default($nl, 'zmconv_c0_ocn');
 add_default($nl, 'zmconv_ke');
 add_default($nl, 'zmconv_tau');
+add_default($nl, 'zmconv_tiedke_add');
+add_default($nl, 'zmconv_cape_cin');
+add_default($nl, 'zmconv_mx_bot_lyr_adj');
+add_default($nl, 'zmconv_dmpdz');
 
 # moist convection rainwater coefficients
 add_default($nl, 'hkconv_cmftau');
@@ -3887,7 +3984,7 @@ if ($cfg->get('dyn') =~ /se/) {
                   statefreq se_partmethod se_topology se_ftype
                   integration nu nu_div nu_p nu_q nu_top  se_phys_tscale
                   vert_remap_q_alg se_limiter_option qsplit rsplit tstep_type
-                  hypervis_scaling mesh_file);
+                  hypervis_scaling mesh_file vthreads);
 
     foreach my $var (@vars) {
 	add_default($nl, $var);

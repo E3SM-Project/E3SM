@@ -19,9 +19,9 @@ module cam_restart
    use mpishorthand,     only: mpicom, mpir8, mpiint, mpilog
 #endif
    use units,            only: getunit
-   use shr_kind_mod,     only: shr_kind_cs
+   use shr_kind_mod,     only: shr_kind_cl
    use cam_logfile,      only: iulog
-   use pio,              only: file_desc_t, pio_global, pio_noerr, &
+   use pio,              only: file_desc_t, pio_global, pio_noerr, pio_offset_kind,&
                                pio_seterrorhandling, pio_bcast_error, pio_internal_error, &
                                pio_inq_att, pio_def_dim, pio_enddef, &
                                pio_get_att, pio_put_att, pio_closefile
@@ -46,7 +46,7 @@ module cam_restart
 
    integer, parameter :: nlen = 256       ! Length of character strings
    character(len=nlen):: pname = ' '      ! Full restart pathname
-   character(shr_kind_cs) :: tcase = ' '  ! Read in previous case name
+   character(shr_kind_cl) :: tcase = ' '  ! Read in previous case name
 
    ! Type of restart run
    logical :: nlres                       ! true => restart or branch run
@@ -320,7 +320,8 @@ end subroutine restart_printopts
    character(len=nlen) :: locfn          ! Local filename
    character(len=nlen+40) :: errstr
    real(r8) :: tmp_rgrid(plat)
-   integer :: ierr, aeres_int, slen, xtype
+   integer :: ierr, aeres_int, xtype
+   integer(PIO_OFFSET_KIND) :: slen
    type(file_desc_t) :: File
    logical :: filefound
 

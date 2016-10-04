@@ -96,6 +96,9 @@ OPTIONS
                                     or read from ~/.cesm_proj or ~/.ccsm_proj
   -compiler <name>         Specify a compiler for the target machine (optional)
                            default: default compiler for the target machine
+  -camse_target <name>     Spedify a target for the cam-se dycore (ignored for other atmospheric dycores)
+                           default: preqx
+                           options: preqx, preqx-acc
   -mpilib <name>           Specify a mpi library for the target machine (optional)
                            default: default mpi library for the target machine
                            allowed: openmpi, mpich, ibm, mpi-serial, etc
@@ -166,6 +169,7 @@ GetOptions(
     "confopts=s"                => \$opts{'confopts'},
     "project=s"                 => \$opts{'project'},  
     "compiler=s"                => \$opts{'compiler'},  
+    "camse_target=s"            => \$opts{'camse_target'},  
     "mpilib=s"                  => \$opts{'mpilib'},  
     "res=s"                     => \$opts{'res'},
     "h|help"                    => \$opts{'help'},
@@ -211,6 +215,7 @@ my $pecount;
 my $xmlmode;
 my $project;
 my $compiler;
+my $camse_target;
 my $mpilib;
 if (!$opts{'list'} && !$opts{'testlist'}) {
     # Check for manditory case input
@@ -258,6 +263,13 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
     # Check if machine compiler option is given
     if ($opts{'compiler'}) {
 	$compiler = $opts{'compiler'};
+    }
+
+    # Check if machine compiler option is given
+    if ($opts{'camse_target'}) {
+      $camse_target = $opts{'camse_target'};
+    } else {
+      $camse_target = "preqx";
     }
 
     # Check if machine mpilib option is given
@@ -502,36 +514,51 @@ if ($mach =~ /(.*)_(.*)/){
 }
 $cfg_ref->set('CCSM_MACHDIR', "$machdir");
 
+# Handle the camse_target option
+# Do this before handling the compiler so that default compiler can be overwritten
+if ($camse_target eq "preqx") {
+    $cfg_ref->set('CAM_TARGET', "preqx");
+} elsif ($camse_target eq "preqx_acc") {
+    $cfg_ref->set('CAM_TARGET', "preqx_acc");
+} else {
+    die "ERROR: option -camse_target must be preqx (default) or preqx_acc"
+}
+
 # Check that compiler request for target machine matches a supported value
 # Or set default compiler - if not provided compiler request
 
 my $compilers;
 if ($mach =~ /userdefined/){
-    $cfg_ref->set('COMPILER', "USERDEFINED_required_build");
+  $cfg_ref->set('COMPILER', "USERDEFINED_required_build");
 } else { 
-    $compilers = $cfg_ref->get('COMPILERS');
-    my @compilers = split ",", $compilers, -1;
-    if ($compiler) {
-	if (! ($mach =~ "generic")){
-	    my $found = 0;
-	    foreach my $comp (@compilers) {
-		if ($compiler eq $comp) {
-		    $found = 1;
-		}
-	    }
-	    if (!$found) {
-		my $sysmod = "rm -rf $caseroot";
-		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-		die "ERROR: compiler setting of $compiler does not match supported values of $compilers \n";
-	    }
-	}
-	$cfg_ref->set('COMPILER', "$compiler");
-	if ($print>=2) { print "Machine compiler specifier: $compiler.$eol"; }
-    } else {
-	$compiler = $compilers[0];   
-	$cfg_ref->set('COMPILER', "$compiler");
-	if ($print>=2) { print "Machine compiler specifier: $compiler.$eol"; }
+  $compilers = $cfg_ref->get('COMPILERS');
+  my @compilers = split ",", $compilers, -1;
+  if ($compiler) {
+    if (! ($mach =~ "generic")){
+      my $found = 0;
+      foreach my $comp (@compilers) {
+        if ($compiler eq $comp) {
+            $found = 1;
+        }
+      }
+      if (!$found) {
+        my $sysmod = "rm -rf $caseroot";
+        system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+        die "ERROR: compiler setting of $compiler does not match supported values of $compilers \n";
+      }
     }
+    $cfg_ref->set('COMPILER', "$compiler");
+    if ($print>=2) { print "Machine compiler specifier: $compiler.$eol"; }
+  } else {
+    $compiler = $compilers[0];
+    if ($camse_target eq "preqx_acc") {
+      if ($mach eq "titan") {
+        $compiler = "pgi_acc";
+      }
+    }
+    $cfg_ref->set('COMPILER', "$compiler");
+    if ($print>=2) { print "Machine compiler specifier: $compiler.$eol"; }
+  }
 }
 
 if ($print>=2) { print "Machine specifier: $mach.$eol"; }

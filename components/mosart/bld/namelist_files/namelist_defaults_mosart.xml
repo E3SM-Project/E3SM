@@ -28,7 +28,8 @@ for the CLM data in the CESM distribution
 
 <!-- River Transport Model river routing file (relative to {csmdata}) -->
 
-<frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_Global_half_20151205a.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="r0125" >rof/mosart/MOSART_Global_8th_20160716a.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_Global_half_20160716a.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th.nc</frivinp_rtm>
 
 </namelist_defaults>

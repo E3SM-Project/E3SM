@@ -1,3 +1,8 @@
+timing_160320: Added routines t_set_prefixf and t_unset_prefixf.
+               Setting the prefix adds this to the beginning of all subsequent 
+               timer event names (defined in t_startf/t_stopf).
+               Also doubling default hash index tablesize to 2048.
+               [Patrick Worley]
 timing_160124: Added option to prefix timer names with detail level. This is
                controlled by a new namelist variable (profile_add_detail).
                The default is to not enable this option. It is meant to be

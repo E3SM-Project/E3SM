@@ -401,7 +401,7 @@ contains
        integer  :: mam_amicphys_optaa
        integer  :: numaerosols     ! number of bulk aerosols in climate list
        character(len=20) :: bulkname
-       real(r8) :: pi
+       real(r8) :: pi,n_so4_monolayers_pcage_in
        complex(r8), pointer  :: refindex_aer_sw(:), &
             refindex_aer_lw(:)
        real(r8), pointer :: qqcw(:,:)
@@ -413,7 +413,8 @@ contains
 
        call phys_getopts(convproc_do_gas_out = convproc_do_gas, &
             convproc_do_aer_out = convproc_do_aer, &
-            mam_amicphys_optaa_out = mam_amicphys_optaa ) 
+            mam_amicphys_optaa_out = mam_amicphys_optaa, &
+            n_so4_monolayers_pcage_out = n_so4_monolayers_pcage_in) 
        
 
        ! Mode specific properties.
@@ -581,7 +582,7 @@ contains
        if ( mam_amicphys_optaa > 0 ) then
           call modal_aero_calcsize_init( pbuf2d, species_class )
           call modal_aero_newnuc_init( mam_amicphys_optaa )
-          call modal_aero_amicphys_init( imozart, species_class )
+          call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in )
        else
           call modal_aero_rename_init
           !   calcsize call must follow rename call

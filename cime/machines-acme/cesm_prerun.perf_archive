@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 # cesm_prerun with performance data archiving: 
 #  ./cesm_prerun.perf_archive with the following argument keyword/value pairs, in any order
 #   -machine <system name>
@@ -173,15 +173,15 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
       gzip sqsf.$lid sqsw.$lid sqsf_jobid.$lid squeue.$lid
 #     gzip xtdb2proc.$lid
     else if ($machine == 'edison') then
-      xtprocadmin > xtprocadmin.$lid
+#     xtprocadmin > xtprocadmin.$lid
       sqs -f > sqsf.$lid
       sqs -w -a > sqsw.$lid
       sqs -f $app_jobid > sqsf_jobid.$lid
 #     xtnodestat > xtnodestat.$lid
       squeue > squeue.$lid
       chmod a+r *
-      gzip xtprocadmin.$lid sqsf.$lid sqsw.$lid sqsf_jobid.$lid squeue.$lid
-#     gzip xtnodestat.$lid
+      gzip sqsf.$lid sqsw.$lid sqsf_jobid.$lid squeue.$lid
+#     gzip xtprocadmin.$lid xtnodestat.$lid
     else if ($machine == 'titan') then
       xtdb2proc -f xtdb2proc.$lid
       qstat -f > qstatf.$lid

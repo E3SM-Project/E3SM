@@ -40,12 +40,18 @@ module zm_conv
 !
 ! Private data
 !
-   real(r8), parameter :: unset_r8 = huge(1.0_r8)
-   real(r8) :: zmconv_c0_lnd = unset_r8    
-   real(r8) :: zmconv_c0_ocn = unset_r8    
-   real(r8) :: zmconv_ke     = unset_r8 
-   real(r8) :: zmconv_tau    = unset_r8   
-   logical  :: zmconv_trigmem= .false.    
+   real(r8), parameter :: unset_r8   = huge(1.0_r8)
+   integer , parameter :: unset_int  = huge(1)
+   real(r8) :: zmconv_c0_lnd         = unset_r8    
+   real(r8) :: zmconv_c0_ocn         = unset_r8    
+   real(r8) :: zmconv_ke             = unset_r8 
+   real(r8) :: zmconv_tau            = unset_r8   
+   real(r8) :: zmconv_dmpdz          = unset_r8   
+   real(r8) :: zmconv_alfa           = unset_r8   
+   real(r8) :: zmconv_tiedke_add     = unset_r8   
+   logical  :: zmconv_trigmem        = .false.    
+   integer  :: zmconv_cape_cin       = unset_int
+   integer  :: zmconv_mx_bot_lyr_adj = unset_int
 
    real(r8) rl         ! wg latent heat of vaporization.
    real(r8) cpres      ! specific heat at constant pressure in j/kg-degk.
@@ -56,7 +62,12 @@ module zm_conv
    real(r8) :: ke           ! Tunable evaporation efficiency set from namelist input zmconv_ke
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
    real(r8) :: c0_ocn       ! set from namelist input zmconv_c0_ocn
+   real(r8) :: dmpdz          = unset_r8  ! Parcel fractional mass entrainment rate (/m)
+   real(r8) :: alfa_scalar  ! maximum downdraft mass flux fraction  
+   real(r8) ::  tiedke_add    = unset_r8
    logical  :: trigmem      ! set from namelist input zmconv_trigmem
+   integer  :: num_cin        = unset_int !number of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
+   integer  :: mx_bot_lyr_adj = unset_int !bottom layer adjustment for setting "launching" level(mx) (to be at maximum moist static energy).
    real(r8) tau   ! convective time scale
    real(r8),parameter :: c1 = 6.112_r8
    real(r8),parameter :: c2 = 17.67_r8
@@ -77,8 +88,6 @@ module zm_conv
    
    integer  limcnv       ! top interface level limit for convection
 
-   real(r8),parameter ::  tiedke_add = 0.5_r8   
-
 contains
 
 subroutine zmconv_readnl(nlfile)
@@ -93,7 +102,9 @@ subroutine zmconv_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'zmconv_readnl'
 
-   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, zmconv_trigmem
+   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
+           zmconv_dmpdz, zmconv_alfa, zmconv_trigmem, zmconv_tiedke_add,     &
+           zmconv_cape_cin, zmconv_mx_bot_lyr_adj
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -111,11 +122,21 @@ subroutine zmconv_readnl(nlfile)
       call freeunit(unitn)
 
       ! set local variables
-      c0_lnd = zmconv_c0_lnd
-      c0_ocn = zmconv_c0_ocn
-      ke = zmconv_ke
-      tau = zmconv_tau
-      trigmem = zmconv_trigmem
+      c0_lnd         = zmconv_c0_lnd
+      c0_ocn         = zmconv_c0_ocn
+      ke             = zmconv_ke
+      tau            = zmconv_tau
+      trigmem        = zmconv_trigmem
+      tiedke_add     = zmconv_tiedke_add
+      num_cin        = zmconv_cape_cin
+      mx_bot_lyr_adj = zmconv_mx_bot_lyr_adj
+      dmpdz          = zmconv_dmpdz
+      
+      if ( zmconv_alfa /= unset_r8 ) then
+           alfa_scalar = zmconv_alfa
+      else
+           alfa_scalar = 0.1_r8
+      end if
 
    end if
 
@@ -125,7 +146,12 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(c0_ocn,            1, mpir8,  0, mpicom)
    call mpibcast(ke,                1, mpir8,  0, mpicom)
    call mpibcast(tau,               1, mpir8,  0, mpicom)
-   call mpibcast(trigmem,           1, mpir8,  0, mpicom)
+   call mpibcast(dmpdz,             1, mpir8,  0, mpicom)
+   call mpibcast(alfa_scalar,       1, mpir8,  0, mpicom)
+   call mpibcast(trigmem,           1, mpilog, 0, mpicom)
+   call mpibcast(tiedke_add,        1, mpir8,  0, mpicom)
+   call mpibcast(num_cin,           1, mpiint, 0, mpicom)
+   call mpibcast(mx_bot_lyr_adj,    1, mpiint, 0, mpicom)
 #endif
 
 end subroutine zmconv_readnl
@@ -168,6 +194,8 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
       write(iulog,*) 'tuning parameters zm_convi: tau',tau
       write(iulog,*) 'tuning parameters zm_convi: c0_lnd',c0_lnd, ', c0_ocn', c0_ocn 
       write(iulog,*) 'tuning parameters zm_convi: ke',ke
+      write(iulog,*) 'tuning parameters zm_convi: dmpdz',dmpdz
+      write(iulog,*) 'tuning parameters zm_convi: alfa',alfa_scalar
       write(iulog,*) 'tuning parameters zm_convi: no_deep_pbl',no_deep_pbl
    endif
 
@@ -2610,7 +2638,7 @@ subroutine cldprp(lchnk   , &
 !
 ! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
 !
-      alfa(i) = 0.1_r8
+      alfa(i) = alfa_scalar 
       jt(i) = min(jt(i),jb(i)-1)
       jd(i) = max(j0(i),jt(i)+1)
       jd(i) = min(jd(i),jb(i))
@@ -3208,7 +3236,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
 !--------------------------Local Variables------------------------------
 !
-   real(r8) capeten(pcols,5)     ! provisional value of cape
+   real(r8) capeten(pcols,num_cin)     ! provisional value of cape
    real(r8) tv(pcols,pver)       !
    real(r8) tpv(pcols,pver)      !
    real(r8) buoy(pcols,pver)
@@ -3224,7 +3252,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
    logical plge600(pcols)
    integer knt(pcols)
-   integer lelten(pcols,5)
+   integer lelten(pcols,num_cin)
 
    real(r8) cp
    real(r8) e
@@ -3244,7 +3272,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
 !-----------------------------------------------------------------------
 !
-   do n = 1,5
+   do n = 1,num_cin
       do i = 1,ncol
          lelten(i,n) = pver
          capeten(i,n) = 0._r8
@@ -3273,8 +3301,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 ! set "launching" level(mx) to be at maximum moist static energy.
 ! search for this level stops at planetary boundary layer top.
 !
-   bot_layer = pver -1
-   if(pver == 30)bot_layer = pver !BSINGH - special case for 30 layer model
+   bot_layer = pver - mx_bot_lyr_adj
 #ifdef PERGRO
    do k = bot_layer,msg + 1,-1
       do i = 1,ncol
@@ -3358,7 +3385,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       do i = 1,ncol
          if (k < lcl(i) .and. plge600(i)) then
             if (buoy(i,k+1) > 0._r8 .and. buoy(i,k) <= 0._r8) then
-               knt(i) = min(5,knt(i) + 1)
+               knt(i) = min(num_cin,knt(i) + 1)
                lelten(i,knt(i)) = k
             end if
          end if
@@ -3367,7 +3394,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
 ! calculate convective available potential energy (cape).
 !
-   do n = 1,5
+   do n = 1,num_cin
       do k = msg + 1,pver
          do i = 1,ncol
             if (plge600(i) .and. k <= mx(i) .and. k > lelten(i,n)) then
@@ -3381,7 +3408,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 ! one sounding,
 ! and use it as the final cape, april 26, 1995
 !
-   do n = 1,5
+   do n = 1,num_cin
       do i = 1,ncol
          if (capeten(i,n) > cape(i)) then
             cape(i) = capeten(i,n)
@@ -3456,7 +3483,7 @@ real(r8) mp0(pcols)    ! Parcel launch relative mass flux.
 real(r8) lwmax      ! Maximum condesate that can be held in cloud before rainout.
 real(r8) dmpdp      ! Parcel fractional mass entrainment rate (/mb).
 !real(r8) dmpdpc     ! In cloud parcel mass entrainment rate (/mb).
-real(r8) dmpdz      ! Parcel fractional mass entrainment rate (/m)
+!real(r8) dmpdz      ! Parcel fractional mass entrainment rate (/m)
 real(r8) dpdz,dzdp  ! Hydrstatic relation and inverse of.
 real(r8) senv       ! Environmental entropy at each grid point.
 real(r8) qtenv      ! Environmental total water "   "   ".
@@ -3490,9 +3517,8 @@ integer i,k,ii   ! Loop counters.
 !
 
 nit_lheat = 2 ! iterations for ds,dq changes from condensation freezing.
-dmpdz=-1.e-3_r8 * 0.5_r8        ! Entrainment rate. (-ve for /m)
-!BSINGH - special case for 30 layer model
-if(pver == 30)dmpdz=-1.e-3_r8        ! Entrainment rate. (-ve for /m)
+
+
 !dmpdpc = 3.e-2_r8   ! In cloud entrainment rate (/mb).
 lwmax = 1.e-3_r8    ! Need to put formula in for this.
 tscool = 0.0_r8   ! Temp at which water loading freezes in the cloud.

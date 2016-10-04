@@ -148,11 +148,9 @@ contains
 
     type (MPAS_Time_Type) :: alarmStartTime
     type (MPAS_TimeInterval_Type) :: alarmTimeStep
-    type (block_type), pointer :: block_ptr
+    type (block_type), pointer :: block
 
-    type (mpas_pool_type), pointer :: meshPool, statePool, &
-                                      forcingPool, diagnosticsPool, &
-                                      averagePool
+    type (MPAS_Pool_Type), pointer :: shortwave
 
     logical :: exists
 
@@ -183,6 +181,9 @@ contains
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
     real (kind=RKIND), pointer :: tempRealConfig
+
+    real(kind=RKIND), pointer :: &
+         dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -267,7 +268,7 @@ contains
        write(stderrUnit, *) 'Start type is:', trim(starttype)
        call mpas_dmpar_global_abort(' ice_comp_mct ERROR: unknown starttype')
     end if
-   
+
 !-----------------------------------------------------------------------
 !
 !   first initializaiton phase of mpas-cice
@@ -288,7 +289,7 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, file='/dev/null', position='APPEND')
+       open(stdout_shr, status='SCRATCH')
     else
        inquire(file='ice_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -473,6 +474,21 @@ contains
     !
     call mpas_bootstrap_framework_phase2(domain)
 
+    ! Determine time of next atmospheric shortwave calculation
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
+       call MPAS_pool_get_array(shortwave, "dayOfNextShortwaveCalculation", dayOfNextShortwaveCalculation)
+       call seq_infodata_GetData(infodata, nextsw_cday=dayOfNextShortwaveCalculation )
+
+       ! Set dayOfNextShortwaveCalculation to -1 for continue and branch runs.
+       if (trim(runtype) /= 'initial') dayOfNextShortwaveCalculation = -1
+       write(stderrUnit,*) 'dayOfNextShortwaveCalculation = ', dayOfNextShortwaveCalculation
+
+       block => block % next
+    end do
+
     ! Initialize the MPAS-CICE core
     ierr = domain % core % core_init(domain, timeStamp)
     if ( ierr /= 0 ) then
@@ -604,6 +620,7 @@ contains
     ! Coupling prep
     call cice_column_coupling_prep(domain)
 
+
 !-----------------------------------------------------------------------
 !
 !   send intial state to driver
@@ -660,6 +677,11 @@ contains
 #endif
     call shr_sys_flush(stderrUnit)
 
+#ifndef MPAS_DEBUG
+    if ( iam /= 0 ) then
+       close(stdout_shr)
+    end if
+#endif
 
 !-----------------------------------------------------------------------
 !EOC
@@ -698,19 +720,28 @@ contains
       integer :: shrloglev, shrlogunit
 
 ! Variable related to MPAS-CICE
-      real (kind=RKIND) :: dt
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool, statePool, forcingPool, diagnostics
-      character(len=strKIND), pointer :: xtime
+      type (MPAS_Pool_type), pointer :: &
+            shortwave
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: ierr, streamDirection
+      integer :: ierr, streamDirection, my_proc_id
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
       character (len=StrKIND), pointer :: config_restart_timestamp_name
+      real(kind=RKIND), pointer :: &
+            dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+
+      my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(iceStdErrUnit, status='SCRATCH')
+    end if
+#endif
 
       call mpas_io_units_set_stdout(iceStdOutUnit)
       call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -732,6 +763,11 @@ contains
       block => domain % blocklist
       do while (associated(block))
 
+         ! Determine time of next atmospheric shortwave calculation
+         call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
+         call MPAS_pool_get_array(shortwave, "dayOfNextShortwaveCalculation", dayOfNextShortwaveCalculation)
+         call seq_infodata_GetData(infodata, nextsw_cday=dayOfNextShortwaveCalculation )
+
          ! perform post coupling operations
          call post_atmospheric_coupling(block)
          call post_oceanic_coupling(block)
@@ -746,7 +782,6 @@ contains
      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
 
      timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
-     call mpas_get_timeInterval(timeStep, dt=dt)
      call mpas_reset_clock_alarm(domain % clock, coupleAlarmID, ierr=ierr)
 
      itimestep = 0  ! We may want to initialize this in init and make it a module, save variable
@@ -771,36 +806,54 @@ contains
         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
 
         ! pre-timestep analysis computation
+        write(stderrUnit,*) '   Starting analysis precompute'
+        call shr_sys_flush(stderrUnit)
         call cice_analysis_precompute(domain, ierr)
+        write(stderrUnit,*) '   Finished analysis precompute'
 
-        block => domain % blocklist
-        do while (associated(block))
-
-           call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
-           call MPAS_pool_get_array(diagnostics, "xtime", xtime)
-           xtime = timeStamp
-
-           block => block % next
-        end do
-
+        write(stderrUnit,*) '   Starting forward update'
+        call shr_sys_flush(stderrUnit)
         call mpas_timer_start("time integration", .false.)
-        call cice_timestep(domain, domain % clock, dt, itimestep)
+        call cice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
+        write(stderrUnit,*) '   Finished forward update'
 
         ! update analysis members
+        write(stderrUnit,*) '   Starting AM compute'
+        call shr_sys_flush(stderrUnit)
         call cice_analysis_compute(domain, ierr)
+        write(stderrUnit,*) '   Finished AM compute'
+        write(stderrUnit,*) '   Starting AM restart'
+        call shr_sys_flush(stderrUnit)
         call cice_analysis_restart(domain, ierr)
+        write(stderrUnit,*) '   Finished AM restart'
+        write(stderrUnit,*) '   Starting AM write'
+        call shr_sys_flush(stderrUnit)
         call cice_analysis_write(domain, ierr)
+        write(stderrUnit,*) '   Finished AM write'
 
         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
-        call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT_OUTPUT, ierr=ierr)
+        write(stderrUnit,*) '   Resetting restart stream alarms'
+        call shr_sys_flush(stderrUnit)
+        call mpas_stream_mgr_begin_iteration(domain % streamManager)
+        do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
+                   directionProperty=streamDirection, activeProperty=streamActive) )
+           if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
+              call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
+           end if
+        end do
+        write(stderrUnit,*) '   Resetting restart stream alarms complete'
 
+        write(stderrUnit,*) '   Writing output streams'
+        call shr_sys_flush(stderrUnit)
         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+        write(stderrUnit,*) '   Finished writing output streams'
 
+        write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
         call shr_sys_flush(stderrUnit)
      end do
 
@@ -808,11 +861,17 @@ contains
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
+         write(stderrUnit,*) 'Writing restart streams'
+         call shr_sys_flush(stderrUnit)
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
+               write(stderrUnit, *) '    Writing stream: ' // trim(streamName)
+               call shr_sys_flush(stderrUnit)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, iErr=iErr)
+               write(stderrUnit, *) '    Finished Writing stream: ' // trim(streamName)
+               call shr_sys_flush(stderrUnit)
             end if
          end do
 
@@ -821,10 +880,15 @@ contains
             write(22, *) trim(timeStamp)
             close(22)
          end if
+        write(stderrUnit,*) 'Finished writing restart streams'
       end if
 
       ! Export state to coupler
+      write(stderrUnit,*) 'Exporting state'
+      call shr_sys_flush(stderrUnit)
       call ice_export_mct(i2x_i, ierr)
+      write(stderrUnit,*) 'Finished exporting state'
+      call shr_sys_flush(stderrUnit)
 
       ! Check if clocks are in sync
 !TODO?      call check_clocks_sync(domain % clock, Eclock, stderrUnit, ierr)
@@ -844,6 +908,13 @@ contains
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(iceStdErrUnit)
+    end if
+#endif
+
 
 
 !-----------------------------------------------------------------------
@@ -881,12 +952,19 @@ contains
 !-----------------------------------------------------------------------
 
 
-    integer :: shrloglev, shrlogunit
+    integer :: shrloglev, shrlogunit, my_proc_id
     integer :: errorCode
 
     integer :: ierr
 
 !-----------------------------------------------------------------------
+    my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(iceStdErrUnit, status='SCRATCH')
+    end if
+#endif
 
     call mpas_io_units_set_stdout(iceStdOutUnit)
     call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -909,6 +987,12 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(iceStdErrUnit)
+    end if
+#endif
 
   end subroutine ice_final_mct!}}}
 

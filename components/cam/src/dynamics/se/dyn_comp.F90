@@ -6,6 +6,7 @@ Module dyn_comp
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t
   use hybrid_mod, only : hybrid_t
+  use thread_mod, only: nthreads, vthreads, omp_get_max_threads, omp_get_thread_num
   use perf_mod, only: t_startf, t_stopf
   use cam_logfile, only : iulog
   use time_manager, only: is_first_step
@@ -93,7 +94,6 @@ CONTAINS
 
     use dimensions_mod,   only: globaluniquecols, nelem, nelemd, nelemdmax
     use prim_driver_mod,  only: prim_init1
-    use thread_mod,       only: nthreads
     use parallel_mod,     only: par, initmp
     use namelist_mod,     only: readnl
     use control_mod,      only: runtype, qsplit, rsplit
@@ -101,6 +101,7 @@ CONTAINS
     use phys_control,     only: use_gw_front
     use physics_buffer,   only: pbuf_add_field, dtype_r8
     use ppgrid,           only: pcols, pver
+    use cam_abortutils,   only : endrun
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -108,9 +109,6 @@ CONTAINS
     type (dyn_import_t), intent(OUT) :: dyn_in
     type (dyn_export_t), intent(OUT) :: dyn_out
 
-#ifdef _OPENMP    
-    integer omp_get_num_threads
-#endif
     integer :: neltmp(3)
     integer :: npes_se
 
@@ -148,20 +146,26 @@ CONTAINS
 
 #ifdef _OPENMP    
 !   Set by driver
-!$omp parallel
-    nthreads = omp_get_num_threads()
-!$omp end parallel
+    nthreads = omp_get_max_threads()
     if(par%masterproc) then
        write(iulog,*) " "
        write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
        write(iulog,*) " "
     endif
 #ifdef COLUMN_OPENMP
+    call omp_set_nested(.true.)
+    if (vthreads > nthreads .or. vthreads < 1) &
+         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
+    nthreads = nthreads / vthreads
     if(par%masterproc) then
        write(iulog,*) " "
-       write(iulog,*) "dyn_init1: using OpenMP within element instead of across elements"
+       write(iulog,*) "dyn_init1: using OpenMP across and within elements"
+       write(iulog,*) "dyn_init1: nthreads=",nthreads,"vthreads=",vthreads
        write(iulog,*) " "
     endif
+#else
+    if (vthreads>1) &
+         call endrun('Error: vthreads>1 requires -DCOLUMN_OPENMP')
 #endif
 #else
     nthreads = 1
@@ -246,7 +250,6 @@ CONTAINS
     use parallel_mod,     only: par
     use time_mod,         only: time_at
     use control_mod,      only: moisture, runtype
-    use thread_mod,       only: nthreads, omp_get_thread_num
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use nctopo_util_mod,  only: nctopo_util_driver
@@ -277,7 +280,12 @@ CONTAINS
     if(iam < par%nprocs) then
 
 #ifdef HORIZ_OPENMP
-       !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+       if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
+                                   "max_threads=",omp_get_max_threads()
+       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+#endif
+#ifdef COLUMN_OPENMP
+       call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
@@ -361,7 +369,6 @@ CONTAINS
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run, prim_run_subcycle
     use dimensions_mod,   only : nlev
-    use thread_mod,       only: omp_get_thread_num, nthreads
     use time_mod,         only: tstep
     use hybrid_mod,       only: hybrid_create
 !    use perf_mod, only : t_startf, t_stopf
@@ -380,7 +387,13 @@ CONTAINS
     !
     if(iam < par%nprocs) then
 #ifdef HORIZ_OPENMP
-       !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+       !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
+       !                            "max_threads=",omp_get_max_threads()
+       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+#endif
+#ifdef COLUMN_OPENMP
+       ! nested threads
+       call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start

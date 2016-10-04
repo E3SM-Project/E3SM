@@ -13,7 +13,7 @@ module clm_driver
   use clm_varpar             , only : nlevtrc_soil
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
-  use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day
+  use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
@@ -81,42 +81,42 @@ module clm_driver
   use DaylengthMod           , only : UpdateDaylength
   use perf_mod
   !
-  use clm_initializeMod      , only : ch4_vars
-  use clm_initializeMod      , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
-  use clm_initializeMod      , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
-  use clm_initializeMod      , only : nitrogenstate_vars
-  use clm_initializeMod      , only : nitrogenflux_vars
-  use clm_initializeMod      , only : phosphorusstate_vars
-  use clm_initializeMod      , only : phosphorusflux_vars
-  use clm_initializeMod      , only : dgvs_vars
-  use clm_initializeMod      , only : crop_vars
-  use clm_initializeMod      , only : cnstate_vars
-  use clm_initializeMod      , only : dust_vars
-  use clm_initializeMod      , only : vocemis_vars
-  use clm_initializeMod      , only : drydepvel_vars
-  use clm_initializeMod      , only : aerosol_vars
-  use clm_initializeMod      , only : canopystate_vars
-  use clm_initializeMod      , only : energyflux_vars
-  use clm_initializeMod      , only : frictionvel_vars
-  use clm_initializeMod      , only : lakestate_vars
-  use clm_initializeMod      , only : photosyns_vars
-  use clm_initializeMod      , only : soilstate_vars
-  use clm_initializeMod      , only : soilhydrology_vars
-  use clm_initializeMod      , only : solarabs_vars
-  use clm_initializeMod      , only : soilhydrology_vars
-  use clm_initializeMod      , only : surfalb_vars
-  use clm_initializeMod      , only : surfrad_vars
-  use clm_initializeMod      , only : temperature_vars
-  use clm_initializeMod      , only : urbanparams_vars
-  use clm_initializeMod      , only : waterflux_vars
-  use clm_initializeMod      , only : waterstate_vars
-  use clm_initializeMod      , only : atm2lnd_vars
-  use clm_initializeMod      , only : lnd2atm_vars
-  use clm_initializeMod      , only : glc2lnd_vars
-  use clm_initializeMod      , only : lnd2glc_vars
-  use clm_initializeMod      , only : EDbio_vars
-  use clm_initializeMod      , only : soil_water_retention_curve
-  use clm_initializeMod      , only : chemstate_vars
+  use clm_instMod            , only : ch4_vars
+  use clm_instMod            , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
+  use clm_instMod            , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
+  use clm_instMod            , only : nitrogenstate_vars
+  use clm_instMod            , only : nitrogenflux_vars
+  use clm_instMod            , only : phosphorusstate_vars
+  use clm_instMod            , only : phosphorusflux_vars
+  use clm_instMod            , only : dgvs_vars
+  use clm_instMod            , only : crop_vars
+  use clm_instMod            , only : cnstate_vars
+  use clm_instMod            , only : dust_vars
+  use clm_instMod            , only : vocemis_vars
+  use clm_instMod            , only : drydepvel_vars
+  use clm_instMod            , only : aerosol_vars
+  use clm_instMod            , only : canopystate_vars
+  use clm_instMod            , only : energyflux_vars
+  use clm_instMod            , only : frictionvel_vars
+  use clm_instMod            , only : lakestate_vars
+  use clm_instMod            , only : photosyns_vars
+  use clm_instMod            , only : soilstate_vars
+  use clm_instMod            , only : soilhydrology_vars
+  use clm_instMod            , only : solarabs_vars
+  use clm_instMod            , only : soilhydrology_vars
+  use clm_instMod            , only : surfalb_vars
+  use clm_instMod            , only : surfrad_vars
+  use clm_instMod            , only : temperature_vars
+  use clm_instMod            , only : urbanparams_vars
+  use clm_instMod            , only : waterflux_vars
+  use clm_instMod            , only : waterstate_vars
+  use clm_instMod            , only : atm2lnd_vars
+  use clm_instMod            , only : lnd2atm_vars
+  use clm_instMod            , only : glc2lnd_vars
+  use clm_instMod            , only : lnd2glc_vars
+  use clm_instMod            , only : EDbio_vars
+  use clm_instMod            , only : soil_water_retention_curve
+  use clm_instMod            , only : chemstate_vars
   use betr_initializeMod     , only : betrtracer_vars
   use betr_initializeMod     , only : tracercoeff_vars
   use betr_initializeMod     , only : tracerflux_vars
@@ -134,11 +134,12 @@ module clm_driver
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
+  use shr_sys_mod            , only : shr_sys_flush
 
   !!----------------------------------------------------------------------------
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface
-  use clm_initializeMod      , only : clm_bgc_data
+  use clm_instMod            , only : clm_bgc_data
   use clm_bgc_interfaceMod   , only : get_clm_bgc_data
   !! (1) clm_bgc through interface
   use clm_varctl             , only : use_clm_bgc
@@ -203,10 +204,16 @@ contains
     integer              :: kyr                     ! thousand years, equals 2 at end of first year
     character(len=256)   :: filer                   ! restart file name
     integer              :: ier                     ! error code
+    character(len=256)   :: dateTimeString
     type(bounds_type)    :: bounds_clump    
     type(bounds_type)    :: bounds_proc     
     !-----------------------------------------------------------------------
 
+    call get_curr_time_string(dateTimeString)
+    if (masterproc) then
+       write(iulog,*)'Beginning timestep   : ',trim(dateTimeString)
+       call shr_sys_flush(iulog)
+    endif
     ! Determine processor bounds and clumps for this processor
 
     call get_proc_bounds(bounds_proc)
@@ -955,6 +962,7 @@ contains
          endif
          
          if (use_lch4) then
+           !warning: do not call ch4 before CNAnnualUpdate, which will fail the ch4 model
            call t_startf('ch4')
            call ch4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
@@ -1644,6 +1652,7 @@ contains
     real(r8):: tsum                    ! sum of ts
     real(r8):: tsxyav                  ! average ts for diagnostic output
     integer :: status(MPI_STATUS_SIZE) ! mpi status
+    character(len=256)   :: dateTimeString
     !------------------------------------------------------------------------
 
     call get_proc_global(ng=numg)
@@ -1666,8 +1675,9 @@ contains
     else
 
 #ifndef CPL_BYPASS
+       call get_curr_time_string(dateTimeString)
        if (masterproc) then
-          write(iulog,*)'clm: completed timestep ',nstep
+          write(iulog,*)'   Completed timestep: ',trim(dateTimeString)
           call shr_sys_flush(iulog)
        end if
 #endif

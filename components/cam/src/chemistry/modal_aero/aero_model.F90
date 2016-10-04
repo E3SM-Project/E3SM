@@ -2561,7 +2561,7 @@ do_lphase2_conditional: &
 !           wetdens_host,                            &
 !           qaerwat                                  )
 
-       call t_startf('modal_aero_amicphys')
+       call t_stopf('modal_aero_amicphys')
 
     endif ! (mam_amicphys_optaa <= 0 OR > 0)
 

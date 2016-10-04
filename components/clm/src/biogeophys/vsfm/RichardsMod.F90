@@ -158,10 +158,10 @@ contains
 
     dist_gravity = (dist_up + dist_dn)*udist_dot_ugrav
 
-    den_ave      = upweight*den_up + (1-upweight)*den_dn
+    den_ave      = upweight*den_up + (1.d0-upweight)*den_dn
 
     ! gravityterm = (rho*g*z)
-    gravityterm  = (upweight*den_up + (1.0 - upweight)*den_dn)*FMWH2O*dist_gravity;
+    gravityterm  = (upweight*den_up + (1.d0 - upweight)*den_dn)*FMWH2O*dist_gravity;
 
     dphi         = Pres_up - Pres_dn + gravityterm;
 
@@ -184,13 +184,13 @@ contains
     if (compute_deriv) then
 
        dden_ave_dP_up       = upweight*dden_dP_up
-       dden_ave_dP_dn       = upweight*dden_dP_dn
+       dden_ave_dP_dn       = (1.d0 - upweight)*dden_dP_dn
 
        dgravityterm_dden_up = upweight*dist_gravity*FMWH2O
-       dgravityterm_dden_dn = (1.0-upweight)*dist_gravity*FMWH2O
+       dgravityterm_dden_dn = (1.d0-upweight)*dist_gravity*FMWH2O
 
-       dphi_dP_up           =  1.0 + dgravityterm_dden_up*dden_ave_dP_up;
-       dphi_dP_dn           = -1.0 + dgravityterm_dden_dn*dden_ave_dP_dn;
+       dphi_dP_up           =  1.d0 + dgravityterm_dden_up*dden_dP_up;
+       dphi_dP_dn           = -1.d0 + dgravityterm_dden_dn*dden_dP_dn;
 
        if (dphi>=0) then
           dukvr_dP_up = dkr_dP_up/vis_up - kr_up/(vis_up*vis_up)*dvis_dP_up
@@ -207,8 +207,8 @@ contains
           dflux_dP_up = 0.d0
           dflux_dP_dn = 0.d0
        else
-          dflux_dP_up = (dq_dp_up*den_ave + q*dden_ave_dp_up);
-          dflux_dP_dn = (dq_dp_dn*den_ave + q*dden_ave_dp_dn);
+          dflux_dP_up = (dq_dp_up*den_ave - q*dden_ave_dp_up);
+          dflux_dP_dn = (dq_dp_dn*den_ave - q*dden_ave_dp_dn);
        endif
 
     endif

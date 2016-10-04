@@ -331,8 +331,16 @@ class CreateTest(object):
             if (os.path.isdir(baseline_casedocs)):
                 shutil.rmtree(baseline_casedocs)
             shutil.copytree(casedoc_dir, baseline_casedocs)
+            os.chmod(baseline_casedocs, stat.S_IRWXU | stat.S_IRWXG | stat.S_IXOTH | stat.S_IROTH)
+            for item in glob.glob("%s/*" % baseline_casedocs):
+                os.chmod(item, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
+
             for item in glob.glob(os.path.join(test_dir, "user_nl*")):
+                preexisting_baseline = os.path.join(baseline_dir, os.path.basename(item))
+                if (os.path.exists(preexisting_baseline)):
+                    os.remove(preexisting_baseline)
                 shutil.copy2(item, baseline_dir)
+                os.chmod(preexisting_baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
         # Always mark as passed unless we hit exception
         return True

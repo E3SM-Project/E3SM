@@ -177,7 +177,7 @@ contains
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort(subname//'ERROR: Failed to open file')
-    else if(pio_subsystem%io_rank==0) then
+    else if(pio_iotask_rank(pio_subsystem)==0) then
        write(iulog,*) 'Opened existing file ', trim(fname), file%fh
     end if
 
@@ -220,7 +220,7 @@ contains
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort( subname//' ERROR: Failed to open file to write: '//trim(fname))
-    else if(pio_subsystem%io_rank==0) then
+    else if(pio_iotask_rank(pio_subsystem)==0) then
        write(iulog,*) 'Opened file ', trim(fname),  ' to write', file%fh
     end if
 
@@ -1563,7 +1563,7 @@ contains
                xtype, iodnum)
           iodesc_plus => iodesc_list(iodnum)
           if (present(nt)) then
-             call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+             call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
           end if
           call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
        end if
@@ -1588,7 +1588,7 @@ contains
             xtype, iodnum)
        iodesc_plus => iodesc_list(iodnum)
        if (present(nt)) then
-          call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
        end if
        call pio_write_darray(ncid, vardesc, iodesc_plus%iodesc, data, status, fillval=0)
 
@@ -1667,7 +1667,7 @@ contains
                xtype, iodnum)
           iodesc_plus => iodesc_list(iodnum)
           if (present(nt)) then
-             call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+             call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
           end if
           call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, idata, status)
           data = (idata == 1)
@@ -1697,7 +1697,7 @@ contains
             xtype, iodnum)
        iodesc_plus => iodesc_list(iodnum)
        if (present(nt)) then
-          call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
        end if
        allocate( idata(size(data)) ) 
        where( data )
@@ -1781,7 +1781,7 @@ contains
                xtype, iodnum)
           iodesc_plus => iodesc_list(iodnum)
           if (present(nt)) then
-             call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+             call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
           end if
           call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
        end if
@@ -1806,7 +1806,7 @@ contains
             xtype, iodnum)
        iodesc_plus => iodesc_list(iodnum)
        if (present(nt)) then
-          call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
        end if
        call pio_write_darray(ncid, vardesc, iodesc_plus%iodesc, data, status, fillval=spval)
 

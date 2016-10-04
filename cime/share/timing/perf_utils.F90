@@ -59,6 +59,8 @@ module perf_utils
    integer,parameter,public :: SHR_KIND_R8 = selected_real_kind(12) ! 8 byte real
    integer,parameter,public :: SHR_KIND_I8 = selected_int_kind (13) ! 8 byte integer
    integer,parameter,public :: SHR_KIND_IN = kind(1)                ! native integer
+   integer,parameter,public :: SHR_KIND_CS = 80                     ! short char
+   integer,parameter,public :: SHR_KIND_CM = 160                    ! mid-sized char
    integer,parameter,public :: SHR_KIND_CL = 256                    ! long char
    integer,parameter,public :: SHR_KIND_CX = 512                    ! extra-long char
 

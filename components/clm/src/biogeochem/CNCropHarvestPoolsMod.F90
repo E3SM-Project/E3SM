@@ -14,6 +14,8 @@ module CNCropHarvestPoolsMod
   use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
+  use PhosphorusStateType , only : phosphorusstate_type
+  use PhosphorusFluxType  , only : phosphorusflux_type
   !
   implicit none
   save
@@ -27,8 +29,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNCropHarvestPools(num_soilc, filter_soilc, &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars)
+       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars,&
+       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Update all loss fluxes from crop harvest pools, and update harvest pool state variables
@@ -42,10 +44,12 @@ contains
     type(carbonstate_type)   , intent(in)    :: c13_carbonstate_vars
     type(carbonstate_type)   , intent(in)    :: c14_carbonstate_vars
     type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(phosphorusflux_type), intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: fc        ! lake filter indices
@@ -75,6 +79,7 @@ contains
        endif
 
        nitrogenflux_vars%prod1n_loss_col(c)    = nitrogenstate_vars%prod1n_col(c)    * kprod1
+       phosphorusflux_vars%prod1p_loss_col(c)  = phosphorusstate_vars%prod1p_col(c)  * kprod1
     end do
 
     ! set time steps
@@ -100,6 +105,8 @@ contains
 
        nitrogenstate_vars%prod1n_col(c)    = nitrogenstate_vars%prod1n_col(c)    + &
             nitrogenflux_vars%hrv_cropn_to_prod1n_col(c)*dt
+       phosphorusstate_vars%prod1p_col(c)    = phosphorusstate_vars%prod1p_col(c)    + &
+            phosphorusflux_vars%hrv_cropp_to_prod1p_col(c)*dt
 
        ! fluxes out of wood product pools, from decomposition
        carbonstate_vars%prod1c_col(c)    = carbonstate_vars%prod1c_col(c)    - &
@@ -117,6 +124,8 @@ contains
 
        nitrogenstate_vars%prod1n_col(c)    = nitrogenstate_vars%prod1n_col(c)    - &
             nitrogenflux_vars%prod1n_loss_col(c)*dt
+       phosphorusstate_vars%prod1p_col(c)  = phosphorusstate_vars%prod1p_col(c)  - &
+            phosphorusflux_vars%prod1p_loss_col(c)*dt
 
     end do ! end of column loop
 

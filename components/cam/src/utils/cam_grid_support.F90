@@ -2,7 +2,7 @@ module cam_grid_support
   use shr_kind_mod,        only: r8=>shr_kind_r8, r4=>shr_kind_r4, max_chars=>shr_kind_cl
   use shr_kind_mod,        only: i8=>shr_kind_i8, i4=>shr_kind_i4
   use shr_sys_mod,         only: shr_sys_flush
-  use pio,                 only: iMap=>PIO_OFFSET, var_desc_t
+  use pio,                 only: iMap=>PIO_OFFSET_KIND, var_desc_t
   use cam_abortutils,      only: endrun
   use cam_logfile,         only: iulog
   use spmd_utils,          only: masterproc
@@ -541,8 +541,8 @@ contains
 
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = File%iosystem%error_handling !! Hack
-    call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+    !err_handling = File%iosystem%error_handling !! Hack
+    call pio_seterrorhandling(File, PIO_BCAST_ERROR,err_handling)
 
     ! Make sure the dimension exists in the file
     call this%get_dim_name(dimname)
@@ -616,8 +616,8 @@ contains
     if (associated(this%vardesc)) then
       ! We will handle errors for this routine
       !!XXgoldyXX: This hack should be replaced with the PIO interface
-      err_handling = File%iosystem%error_handling !! Hack
-      call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+      !err_handling = File%iosystem%error_handling !! Hack
+      call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
 
       ! Write out the values for this dimension variable
       if (associated(this%map)) then
@@ -1955,7 +1955,7 @@ contains
 
   subroutine write_cam_grid_attr_0d_int(attr, File)
     use pio,           only: file_desc_t, pio_put_att, pio_noerr, pio_int,    &
-         pio_inq_att, PIO_GLOBAL
+         pio_inq_att, PIO_GLOBAL, PIO_OFFSET_KIND
     use cam_pio_utils, only: cam_pio_def_var
 
     ! Dummy arguments
@@ -1965,7 +1965,7 @@ contains
     ! Local variables
     character(len=120)                  :: errormsg
     integer                             :: attrtype
-    integer                             :: attrlen
+    integer(PIO_OFFSET_KIND)            :: attrlen
     integer                             :: ierr
 
     ! Since more than one grid can share an attribute, assume that if the
@@ -2003,7 +2003,7 @@ contains
 
   subroutine write_cam_grid_attr_0d_char(attr, File)
     use pio, only: file_desc_t, pio_put_att, pio_noerr,                       &
-                   pio_inq_att, PIO_GLOBAL
+                   pio_inq_att, PIO_GLOBAL, PIO_OFFSET_KIND
 
     ! Dummy arguments
     class(cam_grid_attribute_0d_char_t), intent(inout) :: attr
@@ -2012,7 +2012,7 @@ contains
     ! Local variables
     character(len=120)                  :: errormsg
     integer                             :: attrtype
-    integer                             :: attrlen
+    integer(PIO_OFFSET_KIND)            :: attrlen
     integer                             :: ierr
 
     ! Since more than one grid can share an attribute, assume that if the
@@ -2229,8 +2229,8 @@ contains
 
       ! We will handle errors for this routine
       !!XXgoldyXX: This hack should be replaced with the PIO interface
-      err_handling = File%iosystem%error_handling !! Hack
-      call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+      !err_handling = File%iosystem%error_handling !! Hack
+      call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
 
       attrPtr => cam_grids(gridind)%attributes
       do while (associated(attrPtr))
@@ -2380,8 +2380,8 @@ contains
 
       ! We will handle errors for this routine
       !!XXgoldyXX: This hack should be replaced with the PIO interface
-      err_handling = File%iosystem%error_handling !! Hack
-      call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+      !err_handling = File%iosystem%error_handling !! Hack
+      call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
 
       ! Write out the variable values for each grid attribute
       attrPtr => cam_grids(gridind)%attributes
@@ -2837,8 +2837,8 @@ contains
 
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = File%iosystem%error_handling !! Hack
-    call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+    !err_handling = File%iosystem%error_handling !! Hack
+    call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
 
     call this%dim_names(dimname1, dimname2)
     if (size(dimids) < 1) then

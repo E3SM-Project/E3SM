@@ -137,16 +137,21 @@
 <ncdata           hgrid="8x16"      nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_8x16_L30_c090102.nc</ncdata>
 
 
+<ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160614.nc</ncdata>
+<ncdata dyn="se" hgrid="ne11np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
+<ncdata dyn="se" hgrid="ne11np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne11np4_L30_c160824.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_c120525.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne16np4_L30_c090306.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne16np4_L72_c160614.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L26_c100108.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne30np4_L26_c040422.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-10-01_ne30np4_L72_c160127.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L72_c160214.nc</ncdata>
 <ncdata dyn="se" hgrid="ne60np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne60np4_L30_c090306.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne120np4_L26_c061106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne120np4_L26_c110304.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne120np4_L30_c110928.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
 
@@ -160,6 +165,7 @@
 
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="72"                     >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160719.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 
@@ -201,11 +207,13 @@
 <bnd_topo hgrid="4x5"       >atm/cam/topo/USGS-gtopo30_4x5_remap_c050520.nc</bnd_topo>
 <bnd_topo hgrid="10x15"     >atm/cam/topo/USGS-gtopo30_10x15_remap_c050520.nc</bnd_topo>
 
-<bnd_topo hgrid="ne16np4"   >atm/cam/topo/USGS-gtopo30_1.9x2.5_smooth500-50_ne16np4_c050602.nc</bnd_topo>
+<bnd_topo hgrid="ne4np4"    >atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
+<bnd_topo hgrid="ne11np4"   >atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
+<bnd_topo hgrid="ne16np4"   >atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"   >atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne60np4"   >atm/cam/topo/USGS_gtopo30_0.47x0.63_smooth2000-100_ne60np4_c061106.nc</bnd_topo>
+<bnd_topo hgrid="ne60np4"   >atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4"  >atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne240np4"  >atm/cam/topo/USGS_gtopo30_0.23x0.31_smooth1000-50_ne240np4_c061107.nc</bnd_topo>
+<bnd_topo hgrid="ne240np4"  >atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
@@ -308,11 +316,14 @@
 <seasalt_emis_scale>                          1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4">         1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus">   1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="trop_mam4_resus_soag">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus_mom">1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam4">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam3">        1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus">  1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus_mom"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
@@ -672,16 +683,21 @@
 <drydep_method chem="trop_mam3">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_resus">xactive_atm</drydep_method>
+<drydep_method chem="trop_mam4_resus_soag">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_mom">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam7">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam9">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam3">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_soag">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
+<drydep_srf_file hgrid="ne4np4"  >atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne11np4" >atm/cam/chem/trop_mam/atmsrf_ne11np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne16np4" >atm/cam/chem/trop_mam/atmsrf_ne16np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" >atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
@@ -789,6 +805,11 @@
 <clubb_liq_sh                                     > 10.e-6  </clubb_liq_sh>
 <clubb_ice_deep                                   > 25.e-6  </clubb_ice_deep>
 <clubb_ice_sh                                     > 50.e-6  </clubb_ice_sh>
+<clubb_tk1                                        > 268.15D0  </clubb_tk1>
+<clubb_tk2                                        > 238.15D0  </clubb_tk2>
+<clubb_wpxp_L_thresh                              > 60.0D0   </clubb_wpxp_L_thresh>
+
+
 
 <!-- CLUBB_history -->
 <clubb_history               > .false. </clubb_history>
@@ -807,12 +828,14 @@
 <micro_mg_dcs         microphys="mg1">    400.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg1" unicon="1" >    350.D-6    </micro_mg_dcs>
 <ice_sed_ai           microphys="mg1">    700.0      </ice_sed_ai>
+<micro_mg_accre_enhan_fac  microphys="mg1"> 1.0D0    </micro_mg_accre_enhan_fac>
 
 <micro_mg_version     microphys="mg1.5">  1          </micro_mg_version>
 <micro_mg_sub_version microphys="mg1.5">  5          </micro_mg_sub_version>
 <micro_mg_num_steps   microphys="mg1.5">  2          </micro_mg_num_steps>
 <micro_mg_dcs         microphys="mg1.5">  250.D-6    </micro_mg_dcs>
 <ice_sed_ai           microphys="mg1.5">  700.0      </ice_sed_ai>
+<micro_mg_accre_enhan_fac  microphys="mg1.5"> 1.0D0  </micro_mg_accre_enhan_fac>
 
 <micro_mg_version     microphys="mg2">                                 2          </micro_mg_version>
 <micro_mg_sub_version microphys="mg2">                                 0          </micro_mg_sub_version>
@@ -822,6 +845,12 @@
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1">                   195.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1" clubb_do_deep="1"> 195.D-6    </micro_mg_dcs>
 <ice_sed_ai           microphys="mg2">                                 700.0      </ice_sed_ai>
+<micro_mg_accre_enhan_fac  microphys="mg2"> 1.0D0                                 </micro_mg_accre_enhan_fac>
+<prc_coef1            microphys="mg2">  1350.0      </prc_coef1>
+<prc_exp              microphys="mg2">  2.47        </prc_exp>
+<prc_exp1             microphys="mg2">  -1.79       </prc_exp1>
+<cld_sed              microphys="mg2">  1.0D0       </cld_sed>
+
 
 <micro_mg_precip_frac_method                  >  max_overlap </micro_mg_precip_frac_method>
 <micro_mg_precip_frac_method   clubb_sgs="1"  >  in_cloud    </micro_mg_precip_frac_method>
@@ -841,6 +870,7 @@
 
 <!-- Ice nucleation -->
 <nucleate_ice_subgrid                  >1.0D0</nucleate_ice_subgrid>
+<so4_sz_thresh_icenuc                  >0.1e-6 </so4_sz_thresh_icenuc>
 <nucleate_ice_subgrid microphys="mg1"  >1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid microphys="mg1.5">1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid clubb_sgs="1"     microphys="mg2" >1.2D0</nucleate_ice_subgrid>
@@ -913,6 +943,9 @@
 
 <!-- To turn on amicphys codes in cam-->
 <mam_amicphys_optaa      >0</mam_amicphys_optaa>
+
+<!-- number of so4(+nh4) monolayers needed to "age" a carbon particle-->
+<n_so4_monolayers_pcage > 3.0D0 </n_so4_monolayers_pcage>
 
 <!--  wet deposition option by PNNL -->
 <resus_fix>.false.</resus_fix>
@@ -1150,6 +1183,7 @@
 <zmconv_c0_ocn                   hgrid="512x1024" phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
 
 <zmconv_tau			                                                      > 3600</zmconv_tau>
+<zmconv_alfa			                                                      > 0.1</zmconv_alfa>
 
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="fv"                                              > 1.0E-6 </zmconv_ke>
@@ -1158,7 +1192,11 @@
 <zmconv_ke                       hgrid="256x512"                      > 1.0E-6 </zmconv_ke>
 <zmconv_ke                       hgrid="512x1024"                     > 1.0E-6 </zmconv_ke>
 
-<zmconv_trigmem>                 .false.   </zmconv_trigmem>
+<zmconv_trigmem                                                       >.false. </zmconv_trigmem>
+<zmconv_tiedke_add                                                    >0.5D0   </zmconv_tiedke_add>
+<zmconv_cape_cin                                                      >5       </zmconv_cape_cin>
+<zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
+<zmconv_dmpdz                                                         >-1.0E-3 </zmconv_dmpdz>
 
 <!-- Cloud sedimentation -->
 
@@ -1223,6 +1261,7 @@
 <!-- BSINGH - Flag (when .TRUE.)calculates solar zenith angle averaged over a time step.
      In default model solar zenith angle is held constant over time -->
 <use_rad_dt_cosz>             .false.  </use_rad_dt_cosz>
+<raytau0>                     0.0    </raytau0>
 
 
 
@@ -1321,7 +1360,7 @@
 <rsplit hgrid="ne240np4">  3 </rsplit>
 
 <se_nsplit>                   2 </se_nsplit>
-<se_nsplit hgrid="ne11np4" >  1 </se_nsplit>
+<se_nsplit hgrid="ne11np4" >  4 </se_nsplit>
 <se_nsplit hgrid="ne16np4" >  1 </se_nsplit>
 <se_nsplit hgrid="ne30np4" >  2 </se_nsplit>
 <se_nsplit hgrid="ne60np4" >  4 </se_nsplit>
@@ -1362,6 +1401,7 @@
 <interp_nlat> 0 </interp_nlat>
 <interp_type> 1 </interp_type>
 <interp_gridtype> 1 </interp_gridtype>
+<vthreads> 1 </vthreads>
 
 <!-- ================================================================== -->
 <!-- Defaults for driver namelist seq_infodata_inparm                   -->
@@ -1420,7 +1460,9 @@
 <finidat hgrid="48x96"     ic_ymd="101" sim_year="1850">lnd/clm2/initdata/clmi.BCN.1850-01-01_48x96_gx3v7_simyr1850_c110421.nc</finidat>
 <finidat hgrid="ne30np4"   ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN.2000-01-01_ne30np4_gx1v6_simyr2000_c110328.nc</finidat>
 <finidat hgrid="ne0np4_arm_x8v3_lowcon"  ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.armx8v3.1850-01-01.nc</finidat>
-<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.conusx4v1.2000-01-01_c141106.nc</finidat>
+<!-- for CLM4.0finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.conusx4v1.2000-01-01_c141106.nc</finidat-->
+<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="1850">lnd/clm2/initdata_map/clmi.I1850CLM45.conusx4v1.74e105b.clm2.r.0021-01-01-00000.nc</finidat>
+<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45.conusx4v1.74e105b.clm2.r.0021-01-01-00000.nc</finidat>
 <finidat hgrid="ne0np4_svalbard_x8v1_lowcon"  ic_ymd="101" sim_year="1850">lnd/clm2/initdata/clmi.svalbardx8v1.1850-01-01.nc</finidat>
 <finidat hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  ic_ymd="101" sim_year="1850">lnd/clm2/initdata/clmi.sooberingoax4x8v1.1850-01-01_c141110.nc</finidat>
 
@@ -1529,6 +1571,7 @@
 
 <!-- SST datasets used with DOM/CSIM4 and DOCN -->
 <!-- Present day SST -->
+<!-- Warning: I think bndtvs has been superseded by SSTICE* (pjc, 2016-8-5) -->
 <bndtvs hgrid="0.23x0.31"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_c061106.nc</bndtvs>
 <bndtvs hgrid="0.47x0.63"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_c061106.nc</bndtvs>
 <bndtvs hgrid="0.5x0.625"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.5x0.625_1949_2001_c040402.nc</bndtvs>

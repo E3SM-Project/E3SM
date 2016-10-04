@@ -67,7 +67,6 @@ if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
   # If baseline then move the netcdf output files to the baseline dir
   if [ ${CREATE_BASELINE} == true ] ; then
     echo "Creating baseline..."
-    #moveBaseline
   fi
 
 else

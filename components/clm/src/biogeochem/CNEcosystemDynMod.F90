@@ -111,7 +111,7 @@ contains
     use CNPrecisionControlMod, only: CNPrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
-    use PDynamicsMod         , only: PBiochemMin_QZ
+    use PDynamicsMod         , only: PBiochemMin_balance
     
     !
     ! !ARGUMENTS:
@@ -146,7 +146,6 @@ contains
     ! only do if ed is off
     if( .not. use_ed) then
        if(.not.(use_pflotran.and.pf_cmode)) then
-          if ( nu_com .eq. 'RD') then
              call t_startf('PWeathering')
              call PWeathering(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
@@ -175,11 +174,10 @@ contains
              else
                 ! nu_com_phosphatase is true
                 call t_startf('PBiochemMin')
-                call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
-                     cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+                call PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+                     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
                 call t_stopf('PBiochemMin')
              end if
-          end if
        end if
        
      !-----------------------------------------------------------------------
@@ -286,10 +284,10 @@ contains
 !    use CNDecompMod            , only: CNDecompAlloc2
     use CNNDynamicsMod         , only: CNNLeaching
     use PDynamicsMod           , only: PLeaching
-    use CNNDynamicsMod         , only: CNNFixation_QZ
+    use CNNDynamicsMod         , only: CNNFixation_balance
     use CNAllocationMod        , only: update_plant_stoichiometry
     use PDynamicsMod           , only: PWeathering,PAdsorption,PDesorption,POcclusion
-    use PDynamicsMod           , only: PBiochemMin,PBiochemMin_QZ
+    use PDynamicsMod           , only: PBiochemMin,PBiochemMin_balance
   
     !
     ! !ARGUMENTS:
@@ -381,8 +379,9 @@ contains
        else
           ! nu_com_nfix is true
           call t_startf('CNFixation')
-          call CNNFixation_QZ( num_soilc, filter_soilc, &
-               cnstate_vars, carbonflux_vars, nitrogenflux_vars, temperature_vars, carbonstate_vars, phosphorusstate_vars)
+          call CNNFixation_balance( num_soilc, filter_soilc, &
+               cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
+               temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
           call t_stopf('CNFixation')
        end if
 
@@ -401,25 +400,12 @@ contains
        call t_stopf('CNMResp')
 
        if ( nu_com .ne. 'RD') then
+          ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
+          ! then competitors take up solution P
           call t_startf('PWeathering')
           call PWeathering(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
           call t_stopf('PWeathering')
-
-          call t_startf('PAdsorption')
-          call PAdsorption(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('PAdsorption')
-
-          call t_startf('PDesorption')
-          call PDesorption(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('PDesorption')
-
-          call t_startf('POcclusion')
-          call POcclusion(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('POcclusion')
 
           if (.not. nu_com_phosphatase) then
              call t_startf('PBiochemMin')
@@ -429,8 +415,8 @@ contains
           else
              ! nu_com_phosphatase is true
              call t_startf('PBiochemMin')
-             call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
-                  cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+             call PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+                  cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
              call t_stopf('PBiochemMin')
           end if
        end if
@@ -628,6 +614,14 @@ contains
             carbonflux_vars)
        call t_stopf('CNGResp')
        call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+
+       if(use_c13) then
+         call c13_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif
+
+       if(use_c14) then
+         call c14_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif
        !--------------------------------------------
        ! Dynamic Roots
        !--------------------------------------------
@@ -800,7 +794,8 @@ contains
 
        call CNCropHarvestPools(num_soilc, filter_soilc, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
-            carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars)
+            phosphorusstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
+            nitrogenflux_vars, phosphorusflux_vars)
 
        call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
@@ -854,7 +849,14 @@ contains
           call update_plant_stoichiometry(num_soilp, filter_soilp, &
                carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars)
        end if
-           
+
+       call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       if( use_c13 ) then
+          call c13_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif
+       if( use_c14 ) then
+          call c14_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif    
     end if !end of if not use_ed block
 
   end subroutine CNEcosystemDynNoLeaching2

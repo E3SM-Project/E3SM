@@ -330,8 +330,8 @@ contains
     !-----------------------------------------------------------------------
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = ncid%iosystem%error_handling !! Hack
-    call PIO_seterrorhandling(ncid, PIO_BCAST_ERROR)
+    !err_handling = ncid%iosystem%error_handling !! Hack
+    call PIO_seterrorhandling(ncid, PIO_BCAST_ERROR, err_handling)
 
     dimids = -1
     ndims = 0
@@ -382,8 +382,8 @@ contains
     !-----------------------------------------------------------------------
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = ncid%iosystem%error_handling !! Hack
-    call PIO_seterrorhandling(ncid, PIO_BCAST_ERROR)
+    !err_handling = ncid%iosystem%error_handling !! Hack
+    call PIO_seterrorhandling(ncid, PIO_BCAST_ERROR, err_handling)
     ret = PIO_inq_varid(ncid, trim(varname), varid)
     found = (ret == PIO_NOERR)
     call PIO_seterrorhandling(ncid, err_handling)
@@ -419,8 +419,8 @@ contains
     !-----------------------------------------------------------------------
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = ncid%iosystem%error_handling !! Hack
-    call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+    !err_handling = ncid%iosystem%error_handling !! Hack
+    call pio_seterrorhandling(ncid, PIO_BCAST_ERROR, err_handling)
 
     dimids = -1
     ndims = 0
@@ -644,8 +644,8 @@ contains
 
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = File%iosystem%error_handling !! Hack
-    call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+    !err_handling = File%iosystem%error_handling !! Hack
+    call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
 
     ierr = pio_inq_dimid(File, trim(name), dimid)
     if (ierr == PIO_NOERR) then
@@ -722,8 +722,8 @@ contains
 
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = File%iosystem%error_handling !! Hack
-    call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+    !err_handling = File%iosystem%error_handling !! Hack
+    call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
 
     ! Check to see if the variable already exists in the file
     ierr = pio_inq_varid(File, name, vardesc)
@@ -1136,8 +1136,8 @@ contains
 
     ! We will handle errors for this routine
     !!XXgoldyXX: This hack should be replaced with the PIO interface
-    err_handling = pio_subsystem%error_handling !! Hack
-    call pio_seterrorhandling(pio_subsystem, PIO_BCAST_ERROR)
+    !err_handling = pio_subsystem%error_handling !! Hack
+    call pio_seterrorhandling(pio_subsystem, PIO_BCAST_ERROR, err_handling)
 
     ierr = pio_openfile(pio_subsystem, file, pio_iotype, fname, PIO_NOWRITE)
     cam_pio_fileexists = (ierr == PIO_NOERR)

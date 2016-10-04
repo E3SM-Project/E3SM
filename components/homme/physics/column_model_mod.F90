@@ -28,7 +28,7 @@ module column_model_mod
   use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
   use physics_types_mod, only : pelem
-  use physical_constants, only : Cp, DD_PI, p0, Lc, Cp
+  use physical_constants, only : Cp, DD_PI, p0, Cp
   use global_norms_mod,      only : global_integral
   use column_types_mod,      only : HeldSuarezForcing_t, ColumnModel_t
   

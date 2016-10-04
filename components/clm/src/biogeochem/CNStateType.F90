@@ -148,6 +148,8 @@ module CNStateType
      real(r8), pointer :: fpg_p_vr_col                 (:,:)   ! fraction of plant p demand that is satisfied (no units) 
      real(r8), pointer :: cn_scalar                    (:)     ! cn scaling factor for root n uptake kinetics (no units) 
      real(r8), pointer :: cp_scalar                    (:)     ! cp scaling factor for root p uptake kinetics (no units)
+     real(r8), pointer :: np_scalar                    (:)     ! np scaling factor for root n/p uptake kinetics (no units)
+     real(r8), pointer :: cost_ben_scalar              (:)     ! cost benefit analysis scaling factor for root n uptake kinetics (no units)
 
    contains
 
@@ -315,8 +317,10 @@ contains
     allocate(this%fpg_no3_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_no3_vr_col(:,:) = nan
     allocate(this%fpg_vr_col                  (begc:endc,1:nlevdecomp_full)) ; this%fpg_vr_col    (:,:) = nan
     allocate(this%fpg_p_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%fpg_p_vr_col  (:,:) = nan
-    allocate(this%cn_scalar                   (begp:endp))                   ; this%cn_scalar     (:) = nan 
-    allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = nan
+    allocate(this%cn_scalar                   (begp:endp))                   ; this%cn_scalar     (:) = 0.0
+    allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = 0.0
+    allocate(this%np_scalar                   (begp:endp))                   ; this%np_scalar     (:) = 0.0
+    allocate(this%cost_ben_scalar             (begp:endp))                   ; this%cost_ben_scalar(:) = 0.0
     
   end subroutine InitAllocate
 
@@ -614,7 +618,15 @@ contains
          avgflag='A', long_name='annual max of retranslocated P pool', &
          ptr_patch=this%annmax_retransp_patch, default='inactive')
 
-
+    this%cn_scalar(begp:endp) = spval
+    call hist_addfld1d (fname='cn_scalar', units='', &
+       avgflag='A', long_name='N limitation factor', &
+       ptr_patch=this%cn_scalar, default='active')
+         
+    this%cp_scalar(begp:endp) = spval
+    call hist_addfld1d (fname='cp_scalar', units='', &
+       avgflag='A', long_name='P limitation factor', &
+       ptr_patch=this%cp_scalar, default='active')
 
   end subroutine InitHistory
 

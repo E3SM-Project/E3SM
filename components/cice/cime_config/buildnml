@@ -1,0 +1,181 @@
+#! /usr/bin/env perl
+use strict;
+use Cwd;
+
+if ($#ARGV == -1) {
+    die " ERROR cice.buildnml: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+$ENV{'CASEROOT'} = $CASEROOT;
+
+my $CIMEROOT		= `./xmlquery  CIMEROOT 	   -value`;
+my $SRCROOT		= `./xmlquery  SRCROOT			-value`;
+my $OBJROOT		= `./xmlquery  OBJROOT			-value`;
+my $CIMEROOT		= `./xmlquery  CIMEROOT		        -value`;
+my $CICE_AUTO_DECOMP    = `./xmlquery  CICE_AUTO_DECOMP		-value`;
+my $CICE_NAMELIST_OPTS  = `./xmlquery  CICE_NAMELIST_OPTS	-value`;
+my $CICE_CONFIG_OPTS    = `./xmlquery  CICE_CONFIG_OPTS		-value`;
+my $CICE_MODE           = `./xmlquery  CICE_MODE		-value`;
+my $CICE_BLCKX          = `./xmlquery  CICE_BLCKX               -value`;
+my $CICE_BLCKY          = `./xmlquery  CICE_BLCKY               -value`;
+my $CICE_MXBLCKS        = `./xmlquery  CICE_MXBLCKS             -value`;
+my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
+my $ICE_GRID		= `./xmlquery  ICE_GRID			-value`;
+my $ICE_NX		= `./xmlquery  ICE_NX			-value`;
+my $ICE_NY 	        = `./xmlquery  ICE_NY			-value`;
+my $ICE_NCPL		= `./xmlquery  ICE_NCPL			-value`;
+my $NTHRDS_ICE		= `./xmlquery  NTHRDS_ICE		-value`;
+my $NTASKS_ICE		= `./xmlquery  NTASKS_ICE		-value`;
+my $NINST_ICE		= `./xmlquery  NINST_ICE		-value`;
+my $RUNDIR		= `./xmlquery  RUNDIR			-value`;
+my $TESTCASE            = `./xmlquery  TESTCASE			-value`;
+
+my @dirs = ("${CIMEROOT}/utils/perl5lib");
+unshift @INC, @dirs;
+require Config::SetupTools;
+my $sysmod;
+
+if (! -d "$CASEROOT/Buildconf/ciceconf" ) {
+    $sysmod = "mkdir $CASEROOT/Buildconf/ciceconf";
+    system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+}
+
+chdir "$CASEROOT/Buildconf/ciceconf";
+
+#--------------------------------------------------------------------
+# Invoke cice configure - output will go in $CASEROOT/Buildconf/ciceconf
+#--------------------------------------------------------------------
+
+$sysmod = "$SRCROOT/components/cice/bld/configure ";
+$sysmod = "$sysmod -hgrid $ICE_GRID -nx $ICE_NX -ny $ICE_NY ";
+$sysmod = "$sysmod -comp_intf $COMP_INTERFACE -cice_mode $CICE_MODE -nodecomp $CICE_CONFIG_OPTS";
+system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+
+# update env_build.xml settings to reflect changes in the configuration
+# this will trigger whether an automatic build is set upon the job resubmission
+if ($CICE_AUTO_DECOMP eq 'true') {
+    my $ntasks = int($NTASKS_ICE / $NINST_ICE);
+    my $hgrid = $ICE_GRID;
+    if ($ICE_GRID eq 'ar9v2') {$hgrid = 'ar9v1';}
+    if ($ICE_GRID eq 'ar9v4') {$hgrid = 'ar9v3';}
+
+    chdir "$SRCROOT/components/cice/bld";
+    my $config_args = `./generate_cice_decomp.pl -ccsmroot $SRCROOT -res $hgrid -nx $ICE_NX -ny $ICE_NY -nproc $ntasks -thrds $NTHRDS_ICE -output all `;
+    my @config = split(/\s/, $config_args);
+
+    chdir "$CASEROOT";
+    if ( $config[0] >= 0) {
+	$sysmod = "./xmlchange -noecho CICE_BLCKX=$config[2]";
+	system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+	$sysmod = "./xmlchange -noecho CICE_BLCKY=$config[3]";
+	system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+	$sysmod = "./xmlchange -noecho CICE_MXBLCKS=$config[4]";
+	system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+	$sysmod = "./xmlchange -noecho CICE_DECOMPTYPE=$config[5]";
+	system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+	$sysmod = "./xmlchange -noecho CICE_DECOMPSETTING=$config[6]";
+	system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+    } else {
+	die "ERROR cice.buildnml: cice decomp not set for $ICE_GRID on $ntasks x $NTHRDS_ICE procs";
+    }
+}
+
+#--------------------------------------------------------------
+# determine CPP definitions
+#--------------------------------------------------------------
+
+# determine the actual CPP definitions (these have been determined by the call to configure)
+
+my $cppdefs = `cat $CASEROOT/Buildconf/ciceconf/CICE_cppdefs`;
+chomp($cppdefs);
+my $cppdefs = "$cppdefs -DBLCKX=$CICE_BLCKX -DBLCKY=$CICE_BLCKY -DMXBLCKS=$CICE_MXBLCKS";
+
+# write out cppdefs to env_build.xml
+# this will determine if need to rebuild at runtime - force user to call $CASE.buildexe
+
+chdir "$CASEROOT";
+my $sysmod  = "./xmlchange -noecho -id CICE_CPPDEFS -file env_build.xml -val=\'$cppdefs\'";
+system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+chdir "$CASEROOT/Buildconf/ciceconf";
+
+# write out cppdefs to CICE_cppdefs.new
+# this will force gmake to rebuild when $CASE.buildexe is called
+
+if ($TESTCASE eq 'SBN') {
+    # do nothing
+} else {
+    open(file,">$OBJROOT/ice/obj/CICE_cppdefs.new") or warn "Could not open file $OBJROOT/ice/obj/CICE_cppdefs.new to write";
+    print file "$cppdefs \n";
+    close(file);
+}
+
+#--------------------------------------------------------------------
+# Invoke cice build-namelist - output will go in $CASEROOT/Buidlconf/ciceconf
+#--------------------------------------------------------------------
+
+my $inst_string;
+my $inst_counter = 1;
+while ($inst_counter <= $NINST_ICE) {
+
+    # -----------------------------------------------------
+    # determine instance string
+    # -----------------------------------------------------
+
+    $inst_string = "";
+    if ($NINST_ICE > 1) {
+	$inst_string = `printf _%04d $inst_counter`;
+
+	# If multi-instance case does not have restart file, use single-case restart
+	# for each instance
+	if ( (! -e "$RUNDIR/rpointer.ice${inst_string}") && (-e "$RUNDIR/rpointer.ice") ) {
+	    $sysmod = "cp -v $RUNDIR/rpointer.ice $RUNDIR/rpointer.ice${inst_string}";
+	    system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+	}
+    }
+
+    # -----------------------------------------------------
+    # create ciceconf/namelist
+    # -----------------------------------------------------
+
+    SetupTools::create_namelist_infile("$CASEROOT",
+				       "$CASEROOT/user_nl_cice${inst_string}",
+				       "$CASEROOT/Buildconf/ciceconf/namelist");
+
+    # -----------------------------------------------------
+    # call build-namelist- output will go in $CASEROOT/Buildconf/ciceconf/ice_in
+    # -----------------------------------------------------
+
+    $sysmod = "$SRCROOT/components/cice/bld/build-namelist";
+    $sysmod = "$sysmod -infile $CASEROOT/Buildconf/ciceconf/namelist";
+    $sysmod = "$sysmod -inputdata $CASEROOT/Buildconf/cice.input_data_list";
+    $sysmod = "$sysmod -rundir $RUNDIR";
+    $sysmod = "$sysmod -caseroot $CASEROOT";
+    $sysmod = "$sysmod -cimeroot $CIMEROOT";
+    $sysmod = "$sysmod -inst_string \"$inst_string\"";
+    $sysmod = "$sysmod -namelist \"\&cice $CICE_NAMELIST_OPTS\/\" ";
+    $sysmod = "$sysmod -config config_cache.xml";
+    system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+
+    # -----------------------------------------------------
+    # Copy resolved namelist to $RUNDIR
+    # -----------------------------------------------------
+
+    my $default_ice_in_filename = "ice_in";
+    my $ice_in_filename = "${default_ice_in_filename}${inst_string}";
+    if ( -d ${RUNDIR} ) {
+	$sysmod = "cp $CASEROOT/Buildconf/ciceconf/ice_in ${RUNDIR}/$ice_in_filename";
+	system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
+    }
+
+    # -----------------------------------------------------
+    # increment instance counter
+    # -----------------------------------------------------
+
+    $inst_counter = $inst_counter + 1;
+}
+
+exit (0);
+
+

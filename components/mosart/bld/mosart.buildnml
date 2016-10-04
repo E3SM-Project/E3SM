@@ -42,7 +42,7 @@ chdir "$CASEBUILD/mosartconf";
 #--------------------------------------------------------------------
 
 my $check_grid = "fail";
-my @rof_grid_supported = ("null", "r05", "r01");
+my @rof_grid_supported = ("null", "r05", "r0125", "r01");
 foreach my $grid (@rof_grid_supported) {
     if (${ROF_GRID} eq $grid) {
 	$check_grid = "OK";
@@ -50,7 +50,7 @@ foreach my $grid (@rof_grid_supported) {
 }
 if (${check_grid} ne "OK") {
     print " ROF_GRID=${ROF_GRID} not supported in mosart";
-    die " mosart only support on null (for single point runs), r05 and r01 ROF_GRIDs only \n";
+    die " mosart only support on null (for single point runs), r05, r0125, and r01 ROF_GRIDs only \n";
 }
 
 #--------------------------------------------------------------------

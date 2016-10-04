@@ -19,7 +19,8 @@ module perf_mod
    use perf_utils
 #else
    use shr_sys_mod,       only: shr_sys_abort
-   use shr_kind_mod,      only: shr_kind_cl, shr_kind_r8, shr_kind_i8
+   use shr_kind_mod,      only: SHR_KIND_CS, SHR_KIND_CM, SHR_KIND_CX, &
+                                SHR_KIND_R8, SHR_KIND_I8
    use shr_mpi_mod,       only: shr_mpi_barrier, shr_mpi_bcast
    use shr_file_mod,      only: shr_file_getUnit, shr_file_freeUnit
    use namelist_utils,    only: find_group_name
@@ -42,6 +43,8 @@ module perf_mod
    public t_profile_onf
    public t_barrier_onf
    public t_single_filef
+   public t_set_prefixf
+   public t_unset_prefixf
    public t_stampf
    public t_startf
    public t_stopf
@@ -141,6 +144,15 @@ module perf_mod
                          ! timer name with the current detail level.
                          ! This requires that even t_startf/t_stopf 
                          ! calls do not cross detail level changes
+
+   character(len=SHR_KIND_CS), private :: event_prefix
+                         ! current prefix for all event names.
+                         ! Default defined to be blank via 
+                         ! prefix_len_def
+   integer, parameter :: prefix_len_def = 0                    ! default
+   integer, private   :: prefix_len = prefix_len_def
+                         ! For convenience, contains len_trim of 
+                         ! event_prefix, if set.
 
 #ifdef HAVE_MPI
    integer, parameter :: def_perf_timer = GPTLmpiwtime         ! default
@@ -571,8 +583,7 @@ contains
 !-----------------------------------------------------------------------
 
    if ((.not. timing_initialized) .or. &
-       (timing_disable_depth > 0) .or. &
-       (cur_timing_detail > timing_detail_limit)) then
+       (timing_disable_depth > 0)) then
       t_profile_onf = .false.
    else
       t_profile_onf = .true.
@@ -605,6 +616,68 @@ contains
    t_single_filef = perf_single_file
 
    end function t_single_filef
+!
+!========================================================================
+!
+   subroutine t_set_prefixf(prefix_string)
+!----------------------------------------------------------------------- 
+! Purpose: Set prefix for subsequent time event names. 
+!          Ignored in threaded regions.
+! Author: P. Worley 
+!-----------------------------------------------------------------------
+!---------------------------Input arguments-----------------------------
+!
+   ! performance timer event name prefix
+   character(len=*), intent(in) :: prefix_string
+!
+!---------------------------Local workspace-----------------------------
+!
+   integer i                              ! loop index
+!
+!---------------------------Externals-----------------------------------
+!
+#if ( defined _OPENMP )
+   logical omp_in_parallel
+   external omp_in_parallel
+#endif
+!
+!-----------------------------------------------------------------------
+!
+#if ( defined _OPENMP )
+   if (omp_in_parallel()) return
+#endif
+
+   prefix_len = min(SHR_KIND_CS,len_trim(prefix_string))
+   if (prefix_len > 0) then
+     event_prefix(1:prefix_len) = prefix_string(1:prefix_len)
+   endif
+
+   end subroutine t_set_prefixf
+!
+!========================================================================
+!
+   subroutine t_unset_prefixf()
+!----------------------------------------------------------------------- 
+! Purpose: Unset prefix for subsequent time event names.
+!          Ignored in threaded regions.
+! Author: P. Worley 
+!
+!---------------------------Externals-----------------------------------
+!
+#if ( defined _OPENMP )
+   logical omp_in_parallel
+   external omp_in_parallel
+#endif
+!
+!-----------------------------------------------------------------------
+!
+#if ( defined _OPENMP )
+   if (omp_in_parallel()) return
+#endif
+
+   prefix_len = 0
+
+   end subroutine t_unset_prefixf
 !
 !========================================================================
 !
@@ -657,10 +730,8 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
-   integer  str_length, i                 ! support for adding
-                                          !  detail prefix
+   integer  str_length, i                 ! support for adding prefix
    character(len=2) cdetail               ! char variable for detail 
-   character(len=SHR_KIND_CX+4) aug_event ! augmented label
 !
 !-----------------------------------------------------------------------
 !
@@ -669,22 +740,29 @@ contains
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
-      do i=1,SHR_KIND_CX+4
-        aug_event(i:i) = " "
-      enddo
       write(cdetail,'(i2.2)') cur_timing_detail
-      aug_event(1:2) = cdetail
-      aug_event(3:3) = '_'
-      str_length = min(SHR_KIND_CX,len_trim(event))
-      aug_event(4:str_length+3) = event(1:str_length)
-      ierr = GPTLstart(trim(aug_event))
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len-3,len_trim(event))
+         ierr = GPTLstart( &
+            cdetail//"_"//event_prefix(1:prefix_len)//event(1:str_length))
+      else
+         str_length = min(SHR_KIND_CM-3,len_trim(event))
+         ierr = GPTLstart(cdetail//"_"//event(1:str_length))
+      endif
 
    else
+
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len,len_trim(event))
+         ierr = GPTLstart(event_prefix(1:prefix_len)//event(1:str_length))
+      else
+         ierr = GPTLstart(trim(event))
+      endif
 
 !pw   if ( present (handle) ) then
 !pw      ierr = GPTLstart_handle(event, handle)
 !pw   else
-      ierr = GPTLstart(event)
+!pw      ierr = GPTLstart(event)
 !pw   endif
 
    endif
@@ -712,10 +790,8 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
-   integer  str_length, i                 ! support for adding
-                                          !  detail prefix
+   integer  str_length, i, plen           ! support for adding prefix
    character(len=2) cdetail               ! char variable for detail 
-   character(len=SHR_KIND_CX+4) aug_event ! augmented label
 !
 !-----------------------------------------------------------------------
 !
@@ -724,22 +800,29 @@ contains
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
-      do i=1,SHR_KIND_CX+4
-        aug_event(i:i) = " "
-      enddo
       write(cdetail,'(i2.2)') cur_timing_detail
-      aug_event(1:2) = cdetail
-      aug_event(3:3) = '_'
-      str_length = min(SHR_KIND_CX,len_trim(event))
-      aug_event(4:str_length+3) = event(1:str_length)
-      ierr = GPTLstop(trim(aug_event))
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len-3,len_trim(event))
+         ierr = GPTLstop( &
+           cdetail//"_"//event_prefix(1:prefix_len)//event(1:str_length))
+      else
+         str_length = min(SHR_KIND_CM-3,len_trim(event))
+         ierr = GPTLstop(cdetail//"_"//event(1:str_length))
+      endif
 
    else
+
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len,len_trim(event))
+         ierr = GPTLstop(event_prefix(1:prefix_len)//event(1:str_length))
+     else
+         ierr = GPTLstop(trim(event))
+     endif
 
 !pw   if ( present (handle) ) then
 !pw      ierr = GPTLstop_handle(event, handle)
 !pw   else
-      ierr = GPTLstop(event)
+!pw      ierr = GPTLstop(event)
 !pw   endif
 
    endif
@@ -889,29 +972,26 @@ contains
 !
 !-----------------------------------------------------------------------
 !
+   if (timing_barrier) then
+
 #if ( defined _OPENMP )
-   if (omp_in_parallel()) return
+      if (omp_in_parallel()) return
 #endif
-   if ((timing_initialized) .and. &
-       (timing_disable_depth .eq. 0) .and. &
-       (cur_timing_detail .le. timing_detail_limit)) then
+      if (.not. timing_initialized) return
+      if (timing_disable_depth > 0) return
 
-      if (timing_barrier) then
+      if ( present (event) ) then
+         call t_startf(event)
+      endif
 
-         if ( present (event) ) then
-            ierr = GPTLstart(event)
-         endif
+      if ( present (mpicom) ) then
+         call shr_mpi_barrier(mpicom, 'T_BARRIERF: bad mpi communicator')
+      else
+         call shr_mpi_barrier(MPI_COMM_WORLD, 'T_BARRIERF: bad mpi communicator')
+      endif
 
-         if ( present (mpicom) ) then
-            call shr_mpi_barrier(mpicom, 'T_BARRIERF: bad mpi communicator')
-         else
-            call shr_mpi_barrier(MPI_COMM_WORLD, 'T_BARRIERF: bad mpi communicator')
-         endif
-
-         if ( present (event) ) then
-            ierr = GPTLstop(event)
-         endif
-
+      if ( present (event) ) then
+         call t_stopf(event)
       endif
 
    endif
