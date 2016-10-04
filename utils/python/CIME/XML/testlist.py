@@ -86,8 +86,6 @@ class Testlist(GenericXML):
                         else:
                             this_test[key] = value
                     # option xpath here gets only the children of tnode and ignores grandchildren
-                    import pdb
-                    pdb.set_trace()
                     optionnodes = self.get_nodes("option", root=tnode, xpath="machines/options/option")
 
                     for onode in optionnodes:
