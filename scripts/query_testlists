@@ -5,7 +5,7 @@ Script to query xml test lists.
 """
 from __future__ import print_function
 from Tools.standard_script_setup import *
-from CIME.test_utils import get_tests_from_xml
+from CIME.test_utils import get_tests_from_xml, test_to_string
 from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,9 @@ def parse_command_line(description):
                         "--xml-category, --xml-machine, or --xml-compiler. "
                         "(The singular and plural forms are equivalent - so '--list category' "
                         "is equivalent to '--list categories', etc.)")
+
+    parser.add_argument("--show-options", action="store_true",
+                        help="Print options given for each test")
 
     parser.add_argument("--xml-category",
                         help="Use this category key in the lookup in testlist.xml, default is all")
@@ -72,7 +75,7 @@ def _process_list_type(args):
         args.list_type = 'compiler'
 
 ###############################################################################
-def print_test_data(test_data):
+def print_test_data(test_data, show_options):
 ###############################################################################
     """
     Args:
@@ -87,7 +90,7 @@ def print_test_data(test_data):
         test_subset = [one_test for one_test in test_data if
                        one_test['category'] == category]
         for one_test in test_subset:
-            print("%-*s: %s"%(max_category_len, category, one_test['name']))
+            print(test_to_string(one_test, max_category_len, show_options))
 
 ###############################################################################
 def count_test_data(test_data):
@@ -154,7 +157,7 @@ def _main_func(description):
     elif args.list_type:
         list_test_data(test_data, args.list_type)
     else:
-        print_test_data(test_data)
+        print_test_data(test_data, args.show_options)
 
 if __name__ == "__main__":
     _main_func(__doc__)
