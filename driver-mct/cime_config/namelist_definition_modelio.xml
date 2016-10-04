@@ -163,6 +163,7 @@
     <category>modelio</category>
     <group>modelio</group>
     <description>input directory (no longer needed)</description>
+    <diri>unset</diri>
   </entry>
 
   <entry id="diro">
@@ -170,6 +171,7 @@
     <category>modelio</category>
     <group>modelio</group>
     <description>directory for output log files</description>
+    <diro>unset</diro>
   </entry>
 
   <entry id="logfile">
@@ -177,6 +179,7 @@
     <category>modelio</category>
     <group>modelio</group>
     <description>name of component output log file</description>
+    <logfile>unset</logfile>
   </entry>
 
 </namelist_definition>
