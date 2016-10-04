@@ -1,6 +1,12 @@
 """
 Interface to the config_files.xml file.  This class inherits from generic_xml.py
 It supports versions 1.0 and 2.0 of the testlist.xml file
+
+In version 2 of the file options can be specified to further refine a test or set of tests
+they can be specified at the <machines> level or at the level of a particular machine.
+currently supported options are walltime which sets the wallclock time for a given test
+in the queing system, and memleak_tolerance which specifies the relative memory growth expected for a given test.
+
 """
 from CIME.XML.standard_module_setup import *
 
@@ -79,10 +85,17 @@ class Testlist(GenericXML):
                             this_test["machine"] = value
                         else:
                             this_test[key] = value
+                    this_test["options"] = {}
+                    # option xpath here gets only the children of tnode and ignores grandchildren
+                    optionnodes = self.get_nodes("option", root=tnode, xpath="options/option")
 
+                    for onode in optionnodes:
+                        this_test['options'][onode.get('name')] = onode.text
                     optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
-                        this_test[onode.get('name')] = onode.text
+                        this_test['options'][onode.get('name')] = onode.text
+
+
                     tests.append(this_test)
 
         return tests

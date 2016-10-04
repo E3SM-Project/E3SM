@@ -288,10 +288,13 @@ class SystemTestsCommon(object):
                 memdiff = -1
                 if originalmem > 0:
                     memdiff = (finalmem - originalmem)/originalmem
-
+                tolerance = self._case.get_value("TEST_MEMLEAK_TOLERANCE")
+                if tolerance is None:
+                    tolerance = 0.1
+                expect(tolerance > 0.0, "Bad value for memleak tolerance in test")
                 if memdiff < 0:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
-                elif memdiff < 0.1:
+                elif memdiff < tolerance:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "memleak detected, memory went from %f to %f in %d days" % (originalmem, finalmem, finaldate-originaldate)
