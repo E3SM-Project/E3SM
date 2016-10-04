@@ -85,14 +85,15 @@ class Testlist(GenericXML):
                             this_test["machine"] = value
                         else:
                             this_test[key] = value
+                    this_test["options"] = {}
                     # option xpath here gets only the children of tnode and ignores grandchildren
-                    optionnodes = self.get_nodes("option", root=tnode, xpath="machines/options/option")
+                    optionnodes = self.get_nodes("option", root=tnode, xpath="options/option")
 
                     for onode in optionnodes:
-                        this_test[onode.get('name')] = onode.text
+                        this_test['options'][onode.get('name')] = onode.text
                     optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
-                        this_test[onode.get('name')] = onode.text
+                        this_test['options'][onode.get('name')] = onode.text
 
 
                     tests.append(this_test)

@@ -347,8 +347,9 @@ class TestScheduler(object):
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
-        elif test in self._test_data and "wallclock" in self._test_data[test]:
-            create_newcase_cmd += " --walltime %s" % self._test_data[test]['wallclock']
+        elif test in self._test_data and "options" in self._test_data[test] and \
+                "wallclock" in self._test_data[test]['options']:
+            create_newcase_cmd += " --walltime %s" % self._test_data[test]['options']['wallclock']
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
@@ -372,8 +373,9 @@ class TestScheduler(object):
         envtest.set_value("TESTCASE", test_case)
         envtest.set_value("TEST_TESTID", self._test_id)
         envtest.set_value("CASEBASEID", test)
-        if test in self._test_data and "memleak_tolerance" in self._test_data[test]:
-            envtest.set_value("TEST_MEMLEAK_TOLERANCE", self._test_data[test]['memleak_tolerance'])
+        if test in self._test_data and "options" in self._test_data[test] and \
+                "memleak_tolerance" in self._test_data[test]['options']:
+            envtest.set_value("TEST_MEMLEAK_TOLERANCE", self._test_data[test]['options']['memleak_tolerance'])
 
         test_argv = "-testname %s -testroot %s" % (test, self._test_root)
         if self._baseline_gen_name:
