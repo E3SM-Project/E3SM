@@ -408,7 +408,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 	  iosys->num_iotasks = 1;
 	  ustride = 1;
       }
-      if((iosys->num_iotasks < 1) || ((iosys->num_iotasks*ustride) > iosys->num_comptasks)){
+      if((iosys->num_iotasks < 1) || (((iosys->num_iotasks-1)*ustride+1) > iosys->num_comptasks)){
 	  fprintf(stderr, "PIO_TP PIOc_Init_Intracomm error\n");
 	  fprintf(stderr, "num_iotasks=%d, ustride=%d, num_comptasks=%d\n", num_iotasks, ustride, iosys->num_comptasks);
 	  return PIO_EBADID;
