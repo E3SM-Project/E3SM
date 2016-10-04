@@ -50,162 +50,62 @@ def _parse_input(argv):
     return args.caseroot
 
 ###############################################################################
-def _create_group_seq_cplflds_userspec(case, nmlgen):
+def _create_drv_namelists(case, infiles, definition_file, confdir):
 ###############################################################################
 
-    nmlgen.add_default('cplflds_custom')
-
-###############################################################################
-def _create_group_seq_cplflds_inparm(case, nmlgen):
-###############################################################################
-
+    #--------------------------------
+    # Set up config dictionary
+    #--------------------------------
     config = {}
-
+    config['cime_model'] = get_model()
     config['BGC_MODE'] = case.get_value("CCSM_BGC")
-    nmlgen.add_default('flds_co2a', value=nmlgen.get_default('flds_co2a', config=config))
-    nmlgen.add_default('flds_co2b', value=nmlgen.get_default('flds_co2b', config=config))
-    nmlgen.add_default('flds_co2c', value=nmlgen.get_default('flds_co2c', config=config))
-    nmlgen.add_default('flds_co2_dmsa', value=nmlgen.get_default('flds_co2_dmsa', config=config))
-    nmlgen.add_default('flds_bgc', value=nmlgen.get_default('flds_bgc', config=config))
-
     config['CPL_I2O_PER_CAT'] = case.get_value('CPL_I2O_PER_CAT')
-    nmlgen.add_default('ice_ncat')
-    nmlgen.add_default('seq_flds_i2o_per_cat', value=nmlgen.get_default('seq_flds_i2o_per_cat', config=config))
+    config['COMP_RUN_BARRIERS'] = case.get_value('COMP_RUN_BARRIERS')
+    config['DRV_THREADING'] = case.get_value('DRV_THREADING')
+    config['BFBFLAG'] = case.get_value('BFBFLAG')
+    config['CPL_ALBAV'] = case.get_value('CPL_ALBAV')
+    config['CPL_EPBAL'] = case.get_value('CPL_EPBAL')
+    config['FLDS_WISO'] = case.get_value('FLDS_WISO')
+    config['BUDGETS'] = case.get_value('BUDGETS')
+    config['MACH'] = case.get_value('MACH')
+    config['MPILIB'] = case.get_value('MPILIB')
+    config['OS'] = case.get_value('OS')
+    config['glc_nec'] = 0 if case.get_value('GLC_NEC') == 0 else case.get_value('GLC_NEC')
+    config['single_column'] = '.true.' if case.get_value('PTS_MODE') else '.false.'
+    config['timer_level'] = 'pos' if case.get_value('TIMER_LEVEL') >= 1 else 'neg'
+    config['bfbflag'] = 'on' if case.get_value('BFBFALG') else 'off'
+    config['continue_run'] = '.true.' if case.get_value('CONTINUE_RUN') else '.false.'
+    if case.get_value('RUN_TYPE') == 'startup':
+        config['run_type'] = 'startup' 
+    elif case.get_value('RUN_TYPE') == 'hybrid': 
+        config['run_type'] = 'startup' 
+    elif case.get_value('RUN_TYPE') == 'branch':
+        config['run_type'] = 'branch'  
 
-    glc_nec = case.get_value('GLC_NEC')
-    if glc_nec is None:
-        glc_nec = 0
-    nmlgen.add_default('glc_nec', value=glc_nec)
+    #--------------------------------
+    # Create nmlgen object - using config dictionary
+    #--------------------------------
+    nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
+    entries = nmlgen.get_definition_entries()
 
-###############################################################################
-def _create_group_seq_infodata_inparm(case, cime_model, nmlgen):
-###############################################################################
+    #--------------------------------
+    # Add default values for all entries in namelist_definition_drv.xml 
+    #--------------------------------
+    for entry in entries:
+        nmlgen.add_default(entry)
+        print "  value for %s is %s " %(entry,nmlgen.get_default(entry))
 
-    config = {}
-
-    nmlgen.add_default('cime_model', value=cime_model)
-    nmlgen.add_default('case_name')
-    nmlgen.add_default('case_desc')
-    nmlgen.add_default('username')
-    nmlgen.add_default('hostname')
-    nmlgen.add_default('atm_gnam')
-    nmlgen.add_default('lnd_gnam')
-    nmlgen.add_default('ocn_gnam')
-    nmlgen.add_default('ice_gnam')
-    nmlgen.add_default('rof_gnam')
-    nmlgen.add_default('glc_gnam')
-    nmlgen.add_default('wav_gnam')
-
-    run_type = case.get_value('RUN_TYPE')
-    continue_run = case.get_value('CONTINUE_RUN')
-    if run_type == 'startup':
-        start_type = 'startup'
-    if run_type == 'hybrid':
-        start_type = 'startup'
-    if run_type == 'branch':
-        start_type = 'branch'
-    if continue_run:
-        start_type = 'continue'
-    nmlgen.add_default('start_type', value=start_type)
-
-    nmlgen.add_default('brnch_retain_casename', value='.false.')
+    #--------------------------------
+    # Overwrite: set brnch_retain_casename
+    #--------------------------------
+    start_type = nmlgen.get_value('start_type')
     if start_type != 'startup':
         if case.get_value('CASE') == case.get_value('RUN_REFCASE'):
-            nmlgen.add_default('brnch_retain_casename', value='.true.')
-        
-    config['COMP_RUN_BARRIERS'] = case.get_value('COMP_RUN_BARRIERS')
-    nmlgen.add_default('run_barriers', value=nmlgen.get_default('run_barriers', config=config))
-        
-    config['DRV_THREADING'] = case.get_value('DRV_THREADING')
-    nmlgen.add_default('drv_threading', value=nmlgen.get_default('drv_threading', config=config))
+            nmlgen.set_value('brnch_retain_casename' , value='.true.')
 
-    config['BFBFLAG'] = case.get_value('BFBFLAG')
-    nmlgen.add_default('bfbflag', value=nmlgen.get_default('bfbflag', config=config))
-
-    config['CPL_ALBAV'] = case.get_value('CPL_ALBAV')
-    nmlgen.add_default('flux_albav', value=nmlgen.get_default('flux_albav', config=config))
-
-    config['CPL_EPBAL'] = case.get_value('CPL_EPBAL')
-    nmlgen.add_default('flux_epbal', value=nmlgen.get_default('flux_epbal', config=config))
-
-    config['FLDS_WISO'] = case.get_value('FLDS_WISO')
-    nmlgen.add_default('flds_wiso', value=nmlgen.get_default('flds_wiso', config=config))
-   
-    config['BUDGETS'] = case.get_value('BUDGETS')
-    nmlgen.add_default('do_budgets', value=nmlgen.get_default('do_budgets', config=config))
-    nmlgen.add_default('budget_inst')
-    nmlgen.add_default('budget_daily')
-    nmlgen.add_default('budget_month')
-    nmlgen.add_default('budget_ann')
-    nmlgen.add_default('budget_ltann')
-    nmlgen.add_default('budget_ltend')
-
-    nmlgen.add_default('cpl_seq_option')
-    nmlgen.add_default('flux_diurnal')
-    nmlgen.add_default('info_debug')
-    nmlgen.add_default('cpl_decomp')
-    nmlgen.add_default('wall_time_limit')
-    nmlgen.add_default('force_stop_at')
-
-    nmlgen.add_default('do_histinit')
-    nmlgen.add_default('shr_map_dopole')
-    nmlgen.add_default('cpl_cdf64')
-    nmlgen.add_default('aoflux_grid')
-
-    nmlgen.add_default('orb_mode')
-    nmlgen.add_default('orb_iyear')
-    nmlgen.add_default('orb_iyear_align')
-    
-    nmlgen.add_default('wv_sat_scheme')
-    nmlgen.add_default('wv_sat_transition_start')
-    nmlgen.add_default('wv_sat_use_tables')
-    nmlgen.add_default('wv_sat_table_spacing')
-
-    nmlgen.add_default('tfreeze_option')
-    
-    nmlgen.add_default('histaux_a2x')
-    nmlgen.add_default('histaux_a2x3hr')
-    nmlgen.add_default('histaux_a2x3hrp')
-    nmlgen.add_default('histaux_a2x24hr')
-    nmlgen.add_default('histaux_l2x')
-    nmlgen.add_default('histaux_r2x')
-    nmlgen.add_default('histaux_l2x1yr')
-
-    nmlgen.add_default('histavg_atm')
-    nmlgen.add_default('histavg_lnd')
-    nmlgen.add_default('histavg_ocn')
-    nmlgen.add_default('histavg_ice')
-    nmlgen.add_default('histavg_rof')
-    nmlgen.add_default('histavg_glc')
-    nmlgen.add_default('histavg_wav')
-    nmlgen.add_default('histavg_xao')
-    
-    nmlgen.add_default('vect_map')
-    nmlgen.add_default('eps_frac')
-    nmlgen.add_default('eps_amask')
-    nmlgen.add_default('eps_agrid')
-    nmlgen.add_default('eps_aarea')
-    nmlgen.add_default('eps_omask')
-    nmlgen.add_default('eps_ogrid')
-    nmlgen.add_default('eps_oarea')
-
-    nmlgen.add_default('mct_usealltoall')
-    nmlgen.add_default('mct_usevector')
-
-    nmlgen.add_default('timing_dir')
-    nmlgen.add_default('tchkpt_dir')
-
-    if case.get_value('PTS_MODE'):
-        nmlgen.add_default('single_column', ".true.")
-        nmlgen.add_default('scmlat', value=case.get_value('PTS_LAT'))
-        nmlgen.add_default('scmlon', value=case.get_value('PTS_LON'))
-
-###############################################################################
-def _create_group_seq_timemgr_inparm(case, nmlgen):
-###############################################################################
-
-    nmlgen.add_default('calendar', value=case.get_value('CALENDAR'))
-
+    #--------------------------------
+    # Overwrite: set component coupling frequencies
+    #--------------------------------
     ncpl_base_period  = case.get_value('NCPL_BASE_PERIOD')
     if ncpl_base_period == 'hour':
         basedt = 3600
@@ -234,34 +134,20 @@ def _create_group_seq_timemgr_inparm(case, nmlgen):
         totaldt = cpl_dt * int(ncpl)
         if totaldt != basedt:
             expect(false, " %s ncpl doesn't divide base dt evenly" %comp)
-        nmlgen.add_default(comp + '_cpl_dt', value=cpl_dt)
+        nmlgen.set_value(comp + '_cpl_dt', value=cpl_dt)
 
+    #--------------------------------
+    # Overwrite: set start_ymd
+    #--------------------------------
     run_startdate = "".join(str(x) for x in case.get_value('RUN_STARTDATE').split('-'))
-    nmlgen.add_default('start_ymd', value=run_startdate)
-    nmlgen.add_default('start_tod')
-    nmlgen.add_default('stop_option')
-    nmlgen.add_default('stop_n')
-    nmlgen.add_default('stop_ymd')
-    nmlgen.add_default('restart_option')
-    nmlgen.add_default('restart_n')
-    nmlgen.add_default('restart_ymd')
-    nmlgen.add_default('end_restart')
-    nmlgen.add_default('history_option')
-    nmlgen.add_default('history_n')
-    nmlgen.add_default('history_ymd')
-    nmlgen.add_default('histavg_option')
-    nmlgen.add_default('histavg_n')
-    nmlgen.add_default('histavg_ymd')
-    nmlgen.add_default('barrier_option')
-    nmlgen.add_default('barrier_n')
-    nmlgen.add_default('barrier_ymd')
-    nmlgen.add_default('tprof_option')
-    nmlgen.add_default('tprof_n')
+    nmlgen.set_value('start_ymd', value=run_startdate)
 
+    #--------------------------------
+    # Overwrite: set tprof_option and tprof_n - if tprof_total is > 0
+    #--------------------------------
     # This would be better handled inside the alarm logic in the driver routines.
     # Here supporting only nday(s), nmonth(s), and nyear(s).
-    tprofmult = 1
-    tprofoption = 'never'
+
     stop_option = case.get_value('STOP_OPTION')
     if 'nyear' in stop_option:
         tprofoption = 'ndays'
@@ -271,253 +157,36 @@ def _create_group_seq_timemgr_inparm(case, nmlgen):
         tprofmult = 30
     elif 'nday' in stop_option:
         tprofoption = 'ndays'
+        tprofmult = 1
+    else:
+        tprofmult = 1
+        tprofoption = 'never'
 
-    stop_date = case.get_value('STOP_DATE')
     tprof_total = case.get_value('TPROF_TOTAL')
-    if ((tprof_total > 0) and (stop_date < 0) and ('ndays' in tprofoption)):
+    if ((tprof_total > 0) and (case.get_value('STOP_DATE') < 0) and ('ndays' in tprofoption)):
         stop_n = case.get_value('STOP_N')
         stopn = tprofmult * stop_N
         tprofn = int(stopn / tprof_total)
         if tprofn < 1: 
             tprofn = 1
-        nmlgen.add_default('tprof_option', value="tprofoption")
-        nmlgen.add_default('tprof_n', value="tprofn")
-    else:
-        nmlgen.add_default('tprof_option')
-        nmlgen.add_default('tprof_n')
+        nmlgen.set_value('tprof_option', value="tprofoption")
+        nmlgen.set_value('tprof_n'     , value="tprofn")
 
-    nmlgen.add_default('tprof_ymd')
-    nmlgen.add_default('max_cplstep_time')
-
-###############################################################################
-def _create_group_ccsm_pes(case, nmlgen):
-###############################################################################
-
-    comps = ["atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp", "cpl"]
-    for comp in comps:
-        nmlgen.add_default( comp + '_ntasks')
-        nmlgen.add_default( comp + '_nthreads')
-        nmlgen.add_default( comp + '_rootpe')
-        nmlgen.add_default( comp + '_pestride')
-        if comp != 'cpl':
-            nmlgen.add_default( comp + '_layout')
-
-###############################################################################
-def _create_group_prof_inparm(case, nmlgen):
-###############################################################################
-
-    config = {}
-
-    config['MACH'] = case.get_value('MACH')
-    config['MPILIB'] = case.get_value('MPILIB')
-    config['OS'] = case.get_value('OS')
-    nmlgen.add_default('profile_timer', value=nmlgen.get_default('profile_timer', config=config))
-
-    if case.get_value('TIMER_LEVEL') >= 1:
-        nmlgen.add_default('profile_disable', value=".false.")
-        nmlgen.add_default('profile_depth_limit', value=case.get_value('TIMER_LEVEL'))
-    else:
-        nmlgen.add_default('profile_disable', value=".true.")
-        nmlgen.add_default('profile_depth_limit', value=20)
-
-    if case.get_value('TIMER_DETAIL') >= 1:
-        nmlgen.add_default('profile_detail_limit', value=case.get_value('TIMER_DETAIL'))
-    else:
-        nmlgen.add_default('profile_detail_limit', 0)
-
-    nmlgen.add_default('profile_papi_enable')
-    nmlgen.add_default('profile_global_stats')
-    nmlgen.add_default('profile_single_file')
-    nmlgen.add_default('profile_barrier')
-    nmlgen.add_default('profile_outpe_num')
-    nmlgen.add_default('profile_ovhd_measurement')
-
-###############################################################################
-def _create_group_papi_inparm(case, nmlgen):
-###############################################################################
-
-    nmlgen.add_default('papi_ctr1_str')
-    nmlgen.add_default('papi_ctr2_str')
-    nmlgen.add_default('papi_ctr3_str')
-    nmlgen.add_default('papi_ctr4_str')
-
-###############################################################################
-def _create_group_pio_default_inparm(case, nmlgen):
-###############################################################################
-
-    nmlgen.add_default('pio_async_interface') 
-    nmlgen.add_default('pio_stride')
-    nmlgen.add_default('pio_root')
-    nmlgen.add_default('pio_rearranger')
-    nmlgen.add_default('pio_numiotasks')
-    nmlgen.add_default('pio_typename')
-    nmlgen.add_default('pio_debug_level')
-    nmlgen.add_default('pio_blocksize')
-    nmlgen.add_default('pio_buffer_size_limit') 
-    if case.get_value('PIO_VERSION') == 1:
-        nmlgen.add_default('pio_rearr_comm_type')
-        nmlgen.add_default('pio_rearr_comm_fcd')
-        nmlgen.add_default('pio_rearr_comm_max_pend_req_comp2io')
-        nmlgen.add_default('pio_rearr_comm_max_pend_req_io2comp')
-        nmlgen.add_default('pio_rearr_comm_enable_hs_comp2io')
-        nmlgen.add_default('pio_rearr_comm_enable_hs_io2comp')
-        nmlgen.add_default('pio_rearr_comm_enable_isend_comp2io')
-        nmlgen.add_default('pio_rearr_comm_enable_isend_io2comp')
-
-    # Note: pio_async_interface=.true. is not yet supported
-    # If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99
-    # the component variable will be set using the pio_* value.
-
-###############################################################################
-def _create_group_seq_maps(case, nmlgen):
-###############################################################################
-
-    config = {}
-    if case.get_value('BFBFLAG'):
-        config['bfbflag'] = 'on'
-    else:
-        config['bfbflag'] = 'off'
-        
-    items = ['atm2ocn_fmapname'     , 'atm2ocn_fmaptype'     , 
-             'atm2ocn_smapname'     , 'atm2ocn_smaptype'     , 
-             'atm2ocn_vmapname'     , 'atm2ocn_vmaptype'     , 
-             'ocn2atm_fmapname'     , 'ocn2atm_fmaptype'     , 
-             'ocn2atm_smapname'     , 'ocn2atm_smaptype'     , 
-             'atm2lnd_fmapname'     , 'atm2lnd_fmaptype'     , 
-             'atm2lnd_smapname'     , 'atm2lnd_smaptype'     , 
-             'lnd2atm_fmapname'     , 'lnd2atm_fmaptype'     , 
-             'lnd2atm_smapname'     , 'lnd2atm_smaptype'     , 
-             'lnd2rof_fmapname'     , 'lnd2rof_fmaptype'     , 
-             'rof2lnd_fmapname'     , 'rof2lnd_fmaptype'     , 
-             'rof2ocn_fmapname'     , 'rof2ocn_fmaptype'     , 
-             'rof2ocn_liq_rmapname' , 'rof2ocn_liq_rmaptype' , 
-             'glc2ocn_rmapname'     , 'glc2ocn_rmaptype'     , 
-             'glc2ice_rmapname'     , 'glc2ice_rmaptype'     , 
-             'lnd2glc_fmapname'     , 'lnd2glc_fmaptype'     , 
-             'lnd2glc_smapname'     , 'lnd2glc_smaptype'     , 
-             'glc2lnd_fmapname'     , 'glc2lnd_fmaptype'     , 
-             'glc2lnd_smapname'     , 'glc2lnd_smaptype'     , 
-             'atm2wav_smapname'     , 'atm2wav_smaptype'     , 
-             'ocn2wav_smapname'     , 'ocn2wav_smaptype'     , 
-             'ice2wav_smapname'     , 'ice2wav_smaptype'     , 
-             'wav2ocn_smapname'     , 'wav2ocn_smaptype'     , 
-             'atm2ice_fmapname'     , 'atm2ice_fmaptype'     , 
-             'atm2ice_smapname'     , 'atm2ice_smaptype'     , 
-             'atm2ice_vmapname'     , 'atm2ice_vmaptype'     , 
-             'ice2atm_fmapname'     , 'ice2atm_fmaptype'     , 
-             'ice2atm_smapname'     , 'ice2atm_smaptype'     , 
-             'rof2ocn_ice_rmapname' , 'rof2ocn_ice_rmaptype' ] 
-    
-    for item in items:
-        nmlgen.add_default(item, nmlgen.get_default(item, config=config))
-
-###############################################################################
-def _create_component_modelio_namelists(case, confdir, definition_file):
-###############################################################################
-
-    # will need to create a new namelist generator
-    cimeroot = case.get_value('CIMEROOT')
-    infiles = []
-    config = {}
-    definition_file = [os.path.join(cimeroot, "driver_cpl", "cime_config", "namelist_definition_modelio.xml")]
-    lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
-
-    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
-    for model in models:
-
-        config['component'] = model
-        nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
-        moddiri = case.get_value('EXEROOT') + "/" + model
-        moddiro = case.get_value('RUNDIR')
-
-        if model == 'cpl':
-            inst_count = 1
-        else:
-            inst_count = case.get_value("NINST_" + model.upper())
-
-        inst_index = 1;
-        while inst_index <= inst_count:
-            inst_string = inst_index
-            if inst_index <= 999:
-                inst_string = "0" + str(inst_string)
-            if inst_index <=  99:
-                inst_string = "0" + str(inst_string)
-            if inst_index <=  9:
-                inst_string = "0" + str(inst_string)
-
-            if inst_count > 1:
-                modelio_file = model + "_modelio.nml_" + str(inst_string)
-                logfile = model + inst_string + ".log." + str(lid)
-            else:
-                modelio_file = model + "_modelio.nml"
-                logfile = model + ".log." + str(lid)
-
-            nmlgen.set_value('diri',    value=moddiri)
-            nmlgen.set_value('diro',    value=moddiro)
-            nmlgen.set_value('logfile', value=logfile)
-
-            nmlgen.add_default('pio_stride')
-            nmlgen.add_default('pio_root')
-            nmlgen.add_default('pio_numiotasks')
-            nmlgen.add_default('pio_typename')
-            nmlgen.add_default('pio_rearranger')
-
-            nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
-
-            inst_index = inst_index + 1
-
-####################################################################################
-def _create_namelists(case, cime_model, confdir, infiles, definition_file):
-####################################################################################
-    """Write out the namelist for this component.
-
-    Most arguments are the same as those for `NamelistGenerator`. 
-    The `confdir` argument is used to specify the directory
-    in which output files will be placed.
-    """
-    #----------------------------------------------------
-    # Construct the namelist generator.
-    #----------------------------------------------------
-    config = {}
-    nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
-
-    #----------------------------------------------------
-    # Construct the namelist groups
-    #----------------------------------------------------
-
-    # Note: prof_inparm  and papi_inparm are in utils/timing/perf_mod.F90
-
-    _create_group_seq_cplflds_userspec(case, nmlgen)
-    _create_group_seq_cplflds_inparm(case, nmlgen)
-    _create_group_seq_infodata_inparm(case, cime_model, nmlgen)
-    _create_group_seq_timemgr_inparm(case, nmlgen)
-    _create_group_ccsm_pes(case, nmlgen)
-    _create_group_prof_inparm(case, nmlgen)
-    _create_group_papi_inparm(case, nmlgen)
-    _create_group_pio_default_inparm(case, nmlgen)
-    _create_group_seq_maps(case, nmlgen)
-
-    #-----------------------------------------------------------------------------------------------
-    # (1) Write output namelist files (drv_in, and drv_flds_in)
-    #     Write out model_modelio.nml files
-    #     Write input dataset list.
-    #-----------------------------------------------------------------------------------------------
+    #--------------------------------
+    # Write output files
+    #--------------------------------
+    # (1) Write output namelist file drv_in and  input dataset list.
     data_list_path = os.path.join(case.get_case_root(), "Buildconf", "cpl.input_data_list")
     if os.path.exists(data_list_path):
         os.remove(data_list_path)
-
     namelist_file = os.path.join(confdir, "drv_in")
     nmlgen.write_output_file(namelist_file, data_list_path )
 
-    #-----------------------------------------------------------------------------------------------
     # (2) Write out seq_map.rc file
-    #-----------------------------------------------------------------------------------------------
     seq_maps_file = os.path.join(confdir, "seq_maps.rc")
     nmlgen.write_seq_maps(seq_maps_file)
 
-    #-----------------------------------------------------------------------------
-    # (3) Write drv_flds_in
-    #-----------------------------------------------------------------------------
+    # (3) Construct and write out drv_flds_in
     # In thte following, all values come simply from the infiles - no default values need to be added
     # FIXME - do want to add the possibility that will use a user definition file for drv_flds_in
 
@@ -542,19 +211,68 @@ def _create_namelists(case, cime_model, confdir, infiles, definition_file):
         nmlgen.write_output_file(drv_flds_in)
 
 ###############################################################################
+def _create_component_modelio_namelists(case):
+###############################################################################
+
+    # will need to create a new namelist generator
+    cimeroot = case.get_value('CIMEROOT')
+    infiles = []
+    definition_file = [os.path.join(cimeroot, "driver_cpl", "cime_config", "namelist_definition_modelio.xml")]
+    confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
+    lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
+
+    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
+    for model in models:
+        config = {}
+        config['component'] = model
+        #nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
+        #expect(False, "DEBUG")
+        with NamelistGenerator(case, infiles, definition_file, definition_file,  config) as nmlgen:
+            if model == 'cpl':
+                inst_count = 1
+            else:
+                inst_count = case.get_value("NINST_" + model.upper())
+
+            inst_index = 1;
+            while inst_index <= inst_count:
+                inst_string = inst_index
+                if inst_index <= 999:
+                    inst_string = "0" + str(inst_string)
+                if inst_index <=  99:
+                    inst_string = "0" + str(inst_string)
+                if inst_index <=  9:
+                    inst_string = "0" + str(inst_string)
+
+                # set default values
+                entries = nmlgen.get_definition_entries()
+                for entry in entries:
+                    nmlgen.add_default(entry)
+
+                # overwrite defaults
+                moddiri = case.get_value('EXEROOT') + "/" + model
+                nmlgen.set_value('diri',    value=moddiri)
+
+                moddiro = case.get_value('RUNDIR')
+                nmlgen.set_value('diro',    value=moddiro)
+
+                logfile = model + inst_string + ".log." + str(lid) if inst_count > 1 else model + ".log." + str(lid)
+                nmlgen.set_value('logfile', value=logfile)
+
+                # Write output file
+                modelio_file = model + "_modelio.nml_" + str(inst_string) if inst_count > 1 else model + "_modelio.nml"
+                nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
+
+                inst_index = inst_index + 1
+
+###############################################################################
 def _main_func():
 ###############################################################################
 
     caseroot = _parse_input(sys.argv)
-    cime_model = get_model()
-
     with Case(caseroot) as case:
         cimeroot = case.get_value("CIMEROOT")
-        caseroot = case.get_value("CASEROOT")
-        casebuild = case.get_value("CASEBUILD")
-        rundir = case.get_value("RUNDIR")
 
-        confdir = os.path.join(casebuild, "cplconf")
+        confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
         if not os.path.isdir(confdir):
             os.makedirs(confdir)
 
@@ -579,29 +297,28 @@ def _main_func():
                 infile_text = "atm_ideal_phys = .true."
             if "aquaplanet" in cam_config_opts:
                 infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
-
-        # create user_nl_cpl
         user_nl_file = os.path.join(caseroot, "user_nl_cpl")
         namelist_infile = os.path.join(confdir, "namelist_infile")
         create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
         infile = [namelist_infile]
 
-        # Now build the component namelist and required stream txt files
-        _create_namelists(case, cime_model, confdir, infile, definition_file)
-        _create_component_modelio_namelists(case, confdir, definition_file)
+        # create the files drv_in, drv_flds_in and seq_maps.rc
+        _create_drv_namelists(case, infile, definition_file, confdir)
 
-        # copy drv_in to rundir
+        # create the files comp_modelio.nml where comp = [atm, lnd...]
+        _create_component_modelio_namelists(case)
+
+        # copy drv_in, drv_flds_in, seq_maps.rc and all *modio* fiels to rundir
+        rundir = case.get_value("RUNDIR")
+
         shutil.copy(os.path.join(confdir,"drv_in"), rundir)
 
-        # copy drv_flds_in to rundir
         drv_flds_in = os.path.join(confdir, "drv_flds_in")
         if os.path.isfile(drv_flds_in):
             shutil.copy(drv_flds_in, rundir)  
 
-        # copy seq_maps.rc to rundir
         shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
 
-        # copy all *modio* files to rundir
         for filename in glob.glob(os.path.join(confdir, "*modelio*")):
             shutil.copy(filename, rundir)
 

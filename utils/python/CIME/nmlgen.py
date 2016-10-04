@@ -107,6 +107,17 @@ class NamelistGenerator(object):
             # over later settings).
             self._namelist.merge_nl(new_namelist)
 
+    # Define __enter__ and __exit__ so that we can use this as a context manager
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def get_definition_entries(self):
+        """Return array of names of all definition entries"""
+        return self._definition.get_entries()
+
     @staticmethod
     def quote_string(string):
         """Convert a string to a quoted Fortran literal.
