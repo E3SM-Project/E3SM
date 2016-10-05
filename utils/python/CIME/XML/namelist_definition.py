@@ -58,11 +58,25 @@ class NamelistDefinition(GenericXML):
         self._value_cache = {}
 
     def get_entries(self):
-        """Return all variables in the namelist definition file"""
+        """Return all variables in the namelist definition file
+        that do not have attributes of skip_default_entry or per_stream_entry
+        """
         entries = []
         nodes = self.get_nodes("entry")
         for node in nodes:
-            entries.append(node.get("id"))
+            skip_default_entry = node.get("skip_default_entry")
+            per_stream_entry = node.get("per_stream_entry")
+            if not skip_default_entry and not per_stream_entry:
+                entries.append(node.get("id"))
+        return entries
+
+    def get_per_stream_entries(self):
+        entries = []
+        nodes = self.get_nodes("entry")
+        for node in nodes:
+            per_stream_entry = node.get("per_stream_entry")
+            if per_stream_entry:
+                entries.append(node.get("id"))
         return entries
 
     def get_value(self, item, attribute=None, resolved=False, subgroup=None):

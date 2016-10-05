@@ -176,6 +176,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain file directory.</description>
+    <strm_domdir>null</strm_domdir> 
     <strm_domdir stream="CLM1PT.1x1_mexicocityMEX">$DIN_LOC_ROOT/atm/datm7/domain.clm</strm_domdir>
     <strm_domdir stream="CLM1PT.1x1_vancouverCAN">$DIN_LOC_ROOT/atm/datm7/domain.clm</strm_domdir>
     <strm_domdir stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/domain.clm</strm_domdir>
@@ -261,6 +262,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain file path(s).</description>
+    <strm_domfil>null</strm_domfil>
     <strm_domfil stream="CLM1PT.1x1_mexicocityMEX">domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</strm_domfil>
     <strm_domfil stream="CLM1PT.1x1_vancouverCAN">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </strm_domfil>
     <strm_domfil stream="CLM1PT.1x1_urbanc_alpha">domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </strm_domfil>
@@ -444,6 +446,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data file directory.</description>
+    <strm_datdir>null</strm_datdir>
     <strm_datdir stream="CLM1PT.1x1_mexicocityMEX">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/mexicocityMEX.c080124</strm_datdir>
     <strm_datdir stream="CLM1PT.1x1_vancouverCAN">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/vancouverCAN.c080124 </strm_datdir>
     <strm_datdir stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416 </strm_datdir>
@@ -528,6 +531,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data file path(s).</description>
+    <strm_datfil>null</strm_datfil>
     <strm_datfil  stream="CLM1PT.1x1_mexicocityMEX">clm1pt-1993-12.nc</strm_datfil>
     <strm_datfil  stream="CLM1PT.1x1_vancouverCAN">clm1pt-1992-08.nc</strm_datfil>
     <strm_datfil  stream="CLM1PT.1x1_urbanc_alpha">
@@ -1282,6 +1286,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data variable name(s).</description>
+    <strm_datvar>null</strm_datvar>
     <strm_datvar  stream="CLM1PT.1x1_mexicocityMEX">
       ZBOT     z
       TBOT     tbot
@@ -1568,6 +1573,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>Simulation year to align stream to.</description>
+    <strm_year_align>-999</strm_year_align>
     <strm_year_align stream="CLM1PT.1x1_mexicocityMEX">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
     <strm_year_align stream="CLM1PT.1x1_vancouverCAN">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
     <strm_year_align stream="CLM1PT.1x1_urbanc_alpha">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
@@ -1649,6 +1655,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>First year of stream.</description>
+    <strm_year_start>-999</strm_year_start>
     <strm_year_start stream="CLM1PT.1x1_mexicocityMEX">1993</strm_year_start>
     <strm_year_start stream="CLM1PT.1x1_vancouverCAN">1992</strm_year_start>
     <strm_year_start stream="CLM1PT.1x1_urbanc_alpha">0001</strm_year_start>
@@ -1730,6 +1737,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <description>Last year of stream.</description>
+    <strm_year_end>-999</strm_year_end>
     <strm_year_end stream="CLM1PT.1x1_mexicocityMEX">1993</strm_year_end>
     <strm_year_end stream="CLM1PT.1x1_vancouverCAN">1992</strm_year_end>
     <strm_year_end stream="CLM1PT.1x1_urbanc_alpha">0002</strm_year_end>
@@ -1895,13 +1903,13 @@
     <input_pathname>abs</input_pathname>
     <group>shr_strdata_nml</group> 
     <description>
-      spatial gridfile associated with the strdata.  grid information will
+      model spatial gridfile associated with the strdata.  grid information will
       be read from this file and that grid will serve as the target grid
       for all input data for this strdata input.
     </description>
   </entry>
 
-  <entry id="fillalgo">
+  <entry id="fillalgo" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1912,12 +1920,11 @@
       nearest neighbor, nearest neighbor in "i" direction, or nearest
       neighbor in "j" direction.
       valid values:  'copy','spval','nn','nnoni','nnonj'
-      default: "nn".
     </description>
     <fillalgo>nn</fillalgo>
   </entry>
 
-  <entry id="fillmask">
+  <entry id="fillmask" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1925,12 +1932,11 @@
     <description>
       plays no role is fill algorithm at the present time.
       valid values: "nomask,srcmask,dstmask,bothmask"
-      default: "nomask"
     </description>
     <fillmask>nomask</fillmask>
   </entry>
 
-  <entry id="fillread">
+  <entry id="fillread" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1939,11 +1945,11 @@
       streams.  specifies the weights file to read in instead of computing the
       weights on the fly for the fill operation.  if this is set, fillalgo
       and fillmask are ignored.
-      default: unset
     </description>
+    <fillread>NOT_SET</fillread>
   </entry>
 
-  <entry id="fillwrite">
+  <entry id="fillwrite" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1952,11 +1958,11 @@
       streams.  specifies the weights file to generate after weights are
       computed on the fly for the fill operation.  this allows a user to
       save and reuse a set of weights later.
-      default="unset".
     </description>
+    <fillwrite>NOT_SET</fillwrite>
   </entry>
 
-  <entry id="mapmask">
+  <entry id="mapmask" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1967,11 +1973,11 @@
       valid src points, map only to valid destination points, ignore all
       masks, map only from valid src points to valid destination points.
       valid values: srcmask, dstmask, nomask,bothmask
-      default: dstmask
     </description>
+    <mapmask>nomask</mapmask>
   </entry>
 
-  <entry id="mapalgo">
+  <entry id="mapalgo" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1982,7 +1988,6 @@
       nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
       in "j" direction, or bilinear.
       valid values: copy,spval,nn,nnoni,nnonj,bilinear
-      default: bilinear
     </description>
     <mapalgo>bilinear</mapalgo>
     <mapalgo datm_mode="CLM1PT">nn</mapalgo>
@@ -2003,7 +2008,7 @@
     <mapalgo stream="co2tseries.rcp8.5">nn</mapalgo>
   </entry>
 
-  <entry id="mapread">
+  <entry id="mapread" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2011,12 +2016,12 @@
       array (up to 30 elements) of filenames associated with the array of
       streams.  specifies the weights file to read instead of computing
       weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored.  default="unset".
+      is set, mapalgo and mapmask are ignored. 
     </description>
-    <mapmask>nomask</mapmask>
+    <mapread>NOT_SET</mapread>
   </entry>
 
-  <entry id="mapwrite">
+  <entry id="mapwrite" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2025,11 +2030,11 @@
       streams.  specifies the weights file to generate after weights are
       computed on the fly for the mapping (interpolation) operation.  this
       allows a user to save and reuse a set of weights later.
-      default="unset".
     </description>
+    <mapwrite>NOT_SET</mapwrite>
   </entry>
 
-  <entry id="tintalgo">
+  <entry id="tintalgo" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2043,7 +2048,6 @@
       nearest = Use the nearest time-value
       linear  = Linearly interpolate between the two time-values
       coszen  = Scale according to the cosine of the solar zenith angle (for solar)
-      default="linear".
     </description>
     <tintalgo>linear</tintalgo>
     <tintalgo stream="CLM1PT.1x1_mexicocityMEX">nearest</tintalgo>
@@ -2077,7 +2081,7 @@
     <tintalgo stream="topo.observed">lower</tintalgo>
   </entry>
 
-  <entry id="taxmode">
+  <entry id="taxmode" per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2090,7 +2094,6 @@
       and last valid value indefinitely, or to limit the interpolated data
       to fall only between the least and greatest valid value of the time array.
       valid values: cycle,extend,limit
-      default="cycle".
     </description>
     <taxmode>cycle</taxmode>
     <taxmode stream="co2tseries.20tr">extend</taxmode>
@@ -2102,7 +2105,7 @@
     <taxmode datm_mode="CLM1PT">extend</taxmode>
   </entry>
 
-  <entry id="dtlimit">
+  <entry id="dtlimit" per_stream_entry="TRUE">
     <type>real(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2119,30 +2122,12 @@
       time is computed as data is read and any wraparound or cycling is also
       included.  this input helps trap missing data or errors in cycling.
       to turn off trapping, set the value to 1.0e30 or something similar.
-      default=1.5.
     </description>
     <dtlimit>1.5</dtlimit>
     <dtlimit stream="CORE2_IAF.CORE2.ArcFactor">1.e30</dtlimit>
   </entry>
 
-  <entry id="streams">
-    <type>char*256(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <description>
-      character array (up to 30 elements) of stream input files.  this
-      string is actually parsed by a stream method and so the format is
-      specified by the stream module.  this string consists of a
-      "stream_input_filename year_align year_first year_last".  the
-      stream_input_filename is a stream text input file and the format and
-      options are described elsewhere.  year_align, year_first, and
-      year_last provide information about the time axis of the file and how
-      to relate the input time axis to the model time axis.
-      default="null".
-    </description>
-  </entry>
-
-  <entry id="vectors">
+  <entry id="vectors" skip_default_entry="TRUE">
     <type>char*256</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2154,7 +2139,6 @@
       all input streams where different fields of the vector pair could
       appear in different streams.
       for example, vectors = 'u:v','taux:tauy'.
-      default="".
     </description>
     <vectors>null</vectors>
     <vectors datm_mode="CLM_QIAN"      >null</vectors>
@@ -2169,31 +2153,45 @@
     <vectors datm_mode="NLDAS"         >null</vectors>
   </entry>
 
+  <entry id="streams" skip_default_entry="TRUE">
+    <type>char*256(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      character array (up to 30 elements) of stream input files.  this
+      string is actually parsed by a stream method and so the format is
+      specified by the stream module.  this string consists of a
+      "stream_input_filename year_align year_first year_last".  the
+      stream_input_filename is a stream text input file and the format and
+      options are described elsewhere.  year_align, year_first, and
+      year_last provide information about the time axis of the file and how
+      to relate the input time axis to the model time axis.
+    </description>
+  </entry>
+
   <!-- =========================================  -->
   <!--- datm_nml                                  -->
   <!-- =========================================  -->
 
   <!--- anomaly forcing - bias correction -->
-  <entry id="bias_correct">
+  <entry id="bias_correct" skip_default_entry="TRUE">
     <type>char*256</type>
     <category>datm</category>
     <group>datm_nml</group>
     <valid_values>BC.QIAN.CMAP.Precip,BC.QIAN.GPCP.Precip,BC.CRUNCEP.CMAP.Precip,BC.CRUNCEP.GPCP.Precip</valid_values>
     <description>
       If set, include bias correction streams in namelist.
-      default = ""
     </description>
   </entry>
 
-  <entry id="anomaly_forcing">
+  <entry id="anomaly_forcing" skip_default_entry="TRUE">
     <type>char*50(10)</type>
     <category>datm</category>
     <group>datm_nml</group>
     <valid_values>Anomaly.Forcing.Precip,Anomaly.Forcing.Temperature,Anomaly.Forcing.Pressure,Anomaly.Forcing.Humidity,Anomaly.Forcing.Uwind,Anomaly.Forcing.Vwind,Anomaly.Forcing.Shortwave,Anomaly.Forcing.Longwave</valid_values>
     <description>
-      If set, include anomaly forcing streams in namelist. default = ""
+      If set, include anomaly forcing streams in namelist. 
     </description>
-    <anomaly_forcing>""</anomaly_forcing>
   </entry>
   <!--- for anomaly forcing -->
 
@@ -2207,7 +2205,7 @@
       placing the global array on the root task or a simple stride-one
       load balanced one-dimensional decomposition.  other decompositions
       may be added in the future. valid values are ['root','1d']. 
-      1d = Vector decomposition, root = run only on the master task, default='1d'.
+      1d = Vector decomposition, root = run only on the master task
     </description>
     <decomp>1d</decomp>
   </entry>
@@ -2219,12 +2217,11 @@
     <input_pathname>abs</input_pathname>
     <description>
       filename containing correction factors for use only with CORE2 modes (CORE2_IAF and CORE2_NYF).
-      default='unused'.
     </description>
     <factorfn>null</factorfn>
-    <factorfn datamode="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
-    <factorfn datamode="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
-    <factorfn datamode="CORE2_IAF" atm_grid="01col">null</factorfn>
+    <factorfn datm_mode="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
+    <factorfn datm_mode="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
+    <factorfn datm_mode="CORE2_IAF" atm_grid="01col">null</factorfn>
   </entry>
 
   <entry id="presaero">
@@ -2232,8 +2229,10 @@
     <category>datm</category>
     <group>datm_nml</group>
     <description>
-      If TRUE, prescribed aerosols are sent from datm (must be true for running with CLM).
+      If true, prescribed aerosols are sent from datm (must be true for running with CLM).
     </description>
+    <presaero>.true.</presaero>
+    <presaero datm_presaero="none">.false.</presaero>
   </entry>
 
   <entry id="force_prognostic_true">
@@ -2241,7 +2240,7 @@
     <category>datm</category>
     <group>datm_nml</group>
     <description>
-      If TRUE, prognostic is forced to true. (default=false)
+      If true, prognostic is forced to true. (default=false)
     </description>
     <force_prognostic_true>.false.</force_prognostic_true>
   </entry>
