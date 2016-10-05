@@ -503,6 +503,11 @@ module ocn_forward_mode
          call mpas_timer_stop('io_read')
          call mpas_timer_start('reset_io_alarms')
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+         ! Also restart all block_* streams, if any are defined.
+         if ( mpas_stream_mgr_stream_exists(domain % streamManager, 'block_.*') ) then
+            call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='block_.*', ierr=ierr)
+         end if
          call mpas_timer_stop('reset_io_alarms')
 
          itimestep = itimestep + 1
