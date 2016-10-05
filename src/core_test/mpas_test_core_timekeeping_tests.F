@@ -95,6 +95,15 @@ module test_core_timekeeping_tests
             write(stderrUnit, *) ' * Result: FAILED'
          end if
 
+         write(stderrUnit, *) '  Test 6:'
+         call test_core_interval_test('0001-01-01_00:00:00', '0001-01-00_00:00:00', '0001-00-00_00:00:00', 1, '0000-00-31_00:00:00', err_tmp)
+         if ( err_tmp == 0 ) then
+            write(stderrUnit, *) '   Result: PASSED'
+         else
+            write(stderrUnit, *) ' * Result: FAILED'
+         end if
+
+
 
          write(stderrUnit, *) ' Completed time interval tests'
       end if
