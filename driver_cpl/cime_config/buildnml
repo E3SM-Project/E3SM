@@ -253,11 +253,17 @@ def _create_component_modelio_namelists(case):
                 moddiro = case.get_value('RUNDIR')
                 nmlgen.set_value('diro',    value=moddiro)
 
-                logfile = model + inst_string + ".log." + str(lid) if inst_count > 1 else model + ".log." + str(lid)
+                if inst_count > 1:
+                    logfile = model + "_" + inst_string + ".log." + str(lid) 
+                else:
+                    logfile = model + ".log." + str(lid)
                 nmlgen.set_value('logfile', value=logfile)
 
                 # Write output file
-                modelio_file = model + "_modelio.nml_" + str(inst_string) if inst_count > 1 else model + "_modelio.nml"
+                if inst_count > 1:
+                    modelio_file = model + "_modelio.nml_" + str(inst_string) 
+                else:
+                    modelio_file = model + "_modelio.nml"
                 nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
 
                 inst_index = inst_index + 1
