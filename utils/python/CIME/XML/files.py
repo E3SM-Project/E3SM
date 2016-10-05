@@ -21,6 +21,13 @@ class Files(EntryID):
         infile = os.path.join(get_cime_root(), "cime_config", get_model(), "config_files.xml")
         EntryID.__init__(self, infile)
 
+    def get_schema(self, nodename):
+        node = self.get_optional_node("entry", {"id":nodename})
+        schemanode = self.get_optional_node("schema", root=node)
+        if schemanode is not None:
+            return self.get_resolved_value(schemanode.text)
+        return None
+                            
     def get_components(self, nodename):
         node = self.get_optional_node("entry", {"id":nodename})
         valnodes = self.get_nodes("value", root=node)

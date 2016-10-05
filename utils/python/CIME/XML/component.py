@@ -5,6 +5,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
+from distutils.spawn import find_executable
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +15,20 @@ class Component(EntryID):
         """
         initialize an object
         """
+        files = Files()
         if infile is None:
-            files = Files()
             infile = files.get_value("CONFIG_DRV_FILE")
 
+        # use xmllint to validate infile
+        xmllint = find_executable("xmllint")
+        if xmllint is not None:
+            schema = files.get_schema("CONFIG_DRV_FILE")
+            if schema is not None:
+                logger.warn("Checking file %s against %s"%(infile, schema))
+                run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, infile))
+            
         EntryID.__init__(self,infile)
-
+        
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)

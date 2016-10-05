@@ -206,6 +206,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_component.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ATM_FILE">
