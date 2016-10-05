@@ -1724,7 +1724,7 @@ class S_TestManageAndQuery(unittest.TestCase):
         when it runs. This helps ensure that changes in other utilities don't
         break query_testlists.
         """
-        self._run_and_assert_query_testlist()
+        self._run_and_assert_query_testlist(extra_args="--show-options")
 
     def test_query_testlists_count_runs(self):
         """Make sure that query_testlists runs successfully with the --count argument"""
