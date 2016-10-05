@@ -70,6 +70,9 @@ module atm_time_integration
    real (kind=RKIND), dimension(:,:,:), allocatable :: scalar_tend_array
 
    real (kind=RKIND), dimension(:,:,:), allocatable :: scalars_driving ! regional_MPAS addition 
+   real (kind=RKIND), dimension(:,:), allocatable :: ru_driving_tend ! regional_MPAS addition 
+   real (kind=RKIND), dimension(:,:), allocatable :: rt_driving_tend ! regional_MPAS addition 
+   real (kind=RKIND), dimension(:,:), allocatable :: rho_driving_tend ! regional_MPAS addition 
    
    ! Used in compute_solve_diagnostics
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
@@ -589,22 +592,26 @@ MPAS_GPTL_STOP('dyn_tend')
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
-               call mpas_pool_get_subpool(block % structs, 'lbc', lbc)
    
                call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
                call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
+               allocate(ru_driving_tend(nVertLevels,nEdges+1))
+               allocate(rt_driving_tend(nVertLevels,nCells+1))
+               allocate(rho_driving_tend(nVertLevels,nCells+1))
+               ru_driving_tend(1:nVertLevels,1:nEdges+1) =  mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nEdges, 'u', 0.0_RKIND )
+               rt_driving_tend(1:nVertLevels,1:nCells+1) =  mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'theta_m', 0.0_RKIND )
+               rho_driving_tend(1:nVertLevels,1:nCells+1) =  mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'rho_zz', 0.0_RKIND )
+               !  are the theta_m and u tendencies coupled?
+
 !$OMP PARALLEL DO
                do thread=1,block % nThreads
-!                  call atm_bdy_adjust_dynamics_tend( tend, state, diag, mesh, lbc, block % configs, nVertLevels, rk_step, dt, & ! which dt belongs in here - i.e. should we damp to new (end of full timestep) value?
-!                                                     block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-!                                                     block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-!                                                     block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-!                                                     block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-!                                                     block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-!                                                     block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread) )
+                  call atm_bdy_adjust_dynamics_speczone_tend( tend, state, diag, mesh, block % configs, nVertLevels,          &
+                                                              ru_driving_tend, rt_driving_tend, rho_driving_tend,             &
+                                                              block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                                              block % edgeThreadStart(thread), block % edgeThreadEnd(thread) )
                end do
 !$OMP END PARALLEL DO
 
@@ -5605,6 +5612,61 @@ MPAS_GPTL_STOP('mono_exch_2')
    end subroutine atm_zero_gradient_w_bdy_work
 
 !-------------------------------------------------------------------------
+
+   subroutine atm_bdy_adjust_dynamics_speczone_tend( tend, state, diag, mesh, config, nVertLevels,       &
+                                                     ru_driving_tend, rt_driving_tend, rho_driving_tend, &
+                                                     cellStart, cellEnd, edgeStart, edgeEnd )
+
+      implicit none
+
+      !  this routine resets the dry dynamics variables at the end of an rk3 substep for the case
+      !  where the dry dynamics is split from the scalar transport (i.e. where the dry dynamics is
+      !  using a different, usually smaller, timestep.
+      !
+      !  WCS 18 November 2014
+
+      type (mpas_pool_type), intent(in) :: state
+      type (mpas_pool_type), intent(inout) :: tend
+      type (mpas_pool_type), intent(in) :: diag
+      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: config
+      integer, intent(in) :: nVertLevels
+      integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: ru_driving_tend, rt_driving_tend, rho_driving_tend
+      real (kind=RKIND), dimension(:,:), pointer :: tend_ru, tend_rt, tend_rho, tend_rw
+      integer, dimension(:), pointer :: bdyMaskCell, bdyMaskEdge
+
+      integer :: iCell, iEdge, k
+
+      call mpas_pool_get_array(tend, 'u', tend_ru)
+      call mpas_pool_get_array(tend, 'rho_zz', tend_rho)
+      call mpas_pool_get_array(tend, 'theta_m', tend_rt)
+      call mpas_pool_get_array(tend, 'w', tend_rw)
+      call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
+      call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)
+      
+      do iCell = cellStart, cellEnd
+         if(bdyMaskCell(iCell) > nRelaxZone) then
+            do k=1, nVertLevels
+               tend_rho(k,iCell) = rho_driving_tend(k,iCell)
+               tend_rt(k,iCell) = rt_driving_tend(k,iCell)
+               tend_rw(k,iCell) = 0.
+            end do
+         end if
+      end do
+
+      do iEdge = edgeStart, edgeEnd
+         if(bdyMaskEdge(iEdge) > nRelaxZone) then
+            do k=1, nVertLevels
+               tend_ru(k,iEdge) = ru_driving_tend(k,iCell)
+            end do
+         end if
+      end do
+      
+      end subroutine atm_bdy_adjust_dynamics_speczone_tend
+
+      !-------------------------------------------------------------------------
 
    subroutine atm_bdy_adjust_scalars( state, diag, mesh, config, scalars_driving, nVertLevels, dt, dt_rk, &
                                        cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd,    &
