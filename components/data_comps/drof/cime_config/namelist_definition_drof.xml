@@ -56,7 +56,7 @@
     <streamslist drof_mode="DIATREN_IAF_RX1">rof.diatren_iaf_rx1</streamslist>
   </entry>
 
-  <entry id="strm_domdir">
+  <entry id="strm_domdir"  skip_default_entry="TRUE">
     <type>char*4096</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -66,7 +66,7 @@
     <strm_domdir     stream="rof.cplhist">$ROF_DOMAIN_PATH</strm_domdir>
   </entry>
 
-  <entry id="strm_domfil">
+  <entry id="strm_domfil"  skip_default_entry="TRUE">
     <type>char*4096</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -76,7 +76,7 @@
     <strm_domfil     stream="rof.cplhist">$ROF_DOMAIN_FILE</strm_domfil>
   </entry>
 
-  <entry id="strm_domvar">
+  <entry id="strm_domvar"  skip_default_entry="TRUE">
     <type>char*4096</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -97,7 +97,7 @@
     </strm_domvar>
   </entry>
 
-  <entry id="strm_datdir">
+  <entry id="strm_datdir"  skip_default_entry="TRUE">
     <type>char*4096</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -107,7 +107,7 @@
     <strm_datdir     stream="rof.cplhist">$DROF_CPLHIST_DIR</strm_datdir>
   </entry>
 
-  <entry id="strm_datfil">
+  <entry id="strm_datfil"  skip_default_entry="TRUE">
     <type>char*4096</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -117,7 +117,7 @@
     <strm_datfil     stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2xacc.%y.nc</strm_datfil>
   </entry>
 
-  <entry id="strm_datvar">
+  <entry id="strm_datvar"  skip_default_entry="TRUE">
     <type>char*4096</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -134,7 +134,7 @@
     </strm_datvar>
   </entry>
 
-  <entry id="strm_offset">
+  <entry id="strm_offset"  skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -143,7 +143,7 @@
     <strm_offset stream="rof.cplhist">-43200</strm_offset>
   </entry>
 
-  <entry id="strm_year_align">
+  <entry id="strm_year_align"   skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -153,7 +153,7 @@
     <strm_year_align stream="rof.cplhist">$DROF_CPLHIST_YR_ALIGN</strm_year_align>
   </entry>
 
-  <entry id="strm_year_start">
+  <entry id="strm_year_start"   skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -163,7 +163,7 @@
     <strm_year_start stream="rof.cplhist">$DROF_CPLHIST_YR_START</strm_year_start>
   </entry>
 
-  <entry id="strm_year_end">
+  <entry id="strm_year_end"   skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -222,9 +222,10 @@
       be read from this file and that grid will serve as the target grid
       for all input data for this strdata input.
     </description>
+    <domainfile>null</domainfile>
   </entry>
 
-  <entry id="fillalgo">
+  <entry id="fillalgo"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -235,11 +236,11 @@
       nearest neighbor, nearest neighbor in "i" direction, or nearest
       neighbor in "j" direction.
       valid values:  'copy','spval','nn','nnoni','nnonj'
-      default: "nn".
     </description>
+    <fillalgo>nn</fillalgo>
   </entry>
 
-  <entry id="fillmask">
+  <entry id="fillmask"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -247,12 +248,11 @@
     <description>
       plays no role is fill algorithm at the present time.
       valid values: "nomask,srcmask,dstmask,bothmask"
-      default: "nomask"
     </description>
     <fillmask>nomask</fillmask>
   </entry>
 
-  <entry id="fillread">
+  <entry id="fillread"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -261,12 +261,11 @@
       streams.  specifies the weights file to read in instead of computing the
       weights on the fly for the fill operation.  if this is set, fillalgo
       and fillmask are ignored.
-      default: unset
     </description>
-    <fillalgo>nn</fillalgo>
+    <fillread>NOT_SET</fillread>
   </entry>
 
-  <entry id="fillwrite">
+  <entry id="fillwrite"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -275,11 +274,11 @@
       streams.  specifies the weights file to generate after weights are
       computed on the fly for the fill operation.  this allows a user to
       save and reuse a set of weights later.
-      default="unset".
     </description>
+    <fillwrite>NOT_SET</fillwrite>
   </entry>
 
-  <entry id="mapmask">
+  <entry id="mapmask"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -290,12 +289,11 @@
       valid src points, map only to valid destination points, ignore all
       masks, map only from valid src points to valid destination points.
       valid values: srcmask, dstmask, nomask,bothmask
-      default: dstmask
     </description>
     <mapmask>dstmask</mapmask>
   </entry>
 
-  <entry id="mapalgo">
+  <entry id="mapalgo"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -306,12 +304,11 @@
       nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
       in "j" direction, or bilinear.
       valid values: copy,spval,nn,nnoni,nnonj,bilinear
-      default: bilinear
     </description>
     <mapalgo>bilinear</mapalgo>
   </entry>
 
-  <entry id="mapread">
+  <entry id="mapread"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -319,11 +316,12 @@
       array (up to 30 elements) of filenames associated with the array of
       streams.  specifies the weights file to read instead of computing
       weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored.  default="unset".
+      is set, mapalgo and mapmask are ignored.
     </description>
+    <mapread>NOT_SET</mapread>
   </entry>
 
-  <entry id="mapwrite">
+  <entry id="mapwrite"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -332,11 +330,11 @@
       streams.  specifies the weights file to generate after weights are
       computed on the fly for the mapping (interpolation) operation.  this
       allows a user to save and reuse a set of weights later.
-      default="unset".
     </description>
+    <mapwrite>NOT_SET</mapwrite>
   </entry>
 
-  <entry id="tintalgo">
+  <entry id="tintalgo"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -350,7 +348,6 @@
       nearest = Use the nearest time-value
       linear  = Linearly interpolate between the two time-values
       coszen  = Scale according to the cosine of the solar zenith angle (for solar)
-      default="linear".
     </description>
     <tintalgo>linear</tintalgo>
     <tintalgo stream="rof.diatren_ann_rx1">upper</tintalgo>
@@ -358,7 +355,7 @@
     <tintalgo stream="rof.cplhist">lower</tintalgo>
   </entry>
 
-  <entry id="taxmode">
+  <entry id="taxmode"  per_stream_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -374,12 +371,11 @@
       extend = extrapolate before and after the period by using the first or last value.
       cycle  = cycle between the range of data
       limit  = restrict to the period for which the data is valid
-      default="cycle".
     </description>
     <taxmode>cycle</taxmode>
   </entry>
 
-  <entry id="dtlimit">
+  <entry id="dtlimit"  per_stream_entry="TRUE">
     <type>real(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -396,12 +392,27 @@
       time is computed as data is read and any wraparound or cycling is also
       included.  this input helps trap missing data or errors in cycling.
       to turn off trapping, set the value to 1.0e30 or something similar.
-      default=1.5.
     </description>
     <dtlimit>1.5e0</dtlimit>
   </entry>
 
-  <entry id="streams">
+  <entry id="vectors" skip_default_entry="TRUE">
+    <type>char*256</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      list of paired colon delimited field names that should be treated as
+      vectors when carrying out spatial interpolation.  unlike other
+      character arrays in this namelist, this array is completely decoupled
+      from the list of streams.  this is a list of vector pairs that span
+      all input streams where different fields of the vector pair could
+      appear in different streams.
+      for example, vectors = 'u:v','taux:tauy'.
+    </description>
+    <vectors>null</vectors>
+  </entry>
+
+  <entry id="streams" skip_default_entry="TRUE">
     <type>char*256(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -414,7 +425,6 @@
       options are described elsewhere.  year_align, year_first, and
       year_last provide information about the time axis of the file and how
       to relate the input time axis to the model time axis.
-      default="null".
     </description>
   </entry>
 
@@ -432,6 +442,15 @@
       1d   = Vector decomposition
       root = run only on the master task
     </description>
+    <decomp>1d</decomp>
+  </entry>
+
+  <entry id="force_prognostic_true">
+    <type>logical</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <description>If true, prognostic is forced to true.</description>
+    <force_prognostic_true>.false.</force_prognostic_true>
   </entry>
 
   <entry id="restfilm">
@@ -439,6 +458,7 @@
     <category>drof</category>
     <group>drof_nml</group>
     <description>Master restart file name for drof model</description>
+    <restfilm>undefined</restfilm>
   </entry>
 
   <entry id="restfils">
@@ -446,13 +466,7 @@
     <category>drof</category>
     <group>drof_nml</group>
     <description>Stream restart file name for drof model, needed for branch simulations</description>
-  </entry>
-
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>drof</category>
-    <group>drof_nml</group>
-    <description>If TRUE, prognostic is forced to true.  (default=false)</description>
+    <restfils>undefined</restfils>
   </entry>
 
 </namelist_definition>
