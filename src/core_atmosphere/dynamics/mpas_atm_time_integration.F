@@ -2591,6 +2591,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), pointer :: coef_3rd_order
 
+      integer, dimension(:), pointer :: bdyMaskCell    ! regional_MPAS addition
+
       logical :: local_advance_density
 
       if (present(advance_density)) then
@@ -2619,6 +2621,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
       call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend_save)
 
+      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend_save)  ! regional_MPAS addition
+      
       call mpas_pool_get_array(mesh, 'fzm', fnm)
       call mpas_pool_get_array(mesh, 'fzp', fnp)
       call mpas_pool_get_array(mesh, 'rdzw', rdnw)
@@ -2636,6 +2640,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+
+      call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
 
       if (local_advance_density) then
 !      call atm_advance_scalars_work(num_scalars, nCells, nVertLevels, dt, &
@@ -2655,6 +2661,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
              uhAvg, wwAvg, deriv_two, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
              scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
+             bdyMaskCell,  &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
              nCellsSolve, nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
              local_advance_density, scalar_tend, rho_zz_int)
@@ -2676,6 +2683,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
              uhAvg, wwAvg, deriv_two, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
              scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
+             bdyMaskCell,  &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
              nCellsSolve, nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
              local_advance_density)
@@ -2962,6 +2970,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
              uhAvg, wwAvg, deriv_two, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
              scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
+             bdyMaskCell,  &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
              nCellsSolve, nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
              advance_density, scalar_tend, rho_zz_int)
@@ -3020,6 +3029,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1), intent(inout), optional :: scalar_tend
       real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout), optional :: rho_zz_int
       real (kind=RKIND), dimension(:), intent(in) :: invAreaCell
+      integer, dimension(:), intent(in) :: bdyMaskCell  ! regional_MPAS addition
       integer, intent(in) :: nCellsSolve, nEdges
 
       integer :: i, j, iCell, iAdvCell, iEdge, k, iScalar, cell1, cell2
@@ -3128,6 +3138,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       
       do iCell=cellSolveStart,cellSolveEnd
+
+         if(bdyMaskCell(iCell) <= nRelaxZone) then  ! specified zone for regional_MPAS is not updated in this routine
+
 #ifndef DO_PHYSICS
             scalar_tend_save(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
 #endif
@@ -3193,6 +3206,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             end do
          end do
 
+        end if ! specified zone regional_MPAS test
+
       end do
 
    end subroutine atm_advance_scalars_work_new
@@ -3247,6 +3262,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars_old, scalars_new
 
+      integer, dimension(:), pointer :: bdyMaskCell  ! regional_MPAS addition
+
       integer, pointer :: nCellsSolve
 
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw
@@ -3282,6 +3299,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
       call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
 
+      call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)  ! MPAS_regional addition
+
       call atm_advance_scalars_mono_work(block, state, nCells, nEdges, nVertLevels, dt, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
@@ -3290,6 +3309,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    edgesOnCell, edgesOnCell_sign, nEdgesOnCell, fnm, fnp, rdnw, nAdvCellsForEdge, &
                                    advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
                                    wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
+                                   bdyMaskCell, &
                                    advance_density, rho_zz_int)
 
    end subroutine atm_advance_scalars_mono
@@ -3303,6 +3323,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    edgesOnCell, edgesOnCell_sign, nEdgesOnCell, fnm, fnp, rdnw, nAdvCellsForEdge, &
                                    advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
                                    wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
+                                   bdyMaskCell, &
                                    advance_density, rho_zz_int)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
@@ -3361,6 +3382,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1), intent(in) :: wwAvg
       real (kind=RKIND), dimension(:), intent(in) :: dvEdge, invAreaCell
       integer, dimension(:,:), intent(in) :: cellsOnEdge, cellsOnCell, edgesOnCell
+      integer, dimension(:) :: bdyMaskCell
       real (kind=RKIND), dimension(:,:), intent(in) :: edgesOnCell_sign
 
       integer, dimension(:,:), intent(in) :: advCellsForEdge
@@ -3870,9 +3892,11 @@ MPAS_GPTL_STOP('mono_exch_2')
 !$OMP BARRIER
 
          do iCell=cellStart,cellEnd
-            do k=1, nVertLevels
-               scalars_new(iScalar,k,iCell) = max(0.0_RKIND,scalar_new(k,iCell))
-            end do
+            if(bdyMaskCell(iCell) <= nSpecZone) then ! regional_MPAS does spec zone update after transport.
+               do k=1, nVertLevels
+                  scalars_new(iScalar,k,iCell) = max(0.0_RKIND,scalar_new(k,iCell))
+               end do
+            end if
          end do
 
       end do !  loop over scalars
