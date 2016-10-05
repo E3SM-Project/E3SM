@@ -58,8 +58,7 @@ class NamelistGenerator(object):
 
     """Utility class for generating namelists for a given component."""
 
-    _streams_variables = ("mapalgo", "mapmask", "tintalgo", "taxmode",
-                          "fillalgo", "fillmask", "dtlimit")
+    _streams_variables = []
 
     def __init__(self, case, infiles, #pylint:disable=too-many-arguments
                  definition_files, defaults_files, config):
@@ -77,19 +76,22 @@ class NamelistGenerator(object):
         self._din_loc_root = case.get_value('DIN_LOC_ROOT')
         self._glc_nec = case.get_value('GLC_NEC')
 
-        # Start out with empty streams namelists.
-        self._streams_namelists = {"streams": []}
-        for variable in self._streams_variables:
-            self._streams_namelists[variable] = []
-
-        # Create definition and defaults objects.
+        # Create definition object.
         self._definition = NamelistDefinition(definition_files[0])
         for file_ in definition_files[1:]:
             self._definition.add(file_)
 
+        # Create default object.
         self._defaults = NamelistDefaults(defaults_files[0], attributes=config)
         for file_ in defaults_files[1:]:
             self._defaults.add(file_)
+
+        # Determine array of _stream_variables from definition object
+        # This is only applicable to data models
+        self._streams_namelists = {"streams": []}
+        self._streams_variables = self._definition.get_per_stream_entries()
+        for variable in self._streams_variables:
+            self._streams_namelists[variable] = []
 
         # Create namelist object.
         self._namelist = Namelist()

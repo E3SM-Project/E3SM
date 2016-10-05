@@ -54,6 +54,7 @@
       <value compset="HIST_">trans_1850-2000</value>
       <value compset="_DICE.*_POP2">none</value>
       <value compset="_DLND.*_DICE.*_DOCN">none</value>
+      <value compset="_SLND.*_DICE.*_DOCN">none</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

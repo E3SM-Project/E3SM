@@ -117,11 +117,14 @@ def _create_namelists(case, confdir, inst_string, infiles, definition_file):
     # For each stream, create stream text file and update  
     # shr_strdata_nml group and input data list.
     #----------------------------------------------------
+    print "DEBUG: dlnd streams are ",streams
     for stream in streams:
 
         # Ignore null values.
         if stream is None or stream in ("NULL", ""):
             continue
+
+        print "DEBUG: stream is ",stream
 
         inst_stream = stream + inst_string
         logger.info("DLND stream is %s", inst_stream)
@@ -136,22 +139,29 @@ def _create_namelists(case, confdir, inst_string, infiles, definition_file):
             nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
 
     #----------------------------------------------------
-    # Create dlnd_nml namelists group
+    # Create `shr_strdata_nml` namelist group.
     #----------------------------------------------------
+    # set per-stream variables
     nmlgen.create_shr_strdata_nml()
-    nmlgen.add_default("decomp", "1d")
-    nmlgen.add_default("force_prognostic_true", ".false.")
-    nmlgen.add_default("restfilm", "undefined")
-    nmlgen.add_default("restfils", "undefined")
+
+    # set variables that are not per-stream
     if lnd_domain_file != "UNSET":
         full_domain_path = os.path.join(lnd_domain_path, lnd_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
+    nmlgen.add_default("vectors")
+
+    #----------------------------------------------------
+    # Create `dlnd_nml` namelist group.
+    #----------------------------------------------------
+    entries = nmlgen.get_definition_entries()
+    for entry in entries:
+        nmlgen.add_default(entry)
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
     #----------------------------------------------------
     namelist_file = os.path.join(confdir, "dlnd_in")
-    nmlgen.write_output_file(namelist_file, data_list_path)
+    nmlgen.write_output_file(namelist_file, data_list_path, groups=['dlnd_nml','shr_strdata_nml'])
 
 ###############################################################################
 def _main_func():

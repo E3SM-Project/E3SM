@@ -683,7 +683,6 @@
     preserving the total "u,v,w" speed and the angle of the (u,v) vector.
     the _diag options just add diagnotics to the log file about the vector
     mapping.
-    default: npfix
   </description>
   <vect_map>$VECT_MAP</vect_map>
 </entry>
@@ -742,7 +741,7 @@
   <valid_values>CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
   <unmodifiable_via_user_nl>must be set via xml variable CPL_SEQ_OPTION</unmodifiable_via_user_nl>
   <description>
-    Set the coupler sequencing.  See CPL_SEQ_OPTION in env_run. (default: CESM1_MOD)
+    Set the coupler sequencing.  See CPL_SEQ_OPTION in env_run. 
   </description>
   <cpl_seq_option>$CPL_SEQ_OPTION</cpl_seq_option>
 </entry>
@@ -764,7 +763,6 @@
   <unmodifiable_via_user_nl>must be set via xml variable BUDGETS</unmodifiable_via_user_nl>
   <description>
     logical that turns on diagnostic budgets, false means budgets will never be written
-    default: false
   </description>
   <do_budgets>$BUDGETS</do_budgets>
 </entry>
@@ -793,7 +791,7 @@
     3=+detailed atm budgets
     default: 0
   </description>
-  <budget_inst >0</budget_inst>
+  <budget_inst>0</budget_inst>
 </entry>
 
 <entry id="budget_daily">
@@ -844,7 +842,7 @@
     3=+detailed atm budgets
     default: 1
   </description>
-  <budget_ann  >1</budget_ann>
+  <budget_ann>1</budget_ann>
 </entry>
 
 <entry id="budget_ltann">
@@ -891,7 +889,7 @@
     turns on coupler history stream for instantaneous atm to coupler fields.
     default: false
   </description>
-  <histaux_a2x    >.false.</histaux_a2x    >
+  <histaux_a2x>.false.</histaux_a2x>
 </entry>
 
 <entry id="histaux_a2x3hr">
@@ -902,7 +900,7 @@
     turns on coupler history stream for 3-hour average atm to coupler fields.
     default: false
   </description>
-  <histaux_a2x3hr >.false.</histaux_a2x3hr >
+  <histaux_a2x3hr>.false.</histaux_a2x3hr>
 </entry>
 
 <entry id="histaux_a2x3hrp">
@@ -935,7 +933,7 @@
     turns on coupler history stream for instantaneous land to coupler fields.
     default: false
   </description>
-  <histaux_l2x    >.false.</histaux_l2x    >
+  <histaux_l2x>.false.</histaux_l2x>
 </entry>
 
 <entry id="histaux_r2x">
@@ -946,7 +944,7 @@
     turns on coupler history stream for instantaneous runoff to coupler fields.
     default: false
   </description>
-  <histaux_r2x    >.false.</histaux_r2x    >
+  <histaux_r2x>.false.</histaux_r2x>
 </entry>
 
 <entry id="histaux_l2x1yr">
@@ -957,7 +955,7 @@
     turns on coupler history stream for annual sno to coupler fields.
     default: false
   </description>
-  <histaux_l2x1yr >.false.</histaux_l2x1yr >
+  <histaux_l2x1yr>.false.</histaux_l2x1yr>
 </entry>
 
 <entry id="histavg_atm">
@@ -979,7 +977,7 @@
     writes lnd fields in coupler average history files.
     default: true
   </description>
-  <histavg_lnd    >.true.</histavg_lnd    >
+  <histavg_lnd>.true.</histavg_lnd>
 </entry>
 
 <entry id="histavg_ocn">
@@ -990,7 +988,7 @@
     writes ocn fields in coupler average history files.
     default: true
   </description>
-  <histavg_ocn    >.true.</histavg_ocn    >
+  <histavg_ocn>.true.</histavg_ocn>
 </entry>
 
 <entry id="histavg_ice">
@@ -1001,7 +999,7 @@
     writes ice fields in coupler average history files.
     default: true
   </description>
-  <histavg_ice    >.true.</histavg_ice    >
+  <histavg_ice>.true.</histavg_ice>
 </entry>
 
 <entry id="histavg_rof">
@@ -1012,7 +1010,7 @@
     writes rof fields in coupler average history files.
     default: true
   </description>
-  <histavg_rof    >.true.</histavg_rof    >
+  <histavg_rof>.true.</histavg_rof>
 </entry>
 
 <entry id="histavg_glc">
@@ -1023,7 +1021,7 @@
     writes glc fields in coupler average history files.
     default: true
   </description>
-  <histavg_glc    >.true.</histavg_glc    >
+  <histavg_glc>.true.</histavg_glc>
 </entry>
 
 <entry id="histavg_wav">
@@ -1034,7 +1032,7 @@
     writes wav fields in coupler average history files.
     default: true
   </description>
-  <histavg_wav    >.true.</histavg_wav    >
+  <histavg_wav>.true.</histavg_wav>
 </entry>
 
 <entry id="histavg_xao">
@@ -1045,7 +1043,7 @@
     writes xao fields in coupler average history files.
     default: true
   </description>
-  <histavg_xao    >.true.</histavg_xao    >
+  <histavg_xao>.true.</histavg_xao>   
 </entry>
 
 <entry id="drv_threading">
@@ -1487,7 +1485,7 @@
     Driver restart filename.
     (NOTE: Normally THIS IS NOT USED -- Set with RUN_REFCASE and RUN_REFDATE)
   </description>
-  <restart_file>''</restart_file>
+  <restart_file>str_undefined</restart_file>
 </entry>
 
 <entry id="restart_option">
@@ -1741,7 +1739,7 @@
   <description>
     Ending suffix "postfix" for output log files.
   </description>
-  <logfilepostfix>''</logfilepostfix>
+  <logfilepostfix>.log</logfilepostfix>
 </entry>
 
 <entry id="outpathroot">
@@ -1752,7 +1750,7 @@
   <description>
     Root directory for driver output files
   </description>
-  <outpathroot>''</outpathroot>
+  <outpathroot>./</outpathroot>
 </entry>
 
 <entry id="max_cplstep_time">
@@ -3485,7 +3483,7 @@
   <wav2ocn_smaptype bfbflag="on">X</wav2ocn_smaptype>
 </entry>
 
-  <entry id="drv_flds_in_files">
+  <entry id="drv_flds_in_files" skip_default_entry="TRUE">
     <type>char*256(10)</type>
     <category>drv_physics</category>
     <group>default_settings</group>
