@@ -25,7 +25,8 @@ import CIME.test_utils
 logger = logging.getLogger(__name__)
 
 # Phases managed by TestScheduler
-PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
+TEST_START = "INIT" # Special pseudo-phase just for test_scheduler bookkeeping
+PHASES = [TEST_START, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
           NAMELIST_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
 
@@ -135,7 +136,7 @@ class TestScheduler(object):
         # name -> (phase, status, has_namelist_problem)
         self._tests = {}
         for test_name in test_names:
-            self._tests[test_name] = (INITIAL_PHASE, TEST_PASS_STATUS, False)
+            self._tests[test_name] = (TEST_START, TEST_PASS_STATUS, False)
 
         # Oversubscribe by 1/4
         if proc_pool is None:
@@ -148,17 +149,13 @@ class TestScheduler(object):
 
         # Setup phases
         self._phases = list(PHASES)
-        # These will mark the -no phase as PENDING in TestStatus
         if self._no_setup:
-            i = self._phases.index(SETUP_PHASE)
-            self._phases.insert(i, INCOMPLETE_PHASE)
-        elif self._no_build:
-            i = self._phases.index(SHAREDLIB_BUILD_PHASE)
-            self._phases.insert(i, INCOMPLETE_PHASE)
+            self._phases.remove(SETUP_PHASE)
+        if self._no_build:
+            self._phases.remove(SHAREDLIB_BUILD_PHASE)
             self._phases.remove(MODEL_BUILD_PHASE)
-        elif self._no_run:
-            i = self._phases.index(RUN_PHASE)
-            self._phases.insert(i, INCOMPLETE_PHASE)
+        if self._no_run:
+            self._phases.remove(RUN_PHASE)
         if not self._baseline_cmp_name and not self._baseline_gen_name:
             self._phases.remove(NAMELIST_PHASE)
 
@@ -560,7 +557,6 @@ class TestScheduler(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
-        self._update_test_status_file(test, RUN_PHASE, TEST_PENDING_STATUS)
         if self._no_batch:
             cmd = "./case.submit --no-batch"
         else:
@@ -682,11 +678,6 @@ class TestScheduler(object):
                         test_phase, test_status, _ = self._get_test_data(test)
                         expect(test_status != TEST_PENDING_STATUS, test)
                         next_phase = self._phases[self._phases.index(test_phase) + 1]
-                        # indicates create_test was run with a no-phase option
-                        if next_phase is None:
-                            self._update_test_status_file(test, self._phases[self._phases.index(test_phase)+2], TEST_PENDING_STATUS)
-                            work_to_do = False
-                            break
                         procs_needed = self._get_procs_needed(test, next_phase, threads_in_flight)
 
                         if procs_needed <= self._procs_avail:

@@ -551,7 +551,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
         for idx, phase in enumerate(ct._phases):
             for test in ct._tests:
-                if (phase == CIME.test_scheduler.INITIAL_PHASE):
+                if (phase == CIME.test_scheduler.TEST_START):
                     continue
                 elif (phase == CIME.test_scheduler.MODEL_BUILD_PHASE):
                     ct._update_test_status(test, phase, TEST_PENDING_STATUS)
