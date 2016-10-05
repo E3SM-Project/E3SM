@@ -136,11 +136,11 @@
   <type>integer</type>
   <category>seq_flds</category>
   <group>seq_cplflds_inparm</group>
+  <unmodifiable_via_user_nl>must be set via xml variable GLC_NEC</unmodifiable_via_user_nl>
   <description>
-    Number of cism elevation classes.
-    Set by the xml variable GLC_NEC in env_run.xml
+    Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
   </description>
-  <glc_nec>0</glc_nec>
+  <glc_nec>$GLC_NEC</glc_nec>
 </entry>
 
 <entry id="ice_ncat">
@@ -149,8 +149,7 @@
   <group>seq_cplflds_inparm</group>
   <unmodifiable_via_user_nl>must be set via xml variable ICE_NCAT</unmodifiable_via_user_nl>
   <description>
-    Number of sea ice thickness categories.
-    Set by the xml variable ICE_NCAT in env_build.xml
+    Number of sea ice thickness categories. Set by the xml variable ICE_NCAT in env_build.xml
   </description>
   <ice_ncat>$ICE_NCAT</ice_ncat>
 </entry>
@@ -392,8 +391,7 @@
     year orb_iyear_align has the equivalent orbital year of orb_iyear.
     "fixed_parameters" uses the orb_eccen, orb_mvelp, and orb_obliq to set
     the orbital parameters which then remain constant through the model
-    integration.  set by ORBITAL_MODE in env_run.xml.  [fixed_year,
-    variable_year, fixed_parameters]  (default: 'fixed_year'.)
+    integration. [fixed_year, variable_year, fixed_parameters]  (default: 'fixed_year'.)
   </description>
   <orb_mode>fixed_year</orb_mode>
 </entry>
@@ -741,7 +739,7 @@
   <valid_values>CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
   <unmodifiable_via_user_nl>must be set via xml variable CPL_SEQ_OPTION</unmodifiable_via_user_nl>
   <description>
-    Set the coupler sequencing.  See CPL_SEQ_OPTION in env_run. 
+    Set the coupler sequencing.
   </description>
   <cpl_seq_option>$CPL_SEQ_OPTION</cpl_seq_option>
 </entry>
@@ -1171,7 +1169,7 @@
   <group>seq_infodata_inparm</group>
   <unmodifiable_via_user_nl>must be set via xml variable PTS_LAT</unmodifiable_via_user_nl>
   <description>
-    grid point latitude associated with single column mode. set by PTS_LAT in env_run.xml.
+    grid point latitude associated with single column mode. 
     if set to -999, ignore this value
   </description>
   <scmlat>-999.</scmlat>
@@ -1210,7 +1208,7 @@
     Tolerance for relative error
     default: -1.0e-8
   </description>
-  <reprosum_diffmax>1.0e-8</reprosum_diffmax>
+  <reprosum_diffmax>-1.0e-8</reprosum_diffmax>
 </entry>
 
 <entry id="reprosum_recompute">
@@ -1395,13 +1393,13 @@
   <type>char*16</type>
   <category>time</category>
   <group>seq_timemgr_inparm</group>
+  <unmodifiable_via_user_nl>must be set via xml variable CALENDAR</unmodifiable_via_user_nl>
   <valid_values>NO_LEAP,GREGORIAN</valid_values>
   <description>
     calendar in use.  [NO_LEAP, GREOGORIAN].
-    set by CALENDAR in env_run.xml
-    default: "NO_LEAP".
+    set by CALENDAR in env_build.xml 
   </description>
-  <calendar>NO_LEAP</calendar>
+  <calendar>$CALENDAR</calendar>
 </entry>
 
 <entry id="start_ymd">
