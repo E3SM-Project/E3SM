@@ -2,9 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition.xsl"?>
 
-<namelist_definition>
-
-  <version>2.0</version>
+<namelist_definition version="2.0">
 
     <!-- Each namelist variable is defined in an <entry> element.  The
      content of the element is the documentation of how the variable is
@@ -56,15 +54,17 @@
     <description>
       stride of tasks in pio used generically, component based value takes precedent.
     </description>
-    <pio_stride component="cpl">$CPL_PIO_STRIDE</pio_stride>
-    <pio_stride component="atm">$ATM_PIO_STRIDE</pio_stride>
-    <pio_stride component="lnd">$LND_PIO_STRIDE</pio_stride>
-    <pio_stride component="ocn">$OCN_PIO_STRIDE</pio_stride>
-    <pio_stride component="ice">$ICE_PIO_STRIDE</pio_stride>
-    <pio_stride component="rof">$ROF_PIO_STRIDE</pio_stride>
-    <pio_stride component="glc">$GLC_PIO_STRIDE</pio_stride>
-    <pio_stride component="wav">$WAV_PIO_STRIDE</pio_stride>
-    <pio_stride component="esp">-99</pio_stride>
+    <values>
+    <value component="cpl">$CPL_PIO_STRIDE</value>
+    <value component="atm">$ATM_PIO_STRIDE</value>
+    <value component="lnd">$LND_PIO_STRIDE</value>
+    <value component="ocn">$OCN_PIO_STRIDE</value>
+    <value component="ice">$ICE_PIO_STRIDE</value>
+    <value component="rof">$ROF_PIO_STRIDE</value>
+    <value component="glc">$GLC_PIO_STRIDE</value>
+    <value component="wav">$WAV_PIO_STRIDE</value>
+    <value component="esp">-99</value>
+    </values>
   </entry>
 
   <entry id="pio_root">
@@ -77,15 +77,17 @@
     <description>
       io task root in pio used generically, component based value takes precedent.
     </description>
-    <pio_root component="cpl">$CPL_PIO_ROOT</pio_root>
-    <pio_root component="atm">$ATM_PIO_ROOT</pio_root>
-    <pio_root component="lnd">$LND_PIO_ROOT</pio_root>
-    <pio_root component="ocn">$OCN_PIO_ROOT</pio_root>
-    <pio_root component="ice">$ICE_PIO_ROOT</pio_root>
-    <pio_root component="rof">$ROF_PIO_ROOT</pio_root>
-    <pio_root component="glc">$GLC_PIO_ROOT</pio_root>
-    <pio_root component="wav">$WAV_PIO_ROOT</pio_root>
-    <pio_root component="esp">-99</pio_root>
+    <values>
+    <value component="cpl">$CPL_PIO_ROOT</value>
+    <value component="atm">$ATM_PIO_ROOT</value>
+    <value component="lnd">$LND_PIO_ROOT</value>
+    <value component="ocn">$OCN_PIO_ROOT</value>
+    <value component="ice">$ICE_PIO_ROOT</value>
+    <value component="rof">$ROF_PIO_ROOT</value>
+    <value component="glc">$GLC_PIO_ROOT</value>
+    <value component="wav">$WAV_PIO_ROOT</value>
+    <value component="esp">-99</value>
+    </values>
   </entry>
 
   <entry id="pio_rearranger">
@@ -99,15 +101,17 @@
     <description>
       Rearranger method for pio 1=box, 2=subset.
     </description>
-    <pio_rearranger component="cpl">$CPL_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="atm">$ATM_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="lnd">$LND_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="ocn">$OCN_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="ice">$ICE_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="rof">$ROF_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="glc">$GLC_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="wav">$WAV_PIO_REARRANGER</pio_rearranger>
-    <pio_rearranger component="esp">-99</pio_rearranger>
+    <values>
+    <value component="cpl">$CPL_PIO_REARRANGER</value>
+    <value component="atm">$ATM_PIO_REARRANGER</value>
+    <value component="lnd">$LND_PIO_REARRANGER</value>
+    <value component="ocn">$OCN_PIO_REARRANGER</value>
+    <value component="ice">$ICE_PIO_REARRANGER</value>
+    <value component="rof">$ROF_PIO_REARRANGER</value>
+    <value component="glc">$GLC_PIO_REARRANGER</value>
+    <value component="wav">$WAV_PIO_REARRANGER</value>
+    <value component="esp">-99</value>
+    </values>
   </entry>
 
   <entry id="pio_numiotasks">
@@ -120,15 +124,17 @@
     <description>
       number of io tasks in pio used generically, component based value takes precedent.
     </description>
-    <pio_numiotasks component="cpl">$CPL_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="atm">$ATM_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="lnd">$LND_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="ocn">$OCN_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="ice">$ICE_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="rof">$ROF_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="glc">$GLC_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="wav">$WAV_PIO_NUMTASKS</pio_numiotasks>
-    <pio_numiotasks component="esp">-99</pio_numiotasks>
+    <values>
+    <value component="cpl">$CPL_PIO_NUMTASKS</value>
+    <value component="atm">$ATM_PIO_NUMTASKS</value>
+    <value component="lnd">$LND_PIO_NUMTASKS</value>
+    <value component="ocn">$OCN_PIO_NUMTASKS</value>
+    <value component="ice">$ICE_PIO_NUMTASKS</value>
+    <value component="rof">$ROF_PIO_NUMTASKS</value>
+    <value component="glc">$GLC_PIO_NUMTASKS</value>
+    <value component="wav">$WAV_PIO_NUMTASKS</value>
+    <value component="esp">-99</value>
+    </values>
   </entry>
 
   <entry id="pio_typename">
@@ -143,15 +149,17 @@
       io type in pio used generically, component based value takes precedent.
       valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
     </description>
-    <pio_typename component="cpl">$CPL_PIO_TYPENAME</pio_typename>
-    <pio_typename component="atm">$ATM_PIO_TYPENAME</pio_typename>
-    <pio_typename component="lnd">$LND_PIO_TYPENAME</pio_typename>
-    <pio_typename component="ocn">$OCN_PIO_TYPENAME</pio_typename>
-    <pio_typename component="ice">$ICE_PIO_TYPENAME</pio_typename>
-    <pio_typename component="rof">$ROF_PIO_TYPENAME</pio_typename>
-    <pio_typename component="glc">$GLC_PIO_TYPENAME</pio_typename>
-    <pio_typename component="wav">$WAV_PIO_TYPENAME</pio_typename>
-    <pio_typename component="esp">nothing</pio_typename>
+    <values>
+    <value component="cpl">$CPL_PIO_TYPENAME</value>
+    <value component="atm">$ATM_PIO_TYPENAME</value>
+    <value component="lnd">$LND_PIO_TYPENAME</value>
+    <value component="ocn">$OCN_PIO_TYPENAME</value>
+    <value component="ice">$ICE_PIO_TYPENAME</value>
+    <value component="rof">$ROF_PIO_TYPENAME</value>
+    <value component="glc">$GLC_PIO_TYPENAME</value>
+    <value component="wav">$WAV_PIO_TYPENAME</value>
+    <value component="esp">nothing</value>
+    </values>
   </entry>
 
   <!-- =========================== -->
@@ -163,7 +171,9 @@
     <category>modelio</category>
     <group>modelio</group>
     <description>input directory (no longer needed)</description>
-    <diri>unset</diri>
+    <values>
+      <value>UNSET</value>
+    </values>
   </entry>
 
   <entry id="diro">
@@ -171,7 +181,9 @@
     <category>modelio</category>
     <group>modelio</group>
     <description>directory for output log files</description>
-    <diro>unset</diro>
+    <values>
+      <value>UNSET</value>
+    </values>
   </entry>
 
   <entry id="logfile">
@@ -179,7 +191,9 @@
     <category>modelio</category>
     <group>modelio</group>
     <description>name of component output log file</description>
-    <logfile>unset</logfile>
+    <values>
+    <value>UNSET</value>
+    </values>
   </entry>
 
 </namelist_definition>
