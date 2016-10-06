@@ -735,7 +735,7 @@
 !pw++
    ! forcing use of alltoall protocol until additional tuning 
    ! capabilities are added to calling routines
-   usealltoall=.true.
+!pw   usealltoall=.true.
 !pw--
 
    useswapm=.false.
@@ -765,7 +765,7 @@
     ! forcing use of swapm variant of alltoall protocol 
     ! until additional tuning capabilities are added to 
     ! calling routines
-    useswapm=.true.
+!pw    useswapm=.true.
 !pw--
    endif
 
