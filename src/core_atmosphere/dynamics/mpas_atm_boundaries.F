@@ -68,11 +68,15 @@ module mpas_atm_boundaries
         real (kind=RKIND) :: dt
 
         real (kind=RKIND), dimension(:,:), pointer :: u
+        real (kind=RKIND), dimension(:,:), pointer :: ru
+        real (kind=RKIND), dimension(:,:), pointer :: rho_edge
         real (kind=RKIND), dimension(:,:), pointer :: w
         real (kind=RKIND), dimension(:,:), pointer :: theta_m
         real (kind=RKIND), dimension(:,:), pointer :: rho_zz
         real (kind=RKIND), dimension(:,:,:), pointer :: scalars
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_u
+        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_ru
+        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_edge
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_w
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_theta_m
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_zz
@@ -99,6 +103,14 @@ module mpas_atm_boundaries
         end if
         call mpas_set_time(currTime, dateTimeString=trim(read_time))
 
+        !
+        ! Compute any derived fields from those that were read from the lbc_in stream
+        !
+        call mpas_pool_get_array(lbc, 'lbc_u', u, 2)
+        call mpas_pool_get_array(lbc, 'lbc_ru', ru, 2)
+        call mpas_pool_get_array(lbc, 'lbc_rho_edge', rho_edge, 2)
+        ru(:,:) = u(:,:) * rho_edge(:,:)
+
         if (.not. firstCall) then
             lbc_interval = currTime - LBC_intv_end
             call mpas_get_timeInterval(interval=lbc_interval, DD=dd_intv, S=s_intv, S_n=sn_intv, S_d=sd_intv, ierr=ierr)
@@ -106,19 +118,26 @@ module mpas_atm_boundaries
                  + (real(sn_intv, kind=RKIND) / real(sd_intv, kind=RKIND))
 
             call mpas_pool_get_array(lbc, 'lbc_u', u, 2)
+            call mpas_pool_get_array(lbc, 'lbc_ru', ru, 2)
+            call mpas_pool_get_array(lbc, 'lbc_rho_edge', rho_edge, 2)
             call mpas_pool_get_array(lbc, 'lbc_w', w, 2)
             call mpas_pool_get_array(lbc, 'lbc_theta_m', theta_m, 2)
             call mpas_pool_get_array(lbc, 'lbc_rho_zz', rho_zz, 2)
             call mpas_pool_get_array(lbc, 'lbc_scalars', scalars, 2)
 
             call mpas_pool_get_array(lbc, 'lbc_u', lbc_tend_u, 1)
+            call mpas_pool_get_array(lbc, 'lbc_ru', lbc_tend_ru, 1)
+            call mpas_pool_get_array(lbc, 'lbc_rho_edge', lbc_tend_rho_edge, 1)
             call mpas_pool_get_array(lbc, 'lbc_w', lbc_tend_w, 1)
             call mpas_pool_get_array(lbc, 'lbc_theta_m', lbc_tend_theta_m, 1)
             call mpas_pool_get_array(lbc, 'lbc_rho_zz', lbc_tend_rho_zz, 1)
             call mpas_pool_get_array(lbc, 'lbc_scalars', lbc_tend_scalars, 1)
 
+
             dt = 1.0_RKIND / dt
             lbc_tend_u(:,:) = (u(:,:) - lbc_tend_u(:,:)) * dt
+            lbc_tend_ru(:,:) = (ru(:,:) - lbc_tend_ru(:,:)) * dt
+            lbc_tend_rho_edge(:,:) = (rho_edge(:,:) - lbc_tend_rho_edge(:,:)) * dt
             lbc_tend_w(:,:) = (w(:,:) - lbc_tend_w(:,:)) * dt
             lbc_tend_theta_m(:,:) = (theta_m(:,:) - lbc_tend_theta_m(:,:)) * dt
             lbc_tend_rho_zz(:,:) = (rho_zz(:,:) - lbc_tend_rho_zz(:,:)) * dt
