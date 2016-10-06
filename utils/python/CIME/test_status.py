@@ -265,7 +265,11 @@ class TestStatus(object):
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP', ignore_namelists=True)
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A COMPARE_1\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'FAIL'
+        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'DIFF'
+        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD', wait_for_run=True)
@@ -300,7 +304,7 @@ class TestStatus(object):
                     if (rv == TEST_PASS_STATUS):
                         rv = NAMELIST_FAIL_STATUS
 
-                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase.startswith(COMPARE_PHASE)):
+                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == "COMPARE_baseline"):
                     rv = TEST_DIFF_STATUS
 
                 else:

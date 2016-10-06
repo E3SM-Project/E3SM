@@ -307,6 +307,15 @@ LII    CLM initial condition interpolation test
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="TESTTESTDIFF">
+    <DESC>For testing infra only. Simulates internal test diff (non baseline)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="TESTRUNSLOWPASS">
     <DESC>For testing infra only. After 5 minutes of sleep, pass run step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
