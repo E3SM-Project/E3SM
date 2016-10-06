@@ -1978,6 +1978,9 @@
                 <var name="lbc_theta_m" type="real" dimensions="nVertLevels nCells Time" units="K s^{-2}"
                      description="Lateral boundary tendency of theta_m"/>
 
+                <var name="lbc_rtheta_m" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3} s^{-2}"
+                     description="Lateral boundary tendency of rho_zz-coupled theta_m"/>
+
                 <var_array name="lbc_scalars" type="real" dimensions="nVertLevels nCells Time">
                         <var name="lbc_qv" name_in_code="qv" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Lateral boundary tendency of water vapor mixing ratio"/>
