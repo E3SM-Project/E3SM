@@ -35,7 +35,7 @@
   <!-- ========================================================================================  -->
 
   <entry id="streamslist">
-    <type>char*1024(100)</type>
+    <type>char(100)</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>List of streams used for the given dice_mode.</description>
@@ -49,7 +49,7 @@
   </entry>
 
   <entry id="strm_grid_file" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>derived</group>
     <description>does not appear in namelist - only used to set domain and data information</description>
@@ -60,7 +60,7 @@
   </entry>
 
   <entry id="strm_data_file" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>derived</group>
     <description>does not appear in namelist - only used to set domain and data information</description>
@@ -71,7 +71,7 @@
   </entry>
 
   <entry id="strm_domdir" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain file directory.</description>
@@ -83,7 +83,7 @@
   </entry>
 
   <entry id="strm_domfil" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain file path(s).</description>
@@ -95,7 +95,7 @@
   </entry>
 
   <entry id="strm_domvar" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain variable name(s).</description>
@@ -116,7 +116,7 @@
   </entry>
 
   <entry id="strm_datdir" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data file directory.</description>
@@ -128,7 +128,7 @@
   </entry>
 
   <entry id="strm_datfil" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data file path(s).</description>
@@ -203,7 +203,7 @@
   </entry>
 
   <entry id="strm_datvar" skip_default_entry="TRUE">
-    <type>char*4096</type>
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data variable name(s).</description>
@@ -278,7 +278,7 @@
   <!-- =========================================  -->
 
   <entry id="datamode">
-    <type>char*256</type>
+    <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>NULL,SSTDATA,COPYALL</valid_values>
@@ -320,7 +320,7 @@
   </entry>
 
   <entry id="domainfile">
-    <type>char*256</type>
+    <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
     <group>shr_strdata_nml</group>
@@ -337,7 +337,7 @@
   </entry>
 
   <entry id="fillalgo" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
@@ -354,7 +354,7 @@
   </entry>
 
   <entry id="fillmask" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
@@ -368,7 +368,7 @@
   </entry>
 
   <entry id="fillread" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
@@ -383,7 +383,7 @@
   </entry>
 
   <entry id="fillwrite" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
@@ -398,7 +398,7 @@
   </entry>
 
   <entry id="mapmask" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
@@ -415,7 +415,7 @@
   </entry>
 
   <entry id="mapalgo" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
@@ -432,7 +432,7 @@
   </entry>
 
   <entry id="mapread" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
@@ -447,7 +447,7 @@
   </entry>
 
   <entry id="mapwrite" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
@@ -462,7 +462,7 @@
   </entry>
 
   <entry id="tintalgo" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
@@ -482,7 +482,7 @@
   </entry>
 
   <entry id="taxmode" per_stream_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>extend,cycle,limit</valid_values>
@@ -527,7 +527,7 @@
   </entry>
 
   <entry id="vectors" skip_default_entry="TRUE">
-    <type>char*256</type>
+    <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
@@ -545,7 +545,7 @@
   </entry>
 
   <entry id="streams" skip_default_entry="TRUE">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
@@ -569,7 +569,7 @@
   <!-- =========================================  -->
 
   <entry id="decomp">
-    <type>char*4</type>
+    <type>char</type>
     <category>dice</category>
     <group>dice_nml</group>
     <valid_values>1d,root</valid_values>
@@ -648,7 +648,7 @@
   </entry>
 
   <entry id="restfilm">
-    <type>char*256</type>
+    <type>char</type>
     <category>dice</category>
     <group>dice_nml</group>
     <description>
@@ -662,7 +662,7 @@
   </entry>
 
   <entry id="restfils">
-    <type>char*256</type>
+    <type>char</type>
     <category>dice</category>
     <group>dice_nml</group>
     <description>
