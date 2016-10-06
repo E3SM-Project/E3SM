@@ -15,7 +15,7 @@ module initVerticalMod
   use clm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
   use clm_varpar     , only : toplev_equalspace, nlev_equalspace
   use clm_varpar     , only : nlevsoi, nlevsoifl, nlevurb 
-  use clm_varctl     , only : fsurdat, iulog
+  use clm_varctl     , only : fsurdat, iulog, do_varsoil
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
   use clm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
@@ -571,13 +571,14 @@ contains
       ! Read in depth to bedrock
       !-----------------------------------------------
 
-      allocate(dtb(bounds%begg:bounds%endg))
-      call ncd_io(ncid=ncid, varname='DTB', flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
-      if (.not. readvar) then
-         call shr_sys_abort(' ERROR: DTB NOT on surfdata file'//&
+      if(do_varsoil) then
+        allocate(dtb(bounds%begg:bounds%endg))
+        call ncd_io(ncid=ncid, varname='DTB', flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
+        if (.not. readvar) then
+           call shr_sys_abort(' ERROR: DTB NOT on surfdata file'//&
               errMsg(__FILE__, __LINE__)) 
-      end if
-      do c = begc,endc
+        end if
+        do c = begc,endc
          g = col%gridcell(c)
          ! check for near zero DTBs, set minimum value
 	 beddep = max(dtb(g), 0.2_r8)
@@ -592,8 +593,9 @@ contains
            end if
          enddo
          col%nlev2bed(c) = max(nlevbed, 5)
-      end do
-      deallocate(dtb)
+        end do
+        deallocate(dtb)
+      end if
 
       !-----------------------------------------------
       ! SCA shape function defined
