@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_components.xsl" ?>
 
-<definitions_variables>
+<entry_id>
 
   <entry id="COMP_ATM">
     <type>char</type>
@@ -259,5 +259,5 @@
     =========================================
   </help>
 
-</definitions_variables>
+</entry_id>
 
