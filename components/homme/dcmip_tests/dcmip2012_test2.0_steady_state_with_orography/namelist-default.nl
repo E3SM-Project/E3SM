@@ -9,7 +9,7 @@
   ne                = 30                        ! number of elements per cube face
   qsize             = 1                         ! num tracer fields
   ndays             = 6                         ! num simulation days: 0 = use nmax steps
-  statefreq         = 500                       ! number of steps between screen dumps
+  statefreq         = 200                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
   tstep             = 20                        ! largest timestep in seconds
@@ -36,11 +36,13 @@
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 4,                      ! 100 sec / 0.5 sec per step
+  output_frequency  = 4,                        ! output every 4 hours
   output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
-  io_stride         = 8
+  num_io_procs      = 16         
+  interp_nlat       = 256
+  interp_nlon       = 512
 /
 &prof_inparm
   profile_outpe_num   = 100

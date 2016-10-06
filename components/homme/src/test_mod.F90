@@ -94,14 +94,15 @@ subroutine apply_test_forcing(elem,fvm,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
   select case(test_case)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
+
   endselect
 
   ! apply forcing to state variables
   do ie=nets,nete
 
     ! apply forcing to dynamic variables
-    elem(ie)%state%T(:,:,:,  n) = elem(ie)%state%T(:,:,:,  n) + dt * elem(ie)%derived%FT(:,:,:,  1)
-    elem(ie)%state%v(:,:,:,:,n) = elem(ie)%state%v(:,:,:,:,n) + dt * elem(ie)%derived%FM(:,:,:,:,1)
+    elem(ie)%state%T(:,:,:,  n) = elem(ie)%state%T(:,:,:,  n) + dt * elem(ie)%derived%FT(:,:,:,  n)
+    elem(ie)%state%v(:,:,:,:,n) = elem(ie)%state%v(:,:,:,:,n) + dt * elem(ie)%derived%FM(:,:,:,:,n)
 
     ! apply forcing to tracers (todo)
   enddo

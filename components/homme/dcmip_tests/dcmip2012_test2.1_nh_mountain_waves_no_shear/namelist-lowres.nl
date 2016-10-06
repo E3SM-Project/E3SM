@@ -6,11 +6,11 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2012_test2_1"       ! test identifier
-  ne                = 7                        ! number of elements per cube face
+  ne                = 7                         ! number of elements per cube face
   qsize             = 1                         ! num tracer fields
   ndays             = 0                         ! num simulation days: 0 => use nmax steps
   nmax              = 72000                     ! 7200s / 0.1s per step = 72000 steps
-  statefreq         = 20                       ! number of steps between screen dumps
+  statefreq         = 20                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
   tstep             = 0.2                       ! largest timestep in seconds
@@ -46,7 +46,7 @@
   output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
-  io_stride         = 8
+  num_io_procs      = 16         
 /
 &prof_inparm
   profile_outpe_num   = 100
