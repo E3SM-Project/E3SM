@@ -41,7 +41,7 @@
   output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
-  io_stride         = 8
+  num_io_procs      = 16         
 /
 &prof_inparm
   profile_outpe_num   = 100

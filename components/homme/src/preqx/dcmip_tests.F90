@@ -191,7 +191,6 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
   call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
-
   ! set initial conditions
   do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
@@ -240,8 +239,8 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   ! apply sponge layer forcing to momentum terms
   do ie=nets,nete
     do k=1,nlev
-      elem(ie)%derived%FM(:,:,1,k,1) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,1,k,n) - u0(:,:,k,ie) )
-      elem(ie)%derived%FM(:,:,2,k,1) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,2,k,n) - v0(:,:,k,ie) )
+      elem(ie)%derived%FM(:,:,1,k,n) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,1,k,n) - u0(:,:,k,ie) )
+      elem(ie)%derived%FM(:,:,2,k,n) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,2,k,n) - v0(:,:,k,ie) )
     enddo
   enddo
 

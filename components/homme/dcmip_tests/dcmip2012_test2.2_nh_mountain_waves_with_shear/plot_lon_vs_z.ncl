@@ -112,14 +112,13 @@ begin
 
 
   ;_____________________________________________________________________
-  plot  = new (1, graphic)                          ; define plot - need 3 panels
   res1                          = True
-  res1@gsnDraw                  = True              ; panel plot
+  res1@gsnDraw                  = False              ; panel plot
   res1@gsnFrame                 = False             ; don't draw yet
   res1@gsnMaximize              = True
   res1@cnFillOn                 = True
   res1@cnLinesOn                = True
-  res1@gsnContourLineThicknessesScale = 0.1
+  res1@gsnContourLineThicknessesScale = 1.5
   ;res1@gsnSpreadColors          = True
   res1@lbLabelAutoStride        = True
   res1@gsnCenterString          = ""
@@ -206,9 +205,11 @@ begin
 
   res1@gsnCenterString = pltTitle
 
-;  plot(0) = gsn_csm_contour(wks,var1(:,:),res1)		; plot var1
-  plot(0) = gsn_csm_contour(wks,var_z(:,:),res1)		; plot var1
+;  plot = gsn_csm_contour(wks,var1(:,:),res1)		; plot var1
+  plot = gsn_csm_contour(wks,var_z(:,:),res1)		; plot var1
+  plot1 = ColorNegDashZeroPosContour(plot,"transparent","black","transparent")
 
+  draw(plot1)
   frame(wks)
 
 end

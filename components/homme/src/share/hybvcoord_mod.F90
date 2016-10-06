@@ -54,8 +54,6 @@ contains
     hvcoord%hyai=0.0d0; hvcoord%hybi=0.0d0
     hvcoord%hyam=0.0d0; hvcoord%hybm=0.0d0
 
-write(iulog,*) "hvcoord_init. vanaltyic = 1", vanalytic
-
     if(vanalytic == 1) return ! exit if setting vertical coordinates analytically
 
 #if (defined HORIZ_OPENMP)

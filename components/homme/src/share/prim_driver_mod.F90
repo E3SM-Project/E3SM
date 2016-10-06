@@ -28,6 +28,7 @@ module prim_driver_mod
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
   use Manager
+  use test_mod,         only: set_test_initial_conditions, apply_test_forcing
 #endif
 
   implicit none
@@ -542,8 +543,6 @@ contains
     use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
     use prim_advection_mod,   only: prim_advec_init2, prim_advec_init_deriv, deriv
     use solver_init_mod,      only: solver_init2
-    use test_mod,             only: set_test_initial_conditions
-
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use thread_mod,           only: nthreads
 
@@ -1188,7 +1187,6 @@ contains
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use prim_advection_mod, only: vertical_remap
     use reduction_mod,      only: parallelmax
-    use test_mod,           only: apply_test_forcing
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
 
 #if USE_OPENACC

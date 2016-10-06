@@ -17,7 +17,7 @@
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 1                         ! 1 => default method
   smooth            = 0                         ! timestep smooting (nonzero smoothing breaks this test)
-  nu                = 8.0e6                     ! reduced earth hyperviz =1e15 / 500^3
+  nu                = 8.0e6                     ! reduced earth hyperviz 
   nu_s              = 8.0e6
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling

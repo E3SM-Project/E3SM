@@ -733,7 +733,6 @@ module namelist_mod
     call MPI_bcast(ndays     ,1,MPIinteger_t,par%root,par%comm,ierr)
 
     nEndStep = nmax
-#endif
 
     call MPI_bcast(omega,           1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(rearth,          1, MPIreal_t,    par%root,par%comm,ierr)
@@ -747,6 +746,9 @@ module namelist_mod
     call MPI_bcast(dcmip2_x_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_x_d,      1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_x_xi,     1, MPIreal_t,    par%root,par%comm,ierr)
+
+#endif
+
 
     call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
