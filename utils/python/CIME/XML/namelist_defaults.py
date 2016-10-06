@@ -84,11 +84,11 @@ class NamelistDefaults(EntryID):
             all_attributes.update(self._attributes)
         if attribute is not None:
             all_attributes.update(attribute)
-
-        text =  self.get_value_match(item.lower(), attributes=all_attributes)
-        value =  self._split_defaults_text(text)
+        value =  self.get_value_match(item.lower(), attributes=all_attributes)
+        if value is not None:
+            value =  self._split_defaults_text(value)
         return value
-        
+
         # # Store nodes that match the attributes and their scores.
         # matches = []
         # for node in nodes:

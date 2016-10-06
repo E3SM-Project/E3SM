@@ -39,7 +39,7 @@
           This is an optional attribute that is mainly useful for variables
           that have only a small number of allowed values.
   -->
-  
+
   <!-- =========================== -->
   <!-- group seq_cplflds_inparm    -->
   <!-- =========================== -->
@@ -297,7 +297,9 @@
     <description>
       case description.
     </description>
-    <case_desc>$CASESTR</case_desc>
+    <values>
+    <value>$CASESTR</value>
+    </values>
   </entry>
 
   <entry id="model_version">
@@ -389,7 +391,7 @@
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>this is set automatically xml variables $CASE and $REFCASE</unmodifiable_via_user_nl>
     <description>
-      Allow same branch casename as reference casename. If $CASE and $REFCASE are the same and the start_type is 
+      Allow same branch casename as reference casename. If $CASE and $REFCASE are the same and the start_type is
       not startup, then the value of brnch_retain_casename is set to .true.
     </description>
     <values>
@@ -475,8 +477,8 @@
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
     <description>
-      eccentricity of orbit, used when orb_mode is fixed_parameters. 
-      default: SHR_ORB_UNDEF_REAL (1.e36) (Not currently used in build-namelist) 
+      eccentricity of orbit, used when orb_mode is fixed_parameters.
+      default: SHR_ORB_UNDEF_REAL (1.e36) (Not currently used in build-namelist)
     </description>
     <values>
       <value>1.e36</value>
@@ -1078,7 +1080,9 @@
       turns on coupler history stream for instantaneous runoff to coupler fields.
       default: false
     </description>
-    <histaux_r2x>.false.</histaux_r2x>
+    <values>
+      <value>.false.</value>
+    </values>
   </entry>
 
   <entry id="histaux_l2x1yr">
@@ -1103,9 +1107,7 @@
       default: true
     </description>
     <values>
-      <values>
 	<value>.true.</value>
-      </values>
     </values>
   </entry>
 
@@ -1196,7 +1198,7 @@
       default: true
     </description>
     <values>
-      <value>.true.</value>   
+      <value>.true.</value>
     </values>
   </entry>
 
@@ -1345,7 +1347,7 @@
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable PTS_LAT</unmodifiable_via_user_nl>
     <description>
-      grid point latitude associated with single column mode. 
+      grid point latitude associated with single column mode.
       if set to -999, ignore this value
     </description>
     <values>
@@ -1609,7 +1611,7 @@
     <valid_values>NO_LEAP,GREGORIAN</valid_values>
     <description>
       calendar in use.  [NO_LEAP, GREOGORIAN].
-      set by CALENDAR in env_build.xml 
+      set by CALENDAR in env_build.xml
     </description>
     <values>
       <value>$CALENDAR</value>
@@ -2527,8 +2529,8 @@
     <group>ccsm_pes</group>
     <unmodifiable_via_user_nl>must be set via xml variable NTASKS_ESP</unmodifiable_via_user_nl>
     <description>
-      the number of mpi tasks assigned to the esp components. 
-      set by NTASKS_ESP in env_configure.xml.  
+      the number of mpi tasks assigned to the esp components.
+      set by NTASKS_ESP in env_configure.xml.
     </description>
     <values>
       <value>$NTASKS_ESP</value>
@@ -2541,8 +2543,8 @@
     <group>ccsm_pes</group>
     <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_ESP</unmodifiable_via_user_nl>
     <description>
-      the number of threads per mpi task for the esp component.  
-      set by NTHRDS_ESP in env_configure.xml.  
+      the number of threads per mpi task for the esp component.
+      set by NTHRDS_ESP in env_configure.xml.
     </description>
     <values>
       <value>$NTHRDS_ESP</value>
@@ -2555,7 +2557,7 @@
     <group>ccsm_pes</group>
     <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_ESP</unmodifiable_via_user_nl>
     <description>
-      the global mpi task rank of the root processor assigned to the esp component.  
+      the global mpi task rank of the root processor assigned to the esp component.
       set by ROOTPE_ESP in env_configure.xml.
     </description>
     <values>
@@ -2569,8 +2571,8 @@
     <group>ccsm_pes</group>
     <unmodifiable_via_user_nl>must be set via xml variable PSTRID_ESP</unmodifiable_via_user_nl>
     <description>
-      the mpi global processors stride associated with the mpi tasks for the esp component.  
-      set by PSTRID_ESP in env_configure.xml.  
+      the mpi global processors stride associated with the mpi tasks for the esp component.
+      set by PSTRID_ESP in env_configure.xml.
     </description>
     <values>
       <value>$PSTRID_ESP</value>
