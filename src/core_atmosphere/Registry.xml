@@ -1963,6 +1963,9 @@
                 <var name="lbc_u" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}"
                      description="Lateral boundary tendency of u"/>
 
+                <var name="lbc_ru" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-2} s^{-2}"
+                     description="Lateral boundary tendency of rho_zz-coupled u"/>
+
                 <var name="lbc_w" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
                      description="Lateral boundary tendency of w"/>
 
