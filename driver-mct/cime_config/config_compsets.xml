@@ -49,7 +49,7 @@
 
   <compset grid="r%rx1">
     <alias>AIAF</alias>
-    <lname>2000_DATM%IAF_SLND_DICE%SIAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
+    <lname>2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
