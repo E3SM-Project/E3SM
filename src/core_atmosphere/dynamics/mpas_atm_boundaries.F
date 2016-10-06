@@ -72,6 +72,7 @@ module mpas_atm_boundaries
         real (kind=RKIND), dimension(:,:), pointer :: rho_edge
         real (kind=RKIND), dimension(:,:), pointer :: w
         real (kind=RKIND), dimension(:,:), pointer :: theta_m
+        real (kind=RKIND), dimension(:,:), pointer :: rtheta_m
         real (kind=RKIND), dimension(:,:), pointer :: rho_zz
         real (kind=RKIND), dimension(:,:,:), pointer :: scalars
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_u
@@ -79,6 +80,7 @@ module mpas_atm_boundaries
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_edge
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_w
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_theta_m
+        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rtheta_m
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_zz
         real (kind=RKIND), dimension(:,:,:), pointer :: lbc_tend_scalars
 
@@ -109,7 +111,11 @@ module mpas_atm_boundaries
         call mpas_pool_get_array(lbc, 'lbc_u', u, 2)
         call mpas_pool_get_array(lbc, 'lbc_ru', ru, 2)
         call mpas_pool_get_array(lbc, 'lbc_rho_edge', rho_edge, 2)
+        call mpas_pool_get_array(lbc, 'lbc_theta_m', theta_m, 2)
+        call mpas_pool_get_array(lbc, 'lbc_rtheta_m', rtheta_m, 2)
+        call mpas_pool_get_array(lbc, 'lbc_rho_zz', rho_zz, 2)
         ru(:,:) = u(:,:) * rho_edge(:,:)
+        rtheta_m(:,:) = theta_m(:,:) * rho_zz(:,:)
 
         if (.not. firstCall) then
             lbc_interval = currTime - LBC_intv_end
@@ -122,6 +128,7 @@ module mpas_atm_boundaries
             call mpas_pool_get_array(lbc, 'lbc_rho_edge', rho_edge, 2)
             call mpas_pool_get_array(lbc, 'lbc_w', w, 2)
             call mpas_pool_get_array(lbc, 'lbc_theta_m', theta_m, 2)
+            call mpas_pool_get_array(lbc, 'lbc_rtheta_m', rtheta_m, 2)
             call mpas_pool_get_array(lbc, 'lbc_rho_zz', rho_zz, 2)
             call mpas_pool_get_array(lbc, 'lbc_scalars', scalars, 2)
 
@@ -130,6 +137,7 @@ module mpas_atm_boundaries
             call mpas_pool_get_array(lbc, 'lbc_rho_edge', lbc_tend_rho_edge, 1)
             call mpas_pool_get_array(lbc, 'lbc_w', lbc_tend_w, 1)
             call mpas_pool_get_array(lbc, 'lbc_theta_m', lbc_tend_theta_m, 1)
+            call mpas_pool_get_array(lbc, 'lbc_rtheta_m', lbc_tend_rtheta_m, 1)
             call mpas_pool_get_array(lbc, 'lbc_rho_zz', lbc_tend_rho_zz, 1)
             call mpas_pool_get_array(lbc, 'lbc_scalars', lbc_tend_scalars, 1)
 
@@ -140,6 +148,7 @@ module mpas_atm_boundaries
             lbc_tend_rho_edge(:,:) = (rho_edge(:,:) - lbc_tend_rho_edge(:,:)) * dt
             lbc_tend_w(:,:) = (w(:,:) - lbc_tend_w(:,:)) * dt
             lbc_tend_theta_m(:,:) = (theta_m(:,:) - lbc_tend_theta_m(:,:)) * dt
+            lbc_tend_rtheta_m(:,:) = (rtheta_m(:,:) - lbc_tend_rtheta_m(:,:)) * dt
             lbc_tend_rho_zz(:,:) = (rho_zz(:,:) - lbc_tend_rho_zz(:,:)) * dt
             lbc_tend_scalars(:,:,:) = (scalars(:,:,:) - lbc_tend_scalars(:,:,:)) * dt
         end if
