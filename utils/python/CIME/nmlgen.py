@@ -254,12 +254,14 @@ class NamelistGenerator(object):
                 scalar = scalar.replace(match.group(0), str(env_val), 1)
                 match = _var_ref_re.search(scalar)
             default[i] = scalar
+
         # Deal with missing quotes.
         if var_info['type'] == 'character':
             for i, scalar in enumerate(default):
                 # Preserve null values.
                 if scalar != '':
                     default[i] = self.quote_string(scalar)
+
         default = self._to_python_value(name, default)
         return default
 

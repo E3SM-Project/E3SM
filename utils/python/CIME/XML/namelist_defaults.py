@@ -11,11 +11,11 @@ This module contains only one class, `NamelistDefaults`, inheriting from
 # pylint:disable=wildcard-import,unused-wildcard-import
 
 from CIME.XML.standard_module_setup import *
-from CIME.XML.generic_xml import GenericXML
+from CIME.XML.entry_id import EntryID
 
 logger = logging.getLogger(__name__)
 
-class NamelistDefaults(GenericXML):
+class NamelistDefaults(EntryID):
 
     """Class representing variable default values for a namelist.
 
@@ -72,7 +72,11 @@ class NamelistDefaults(GenericXML):
         """
         expect(not resolved, "This class does not support env resolution.")
         expect(subgroup is None, "This class does not support subgroups.")
-        nodes = self.get_nodes(item.lower())
+
+        # #nodes = self.get_nodes(item.lower())
+        # #node = self.get_node("entry", attribute={"id":item.lower()})
+        # values = self.get_values(item.lower(), attribute=attribute, resolved=resolved, subgroup=subgroup)
+        # print "DEBUG: values for item %s are %s" %(item,values)
 
         # Merge internal attributes with those passed in.
         all_attributes = {}
@@ -81,33 +85,37 @@ class NamelistDefaults(GenericXML):
         if attribute is not None:
             all_attributes.update(attribute)
 
-        # Store nodes that match the attributes and their scores.
-        matches = []
-        for node in nodes:
-            # For each node in the list start a score.
-            score = 0
-            for attribute in node.keys():
-                # For each attribute, add to the score.
-                score += 1
-                # If some attribute is specified that we don't know about,
-                # or the values don't match, it's not a match we want.
-                if attribute not in all_attributes or \
-                   all_attributes[attribute] != node.get(attribute):
-                    score = -1
-                    break
+        text =  self.get_value_match(item.lower(), attributes=all_attributes)
+        value =  self._split_defaults_text(text)
+        return value
+        
+        # # Store nodes that match the attributes and their scores.
+        # matches = []
+        # for node in nodes:
+        #     # For each node in the list start a score.
+        #     score = 0
+        #     for attribute in node.keys():
+        #         # For each attribute, add to the score.
+        #         score += 1
+        #         # If some attribute is specified that we don't know about,
+        #         # or the values don't match, it's not a match we want.
+        #         if attribute not in all_attributes or \
+        #            all_attributes[attribute] != node.get(attribute):
+        #             score = -1
+        #             break
 
-            # Add valid matches to the list.
-            if score >= 0:
-                matches.append((score, node))
+        #     # Add valid matches to the list.
+        #     if score >= 0:
+        #         matches.append((score, node))
 
-        if not matches:
-            return None
+        # if not matches:
+        #     return None
 
-        # Get maximum score using custom `key` function, extract the node.
-        _, node = max(matches, key=lambda x: x[0])
-        if node.text is None:
-            return ['']
-        return self._split_defaults_text(node.text)
+        # # Get maximum score using custom `key` function, extract the node.
+        # _, node = max(matches, key=lambda x: x[0])
+        # if node.text is None:
+        #     return ['']
+        # return self._split_defaults_text(node.text)
 
     # While there are environment variable references in the file at times, they
     # usually involve env files that we don't know about at this low level. So

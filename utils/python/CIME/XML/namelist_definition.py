@@ -47,7 +47,7 @@ class NamelistDefinition(GenericXML):
         self._version = self._get_version(infile)
 
     def _get_version(self, infile):
-        version = self.get_node("version").text
+        version = self.root.get("version")
         return version
 
     def add(self, infile):
