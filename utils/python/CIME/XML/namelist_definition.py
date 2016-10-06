@@ -130,7 +130,7 @@ class NamelistDefinition(GenericXML):
             elif self._version == "2.0":
                 var_info[name] = self.get_node(name, root=elem).text
             expect(var_info[name] is not None,
-                   "field %s missing from namelist definition for %s" 
+                   "field %s missing from namelist definition for %s"
                    % (name, item))
 
         get_required_field('type')
@@ -161,7 +161,7 @@ class NamelistDefinition(GenericXML):
         # The "input_pathname" attribute is not required.
         if self._version == "1.0":
             var_info['input_pathname'] = elem.get('input_pathname')
-        elif self._version == "2.0": 
+        elif self._version == "2.0":
             node = self.get_optional_node('input_pathname', root=elem)
             if node is not None:
                 var_info['input_pathname'] = node.text
@@ -320,7 +320,7 @@ class NamelistDefinition(GenericXML):
         node = self.get_optional_node("entry", attributes={'id': name})
         user_modifiable = self.get_optional_node("unmodifiable_via_user_nl", root=node)
         if user_modifiable is not None:
-            expect(False, 
+            expect(False,
                    "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable.text))
 
     def validate(self, namelist, filename=None):
@@ -344,7 +344,7 @@ class NamelistDefinition(GenericXML):
                 # Check if can actually change this variable via filename change
                 if filename is not None:
                     self._user_modifiable_in_variable_definition(variable_name, filename)
-                
+
                 # and has the right group name...
                 var_info = self.get_value(variable_name)
                 expect(var_info['group'] == group_name,
