@@ -163,7 +163,7 @@ class TestScheduler(object):
             for test in self._tests:
                 ts = TestStatus(self._get_test_dir(test))
                 for phase, status in ts:
-                    self._update_test_status(test, phase, TEST_PENDING_STATUS)
+                    self._update_test_status(test, phase, TEST_PEND_STATUS)
                     self._update_test_status(test, phase, status)
         else:
             # None of the test directories should already exist.
@@ -214,13 +214,13 @@ class TestScheduler(object):
     def _is_broken(self, test):
     ###########################################################################
         status = self._get_test_status(test)
-        return status not in CONTINUE and status != TEST_PENDING_STATUS
+        return status not in CONTINUE and status != TEST_PEND_STATUS
 
     ###########################################################################
     def _work_remains(self, test):
     ###########################################################################
         test_phase, test_status, _ = self._get_test_data(test)
-        return (test_status in CONTINUE or test_status == TEST_PENDING_STATUS) and\
+        return (test_status in CONTINUE or test_status == TEST_PEND_STATUS) and\
             test_phase != self._phases[-1]
 
     ###########################################################################
@@ -249,15 +249,15 @@ class TestScheduler(object):
         old_phase, old_status, old_nl_fail = self._get_test_data(test)
 
         if old_phase == phase:
-            expect(old_status == TEST_PENDING_STATUS,
-                   "Only valid to transition from PENDING to something else, found '%s' for phase '%s'" %
+            expect(old_status == TEST_PEND_STATUS,
+                   "Only valid to transition from PEND to something else, found '%s' for phase '%s'" %
                    (old_status, phase))
-            expect(status != TEST_PENDING_STATUS,
+            expect(status != TEST_PEND_STATUS,
                    "Cannot transition from PEND -> PEND")
         else:
             expect(old_status in CONTINUE,
                    "Why did we move on to next phase when prior phase did not pass?")
-            expect(status == TEST_PENDING_STATUS,
+            expect(status == TEST_PEND_STATUS,
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase? %s %s"%(old_phase, phase_idx))
@@ -633,10 +633,10 @@ class TestScheduler(object):
         before_time = time.time()
         success = self._run_catch_exceptions(test, test_phase, phase_method)
         elapsed_time = time.time() - before_time
-        status  = (TEST_PENDING_STATUS if test_phase == RUN_PHASE and not \
+        status  = (TEST_PEND_STATUS if test_phase == RUN_PHASE and not \
                    self._no_batch else TEST_PASS_STATUS) if success else TEST_FAIL_STATUS
 
-        if status != TEST_PENDING_STATUS:
+        if status != TEST_PEND_STATUS:
             self._update_test_status(test, test_phase, status)
 
         status_str = "Finished %s for test %s in %f seconds (%s)" %\
@@ -656,7 +656,7 @@ class TestScheduler(object):
         # it's very cheap to submit and will get us a better spot in line
         if (success and not self._no_run and not self._no_batch and test_phase == MODEL_BUILD_PHASE):
             logger.info("Starting %s for test %s with %d procs" % (RUN_PHASE, test, 1))
-            self._update_test_status(test, RUN_PHASE, TEST_PENDING_STATUS)
+            self._update_test_status(test, RUN_PHASE, TEST_PEND_STATUS)
             self._consumer(test, RUN_PHASE, self._run_phase)
 
     ###########################################################################
@@ -676,7 +676,7 @@ class TestScheduler(object):
                     work_to_do = True
                     if test not in threads_in_flight:
                         test_phase, test_status, _ = self._get_test_data(test)
-                        expect(test_status != TEST_PENDING_STATUS, test)
+                        expect(test_status != TEST_PEND_STATUS, test)
                         next_phase = self._phases[self._phases.index(test_phase) + 1]
                         procs_needed = self._get_procs_needed(test, next_phase, threads_in_flight)
 
@@ -687,7 +687,7 @@ class TestScheduler(object):
                             logger.info("Starting %s for test %s with %d procs" %
                                         (next_phase, test, procs_needed))
 
-                            self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
+                            self._update_test_status(test, next_phase, TEST_PEND_STATUS)
                             new_thread = threading.Thread(target=self._consumer,
                                 args=(test, next_phase, getattr(self, "_%s_phase" % next_phase.lower())) )
                             threads_in_flight[test] = (new_thread, procs_needed, next_phase)
@@ -698,7 +698,7 @@ class TestScheduler(object):
                                 msg = "Phase '%s' for test '%s' required more processors, %d, than this machine can provide, %d" % \
                                     (next_phase, test, procs_needed, self._procs_avail)
                                 logger.warning(msg)
-                                self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
+                                self._update_test_status(test, next_phase, TEST_PEND_STATUS)
                                 self._update_test_status(test, next_phase, TEST_FAIL_STATUS)
                                 self._log_output(test, msg)
                                 self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
@@ -793,7 +793,7 @@ class TestScheduler(object):
                 ts = TestStatus(self._get_test_dir(test))
                 status = ts.get_overall_test_status()
 
-            if status not in [TEST_PASS_STATUS, TEST_PENDING_STATUS]:
+            if status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                 logger.info( "%s %s (phase %s)" % (status, test, phase))
                 rv = False
 

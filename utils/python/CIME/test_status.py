@@ -9,11 +9,11 @@ from collections import OrderedDict
 TEST_STATUS_FILENAME = "TestStatus"
 
 # The statuses that a phase can be in
-TEST_PENDING_STATUS  = "PEND"
-TEST_PASS_STATUS     = "PASS"
-TEST_FAIL_STATUS     = "FAIL"
+TEST_PEND_STATUS = "PEND"
+TEST_PASS_STATUS = "PASS"
+TEST_FAIL_STATUS = "FAIL"
 
-ALL_PHASE_STATUSES = [TEST_PENDING_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
+ALL_PHASE_STATUSES = [TEST_PEND_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
 
 # Special statuses that the overall test can be in
 TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in one of the COMPARE phases
@@ -151,11 +151,14 @@ class TestStatus(object):
 
         if phase in CORE_PHASES and phase != CORE_PHASES[0]:
             previous_core_phase = CORE_PHASES[CORE_PHASES.index(phase)-1]
-            expect(previous_core_phase in self._phase_statuses, "Core phase '%s' was skipped" % previous_core_phase)
-            expect(self._phase_statuses[previous_core_phase][0] == TEST_PASS_STATUS,
-                   "Cannot move past core phase '%s', it didn't pass" % previous_core_phase)
+            #TODO: enamble check below
+            #expect(previous_core_phase in self._phase_statuses, "Core phase '%s' was skipped" % previous_core_phase)
 
-        reran_phase = (phase in self._phase_statuses and self._phase_statuses[phase][0] != TEST_PENDING_STATUS)
+            if previous_core_phase in self._phase_statuses:
+                expect(self._phase_statuses[previous_core_phase][0] == TEST_PASS_STATUS,
+                       "Cannot move past core phase '%s', it didn't pass" % previous_core_phase)
+
+        reran_phase = (phase in self._phase_statuses and self._phase_statuses[phase][0] != TEST_PEND_STATUS)
         if reran_phase:
             # All subsequent phases are invalidated
             phase_idx = ALL_PHASES.index(phase)
@@ -171,7 +174,7 @@ class TestStatus(object):
 
         if status == TEST_PASS_STATUS and phase in CORE_PHASES and phase != CORE_PHASES[-1]:
             next_core_phase = CORE_PHASES[CORE_PHASES.index(phase)+1]
-            self._phase_statuses[next_core_phase] = (TEST_PENDING_STATUS, "")
+            self._phase_statuses[next_core_phase] = (TEST_PEND_STATUS, "")
 
     def get_status(self, phase):
         return self._phase_statuses[phase][0] if phase in self._phase_statuses else None
@@ -283,7 +286,7 @@ class TestStatus(object):
             if phase == RUN_PHASE:
                 run_phase_found = True
 
-            if (status == TEST_PENDING_STATUS):
+            if (status == TEST_PEND_STATUS):
                 return status
 
             elif (status == TEST_FAIL_STATUS):
@@ -306,6 +309,6 @@ class TestStatus(object):
         # The test did not fail but the RUN phase was not found, so if the user requested
         # that we wait for the RUN phase, then the test must still be considered pending.
         if rv != TEST_FAIL_STATUS and not run_phase_found and wait_for_run:
-            rv = TEST_PENDING_STATUS
+            rv = TEST_PEND_STATUS
 
         return rv
