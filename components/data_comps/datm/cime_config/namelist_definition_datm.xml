@@ -2027,15 +2027,15 @@
       <value>bilinear</value>
       <value datm_mode="CLM1PT">nn</value>
       <value datm_mode="CLM1PT" presaero_mode="pt1_pt1">nn</value>
-      <value stream="CLMCRUNCEP.Solar" ATM_GRID="hcru">copy</value>
-      <value stream="CLMCRUNCEP.Precip" ATM_GRID="hcru">copy</value>
-      <value stream="CLMCRUNCEP.TPQW" ATM_GRID="hcru">copy</value>
-      <value stream="CLMCRUNCEP_V5.Solar" ATM_GRID="hcru">copy</value>
-      <value stream="CLMCRUNCEP_V5.Precip" ATM_GRID="hcru">copy</value>
-      <value stream="CLMCRUNCEP_V5.TPQW" ATM_GRID="hcru">copy</value>
-      <value stream="CLMGSWP3.Solar" ATM_GRID="hcru">copy</value>
-      <value stream="CLMGSWP3.Precip" ATM_GRID="hcru">copy</value>
-      <value stream="CLMGSWP3.TPQW" ATM_GRID="hcru">copy</value>
+      <value stream="CLMCRUNCEP.Solar" atm_grid="hcru">copy</value>
+      <value stream="CLMCRUNCEP.Precip" atm_grid="hcru">copy</value>
+      <value stream="CLMCRUNCEP.TPQW" atm_grid="hcru">copy</value>
+      <value stream="CLMCRUNCEP_V5.Solar" atm_grid="hcru">copy</value>
+      <value stream="CLMCRUNCEP_V5.Precip" atm_grid="hcru">copy</value>
+      <value stream="CLMCRUNCEP_V5.TPQW" atm_grid="hcru">copy</value>
+      <value stream="CLMGSWP3.Solar" atm_grid="hcru">copy</value>
+      <value stream="CLMGSWP3.Precip" atm_grid="hcru">copy</value>
+      <value stream="CLMGSWP3.TPQW" atm_grid="hcru">copy</value>
       <value stream="co2tseries.20tr">nn</value>
       <value stream="co2tseries.rcp2.6">nn</value>
       <value stream="co2tseries.rcp4.5">nn</value>
