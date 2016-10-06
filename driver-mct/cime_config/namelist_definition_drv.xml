@@ -14,7 +14,7 @@
      type
           An abbreviation of the fortran declaration for the variable.
 	  Valid declarations are:
-             char*n, integer, logical, real
+             char, integer, logical, real
 	  Any of these types may be followed by a comma separated list of
 	  integers enclosed in parenthesis to indicate an array.
 	  The current namelist validation code only distinquishes between
@@ -187,7 +187,7 @@
   <!-- =========================== -->
 
   <entry id="cplflds_custom">
-    <type>char*1024(200)</type>
+    <type>char(200)</type>
     <category>seq_flds</category>
     <group>seq_cplflds_userspec</group>
     <description>
@@ -216,7 +216,7 @@
   <!-- =========================== -->
 
   <entry id="cime_model">
-    <type>char*8</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable CIME_MODEL</unmodifiable_via_user_nl>
@@ -277,7 +277,7 @@
   </entry>
 
   <entry id="case_name">
-    <type>char*128</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable CASE</unmodifiable_via_user_nl>
@@ -290,7 +290,7 @@
   </entry>
 
   <entry id="case_desc">
-    <type>char*256</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable CASESTR</unmodifiable_via_user_nl>
@@ -303,7 +303,7 @@
   </entry>
 
   <entry id="model_version">
-    <type>char*256</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable CCSM_REPOTAG</unmodifiable_via_user_nl>
@@ -316,7 +316,7 @@
   </entry>
 
   <entry id="username">
-    <type>char*256</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable CCSM_USER</unmodifiable_via_user_nl>
@@ -329,7 +329,7 @@
   </entry>
 
   <entry id="hostname">
-    <type>char*256</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable MACH</unmodifiable_via_user_nl>
@@ -342,7 +342,7 @@
   </entry>
 
   <entry id="timing_dir">
-    <type>char*256</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <description>
@@ -354,7 +354,7 @@
   </entry>
 
   <entry id="tchkpt_dir">
-    <type>char*256</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <description>
@@ -366,7 +366,7 @@
   </entry>
 
   <entry id="start_type">
-    <type>char*64</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values>startup,branch,continue</valid_values>
@@ -427,7 +427,7 @@
   </entry>
 
   <entry id="orb_mode">
-    <type>char*64</type>
+    <type>char</type>
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
     <valid_values>fixed_year,variable_year,fixed_parameters</valid_values>
@@ -512,7 +512,7 @@
   </entry>
 
   <entry id="wv_sat_scheme">
-    <type>char*16</type>
+    <type>char</type>
     <category>wv_sat</category>
     <group>seq_infodata_inparm</group>
     <valid_values>GoffGratch,MurphyKoop,Bolton,Flatau</valid_values>
@@ -574,7 +574,7 @@
   </entry>
 
   <entry id="tfreeze_option">
-    <type>char*16</type>
+    <type>char</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
@@ -587,8 +587,8 @@
     </values>
   </entry>
 
-  <entry  id="flux_epbal">
-    <type>char*8</type>
+  <entry id="flux_epbal">
+    <type>char</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <valid_values>off,ocn</valid_values>
@@ -628,7 +628,7 @@
   </entry>
 
   <entry id="force_stop_at">
-    <type>char*8</type>
+    <type>char</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <valid_values>day,month,year</valid_values>
@@ -655,7 +655,7 @@
   </entry>
 
   <entry id="atm_gnam">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM_GRID</unmodifiable_via_user_nl>
@@ -668,7 +668,7 @@
   </entry>
 
   <entry id="lnd_gnam">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable LND_GRID</unmodifiable_via_user_nl>
@@ -681,7 +681,7 @@
   </entry>
 
   <entry id="ocn_gnam">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable OCN_GRID</unmodifiable_via_user_nl>
@@ -694,7 +694,7 @@
   </entry>
 
   <entry id="ice_gnam">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable ICE_GRID</unmodifiable_via_user_nl>
@@ -707,7 +707,7 @@
   </entry>
 
   <entry id="rof_gnam">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <description>
@@ -720,7 +720,7 @@
   </entry>
 
   <entry id="glc_gnam">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable GLC_GRID</unmodifiable_via_user_nl>
@@ -733,7 +733,7 @@
   </entry>
 
   <entry id="wav_gnam">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable WAV_GRID</unmodifiable_via_user_nl>
@@ -758,7 +758,7 @@
   </entry>
 
   <entry id="vect_map">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
@@ -786,7 +786,7 @@
   </entry>
 
   <entry id="aoflux_grid">
-    <type>char*64</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <valid_values>ocn,atm,exch</valid_values>
@@ -841,7 +841,7 @@
   </entry>
 
   <entry id="cpl_seq_option">
-    <type>char*64</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values>CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
@@ -1604,7 +1604,7 @@
   </entry>
 
   <entry id="calendar">
-    <type>char*16</type>
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable CALENDAR</unmodifiable_via_user_nl>
@@ -1647,7 +1647,7 @@
   </entry>
 
   <entry id="stop_option">
-    <type>char*16</type>
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <unmodifiable_via_user_nl>must be set via xml variable STOP_OPTION</unmodifiable_via_user_nl>
@@ -1701,7 +1701,7 @@
   </entry>
 
   <entry id="restart_file">
-    <type>char*256</type>
+    <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values></valid_values>
@@ -1715,7 +1715,7 @@
   </entry>
 
   <entry id="restart_option">
-    <type>char*16</type>
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
@@ -1785,7 +1785,7 @@
   </entry>
 
   <entry id="history_option">
-    <type>char*16</type>
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
@@ -1841,7 +1841,7 @@
   </entry>
 
   <entry id="histavg_option">
-    <type>char*16</type>
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
@@ -1897,7 +1897,7 @@
   </entry>
 
   <entry id="barrier_option">
-    <type>char*16</type>
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
@@ -1940,7 +1940,7 @@
   </entry>
 
   <entry id="tprof_option">
-    <type>char*16</type>
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
@@ -1990,7 +1990,7 @@
   </entry>
 
   <entry id="logfilepostfix">
-    <type>char*80</type>
+    <type>char</type>
     <category>driver</category>
     <group>seq_infodata_inparm</group>
     <valid_values></valid_values>
@@ -2003,7 +2003,7 @@
   </entry>
 
   <entry id="outpathroot">
-    <type>char*256</type>
+    <type>char</type>
     <category>drv_history</category>
     <group>seq_infodata_inparm</group>
     <valid_values></valid_values>
@@ -2090,7 +2090,7 @@
   </entry>
 
   <entry id="atm_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2160,7 +2160,7 @@
   </entry>
 
   <entry id="lnd_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2230,7 +2230,7 @@
   </entry>
 
   <entry id="ice_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2300,7 +2300,7 @@
   </entry>
 
   <entry id="ocn_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2370,7 +2370,7 @@
   </entry>
 
   <entry id="glc_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2440,7 +2440,7 @@
   </entry>
 
   <entry id="wav_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2510,7 +2510,7 @@
   </entry>
 
   <entry id="rof_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2580,7 +2580,7 @@
   </entry>
 
   <entry  id="esp_layout">
-    <type>char*32</type>
+    <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
@@ -2803,7 +2803,7 @@
   <!-- =========================== -->
 
   <entry id="papi_ctr1_str">
-    <type>char*16</type>
+    <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
     <description>
@@ -2815,7 +2815,7 @@
   </entry>
 
   <entry id="papi_ctr2_str">
-    <type>char*16</type>
+    <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
     <description>
@@ -2827,7 +2827,7 @@
   </entry>
 
   <entry id="papi_ctr3_str">
-    <type>char*16</type>
+    <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
     <description>
@@ -2839,7 +2839,7 @@
   </entry>
 
   <entry id="papi_ctr4_str">
-    <type>char*16</type>
+    <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
     <description>
@@ -2922,7 +2922,7 @@
   </entry>
 
   <entry id="pio_typename">
-    <type>char*64</type>
+    <type>char</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
@@ -2978,7 +2978,7 @@
   </entry>
 
   <entry id="pio_rearr_comm_type">
-    <type>char*16</type>
+    <type>char</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
     <valid_values>p2p,coll,default</valid_values>
@@ -2993,7 +2993,7 @@
   </entry>
 
   <entry id="pio_rearr_comm_fcd">
-    <type>char*16</type>
+    <type>char</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
     <valid_values>2denable,io2comp,comp2io,disable,default</valid_values>
@@ -3089,7 +3089,7 @@
   <!-- =========================== -->
 
   <entry id="atm2ocn_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3103,7 +3103,7 @@
   </entry>
 
   <entry id="atm2ocn_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3121,7 +3121,7 @@
   </entry>
 
   <entry id="atm2ocn_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3135,7 +3135,7 @@
   </entry>
 
   <entry id="atm2ocn_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3153,7 +3153,7 @@
   </entry>
 
   <entry id="atm2ocn_vmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3167,7 +3167,7 @@
   </entry>
 
   <entry id="atm2ocn_vmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_VMAPTYPE</unmodifiable_via_user_nl>
@@ -3185,7 +3185,7 @@
   </entry>
 
   <entry id="ocn2atm_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3199,7 +3199,7 @@
   </entry>
 
   <entry id="ocn2atm_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3217,7 +3217,7 @@
   </entry>
 
   <entry id="ocn2atm_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3231,7 +3231,7 @@
   </entry>
 
   <entry id="ocn2atm_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3249,7 +3249,7 @@
   </entry>
 
   <entry id="atm2ice_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3263,7 +3263,7 @@
   </entry>
 
   <entry id="atm2ice_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2ICE_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3281,7 +3281,7 @@
   </entry>
 
   <entry id="atm2ice_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3295,7 +3295,7 @@
   </entry>
 
   <entry id="atm2ice_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3313,7 +3313,7 @@
   </entry>
 
   <entry id="atm2ice_vmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3327,7 +3327,7 @@
   </entry>
 
   <entry id="atm2ice_vmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_VMAPTYPE</unmodifiable_via_user_nl>
@@ -3345,7 +3345,7 @@
   </entry>
 
   <entry id="ice2atm_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3359,7 +3359,7 @@
   </entry>
 
   <entry id="ice2atm_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3377,7 +3377,7 @@
   </entry>
 
   <entry id="ice2atm_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3391,7 +3391,7 @@
   </entry>
 
   <entry id="ice2atm_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <unmodifiable_via_user_nl>must be set via xml variable ICE2ATM_SMAPTYPE</unmodifiable_via_user_nl>
     <group>seq_maps</group>
@@ -3409,7 +3409,7 @@
   </entry>
 
   <entry id="atm2lnd_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3423,7 +3423,7 @@
   </entry>
 
   <entry id="atm2lnd_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2LND_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3441,7 +3441,7 @@
   </entry>
 
   <entry id="atm2lnd_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3455,7 +3455,7 @@
   </entry>
 
   <entry id="atm2lnd_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2LND_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3473,7 +3473,7 @@
   </entry>
 
   <entry id="lnd2atm_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3487,7 +3487,7 @@
   </entry>
 
   <entry id="lnd2atm_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable LND2ATM_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3505,7 +3505,7 @@
   </entry>
 
   <entry id="lnd2atm_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3519,7 +3519,7 @@
   </entry>
 
   <entry id="lnd2atm_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable LND2ATM_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3537,7 +3537,7 @@
   </entry>
 
   <entry id="lnd2rof_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3551,7 +3551,7 @@
   </entry>
 
   <entry id="lnd2rof_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable LND2ROF_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3569,7 +3569,7 @@
   </entry>
 
   <entry id="rof2lnd_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3583,7 +3583,7 @@
   </entry>
 
   <entry id="rof2lnd_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ROF2LND_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3601,7 +3601,7 @@
   </entry>
 
   <entry id="rof2ocn_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3615,7 +3615,7 @@
   </entry>
 
   <entry id="rof2ocn_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3633,7 +3633,7 @@
   </entry>
 
   <entry id="glc2ocn_rmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3647,7 +3647,7 @@
   </entry>
 
   <entry id="glc2ocn_rmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable GLC2OCN_RMAPTYPE</unmodifiable_via_user_nl>
@@ -3665,7 +3665,7 @@
   </entry>
 
   <entry id="glc2ice_rmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3679,7 +3679,7 @@
   </entry>
 
   <entry id="glc2ice_rmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable GLC2ICE_RMAPTYPE</unmodifiable_via_user_nl>
@@ -3697,7 +3697,7 @@
   </entry>
 
   <entry id="rof2ocn_liq_rmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3711,7 +3711,7 @@
   </entry>
 
   <entry id="rof2ocn_liq_rmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_LIQ_RMAPTYPE</unmodifiable_via_user_nl>
@@ -3729,7 +3729,7 @@
   </entry>
 
   <entry id="rof2ocn_ice_rmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3743,7 +3743,7 @@
   </entry>
 
   <entry id="rof2ocn_ice_rmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_ICE_RMAPTYPE</unmodifiable_via_user_nl>
@@ -3762,7 +3762,7 @@
 
 
   <entry id="lnd2glc_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3776,7 +3776,7 @@
   </entry>
 
   <entry id="lnd2glc_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable LND2GLC_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3794,7 +3794,7 @@
   </entry>
 
   <entry id="lnd2glc_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3808,7 +3808,7 @@
   </entry>
 
   <entry id="lnd2glc_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable LND2GLC_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3826,7 +3826,7 @@
   </entry>
 
   <entry id="glc2lnd_fmapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3840,7 +3840,7 @@
   </entry>
 
   <entry id="glc2lnd_fmaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable GLC2LND_FMAPTYPE</unmodifiable_via_user_nl>
@@ -3858,7 +3858,7 @@
   </entry>
 
   <entry id="glc2lnd_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3872,7 +3872,7 @@
   </entry>
 
   <entry id="glc2lnd_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable GLC2LND_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3890,7 +3890,7 @@
   </entry>
 
   <entry id="atm2wav_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3904,7 +3904,7 @@
   </entry>
 
   <entry id="atm2wav_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ATM2WAV_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3922,7 +3922,7 @@
   </entry>
 
   <entry id="ocn2wav_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3936,7 +3936,7 @@
   </entry>
 
   <entry id="ocn2wav_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable OCN2WAV_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3954,7 +3954,7 @@
   </entry>
 
   <entry id="ice2wav_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -3968,7 +3968,7 @@
   </entry>
 
   <entry id="ice2wav_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable ICE2WAV_SMAPTYPE</unmodifiable_via_user_nl>
@@ -3986,7 +3986,7 @@
   </entry>
 
   <entry id="wav2ocn_smapname">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
@@ -4000,7 +4000,7 @@
   </entry>
 
   <entry id="wav2ocn_smaptype">
-    <type>char*256</type>
+    <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
     <unmodifiable_via_user_nl>must be set via xml variable WAV2OCN_SMAPTYPE</unmodifiable_via_user_nl>
@@ -4018,7 +4018,7 @@
   </entry>
 
   <entry id="drv_flds_in_files" skip_default_entry="TRUE">
-    <type>char*256(10)</type>
+    <type>char(10)</type>
     <category>drv_physics</category>
     <group>default_settings</group>
     <description>
