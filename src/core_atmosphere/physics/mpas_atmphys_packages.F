@@ -72,9 +72,9 @@
     return
  endif
 
- mp_kessler_in           = .true.
- mp_thompson_in          = .true.
- mp_wsm6_in              = .true.
+ mp_kessler_in           = .false.
+ mp_thompson_in          = .false.
+ mp_wsm6_in              = .false.
 
  if(config_microp_scheme == 'mp_kessler') then
     mp_kessler_in = .true.
@@ -112,9 +112,9 @@
     return
  endif
 
- cu_grell_freitas_in = .true.
- cu_kain_fritsch_in  = .true.
- cu_tiedtke_in       = .true.
+ cu_grell_freitas_in = .false.
+ cu_kain_fritsch_in  = .false.
+ cu_tiedtke_in       = .false.
 
  if(config_convection_scheme=='cu_grell_freitas') then
     cu_grell_freitas_in = .true.
@@ -148,8 +148,8 @@
     return
  endif
 
- bl_mynn_in = .true.
- bl_ysu_in  = .true.
+ bl_mynn_in = .false.
+ bl_ysu_in  = .false.
 
  if(config_pbl_scheme=='bl_mynn') then
     bl_mynn_in = .true.

@@ -337,6 +337,28 @@
  tend_ru_physics(:,:) = 0._RKIND
  tend_rtheta_physics(:,:) = 0._RKIND
 
+ !
+ ! In case some variables are not allocated due to their associated packages,
+ ! we need to make their pointers associated here to avoid triggering run-time
+ ! checks when calling physics_get_tend_work
+ !
+ if (.not. associated(rucuten)) allocate(rucuten(0,0))
+ if (.not. associated(rvcuten)) allocate(rvcuten(0,0))
+ if (.not. associated(rqrcuten)) allocate(rqrcuten(0,0))
+ if (.not. associated(rqscuten)) allocate(rqscuten(0,0))
+ if (.not. associated(rniblten)) allocate(rniblten(0,0))
+ if (.not. associated(rthdynten)) allocate(rthdynten(0,0))
+ if (.not. associated(rublten)) allocate(rublten(0,0))
+ if (.not. associated(rvblten)) allocate(rvblten(0,0))
+ if (.not. associated(rthblten)) allocate(rthblten(0,0))
+ if (.not. associated(rqvblten)) allocate(rqvblten(0,0))
+ if (.not. associated(rqcblten)) allocate(rqcblten(0,0))
+ if (.not. associated(rqiblten)) allocate(rqiblten(0,0))
+ if (.not. associated(rthcuten)) allocate(rthcuten(0,0))
+ if (.not. associated(rqvcuten)) allocate(rqvcuten(0,0))
+ if (.not. associated(rqccuten)) allocate(rqccuten(0,0))
+ if (.not. associated(rqicuten)) allocate(rqicuten(0,0))
+
  call physics_get_tend_work(block, mesh, nCells, nEdges, nCellsSolve, nEdgesSolve, &
                            rk_step, dynamics_substep, &
                            config_pbl_scheme, config_convection_scheme, config_radt_lw_scheme, config_radt_sw_scheme, &
@@ -353,6 +375,26 @@
                            tend_theta_euler &
                            )
 
+ !
+ ! Clean up any pointers that were allocated with zero size before the call to
+ ! physics_get_tend_work
+ !
+ if (size(rucuten) == 0) deallocate(rucuten)
+ if (size(rvcuten) == 0) deallocate(rvcuten)
+ if (size(rqrcuten) == 0) deallocate(rqrcuten)
+ if (size(rqscuten) == 0) deallocate(rqscuten)
+ if (size(rniblten) == 0) deallocate(rniblten)
+ if (size(rthdynten) == 0) deallocate(rthdynten)
+ if (size(rublten) == 0) deallocate(rublten)
+ if (size(rvblten) == 0) deallocate(rvblten)
+ if (size(rthblten) == 0) deallocate(rthblten)
+ if (size(rqvblten) == 0) deallocate(rqvblten)
+ if (size(rqcblten) == 0) deallocate(rqcblten)
+ if (size(rqiblten) == 0) deallocate(rqiblten)
+ if (size(rthcuten) == 0) deallocate(rthcuten)
+ if (size(rqvcuten) == 0) deallocate(rqvcuten)
+ if (size(rqccuten) == 0) deallocate(rqccuten)
+ if (size(rqicuten) == 0) deallocate(rqicuten)
 
 ! deallocate(theta)
  deallocate(tend_th)

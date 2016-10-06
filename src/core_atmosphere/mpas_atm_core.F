@@ -2339,53 +2339,77 @@ module atm_core
             
             !depv_dt_lw/sw/mp/ -------------
             !absolute vorticity here should maybe be from before taking timestep (from field that generated that tendency...)
-            call calc_grad_cell(gradtheta, &
-                             iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
-                             cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
-                             cellsOnVertex, &
-                             cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
-                             rthratenlw)
-            depv_dt_lw(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6 !SI to PVUs
+            if (associated(rthratenlw)) then
+               call calc_grad_cell(gradtheta, &
+                                iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
+                                cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
+                                cellsOnVertex, &
+                                cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
+                                rthratenlw)
+               depv_dt_lw(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6 !SI to PVUs
+            else
+               depv_dt_lw(k,iCell) = 0.0_RKIND
+            end if
             
-            call calc_grad_cell(gradtheta, &
-                             iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
-                             cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
-                             cellsOnVertex, &
-                             cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
-                             rthratensw)
-            depv_dt_sw(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            if (associated(rthratensw)) then
+               call calc_grad_cell(gradtheta, &
+                                iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
+                                cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
+                                cellsOnVertex, &
+                                cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
+                                rthratensw)
+               depv_dt_sw(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            else
+               depv_dt_sw(k,iCell) = 0.0_RKIND
+            end if
             
-            call calc_grad_cell(gradtheta, &
-                             iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
-                             cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
-                             cellsOnVertex, &
-                             cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
-                             rthblten)
-            depv_dt_bl(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            if (associated(rthblten)) then
+               call calc_grad_cell(gradtheta, &
+                                iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
+                                cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
+                                cellsOnVertex, &
+                                cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
+                                rthblten)
+               depv_dt_bl(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            else
+               depv_dt_bl(k,iCell) = 0.0_RKIND
+            end if
             
-            call calc_grad_cell(gradtheta, &
-                             iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
-                             cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
-                             cellsOnVertex, &
-                             cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
-                             rthcuten)
-            depv_dt_cu(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            if (associated(rthcuten)) then
+               call calc_grad_cell(gradtheta, &
+                                iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
+                                cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
+                                cellsOnVertex, &
+                                cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
+                                rthcuten)
+               depv_dt_cu(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            else
+               depv_dt_cu(k,iCell) = 0.0_RKIND
+            end if
             
-            call calc_grad_cell(gradtheta, &
-                             iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
-                             cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
-                             cellsOnVertex, &
-                             cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
-                             dtheta_dt_mp)
-            depv_dt_mp(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            if (associated(dtheta_dt_mp)) then
+               call calc_grad_cell(gradtheta, &
+                                iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
+                                cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
+                                cellsOnVertex, &
+                                cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
+                                dtheta_dt_mp)
+               depv_dt_mp(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            else
+               depv_dt_mp(k,iCell) = 0.0_RKIND
+            end if
             
-            call calc_grad_cell(gradtheta, &
-                             iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
-                             cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
-                             cellsOnVertex, &
-                             cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
-                             dtheta_dt_mix)
-            depv_dt_mix(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            if (associated(dtheta_dt_mp)) then
+               call calc_grad_cell(gradtheta, &
+                                iCell, k, nVertLevels, nEdgesOnCell(iCell), verticesOnCell, kiteAreasOnVertex, &
+                                cellsOnCell, edgesOnCell, cellsOnEdge, dvEdge, edgeNormalVectors, &
+                                cellsOnVertex, &
+                                cellTangentPlane, localVerticalUnitVectors, zgrid, areaCell(iCell), &
+                                dtheta_dt_mix)
+               depv_dt_mix(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
+            else
+               depv_dt_mix(k,iCell) = 0.0_RKIND
+            end if
          end do 
       end do
       depv_dt_diab = depv_dt_lw + depv_dt_sw + depv_dt_bl + depv_dt_cu + depv_dt_mp + depv_dt_mix

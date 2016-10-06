@@ -3798,6 +3798,9 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2
       real (kind=RKIND), pointer :: config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
 
+      logical :: inactive_rthdynten
+
+
       call mpas_pool_get_config(mesh, 'sphere_radius', r_earth)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_mix_full', config_mix_full)
@@ -3921,6 +3924,17 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(mesh, 'cf2', cf2)
       call mpas_pool_get_array(mesh, 'cf3', cf3)
 
+      !
+      ! rthdynten is currently associated with packages, and if those packages
+      ! are not active at run-time, we need to produce an rthdynten array for
+      ! use in the atm_compute_dyn_tend_work routine
+      !
+      inactive_rthdynten = .false.
+      if (.not. associated(rthdynten)) then
+         allocate(rthdynten(nVertLevels,nCells+1))
+         inactive_rthdynten = .true.
+      end if
+
       call atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels, &
          nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, num_scalars, moist_start, moist_end, &
          fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
@@ -3939,6 +3953,9 @@ MPAS_GPTL_STOP('mono_exch_2')
          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
+      if (inactive_rthdynten) then
+         deallocate(rthdynten)
+      end if
 
    end subroutine atm_compute_dyn_tend
 
