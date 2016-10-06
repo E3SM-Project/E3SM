@@ -578,9 +578,9 @@ class TestScheduler(object):
             return False
 
     ###########################################################################
-    def _get_procs_needed(self, test, phase, threads_in_flight=None):
+    def _get_procs_needed(self, test, phase, threads_in_flight=None, no_batch=False):
     ###########################################################################
-        if phase == RUN_PHASE and self._no_batch:
+        if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
             out = run_cmd_no_fail("./xmlquery TOTALPES -value", from_dir=test_dir)
             return int(out)
@@ -655,7 +655,8 @@ class TestScheduler(object):
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
         if (success and not self._no_run and not self._no_batch and test_phase == MODEL_BUILD_PHASE):
-            logger.info("Starting %s for test %s with %d procs" % (RUN_PHASE, test, 1))
+            logger.info("Starting %s for test %s with 1 proc on interactive node and %d procs on compute nodes" %
+                        (RUN_PHASE, test, self._get_procs_needed(test, RUN_PHASE, no_batch=True)))
             self._update_test_status(test, RUN_PHASE, TEST_PEND_STATUS)
             self._consumer(test, RUN_PHASE, self._run_phase)
 
