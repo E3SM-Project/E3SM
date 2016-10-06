@@ -57,7 +57,7 @@ class EntryID(GenericXML):
         #  </values>
         # </entry>
 
-        node = self.get_optional_node(vid)
+        node = self.get_optional_node("entry", {"id":vid})
         value = None
         if node is not None:
             value = self._get_value_match(node, attributes)
