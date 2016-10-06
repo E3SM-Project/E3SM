@@ -458,6 +458,27 @@ fi
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
+class TESTTESTDIFF(FakeTest):
+
+    def build_phase(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
+        script = \
+"""
+echo Insta pass
+echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
+cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
+cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
+""" % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
+        self._set_script(script)
+        FakeTest.build_phase(self,
+                       sharedlib_only=sharedlib_only, model_only=model_only)
+
+    def run_phase(self):
+        self.run_indv(suffix=None)
+        self._component_compare_test("base", "rest")
+
 class TESTRUNFAIL(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):

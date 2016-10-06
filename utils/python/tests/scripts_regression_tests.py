@@ -541,6 +541,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = update_acme_tests.get_full_test_names(["cime_test_only",
                                                        "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
                                                        "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X",
+                                                       "^TESTTESTDIFF_Mmpi-serial.f19_g16_rx1.A",
                                                        "^TESTBUILDFAILEXC.f19_g16_rx1.A",
                                                        "^TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
@@ -622,6 +623,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         run_fail_test       = [item for item in tests if "TESTRUNFAIL_" in item][0]
         run_fail_exc_test   = [item for item in tests if "TESTRUNFAILEXC" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
+        test_diff_test      = [item for item in tests if "TESTTESTDIFF" in item][0]
         mem_fail_test       = [item for item in tests if "TESTMEMLEAKFAIL" in item][0]
         mem_pass_test       = [item for item in tests if "TESTMEMLEAKPASS" in item][0]
 
@@ -664,6 +666,9 @@ class O_TestTestScheduler(TestCreateTestCommon):
                                 "Broken test did not report run error:\n%s" % data)
             elif (test_name == mem_fail_test):
                 self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
+            elif (test_name == test_diff_test):
+                self.assertEqual(ts.get_status("COMPARE_base_rest"), TEST_FAIL_STATUS)
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
