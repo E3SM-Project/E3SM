@@ -125,7 +125,9 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Construct the list of streams.
     #----------------------------------------------------
+    print "DEBUG: config is ",config
     streams = nmlgen.get_streams()
+    print "DEBUG: streams are ",streams
 
     if datm_presaero == "pt1_pt1":
         streams.append("presaero.%s.%s" % (datm_presaero, atm_grid))
