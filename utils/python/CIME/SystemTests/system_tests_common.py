@@ -81,7 +81,7 @@ class SystemTestsCommon(object):
                                        (MODEL_BUILD_PHASE, not sharedlib_only)]:
             if phase_bool:
                 with self._test_status:
-                    self._test_status.set_status(phase_name, TEST_PENDING_STATUS)
+                    self._test_status.set_status(phase_name, TEST_PEND_STATUS)
 
                 start_time = time.time()
                 try:
@@ -133,7 +133,7 @@ class SystemTestsCommon(object):
             expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
                    "Model was not built!")
             with self._test_status:
-                self._test_status.set_status(RUN_PHASE, TEST_PENDING_STATUS)
+                self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
             self.run_phase()
 
