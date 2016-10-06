@@ -48,7 +48,6 @@ def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
         histlist.append(latest_files[key])
     return histlist
 
-
 def copy(case, suffix):
     """Copy the most recent batch of hist files in a case, adding the given suffix.
 
