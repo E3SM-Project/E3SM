@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="entry_id">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="entry"/>
+        <xs:element ref="description" minOccurs="0"/>
+        <xs:element ref="help" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element ref="type"/>
+        <xs:element ref="valid_values"/>
+        <xs:element ref="default_value"/>
+        <xs:element ref="file"/>
+        <xs:element ref="group"/>
+        <xs:element ref="values"/>
+        <xs:element ref="desc"/>
+        <xs:element ref="schema" minOccurs="0"/>
+      </xs:choice>
+      <xs:attribute name="id" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="type" type="xs:NCName"/>
+  <xs:element name="default_value" type="xs:string"/>
+  <xs:element name="file" type="xs:NCName"/>
+  <xs:element name="group" type="xs:NCName"/>
+  <xs:element name="valid_values" type="xs:string"/>
+  <xs:element name="schema" type="xs:string"/>
+  <xs:element name="values">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="value"/>
+      </xs:sequence>
+         <xs:attribute name="modifier" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="value">
+    <xs:complexType mixed="true">
+      <xs:attribute name="component"/>
+      <xs:attribute name="compset"/>
+      <xs:attribute name="grid"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="description">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="desc"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="help" type="xs:string"/>
+  <xs:element name="desc">
+    <xs:complexType mixed="true">
+      <xs:attribute name="compset"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

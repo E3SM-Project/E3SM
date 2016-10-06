@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="setup_comp.xsl" ?>
 
-<definitions_variables>
+<entry_id>
 
   <entry id="COMP_OCN">
     <type>char</type>
@@ -188,7 +188,6 @@
   </entry>
 
   <entry id="SSTICE_YEAR_END">
-    <name>value</name>
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
@@ -219,5 +218,5 @@
     =========================================
   </help>
 
-</definitions_variables>
+</entry_id>
 
