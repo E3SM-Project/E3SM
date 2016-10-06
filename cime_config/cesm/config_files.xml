@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+<?xml-stylesheet type="text/xsl" ?>
 
-<files>
+<entry_id>
 
   <entry id="MODEL">
     <type>char</type>
@@ -206,7 +206,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
-    <schema>$CIMEROOT/cime_config/xml_schemas/config_component.xsd</schema>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ATM_FILE">
@@ -221,6 +221,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_LND_FILE">
@@ -236,6 +237,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ROF_FILE">
@@ -251,6 +253,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ICE_FILE">
@@ -265,6 +268,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_OCN_FILE">
@@ -281,6 +285,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_GLC_FILE">
@@ -295,6 +300,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_WAV_FILE">
@@ -309,6 +315,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ESP_FILE">
@@ -320,7 +327,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
-</files>
+</entry_id>
 

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<definitions_variables>
+<entry_id>
 
   <entry id="COMP_ROF">
     <type>char</type>
@@ -92,4 +92,4 @@
     =========================================
   </help>
 
-</definitions_variables>
+</entry_id>

@@ -11,17 +11,16 @@ logger = logging.getLogger(__name__)
 
 class Component(EntryID):
 
-    def __init__(self, infile=None):
+    def __init__(self, infile):
         """
         initialize an object
         """
         files = Files()
-        if infile is None:
-            infile = files.get_value("CONFIG_DRV_FILE")
 
         # use xmllint to validate infile
         xmllint = find_executable("xmllint")
         if xmllint is not None:
+            # all components refer to the same schema so referencing config_drv_file is okay
             schema = files.get_schema("CONFIG_DRV_FILE")
             if schema is not None:
                 logger.warn("Checking file %s against %s"%(infile, schema))

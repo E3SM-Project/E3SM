@@ -25,6 +25,7 @@ class Files(EntryID):
         node = self.get_optional_node("entry", {"id":nodename})
         schemanode = self.get_optional_node("schema", root=node)
         if schemanode is not None:
+            logger.warn("Found schema for %s"%(nodename))
             return self.get_resolved_value(schemanode.text)
         return None
                             

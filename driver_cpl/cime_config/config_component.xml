@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
 
-<definitions_variables>
+<entry_id>
 
 <!-- The list of component classes that this coupler/driver knows how
      to deal with.  Stub and data models for each component class
@@ -3632,6 +3632,6 @@
     =========================================
   </help>
 
-</definitions_variables>
+</entry_id>
 
 
