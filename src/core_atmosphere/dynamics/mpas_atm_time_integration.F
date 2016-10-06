@@ -1700,7 +1700,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, rdzw, dcEdge, invDcEdge, invAreaCell, cofrz, dvEdge
 
-      real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
@@ -1743,8 +1742,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(diag, 'gamma_tri', gamma_tri)
 
       call mpas_pool_get_array(mesh, 'dss', dss)
-      call mpas_pool_get_array(mesh, 'pzp', pzp)
-      call mpas_pool_get_array(mesh, 'pzm', pzm)
 
       call mpas_pool_get_array(tend, 'u', tend_ru)
       call mpas_pool_get_array(tend, 'rho_zz', tend_rho)
@@ -1787,7 +1784,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
-                                   invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
+                                   invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
                                    dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
                                    )
 
@@ -1799,7 +1796,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
-                                   invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
+                                   invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
                                    dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
                                    )
 
@@ -1859,9 +1856,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(nCells+1) :: invAreaCell
       real (kind=RKIND), dimension(nVertLevels) :: cofrz
       real (kind=RKIND), dimension(nEdges+1) :: dvEdge
-
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzp
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzm
 
       integer, dimension(nCells+1) :: nEdgesOnCell
       integer, dimension(2,nEdges+1) :: cellsOnEdge
@@ -3776,8 +3770,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), dimension(:), pointer :: rdzu, rdzw, fzm, fzp, qv_init
       real (kind=RKIND), dimension(:,:), pointer :: t_init 
 
-      real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
-
       real (kind=RKIND), pointer :: cf1, cf2, cf3
 
       real (kind=RKIND), pointer :: r_earth
@@ -3848,8 +3840,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(diag, 'tend_rtheta_adv', tend_rtheta_adv)
       call mpas_pool_get_array(tend_physics, 'rthdynten', rthdynten)
 
-      call mpas_pool_get_array(mesh, 'pzp', pzp)
-      call mpas_pool_get_array(mesh, 'pzm', pzm)
       call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
@@ -3945,7 +3935,7 @@ MPAS_GPTL_STOP('mono_exch_2')
          theta_m_save, exner, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
          cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
          latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
-         rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
+         rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
          tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
          config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
          config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
@@ -3970,7 +3960,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       theta_m_save, exner, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
       cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
       latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
-      rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
+      rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
       tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
       config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
       config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
@@ -4066,9 +4056,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), dimension(nVertLevels) :: fzp
       real (kind=RKIND), dimension(nVertLevels) :: qv_init
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: t_init 
-
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzp
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzm
 
       real (kind=RKIND) :: cf1, cf2, cf3
       real (kind=RKIND) :: prandtl_inv, r_areaCell, rgas_cprcv

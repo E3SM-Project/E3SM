@@ -387,8 +387,6 @@ module atm_core
 
       call atm_compute_damping_coefs(mesh, block % configs)
 
-      call atm_compute_pgf_coefs(mesh, block % configs)
-
       call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
@@ -1033,62 +1031,6 @@ module atm_core
       end do
 
    end subroutine atm_compute_damping_coefs
-
-
-   subroutine atm_compute_pgf_coefs(mesh, configs)
-
-      implicit none
-
-      type (mpas_pool_type), intent(inout) :: mesh
-      type (mpas_pool_type), intent(in) :: configs
-
-      integer :: iEdge, iCell1, iCell2, k, iCell, nz, nz1
-      real (kind=RKIND) :: d1, d2, d3
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, pzp, pzm
-      integer, dimension(:,:), pointer :: cellsOnEdge
-      integer, pointer :: nCells, nEdges, nVertLevels
-
-      call mpas_pool_get_array(mesh, 'pzp', pzp)
-      call mpas_pool_get_array(mesh, 'pzm', pzm)
-      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
-      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
-
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-
-
-!     Coefficients for computing vertical pressure gradient dp/dz
-!     dp/dz (k,iCell) = pzp(k,iCell) * (p(k+1,iCell) - p(k,iCell)) +pzm(k,iCell) * (p(k,iCell) - p(k-1,iCell))
-
-      nz1 = nVertLevels
-      nz = nz1 + 1
-
-      do iCell=1, nCells
-
-         d1 = zgrid(3,iCell)-zgrid(1,iCell)
-         d2 = zgrid(4,iCell)-zgrid(2,iCell)
-         d3 = d1+d2
-         pzm(1,iCell) =  2.*d3/(d1*d2)
-         pzp(1,iCell) = -2.*d1/(d2*d3)
-
-         do k=2,nz1-1
-            pzp(k,iCell) = 2.*(zgrid(k+1,iCell)-zgrid(k-1,iCell))/     &
-                         ((zgrid(k+2,iCell)-zgrid(k  ,iCell))*         &
-                          (zgrid(k+2,iCell)-zgrid(k  ,iCell)           &
-                          +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-            pzm(k,iCell) = 2.*(zgrid(k+2,iCell)-zgrid(k  ,iCell))/     &
-                         ((zgrid(k+1,iCell)-zgrid(k-1,iCell))*         &
-                          (zgrid(k+2,iCell)-zgrid(k  ,iCell)           &
-                          +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-         end do
-
-         pzp(nz1,iCell) = 0.
-         pzm(nz1,iCell) = 2./(zgrid(nz,iCell)-zgrid(nz1-1,iCell))
-
-      end do
-
-   end subroutine atm_compute_pgf_coefs
 
 
    subroutine atm_adv_coef_compression( mesh )

@@ -540,8 +540,6 @@
 			<var name="zz"/>
 			<var name="zb"/>
 			<var name="zb3"/>
-			<var name="pzm"/>
-			<var name="pzp"/>
 			<var name="dss"/>
 			<var name="u_init"/>
 			<var name="t_init"/>
@@ -1227,12 +1225,6 @@
 
                 <var name="zb3_cell" type="real" dimensions="nVertLevelsP1 maxEdges nCells" units="TBD"
                      description="TBD"/>
-
-                <var name="pzm" type="real" dimensions="nVertLevels nCells" units="-"
-                     description="Used by newpx formulation"/>
-
-                <var name="pzp" type="real" dimensions="nVertLevels nCells" units="-"
-                     description="Used by newpx formulation"/>
 
                 <!-- W-Rayleigh damping coefficients -->
                 <var name="dss" type="real" dimensions="nVertLevels nCells" units="unitless"
