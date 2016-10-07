@@ -16,7 +16,7 @@ TEST_FAIL_STATUS = "FAIL"
 ALL_PHASE_STATUSES = [TEST_PEND_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
 
 # Special statuses that the overall test can be in
-TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in one of the COMPARE phases
+TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in the BASELINE phase
 NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
 
 # Special strings that can appear in comments, indicating particular types of failures
@@ -33,7 +33,8 @@ RUN_PHASE             = "RUN"
 THROUGHPUT_PHASE      = "TPUTCOMP"
 MEMCOMP_PHASE         = "MEMCOMP"
 MEMLEAK_PHASE         = "MEMLEAK"
-COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
+COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT, this is for internal test comparisons, there could be multiple variations of this phase in one test
+BASELINE_PHASE        = "BASELINE"
 GENERATE_PHASE        = "GENERATE"
 
 ALL_PHASES = [CREATE_NEWCASE_PHASE,
@@ -44,6 +45,7 @@ ALL_PHASES = [CREATE_NEWCASE_PHASE,
               MODEL_BUILD_PHASE,
               RUN_PHASE,
               COMPARE_PHASE,
+              BASELINE_PHASE,
               THROUGHPUT_PHASE,
               MEMCOMP_PHASE,
               MEMLEAK_PHASE,
@@ -123,17 +125,18 @@ class TestStatus(object):
         ...     ts.set_status(XML_PHASE, "PASS")
         ...     ts.set_status(SETUP_PHASE, "FAIL")
         ...     ts.set_status(SETUP_PHASE, "PASS")
-        ...     ts.set_status("%s_baseline" % COMPARE_PHASE, "FAIL")
+        ...     ts.set_status("%s_base_rest" % COMPARE_PHASE, "FAIL")
         ...     ts.set_status(SHAREDLIB_BUILD_PHASE, "PASS", comments='Time=42')
         >>> ts._phase_statuses
-        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42')), ('COMPARE_baseline', ('FAIL', '')), ('MODEL_BUILD', ('PEND', ''))])
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42')), ('COMPARE_base_rest', ('FAIL', '')), ('MODEL_BUILD', ('PEND', ''))])
 
         >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
         ...     ts.set_status(CREATE_NEWCASE_PHASE, "PASS")
         ...     ts.set_status(XML_PHASE, "PASS")
         ...     ts.set_status(SETUP_PHASE, "FAIL")
         ...     ts.set_status(SETUP_PHASE, "PASS")
-        ...     ts.set_status("%s_baseline" % COMPARE_PHASE, "FAIL")
+        ...     ts.set_status(BASELINE_PHASE, "PASS")
+        ...     ts.set_status("%s_base_rest" % COMPARE_PHASE, "FAIL")
         ...     ts.set_status(SHAREDLIB_BUILD_PHASE, "PASS", comments='Time=42')
         ...     ts.set_status(SETUP_PHASE, "PASS")
         >>> ts._phase_statuses
@@ -206,11 +209,11 @@ class TestStatus(object):
         ... PASS ERS.foo.A CREATE_NEWCASE
         ... PASS ERS.foo.A XML
         ... FAIL ERS.foo.A SETUP
-        ... PASS ERS.foo.A COMPARE_baseline
+        ... PASS ERS.foo.A COMPARE_base_rest
         ... PASS ERS.foo.A SHAREDLIB_BUILD Time=42
         ... '''
         >>> _test_helper1(contents)
-        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', '')), ('COMPARE_baseline', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42'))])
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', '')), ('COMPARE_base_rest', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42'))])
         """
         for line in file_contents.splitlines():
             line = line.strip()
@@ -266,9 +269,9 @@ class TestStatus(object):
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A COMPARE_1\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'FAIL'
-        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'DIFF'
-        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD')
         'PASS'
@@ -304,7 +307,7 @@ class TestStatus(object):
                     if (rv == TEST_PASS_STATUS):
                         rv = NAMELIST_FAIL_STATUS
 
-                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == "COMPARE_baseline"):
+                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == BASELINE_PHASE):
                     rv = TEST_DIFF_STATUS
 
                 else:
