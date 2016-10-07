@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<definitions_variables>
+<entry_id>
 
   <entry id="COMP_WAV">
     <type>char</type>
@@ -37,4 +37,4 @@
     =========================================
   </help>
 
-</definitions_variables>
+</entry_id>
