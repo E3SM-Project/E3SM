@@ -318,10 +318,11 @@ class NamelistDefinition(GenericXML):
     def _user_modifiable_in_variable_definition(self, name, filename):
         # Is name user modifiable?
         node = self.get_optional_node("entry", attributes={'id': name})
-        user_modifiable = self.get_optional_node("unmodifiable_via_user_nl", root=node)
+
+        user_modifiable = node.get('modify_in_xml')
         if user_modifiable is not None:
             expect(False,
-                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable.text))
+                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable))
 
     def validate(self, namelist, filename=None):
         """Validate a namelist object against this definition.
