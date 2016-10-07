@@ -272,7 +272,7 @@ contains
     use clm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager     , only : get_step_size
     use column_varcon        , only : icol_roof, icol_road_imperv
-    use TridiagonalMod       , only : Tridiagonal2
+    use TridiagonalMod       , only : Tridiagonal, Tridiagonal2
     use abortutils           , only : endrun     
     use SoilStateType        , only : soilstate_type
     use SoilHydrologyType    , only : soilhydrology_type
@@ -805,7 +805,8 @@ contains
          end if
 	 jbot(c) = nlevbed
       end do
-      call Tridiagonal2(bounds, 1, nlevgrnd+1, &
+      if(do_varsoil) then
+        call Tridiagonal2(bounds, 1, nlevgrnd+1, &
            jtop(bounds%begc:bounds%endc), jbot(bounds%begc:bounds%endc), &
            num_hydrologyc, filter_hydrologyc, &
            amx(bounds%begc:bounds%endc, :), &
@@ -813,6 +814,16 @@ contains
            cmx(bounds%begc:bounds%endc, :), &
            rmx(bounds%begc:bounds%endc, :), &
            dwat2(bounds%begc:bounds%endc, :) )
+      else
+        call Tridiagonal(bounds, 1, nlevsoi+1, &
+           jtop(bounds%begc:bounds%endc), &
+           num_hydrologyc, filter_hydrologyc, &
+           amx(bounds%begc:bounds%endc, :), &
+           bmx(bounds%begc:bounds%endc, :), &
+           cmx(bounds%begc:bounds%endc, :), &
+           rmx(bounds%begc:bounds%endc, :), &
+           dwat2(bounds%begc:bounds%endc, :) )
+      end if
 
       ! Renew the mass of liquid water
       ! also compute qcharge from dwat in aquifer layer
