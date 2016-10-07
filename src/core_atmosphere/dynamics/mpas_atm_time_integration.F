@@ -250,6 +250,8 @@ module atm_time_integration
       call mpas_pool_get_dimension(state, 'nCells', nCells)
       call mpas_pool_get_dimension(state, 'nEdges', nEdges)
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+
+      allocate(qtot(nVertLevels,nCells+1))
       allocate(tend_rtheta_physics(nVertLevels,nCells+1))
       allocate(tend_ru_physics(nVertLevels,nEdges+1))
 
@@ -346,11 +348,6 @@ module atm_time_integration
          ! mesh is needed for atm_compute_moist_coefficients
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
 
-         call mpas_pool_get_dimension(state, 'nCells', nCells)
-         call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
-
-         allocate(qtot(nVertLevels,nCells+1))  ! new allocation of qtot
-
 !$OMP PARALLEL DO
          do thread=1,block % nThreads
             call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh, &     !MGD could do away with dimensions arg
@@ -368,60 +365,60 @@ module atm_time_integration
       call mpas_timer_stop('atm_compute_moist_coefficients')
 
 #ifdef DO_PHYSICS
-            call mpas_timer_start('physics_addtend')
-            block => domain % blocklist
-            do while (associated(block))
-               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-               call mpas_pool_get_subpool(block % structs, 'state', state)
-               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
-               rk_step = 1
-               dynamics_substep = 1
-               call physics_get_tend( block, &
-                                       mesh, &
-                                      state, &     
-                                       diag, &
-                                       tend, &
-                               tend_physics, &
-                            block % configs, &
-                                    rk_step, &
-                           dynamics_substep, &
-                            tend_ru_physics, &
-                        tend_rtheta_physics )
-               block => block % next
-            end do
-            call mpas_timer_stop('physics_addtend')
+      call mpas_timer_start('physics_addtend')
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+         call mpas_pool_get_subpool(block % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block % structs, 'tend', tend)
+         call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
+         rk_step = 1
+         dynamics_substep = 1
+         call physics_get_tend( block, &
+                                 mesh, &
+                                state, &     
+                                 diag, &
+                                 tend, &
+                         tend_physics, &
+                      block % configs, &
+                              rk_step, &
+                     dynamics_substep, &
+                      tend_ru_physics, &
+                  tend_rtheta_physics )
+         block => block % next
+      end do
+      call mpas_timer_stop('physics_addtend')
 #endif
 
 
-            DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
+      DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
-            !  Compute the coefficients for the vertically implicit solve in the acoustic step.
-            !  These coefficients will work for the first acoustic step in all cases.
-            call mpas_timer_start('atm_compute_vert_imp_coefs')
-            block => domain % blocklist
-            do while (associated(block))
-               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-               call mpas_pool_get_subpool(block % structs, 'state', state)
-               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-   
-               call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+         !  Compute the coefficients for the vertically implicit solve in the acoustic step.
+         !  These coefficients will work for the first acoustic step in all cases.
+         call mpas_timer_start('atm_compute_vert_imp_coefs')
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'tend', tend)
 
-               rk_step = 1
+            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+            rk_step = 1
 !$OMP PARALLEL DO
-               do thread=1,block % nThreads
-                  call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
-               end do
-!$OMP END PARALLEL DO
-               block => block % next
+            do thread=1,block % nThreads
+               call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
+                                          block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                          block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
+                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
+                                          block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
             end do
-            call mpas_timer_stop('atm_compute_vert_imp_coefs')
+!$OMP END PARALLEL DO
+            block => block % next
+         end do
+         call mpas_timer_stop('atm_compute_vert_imp_coefs')
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -4083,7 +4080,8 @@ MPAS_GPTL_STOP('mono_exch_2')
       integer, intent(in) :: rk_step
       real (kind=RKIND), intent(in) :: dt
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv, rthdynten
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rthdynten
 
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
