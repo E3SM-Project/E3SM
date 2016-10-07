@@ -257,7 +257,7 @@ OR
         args.no_batch = True
 
     if args.test_id is None:
-        args.test_id = "%s.%s"%(CIME.utils.get_timestamp(), CIME.utils.id_generator())
+        args.test_id = "%s_%s"%(CIME.utils.get_timestamp(), CIME.utils.id_generator())
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:
@@ -285,6 +285,11 @@ OR
             test_names = update_acme_tests.get_full_test_names(args.testargs,
                                                                mach_obj.get_machine_name(), args.compiler)
         else:
+            expect(not (args.xml_machine is None and args.xml_compiler
+                        is  None and args.xml_category is None and args.xml_testlist is None),
+                   "At least one of --xml-machine, --xml-testlist, "
+                   "--xml-compiler, --xml-category or a valid test name must be provided.")
+                   
             test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
                                                            args.xml_compiler, args.xml_testlist,
                                                            machine_name, args.compiler)

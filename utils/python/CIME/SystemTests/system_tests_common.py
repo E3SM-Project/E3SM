@@ -31,7 +31,6 @@ class SystemTestsCommon(object):
         self._runstatus = None
         self._casebaseid = self._case.get_value("CASEBASEID")
         self._test_status = TestStatus(test_dir=caseroot, test_name=self._casebaseid)
-
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
         self._init_case_setup()
@@ -82,7 +81,7 @@ class SystemTestsCommon(object):
                                        (MODEL_BUILD_PHASE, not sharedlib_only)]:
             if phase_bool:
                 with self._test_status:
-                    self._test_status.set_status(phase_name, TEST_PENDING_STATUS)
+                    self._test_status.set_status(phase_name, TEST_PEND_STATUS)
 
                 start_time = time.time()
                 try:
@@ -134,7 +133,7 @@ class SystemTestsCommon(object):
             expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
                    "Model was not built!")
             with self._test_status:
-                self._test_status.set_status(RUN_PHASE, TEST_PENDING_STATUS)
+                self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
             self.run_phase()
 
@@ -289,10 +288,13 @@ class SystemTestsCommon(object):
                 memdiff = -1
                 if originalmem > 0:
                     memdiff = (finalmem - originalmem)/originalmem
-
+                tolerance = self._case.get_value("TEST_MEMLEAK_TOLERANCE")
+                if tolerance is None:
+                    tolerance = 0.1
+                expect(tolerance > 0.0, "Bad value for memleak tolerance in test")
                 if memdiff < 0:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
-                elif memdiff < 0.1:
+                elif memdiff < tolerance:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "memleak detected, memory went from %f to %f in %d days" % (originalmem, finalmem, finaldate-originaldate)
@@ -337,7 +339,7 @@ class SystemTestsCommon(object):
             append_status(comments, sfile="TestStatus.log")
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             ts_comments = comments if "\n" not in comments else None
-            self._test_status.set_status("%s_baseline" % COMPARE_PHASE, status, comments=ts_comments)
+            self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASECMP_CASE"))
 
             # compare memory usage to baseline
@@ -455,6 +457,27 @@ fi
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
+
+class TESTTESTDIFF(FakeTest):
+
+    def build_phase(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
+        script = \
+"""
+echo Insta pass
+echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
+cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
+cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
+""" % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
+        self._set_script(script)
+        FakeTest.build_phase(self,
+                       sharedlib_only=sharedlib_only, model_only=model_only)
+
+    def run_phase(self):
+        self.run_indv(suffix=None)
+        self._component_compare_test("base", "rest")
 
 class TESTRUNFAIL(FakeTest):
 

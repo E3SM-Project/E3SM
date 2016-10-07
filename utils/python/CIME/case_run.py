@@ -81,7 +81,7 @@ def run_model(case):
 
     # Set OMP_NUM_THREADS
     env_mach_pes = case.get_env("mach_pes")
-    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_value("COMP_CLASSES").split(',')))
+    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_values("COMP_CLASSES")))
 
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))

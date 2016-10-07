@@ -33,6 +33,7 @@ _TEST_SUITES = {
                     "TESTRUNFAIL_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTTESTDIFF_Mmpi-serial.f19_g16_rx1.A",
                     "TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
                     "TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X")
                    ),

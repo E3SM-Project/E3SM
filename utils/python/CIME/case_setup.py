@@ -8,7 +8,7 @@ from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.compilers     import Compilers
-from CIME.utils             import append_status, parse_test_name
+from CIME.utils             import append_status, parse_test_name, get_cime_root
 from CIME.user_mod_support  import apply_user_mods
 from CIME.test_status       import *
 
@@ -83,7 +83,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
     msg = "case.setup starting"
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
-    cimeroot = os.environ["CIMEROOT"]
+    cimeroot = get_cime_root(case)
 
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
     din_loc_root = case.get_value("DIN_LOC_ROOT")
@@ -136,7 +136,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
-        models = case.get_value("COMP_CLASSES").split(",")
+        models = case.get_values("COMP_CLASSES")
 
         mach, compiler, debug, mpilib = \
             case.get_value("MACH"), case.get_value("COMPILER"), case.get_value("DEBUG"), case.get_value("MPILIB")
@@ -172,9 +172,6 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst[comp_model], comp, ntasks))
 
-        expect(not (case.get_value("BUILD_THREADED") and compiler == "nag"),
-               "it is not possible to run with OpenMP if using the NAG Fortran compiler")
-
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
         else:
@@ -190,6 +187,13 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
             logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
+            if thread_count > 1:
+                case.set_value("BUILD_THREADED", True)
+
+            expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
+                   "it is not possible to run with OpenMP if using the NAG Fortran compiler")
+
+
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
@@ -208,10 +212,10 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
-                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes)
+                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
-                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes)
+                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked

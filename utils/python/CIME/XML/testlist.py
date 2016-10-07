@@ -1,6 +1,38 @@
 """
 Interface to the config_files.xml file.  This class inherits from generic_xml.py
 It supports versions 1.0 and 2.0 of the testlist.xml file
+
+In version 2 of the file options can be specified to further refine a test or
+set of tests. They can be specified either at the top level, in which case they
+apply to all machines/compilers for this test:
+
+<test ...>
+  <options>
+    <option name="wallclock">00:20</option>
+  </options>
+  ...
+</test>
+
+or at the level of a particular machine/compiler:
+
+<test ...>
+  <machines>
+    <machine ...>
+      <options>
+        <option name="wallclock">00:20</option>
+      </options>
+    </machine>
+  </machines>
+</test>
+
+Currently supported options are:
+
+- walltime: sets the wallclock limit in the queuing system
+
+- memleak_tolerance: specifies the relative memory growth expected for this test
+
+- comment: has no effect, but is written out when printing the test list
+
 """
 from CIME.XML.standard_module_setup import *
 
@@ -79,10 +111,22 @@ class Testlist(GenericXML):
                             this_test["machine"] = value
                         else:
                             this_test[key] = value
+                    this_test["options"] = {}
 
+                    # Get options that apply to all machines/compilers for this test
+                    #
+                    # option xpath here prevents us from looking within the
+                    # machines block
+                    optionnodes = self.get_nodes("option", root=tnode, xpath="options/option")
+                    for onode in optionnodes:
+                        this_test['options'][onode.get('name')] = onode.text
+
+                    # Now get options specific to this machine/compiler
                     optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
-                        this_test[onode.get('name')] = onode.text
+                        this_test['options'][onode.get('name')] = onode.text
+
+
                     tests.append(this_test)
 
         return tests

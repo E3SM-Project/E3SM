@@ -81,7 +81,7 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+      <arg name="thread_count" > -c {{ thread_count }}</arg>
 
     </arguments>
   </mpirun>
@@ -197,7 +197,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-	<arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -371,11 +371,13 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-        <command name="load">git/2.1.3</command>
-	<command name="load">python/2.7.9</command>
-	<command name="load">gcc/5.1.0/openmpi/1.8.7</command>
-	<command name="load">cmake/2.8.12</command>
-	<command name="load">netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7</command>
+        <command name="load">sems-env</command>
+        <command name="load">sems-git</command>
+	<command name="load">sems-python/2.7.9</command>
+	<command name="load">sems-gcc/5.1.0</command>
+	<command name="load">sems-openmpi/1.8.7</command>
+	<command name="load">sems-cmake/2.8.12</command>
+	<command name="load">sems-netcdf/4.3.2/parallel</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -386,7 +388,7 @@
 
 <machine MACH="sandia-srn-sems">
     <DESC>Linux workstation at Sandia on SRN with SEMS TPL modules</DESC>
-    <NODENAME_REGEX>(s999964|climate)</NODENAME_REGEX>
+    <NODENAME_REGEX>(s999964|climate|penn)</NODENAME_REGEX>
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
@@ -425,11 +427,13 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-        <command name="load">git/2.1.3</command>
-	<command name="load">python/2.7.9</command>
-	<command name="load">gcc/5.1.0/openmpi/1.8.7</command>
-	<command name="load">cmake/2.8.12</command>
-	<command name="load">netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7</command>
+        <command name="load">sems-env</command>
+        <command name="load">sems-git</command>
+	<command name="load">sems-python/2.7.9</command>
+	<command name="load">sems-gcc/5.1.0</command>
+	<command name="load">sems-openmpi/1.8.7</command>
+	<command name="load">sems-cmake/2.8.12</command>
+	<command name="load">sems-netcdf/4.3.2/parallel</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -740,7 +744,7 @@
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -761,29 +765,6 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="HDF5">/soft/libraries/hdf5/1.8.14/cnk-xl/current</env>
     </environment_variables>
-</machine>
-
-<machine MACH="penn">
-    <DESC>Linux workstation: Andy's at SNL</DESC>
-    <NODENAME_REGEX>penn</NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
-    <OS>LINUX</OS>
-    <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/acme/ptclmdata</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-
-    <CCSM_BASELINE>/home/agsalin/acme/baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
-    <SUPPORTED_BY>agsalin at sandia dot gov</SUPPORTED_BY>
-    <GMAKE_J>20</GMAKE_J>
-    <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>2</PES_PER_NODE>
 </machine>
 
 <machine MACH="sierra">
@@ -862,7 +843,7 @@
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1128,7 +1109,7 @@
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
         <arg name="num_tasks" > -n $TOTALPES</arg>
         <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-        <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
+        <arg name="thread_count" > -d {{ thread_count }}</arg>
         <arg name="numa_node" > -cc numa_node </arg>
       </arguments>
 
@@ -1295,7 +1276,7 @@
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
              <arg name="num_tasks" > -n $TOTALPES</arg>
              <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-             <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
+             <arg name="thread_count" > -d {{ thread_count }}</arg>
              <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
          </mpirun>
@@ -1660,7 +1641,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
+                <arg name="thread_count"> -d {{ thread_count }}</arg>
              </arguments>
          </mpirun>
 </machine>
@@ -1699,7 +1680,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d $OMP_NUM_THREADS </arg>
+                <arg name="thread_count"> -d {{ thread_count }} </arg>
              </arguments>
          </mpirun>
 </machine>

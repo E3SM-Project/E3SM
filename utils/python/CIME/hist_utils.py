@@ -5,7 +5,7 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
-import logging, glob, os, shutil, re
+import logging, glob, os, shutil, re, stat
 logger = logging.getLogger(__name__)
 
 def _iter_model_file_substrs(case):
@@ -47,7 +47,6 @@ def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
     for key in latest_files.keys():
         histlist.append(latest_files[key])
     return histlist
-
 
 def copy(case, suffix):
     """Copy the most recent batch of hist files in a case, adding the given suffix.
@@ -260,15 +259,15 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False):
     if mstr1 != mstr2:
         mstr = mstr1+mstr2
 
-    stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename, mstr))
+    cpr_stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s%s.cprnc.out" % (cprnc_exe, file1, file2, rundir, basename, mstr))
     if multiinst_cpl_compare:
         #  In a multiinstance test the cpl hist file will have a different number of
         # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
         # in this case we only want to check that the fields we are able to compare
         # have no differences.
-        return (stat == 0 and " 0 had non-zero differences" in out, out)
+        return (cpr_stat == 0 and " 0 had non-zero differences" in out, out)
     else:
-        return (stat == 0 and "files seem to be IDENTICAL" in out, out)
+        return (cpr_stat == 0 and "files seem to be IDENTICAL" in out, out)
 
 def compare_baseline(case, baseline_dir=None):
     """
@@ -291,7 +290,7 @@ def compare_baseline(case, baseline_dir=None):
 
     for bdir in dirs_to_check:
         if not os.path.isdir(bdir):
-            return False, "ERROR %s baseline directory '%s' does not exist" % TEST_NO_BASELINES_COMMENT,bdir
+            return False, "ERROR %s baseline directory '%s' does not exist" % (TEST_NO_BASELINES_COMMENT,bdir)
 
     return _compare_hists(case, rundir, basecmp_dir)
 
@@ -382,5 +381,9 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
 
     expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
+    #make sure permissions are open in baseline directory
+    for root, _, files in os.walk(basegen_dir):
+        for name in files:
+            os.chmod(os.path.join(root,name), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
 
     return True, comments
