@@ -4394,7 +4394,7 @@ MPAS_GPTL_STOP('mono_exch_2')
 
             if (config_mix_full) then  ! mix full state
 
-               do iEdge=1,nEdgesSolve
+               do iEdge=edgeSolveStart,edgeSolveEnd
 
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
@@ -4418,7 +4418,7 @@ MPAS_GPTL_STOP('mono_exch_2')
 
             else  ! idealized cases where we mix on the perturbation from the initial 1-D state
 
-               do iEdge=1,nEdgesSolve
+               do iEdge=edgeSolveStart,edgeSolveEnd
 
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
@@ -4560,9 +4560,9 @@ MPAS_GPTL_STOP('mono_exch_2')
             end do
          end do
 
-         if (h_mom_eddy_visc4 > 0.0) then  ! 4th order mixing is active
-
 !$OMP BARRIER
+
+         if (h_mom_eddy_visc4 > 0.0) then  ! 4th order mixing is active
 
             do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
                r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
@@ -4631,7 +4631,7 @@ MPAS_GPTL_STOP('mono_exch_2')
 
          if ( v_mom_eddy_visc2 > 0.0 ) then
 
-            do iCell = 1, nCellsSolve
+            do iCell=cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
                do k=2,nVertLevels
                   tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + v_mom_eddy_visc2*0.5*(rho_zz(k,iCell)+rho_zz(k-1,iCell))*(  &
@@ -4730,10 +4730,10 @@ MPAS_GPTL_STOP('mono_exch_2')
                end do
             end do
           end do
-            
-         if (h_theta_eddy_visc4 > 0.0) then  ! 4th order mixing is active
 
 !$OMP BARRIER
+            
+         if (h_theta_eddy_visc4 > 0.0) then  ! 4th order mixing is active
 
             do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
                r_areaCell = h_theta_eddy_visc4 * prandtl_inv * invAreaCell(iCell)
@@ -4794,7 +4794,7 @@ MPAS_GPTL_STOP('mono_exch_2')
 
             if (config_mix_full) then
 
-               do iCell = 1, nCellsSolve
+               do iCell = cellSolveStart,cellSolveEnd
                   do k=2,nVertLevels-1
                      z1 = zgrid(k-1,iCell)
                      z2 = zgrid(k  ,iCell)
@@ -4813,7 +4813,7 @@ MPAS_GPTL_STOP('mono_exch_2')
 
          else  ! idealized cases where we mix on the perturbation from the initial 1-D state
 
-               do iCell = 1, nCellsSolve
+               do iCell = cellSolveStart,cellSolveEnd
                   do k=2,nVertLevels-1
                      z1 = zgrid(k-1,iCell)
                      z2 = zgrid(k  ,iCell)
