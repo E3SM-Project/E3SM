@@ -702,8 +702,8 @@ contains
           end if
 
           !scs: use analytical expression for aquifer specific yield
-          rous = watsat(c,nlevsoi) &
-               * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevsoi))**(-1./bsw(c,nlevsoi)))
+          rous = watsat(c,nlevbed) &
+               * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
           rous=max(rous,0.02_r8)
 
           !--  water table is below the soil column  --------------------------------------
