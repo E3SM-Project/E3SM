@@ -853,7 +853,7 @@ def get_build_threaded(case):
     force_threaded = case.get_value("BUILD_THREADED")
     if force_threaded:
         return True
-    comp_classes = case.get_value("COMP_CLASSES").split(',')
+    comp_classes = case.get_values("COMP_CLASSES")
     for comp_class in comp_classes:
         if comp_class == "DRV":
             comp_class = "CPL"

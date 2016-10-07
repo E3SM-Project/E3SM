@@ -136,7 +136,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
-        models = case.get_value("COMP_CLASSES").split(",")
+        models = case.get_values("COMP_CLASSES")
 
         mach, compiler, debug, mpilib = \
             case.get_value("MACH"), case.get_value("COMPILER"), case.get_value("DEBUG"), case.get_value("MPILIB")

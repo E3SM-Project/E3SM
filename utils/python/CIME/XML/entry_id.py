@@ -183,16 +183,52 @@ class EntryID(GenericXML):
             val = self._set_value(node, value, vid, subgroup, ignore_type)
         return val
 
+    def get_values(self, vid, attribute=None, resolved=True, subgroup=None):
+        """
+        Same functionality as get_value but it returns a list, if the
+        value in xml contains commas the list have multiple elements split on
+        commas
+        """
+        results = []
+        node = self.get_optional_node("entry", {"id":vid})
+        if node is None:
+            return results
+        str_result = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)
+        str_results = str_result.split(',')
+        for result in str_results:
+            # Return value as right type if we were able to fully resolve
+            # otherwise, we have to leave as string.
+            if "$" in result:
+                results.append(result)
+            else:
+                type_str = self._get_type_info(node)
+                results.append( convert_to_type(result, type_str, vid))
+        return results
+
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         """
         Get a value for entry with id attribute vid.
         or from the values field if the attribute argument is provided
         and matches
         """
-        logger.debug("Get Value (%s, %s, %s, %s)" % (vid, attribute, resolved, subgroup))
-        val = None
         node = self.get_optional_node("entry", {"id":vid})
+        if node is None:
+            return
+        val = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)
+        # Return value as right type if we were able to fully resolve
+        # otherwise, we have to leave as string.
+        if "$" in val:
+            return val
+        else:
+            type_str = self._get_type_info(node)
+            return convert_to_type(val, type_str, vid)
 
+    def _get_value(self, node, attribute=None, resolved=True, subgroup=None):
+        """
+        internal get_value, does not convert to type
+        """
+        logger.debug("(_get_value) (%s, %s, %s)" % (attribute, resolved, subgroup))
+        val = None
         if node is None:
             logger.debug("No node")
             return val
@@ -210,22 +246,14 @@ class EntryID(GenericXML):
         if resolved:
             val = self.get_resolved_value(val)
 
-        if val is None:
-            return val
-        # Return value as right type if we were able to fully resolve
-        # otherwise, we have to leave as string.
-        if "$" in val:
-            return val
-        else:
-            type_str = self._get_type_info(node)
-            return convert_to_type(val, type_str, vid)
+        return val
 
-    def get_values(self, item, attribute=None, resolved=True, subgroup=None): # (self, vid, att, resolved=True , subgroup=None ):
+    def get_full_records(self, item, attribute=None, resolved=True, subgroup=None): # (self, vid, att, resolved=True , subgroup=None ):
         """
         If an entry includes a list of values return a list of dict matching each
         attribute to its associated value and group
         """
-        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
+        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
@@ -244,16 +272,16 @@ class EntryID(GenericXML):
                 nodes = self.get_nodes("entry",{"id" : item} , root=group)
             else :
                 # Return all nodes
-                logger.debug("Retrieving all parameter")
+                logger.debug("(get_full_records) Retrieving all parameter")
                 nodes = self.get_nodes("entry" , root=group)
 
             if (len(nodes) == 0) :
-                logger.debug("Found no nodes for %s" , item)
+                logger.debug("(get_full_records) Found no nodes for %s" , item)
             else :
-                logger.debug("Building return structure for %s nodes" , len(nodes))
+                logger.debug("(get_full_records) Building return structure for %s nodes" , len(nodes))
 
             for node in nodes :
-                logger.debug("Node tag=%s attribute=%s" , node.tag , node.attrib )
+                logger.debug("(get_full_records) Node tag=%s attribute=%s" , node.tag , node.attrib )
 
                 g       = self._get_group(group)
                 val     = node.attrib['value']
@@ -265,13 +293,13 @@ class EntryID(GenericXML):
                 try :
                     file_   = self.filename
                 except AttributeError:
-                    logger.debug("Can't call filename on %s (%s)" , self , self.__class__.__name__ )
+                    logger.debug("(get_full_records) Can't call filename on %s (%s)" , self , self.__class__.__name__ )
                 #t   =  super(EnvBase , self).get_type( node )
                 v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file_}
 
                 results.append(v)
 
-        logger.debug("(get_values) Returning %s items" , len(results) )
+        logger.debug("(get_full_records) Returning %s items" , len(results) )
         return results
 
     def get_child_content(self, vid, childname):

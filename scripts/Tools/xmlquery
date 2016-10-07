@@ -114,13 +114,13 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False,
             for xmlattr in listofattributes:
                 # type_str = case.get_type_info(xmlattr)
                 logger.debug("Searching for %s", xmlattr)
-                attribute_hits = case.get_values(xmlattr, resolved=resolved,
+                attribute_hits = case.get_full_records(xmlattr, resolved=resolved,
                                                  subgroup=subgroup)
                 results       += attribute_hits
 
         elif (args.listall):
             logger.warning("Retrieving all values.")
-            results = case.get_values(None, resolved=resolved,
+            results = case.get_full_records(None, resolved=resolved,
                                       subgroup=subgroup)
         else:
             logger.warning("No attributes (%s) or listall option",
