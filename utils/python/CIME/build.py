@@ -163,7 +163,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     cimeroot = case.get_value("CIMEROOT")
 
-    comp_classes = case.get_value("COMP_CLASSES").split(',')
+    comp_classes = case.get_values("COMP_CLASSES")
 
     if not sharedlib_only:
         check_all_input_data(case)
@@ -490,7 +490,7 @@ def clean(case, cleanlist=None):
     clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
     comp_lnd = case.get_value("COMP_LND")
     if cleanlist is None:
-        cleanlist = case.get_value("COMP_CLASSES").split(',')
+        cleanlist = case.get_values("COMP_CLASSES")
         cleanlist = [x.lower().replace('drv','cpl') for x in cleanlist]
         testcase        = case.get_value("TESTCASE")
         # we only want to clean clm here if it is clm4_0 otherwise remove

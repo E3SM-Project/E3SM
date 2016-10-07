@@ -23,11 +23,11 @@ class Component(EntryID):
             # all components refer to the same schema so referencing config_drv_file is okay
             schema = files.get_schema("CONFIG_DRV_FILE")
             if schema is not None:
-                logger.warn("Checking file %s against %s"%(infile, schema))
+                logger.debug("Checking file %s against %s"%(infile, schema))
                 run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, infile))
-            
+
         EntryID.__init__(self,infile)
-        
+
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)

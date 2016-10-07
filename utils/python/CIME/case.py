@@ -168,11 +168,45 @@ class Case(object):
             env_file.write()
         self._env_files_that_need_rewrite = set()
 
+    def get_values(self, item, attribute=None, resolved=True, subgroup=None):
+        results = []
+        for env_file in self._env_entryid_files:
+            # Wait and resolve in self rather than in env_file
+            results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+
+            if len(results) > 0:
+                new_results = []
+                vtype = env_file.get_type_info(item)
+                if resolved:
+                    for result in results:
+                        if type(result) is str:
+                            result = self.get_resolved_value(result)
+                            new_results.append(convert_to_type(result, vtype, item))
+                        else:
+                            new_results.append(result)
+                else:
+                    new_results = results
+                return new_results
+
+        for env_file in self._env_generic_files:
+            results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+            if len(results) > 0:
+                if resolved:
+                    for result in results:
+                        if type(result) is str:
+                            new_results.append(self.get_resolved_value(result))
+                        else:
+                            new_results.append(result)
+                else:
+                    new_results = results
+                return new_results
+        # Return empty result
+        return results
+
     def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         result = None
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
             if result is not None:
