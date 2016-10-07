@@ -195,37 +195,37 @@ class Case(object):
         return result
 
 
-    def get_values(self, item=None, attribute=None, resolved=True, subgroup=None):
+    def get_full_records(self, item=None, attribute=None, resolved=True, subgroup=None):
 
         """
         Return info object for given item, return all info for all item if item is empty.
         """
 
-        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
+        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
 
         # Empty result list
         results = []
 
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-            logger.debug("Searching in %s" , env_file.__class__.__name__)
+            logger.debug("(get_full_records) Searching in %s" , env_file.__class__.__name__)
             result = None
 
             try:
-                # env_batch has its own implementation of get_values otherwise in entry_id
-                result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+                # env_batch has its own implementation of get_full_records otherwise in entry_id
+                result = env_file.get_full_records(item, attribute, resolved=False, subgroup=subgroup)
                 # Method exists, and was used.
             except AttributeError:
                 # Method does not exist.  What now?
                 traceback.print_exc()
-                logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
+                logger.debug("(get_full_records) No get_full_records method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
 
             if result is not None and (len(result) >= 1):
 
                 if resolved :
                     for r in result :
                         if type(r['value']) is str:
-                            logger.debug("Resolving %s" , r['value'])
+                            logger.debug("(get_full_records) Resolving %s" , r['value'])
                             r['value'] = self.get_resolved_value(r['value'])
 
                 if subgroup :
@@ -237,7 +237,7 @@ class Case(object):
                 else:
                     results = results + result
 
-        logger.debug("(get_values) Return value:  %s" , results )
+        logger.debug("(get_full_records) Return value:  %s" , results )
         return results
 
     def get_type_info(self, item):
