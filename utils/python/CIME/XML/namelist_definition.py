@@ -43,18 +43,10 @@ class NamelistDefinition(EntryID):
     def __init__(self, infile):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
-        self._value_cache = {}
 
     def _get_version(self):
         version = self.root.get("version")
         return version
-
-#    def add(self, infile):
-#        """Add the contents of an XML file to the namelist definition."""
-#        new_root = ET.parse(infile).getroot()
-#        for elem in new_root:
-#            self.root.append(elem)
-#        self._value_cache = {}
 
     def get_entries(self):
         """Return all variables in the namelist definition file
@@ -78,96 +70,6 @@ class NamelistDefinition(EntryID):
                 entries.append(node.get("id"))
         return entries
 
-
-    def get_value(self, item, attribute=None, resolved=False, subgroup=None):
-        """Get data about the namelist variable named `item`.
-
-        The returned value will be a dict with the following keys:
-         - type
-         - length
-         - size
-         - category
-         - group
-         - valid_values
-         - input_pathname
-         - description
-
-        Most values are strings, and correspond directly to the information
-        present in the file. The exceptions are:
-
-        `type` is string specifying a normalized scalar type, i.e. "character",
-        "complex", "integer", "logical", or "real".
-
-        `length` is an `int` specifying the length of a character variable, or
-        `None` for all other variables.
-
-        `size` is an `int` specifying the size of an array. For scalars, this is
-         set to `1`.
-
-        `valid_values` will be a list of valid values for the namelist variable
-         to take, or `None` if no such constraint is provided.
-        """
-        expect(attribute is None, "This class does not support attributes.")
-        expect(not resolved, "This class does not support env resolution.")
-        expect(subgroup is None, "This class does not support subgroups.")
-
-        # Normalize case.
-        item = item.lower()
-
-        # Check cache in case we can avoid everything below.
-        if item in self._value_cache:
-            return self._value_cache[item]
-
-        # Nicer error message if the variable is not found.
-        self._expect_variable_in_definition(item, "Variable %r")
-        elem = self.get_node("entry", attributes={'id': item})
-        var_info = {}
-
-        def get_required_field(name):
-            """Copy a required node from `entry` element to `var_info`."""
-            if self._get_version() == "1.0":
-                var_info[name] = elem.get(name)
-            elif self._get_version() == "2.0":
-                var_info[name] = self.get_node(name, root=elem).text
-            expect(var_info[name] is not None,
-                   "field %s missing from namelist definition for %s"
-                   % (name, item))
-
-        get_required_field('type')
-        get_required_field('category')
-        get_required_field('group')
-
-        # Convert type string into more usable information.
-        type_, length, size = self._split_type_string(item, var_info["type"])
-        var_info["type"] = type_
-        var_info["length"] = length
-        var_info["size"] = size
-
-
-
-        # The "input_pathname" attribute is not required.
-        if self._get_version() == "1.0":
-            var_info['input_pathname'] = elem.get('input_pathname')
-        elif self._get_version() == "2.0":
-            node = self.get_optional_node('input_pathname', root=elem)
-            if node is not None:
-                var_info['input_pathname'] = node.text
-            else:
-                var_info['input_pathname'] = None
-
-        # The description is the data on the node itself.
-        if self._get_version() == "1.0.":
-            var_info['description'] = elem.text
-        elif self._get_version() == "2.0":
-            node = self.get_optional_node('description', root=elem)
-            if node is not None:
-                var_info['description'] = node.text
-            else:
-                var_info['description'] = None
-
-        # Cache result of query.
-        self._value_cache[item] = var_info
-        return var_info
 
     # Currently we don't use this object to construct new files, and it's no
     # good for that purpose anyway, so stop this function from being called.
