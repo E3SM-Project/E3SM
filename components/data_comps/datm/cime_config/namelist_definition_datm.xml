@@ -1933,7 +1933,7 @@
     </values>
   </entry>
 
-  <entry id="fillalgo" per_stream_entry="TRUE">
+  <entry id="fillalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1950,7 +1950,7 @@
     </values>
   </entry>
 
-  <entry id="fillmask" per_stream_entry="TRUE">
+  <entry id="fillmask" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1964,7 +1964,7 @@
     </values>
   </entry>
 
-  <entry id="fillread" per_stream_entry="TRUE">
+  <entry id="fillread" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1979,7 +1979,7 @@
     </values>
   </entry>
 
-  <entry id="fillwrite" per_stream_entry="TRUE">
+  <entry id="fillwrite" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -1994,7 +1994,7 @@
     </values>
   </entry>
 
-  <entry id="mapmask" per_stream_entry="TRUE">
+  <entry id="mapmask" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2011,7 +2011,7 @@
     </values>
   </entry>
 
-  <entry id="mapalgo" per_stream_entry="TRUE">
+  <entry id="mapalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2044,7 +2044,7 @@
     </values>
   </entry>
 
-  <entry id="mapread" per_stream_entry="TRUE">
+  <entry id="mapread" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2059,7 +2059,7 @@
     </values>
   </entry>
 
-  <entry id="mapwrite" per_stream_entry="TRUE">
+  <entry id="mapwrite" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2074,7 +2074,7 @@
     </values>
   </entry>
 
-  <entry id="tintalgo" per_stream_entry="TRUE">
+  <entry id="tintalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2123,7 +2123,7 @@
     </values>
   </entry>
 
-  <entry id="taxmode" per_stream_entry="TRUE">
+  <entry id="taxmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2149,7 +2149,7 @@
     </values>
   </entry>
 
-  <entry id="dtlimit" per_stream_entry="TRUE">
+  <entry id="dtlimit" per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
