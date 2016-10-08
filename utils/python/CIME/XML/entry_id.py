@@ -101,54 +101,42 @@ class EntryID(GenericXML):
 
         return match_value
 
-    def _get_type_info(self, node):
-        type_node = self.get_optional_node("type", root=node)
-        if type_node is not None:
-            return type_node.text
-        else:
-            # Default to string
-            return "char"
-
-    def get_type_info(self, vid):
+    def get_node_element_info(self, vid, element_name):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
             return None
         else:
-            return self._get_type_info(node)
+            return self._get_node_element_info(node, element_name)
+
+    def _get_node_element_info(self, node, element_name):
+        element_node = self.get_optional_node(element_name, root=node)
+        if element_node is not None:
+            return element_node.text
+        return None
+
+    def _get_type_info(self, node):
+        val = self._get_node_element_info(node, "type")
+        if val is None:
+            return "char"
+        return val
+
+    def get_type_info(self, vid):
+        val = self.get_node_element_info(vid, "type")
+        if val is None:
+            return "char"
+        return val
 
     def _get_default(self, node):
-        default = self.get_optional_node("default_value", root=node)
-        if default is not None:
-            return default.text
-        else:
-            return None
-
-    # Get type description , expect child with tag "type" for node
-    def _get_type (self, node):
-        type_node = self.get_optional_node("type", root=node)
-        if type_node is not None:
-            return type_node.text
-        else:
-            # Default to string
-            return "char"
+        return self._get_node_element_info(node, "default_value")
 
     # Get description , expect child with tag "description" for parent node
     def _get_description (self, node):
-        type_node = self.get_optional_node("desc", root=node)
-        if type_node is not None:
-            return type_node.text
-        else:
-            return None
+        return self._get_node_element_info(node, "desc")
 
     # Get group , expect node with tag "group"
     # entry id nodes are children of group nodes
     def _get_group (self, node):
-
-        if node is not None:
-            return node.get('id')
-        else:
-            # Default to None
-            return None
+        return self._get_node_element_info(node, "group")
 
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
         """
@@ -286,7 +274,7 @@ class EntryID(GenericXML):
                 g       = self._get_group(group)
                 val     = node.attrib['value']
                 attr    = node.attrib['id']
-                t       = self._get_type(node)
+                t       = self._get_type_info(node)
                 desc    = self._get_description(node)
                 default = self._get_default(node)
                 file_   = None

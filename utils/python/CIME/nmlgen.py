@@ -79,7 +79,7 @@ class NamelistGenerator(object):
         # Create definition object.
         self._definition = NamelistDefinition(definition_files[0])
         for file_ in definition_files[1:]:
-            self._definition.add(file_)
+            self._definition.read(file_)
 
         # Create default object.
         self._defaults = NamelistDefaults(defaults_files[0], attributes=config)

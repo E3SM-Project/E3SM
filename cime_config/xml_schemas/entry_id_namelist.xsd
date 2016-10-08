@@ -5,6 +5,7 @@
   <!-- attributes -->
   <xs:attribute name="modify_via_xml" type="xs:NCName"/>
   <xs:attribute name="skip_default_entry" type="xs:boolean"/>
+  <xs:attribute name="per_stream_entry" type="xs:boolean"/>
 
   <!-- simple elements -->
   <xs:element name="type" type="xs:string"/>
@@ -28,6 +29,7 @@
       <xs:attribute ref="id" use="required"/>
       <xs:attribute ref="modify_via_xml"/>
       <xs:attribute ref="skip_default_entry"/>
+      <xs:attribute ref="per_stream_entry"/>
     </xs:complexType>
   </xs:element>
 
