@@ -82,6 +82,7 @@
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oRRS30to10wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
@@ -102,6 +103,7 @@
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30wLI">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="oRRS30to10wLI">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS18to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
@@ -120,6 +122,7 @@
 <config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS30to10wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS18to6">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
