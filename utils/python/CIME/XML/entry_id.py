@@ -47,7 +47,7 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_value_match(self, vid, attributes=None):
+    def get_value_match(self, vid, attributes=None, exact_match=False):
         # Handle this case:
         # <entry id ...>
         #  <values>
@@ -60,10 +60,10 @@ class EntryID(GenericXML):
         node = self.get_optional_node("entry", {"id":vid})
         value = None
         if node is not None:
-            value = self._get_value_match(node, attributes)
+            value = self._get_value_match(node, attributes, exact_match)
         return value
 
-    def _get_value_match(self, node, attributes=None):
+    def _get_value_match(self, node, attributes=None, exact_match=False):
         '''
         Note that the component class has a specific version of this function
         '''
@@ -79,18 +79,27 @@ class EntryID(GenericXML):
         for valnode in self.get_nodes("value", root=values):
             # loop through all the keys in valnode (value nodes) attributes
             if len(valnode.attrib) == 0:
+                match_value = valnode.text
                 match_count = 0
             else:
                 for key,value in valnode.attrib.iteritems():
                     # determine if key is in attributes dictionary
                     match_count = 0
                     if attributes is not None and key in attributes:
-                        if re.search(value, attributes[key]):
-                            logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
-                            match_count += 1
+                        if exact_match:
+                            if value == attributes[key]:
+                                logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                                match_count += 1
+                            else:
+                                match_count = -1
+                                break
                         else:
-                            match_count = -1
-                            break
+                            if re.search(value, attributes[key]):
+                                logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                                match_count += 1
+                            else:
+                                match_count = -1
+                                break
 
             if match_count > match_max:
                 match_max = match_count

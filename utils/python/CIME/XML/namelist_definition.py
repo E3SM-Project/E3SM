@@ -26,15 +26,11 @@ _array_size_re = re.compile(r'^(?P<type>[^(]+)\((?P<size>[^)]+)\)$')
 class NamelistDefinition(EntryID):
 
     """Class representing variable definitions for a namelist.
-    TODO: fix documentation
     This class inherits from `EntryID`, and supports most inherited methods;
     however, `set_value` and `get_resolved_value` are unsupported.
 
-    The `get_value` implementation returns a dictionary containing all relevant
-    metadata about a given namelist variable.
-
     Additional public methods:
-    - add
+    - read
     - dict_to_namelist.
     - is_valid_value
     - validate
@@ -78,6 +74,9 @@ class NamelistDefinition(EntryID):
         raise TypeError, \
             "NamelistDefinition does not support `set_value`."
 
+    
+
+
     def get_valid_values(self, name):
         # The "valid_values" attribute is not required, and an empty string has
         # the same effect as not specifying it.
@@ -100,6 +99,88 @@ class NamelistDefinition(EntryID):
         """This function is not implemented."""
         raise TypeError, \
             "NamelistDefinition does not support `get_resolved_value`."
+
+    def get_value_match(self, item, attributes=None, exact_match=True):
+        """Return the default value for the variable named `item`.
+
+        The return value is a list of strings corresponding to the
+        comma-separated list of entries for the value (length 1 for scalars). If
+        there is no default value in the file, this returns `None`.
+        """
+#        expect(not resolved, "This class does not support env resolution.")
+#        expect(subgroup is None, "This class does not support subgroups.")
+
+        # #nodes = self.get_nodes(item.lower())
+        # #node = self.get_node("entry", attribute={"id":item.lower()})
+        # values = self.get_values(item.lower(), attribute=attribute, resolved=resolved, subgroup=subgroup)
+        # print "DEBUG: values for item %s are %s" %(item,values)
+
+        # Merge internal attributes with those passed in.
+        all_attributes = {}
+#        if self._attributes is not None:
+#            all_attributes.update(self._attributes)
+        if attributes is not None:
+            all_attributes.update(attributes)
+        value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match)
+
+        if value is not None:
+            value =  self._split_defaults_text(value)
+        return value
+
+        # # Store nodes that match the attributes and their scores.
+        # matches = []
+        # for node in nodes:
+        #     # For each node in the list start a score.
+        #     score = 0
+        #     for attribute in node.keys():
+        #         # For each attribute, add to the score.
+        #         score += 1
+        #         # If some attribute is specified that we don't know about,
+        #         # or the values don't match, it's not a match we want.
+        #         if attribute not in all_attributes or \
+        #            all_attributes[attribute] != node.get(attribute):
+        #             score = -1
+        #             break
+
+        #     # Add valid matches to the list.
+        #     if score >= 0:
+        #         matches.append((score, node))
+
+        # if not matches:
+        #     return None
+
+        # # Get maximum score using custom `key` function, extract the node.
+        # _, node = max(matches, key=lambda x: x[0])
+        # if node.text is None:
+        #     return ['']
+        # return self._split_defaults_text(node.text)
+
+
+    @staticmethod
+    def _split_defaults_text(string):
+        """Take a comma-separated list in a string, and split it into a list."""
+        # Some trickiness here; we want to split items on commas, but not inside
+        # quote-delimited strings. Stripping whitespace is also useful.
+        value = []
+        pos = 0
+        delim = None
+        for i, char in enumerate(string):
+            if delim is None:
+                # If not inside a string...
+                if char in ('"', "'"):
+                    # if we have a quote character, start a string.
+                    delim = char
+                elif char == ',':
+                    # if we have a comma, this is a new value.
+                    value.append(string[pos:i].strip())
+                    pos = i+1
+            else:
+                # If inside a string, the only thing that can happen is the end
+                # of the string.
+                if char == delim:
+                    delim = None
+        value.append(string[pos:].strip())
+        return value
 
     @staticmethod
     def _split_type_string(name, type_string):
