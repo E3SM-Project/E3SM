@@ -91,6 +91,12 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$grid_prefix .= 'ocean.RRS.30-10km';
 	$ic_prefix .= 'ocean.RRS.30-10km';
         $decomp_prefix .= 'mpas-o.graph.info.';
+} elsif ( $OCN_GRID eq 'oRRS30to10wLI' ) {
+	$grid_date .= '160930';
+	$ic_date .= '160930';
+	$grid_prefix .= 'ocean.RRS30to10wLI';
+	$ic_prefix .= 'ocean.RRS30to10wLI';
+        $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS18to6' ) {
 	$grid_date .= '160830';
 	$grid_prefix .= 'ocean.RRS.18-6km';
