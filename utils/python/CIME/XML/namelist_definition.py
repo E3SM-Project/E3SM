@@ -17,24 +17,20 @@ from CIME.namelist import fortran_namelist_base_value, \
     expand_literal_list, Namelist
 
 from CIME.XML.standard_module_setup import *
-from CIME.XML.generic_xml import GenericXML
+from CIME.XML.entry_id import EntryID
 
 logger = logging.getLogger(__name__)
 
 _array_size_re = re.compile(r'^(?P<type>[^(]+)\((?P<size>[^)]+)\)$')
 
-class NamelistDefinition(GenericXML):
+class NamelistDefinition(EntryID):
 
     """Class representing variable definitions for a namelist.
-
-    This class inherits from `GenericXML`, and supports most inherited methods;
+    This class inherits from `EntryID`, and supports most inherited methods;
     however, `set_value` and `get_resolved_value` are unsupported.
 
-    The `get_value` implementation returns a dictionary containing all relevant
-    metadata about a given namelist variable.
-
     Additional public methods:
-    - add
+    - read
     - dict_to_namelist.
     - is_valid_value
     - validate
@@ -43,19 +39,10 @@ class NamelistDefinition(GenericXML):
     def __init__(self, infile):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
-        self._value_cache = {}
-        self._version = self._get_version(infile)
 
-    def _get_version(self, infile):
-        version = self.get_node("version").text
+    def _get_version(self):
+        version = self.root.get("version")
         return version
-
-    def add(self, infile):
-        """Add the contents of an XML file to the namelist definition."""
-        new_root = ET.parse(infile).getroot()
-        for elem in new_root:
-            self.root.append(elem)
-        self._value_cache = {}
 
     def get_entries(self):
         """Return all variables in the namelist definition file
@@ -79,108 +66,6 @@ class NamelistDefinition(GenericXML):
                 entries.append(node.get("id"))
         return entries
 
-    def get_value(self, item, attribute=None, resolved=False, subgroup=None):
-        """Get data about the namelist variable named `item`.
-
-        The returned value will be a dict with the following keys:
-         - type
-         - length
-         - size
-         - category
-         - group
-         - valid_values
-         - input_pathname
-         - description
-
-        Most values are strings, and correspond directly to the information
-        present in the file. The exceptions are:
-
-        `type` is string specifying a normalized scalar type, i.e. "character",
-        "complex", "integer", "logical", or "real".
-
-        `length` is an `int` specifying the length of a character variable, or
-        `None` for all other variables.
-
-        `size` is an `int` specifying the size of an array. For scalars, this is
-         set to `1`.
-
-        `valid_values` will be a list of valid values for the namelist variable
-         to take, or `None` if no such constraint is provided.
-        """
-        expect(attribute is None, "This class does not support attributes.")
-        expect(not resolved, "This class does not support env resolution.")
-        expect(subgroup is None, "This class does not support subgroups.")
-
-        # Normalize case.
-        item = item.lower()
-
-        # Check cache in case we can avoid everything below.
-        if item in self._value_cache:
-            return self._value_cache[item]
-
-        # Nicer error message if the variable is not found.
-        self._expect_variable_in_definition(item, "Variable %r")
-        elem = self.get_node("entry", attributes={'id': item})
-        var_info = {}
-
-        def get_required_field(name):
-            """Copy a required node from `entry` element to `var_info`."""
-            if self._version == "1.0":
-                var_info[name] = elem.get(name)
-            elif self._version == "2.0":
-                var_info[name] = self.get_node(name, root=elem).text
-            expect(var_info[name] is not None,
-                   "field %s missing from namelist definition for %s" 
-                   % (name, item))
-
-        get_required_field('type')
-        get_required_field('category')
-        get_required_field('group')
-
-        # Convert type string into more usable information.
-        type_, length, size = self._split_type_string(item, var_info["type"])
-        var_info["type"] = type_
-        var_info["length"] = length
-        var_info["size"] = size
-
-        # The "valid_values" attribute is not required, and an empty string has
-        # the same effect as not specifying it.
-        valid_values = ''
-        if self._version == "1.0":
-            valid_values = elem.get('valid_values')
-        elif self._version == "2.0":
-            node = self.get_optional_node('valid_values', root=elem)
-            if node is not None:
-                valid_values = node.text
-        if valid_values == '':
-            valid_values = None
-        if valid_values is not None:
-            valid_values = valid_values.split(',')
-        var_info['valid_values'] = valid_values
-
-        # The "input_pathname" attribute is not required.
-        if self._version == "1.0":
-            var_info['input_pathname'] = elem.get('input_pathname')
-        elif self._version == "2.0": 
-            node = self.get_optional_node('input_pathname', root=elem)
-            if node is not None:
-                var_info['input_pathname'] = node.text
-            else:
-                var_info['input_pathname'] = None
-
-        # The description is the data on the node itself.
-        if self._version == "1.0.":
-            var_info['description'] = elem.text
-        elif self._version == "2.0":
-            node = self.get_optional_node('description', root=elem)
-            if node is not None:
-                var_info['description'] = node.text
-            else:
-                var_info['description'] = None
-
-        # Cache result of query.
-        self._value_cache[item] = var_info
-        return var_info
 
     # Currently we don't use this object to construct new files, and it's no
     # good for that purpose anyway, so stop this function from being called.
@@ -189,12 +74,113 @@ class NamelistDefinition(GenericXML):
         raise TypeError, \
             "NamelistDefinition does not support `set_value`."
 
+    
+
+
+    def get_valid_values(self, name):
+        # The "valid_values" attribute is not required, and an empty string has
+        # the same effect as not specifying it.
+        valid_values = ''
+        elem = self.get_optional_node("entry", attributes={'id': name})
+        if self._get_version() == "1.0":
+            valid_values = elem.get('valid_values')
+        elif self._get_version() == "2.0":
+            valid_values = self._get_node_element_info(elem, "valid_values")
+        if valid_values == '':
+            valid_values = None
+        if valid_values is not None:
+            valid_values = valid_values.split(',')
+        return valid_values
+
+
     # There seems to be no good use for this capability in this file, so it is
     # unimplemented.
     def get_resolved_value(self, raw_value):
         """This function is not implemented."""
         raise TypeError, \
             "NamelistDefinition does not support `get_resolved_value`."
+
+    def get_value_match(self, item, attributes=None, exact_match=True):
+        """Return the default value for the variable named `item`.
+
+        The return value is a list of strings corresponding to the
+        comma-separated list of entries for the value (length 1 for scalars). If
+        there is no default value in the file, this returns `None`.
+        """
+#        expect(not resolved, "This class does not support env resolution.")
+#        expect(subgroup is None, "This class does not support subgroups.")
+
+        # #nodes = self.get_nodes(item.lower())
+        # #node = self.get_node("entry", attribute={"id":item.lower()})
+        # values = self.get_values(item.lower(), attribute=attribute, resolved=resolved, subgroup=subgroup)
+        # print "DEBUG: values for item %s are %s" %(item,values)
+
+        # Merge internal attributes with those passed in.
+        all_attributes = {}
+#        if self._attributes is not None:
+#            all_attributes.update(self._attributes)
+        if attributes is not None:
+            all_attributes.update(attributes)
+        value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match)
+
+        if value is not None:
+            value =  self._split_defaults_text(value)
+        return value
+
+        # # Store nodes that match the attributes and their scores.
+        # matches = []
+        # for node in nodes:
+        #     # For each node in the list start a score.
+        #     score = 0
+        #     for attribute in node.keys():
+        #         # For each attribute, add to the score.
+        #         score += 1
+        #         # If some attribute is specified that we don't know about,
+        #         # or the values don't match, it's not a match we want.
+        #         if attribute not in all_attributes or \
+        #            all_attributes[attribute] != node.get(attribute):
+        #             score = -1
+        #             break
+
+        #     # Add valid matches to the list.
+        #     if score >= 0:
+        #         matches.append((score, node))
+
+        # if not matches:
+        #     return None
+
+        # # Get maximum score using custom `key` function, extract the node.
+        # _, node = max(matches, key=lambda x: x[0])
+        # if node.text is None:
+        #     return ['']
+        # return self._split_defaults_text(node.text)
+
+
+    @staticmethod
+    def _split_defaults_text(string):
+        """Take a comma-separated list in a string, and split it into a list."""
+        # Some trickiness here; we want to split items on commas, but not inside
+        # quote-delimited strings. Stripping whitespace is also useful.
+        value = []
+        pos = 0
+        delim = None
+        for i, char in enumerate(string):
+            if delim is None:
+                # If not inside a string...
+                if char in ('"', "'"):
+                    # if we have a quote character, start a string.
+                    delim = char
+                elif char == ',':
+                    # if we have a comma, this is a new value.
+                    value.append(string[pos:i].strip())
+                    pos = i+1
+            else:
+                # If inside a string, the only thing that can happen is the end
+                # of the string.
+                if char == delim:
+                    delim = None
+        value.append(string[pos:].strip())
+        return value
 
     @staticmethod
     def _split_type_string(name, type_string):
@@ -266,12 +252,8 @@ class NamelistDefinition(GenericXML):
         length of the list is always 1).
         """
         name = name.lower()
-        var_info = self.get_value(name)
-
         # Separate into a type, optional length, and optional size.
-        type_ = var_info["type"]
-        max_len = var_info["length"]
-        size = var_info["size"]
+        type_, max_len, size = self._split_type_string(name, self.get_type_info(name))
 
         # Check value against type.
         for scalar in value:
@@ -289,16 +271,17 @@ class NamelistDefinition(GenericXML):
                     return False
 
         # Check valid value constraints (if applicable).
-        if var_info["valid_values"] is not None:
+        valid_values = self.get_valid_values(name)
+        if valid_values is not None:
             expect(type_ in ('integer', 'character'),
                    "Found valid_values attribute for variable %s with "
                    "type %s, but valid_values only allowed for character "
                    "and integer variables." % (name, type_))
             if type_ == 'integer':
                 compare_list = [int(vv)
-                                for vv in var_info["valid_values"]]
+                                for vv in valid_values]
             else:
-                compare_list = var_info["valid_values"]
+                compare_list = valid_values
             for scalar in canonical_value:
                 if scalar not in compare_list:
                     return False
@@ -318,10 +301,11 @@ class NamelistDefinition(GenericXML):
     def _user_modifiable_in_variable_definition(self, name, filename):
         # Is name user modifiable?
         node = self.get_optional_node("entry", attributes={'id': name})
-        user_modifiable = self.get_optional_node("unmodifiable_via_user_nl", root=node)
+
+        user_modifiable = node.get('modify_via_xml')
         if user_modifiable is not None:
-            expect(False, 
-                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable.text))
+            expect(False,
+                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable))
 
     def validate(self, namelist, filename=None):
         """Validate a namelist object against this definition.
@@ -344,14 +328,14 @@ class NamelistDefinition(GenericXML):
                 # Check if can actually change this variable via filename change
                 if filename is not None:
                     self._user_modifiable_in_variable_definition(variable_name, filename)
-                
+
                 # and has the right group name...
-                var_info = self.get_value(variable_name)
-                expect(var_info['group'] == group_name,
+                var_group = self.get_node_element_info(variable_name, "group")
+                expect(var_group == group_name,
                        (variable_template + " is in a group named %r, but "
                         "should be in %r.") %
                        (str(variable_name), str(group_name),
-                        str(var_info['group'])))
+                        str(var_group)))
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
@@ -372,15 +356,14 @@ class NamelistDefinition(GenericXML):
         """
         # Improve error reporting when a file name is provided.
         if filename is None:
-            variable_template = "Variable %r"
+            variable_template = "Variable %rs"
         else:
             variable_template = "Variable %r from file " + repr(str(filename))
         groups = {}
         for variable_name in dict_:
             variable_lc = variable_name.lower()
             self._expect_variable_in_definition(variable_lc, variable_template)
-            var_info = self.get_value(variable_lc)
-            group_name = var_info['group']
+            group_name = self.get_node_element_info(variable_lc, "group")
             if group_name not in groups:
                 groups[group_name] = {}
             groups[group_name][variable_lc] = dict_[variable_name]

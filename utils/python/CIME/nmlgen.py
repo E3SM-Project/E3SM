@@ -74,17 +74,11 @@ class NamelistGenerator(object):
         # Save off important information from inputs.
         self._case = case
         self._din_loc_root = case.get_value('DIN_LOC_ROOT')
-        self._glc_nec = case.get_value('GLC_NEC')
 
         # Create definition object.
         self._definition = NamelistDefinition(definition_files[0])
         for file_ in definition_files[1:]:
-            self._definition.add(file_)
-
-        # Create default object.
-        self._defaults = NamelistDefaults(defaults_files[0], attributes=config)
-        for file_ in defaults_files[1:]:
-            self._defaults.add(file_)
+            self._definition.read(file_)
 
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
@@ -133,14 +127,14 @@ class NamelistGenerator(object):
 
     def _to_python_value(self, name, literals):
         """Transform a literal list as needed for `get_value`."""
-        var_info = self._definition.get_value(name)
+        var_type, _, var_size, =  self._definition._split_type_string(name, self._definition.get_type_info(name))
         value = expand_literal_list(literals)
         for i, scalar in enumerate(value):
             if scalar == '':
                 value[i] = None
-            elif var_info['type'] == 'character':
+            elif var_type == 'character':
                 value[i] = character_literal_to_string(scalar)
-        if var_info['size'] == 1:
+        if var_size == 1:
             return value[0]
         else:
             return value
@@ -151,13 +145,13 @@ class NamelistGenerator(object):
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
-        var_info = self._definition.get_value(name)
-        if var_info['size'] == 1 and not isinstance(value, list):
+        var_type, _, var_size, =  self._definition._split_type_string(name, self._definition.get_type_info(name))
+        if var_size == 1 and not isinstance(value, list):
             value = [value]
         for i, scalar in enumerate(value):
             if scalar is None:
                 value[i] = ""
-            elif var_info['type'] == 'character':
+            elif var_type == 'character':
                 expect(not isinstance(scalar, list), name)
                 value[i] = self.quote_string(scalar)
         return compress_literal_list(value)
@@ -199,9 +193,9 @@ class NamelistGenerator(object):
         a user-specified setting. Even if `value` is (or contains) a null value,
         the old setting for the variable will be thrown out completely.
         """
-        var_info = self._definition.get_value(name)
+        var_group = self._definition.get_node_element_info(name, "group")
         literals = self._to_namelist_literals(name, value)
-        self._namelist.set_variable_value(var_info['group'], name, literals)
+        self._namelist.set_variable_value(var_group, name, literals)
 
     def get_default(self, name, config=None, allow_none=False):
         """Get the value of a variable from the namelist defaults file.
@@ -232,17 +226,18 @@ class NamelistGenerator(object):
            exists. This behavior is suppressed within single-quoted strings
            (similar to parameter expansion in shell scripts).
         """
-        default = self._defaults.get_value(name, attribute=config)
+        default = self._definition.get_value_match(name, attributes=config, exact_match=True)
+        
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None
         default = expand_literal_list(default)
 
-        # Expand variable references.
-        var_info = self._definition.get_value(name)
+        var_type,_,_ = self._definition._split_type_string(name, self._definition.get_type_info(name))
+
         for i, scalar in enumerate(default):
             # Skip single-quoted strings.
-            if var_info['type'] == 'character' and scalar != '' and \
+            if var_type == 'character' and scalar != '' and \
                scalar[0] == scalar[-1] == "'":
                 continue
             match = _var_ref_re.search(scalar)
@@ -254,12 +249,15 @@ class NamelistGenerator(object):
                 scalar = scalar.replace(match.group(0), str(env_val), 1)
                 match = _var_ref_re.search(scalar)
             default[i] = scalar
+
         # Deal with missing quotes.
-        if var_info['type'] == 'character':
+        
+        if var_type == 'character':
             for i, scalar in enumerate(default):
                 # Preserve null values.
                 if scalar != '':
                     default[i] = self.quote_string(scalar)
+
         default = self._to_python_value(name, default)
         return default
 
@@ -297,7 +295,7 @@ class NamelistGenerator(object):
             if not line:
                 continue
             if "%glc" in line:
-                glc_nec_indices = range(self._glc_nec)
+                glc_nec_indices = range(self._case.get_value('GLC_NEC'))
                 glc_nec_indices.append(glc_nec_indices[-1] + 1)
                 glc_nec_indices.pop(0)
                 for i in glc_nec_indices:
@@ -491,8 +489,7 @@ class NamelistGenerator(object):
         If no value for the variable is found via any of the above, this method
         will raise an exception.
         """
-        var_info = self._definition.get_value(name)
-        group = var_info["group"]
+        group = self._definition.get_node_element_info(name, "group")
 
         # Use this to see if we need to raise an error when nothing is found.
         have_value = False
@@ -519,7 +516,8 @@ class NamelistGenerator(object):
 
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
-        if var_info["input_pathname"] == 'abs':
+        var_input_pathname = self._definition.get_node_element_info(name, "input_pathname")
+        if var_input_pathname == 'abs':
             current_literals = expand_literal_list(current_literals)
             for i, literal in enumerate(current_literals):
                 if literal == '':
@@ -552,8 +550,9 @@ class NamelistGenerator(object):
         """Write input data files to list."""
         for group_name in self._namelist.get_group_names():
             for variable_name in self._namelist.get_variable_names(group_name):
-                var_info = self._definition.get_value(variable_name)
-                input_pathname = var_info["input_pathname"]
+#                var_info = self._definition.get_value(variable_name)
+                
+                input_pathname = self._definition.get_node_element_info(variable_name, "input_pathname")
                 if input_pathname is not None:
                     # This is where we end up for all variables that are paths
                     # to input data files.

@@ -172,11 +172,45 @@ class Case(object):
             env_file.write()
         self._env_files_that_need_rewrite = set()
 
+    def get_values(self, item, attribute=None, resolved=True, subgroup=None):
+        results = []
+        for env_file in self._env_entryid_files:
+            # Wait and resolve in self rather than in env_file
+            results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+
+            if len(results) > 0:
+                new_results = []
+                vtype = env_file.get_type_info(item)
+                if resolved:
+                    for result in results:
+                        if type(result) is str:
+                            result = self.get_resolved_value(result)
+                            new_results.append(convert_to_type(result, vtype, item))
+                        else:
+                            new_results.append(result)
+                else:
+                    new_results = results
+                return new_results
+
+        for env_file in self._env_generic_files:
+            results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+            if len(results) > 0:
+                if resolved:
+                    for result in results:
+                        if type(result) is str:
+                            new_results.append(self.get_resolved_value(result))
+                        else:
+                            new_results.append(result)
+                else:
+                    new_results = results
+                return new_results
+        # Return empty result
+        return results
+
     def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         result = None
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
             if result is not None:
@@ -199,37 +233,37 @@ class Case(object):
         return result
 
 
-    def get_values(self, item=None, attribute=None, resolved=True, subgroup=None):
+    def get_full_records(self, item=None, attribute=None, resolved=True, subgroup=None):
 
         """
         Return info object for given item, return all info for all item if item is empty.
         """
 
-        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
+        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
 
         # Empty result list
         results = []
 
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-            logger.debug("Searching in %s" , env_file.__class__.__name__)
+            logger.debug("(get_full_records) Searching in %s" , env_file.__class__.__name__)
             result = None
 
             try:
-                # env_batch has its own implementation of get_values otherwise in entry_id
-                result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+                # env_batch has its own implementation of get_full_records otherwise in entry_id
+                result = env_file.get_full_records(item, attribute, resolved=False, subgroup=subgroup)
                 # Method exists, and was used.
             except AttributeError:
                 # Method does not exist.  What now?
                 traceback.print_exc()
-                logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
+                logger.debug("(get_full_records) No get_full_records method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
 
             if result is not None and (len(result) >= 1):
 
                 if resolved :
                     for r in result :
                         if type(r['value']) is str:
-                            logger.debug("Resolving %s" , r['value'])
+                            logger.debug("(get_full_records) Resolving %s" , r['value'])
                             r['value'] = self.get_resolved_value(r['value'])
 
                 if subgroup :
@@ -241,7 +275,7 @@ class Case(object):
                 else:
                     results = results + result
 
-        logger.debug("(get_values) Return value:  %s" , results )
+        logger.debug("(get_full_records) Return value:  %s" , results )
         return results
 
     def get_type_info(self, item):
@@ -660,7 +694,8 @@ class Case(object):
         model = get_model()
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
-
+        if test:
+            self.set_value("TEST",True)
 
 
     def get_compset_var_settings(self):

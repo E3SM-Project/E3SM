@@ -113,7 +113,8 @@
 
   <comp_archive_spec compname="cism" compclass="glc">
     <rest_file_extension>\.[ri]\..*</rest_file_extension>
-    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <hist_file_extension>\.h\..*\.nc$</hist_file_extension>
+    <hist_file_extension>\.initial_hist\..*\.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.glc</rpointer_file>

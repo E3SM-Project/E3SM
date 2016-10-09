@@ -2,7 +2,7 @@
 <testlist version="2.0">
   <test name="ERI" grid="T31_g37_rx1" compset="A">
     <machines>
-      <machine name="yellowstone" compiler="intel " category="prebeta">
+      <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>

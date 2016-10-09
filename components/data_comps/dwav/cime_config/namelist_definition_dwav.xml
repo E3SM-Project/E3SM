@@ -2,9 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
 
-<namelist_definition>
-
-  <version>2.0</version>
+<entry_id version="2.0">
 
   <!--
      Values to use by default for creation of DWAV model dwav namelists.
@@ -46,102 +44,124 @@
   <!-- ========================================================================================  -->
 
   <entry id="streamslist">
-    <type>char*1024(100)</type>
+    <type>char(100)</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>List of streams used for the given datm_mode.</description>
-<streamslist dwav_mode="null"         >NULL</streamslist>
-<streamslist dwav_mode="copyall"       >wav.copyall</streamslist>
+    <values>
+      <value dwav_mode="null">NULL</value>
+      <value dwav_mode="copyall">wav.copyall</value>
+    </values>
   </entry>
 
-  <entry id="strm_domdir">
-    <type>char*4096</type>
+  <entry id="strm_domdir" skip_default_entry="TRUE">
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain file directory.</description>
-<strm_domdir     stream="wav.copyall">$DIN_LOC_ROOT/wav/dwav</strm_domdir>
+    <values>
+      <value stream="wav.copyall">$DIN_LOC_ROOT/wav/dwav</value>
+    </values>
   </entry>
 
-  <entry id="strm_domfil">
-    <type>char*4096</type>
+  <entry id="strm_domfil" skip_default_entry="TRUE">
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain file path(s).</description>
-<strm_domfil     stream="wav.copyall">waveclim.mon.ww3a.150612.nc</strm_domfil>
+    <values>
+      <value stream="wav.copyall">waveclim.mon.ww3a.150612.nc</value>
+    </values>
   </entry>
 
-  <entry id="strm_domvar">
-    <type>char*4096</type>
+  <entry id="strm_domvar" skip_default_entry="TRUE">
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream domain variable name(s).</description>
-<strm_domvar     stream="wav.copyall">
-  time   time
-  xc     lon
-  yc     lat
-  area   area
-  mask   mask
-</strm_domvar>
+    <values>
+      <value stream="wav.copyall">
+	time   time
+	xc     lon
+	yc     lat
+	area   area
+	mask   mask
+      </value>
+    </values>
   </entry>
 
-  <entry id="strm_datdir">
-    <type>char*4096</type>
+  <entry id="strm_datdir" skip_default_entry="TRUE">
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data file directory.</description>
-<strm_datdir     stream="wav.copyall">$DIN_LOC_ROOT/wav/dwav</strm_datdir>
+    <values>
+      <value stream="wav.copyall">$DIN_LOC_ROOT/wav/dwav</value>
+    </values>
   </entry>
 
-  <entry id="strm_datfil">
-    <type>char*4096</type>
+  <entry id="strm_datfil" skip_default_entry="TRUE">
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data file path(s).</description>
-<strm_datfil     stream="wav.copyall">waveclim.mon.ww3a.150612.nc</strm_datfil>
+    <values>
+      <value stream="wav.copyall">waveclim.mon.ww3a.150612.nc</value>
+    </values>
   </entry>
 
-  <entry id="strm_datvar">
-    <type>char*4096</type>
+  <entry id="strm_datvar" skip_default_entry="TRUE">
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream data variable name(s).</description>
-<strm_datvar     stream="wav.copyall">
-  lamult  lamult
-  ustokes ustokes
-  vstokes vstokes
-</strm_datvar>
+    <values>
+      <value stream="wav.copyall">
+	lamult  lamult
+	ustokes ustokes
+	vstokes vstokes
+      </value>
+    </values>
   </entry>
 
-  <entry id="strm_offset">
+  <entry id="strm_offset" skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Stream offset.</description>
-<strm_offset>0</strm_offset>
+    <values>
+      <value>0</value>
+    </values>
   </entry>
 
-  <entry id="strm_year_align">
+  <entry id="strm_year_align" skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Simulation year to align stream to.</description>
-<strm_year_align stream="wav.copyall">1</strm_year_align>
+    <values>
+      <value stream="wav.copyall">1</value>
+    </values>
   </entry>
 
-  <entry id="strm_year_start">
+  <entry id="strm_year_start" skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>First year of stream.</description>
-<strm_year_start stream="wav.copyall">1</strm_year_start>
+    <values>
+      <value stream="wav.copyall">1</value>
+    </values>
   </entry>
 
-  <entry id="strm_year_end">
+  <entry id="strm_year_end" skip_default_entry="TRUE">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
     <description>Last year of stream.</description>
-<strm_year_end   stream="wav.copyall">1</strm_year_end>
+    <values>
+      <value   stream="wav.copyall">1</value>
+    </values>
   </entry>
 
   <!-- ========================================================================================  -->
@@ -153,14 +173,13 @@
   <!-- =========================================  -->
 
   <entry id="datamode">
-    <type>char*256</type>
+    <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>null,copyall</valid_values>
     <description>
       The wave data is associated with the wave model
       and is normally on a different grid than the ocean data.
-
       datamode = "null"
       null is always a valid option and means no data will be generated.
       Turns off the data model as a provider of data to the coupler.
@@ -171,12 +190,14 @@
       specifies values for wav mode: copyall,null
       default value: copyall
     </description>
-<datamode dwav_mode="null"           >null</datamode>
-<datamode dwav_mode="copyall"        >copyall</datamode>
+    <values>
+      <value dwav_mode="null">null</value>
+      <value dwav_mode="copyall">copyall</value>
+    </values>
   </entry>
 
   <entry id="domainfile">
-    <type>char*256</type>
+    <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
     <group>shr_strdata_nml</group>
@@ -185,10 +206,12 @@
       be read from this file and that grid will serve as the target grid
       for all input data for this strdata input.
     </description>
+    <values>
+    </values>
   </entry>
 
-  <entry id="fillalgo">
-    <type>char*256(30)</type>
+  <entry id="fillalgo"  per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
@@ -198,26 +221,28 @@
       nearest neighbor, nearest neighbor in "i" direction, or nearest
       neighbor in "j" direction.
       valid values:  'copy','spval','nn','nnoni','nnonj'
-      default: "nn".
     </description>
-  <fillalgo>nn</fillalgo>
+    <values>
+      <value>nn</value>
+    </values>
   </entry>
 
-  <entry id="fillmask">
-    <type>char*256(30)</type>
+  <entry id="fillmask"  per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <description>
       plays no role is fill algorithm at the present time.
       valid values: "nomask,srcmask,dstmask,bothmask"
-      default: "nomask"
     </description>
-  <fillmask>nomask</fillmask>
+    <values>
+      <value>nomask</value>
+    </values>
   </entry>
 
-  <entry id="fillread">
-    <type>char*256(30)</type>
+  <entry id="fillread"  per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml" </group>
     <description>
@@ -225,12 +250,13 @@
       streams.  specifies the weights file to read in instead of computing the
       weights on the fly for the fill operation.  if this is set, fillalgo
       and fillmask are ignored.
-      default: unset
     </description>
+    <values>
+    </values>
   </entry>
 
-  <entry id="fillwrite">
-    <type>char*256(30)</type>
+  <entry id="fillwrite" per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
@@ -238,12 +264,13 @@
       streams.  specifies the weights file to generate after weights are
       computed on the fly for the fill operation.  this allows a user to
       save and reuse a set of weights later.
-      default="unset".
     </description>
+    <values>
+    </values>
   </entry>
 
-  <entry id="mapmask">
-    <type>char*256(30)</type>
+  <entry id="mapmask" per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
@@ -253,13 +280,14 @@
       valid src points, map only to valid destination points, ignore all
       masks, map only from valid src points to valid destination points.
       valid values: srcmask, dstmask, nomask,bothmask
-      default: dstmask
     </description>
-  <mapmask>dstmask</mapmask>
+    <values>
+      <value>dstmask</value>
+    </values>
   </entry>
 
-  <entry id="mapalgo">
-    <type>char*256(30)</type>
+  <entry id="mapalgo" per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
@@ -269,25 +297,28 @@
       nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
       in "j" direction, or bilinear.
       valid values: copy,spval,nn,nnoni,nnonj,bilinear
-      default: bilinear
     </description>
-  <mapalgo>bilinear</mapalgo>
+    <values>
+      <value>bilinear</value>
+    </values>
   </entry>
 
-  <entry id="mapread">
-    <type>char*256(30)</type>
+  <entry id="mapread" per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <description>
       array (up to 30 elements) of filenames associated with the array of
       streams.  specifies the weights file to read instead of computing
       weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored.  default="unset".
+      is set, mapalgo and mapmask are ignored.
     </description>
+    <values>
+    </values>
   </entry>
 
-  <entry id="mapwrite">
-    <type>char*256(30)</type>
+  <entry id="mapwrite" per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml" </group>
     <description>
@@ -295,12 +326,13 @@
       streams.  specifies the weights file to generate after weights are
       computed on the fly for the mapping (interpolation) operation.  this
       allows a user to save and reuse a set of weights later.
-      default="unset".
     </description>
+    <values>
+    </values>
   </entry>
 
-  <entry id="tintalgo">
-    <type>char*256(30)</type>
+  <entry id="tintalgo" per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
@@ -313,13 +345,14 @@
       nearest = Use the nearest time-value
       linear  = Linearly interpolate between the two time-values
       coszen  = Scale according to the cosine of the solar zenith angle (for solar)
-      default="linear".
     </description>
-  <tintalgo>linear</tintalgo>
+    <values>
+      <value>linear</value>
+    </values>
   </entry>
 
-  <entry id="taxmode">
-    <type>char*256(30)</type>
+  <entry id="taxmode" per_stream_entry="TRUE">
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
     <valid_values>extend,cycle,limit</valid_values>
@@ -334,12 +367,13 @@
       extend = extrapolate before and after the period by using the first or last value.
       cycle  = cycle between the range of data
       limit  = restrict to the period for which the data is valid
-      default="cycle".
     </description>
-  <taxmode>cycle</taxmode>
+    <values>
+      <value>cycle</value>
+    </values>
   </entry>
 
-  <entry id="dtlimit">
+  <entry id="dtlimit" per_stream_entry="TRUE">
     <type>real(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml" </group>
@@ -356,13 +390,32 @@
       time is computed as data is read and any wraparound or cycling is also
       included.  this input helps trap missing data or errors in cycling.
       to turn off trapping, set the value to 1.0e30 or something similar.
-      default=1.5.
     </description>
-  <dtlimit>1.5e0</dtlimit>
+    <values>
+      <value>1.5e0</value>
+    </values>
+  </entry>
+
+  <entry id="vectors" skip_default_entry="TRUE">
+    <type>char</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <description>
+      list of paired colon delimited field names that should be treated as
+      vectors when carrying out spatial interpolation.  unlike other
+      character arrays in this namelist, this array is completely decoupled
+      from the list of streams.  this is a list of vector pairs that span
+      all input streams where different fields of the vector pair could
+      appear in different streams.
+      for example, vectors = 'u:v','taux:tauy'.
+    </description>
+    <values>
+      <value>null</value>
+    </values>
   </entry>
 
   <entry id="streams">
-    <type>char*256(30)</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml" </group>
     <description>
@@ -374,8 +427,10 @@
       options are described elsewhere.  year_align, year_first, and
       year_last provide information about the time axis of the file and how
       to relate the input time axis to the model time axis.
-      default="null".
     </description>
+    <values>
+      <value></value>
+    </values>
   </entry>
 
   <!-- =========================================  -->
@@ -383,7 +438,7 @@
   <!-- =========================================  -->
 
   <entry id="decomp">
-    <type>char*4</type>
+    <type>char</type>
     <category>dwav</category>
     <group>dwav_nml</group>
     <valid_values>1d,root</valid_values>
@@ -392,42 +447,43 @@
       1d   = Vector decomposition
       root = run only on the master task
     </description>
+    <values>
+      <value>1d</value>
+    </values>
   </entry>
 
   <entry id="restfilm">
-    <type>char*256</type>
+    <type>char</type>
     <category>dwav</category>
     <group>dwav_nml</group>
     <description>
       Master restart file name for dwav model
     </description>
+    <values>
+      <value>undefined</value>
+    </values>
   </entry>
 
   <entry id="restfils">
-    <type>char*256</type>
+    <type>char</type>
     <category>dwav</category>
     <group>dwav_nml</group>
     <description>
       Stream restart file name for dwav model, needed for branch simulations
     </description>
+    <values>
+      <value>undefined</value>
+    </values>
   </entry>
 
   <entry id="force_prognostic_true">
     <type>logical</type>
     <category>drof</category>
     <group>drof_nml</group>
-    <description>If TRUE, prognostic is forced to true. (default=false)</description>
+    <description>If TRUE, prognostic is forced to true. </description>
+    <values>
+      <value>.false.</value>
+    </values>
   </entry>
 
-  <!-- =========================================  -->
-  <!--- modelio (in file atm_modeio.nml)          -->
-  <!-- =========================================  -->
-
-  <entry id="logfile">
-    <type>char*256</type>
-    <category>dwav</category>
-    <group>modelio</group>
-    <description>DWAV logfile name (default='wav.log')</description>
-  </entry>
-
-</namelist_definition>
+</entry_id>

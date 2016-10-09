@@ -1,6 +1,56 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 10-04-2016
+Tag: cime5.2.0-alpha.3
+Answer Changes: None
+Tests:  scripts_regression_tests
+Dependencies:
+
+Brief Summary: updates based on cesm2_0_beta02 testing, add memleak_tolerance check, better TestStatus for incomplete tests. new query_testlist feature.
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/allactive/config_pesall.xml
+M       cime_config/acme/config_archive.xml
+M       cime_config/acme/config_files.xml
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_build.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+D       cime_config/acme/machines/env_mach_specific.penn
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_archive.xml
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/machines/config_batch.xml
+M       cime_config/config_tests.xml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/cime_config/testdefs/testlist_drv.xml
+M       externals/pio2/src/clib/pioc.c
+M       scripts/create_test
+A       scripts/query_testlists
+D       tools/cprnc/CMake/FindNetcdf.cmake
+M       tools/cprnc/CMakeLists.txt
+M       tools/cprnc/README
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/XML/lt_archive.py
+M       utils/python/CIME/XML/testlist.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/hist_utils.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/test_status.py
+M       utils/python/CIME/test_utils.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 09-27-2016
 Tag: cime5.2.0-alpha01
 Answer Changes: None

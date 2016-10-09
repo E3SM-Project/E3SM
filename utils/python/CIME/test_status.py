@@ -9,11 +9,11 @@ from collections import OrderedDict
 TEST_STATUS_FILENAME = "TestStatus"
 
 # The statuses that a phase can be in
-TEST_PENDING_STATUS  = "PEND"
-TEST_PASS_STATUS     = "PASS"
-TEST_FAIL_STATUS     = "FAIL"
+TEST_PEND_STATUS = "PEND"
+TEST_PASS_STATUS = "PASS"
+TEST_FAIL_STATUS = "FAIL"
 
-ALL_PHASE_STATUSES = [TEST_PENDING_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
+ALL_PHASE_STATUSES = [TEST_PEND_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
 
 # Special statuses that the overall test can be in
 TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in one of the COMPARE phases
@@ -23,7 +23,6 @@ NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
 TEST_NO_BASELINES_COMMENT = "BFAIL" # Implies baseline directory is missing in the baseline comparison phase
 
 # The valid phases
-INITIAL_PHASE         = "INIT"
 CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
 XML_PHASE             = "XML"
 SETUP_PHASE           = "SETUP"
@@ -37,18 +36,26 @@ MEMLEAK_PHASE         = "MEMLEAK"
 COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
 GENERATE_PHASE        = "GENERATE"
 
-ALL_PHASES = [INITIAL_PHASE,
-              CREATE_NEWCASE_PHASE,
+ALL_PHASES = [CREATE_NEWCASE_PHASE,
               XML_PHASE,
               SETUP_PHASE,
               NAMELIST_PHASE,
               SHAREDLIB_BUILD_PHASE,
               MODEL_BUILD_PHASE,
               RUN_PHASE,
+              COMPARE_PHASE,
               THROUGHPUT_PHASE,
               MEMCOMP_PHASE,
               MEMLEAK_PHASE,
               GENERATE_PHASE]
+
+# These are mandatory phases that a test must go through
+CORE_PHASES = [CREATE_NEWCASE_PHASE,
+               XML_PHASE,
+               SETUP_PHASE,
+               SHAREDLIB_BUILD_PHASE,
+               MODEL_BUILD_PHASE,
+               RUN_PHASE]
 
 def _test_helper1(file_contents):
     ts = TestStatus(test_dir="/", test_name="ERS.foo.A")
@@ -65,7 +72,7 @@ def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, che
 
 class TestStatus(object):
 
-    def __init__(self, test_dir=None, test_name=None):
+    def __init__(self, test_dir=None, test_name=None, no_io=False):
         """
         Create a TestStatus object
 
@@ -76,6 +83,7 @@ class TestStatus(object):
         self._phase_statuses = OrderedDict() # {name -> (status, comments)}
         self._test_name = test_name
         self._ok_to_modify = False
+        self._no_io = no_io
 
         if os.path.exists(self._filename):
             self._parse_test_status_file()
@@ -99,24 +107,74 @@ class TestStatus(object):
 
     def set_status(self, phase, status, comments=""):
         """
-        >>> with TestStatus(test_dir="/", test_name="ERS.foo.A") as ts:
+        Update the status of this test by changing the status of given phase to the
+        given status.
+
+        Key implematation details:
+        1) In order to ensure that incomplete tests are always left in a PEND
+        state, updating a core phase to a PASS state will automatically set the next
+        core state to PEND.
+        2) If the user repeats a core state, that invalidates all subsequent state. For
+        example, if a user rebuilds their case, then any of the post-run states like the
+        RUN state are no longer valid.
+
+        >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
         ...     ts.set_status(CREATE_NEWCASE_PHASE, "PASS")
         ...     ts.set_status(XML_PHASE, "PASS")
-        ...     ts.set_status(SETUP_PHASE, "PASS")
         ...     ts.set_status(SETUP_PHASE, "FAIL")
+        ...     ts.set_status(SETUP_PHASE, "PASS")
         ...     ts.set_status("%s_baseline" % COMPARE_PHASE, "FAIL")
         ...     ts.set_status(SHAREDLIB_BUILD_PHASE, "PASS", comments='Time=42')
-        ...     result = OrderedDict(ts._phase_statuses)
-        ...     ts._phase_statuses = None
-        >>> result
-        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', '')), ('COMPARE_baseline', ('FAIL', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42'))])
+        >>> ts._phase_statuses
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42')), ('COMPARE_baseline', ('FAIL', '')), ('MODEL_BUILD', ('PEND', ''))])
+
+        >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
+        ...     ts.set_status(CREATE_NEWCASE_PHASE, "PASS")
+        ...     ts.set_status(XML_PHASE, "PASS")
+        ...     ts.set_status(SETUP_PHASE, "FAIL")
+        ...     ts.set_status(SETUP_PHASE, "PASS")
+        ...     ts.set_status("%s_baseline" % COMPARE_PHASE, "FAIL")
+        ...     ts.set_status(SHAREDLIB_BUILD_PHASE, "PASS", comments='Time=42')
+        ...     ts.set_status(SETUP_PHASE, "PASS")
+        >>> ts._phase_statuses
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('PASS', '')), ('SHAREDLIB_BUILD', ('PEND', ''))])
+
+        >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
+        ...     ts.set_status(CREATE_NEWCASE_PHASE, "FAIL")
+        >>> ts._phase_statuses
+        OrderedDict([('CREATE_NEWCASE', ('FAIL', ''))])
         """
         expect(self._ok_to_modify, "TestStatus not in a modifiable state, use 'with' syntax")
         expect(phase in ALL_PHASES or phase.startswith(COMPARE_PHASE),
                "Invalid phase '%s'" % phase)
         expect(status in ALL_PHASE_STATUSES, "Invalid status '%s'" % status)
 
+        if phase in CORE_PHASES and phase != CORE_PHASES[0]:
+            previous_core_phase = CORE_PHASES[CORE_PHASES.index(phase)-1]
+            #TODO: enamble check below
+            #expect(previous_core_phase in self._phase_statuses, "Core phase '%s' was skipped" % previous_core_phase)
+
+            if previous_core_phase in self._phase_statuses:
+                expect(self._phase_statuses[previous_core_phase][0] == TEST_PASS_STATUS,
+                       "Cannot move past core phase '%s', it didn't pass" % previous_core_phase)
+
+        reran_phase = (phase in self._phase_statuses and self._phase_statuses[phase][0] != TEST_PEND_STATUS)
+        if reran_phase:
+            # All subsequent phases are invalidated
+            phase_idx = ALL_PHASES.index(phase)
+            for subsequent_phase in ALL_PHASES[phase_idx+1:]:
+                if subsequent_phase in self._phase_statuses:
+                    del self._phase_statuses[subsequent_phase]
+                if subsequent_phase.startswith(COMPARE_PHASE):
+                    for stored_phase in self._phase_statuses.keys():
+                        if stored_phase.startswith(COMPARE_PHASE):
+                            del self._phase_statuses[stored_phase]
+
         self._phase_statuses[phase] = (status, comments) # Can overwrite old phase info
+
+        if status == TEST_PASS_STATUS and phase in CORE_PHASES and phase != CORE_PHASES[-1]:
+            next_core_phase = CORE_PHASES[CORE_PHASES.index(phase)+1]
+            self._phase_statuses[next_core_phase] = (TEST_PEND_STATUS, "")
 
     def get_status(self, phase):
         return self._phase_statuses[phase][0] if phase in self._phase_statuses else None
@@ -138,7 +196,7 @@ class TestStatus(object):
                     fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
 
     def flush(self):
-        if self._phase_statuses:
+        if self._phase_statuses and not self._no_io:
             with open(self._filename, "w") as fd:
                 self.phase_statuses_dump(fd)
 
@@ -207,7 +265,11 @@ class TestStatus(object):
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP', ignore_namelists=True)
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A COMPARE_1\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'FAIL'
+        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'DIFF'
+        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD', wait_for_run=True)
@@ -228,7 +290,7 @@ class TestStatus(object):
             if phase == RUN_PHASE:
                 run_phase_found = True
 
-            if (status == TEST_PENDING_STATUS):
+            if (status == TEST_PEND_STATUS):
                 return status
 
             elif (status == TEST_FAIL_STATUS):
@@ -242,7 +304,7 @@ class TestStatus(object):
                     if (rv == TEST_PASS_STATUS):
                         rv = NAMELIST_FAIL_STATUS
 
-                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase.startswith(COMPARE_PHASE)):
+                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == "COMPARE_baseline"):
                     rv = TEST_DIFF_STATUS
 
                 else:
@@ -251,6 +313,6 @@ class TestStatus(object):
         # The test did not fail but the RUN phase was not found, so if the user requested
         # that we wait for the RUN phase, then the test must still be considered pending.
         if rv != TEST_FAIL_STATUS and not run_phase_found and wait_for_run:
-            rv = TEST_PENDING_STATUS
+            rv = TEST_PEND_STATUS
 
         return rv

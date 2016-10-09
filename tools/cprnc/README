@@ -24,7 +24,14 @@ CIMEROOT=../.. source .env_mach_specific.sh && make
 Finally, put the resulting executable in CCSM_CPRNC as defined in
 config_machines.xml.
 
-You can also build cprnc using cmake.
+You can also build cprnc using cmake:
+export CIMEROOT=../..
+MPILIB=mpi-serial source .env_mach_specific.sh
+../configure --macros-format=CMake
+
+Next run cmake . to build the Makefile and then
+make to build cprnc.
+
 
  Usage: cprnc  [-v] [-d dimname:start[:count]] file1 [file2]
  -m: Compare each time sample. Default is false, i.e. match "time"

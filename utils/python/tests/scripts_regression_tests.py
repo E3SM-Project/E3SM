@@ -110,8 +110,14 @@ class A_RunUnitTests(unittest.TestCase):
 ###############################################################################
 def make_fake_teststatus(path, testname, status, phase):
 ###############################################################################
-    with open(path, "w") as fd:
-        fd.write("%s %s %s\n" % (status, testname, phase))
+    expect(phase in CORE_PHASES, "Bad phase '%s'" % phase)
+    with TestStatus(test_dir=path, test_name=testname) as ts:
+        for core_phase in CORE_PHASES:
+            if core_phase == phase:
+                ts.set_status(core_phase, status)
+                break
+            else:
+                ts.set_status(core_phase, TEST_PASS_STATUS)
 
 ###############################################################################
 def parse_test_status(line):
@@ -239,11 +245,11 @@ class M_TestWaitForTests(unittest.TestCase):
         for r in range(10):
             for testdir in testdirs:
                 os.makedirs(os.path.join(testdir, str(r)))
-                make_fake_teststatus(os.path.join(testdir, str(r), "TestStatus"), "Test_%d" % r, "PASS", "RUN")
+                make_fake_teststatus(os.path.join(testdir, str(r)), "Test_%d" % r, TEST_PASS_STATUS, RUN_PHASE)
 
-        make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5", "TestStatus"), "Test_5", "FAIL", "RUN")
-        make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5", "TestStatus"), "Test_5", "PEND", "RUN")
-        make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5", "TestStatus"), "Test_5", "PASS", "MODEL_BUILD")
+        make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5"), "Test_5", TEST_FAIL_STATUS, RUN_PHASE)
+        make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5"), "Test_5", TEST_PEND_STATUS, RUN_PHASE)
+        make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5"), "Test_5", TEST_PASS_STATUS, MODEL_BUILD_PHASE)
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -306,7 +312,7 @@ class M_TestWaitForTests(unittest.TestCase):
         self.simple_test(self._testdir_unfinished, expected_results, "-n")
 
     ###########################################################################
-    def test_wait_for_test_wait(self):
+    def test_wait_for_test_wait_for_pend(self):
     ###########################################################################
         run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_unfinished, ["PASS"] * 10))
         run_thread.daemon = True
@@ -326,7 +332,7 @@ class M_TestWaitForTests(unittest.TestCase):
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
     ###########################################################################
-    def test_wait_for_test_wait2(self):
+    def test_wait_for_test_wait_for_missing_run_phase(self):
     ###########################################################################
         run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_unfinished2, ["PASS"] * 10))
         run_thread.daemon = True
@@ -535,6 +541,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = update_acme_tests.get_full_test_names(["cime_test_only",
                                                        "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
                                                        "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X",
+                                                       "^TESTTESTDIFF_Mmpi-serial.f19_g16_rx1.A",
                                                        "^TESTBUILDFAILEXC.f19_g16_rx1.A",
                                                        "^TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
@@ -551,10 +558,10 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
         for idx, phase in enumerate(ct._phases):
             for test in ct._tests:
-                if (phase == CIME.test_scheduler.INITIAL_PHASE):
+                if (phase == CIME.test_scheduler.TEST_START):
                     continue
                 elif (phase == CIME.test_scheduler.MODEL_BUILD_PHASE):
-                    ct._update_test_status(test, phase, TEST_PENDING_STATUS)
+                    ct._update_test_status(test, phase, TEST_PEND_STATUS)
 
                     if (test == build_fail_test):
                         ct._update_test_status(test, phase, TEST_FAIL_STATUS)
@@ -568,9 +575,9 @@ class O_TestTestScheduler(TestCreateTestCommon):
                 elif (phase == CIME.test_scheduler.RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
-                            ct._update_test_status(test, phase, TEST_PENDING_STATUS)
+                            ct._update_test_status(test, phase, TEST_PEND_STATUS)
                     else:
-                        ct._update_test_status(test, phase, TEST_PENDING_STATUS)
+                        ct._update_test_status(test, phase, TEST_PEND_STATUS)
                         self.assertFalse(ct._work_remains(test))
 
                         if (test == run_fail_test):
@@ -584,17 +591,17 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
                 else:
                     with self.assertRaises(SystemExit):
-                        ct._update_test_status(test, ct._phases[idx+1], TEST_PENDING_STATUS)
+                        ct._update_test_status(test, ct._phases[idx+1], TEST_PEND_STATUS)
 
                     with self.assertRaises(SystemExit):
                         ct._update_test_status(test, phase, TEST_PASS_STATUS)
 
-                    ct._update_test_status(test, phase, TEST_PENDING_STATUS)
+                    ct._update_test_status(test, phase, TEST_PEND_STATUS)
                     self.assertFalse(ct._is_broken(test))
                     self.assertTrue(ct._work_remains(test))
 
                     with self.assertRaises(SystemExit):
-                        ct._update_test_status(test, phase, TEST_PENDING_STATUS)
+                        ct._update_test_status(test, phase, TEST_PEND_STATUS)
 
                     ct._update_test_status(test, phase, TEST_PASS_STATUS)
 
@@ -616,6 +623,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         run_fail_test       = [item for item in tests if "TESTRUNFAIL_" in item][0]
         run_fail_exc_test   = [item for item in tests if "TESTRUNFAILEXC" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
+        test_diff_test      = [item for item in tests if "TESTTESTDIFF" in item][0]
         mem_fail_test       = [item for item in tests if "TESTMEMLEAKFAIL" in item][0]
         mem_pass_test       = [item for item in tests if "TESTMEMLEAKPASS" in item][0]
 
@@ -658,6 +666,9 @@ class O_TestTestScheduler(TestCreateTestCommon):
                                 "Broken test did not report run error:\n%s" % data)
             elif (test_name == mem_fail_test):
                 self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
+            elif (test_name == test_diff_test):
+                self.assertEqual(ts.get_status("COMPARE_base_rest"), TEST_FAIL_STATUS)
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
@@ -1705,6 +1716,34 @@ class I_TestCMakeMacros(H_TestMakeMacros):
         test_xml = _wrap_config_build_xml(xml_string)
         return CMakeTester(self, get_macros(self._maker, test_xml, "CMake"))
 
+###############################################################################
+class S_TestManageAndQuery(unittest.TestCase):
+    """Tests various scripts to manage and query xml files"""
+
+    def _run_and_assert_query_testlist(self, extra_args=""):
+        """Ensure that query_testlist runs successfully with the given extra arguments"""
+
+        testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
+
+        run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s %s"%
+                              (SCRIPT_DIR, testlist_allactive, extra_args))
+
+    def test_query_testlists_runs(self):
+        """Make sure that query_testlists runs successfully
+
+        This simply makes sure that query_testlists doesn't generate any errors
+        when it runs. This helps ensure that changes in other utilities don't
+        break query_testlists.
+        """
+        self._run_and_assert_query_testlist(extra_args="--show-options")
+
+    def test_query_testlists_count_runs(self):
+        """Make sure that query_testlists runs successfully with the --count argument"""
+        self._run_and_assert_query_testlist(extra_args="--count")
+
+    def test_query_testlists_list_runs(self):
+        """Make sure that query_testlists runs successfully with the --list argument"""
+        self._run_and_assert_query_testlist(extra_args="--list categories")
 
 ###############################################################################
 
