@@ -49,10 +49,6 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_vorticity
    real (kind=RKIND), allocatable, dimension(:,:) :: dpdz
 
-   ! Used in advance_acoustic_step
-   real (kind=RKIND), allocatable, dimension(:,:) :: ts, rs
-!   real (kind=RKIND), allocatable, dimension(:,:) :: drthetadz
-
    ! Used in atm_advance_scalars
    real (kind=RKIND), dimension(:,:,:), allocatable :: horiz_flux_array
 
@@ -583,11 +579,6 @@ MPAS_GPTL_STOP('dyn_tend')
                   call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
-! Would be more efficient to allocate these outside the acoustic loop...
-                  allocate(ts(nVertLevels,nCells+1))
-                  allocate(rs(nVertLevels,nCells+1))
-!                  allocate(drthetadz(nVertLevels,nCells+1))
-
 !$OMP PARALLEL DO
                   do thread=1,block % nThreads
                      call atm_advance_acoustic_step( state, diag, tend,  mesh, block % configs, nCells, nVertLevels, &
@@ -600,10 +591,6 @@ MPAS_GPTL_STOP('dyn_tend')
                                              block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
                   end do
 !$OMP END PARALLEL DO
-
-                  deallocate(ts)
-                  deallocate(rs)
-!                  deallocate(drthetadz)
 
                   block => block % next
                end do
@@ -1861,6 +1848,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       integer, intent(in) :: small_step
       real (kind=RKIND), intent(in) :: dts, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3
+      real (kind=RKIND), dimension(nVertLevels) :: ts, rs
 
   
       !
@@ -1964,8 +1952,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
 
-         ts(:,iCell) = 0.0
-         rs(:,iCell) = 0.0
+         ts(:) = 0.0
+         rs(:) = 0.0
 
          if(small_step == 1) then  ! initialize here on first small timestep.
             wwAvg(1:nVertLevels+1,iCell) = 0.0            
@@ -1989,8 +1977,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 !DIR$ IVDEP
             do k=1,nVertLevels
                flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge) * invAreaCell(iCell)
-               rs(k,iCell) = rs(k,iCell)-flux
-               ts(k,iCell) = ts(k,iCell)-flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
+               rs(k) = rs(k)-flux
+               ts(k) = ts(k)-flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
             end do
          end do
 
@@ -2000,9 +1988,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !DIR$ IVDEP
          do k=1, nVertLevels
-            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
+            rs(k) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k)                  &
                             - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell)) 
-            ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
+            ts(k) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k)                &
                                - resm*rdzw(k)*( coftz(k+1,iCell)*rw_p(k+1,iCell)     &
                                                -coftz(k,iCell)*rw_p(k,iCell))
          end do
@@ -2015,14 +2003,14 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 !DIR$ IVDEP
          do k=2, nVertLevels
             rw_p(k,iCell) = rw_p(k,iCell) +  dts*tend_rw(k,iCell)                       &
-                       - cofwz(k,iCell)*((zz(k  ,iCell)*ts (k  ,iCell)                  &
-                                     -zz(k-1,iCell)*ts (k-1,iCell))                     &
+                       - cofwz(k,iCell)*((zz(k  ,iCell)*ts(k)                           &
+                                     -zz(k-1,iCell)*ts(k-1))                            &
                                +resm*(zz(k  ,iCell)*rtheta_pp(k  ,iCell)                &
                                      -zz(k-1,iCell)*rtheta_pp(k-1,iCell)))              &
-                       - cofwr(k,iCell)*((rs (k,iCell)+rs (k-1,iCell))                  &
+                       - cofwr(k,iCell)*((rs(k)+rs(k-1))                                &
                                +resm*(rho_pp(k,iCell)+rho_pp(k-1,iCell)))               &
-                       + cofwt(k  ,iCell)*(ts (k  ,iCell)+resm*rtheta_pp(k  ,iCell))    &
-                       + cofwt(k-1,iCell)*(ts (k-1,iCell)+resm*rtheta_pp(k-1,iCell))
+                       + cofwt(k  ,iCell)*(ts(k  )+resm*rtheta_pp(k  ,iCell))           &
+                       + cofwt(k-1,iCell)*(ts(k-1)+resm*rtheta_pp(k-1,iCell))
          end do
 
          ! tridiagonal solve sweeping up and then down the column
@@ -2058,8 +2046,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !DIR$ IVDEP
          do k=1,nVertLevels
-            rho_pp(k,iCell) = rs(k,iCell) - cofrz(k) *(rw_p(k+1,iCell)-rw_p(k  ,iCell))
-            rtheta_pp(k,iCell) = ts(k,iCell) - rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)  &
+            rho_pp(k,iCell) = rs(k) - cofrz(k) *(rw_p(k+1,iCell)-rw_p(k  ,iCell))
+            rtheta_pp(k,iCell) = ts(k) - rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)  &
                                -coftz(k  ,iCell)*rw_p(k  ,iCell))
             divergence_3d(k,iCell) = (rho_pp(k,iCell) - divergence_3d(k,iCell))*rdts
          end do
