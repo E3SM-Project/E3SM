@@ -1954,6 +1954,14 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !$OMP BARRIER
 
+      if (small_step == 1) then  ! initialize here on first small timestep.
+         do iCell=cellStart,cellEnd
+            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+         end do
+      end if
+
+!!!OMP BARRIER -- not needed, since zz_rtheta_pp_old not used below when small_step == 1
+
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
 
          ts(:,iCell) = 0.0
@@ -1963,7 +1971,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             wwAvg(1:nVertLevels+1,iCell) = 0.0            
             rho_pp(1:nVertLevels,iCell) = 0.0            
             rtheta_pp(1:nVertLevels,iCell) = 0.0            
-            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+!MGD moved to loop above over all cells
+!            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
             rw_p(:,iCell) = 0.0
             divergence_3d(1:nVertLevels,iCell) = 0.
          else  ! reset rtheta_pp to input value;
