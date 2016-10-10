@@ -61,14 +61,13 @@ class NamelistGenerator(object):
     _streams_variables = []
 
     def __init__(self, case, infiles, #pylint:disable=too-many-arguments
-                 definition_files, defaults_files, config):
+                 definition_files, config):
         """Construct a namelist generator.
 
         Arguments:
         `case`             - `Case` object corresponding to the current case.
         `infiles`          - List of files with user namelist options.
         `definition_files` - List of XML files containing namelist definitions.
-        `defaults_files`   - List of XML files containing namelist defaults.
         `config`           - A dictionary of attributes for matching defaults.
         """
         # Save off important information from inputs.
@@ -77,14 +76,7 @@ class NamelistGenerator(object):
         self._glc_nec = case.get_value('GLC_NEC')
 
         # Create definition object.
-        self._definition = NamelistDefinition(definition_files[0])
-        for file_ in definition_files[1:]:
-            self._definition.add(file_)
-
-        # Create default object.
-        self._defaults = NamelistDefaults(defaults_files[0], attributes=config)
-        for file_ in defaults_files[1:]:
-            self._defaults.add(file_)
+        self._definition = NamelistDefinition(definition_files[0], attributes=config)
 
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
@@ -204,7 +196,7 @@ class NamelistGenerator(object):
         self._namelist.set_variable_value(var_info['group'], name, literals)
 
     def get_default(self, name, config=None, allow_none=False):
-        """Get the value of a variable from the namelist defaults file.
+        """Get the value of a variable from the namelist definition file.
 
         The `config` argument is passed through to the underlying
         `NamelistDefaults.get_value` call as the `attribute` argument.
@@ -232,7 +224,7 @@ class NamelistGenerator(object):
            exists. This behavior is suppressed within single-quoted strings
            (similar to parameter expansion in shell scripts).
         """
-        default = self._defaults.get_value(name, attribute=config)
+        default = self._definition.get_default_value(name, attribute=config)
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None

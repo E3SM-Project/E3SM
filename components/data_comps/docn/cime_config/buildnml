@@ -52,7 +52,7 @@ def _parse_input(argv):
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 ####################################################################################
-def _create_namelists(case, confdir, inst_string, infiles, definition_file):
+def _create_namelists(case, confdir, inst_string, infile, definition_file):
 ####################################################################################
     """Write out the namelist for this component.
 
@@ -105,7 +105,7 @@ def _create_namelists(case, confdir, inst_string, infiles, definition_file):
     #----------------------------------------------------
     # Construct the namelist generator.
     #----------------------------------------------------
-    nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file, config)
+    nmlgen = NamelistGenerator(case, infile, definition_file, config)
 
     #----------------------------------------------------
     # Construct the list of streams.

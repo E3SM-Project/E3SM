@@ -18,12 +18,13 @@ from CIME.namelist import fortran_namelist_base_value, \
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
+from CIME.XML.entry_id import EntryID
 
 logger = logging.getLogger(__name__)
 
 _array_size_re = re.compile(r'^(?P<type>[^(]+)\((?P<size>[^)]+)\)$')
 
-class NamelistDefinition(GenericXML):
+class NamelistDefinition(EntryID):
 
     """Class representing variable definitions for a namelist.
 
@@ -40,22 +41,16 @@ class NamelistDefinition(GenericXML):
     - validate
     """
 
-    def __init__(self, infile):
+    def __init__(self, infile, attributes=None):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
         self._value_cache = {}
         self._version = self._get_version(infile)
+        self._attributes = attributes
 
     def _get_version(self, infile):
         version = self.root.get("version")
         return version
-
-    def add(self, infile):
-        """Add the contents of an XML file to the namelist definition."""
-        new_root = ET.parse(infile).getroot()
-        for elem in new_root:
-            self.root.append(elem)
-        self._value_cache = {}
 
     def get_entries(self):
         """Return all variables in the namelist definition file
@@ -318,10 +313,10 @@ class NamelistDefinition(GenericXML):
     def _user_modifiable_in_variable_definition(self, name, filename):
         # Is name user modifiable?
         node = self.get_optional_node("entry", attributes={'id': name})
-        user_modifiable = self.get_optional_node("unmodifiable_via_user_nl", root=node)
+        user_modifiable = node.get("modify_via_xml")
         if user_modifiable is not None:
             expect(False,
-                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable.text))
+                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable))
 
     def validate(self, namelist, filename=None):
         """Validate a namelist object against this definition.
@@ -385,3 +380,79 @@ class NamelistDefinition(GenericXML):
                 groups[group_name] = {}
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
+
+    @staticmethod
+    def _split_defaults_text(string):
+        """Take a comma-separated list in a string, and split it into a list."""
+        # Some trickiness here; we want to split items on commas, but not inside
+        # quote-delimited strings. Stripping whitespace is also useful.
+        value = []
+        pos = 0
+        delim = None
+        for i, char in enumerate(string):
+            if delim is None:
+                # If not inside a string...
+                if char in ('"', "'"):
+                    # if we have a quote character, start a string.
+                    delim = char
+                elif char == ',':
+                    # if we have a comma, this is a new value.
+                    value.append(string[pos:i].strip())
+                    pos = i+1
+            else:
+                # If inside a string, the only thing that can happen is the end
+                # of the string.
+                if char == delim:
+                    delim = None
+        value.append(string[pos:].strip())
+        return value
+
+
+    def get_default_value(self, item, attribute=None, resolved=False, subgroup=None):
+        """Return the default value for the variable named `item`.
+
+        The return value is a list of strings corresponding to the
+        comma-separated list of entries for the value (length 1 for scalars). If
+        there is no default value in the file, this returns `None`.
+        """
+        expect(not resolved, "This class does not support env resolution.")
+        expect(subgroup is None, "This class does not support subgroups.")
+
+        # Merge internal attributes with those passed in.
+        all_attributes = {}
+        if self._attributes is not None:
+            all_attributes.update(self._attributes)
+        if attribute is not None:
+            all_attributes.update(attribute)
+
+        node = self.get_node("entry", attributes={"id":item.lower()})
+        nodes = self.get_nodes("value", root=node)
+
+        # Store nodes that match the attributes and their scores.
+        matches = []
+        for node in nodes:
+            # For each node in the list start a score.
+            score = 0
+            for attribute in node.keys():
+                # For each attribute, add to the score.
+                score += 1
+                # If some attribute is specified that we don't know about,
+                # or the values don't match, it's not a match we want.
+                if attribute not in all_attributes or \
+                   all_attributes[attribute] != node.get(attribute):
+                    score = -1
+                    break
+
+            # Add valid matches to the list.
+            if score >= 0:
+                matches.append((score, node))
+
+        if not matches:
+            return None
+
+        # Get maximum score using custom `key` function, extract the node.
+        _, node = max(matches, key=lambda x: x[0])
+        if node.text is None:
+            return ['']
+        return self._split_defaults_text(node.text)
+
