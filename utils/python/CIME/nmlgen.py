@@ -61,7 +61,7 @@ class NamelistGenerator(object):
     _streams_variables = []
 
     def __init__(self, case, infiles, #pylint:disable=too-many-arguments
-                 definition_files, defaults_files, config):
+                 definition_files, config):
         """Construct a namelist generator.
 
         Arguments:
@@ -76,7 +76,7 @@ class NamelistGenerator(object):
         self._din_loc_root = case.get_value('DIN_LOC_ROOT')
 
         # Create definition object.
-        self._definition = NamelistDefinition(definition_files[0])
+        self._definition = NamelistDefinition(definition_files[0], config)
         for file_ in definition_files[1:]:
             self._definition.read(file_)
 
@@ -227,7 +227,7 @@ class NamelistGenerator(object):
            (similar to parameter expansion in shell scripts).
         """
         default = self._definition.get_value_match(name, attributes=config, exact_match=True)
-        
+
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None
@@ -251,7 +251,7 @@ class NamelistGenerator(object):
             default[i] = scalar
 
         # Deal with missing quotes.
-        
+
         if var_type == 'character':
             for i, scalar in enumerate(default):
                 # Preserve null values.
@@ -551,7 +551,7 @@ class NamelistGenerator(object):
         for group_name in self._namelist.get_group_names():
             for variable_name in self._namelist.get_variable_names(group_name):
 #                var_info = self._definition.get_value(variable_name)
-                
+
                 input_pathname = self._definition.get_node_element_info(variable_name, "input_pathname")
                 if input_pathname is not None:
                     # This is where we end up for all variables that are paths
@@ -594,7 +594,7 @@ class NamelistGenerator(object):
             groups.remove("modelio")
         if "seq_maps" in groups:
             groups.remove("seq_maps")
-            
+
         # write namelist file
         self._namelist.write(namelist_file, groups=groups)
 

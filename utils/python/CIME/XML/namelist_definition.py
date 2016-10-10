@@ -36,9 +36,10 @@ class NamelistDefinition(EntryID):
     - validate
     """
 
-    def __init__(self, infile):
+    def __init__(self, infile, config):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
+        self._attributes = config
 
     def _get_version(self):
         version = self.root.get("version")
@@ -74,7 +75,7 @@ class NamelistDefinition(EntryID):
         raise TypeError, \
             "NamelistDefinition does not support `set_value`."
 
-    
+
 
 
     def get_valid_values(self, name):
@@ -117,8 +118,8 @@ class NamelistDefinition(EntryID):
 
         # Merge internal attributes with those passed in.
         all_attributes = {}
-#        if self._attributes is not None:
-#            all_attributes.update(self._attributes)
+        if self._attributes is not None:
+            all_attributes.update(self._attributes)
         if attributes is not None:
             all_attributes.update(attributes)
         value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match)
