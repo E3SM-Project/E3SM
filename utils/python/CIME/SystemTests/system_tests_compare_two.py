@@ -26,6 +26,7 @@ In addition, they MAY require the following method:
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
+from CIME.case_setup import case_setup
 
 import shutil, os, glob
 
@@ -298,6 +299,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # Flush the case so that, if errors occur later, then at least case2 is
         # in a correct, post-setup state
         self._case.flush()
+        case_setup(self._case, clean=False, test_mode=False, reset=True)
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
