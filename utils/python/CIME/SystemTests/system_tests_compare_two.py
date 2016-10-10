@@ -26,7 +26,6 @@ In addition, they MAY require the following method:
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
-from CIME.case_setup import case_setup
 
 import shutil, os, glob
 
