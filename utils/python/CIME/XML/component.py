@@ -16,7 +16,6 @@ class Component(EntryID):
         initialize an object
         """
         files = Files()
-
         # use xmllint to validate infile
         xmllint = find_executable("xmllint")
         if xmllint is not None:
@@ -43,11 +42,12 @@ class Component(EntryID):
         components = comps.split(',')
         return components
 
-    def _get_value_match(self, node, attributes=None):
+    def _get_value_match(self, node, attributes=None, exact_match=False):
         match_value = None
         match_max = 0
         match_count = 0
         match_values = []
+        expect(not exact_match, " exact_match not implemented in this method")
         expect(node is not None," Empty node in _get_value_match")
         values = self.get_optional_node("values", root=node)
         if values is None:

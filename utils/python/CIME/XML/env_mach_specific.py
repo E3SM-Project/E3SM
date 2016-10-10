@@ -76,9 +76,8 @@ class EnvMachSpecific(EnvBase):
             group   = super(EnvMachSpecific, self)._get_group(node)
             val     = node.text
             attr    = node.attrib['name']
-            t       = self._get_type(node)
+            t       = self._get_type_info(node)
             desc    = self._get_description(node)
-            #default = super(EnvBase , self).get_default(node)
             default = self._get_default(node)
             filename    = self.filename
 

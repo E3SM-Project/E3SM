@@ -13,7 +13,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.namelist import Namelist, parse, \
     character_literal_to_string, string_to_character_literal, \
     expand_literal_list, compress_literal_list, merge_literal_lists
-from CIME.XML.namelist_defaults import NamelistDefaults
 from CIME.XML.namelist_definition import NamelistDefinition
 from CIME.utils import expect
 
@@ -124,7 +123,7 @@ class NamelistGenerator(object):
 
     def _to_python_value(self, name, literals):
         """Transform a literal list as needed for `get_value`."""
-        var_type, _, var_size, =  self._definition._split_type_string(name, self._definition.get_type_info(name))
+        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name))
         value = expand_literal_list(literals)
         for i, scalar in enumerate(value):
             if scalar == '':
@@ -142,7 +141,7 @@ class NamelistGenerator(object):
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
-        var_type, _, var_size, =  self._definition._split_type_string(name, self._definition.get_type_info(name))
+        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name))
         if var_size == 1 and not isinstance(value, list):
             value = [value]
         for i, scalar in enumerate(value):
@@ -229,7 +228,7 @@ class NamelistGenerator(object):
             return None
         default = expand_literal_list(default)
 
-        var_type,_,_ = self._definition._split_type_string(name, self._definition.get_type_info(name))
+        var_type,_,_ = self._definition.split_type_string(name, self._definition.get_type_info(name))
 
         for i, scalar in enumerate(default):
             # Skip single-quoted strings.

@@ -181,7 +181,7 @@ class NamelistDefinition(EntryID):
         return value
 
     @staticmethod
-    def _split_type_string(name, type_string):
+    def split_type_string(name, type_string):
         """Split a 'type' attribute string into its component parts.
 
         The `name` argument is the variable name associated with this type
@@ -251,7 +251,7 @@ class NamelistDefinition(EntryID):
         """
         name = name.lower()
         # Separate into a type, optional length, and optional size.
-        type_, max_len, size = self._split_type_string(name, self.get_type_info(name))
+        type_, max_len, size = self.split_type_string(name, self.get_type_info(name))
 
         # Check value against type.
         for scalar in value:
@@ -296,7 +296,7 @@ class NamelistDefinition(EntryID):
                (variable_template + " is not in the namelist definition.") %
                str(name))
 
-    def _user_modifiable_in_variable_definition(self, name, filename):
+    def _user_modifiable_in_variable_definition(self, name):
         # Is name user modifiable?
         node = self.get_optional_node("entry", attributes={'id': name})
         user_modifiable = node.get('modify_via_xml')
@@ -324,7 +324,7 @@ class NamelistDefinition(EntryID):
 
                 # Check if can actually change this variable via filename change
                 if filename is not None:
-                    self._user_modifiable_in_variable_definition(variable_name, filename)
+                    self._user_modifiable_in_variable_definition(variable_name)
 
                 # and has the right group name...
                 var_group = self.get_node_element_info(variable_name, "group")
@@ -361,37 +361,11 @@ class NamelistDefinition(EntryID):
             variable_lc = variable_name.lower()
             self._expect_variable_in_definition(variable_lc, variable_template)
             group_name = self.get_node_element_info(variable_lc, "group")
+            print "DEBUG var %s group_name %s"%(variable_lc, group_name)
             if group_name not in groups:
                 groups[group_name] = {}
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
-
-    @staticmethod
-    def _split_defaults_text(string):
-        """Take a comma-separated list in a string, and split it into a list."""
-        # Some trickiness here; we want to split items on commas, but not inside
-        # quote-delimited strings. Stripping whitespace is also useful.
-        value = []
-        pos = 0
-        delim = None
-        for i, char in enumerate(string):
-            if delim is None:
-                # If not inside a string...
-                if char in ('"', "'"):
-                    # if we have a quote character, start a string.
-                    delim = char
-                elif char == ',':
-                    # if we have a comma, this is a new value.
-                    value.append(string[pos:i].strip())
-                    pos = i+1
-            else:
-                # If inside a string, the only thing that can happen is the end
-                # of the string.
-                if char == delim:
-                    delim = None
-        value.append(string[pos:].strip())
-        return value
-
 
     def get_default_value(self, item, attribute=None):
         """Return the default value for the variable named `item`.
