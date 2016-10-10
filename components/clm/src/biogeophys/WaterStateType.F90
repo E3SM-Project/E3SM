@@ -519,7 +519,6 @@ contains
     use abortutils      , only : endrun
     use fileutils       , only : getfil
     use ncdio_pio       , only : file_desc_t, ncd_io
-    use SoilHydrologyMod, only : soilroot_water_method, zengdecker2009
     use clm_varctl      , only : do_varsoil
     !
     ! !ARGUMENTS:
@@ -644,7 +643,7 @@ contains
          l = col%landunit(c)
          if (.not. lun%lakpoi(l)) then  !not lake
 
-	    if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
+	    if(do_varsoil) then
 	      nlevbed = nlev2bed(c)
 	    else
 	      nlevbed = nlevsoi
