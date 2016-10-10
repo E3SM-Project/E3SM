@@ -61,55 +61,47 @@ class EntryID(GenericXML):
         value = None
         if node is not None:
             value = self._get_value_match(node, attributes, exact_match)
+        logger.debug("(get_value_match) vid %s value %s"%(vid, value))
         return value
 
     def _get_value_match(self, node, attributes=None, exact_match=False):
         '''
         Note that the component class has a specific version of this function
         '''
-        match_value = None
-        match_max = -1
-        match_count = 0
-        expect(node is not None," Empty node in _get_value_match")
+        # Store nodes that match the attributes and their scores.
+        matches = []
+        nodes = self.get_nodes("value", root=node)
+        for vnode in nodes:
+            # For each node in the list start a score.
+            score = 0
+            for attribute in vnode.keys():
+                # For each attribute, add to the score.
+                score += 1
+                # If some attribute is specified that we don't know about,
+                # or the values don't match, it's not a match we want.
+                if exact_match:
+                    if attribute not in attributes or \
+                            attributes[attribute] != vnode.get(attribute):
+                        score = -1
+                        break
+                else:
+                    if attribute not in attributes or \
+                            not re.search(vnode.get(attribute),
+                                          attributes[attribute]):
+                        score = -1
+                        break
 
-        values = self.get_optional_node("values", root=node)
-        if values is None:
-            return
+            # Add valid matches to the list.
+            if score >= 0:
+                matches.append((score, vnode))
 
-        for valnode in self.get_nodes("value", root=values):
-            # loop through all the keys in valnode (value nodes) attributes
-            if len(valnode.attrib) == 0:
-                logger.debug("(get_value_match) Set default value %s %s",node.get("id"), valnode.text)
-                match_value = valnode.text
-                continue
-            for key,value in valnode.attrib.iteritems():
-                match_count = 0
-                # determine if key is in attributes dictionary
-                if attributes is not None and key in attributes:
-                    if exact_match:
-                        if value == attributes[key]:
-                            logger.debug("(get_value_match) Value %s and key %s match with value %s"%(value, key, attributes[key]))
-                            match_count += 1
-                        else:
-                            match_count = -1
-                            break
-                    else:
-                        if re.search(value, attributes[key]):
-                            logger.debug("(get_value_match) Value %s and key %s match with value %s"%(value, key, attributes[key]))
-                            match_count += 1
-                        else:
-                            match_count = -1
-                            break
+        if not matches:
+            return None
 
-            if match_count > match_max:
-                match_max = match_count
-                match_value = valnode.text
-            elif match_count == match_max:
-                logger.debug("Ambiguous match for node '%s' for attributes '%s',"
-                             "falling back to order precedence" %
-                               (node.attrib["id"], attributes))
+        # Get maximum score using custom `key` function, extract the node.
+        _, mnode = max(matches, key=lambda x: x[0])
 
-        return match_value
+        return mnode.text
 
     def get_node_element_info(self, vid, element_name):
         node = self.get_optional_node("entry", {"id":vid})

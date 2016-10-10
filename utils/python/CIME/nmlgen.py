@@ -124,7 +124,11 @@ class NamelistGenerator(object):
     def _to_python_value(self, name, literals):
         """Transform a literal list as needed for `get_value`."""
         var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name))
-        value = expand_literal_list(literals)
+        if len(literals) > 0:
+            value = expand_literal_list(literals)
+        else:
+            value = ''
+            return value
         for i, scalar in enumerate(value):
             if scalar == '':
                 value[i] = None
@@ -511,7 +515,7 @@ class NamelistGenerator(object):
 
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
-        var_input_pathname = self._definition.get_node_element_info(name, "input_pathname")
+        var_input_pathname = self._definition.get_input_pathname(name)
         if var_input_pathname == 'abs':
             current_literals = expand_literal_list(current_literals)
             for i, literal in enumerate(current_literals):

@@ -15,15 +15,15 @@ class Component(EntryID):
         """
         initialize an object
         """
-        files = Files()
-        # use xmllint to validate infile
-        xmllint = find_executable("xmllint")
-        if xmllint is not None:
-            # all components refer to the same schema so referencing config_drv_file is okay
-            schema = files.get_schema("CONFIG_DRV_FILE")
-            if schema is not None:
-                logger.debug("Checking file %s against %s"%(infile, schema))
-                run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, infile))
+        # files = Files()
+        # # use xmllint to validate infile
+        # xmllint = find_executable("xmllint")
+        # if xmllint is not None:
+        #     # all components refer to the same schema so referencing config_drv_file is okay
+        #     schema = files.get_schema("CONFIG_DRV_FILE")
+        #     if schema is not None:
+        #         logger.debug("Checking file %s against %s"%(infile, schema))
+        #         run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, infile))
 
         EntryID.__init__(self,infile)
 

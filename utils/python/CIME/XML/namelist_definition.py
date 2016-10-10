@@ -104,14 +104,6 @@ class NamelistDefinition(EntryID):
         comma-separated list of entries for the value (length 1 for scalars). If
         there is no default value in the file, this returns `None`.
         """
-#        expect(not resolved, "This class does not support env resolution.")
-#        expect(subgroup is None, "This class does not support subgroups.")
-
-        # #nodes = self.get_nodes(item.lower())
-        # #node = self.get_node("entry", attribute={"id":item.lower()})
-        # values = self.get_values(item.lower(), attribute=attribute, resolved=resolved, subgroup=subgroup)
-        # print "DEBUG: values for item %s are %s" %(item,values)
-
         # Merge internal attributes with those passed in.
         all_attributes = {}
         if self._attributes is not None:
@@ -120,38 +112,12 @@ class NamelistDefinition(EntryID):
             all_attributes.update(attributes)
         value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match)
 
-        if value is not None:
+        if value is None:
+            value = ''
+        else:
             value =  self._split_defaults_text(value)
 
         return value
-
-        # # Store nodes that match the attributes and their scores.
-        # matches = []
-        # for node in nodes:
-        #     # For each node in the list start a score.
-        #     score = 0
-        #     for attribute in node.keys():
-        #         # For each attribute, add to the score.
-        #         score += 1
-        #         # If some attribute is specified that we don't know about,
-        #         # or the values don't match, it's not a match we want.
-        #         if attribute not in all_attributes or \
-        #            all_attributes[attribute] != node.get(attribute):
-        #             score = -1
-        #             break
-
-        #     # Add valid matches to the list.
-        #     if score >= 0:
-        #         matches.append((score, node))
-
-        # if not matches:
-        #     return None
-
-        # # Get maximum score using custom `key` function, extract the node.
-        # _, node = max(matches, key=lambda x: x[0])
-        # if node.text is None:
-        #     return ['']
-        # return self._split_defaults_text(node.text)
 
 
     @staticmethod
@@ -160,24 +126,25 @@ class NamelistDefinition(EntryID):
         # Some trickiness here; we want to split items on commas, but not inside
         # quote-delimited strings. Stripping whitespace is also useful.
         value = []
-        pos = 0
-        delim = None
-        for i, char in enumerate(string):
-            if delim is None:
-                # If not inside a string...
-                if char in ('"', "'"):
-                    # if we have a quote character, start a string.
-                    delim = char
-                elif char == ',':
-                    # if we have a comma, this is a new value.
-                    value.append(string[pos:i].strip())
-                    pos = i+1
-            else:
-                # If inside a string, the only thing that can happen is the end
-                # of the string.
-                if char == delim:
-                    delim = None
-        value.append(string[pos:].strip())
+        if len(string):
+            pos = 0
+            delim = None
+            for i, char in enumerate(string):
+                if delim is None:
+                    # If not inside a string...
+                    if char in ('"', "'"):
+                        # if we have a quote character, start a string.
+                        delim = char
+                    elif char == ',':
+                        # if we have a comma, this is a new value.
+                        value.append(string[pos:i].strip())
+                        pos = i+1
+                else:
+                    # If inside a string, the only thing that can happen is the end
+                    # of the string.
+                    if char == delim:
+                        delim = None
+            value.append(string[pos:].strip())
         return value
 
     @staticmethod
@@ -327,7 +294,7 @@ class NamelistDefinition(EntryID):
                     self._user_modifiable_in_variable_definition(variable_name)
 
                 # and has the right group name...
-                var_group = self.get_node_element_info(variable_name, "group")
+                var_group = self.get_group_name(variable_name)
                 expect(var_group == group_name,
                        (variable_template + " is in a group named %r, but "
                         "should be in %r.") %
@@ -360,12 +327,39 @@ class NamelistDefinition(EntryID):
         for variable_name in dict_:
             variable_lc = variable_name.lower()
             self._expect_variable_in_definition(variable_lc, variable_template)
-            group_name = self.get_node_element_info(variable_lc, "group")
-            print "DEBUG var %s group_name %s"%(variable_lc, group_name)
+            group_name = self.get_group_name(variable_lc)
+            expect (group_name is not None, "No group found for var %s"%variable_lc)
             if group_name not in groups:
                 groups[group_name] = {}
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
+
+    def get_input_pathname(self, name):
+        elem = self.get_optional_node("entry", attributes={'id': name})
+
+        if self._get_version() == "1.0":
+            input_pathname = elem.get('input_pathname')
+        elif self._get_version() == "2.0":
+            input_pathname = self._get_node_element_info(elem, "input_pathname")
+        return(input_pathname)
+
+    def get_type_info(self, name):
+        elem = self.get_optional_node("entry", attributes={'id': name})
+
+        if self._get_version() == "1.0":
+            type_info = elem.get('type')
+        elif self._get_version() == "2.0":
+            type_info = self._get_type_info(elem)
+        return(type_info)
+
+    def get_group_name(self, name):
+        elem = self.get_optional_node("entry", attributes={'id': name})
+
+        if self._get_version() == "1.0":
+            group = elem.get('group')
+        elif self._get_version() == "2.0":
+            group = self._get_node_element_info(elem, "group")
+        return(group)
 
     def get_default_value(self, item, attribute=None):
         """Return the default value for the variable named `item`.
@@ -381,38 +375,5 @@ class NamelistDefinition(EntryID):
         if attribute is not None:
             all_attributes.update(attribute)
 
-        # i know this is bad ...
-        if not isinstance(item, basestring):
-            node = item
-        else:
-            node = self.get_node("entry", attributes={"id":item.lower()})
-        nodes = self.get_nodes("value", root=node)
-
-        # Store nodes that match the attributes and their scores.
-        matches = []
-        for node in nodes:
-            # For each node in the list start a score.
-            score = 0
-            for attribute in node.keys():
-                # For each attribute, add to the score.
-                score += 1
-                # If some attribute is specified that we don't know about,
-                # or the values don't match, it's not a match we want.
-                if attribute not in all_attributes or \
-                   all_attributes[attribute] != node.get(attribute):
-                    score = -1
-                    break
-
-            # Add valid matches to the list.
-            if score >= 0:
-                matches.append((score, node))
-
-        if not matches:
-            return None
-
-        # Get maximum score using custom `key` function, extract the node.
-        _, node = max(matches, key=lambda x: x[0])
-        if node.text is None:
-            return ['']
-        return self._split_defaults_text(node.text)
-
+        value = self.get_value_match(item.lower(), all_attributes, True)
+        return self._split_defaults_text(value)
