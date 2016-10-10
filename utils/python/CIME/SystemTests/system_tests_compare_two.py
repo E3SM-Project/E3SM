@@ -299,7 +299,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # Flush the case so that, if errors occur later, then at least case2 is
         # in a correct, post-setup state
         self._case.flush()
-        case_setup(self._case, clean=False, test_mode=False, reset=True)
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
