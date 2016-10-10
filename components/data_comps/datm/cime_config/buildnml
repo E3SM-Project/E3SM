@@ -41,7 +41,7 @@ def _parse_input(argv):
 
     setup_standard_logging_options(parser)
 
-    parser.add_argument("caseroot", 
+    parser.add_argument("caseroot",
                         help="case directory")
 
     args = parser.parse_args()
@@ -120,7 +120,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Construct the namelist generator.
     #----------------------------------------------------
-    nmlgen = NamelistGenerator(case, infile, definition_file, definition_file,  config)
+    nmlgen = NamelistGenerator(case, infile, definition_file, config)
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -149,7 +149,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     streams += anomaly_forcing
 
     #----------------------------------------------------
-    # For each stream, create stream text file and update  
+    # For each stream, create stream text file and update
     # shr_strdata_nml group and input data list.
     #----------------------------------------------------
     for stream in streams:
