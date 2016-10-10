@@ -48,13 +48,13 @@
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <description>
+    <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
       modified to now be use cases. This use cases are specified in the
       namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
       If CCSM_BGC is set to 'CO2A', then flds_co2a will be set to .true.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
       <value BGC_MODE="CO2A">.true.</value>
@@ -65,13 +65,13 @@
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <description>
+    <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
       modified to now be use cases. This use cases are specified in the
       namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
       If CCSM_BGC is set to 'CO2B', then flds_co2b will be set to .true.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
       <value BGC_MODE="CO2B">.true.</value>
@@ -82,13 +82,13 @@
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <description>
+    <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
       modified to now be use cases. This use cases are specified in the
       namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
       If CCSM_BGC is set to 'CO2C', then flds_co2c will be set to .true.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
       <value BGC_MODE="CO2C">.true.</value>
@@ -99,13 +99,13 @@
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <description>
+    <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
       modified to now be use cases. This use cases are specified in the
       namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
       If CCSM_BGC is set to 'CO2_DMSA', then flds_co2_dmsa will be set to .true.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
       <value BGC_MODE="CO2_DMSA">.true.</value>
@@ -116,67 +116,63 @@
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <description>
+    <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
       modified to now be use cases. This use cases are specified in the
       namelist cpl_flds_inparm and are currently triggered by the xml variable ACME_BGC.
       This is a new master switch for turning ACME BGC off and on, just for testing.
       If ACME_BGC is set to 'TRUE', then flds_bgc will be set to .true.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
   </entry>
 
-  <entry  id="flds_wiso">
+  <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable FLDS_WISO</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Pass water isotopes between components
-    </description>
+    </desc>
     <values>
       <value>$FLDS_WISO</value>
     </values>
   </entry>
 
-  <entry  id="glc_nec">
+  <entry  id="glc_nec" modify_via_xml="GLC_NEC">
     <type>integer</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC_NEC</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
-    </description>
+    </desc>
     <values>
       <value>$GLC_NEC</value>
     </values>
   </entry>
 
-  <entry id="ice_ncat">
+  <entry id="ice_ncat" modify_via_xml="ICE_NCAT">
     <type>integer</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE_NCAT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Number of sea ice thickness categories. Set by the xml variable ICE_NCAT in env_build.xml
-    </description>
+    </desc>
     <values>
       <value>$ICE_NCAT</value>
     </values>
   </entry>
 
-  <entry id="seq_flds_i2o_per_cat">
+  <entry id="seq_flds_i2o_per_cat" modify_via_xml="CPL_I2O_PER_CAT">
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CPL_I2O_PER_CAT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       .true. if select per ice thickness category fields are passed to the ocean.
       Set by the xml variable CPL_I2O_PER_CAT in env_run.xml
-    </description>
+    </desc>
     <values>
       <value>$CPL_I2O_PER_CAT</value>
     </values>
@@ -190,7 +186,7 @@
     <type>char(200)</type>
     <category>seq_flds</category>
     <group>seq_cplflds_userspec</group>
-    <description>
+    <desc>
       New fields that are user specidied can be added as namelist variables
       by the user in the cpl namelist seq_flds_user using the namelist variable
       array cplflds_customs. The user specified new fields must follow the
@@ -205,7 +201,7 @@
       introduced in the atm and land components to deal with this new attribute
       vector field.
       Modify user_nl_cpl to edit this.
-    </description>
+    </desc>
     <values>
       <value>''</value>
     </values>
@@ -215,13 +211,12 @@
   <!--  group seq_infodata_inparm  -->
   <!-- =========================== -->
 
-  <entry id="cime_model">
+  <entry id="cime_model" modify_via_xml="CIME_MODEL">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CIME_MODEL</unmodifiable_via_user_nl>
     <valid_values>acme,cesm</valid_values>
-    <description>cime model</description>
+    <desc>cime model</desc>
     <values>
       <value cime_model='cesm'>cesm</value>
       <value cime_model='acme'>acme</value>
@@ -232,9 +227,9 @@
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       true => turn on adiabatic mode in cam
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -244,9 +239,9 @@
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       true => turn on ideal physics mode in cam
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -256,9 +251,9 @@
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       true => turn on aquaplanet mode in cam
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -268,74 +263,71 @@
     <type>integer</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       1 => default sst mode for aquaplanet in cam
-    </description>
+    </desc>
     <values>
       <value>1</value>
     </values>
   </entry>
 
-  <entry id="case_name">
+  <entry id="case_name" modify_via_xml="CASE">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CASE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       case name.
-    </description>
+    </desc>
     <values>
       <value>$CASE</value>
     </values>
   </entry>
 
-  <entry id="case_desc">
+  <entry id="case_desc" modify_via_xml="CASESTR">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CASESTR</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       case description.
-    </description>
+    </desc>
     <values>
     <value>$CASESTR</value>
     </values>
   </entry>
 
-  <entry id="model_version">
+<!--      CURRENTLY DOES NOT EXIST
+  <entry id="model_version" modify_via_xml="CCSM_REPOTAG">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CCSM_REPOTAG</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       model version documentation,
-    </description>
+    </desc>
     <values>
       <value>unset</value>
     </values>
   </entry>
+-->
 
-  <entry id="username">
+  <entry id="username" modify_via_xml="USER">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CCSM_USER</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       username documentation
-    </description>
+    </desc>
     <values>
       <value>$USER</value>
     </values>
   </entry>
 
-  <entry id="hostname">
+  <entry id="hostname" modify_via_xml="MACH">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable MACH</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       hostname information,
-    </description>
+    </desc>
     <values>
       <value>$MACH</value>
     </values>
@@ -345,9 +337,9 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       location of timing output.
-    </description>
+    </desc>
     <values>
       <value>./timing</value>
     </values>
@@ -357,24 +349,23 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       location of timing checkpoint output.
-    </description>
+    </desc>
     <values>
       <value>./timing/checkpoints</value>
     </values>
   </entry>
 
-  <entry id="start_type">
+  <entry id="start_type" modify_via_xml="RUN_TYPE">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values>startup,branch,continue</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable RUN_TYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       mode to start the run up, [startup,branch,continue],
       automatically derived from RUN_TYPE in env_run.xml
-    </description>
+    </desc>
     <values>
       <value run_type="startup" continue_run=".false.">startup</value>
       <value run_type="hybrid"  continue_run=".false.">startup</value>
@@ -385,42 +376,39 @@
     </values>
   </entry>
 
-  <entry id="brnch_retain_casename">
+  <entry id="brnch_retain_casename" modify_via_xml="REFCASE">
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>this is set automatically xml variables $CASE and $REFCASE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Allow same branch casename as reference casename. If $CASE and $REFCASE are the same and the start_type is
       not startup, then the value of brnch_retain_casename is set to .true.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
   </entry>
 
-  <entry id="info_debug">
+  <entry id="info_debug" modify_via_xml="INFO_DBUG">
     <type>integer</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable INFO_DBUG</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Level of debug output, 0=minimum, 1=normal, 2=more, 3=too much (default: 1)
-    </description>
+    </desc>
     <values>
       <value>$INFO_DBUG</value>
     </values>
   </entry>
 
-  <entry id="bfbflag">
+  <entry id="bfbflag" modify_via_xml="BFBFLAG">
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable BFBFLAG</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       turns on bfb option in coupler which produce bfb results in the
       coupler on different processor counts.  (default: .false.)
-    </description>
+    </desc>
     <values>
       <value>$BFBFLAG</value>
     </values>
@@ -431,7 +419,7 @@
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
     <valid_values>fixed_year,variable_year,fixed_parameters</valid_values>
-    <description>
+    <desc>
       orbital model setting.  this sets how the orbital mode will be
       configured.
       "fixed_year" uses the orb_iyear and other orb inputs are ignored.  In
@@ -442,7 +430,7 @@
       "fixed_parameters" uses the orb_eccen, orb_mvelp, and orb_obliq to set
       the orbital parameters which then remain constant through the model
       integration. [fixed_year, variable_year, fixed_parameters]  (default: 'fixed_year'.)
-    </description>
+    </desc>
     <values>
       <value>fixed_year</value>
     </values>
@@ -452,9 +440,9 @@
     <type>integer</type>
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       model year associated with orb_iyear when orb_mode is variable_year. (default: 1990)
-    </description>
+    </desc>
     <values>
       <value>1990</value>
     </values>
@@ -464,9 +452,9 @@
     <type>integer</type>
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       year of orbit, used when orb_mode is fixed_year or variable_year. (default: 1990)
-    </description>
+    </desc>
     <values>
       <value>1990</value>
     </values>
@@ -476,10 +464,10 @@
     <type>real</type>
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       eccentricity of orbit, used when orb_mode is fixed_parameters.
       default: SHR_ORB_UNDEF_REAL (1.e36) (Not currently used in build-namelist)
-    </description>
+    </desc>
     <values>
       <value>1.e36</value>
     </values>
@@ -489,10 +477,10 @@
     <type>real</type>
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       location of vernal equinox in longitude degrees, used when orb_mode is fixed_parameters.
       default: SHR_ORB_UNDEF_REAL (1.e36)(Not currently used in build-namelist)
-    </description>
+    </desc>
     <values>
       <value>1.e36</value>
     </values>
@@ -502,10 +490,10 @@
     <type>real</type>
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       obliquity of orbit in degrees, used when orb_mode is fixed_parameters.
       default: SHR_ORB_UNDEF_REAL (1.e36) (Not currently used in build-namelist)
-    </description>
+    </desc>
     <values>
       <value>1.e36</value>
     </values>
@@ -516,12 +504,12 @@
     <category>wv_sat</category>
     <group>seq_infodata_inparm</group>
     <valid_values>GoffGratch,MurphyKoop,Bolton,Flatau</valid_values>
-    <description>
+    <desc>
       Type of water vapor saturation vapor pressure scheme employed. 'GoffGratch' for
       Goff and Gratch (1946); 'MurphyKoop' for Murphy and Koop (2005); 'Bolton' for
       Bolton (1980); 'Flatau' for Flatau, Walko, and Cotton (1992).
       Default: GoffGratch
-    </description>
+    </desc>
     <values>
       <value>GoffGratch</value>
     </values>
@@ -531,7 +519,7 @@
     <type>real</type>
     <category>wv_sat</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Width of the liquid-ice transition range in mixed-phase water saturation vapor
       pressure calculations. The range always ends at 0 degrees Celsius, so this
       variable only affects the start of the transition.
@@ -539,7 +527,7 @@
       WARNING: CAM is tuned to the default value of this variable. Because it affects
       so many different parameterizations, changes to this variable may require a
       significant retuning of CAM's cloud physics to give reasonable results.
-    </description>
+    </desc>
     <values>
       <value>20.0D0</value>
     </values>
@@ -549,11 +537,11 @@
     <type>logical</type>
     <category>wv_sat</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Whether or not to produce lookup tables at init time to use as a cache for
       saturation vapor pressure.
       Default: .false.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -563,11 +551,11 @@
     <type>real</type>
     <category>wv_sat</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Temperature resolution of saturation vapor pressure lookup tables in Kelvin.
       (This is only used if wv_sat_use_tables is .true.)
       Default: 1.0
-    </description>
+    </desc>
     <values>
       <value>1.0D0</value>
     </values>
@@ -578,37 +566,35 @@
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
-    <description>
+    <desc>
       Freezing point calculation for salt water.
       Default: minus1p8
-    </description>
+    </desc>
     <values>
       <value>minus1p8</value>
     </values>
   </entry>
 
-  <entry id="flux_epbal">
+  <entry id="flux_epbal" modify_via_xml="CPL_EPBAL">
     <type>char</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <valid_values>off,ocn</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable CPL_EPBAL</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Only used for C,G compsets: if ocn, ocn provides EP balance factor for precip
-    </description>
+    </desc>
     <values>
       <value>$CPL_EPBAL</value>
     </values>
   </entry>
 
-  <entry id="flux_albav">
+  <entry id="flux_albav" modify_via_xml="CPL_ALBAV">
     <type>logical</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CPL_ALBAV</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Only used for C,G compsets: if true, compute albedos to work with daily avg SW down
-    </description>
+    </desc>
     <values>
       <value>$CPL_ALBAV</value>
     </values>
@@ -618,10 +604,10 @@
     <type>real</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Wall time limit for run
       default: -1.0
-    </description>
+    </desc>
     <values>
       <value>-1.0</value>
     </values>
@@ -632,10 +618,10 @@
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <valid_values>day,month,year</valid_values>
-    <description>
+    <desc>
       Force stop at the next month, day, etc when wall_time_limit is hit
       default: month
-    </description>
+    </desc>
     <values>
       <value>month</value>
     </values>
@@ -645,101 +631,94 @@
     <type>logical</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       If true, turn on diurnal cycle in computing atm/ocn fluxes
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
   </entry>
 
-  <entry id="atm_gnam">
+  <entry id="atm_gnam" modify_via_xml="ATM_GRID">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM_GRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ATM_GRID values passed into driver.
-    </description>
+    </desc>
     <values>
       <value>$ATM_GRID</value>
     </values>
   </entry>
 
-  <entry id="lnd_gnam">
+  <entry id="lnd_gnam" modify_via_xml="LND_GRID">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND_GRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       LND_GRID values passed into driver.
-    </description>
+    </desc>
     <values>
       <value>$LND_GRID</value>
     </values>
   </entry>
 
-  <entry id="ocn_gnam">
+  <entry id="ocn_gnam" modify_via_xml="OCN_GRID">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN_GRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       OCN_GRID values passed into driver.
-    </description>
+    </desc>
     <values>
       <value>$OCN_GRID</value>
     </values>
   </entry>
 
-  <entry id="ice_gnam">
+  <entry id="ice_gnam" modify_via_xml="ICE_GRID">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE_GRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ICE_GRID values passed into driver.
-    </description>
+    </desc>
     <values>
       <value>$ICE_GRID</value>
     </values>
   </entry>
 
-  <entry id="rof_gnam">
+  <entry id="rof_gnam" modify_via_xml="ROF_GRID">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <description>
-      <unmodifiable_via_user_nl>must be set via xml variable ROF_GRID</unmodifiable_via_user_nl>
+    <desc>
       ROF_GRID values passed into driver.
-    </description>
+    </desc>
     <values>
       <value>$ROF_GRID</value>
     </values>
   </entry>
 
-  <entry id="glc_gnam">
+  <entry id="glc_gnam" modify_via_xml="GLC_GRID">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC_GRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       GLC_GRID values passed into driver.
-    </description>
+    </desc>
     <values>
       <value>$GLC_GRID</value>
     </values>
   </entry>
 
-  <entry id="wav_gnam">
+  <entry id="wav_gnam" modify_via_xml="WAV_GRID">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable WAV_GRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       WAV_GRID values passed into driver.
-    </description>
+    </desc>
     <values>
       <value>$WAV_GRID</value>
     </values>
@@ -749,21 +728,20 @@
     <type>logical</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       invoke pole averaging corrections in shr_map_mod weights generation (default: true)
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
   </entry>
 
-  <entry id="vect_map">
+  <entry id="vect_map" modify_via_xml="VECT_MAP">
     <type>char</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable VECT_MAP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       vect_map
       turns on the vector mapping option for u and v vector mapping between
       atm and ocean grids in the coupler.  the options are none, npfix,
@@ -779,7 +757,7 @@
       preserving the total "u,v,w" speed and the angle of the (u,v) vector.
       the _diag options just add diagnotics to the log file about the vector
       mapping.
-    </description>
+    </desc>
     <values>
       <value>$VECT_MAP</value>
     </values>
@@ -790,10 +768,10 @@
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
     <valid_values>ocn,atm,exch</valid_values>
-    <description>
+    <desc>
       Grid for atm ocn flux calc (untested)
       default: ocn
-    </description>
+    </desc>
     <values>
       <value>ocn</value>
     </values>
@@ -803,10 +781,10 @@
     <type>logical</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       mct alltoall mapping flag
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -816,39 +794,37 @@
     <type>logical</type>
     <category>mapping</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       mct vector flag
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
   </entry>
 
-  <entry id="cpl_decomp">
+  <entry id="cpl_decomp" modify_via_xml="CPL_DECOMP">
     <type>integer</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values>0,1,2,3,4,5,6</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable CPL_DECOMP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       cpl decomp option (0=default, 1=comp decomp, 2=rearr comp decomp, 3=new single 1d seg
       default: 0
-    </description>
+    </desc>
     <values>
       <value>$CPL_DECOMP</value>
     </values>
   </entry>
 
-  <entry id="cpl_seq_option">
+  <entry id="cpl_seq_option" modify_via_xml="CPL_SEQ_OPTION">
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values>CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable CPL_SEQ_OPTION</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Set the coupler sequencing.
-    </description>
+    </desc>
     <values>
       <value>$CPL_SEQ_OPTION</value>
     </values>
@@ -858,22 +834,21 @@
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
   </entry>
 
-  <entry id="do_budgets">
+  <entry id="do_budgets" modify_via_xml="BUDGETS">
     <type>logical</type>
     <category>budget</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable BUDGETS</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       logical that turns on diagnostic budgets, false means budgets will never be written
-    </description>
+    </desc>
     <values>
       <value>$BUDGETS</value>
     </values>
@@ -883,9 +858,9 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       logical to write an extra initial coupler history file
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -896,7 +871,7 @@
     <category>budget</category>
     <group>seq_infodata_inparm</group>
     <valid_values>0,1,2,3</valid_values>
-    <description>
+    <desc>
       sets the diagnotics level of the instantaneous budgets. [0,1,2,3],
       written only if BUDGETS variable is true
       0=none,
@@ -904,7 +879,7 @@
       2=+detailed lnd/ocn/ice component budgets,
       3=+detailed atm budgets
       default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -915,7 +890,7 @@
     <category>budget</category>
     <group>seq_infodata_inparm</group>
     <valid_values>0,1,2,3</valid_values>
-    <description>
+    <desc>
       sets the diagnotics level of the daily budgets. [0,1,2,3],
       written only if do_budgets variable is .true.,
       0=none,
@@ -923,7 +898,7 @@
       2=+detailed lnd/ocn/ice component budgets,
       3=+detailed atm budgets
       default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -934,7 +909,7 @@
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values>0,1,2,3</valid_values>
-    <description>
+    <desc>
       sets the diagnotics level of the monthy budgets. [0,1,2,3],
       written only if do_budgets variable is .true.,
       0=none,
@@ -942,7 +917,7 @@
       2=+detailed lnd/ocn/ice component budgets,
       3=+detailed atm budgets
       default: 1
-    </description>
+    </desc>
     <values>
       <value>1</value>
     </values>
@@ -953,7 +928,7 @@
     <category>budget</category>
     <group>seq_infodata_inparm</group>
     <valid_values>0,1,2,3</valid_values>
-    <description>
+    <desc>
       sets the diagnotics level of the annual budgets. [0,1,2,3],
       written only if do_budgets variable is .true.,
       0=none,
@@ -961,7 +936,7 @@
       2=+detailed lnd/ocn/ice component budgets,
       3=+detailed atm budgets
       default: 1
-    </description>
+    </desc>
     <values>
       <value>1</value>
     </values>
@@ -972,7 +947,7 @@
     <category>budget</category>
     <group>seq_infodata_inparm</group>
     <valid_values>0,1,2,3</valid_values>
-    <description>
+    <desc>
       sets the diagnotics level of the longterm budgets written at the end
       of the year. [0,1,2,3],
       written only if do_budgets variable is .true.,
@@ -981,7 +956,7 @@
       2=+detailed lnd/ocn/ice component budgets,
       3=+detailed atm budgets,
       default: 1
-    </description>
+    </desc>
     <values>
       <value>1</value>
     </values>
@@ -992,7 +967,7 @@
     <category>budget</category>
     <group>seq_infodata_inparm</group>
     <valid_values>0,1,2,3</valid_values>
-    <description>
+    <desc>
       sets the diagnotics level of the longterm budgets written at the end
       of each run. [0,1,2,3],
       written only if do_budgets variable is .true.,
@@ -1001,7 +976,7 @@
       2=+detailed lnd/ocn/ice component budgets,
       3=+detailed atm budgets,
       default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -1011,10 +986,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       turns on coupler history stream for instantaneous atm to coupler fields.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1024,10 +999,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       turns on coupler history stream for 3-hour average atm to coupler fields.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1037,10 +1012,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       turns on coupler history stream for 3-hour average atm to coupler precip fields.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1050,10 +1025,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       turns on coupler history stream for daily average atm to coupler fields.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1063,10 +1038,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       turns on coupler history stream for instantaneous land to coupler fields.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1076,10 +1051,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       turns on coupler history stream for instantaneous runoff to coupler fields.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1089,10 +1064,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       turns on coupler history stream for annual sno to coupler fields.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1102,10 +1077,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes atm fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
 	<value>.true.</value>
     </values>
@@ -1115,10 +1090,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes lnd fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
@@ -1128,10 +1103,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes ocn fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
@@ -1141,10 +1116,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes ice fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
@@ -1154,10 +1129,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes rof fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
@@ -1167,10 +1142,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes glc fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
@@ -1180,10 +1155,10 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes wav fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
@@ -1193,178 +1168,166 @@
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       writes xao fields in coupler average history files.
       default: true
-    </description>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
   </entry>
 
-  <entry id="drv_threading">
+  <entry id="drv_threading" modify_via_xml="DRV_THREADING">
     <type>logical</type>
     <category>performance</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable DRV_THREADING</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       turn on run time control of threading per pe per component by the driver
       default: false
-    </description>
+    </desc>
     <values>
       <value>$DRV_THREADING</value>
     </values>
   </entry>
 
-  <entry id="run_barriers">
+  <entry id="run_barriers" modify_via_xml="COMP_RUN_BARRIERS">
     <type>logical</type>
     <category>performance</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable COMP_RUN_BARRIERS</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>$COMP_RUN_BARRIERS</value>
     </values>
   </entry>
 
-  <entry id="eps_frac">
+  <entry id="eps_frac" modify_via_xml="EPS_FRAC">
     <type>real</type>
     <category>domain_check</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable EPS_FRAC</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Error tolerance for differences in fractions in domain checking
       default: 1.0e-02
-    </description>
+    </desc>
     <values>
       <value>$EPS_FRAC</value>
     </values>
   </entry>
 
-  <entry id="eps_amask">
+  <entry id="eps_amask" modify_via_xml="EPS_AMASK">
     <type>real</type>
     <category>domain_check</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable EPS_AMASK</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Error tolerance for differences in atm/land masks in domain checking
       default: 1.0e-13
-    </description>
+    </desc>
     <values>
       <value>$EPS_AMASK</value>
     </values>
   </entry>
 
-  <entry id="eps_agrid">
+  <entry id="eps_agrid" modify_via_xml="EPS_AGRID">
     <type>real</type>
     <category>domain_check</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable EPS_AGRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Error tolerance for differences in atm/land lat/lon in domain checking
       default: 1.0e-12
-    </description>
+    </desc>
     <values>
       <value>$EPS_AGRID</value>
     </values>
   </entry>
 
-  <entry id="eps_aarea">
+  <entry id="eps_aarea" modify_via_xml="EPS_AAREA">
     <type>real</type>
     <category>domain_check</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable EPS_AAREA</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Error tolerance for differences in atm/land areas in domain checking
       default: 1.0e-07
-    </description>
+    </desc>
     <values>
       <value>$EPS_AAREA</value>
     </values>
   </entry>
 
-  <entry id="eps_omask">
+  <entry id="eps_omask" modify_via_xml="EPS_OMASK">
     <type>real</type>
     <category>domain_check</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable EPS_OMASK</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Error tolerance for differences in ocean/ice masks in domain checking
       default: 1.0e-06
-    </description>
+    </desc>
     <values>
       <value>$EPS_OMASK</value>
     </values>
   </entry>
 
-  <entry id="eps_ogrid">
+  <entry id="eps_ogrid" modify_via_xml="EPS_OGRID">
     <type>real</type>
     <category>domain_check</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable EPS_OGRID</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Error tolerance for differences in ocean/ice lon/lat in domain checking
       default: 1.0e-2
-    </description>
+    </desc>
     <values>
       <value>$EPS_OGRID</value>
     </values>
   </entry>
 
-  <entry id="eps_oarea">
+  <entry id="eps_oarea" modify_via_xml="EPS_OAREA">
     <type>real</type>
     <category>domain_check</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable EPS_OAREA</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Error tolerance for differences in ocean/ice lon/lat in domain checking
       default: 1.0e-1
-    </description>
+    </desc>
     <values>
       <value>$EPS_OAREA</value>
     </values>
   </entry>
 
-  <entry id="single_column">
+  <entry id="single_column" modify_via_xml="PTS_MODE">
     <type>logical</type>
     <category>seq_infodata_inparm</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PTS_MODE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       turns on single column mode. set by PTS_MODE in env_case.xml, default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
       <value single_column=".true">.true.</value>
     </values>
   </entry>
 
-  <entry id="scmlat">
+  <entry id="scmlat" modify_via_xml="PTS_LAT">
     <type>real</type>
     <category>seq_infodata_inparm</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PTS_LAT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       grid point latitude associated with single column mode.
       if set to -999, ignore this value
-    </description>
+    </desc>
     <values>
       <value>-999.</value>
       <value single_column="true">$PTS_LAT</value>
     </values>
   </entry>
 
-  <entry id="scmlon">
+  <entry id="scmlon" modify_via_xml="PTS_LON">
     <type>real</type>
     <category>seq_infodata_inparm</category>
     <group>seq_infodata_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PTS_LON</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       grid point longitude associated with single column mode.
       set by PTS_LON in env_run.xml.
-    </description>
+    </desc>
     <values>
       <value>-999.</value>
       <value single_column="true">$PTS_LON</value>
@@ -1375,10 +1338,10 @@
     <type>logical</type>
     <category>reprosum</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Use faster method for reprosum, but one where reproducibility is not always guaranteed.
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1388,10 +1351,10 @@
     <type>real</type>
     <category>reprosum</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Tolerance for relative error
       default: -1.0e-8
-    </description>
+    </desc>
     <values>
       <value>-1.0e-8</value>
     </values>
@@ -1401,10 +1364,10 @@
     <type>logical</type>
     <category>reprosum</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Recompute with non-scalable algorithm if reprosum_diffmax is exceeded.
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -1414,118 +1377,111 @@
   <!-- group seq_timemgr_inparm    -->
   <!-- =========================== -->
 
-  <entry id="atm_cpl_dt">
+  <entry id="atm_cpl_dt" modify_via_xml="ATM_NCPL">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM_NCPL and NCPL_BASE_PERIOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm coupling interval in seconds
       set via ATM_NCPL in env_run.xml.
       ATM_NCPL is the number of times the atm is coupled per NCPL_BASE_PERIOD
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, and has valid values: hour,day,year,decade
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
   </entry>
 
-  <entry id="lnd_cpl_dt">
+  <entry id="lnd_cpl_dt" modify_via_xml="LND_NCPL">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND_NCPL and NCPL_BASE_PERIOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       lnd coupling interval in seconds
       set via LND_NCPL in env_run.xml.
       LND_NCPL is the number of times the lnd is coupled per NCPL_BASE_PERIOD
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
   </entry>
 
-  <entry id="rof_cpl_dt">
+  <entry id="rof_cpl_dt" modify_via_xml="ROF_NCPL">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF_NCPL and NCPL_BASE_PERIOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       river runoff coupling interval in seconds
       currently set by default to 10800 seconds.
       default: 10800
-    </description>
+    </desc>
     <values>
       <value>10800</value>
     </values>
   </entry>
 
-  <entry id="ice_cpl_dt">
+  <entry id="ice_cpl_dt" modify_via_xml="ICE_NCPL">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE_NCPL and NCPL_BASE_PERIOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ice coupling interval in seconds
       set via ICE_NCPL in env_run.xml.
       ICE_NCPL is the number of times the ice is coupled per NCPL_BASE_PERIOD
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
   </entry>
 
-  <entry id="ocn_cpl_dt">
+  <entry id="ocn_cpl_dt" modify_via_xml="OCN_NCPL">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN_NCPL and NCPL_BASE_PERIOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ocn coupling interval in seconds
       set via OCN_NCPL in env_run.xml.
       OCN_NCPL is the number of times the ocn is coupled per NCPL_BASE_PERIOD
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
   </entry>
 
-  <entry id="glc_cpl_dt">
+  <entry id="glc_cpl_dt" modify_via_xml="GLC_NCPL">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC_NCPL and NCPL_BASE_PERIOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       glc coupling interval in seconds
       set via GLC_NCPL in env_run.xml.
       GLC_NCPL is the number of times the glc is coupled per NCPL_BASE_PERIOD
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
   </entry>
 
-  <entry id="wav_cpl_dt">
+  <entry id="wav_cpl_dt" modify_via_xml="WAV_NCPL">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable WAV_NCPL and NCPL_BASE_PERIOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       wav coupling interval in seconds
       set via WAV_NCPL in env_run.xml.
       WAV_NCPL is the number of times the wav is coupled per NCPL_BASE_PERIOD
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
@@ -1535,9 +1491,9 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       atm coupling interval offset in seconds default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -1547,9 +1503,9 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       lnd coupling interval offset in seconds default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -1559,9 +1515,9 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       ice coupling interval offset in seconds default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -1571,9 +1527,9 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       ocn coupling interval offset in seconds default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -1583,9 +1539,9 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       glc coupling interval offset in seconds default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -1595,64 +1551,60 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       wav coupling interval offset in seconds default: 0
-    </description>
+    </desc>
     <values>
       <value>0</value>
     </values>
   </entry>
 
-  <entry id="calendar">
+  <entry id="calendar" modify_via_xml="CALENDAR">
     <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable CALENDAR</unmodifiable_via_user_nl>
     <valid_values>NO_LEAP,GREGORIAN</valid_values>
-    <description>
+    <desc>
       calendar in use.  [NO_LEAP, GREOGORIAN].
       set by CALENDAR in env_build.xml
-    </description>
+    </desc>
     <values>
       <value>$CALENDAR</value>
     </values>
   </entry>
 
-  <entry id="start_ymd">
+  <entry id="start_ymd" modify_via_xml="RUN_STARTDATE">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable RUN_STARTDATE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Run start date in yyyymmdd format, only used for startup and hybrid runs.
       default: 00010101
-    </description>
+    </desc>
     <values>
       <value>00010101</value>
     </values>
   </entry>
 
-  <entry id="start_tod">
+  <entry id="start_tod" modify_via_xml="START_TOD">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable START_TOD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Start time-of-day in universal time (seconds), should be between zero and 86400
       default: 0
-    </description>
+    </desc>
     <values>
       <value>$START_TOD</value>
     </values>
   </entry>
 
-  <entry id="stop_option">
+  <entry id="stop_option" modify_via_xml="STOP_OPTION">
     <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable STOP_OPTION</unmodifiable_via_user_nl>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
-    <description>
+    <desc>
       sets the run length with stop_n and stop_ymd
       stop_option alarms are:
       [none/never], turns option off
@@ -1667,34 +1619,32 @@
       [date]      , stops at stop_ymd value
       [ifdays0]   , stops at stop_n calendar day value and seconds equal 0
       [end]       , stops at end
-    </description>
+    </desc>
     <values>
       <value>$STOP_OPTION</value>
     </values>
   </entry>
 
-  <entry id="stop_n">
+  <entry id="stop_n" modify_via_xml="STOP_N">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable STOP_N</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Sets the run length with stop_option and stop_ymd
-    </description>
+    </desc>
     <values>
       <value>$STOP_N</value>
     </values>
   </entry>
 
-  <entry id="stop_ymd">
+  <entry id="stop_ymd" modify_via_xml="STOP_YMD">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable STOP_YMD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       date in yyyymmdd format, sets the run length with stop_option and stop_n,
       can be in addition to stop_option and stop_n, negative value implies off
-    </description>
+    </desc>
     <values>
       <value>$STOP_DATE</value>
     </values>
@@ -1705,22 +1655,21 @@
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
     <valid_values></valid_values>
-    <description>
+    <desc>
       Driver restart filename.
       (NOTE: Normally THIS IS NOT USED -- Set with RUN_REFCASE and RUN_REFDATE)
-    </description>
+    </desc>
     <values>
       <value>str_undefined</value>
     </values>
   </entry>
 
-  <entry id="restart_option">
+  <entry id="restart_option" modify_via_xml="REST_OPTION">
     <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable REST_OPTION</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       sets the restart frequency with restart_n and restart_ymd
       restart_option alarms are:
       [none/never], turns option off
@@ -1735,34 +1684,32 @@
       [date]      , restarts at restart_ymd value
       [ifdays0]   , restarts at restart_n calendar day value and seconds equal 0
       [end]       , restarts at end
-    </description>
+    </desc>
     <values>
       <value>$REST_OPTION</value>
     </values>
   </entry>
 
-  <entry id="restart_n">
+  <entry id="restart_n" modify_via_xml="REST_N">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable REST_N</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Sets model restart writes with restart_option and restart_ymd (same options as stop_n)
-    </description>
+    </desc>
     <values>
       <value>$REST_N</value>
     </values>
   </entry>
 
-  <entry id="restart_ymd">
+  <entry id="restart_ymd" modify_via_xml="REST_YMD">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable REST_YMD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Date in yyyymmdd format, sets model restart write date with rest_option and restart_n
       default: STOP_N
-    </description>
+    </desc>
     <values>
       <value>$REST_DATE</value>
     </values>
@@ -1772,25 +1719,24 @@
     <type>logical</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       true => write restarts at end of run
       forces a restart write at the end of the run in addition to any
       setting associated with rest_option.  default=true.  this setting
       will be set to false if restart_option is none or never.
       default: false
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
   </entry>
 
-  <entry id="history_option">
+  <entry id="history_option" modify_via_xml="HIST_OPTION">
     <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable HIST_OPTION</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       coupler history snapshot option (used with history_n and history_ymd)
       set by HIST_OPTION in env_run.xml.
       history_option alarms are:
@@ -1806,47 +1752,44 @@
       [date]      , history snapshot at history_ymd value
       [ifdays0]   , history snapshot at history_n calendar day value and seconds equal 0
       [end]       , history snapshot at end
-    </description>
+    </desc>
     <values>
       <value>$HIST_OPTION</value>
     </values>
   </entry>
 
-  <entry id="history_n">
+  <entry id="history_n" modify_via_xml="HIST_N">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable HIST_N</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       sets coupler snapshot history file frequency (like restart_n)
       set by HIST_N in env_run.xml.
-    </description>
+    </desc>
     <values>
       <value>$HIST_N</value>
     </values>
   </entry>
 
-  <entry id="history_ymd">
+  <entry id="history_ymd" modify_via_xml="HIST_YMD">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable HIST_YMD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       date associated with history_option date.  yyyymmdd format.
       set by HIST_DATE in env_run.xml.
-    </description>
+    </desc>
     <values>
       <value>$HIST_DATE</value>
     </values>
   </entry>
 
-  <entry id="histavg_option">
+  <entry id="histavg_option" modify_via_xml="HISTAVG_OPTION">
     <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable HISTAVG_OPTION</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       coupler time average history option (used with histavg_n and histavg_ymd)
       set by AVGHIST_OPTION in env_run.xml.
       histavg_option alarms are:
@@ -1862,78 +1805,73 @@
       [date]      , history snapshot at histavg_ymd value
       [ifdays0]   , history snapshot at histavg_n calendar day value and seconds equal 0
       [end]       , history snapshot at end
-    </description>
+    </desc>
     <values>
       <value>$AVGHIST_OPTION</value>
     </values>
   </entry>
 
-  <entry id="histavg_n">
+  <entry id="histavg_n" modify_via_xml="HISTAVG_N">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable HISTAVG_N</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Sets coupler time-average history file frequency (like restart_option)
       set by AVGHIST_N in env_run.xml.
-    </description>
+    </desc>
     <values>
       <value>$AVGHIST_N</value>
     </values>
   </entry>
 
-  <entry id="histavg_ymd">
+  <entry id="histavg_ymd" modify_via_xml="HISTAVG_YMD">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable HISTAVG_YMD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       date associated with histavg_option date.  yyyymmdd format.
       set by AVGHIST_DATE in env_run.xml.
-    </description>
+    </desc>
     <values>
       <value>$AVGHIST_DATE</value>
     </values>
   </entry>
 
-  <entry id="barrier_option">
+  <entry id="barrier_option" modify_via_xml="BARRIER_OPTION">
     <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable BARRIER_OPTION</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       sets the driver barrier frequency to sync models across all tasks with barrier_n and barrier_ymd
       barrier_option alarms are like restart_option
       default: never
-    </description>
+    </desc>
     <values>
       <value>$BARRIER_OPTION</value>
     </values>
   </entry>
 
-  <entry id="barrier_n">
+  <entry id="barrier_n" modify_via_xml="BARRIER_N">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable BARRIER_N</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Sets model barriers with barrier_option and barrier_ymd (same options as stop_n)
       default: 1
-    </description>
+    </desc>
     <values>
       <value>$BARRIER_N</value>
     </values>
   </entry>
 
-  <entry id="barrier_ymd">
+  <entry id="barrier_ymd" modify_via_xml="BARRIER_DATE">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable BARRIER_ymd</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Date in yyyymmdd format, sets model barriers date with barrier_option and barrier_n
-    </description>
+    </desc>
     <values>
       <value>$BARRIER_DATE</value>
     </values>
@@ -1944,7 +1882,7 @@
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
-    <description>
+    <desc>
       Sets timing output file frequency (like rest_option but relative to run start date)
       tprof_option alarms are:
       [none/never], turns option off
@@ -1959,7 +1897,7 @@
       [date]      , at tprof_ymd value
       [ifdays0]   , at tprof_n calendar day value and seconds equal 0
       [end]       , at end
-    </description>
+    </desc>
     <values>
       <value>never</value>
     </values>
@@ -1969,9 +1907,9 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       Sets timing output file frequency (like restart_n)
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
@@ -1981,9 +1919,9 @@
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <description>
+    <desc>
       yyyymmdd format, sets timing output file date (like restart_date)
-    </description>
+    </desc>
     <values>
       <value>-999</value>
     </values>
@@ -1994,9 +1932,9 @@
     <category>driver</category>
     <group>seq_infodata_inparm</group>
     <valid_values></valid_values>
-    <description>
+    <desc>
       Ending suffix "postfix" for output log files.
-    </description>
+    </desc>
     <values>
       <value>.log</value>
     </values>
@@ -2007,9 +1945,9 @@
     <category>drv_history</category>
     <group>seq_infodata_inparm</group>
     <valid_values></valid_values>
-    <description>
+    <desc>
       Root directory for driver output files
-    </description>
+    </desc>
     <values>
       <value>./</value>
     </values>
@@ -2019,11 +1957,11 @@
     <type>real</type>
     <category>driver</category>
     <group>seq_infodata_inparm</group>
-    <description>
+    <desc>
       Abort model if coupler timestep wallclock time exceeds this value, ignored if 0,
       if &lt; 0 then use abs(max_cplstep_time)*cktime as the threshold.
       default: 0
-    </description>
+    </desc>
     <values>
       <value>0.0</value>
     </values>
@@ -2033,617 +1971,573 @@
   <!-- group seq_ccsm_pes          -->
   <!-- =========================== -->
 
-  <entry id="atm_ntasks">
+  <entry id="atm_ntasks" modify_via_xml="NTASKS_ATM">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_ATM</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the atm components.
       set by NTASKS_ATM in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_ATM</value>
     </values>
   </entry>
 
-  <entry id="atm_nthreads">
+  <entry id="atm_nthreads" modify_via_xml="NTHRDS_ATM">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_ATM</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the atm component.
       set by NTHRDS_ATM in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_ATM</value>
     </values>
   </entry>
 
-  <entry id="atm_rootpe">
+  <entry id="atm_rootpe" modify_via_xml="ROOTPE_ATM">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_ATM</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the atm component.
       set by ROOTPE_ATM in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_ATM</value>
     </values>
   </entry>
 
-  <entry id="atm_pestride">
+  <entry id="atm_pestride" modify_via_xml="PSTRID_ATM">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_ATM</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the atm component.
       set by PSTRID_ATM in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_ATM</value>
     </values>
   </entry>
 
-  <entry id="atm_layout">
+  <entry id="atm_layout" modify_via_xml="NINST_ATM_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_ATM_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance atms (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_ATM_LAYOUT</value>
     </values>
   </entry>
 
-  <entry id="lnd_ntasks">
+  <entry id="lnd_ntasks" modify_via_xml="NTASKS_LND">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_LND</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the lnd components.
       set by NTASKS_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_LND</value>
     </values>
   </entry>
 
-  <entry id="lnd_nthreads">
+  <entry id="lnd_nthreads" modify_via_xml="NTHRDS_LND">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_LND</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the lnd component.
       set by NTHRDS_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_LND</value>
     </values>
   </entry>
 
-  <entry id="lnd_rootpe">
+  <entry id="lnd_rootpe" modify_via_xml="ROOTPE_LND">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_LND</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the lnd component.
       set by ROOTPE_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_LND</value>
     </values>
   </entry>
 
-  <entry id="lnd_pestride">
+  <entry id="lnd_pestride" modify_via_xml="PSTRID_LND">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_LND</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the lnd component.
       set by PSTRID_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_LND</value>
     </values>
   </entry>
 
-  <entry id="lnd_layout">
+  <entry id="lnd_layout" modify_via_xml="NINST_LND_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_LND_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance lnds (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_LND_LAYOUT</value>
     </values>
   </entry>
 
-  <entry id="ice_ntasks">
+  <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_ICE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the ice components.
       set by NTASKS_ICE in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_ICE</value>
     </values>
   </entry>
 
-  <entry id="ice_nthreads">
+  <entry id="ice_nthreads" modify_via_xml="NTHRDS_ICE">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_ICE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the ice component.
       set by NTHRDS_ICE in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_ICE</value>
     </values>
   </entry>
 
-  <entry id="ice_rootpe">
+  <entry id="ice_rootpe" modify_via_xml="ROOTPE_ICE">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_ICE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the ice component.
       set by ROOTPE_ICE in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_ICE</value>
     </values>
   </entry>
 
-  <entry id="ice_pestride">
+  <entry id="ice_pestride" modify_via_xml="PSTRID_ICE">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_ICE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the ice component.
       set by PSTRID_ICE in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_ICE</value>
     </values>
   </entry>
 
-  <entry id="ice_layout">
+  <entry id="ice_layout" modify_via_xml="NINST_ICE_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_ICE_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance ices (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_ICE_LAYOUT</value>
     </values>
   </entry>
 
-  <entry id="ocn_ntasks">
+  <entry id="ocn_ntasks" modify_via_xml="NTASKS_OCN">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_OCN</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the ocn components.
       set by NTASKS_OCN in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_OCN</value>
     </values>
   </entry>
 
-  <entry id="ocn_nthreads">
+  <entry id="ocn_nthreads" modify_via_xml="NTHRDS_OCN">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_OCN</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the ocn component.
       set by NTHRDS_OCN in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_OCN</value>
     </values>
   </entry>
 
-  <entry id="ocn_rootpe">
+  <entry id="ocn_rootpe" modify_via_xml="ROOTPE_OCN">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_OCN</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the ocn component.
       set by ROOTPE_OCN in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_OCN</value>
     </values>
   </entry>
 
-  <entry id="ocn_pestride">
+  <entry id="ocn_pestride" modify_via_xml="PSTRID_OCN">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_OCN</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the ocn component.
       set by PSTRID_OCN in env_configure.xml.  default: 1
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_OCN</value>
     </values>
   </entry>
 
-  <entry id="ocn_layout">
+  <entry id="ocn_layout" modify_via_xml="NINST_OCN_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_OCN_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance ocns (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_OCN_LAYOUT</value>
     </values>
   </entry>
 
-  <entry id="glc_ntasks">
+  <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_GLC</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the glc components.
       set by NTASKS_GLC in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_GLC</value>
     </values>
   </entry>
 
-  <entry id="glc_nthreads">
+  <entry id="glc_nthreads" modify_via_xml="NTHRDS_GLC">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_GLC</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the glc component.
       set by NTHRDS_GLC in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_GLC</value>
     </values>
   </entry>
 
-  <entry id="glc_rootpe">
+  <entry id="glc_rootpe" modify_via_xml="ROOTPE_GLC">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_GLC</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the glc component.
       set by ROOTPE_GLC in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_GLC</value>
     </values>
   </entry>
 
-  <entry id="glc_pestride">
+  <entry id="glc_pestride" modify_via_xml="PSTRID_GLC">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_GLC</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the glc component.
       set by PSTRID_GLC in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_GLC</value>
     </values>
   </entry>
 
-  <entry id="glc_layout">
+  <entry id="glc_layout" modify_via_xml="NINST_GLC_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_GLC_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance glcs (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_GLC_LAYOUT</value>
     </values>
   </entry>
 
-  <entry id="wav_ntasks">
+  <entry id="wav_ntasks" modify_via_xml="NTASKS_WAV">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_WAV</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the wav components.
       set by NTASKS_WAV in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_WAV</value>
     </values>
   </entry>
 
-  <entry id="wav_nthreads">
+  <entry id="wav_nthreads" modify_via_xml="NTHRDS_WAV">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_WAV</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the wav component.
       set by NTHRDS_WAV in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_WAV</value>
     </values>
   </entry>
 
-  <entry id="wav_rootpe">
+  <entry id="wav_rootpe" modify_via_xml="ROOTPE_WAV">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_WAV</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the wav component.
       set by ROOTPE_WAV in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_WAV</value>
     </values>
   </entry>
 
-  <entry id="wav_pestride">
+  <entry id="wav_pestride" modify_via_xml="PSTRID_WAV">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_WAV</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the wav component.
       set by PSTRID_WAV in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_WAV</value>
     </values>
   </entry>
 
-  <entry id="wav_layout">
+  <entry id="wav_layout" modify_via_xml="NINST_WAV_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_WAV_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance wavs (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_WAV_LAYOUT</value>
     </values>
   </entry>
 
-  <entry id="rof_ntasks">
+  <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_ROF</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the lnd components.
       set by NTASKS_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_ROF</value>
     </values>
   </entry>
 
-  <entry id="rof_nthreads">
+  <entry id="rof_nthreads" modify_via_xml="NTHRDS_ROF">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_ROF</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the lnd component.
       set by NTHRDS_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_ROF</value>
     </values>
   </entry>
 
-  <entry id="rof_rootpe">
+  <entry id="rof_rootpe" modify_via_xml="ROOTPE_ROF">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_ROF</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the lnd component.
       set by ROOTPE_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_ROF</value>
     </values>
   </entry>
 
-  <entry id="rof_pestride">
+  <entry id="rof_pestride" modify_via_xml="PSTRID_ROF">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_ROF</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the lnd component.
       set by PSTRID_LND in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_ROF</value>
     </values>
   </entry>
 
-  <entry id="rof_layout">
+  <entry id="rof_layout" modify_via_xml="NINST_ROF_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_ROF_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance lnds (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_ROF_LAYOUT</value>
     </values>
   </entry>
 
-  <entry id="esp_ntasks">
+  <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_ESP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the esp components.
       set by NTASKS_ESP in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_ESP</value>
     </values>
   </entry>
 
-  <entry  id="esp_nthreads">
+  <entry  id="esp_nthreads" modify_via_xml="NTHRDS_ESP">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_ESP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the esp component.
       set by NTHRDS_ESP in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_ESP</value>
     </values>
   </entry>
 
-  <entry  id="esp_rootpe">
+  <entry  id="esp_rootpe" modify_via_xml="ROOTPE_ESP">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_ESP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the esp component.
       set by ROOTPE_ESP in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_ESP</value>
     </values>
   </entry>
 
-  <entry  id="esp_pestride">
+  <entry  id="esp_pestride" modify_via_xml="PSTRID_ESP">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_ESP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the esp component.
       set by PSTRID_ESP in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_ESP</value>
     </values>
   </entry>
 
-  <entry  id="esp_layout">
+  <entry  id="esp_layout" modify_via_xml="NINST_ESP_LAYOUT">
     <type>char</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
     <valid_values>concurrent,sequential</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable NINST_ESP_LAYOUT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Layout of multi-instance external system processor (if there are more than 1)
-    </description>
+    </desc>
     <values>
       <value>$NINST_ESP_LAYOUT</value>
     </values>
   </entry>
 
-  <entry  id="cpl_ntasks">
+  <entry  id="cpl_ntasks" modify_via_xml="NTASKS_CPL">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTASKS_CPL</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of mpi tasks assigned to the cpl components.
       set by NTASKS_CPL in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTASKS_CPL</value>
     </values>
   </entry>
 
-  <entry id="cpl_nthreads">
+  <entry id="cpl_nthreads" modify_via_xml="NTHRDS_CPL">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable NTHRDS_CPL</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the number of threads per mpi task for the cpl component.
       set by NTHRDS_CPL in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$NTHRDS_CPL</value>
     </values>
   </entry>
 
-  <entry id="cpl_rootpe">
+  <entry id="cpl_rootpe" modify_via_xml="ROOTPE_CPL">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROOTPE_CPL</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the global mpi task rank of the root processor assigned to the cpl component.
       set by ROOTPE_CPL in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$ROOTPE_CPL</value>
     </values>
   </entry>
 
-  <entry id="cpl_pestride">
+  <entry id="cpl_pestride" modify_via_xml="PSTRID_CPL">
     <type>integer</type>
     <category>ccsm_pes</category>
     <group>ccsm_pes</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PSTRID_CPL</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       the mpi global processors stride associated with the mpi tasks for the cpl component.
       set by PSTRID_CPL in env_configure.xml.
-    </description>
+    </desc>
     <values>
       <value>$PSTRID_CPL</value>
     </values>
@@ -2658,8 +2552,8 @@
     <type>logical</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value>.true.</value>
     </values>
@@ -2669,8 +2563,8 @@
     <type>logical</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -2680,8 +2574,8 @@
     <type>logical</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value timer_level='pos'>.false.</value>
       <value timer_level='neg'>.true.</value>
@@ -2692,8 +2586,8 @@
     <type>logical</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -2703,8 +2597,8 @@
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value timer_level='pos'>$TIMER_LEVEL</value>
       <value timer_level='neg'>20</value>
@@ -2715,8 +2609,8 @@
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value>0</value>
     </values>
@@ -2726,8 +2620,8 @@
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value timer_level='neg'>$TIMER_LEVEL</value>
       <value timer_level='pos'>0</value>
@@ -2738,8 +2632,8 @@
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
-    </description>
+    <desc>
+    </desc>
     <values>
       <value>4</value> <!-- mpiwtime -->
       <value MACH="yellowstone">2</value> <!-- nanotime -->
@@ -2752,9 +2646,9 @@
     <type>logical</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
+    <desc>
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -2764,9 +2658,9 @@
     <type>logical</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
+    <desc>
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>.false.</value>
     </values>
@@ -2776,22 +2670,21 @@
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <description>
+    <desc>
       default: 1
-    </description>
+    </desc>
     <values>
       <value>1</value>
     </values>
   </entry>
 
-  <entry id="profile_papi_enable">
+  <entry id="profile_papi_enable" modify_via_xml="PROFILE_PAPI_ENABLE">
     <type>logical</type>
     <category>performance</category>
     <group>prof_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PROFILE_PAPI_ENABLE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>$PROFILE_PAPI_ENABLE</value>
     </values>
@@ -2806,9 +2699,9 @@
     <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
-    <description>
+    <desc>
       See gptl_papi.c for the list of valid values
-    </description>
+    </desc>
     <values>
       <value>PAPI_FP_OPS</value>
     </values>
@@ -2818,9 +2711,9 @@
     <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
-    <description>
+    <desc>
       See gptl_papi.c for the list of valid values
-    </description>
+    </desc>
     <values>
       <value>PAPI_NO_CTR</value>
     </values>
@@ -2830,9 +2723,9 @@
     <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
-    <description>
+    <desc>
       See gptl_papi.c for the list of valid values
-    </description>
+    </desc>
     <values>
       <value>PAPI_NO_CTR</value>
     </values>
@@ -2842,9 +2735,9 @@
     <type>char</type>
     <category>performance</category>
     <group>papi_inparm</group>
-    <description>
+    <desc>
       See gptl_papi.c for the list of valid values
-    </description>
+    </desc>
     <values>
       <value>PAPI_NO_CTR</value>
     </values>
@@ -2858,214 +2751,199 @@
     <type>logical</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <description>
+    <desc>
       future asynchronous IO capability (not currently supported).
       If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99
       the component variable will be set using the pio_* value.
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>$PIO_ASYNC_INTERFACE</value>
     </values>
   </entry>
 
-  <entry id="pio_stride">
+  <entry id="pio_stride" modify_via_xml="PIO_STRIDE">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_STRIDE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       stride of tasks in pio used generically, component based value takes precedent.
-    </description>
+    </desc>
     <values>
       <value>$PIO_STRIDE</value>
     </values>
   </entry>
 
-  <entry id="pio_root">
+  <entry id="pio_root" modify_via_xml="PIO_ROOT">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_ROOT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       io task root in pio used generically, component based value takes precedent.
-    </description>
+    </desc>
     <values>
       <value>$PIO_ROOT</value>
     </values>
   </entry>
 
-  <entry id="pio_rearranger">
+  <entry id="pio_rearranger" modify_via_xml="PIO_REARRANGER">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARRANGER</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       Rearranger method for pio 1=box, 2=subset.
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARRANGER</value>
     </values>
   </entry>
 
-  <entry id="pio_numiotasks">
+  <entry id="pio_numiotasks" modify_via_xml="PIO_NUMTASKS">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_NUMTASKS</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       number of io tasks in pio used generically, component based value takes precedent.
-    </description>
+    </desc>
     <values>
       <value>$PIO_NUMTASKS</value>
     </values>
   </entry>
 
-  <entry id="pio_typename">
+  <entry id="pio_typename" modify_via_xml="PIO_TYPENAME">
     <type>char</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_TYPENAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       io type in pio used generically, component based value takes precedent.
       valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
-    </description>
+    </desc>
     <values>
       <value>$PIO_TYPENAME</value>
     </values>
   </entry>
 
-  <entry id="pio_debug_level">
+  <entry id="pio_debug_level" modify_via_xml="PIO_DEBUG_LEVEL">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
     <valid_values>0,1,2,3,4,5,6</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_DEBUG_LEVEL</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio debug level
       valid values: 0,1,2,3,4,5,6
-    </description>
+    </desc>
     <values>
       <value>$PIO_DEBUG_LEVEL</value>
     </values>
   </entry>
 
-  <entry id="pio_blocksize">
+  <entry id="pio_blocksize" modify_via_xml="PIO_BLOCKSIZE">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_BLOCKSIZE</unmodifiable_via_user_nl>
-    <description>
-      pio blocksize
-    </description>
+    <desc>
+      blocksize for pio box rearranger
+    </desc>
     <values>
       <value>$PIO_BLOCKSIZE</value>
     </values>
   </entry>
 
-  <entry id="pio_buffer_size_limit">
+  <entry id="pio_buffer_size_limit" modify_via_xml="PIO_BUFFER_SIZE_LIMIT">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_BUFFER_SIZE_LIMIT</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio buffer size limit
-    </description>
+    </desc>
     <values>
       <value>$PIO_BUFFER_SIZE_LIMIT</value>
     </values>
   </entry>
 
-  <entry id="pio_rearr_comm_type">
+  <entry id="pio_rearr_comm_type" modify_via_xml="PIO_REARR_COMM_TYPE">
     <type>char</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
     <valid_values>p2p,coll,default</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARR_COMM_TYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio rearranger communication type.
       valid values: p2p, coll, default
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_TYPE</value>
     </values>
   </entry>
 
-  <entry id="pio_rearr_comm_fcd">
+  <entry id="pio_rearr_comm_fcd" modify_via_xml="PIO_REARR_COMM_FCD">
     <type>char</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
     <valid_values>2denable,io2comp,comp2io,disable,default</valid_values>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARR_COMM_FCD</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio rearranger communication flow control direction.
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_FCD</value>
     </values>
   </entry>
 
-  <entry id="pio_rearr_comm_max_pend_req_comp2io">
+  <entry id="pio_rearr_comm_max_pend_req_comp2io" modify_via_xml=" PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio rearranger communication max pending req (comp2io)
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO</value>
     </values>
   </entry>
 
-  <entry id="pio_rearr_comm_enable_hs_comp2io">
+  <entry id="pio_rearr_comm_enable_hs_comp2io" modify_via_xml="PIO_REARR_COMM_ENABLE_HS_COMP2IO">
     <type>logical</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARR_COMM_ENABLE_HS_COMP2IO</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio rearranger communication option: Enable handshake (comp2io)
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_ENABLE_HS_COMP2IO</value>
     </values>
   </entry>
 
-  <entry id="pio_rearr_comm_enable_isend_comp2io">
+  <entry id="pio_rearr_comm_enable_isend_comp2io"    modify_via_xml="PIO_REARR_COMM_ENABLE_ISEND_COMP2IO">
     <type>logical</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARR_COMM_ENABLE_ISEND_COMP2IO</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio rearranger communication option: Enable isends (comp2io)
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_ENABLE_ISEND_COMP2IO</value>
     </values>
   </entry>
 
-  <entry id="pio_rearr_comm_max_pend_req_io2comp">
+  <entry id="pio_rearr_comm_max_pend_req_io2comp"    modify_via_xml="PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP">
     <type>integer</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio rearranger communication max pending req (io2comp)
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP</value>
     </values>
   </entry>
 
-  <entry id="pio_rearr_comm_enable_hs_io2comp">
+  <entry id="pio_rearr_comm_enable_hs_io2comp"    modify_via_xml="PIO_REARR_COMM_ENABLE_HS_IO2COMP">
     <type>logical</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <unmodifiable_via_user_nl>must be set via xml variable PIO_REARR_COMM_ENABLE_HS_IO2COMP</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       pio rearranger communication option: Enable handshake (io2comp)
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_ENABLE_HS_IO2COMP</value>
     </values>
@@ -3075,10 +2953,10 @@
     <type>logical</type>
     <category>pio</category>
     <group>pio_default_inparm</group>
-    <description>
+    <desc>
       pio rearranger communication option: Enable isends (io2comp)
       default: .false.
-    </description>
+    </desc>
     <values>
       <value>$PIO_REARR_COMM_ENABLE_ISEND_IO2COMP</value>
     </values>
@@ -3088,672 +2966,630 @@
   <!-- group seq_maps              -->
   <!-- =========================== -->
 
-  <entry id="atm2ocn_fmapname">
+  <entry id="atm2ocn_fmapname"    modify_via_xml="ATM2OCN_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to ocn flux mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2ocn_fmaptype">
+  <entry id="atm2ocn_fmaptype"    modify_via_xml="ATM2OCN_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2ocn_smapname">
+  <entry id="atm2ocn_smapname"    modify_via_xml="ATM2OCN_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to ocn state mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2ocn_smaptype">
+  <entry id="atm2ocn_smaptype"    modify_via_xml="ATM2OCN_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2ocn_vmapname">
+  <entry id="atm2ocn_vmapname"    modify_via_xml="ATM2OCN_VMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_VMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to ocn state mapping file for velocity
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_VMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2ocn_vmaptype">
+  <entry id="atm2ocn_vmaptype"    modify_via_xml="ATM2OCN_VMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_VMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_VMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ocn2atm_fmapname">
+  <entry id="ocn2atm_fmapname"    modify_via_xml="OCN2ATM_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ocn to atm mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2atm_fmaptype">
+  <entry id="ocn2atm_fmaptype"    modify_via_xml="OCN2ATM_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ocn2atm_smapname">
+  <entry id="ocn2atm_smapname"    modify_via_xml="OCN2ATM_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ocn to atm mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2atm_smaptype">
+  <entry id="ocn2atm_smaptype"    modify_via_xml="OCN2ATM_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2ice_fmapname">
+  <entry id="atm2ice_fmapname"    modify_via_xml="ATM2ICE_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2ICE_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to ice flux mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2ice_fmaptype">
+  <entry id="atm2ice_fmaptype"    modify_via_xml="ATM2ICE_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2ICE_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2ice_smapname">
+  <entry id="atm2ice_smapname"    modify_via_xml="ATM2ICE_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2ICE_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to ice state mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2ice_smaptype">
+  <entry id="atm2ice_smaptype"    modify_via_xml="ATM2OCN_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2ice_vmapname">
+  <entry id="atm2ice_vmapname"    modify_via_xml="ATM2ICE_VMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2ICE_VMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to ice state mapping file for velocity
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_VMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2ice_vmaptype">
+  <entry id="atm2ice_vmaptype"    modify_via_xml="ATM2OCN_VMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2OCN_VMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2OCN_VMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ice2atm_fmapname">
+  <entry id="ice2atm_fmapname"    modify_via_xml="ICE2ATM_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE2ATM_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ice to atm mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ice2atm_fmaptype">
+  <entry id="ice2atm_fmaptype"    modify_via_xml="OCN2ATM_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN2ATM_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ice2atm_smapname">
+  <entry id="ice2atm_smapname"    modify_via_xml="ICE2ATM_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE2ATM_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ice to atm mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ice2atm_smaptype">
+  <entry id="ice2atm_smaptype"    modify_via_xml="ICE2ATM_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE2ATM_SMAPTYPE</unmodifiable_via_user_nl>
     <group>seq_maps</group>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$OCN2ATM_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2lnd_fmapname">
+  <entry id="atm2lnd_fmapname"    modify_via_xml="ATM2LND_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2LND_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to land mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$ATM2LND_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2lnd_fmaptype">
+  <entry id="atm2lnd_fmaptype"    modify_via_xml="ATM2LND_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2LND_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2LND_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2lnd_smapname">
+  <entry id="atm2lnd_smapname"    modify_via_xml="ATM2LND_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2LND_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to land mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$ATM2LND_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2lnd_smaptype">
+  <entry id="atm2lnd_smaptype"    modify_via_xml="ATM2LND_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2LND_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2LND_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="lnd2atm_fmapname">
+  <entry id="lnd2atm_fmapname"    modify_via_xml="LND2ATM_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2ATM_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       land to atm mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$LND2ATM_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="lnd2atm_fmaptype">
+  <entry id="lnd2atm_fmaptype"    modify_via_xml="LND2ATM_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2ATM_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$LND2ATM_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="lnd2atm_smapname">
+  <entry id="lnd2atm_smapname"    modify_via_xml="LND2ATM_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2ATM_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       land to atm mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$LND2ATM_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="lnd2atm_smaptype">
+  <entry id="lnd2atm_smaptype"   modify_via_xml="LND2ATM_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2ATM_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$LND2ATM_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="lnd2rof_fmapname">
+  <entry id="lnd2rof_fmapname"    modify_via_xml="LND2ROF_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2ROF_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       lnd to runoff conservative mapping file
-    </description>
+    </desc>
     <values>
       <value>$LND2ROF_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="lnd2rof_fmaptype">
+  <entry id="lnd2rof_fmaptype"    modify_via_xml="LND2ROF_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2ROF_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$LND2ROF_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="rof2lnd_fmapname">
+  <entry id="rof2lnd_fmapname"    modify_via_xml="ROF2LND_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2LND_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       runoff to lnd conservative mapping file
-    </description>
+    </desc>
     <values>
       <value>$ROF2LND_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="rof2lnd_fmaptype">
+  <entry id="rof2lnd_fmaptype"    modify_via_xml="ROF2LND_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2LND_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ROF2LND_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="rof2ocn_fmapname">
+  <entry id="rof2ocn_fmapname"    modify_via_xml="ROF2OCN_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       runoff to ocn area overlap conservative mapping file
-    </description>
+    </desc>
     <values>
       <value>$ROF2OCN_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="rof2ocn_fmaptype">
+  <entry id="rof2ocn_fmaptype"    modify_via_xml="ROF2OCN_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ROF2OCN_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="glc2ocn_rmapname">
+  <entry id="glc2ocn_rmapname"    modify_via_xml="GLC2OCN_RMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2OCN_RMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       glc to ocn runoff conservative mapping file
-    </description>
+    </desc>
     <values>
       <value>$GLC2OCN_RMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="glc2ocn_rmaptype">
+  <entry id="glc2ocn_rmaptype"    modify_via_xml="GLC2OCN_RMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2OCN_RMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$GLC2OCN_RMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="glc2ice_rmapname">
+  <entry id="glc2ice_rmapname"    modify_via_xml="GLC2ICE_RMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2ICE_RMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       glc to ice runoff conservative mapping file
-    </description>
+    </desc>
     <values>
       <value>$GLC2ICE_RMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="glc2ice_rmaptype">
+  <entry id="glc2ice_rmaptype"    modify_via_xml="GLC2ICE_RMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2ICE_RMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$GLC2ICE_RMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="rof2ocn_liq_rmapname">
+  <entry id="rof2ocn_liq_rmapname"    modify_via_xml="ROF2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_LIQ_RMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       runoff to ocn nearest neighbor plus smoothing conservative mapping file
-    </description>
+    </desc>
     <values>
       <value>$ROF2OCN_LIQ_RMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="rof2ocn_liq_rmaptype">
+  <entry id="rof2ocn_liq_rmaptype"    modify_via_xml="ROF2OCN_LIQ_RMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_LIQ_RMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ROF2OCN_LIQ_RMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="rof2ocn_ice_rmapname">
+  <entry id="rof2ocn_ice_rmapname"    modify_via_xml="ROF2OCN_ICE_RMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_ICE_RMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       runoff to ocn nearest neighbor plus smoothing conservative mapping file
-    </description>
+    </desc>
     <values>
       <value>$ROF2OCN_ICE_RMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="rof2ocn_ice_rmaptype">
+  <entry id="rof2ocn_ice_rmaptype"    modify_via_xml="ROF2OCN_ICE_RMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ROF2OCN_ICE_RMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ROF2OCN_ICE_RMAPTYPE</value>
       <value bfbflag="on">X</value>
@@ -3761,272 +3597,256 @@
   </entry>
 
 
-  <entry id="lnd2glc_fmapname">
+  <entry id="lnd2glc_fmapname"    modify_via_xml="LND2GLC_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2GLC_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       land to glc mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$LND2GLC_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="lnd2glc_fmaptype">
+  <entry id="lnd2glc_fmaptype"    modify_via_xml="LND2GLC_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2GLC_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$LND2GLC_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="lnd2glc_smapname">
+  <entry id="lnd2glc_smapname"    modify_via_xml="LND2GLC_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2GLC_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       land to glc mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$LND2GLC_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="lnd2glc_smaptype">
+  <entry id="lnd2glc_smaptype"    modify_via_xml="LND2GLC_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable LND2GLC_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$LND2GLC_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="glc2lnd_fmapname">
+  <entry id="glc2lnd_fmapname"    modify_via_xml="GLC2LND_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2LND_FMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       glc to land mapping file for fluxes
-    </description>
+    </desc>
     <values>
       <value>$GLC2LND_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="glc2lnd_fmaptype">
+  <entry id="glc2lnd_fmaptype"    modify_via_xml="GLC2LND_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2LND_FMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$GLC2LND_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="glc2lnd_smapname">
+  <entry id="glc2lnd_smapname"    modify_via_xml="GLC2LND_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2LND_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       glc to land mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$GLC2LND_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="glc2lnd_smaptype">
+  <entry id="glc2lnd_smaptype"    modify_via_xml="GLC2LND_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable GLC2LND_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$GLC2LND_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="atm2wav_smapname">
+  <entry id="atm2wav_smapname"    modify_via_xml="ATM2WAV_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2WAV_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       atm to wav state mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$ATM2WAV_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="atm2wav_smaptype">
+  <entry id="atm2wav_smaptype"    modify_via_xml="ATM2WAV_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ATM2WAV_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ATM2WAV_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ocn2wav_smapname">
+  <entry id="ocn2wav_smapname"    modify_via_xml="OCN2WAV_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN2WAV_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ocn to wav state mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$OCN2WAV_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2wav_smaptype">
+  <entry id="ocn2wav_smaptype"    modify_via_xml="OCN2WAV_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable OCN2WAV_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$OCN2WAV_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ice2wav_smapname">
+  <entry id="ice2wav_smapname"    modify_via_xml="ICE2WAV_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE2WAV_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       ice to wav state mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$ICE2WAV_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ice2wav_smaptype">
+  <entry id="ice2wav_smaptype"    modify_via_xml="ICE2WAV_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable ICE2WAV_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$ICE2WAV_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="wav2ocn_smapname">
+  <entry id="wav2ocn_smapname"    modify_via_xml="WAV2OCN_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable WAV2OCN_SMAPNAME</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       wav to ocn state mapping file for states
-    </description>
+    </desc>
     <values>
       <value>$WAV2OCN_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="wav2ocn_smaptype">
+  <entry id="wav2ocn_smaptype"    modify_via_xml="WAV2OCN_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
-    <unmodifiable_via_user_nl>must be set via xml variable WAV2OCN_SMAPTYPE</unmodifiable_via_user_nl>
-    <description>
+    <desc>
       The type of mapping desired, either "source" or "destination" mapping.
       X is associated with rearrangement of the source grid to the
       destination grid and then local mapping.  Y is associated with mapping
       on the source grid and then rearrangement and sum to the destination
       grid.
-    </description>
+    </desc>
     <values>
       <value>$WAV2OCN_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="drv_flds_in_files" skip_default_entry="TRUE">
+  <entry id="drv_flds_in_files" skip_default_entry="true">
     <type>char(10)</type>
     <category>drv_physics</category>
     <group>default_settings</group>
-    <description>
+    <desc>
       List of files to merge together that contains drv_flds_in namelists
       The paths are relative to the case directory. drv_flds_in include the namelists that
       the driver reads and gives information on additional fields to be passed to different
       components that need to look at the same data.
-    </description>
+    </desc>
     <values>
       <value>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
     </values>
