@@ -1055,6 +1055,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/0.9x1.25/map_360x720_cruncep_to_0.9x1.25_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="0.9x1.25"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/0.9x1.25/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.9x1.25_nomask_aave_da_c130405.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="0.9x1.25"   to_lmask="nomask" 
+>lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_GSDTG2000_to_0.9x1.25_nomask_aave_da_c161010.nc</map>
 
 <map frm_hgrid="0.5x0.5"  frm_lmask="MODIS"  to_hgrid="1.9x2.5" to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc</map>
@@ -1084,6 +1086,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/1.9x2.5/map_360x720_cruncep_to_1.9x2.5_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="1.9x2.5"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/1.9x2.5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_1.9x2.5_nomask_aave_da_c130405.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="1.9x2.5"   to_lmask="nomask" 
+>lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_GSDTG2000_to_1.9x2.5_nomask_aave_da_c161010.nc</map>
 
 
 <map frm_hgrid="0.5x0.5"  frm_lmask="MODIS"  to_hgrid="10x15"   to_lmask="nomask" 
@@ -1553,6 +1557,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/ne30np4/map_360x720_cruncep_to_ne30np4_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="ne30np4"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/ne30np4/map_1km-merge-10min_HYDRO1K-merge-nomask_to_ne30np4_nomask_aave_da_c130405.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="ne30np4"   to_lmask="nomask" 
+>lnd/clm2/mappingdata/maps/ne30np4/map_0.5x0.5_GSDTG2000_to_ne30np4_nomask_aave_da_c161010.nc</map>
 
 <map frm_hgrid="ne30np4"  frm_lmask="nomask" to_hgrid="0.5x0.5" to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>

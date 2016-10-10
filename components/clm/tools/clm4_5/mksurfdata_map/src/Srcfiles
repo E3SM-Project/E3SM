@@ -10,6 +10,7 @@ mklanwatMod.F90
 mkpftMod.F90
 mksoilMod.F90
 mkvocefMod.F90
+mksoilphosphorusMod.F90
 mksurfdat.F90
 mkurbanparCommonMod.F90
 mkurbanparMod.F90

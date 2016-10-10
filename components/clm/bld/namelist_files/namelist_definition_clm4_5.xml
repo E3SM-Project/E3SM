@@ -703,6 +703,11 @@ VIC parameters dataset for mksurfdata
 Inversion-derived CH4 parameters dataset for mksurfdata
 </entry>
 
+<entry id="mksrf_fphosphorus" type="char*256" category="mksurfdata"
+       input_pathname="abs" group="clmexp" valid_values="" >
+Soil phosphorus dataset for mksurfdata
+</entry>
+
 <entry id="outnc_double" type="logical" category="mksurfdata"
        group="clmexp" value=".true.">
 If TRUE, output variables in double precision for mksurfdata

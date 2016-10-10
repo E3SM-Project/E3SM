@@ -945,6 +945,46 @@ contains
        end do
     end if
 
+    if (outnc_1d) then
+       call ncd_defvar(ncid=ncid, varname='APATITE_P', xtype=xtype, &
+            dim1name='gridcell',&
+            long_name='Apatite Phosphorus ', units='gP/m2')
+    else
+       call ncd_defvar(ncid=ncid, varname='APATITE_P', xtype=xtype, &
+            dim1name='lsmlon', dim2name='lsmlat', &
+            long_name='Apatite Phosphorus', units='gP/m2')
+    end if
+
+    if (outnc_1d) then
+       call ncd_defvar(ncid=ncid, varname='LABILE_P', xtype=xtype, &
+            dim1name='gridcell',&
+            long_name='Labile Inorganic Phosphorus', units='gP/m2')
+    else
+       call ncd_defvar(ncid=ncid, varname='LABILE_P', xtype=xtype, &
+            dim1name='lsmlon', dim2name='lsmlat', &
+            long_name='Labile Inorganic Phosphorus', units='gP/m2')
+    end if
+
+    if (outnc_1d) then
+       call ncd_defvar(ncid=ncid, varname='OCCLUDED_P', xtype=xtype, &
+            dim1name='gridcell',&
+            long_name='Occluded Phosphorus', units='gP/m2')
+    else
+       call ncd_defvar(ncid=ncid, varname='OCCLUDED_P', xtype=xtype, &
+            dim1name='lsmlon', dim2name='lsmlat', &
+            long_name='Occluded Phosphorus', units='gP/m2')
+    end if
+
+    if (outnc_1d) then
+       call ncd_defvar(ncid=ncid, varname='SECONDARY_P', xtype=xtype, &
+            dim1name='gridcell',&
+            long_name='Secondary Mineral Phosphorus', units='gP/m2')
+    else
+       call ncd_defvar(ncid=ncid, varname='SECONDARY_P', xtype=xtype, &
+            dim1name='lsmlon', dim2name='lsmlat', &
+            long_name='Secondary Mineral Phosphorus', units='gP/m2')
+    end if
+
     ! End of define mode
 
     call check_ret(nf_enddef(ncid), subname)
