@@ -68,7 +68,6 @@ class NamelistGenerator(object):
         `case`             - `Case` object corresponding to the current case.
         `infiles`          - List of files with user namelist options.
         `definition_files` - List of XML files containing namelist definitions.
-        `defaults_files`   - List of XML files containing namelist defaults.
         `config`           - A dictionary of attributes for matching defaults.
         """
         # Save off important information from inputs.
@@ -76,9 +75,7 @@ class NamelistGenerator(object):
         self._din_loc_root = case.get_value('DIN_LOC_ROOT')
 
         # Create definition object.
-        self._definition = NamelistDefinition(definition_files[0], config)
-        for file_ in definition_files[1:]:
-            self._definition.read(file_)
+        self._definition = NamelistDefinition(definition_files[0], attributes=config)
 
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
@@ -198,7 +195,7 @@ class NamelistGenerator(object):
         self._namelist.set_variable_value(var_group, name, literals)
 
     def get_default(self, name, config=None, allow_none=False):
-        """Get the value of a variable from the namelist defaults file.
+        """Get the value of a variable from the namelist definition file.
 
         The `config` argument is passed through to the underlying
         `NamelistDefaults.get_value` call as the `attribute` argument.
@@ -227,7 +224,6 @@ class NamelistGenerator(object):
            (similar to parameter expansion in shell scripts).
         """
         default = self._definition.get_value_match(name, attributes=config, exact_match=True)
-
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None
@@ -550,8 +546,6 @@ class NamelistGenerator(object):
         """Write input data files to list."""
         for group_name in self._namelist.get_group_names():
             for variable_name in self._namelist.get_variable_names(group_name):
-#                var_info = self._definition.get_value(variable_name)
-
                 input_pathname = self._definition.get_node_element_info(variable_name, "input_pathname")
                 if input_pathname is not None:
                     # This is where we end up for all variables that are paths

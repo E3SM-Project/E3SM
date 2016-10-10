@@ -11,7 +11,7 @@
       attributes to express the dependency.  The recognized attributes
       are: grid, docn_presaero and all configuration
       attributes from the config_cache.xml file (with keys converted to upper-case).
-      
+
       strm_year_first is the first year of the stream data that will be used
       strm_year_last  is the last  year of the stream data that will be used
       strm_year_align is the model year that will be aligned with stream data for year_first
@@ -81,7 +81,7 @@
     <group>streams_file</group>
     <description>Stream domain file directory.</description>
     <values>
-      <value>null</value> 
+      <value>null</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
@@ -93,7 +93,7 @@
     <group>streams_file</group>
     <description>Stream domain file path(s).</description>
     <values>
-      <value>null</value> 
+      <value>null</value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
@@ -131,7 +131,7 @@
     <group>streams_file</group>
     <description>Stream data file directory.</description>
     <values>
-      <value>null</value> 
+      <value>null</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
@@ -143,7 +143,7 @@
     <group>streams_file</group>
     <description>Stream data file path(s).</description>
     <values>
-      <value>null</value> 
+      <value>null</value>
       <value  stream="prescribed" sstice_stream="WRFDATA_wus12">
 	sst_wus12_110111.2003-10.nc
 	sst_wus12_110111.2003-11.nc
@@ -200,7 +200,7 @@
     <group>streams_file</group>
     <description>Stream offset.</description>
     <values>
-      <value>0</value> 
+      <value>0</value>
     </values>
   </entry>
 
@@ -333,7 +333,7 @@
     </values>
   </entry>
 
-  <entry id="fillalgo" per_stream_entry="TRUE">
+  <entry id="fillalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -350,7 +350,7 @@
     </values>
   </entry>
 
-  <entry id="fillmask" per_stream_entry="TRUE">
+  <entry id="fillmask" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -364,7 +364,7 @@
     </values>
   </entry>
 
-  <entry id="fillread" per_stream_entry="TRUE">
+  <entry id="fillread" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -379,7 +379,7 @@
     </values>
   </entry>
 
-  <entry id="fillwrite" per_stream_entry="TRUE">
+  <entry id="fillwrite" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -394,7 +394,7 @@
     </values>
   </entry>
 
-  <entry id="mapmask" per_stream_entry="TRUE">
+  <entry id="mapmask" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -411,7 +411,7 @@
     </values>
   </entry>
 
-  <entry id="mapalgo" per_stream_entry="TRUE">
+  <entry id="mapalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -428,7 +428,7 @@
     </values>
   </entry>
 
-  <entry id="mapread" per_stream_entry="TRUE">
+  <entry id="mapread" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -436,14 +436,14 @@
       array (up to 30 elements) of filenames associated with the array of
       streams.  specifies the weights file to read instead of computing
       weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored.  
+      is set, mapalgo and mapmask are ignored.
     </description>
     <values>
       <value>NOT_SET</value>
     </values>
   </entry>
 
-  <entry id="mapwrite" per_stream_entry="TRUE">
+  <entry id="mapwrite" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -458,7 +458,7 @@
     </values>
   </entry>
 
-  <entry id="tintalgo" per_stream_entry="TRUE">
+  <entry id="tintalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -478,7 +478,7 @@
     </values>
   </entry>
 
-  <entry id="taxmode" per_stream_entry="TRUE">
+  <entry id="taxmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -502,7 +502,7 @@
     </values>
   </entry>
 
-  <entry id="dtlimit" per_stream_entry="TRUE">
+  <entry id="dtlimit" per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>

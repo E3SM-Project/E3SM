@@ -79,34 +79,35 @@ class EntryID(GenericXML):
         for valnode in self.get_nodes("value", root=values):
             # loop through all the keys in valnode (value nodes) attributes
             if len(valnode.attrib) == 0:
+                logger.debug("(get_value_match) Set default value %s %s",node.get("id"), valnode.text)
                 match_value = valnode.text
+                continue
+            for key,value in valnode.attrib.iteritems():
                 match_count = 0
-            else:
-                for key,value in valnode.attrib.iteritems():
-                    # determine if key is in attributes dictionary
-                    match_count = 0
-                    if attributes is not None and key in attributes:
-                        if exact_match:
-                            if value == attributes[key]:
-                                logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
-                                match_count += 1
-                            else:
-                                match_count = -1
-                                break
+                # determine if key is in attributes dictionary
+                if attributes is not None and key in attributes:
+                    if exact_match:
+                        if value == attributes[key]:
+                            logger.debug("(get_value_match) Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                            match_count += 1
                         else:
-                            if re.search(value, attributes[key]):
-                                logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
-                                match_count += 1
-                            else:
-                                match_count = -1
-                                break
+                            match_count = -1
+                            break
+                    else:
+                        if re.search(value, attributes[key]):
+                            logger.debug("(get_value_match) Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                            match_count += 1
+                        else:
+                            match_count = -1
+                            break
 
             if match_count > match_max:
                 match_max = match_count
                 match_value = valnode.text
             elif match_count == match_max:
-                logger.debug("Ambiguous match for node '%s' for attributes '%s', falling back to order precedence" %
-                             (node.attrib["id"], attributes))
+                logger.debug("Ambiguous match for node '%s' for attributes '%s',"
+                             "falling back to order precedence" %
+                               (node.attrib["id"], attributes))
 
         return match_value
 

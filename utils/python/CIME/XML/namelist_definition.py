@@ -36,10 +36,10 @@ class NamelistDefinition(EntryID):
     - validate
     """
 
-    def __init__(self, infile, config):
+    def __init__(self, infile, attributes=None):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
-        self._attributes = config
+        self._attributes = attributes
 
     def _get_version(self):
         version = self.root.get("version")
@@ -75,9 +75,6 @@ class NamelistDefinition(EntryID):
         raise TypeError, \
             "NamelistDefinition does not support `set_value`."
 
-
-
-
     def get_valid_values(self, name):
         # The "valid_values" attribute is not required, and an empty string has
         # the same effect as not specifying it.
@@ -93,13 +90,12 @@ class NamelistDefinition(EntryID):
             valid_values = valid_values.split(',')
         return valid_values
 
-
     # There seems to be no good use for this capability in this file, so it is
     # unimplemented.
-    def get_resolved_value(self, raw_value):
-        """This function is not implemented."""
-        raise TypeError, \
-            "NamelistDefinition does not support `get_resolved_value`."
+#    def get_resolved_value(self, raw_value):
+#        """This function is not implemented."""
+#        raise TypeError, \
+#            "NamelistDefinition does not support `get_resolved_value`."
 
     def get_value_match(self, item, attributes=None, exact_match=True):
         """Return the default value for the variable named `item`.
@@ -126,6 +122,7 @@ class NamelistDefinition(EntryID):
 
         if value is not None:
             value =  self._split_defaults_text(value)
+
         return value
 
         # # Store nodes that match the attributes and their scores.
@@ -302,7 +299,6 @@ class NamelistDefinition(EntryID):
     def _user_modifiable_in_variable_definition(self, name, filename):
         # Is name user modifiable?
         node = self.get_optional_node("entry", attributes={'id': name})
-
         user_modifiable = node.get('modify_via_xml')
         if user_modifiable is not None:
             expect(False,
@@ -369,3 +365,80 @@ class NamelistDefinition(EntryID):
                 groups[group_name] = {}
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
+
+    @staticmethod
+    def _split_defaults_text(string):
+        """Take a comma-separated list in a string, and split it into a list."""
+        # Some trickiness here; we want to split items on commas, but not inside
+        # quote-delimited strings. Stripping whitespace is also useful.
+        value = []
+        pos = 0
+        delim = None
+        for i, char in enumerate(string):
+            if delim is None:
+                # If not inside a string...
+                if char in ('"', "'"):
+                    # if we have a quote character, start a string.
+                    delim = char
+                elif char == ',':
+                    # if we have a comma, this is a new value.
+                    value.append(string[pos:i].strip())
+                    pos = i+1
+            else:
+                # If inside a string, the only thing that can happen is the end
+                # of the string.
+                if char == delim:
+                    delim = None
+        value.append(string[pos:].strip())
+        return value
+
+
+    def get_default_value(self, item, attribute=None):
+        """Return the default value for the variable named `item`.
+
+        The return value is a list of strings corresponding to the
+        comma-separated list of entries for the value (length 1 for scalars). If
+        there is no default value in the file, this returns `None`.
+        """
+        # Merge internal attributes with those passed in.
+        all_attributes = {}
+        if self._attributes is not None:
+            all_attributes.update(self._attributes)
+        if attribute is not None:
+            all_attributes.update(attribute)
+
+        # i know this is bad ...
+        if not isinstance(item, basestring):
+            node = item
+        else:
+            node = self.get_node("entry", attributes={"id":item.lower()})
+        nodes = self.get_nodes("value", root=node)
+
+        # Store nodes that match the attributes and their scores.
+        matches = []
+        for node in nodes:
+            # For each node in the list start a score.
+            score = 0
+            for attribute in node.keys():
+                # For each attribute, add to the score.
+                score += 1
+                # If some attribute is specified that we don't know about,
+                # or the values don't match, it's not a match we want.
+                if attribute not in all_attributes or \
+                   all_attributes[attribute] != node.get(attribute):
+                    score = -1
+                    break
+
+            # Add valid matches to the list.
+            if score >= 0:
+                matches.append((score, node))
+
+        if not matches:
+            return None
+
+        # Get maximum score using custom `key` function, extract the node.
+        _, node = max(matches, key=lambda x: x[0])
+        if node.text is None:
+            return ['']
+        return self._split_defaults_text(node.text)
+

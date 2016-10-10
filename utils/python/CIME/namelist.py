@@ -661,7 +661,7 @@ def compress_literal_list(literals):
         compressed.append(rep_str + old_literal)
     else:
         compressed.append(rep_str + str(old_literal))
-    return compressed 
+    return compressed
 
 def merge_literal_lists(default, overwrite):
     """Merge two lists of literal value strings.
