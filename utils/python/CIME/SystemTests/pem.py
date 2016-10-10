@@ -38,15 +38,3 @@ class PEM(SystemTestsCompareTwo):
             if ( ntasks > 1 ):
                 self._case.set_value("NTASKS_%s"%comp, int(ntasks/2))
         case_setup(self._case, clean=False, test_mode=False, reset=True)
-
-    def _config_run(self):
-        # These options must be set in the run phase,
-        # as their environment variables don't exist before then
-        for f in (self._activate_case1, self._activate_case2):
-            f()
-            self._case.set_value("HIST_OPTION","$STOP_OPTION")
-            self._case.set_value("HIST_N","$STOP_N")
-
-    def run_phase(self):
-        self._config_run()
-        SystemTestsCompareTwo.run_phase(self)
