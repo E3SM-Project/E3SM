@@ -36,7 +36,7 @@ class PEM(SystemTestsCompareTwo):
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
             ntasks = self._case.get_value("NTASKS_%s"%comp)
             if ( ntasks > 1 ):
-                self._case.set_value("NTASKS_%s"%comp, ntasks/2)
+                self._case.set_value("NTASKS_%s"%comp, int(ntasks/2))
         case_setup(self._case, clean=False, test_mode=False, reset=True)
 
     def _config_run(self):
