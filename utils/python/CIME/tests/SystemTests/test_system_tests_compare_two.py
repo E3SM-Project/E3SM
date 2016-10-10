@@ -107,9 +107,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         # Need to tell test status that case has been built, since this is
         # checked in the run call
         with self._test_status:
-            self._test_status.set_status(
-                test_status.MODEL_BUILD_PHASE,
-                test_status.TEST_PASS_STATUS)
+            for phase in test_status.CORE_PHASES[:-1]:
+                self._test_status.set_status(phase, test_status.TEST_PASS_STATUS)
 
         self.run_pass_casenames = []
         if run_one_should_pass:

@@ -21,8 +21,9 @@ def expect(condition, error_msg, exc_type=SystemExit):
     """
     if (not condition):
         # Uncomment these to bring up a debugger when an expect fails
-        #import pdb
-        #pdb.set_trace()
+        if logger.isEnabledFor(logging.DEBUG):
+            import pdb
+            pdb.set_trace()
         raise exc_type("ERROR: %s" % error_msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
@@ -71,7 +72,7 @@ def get_python_libs_location_within_cime():
     """
     return os.path.join("utils", "python")
 
-def get_cime_root():
+def get_cime_root(case=None):
     """
     Return the absolute path to the root of CIME that contains this script
 
@@ -89,6 +90,11 @@ def get_cime_root():
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
             cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
         cime_config.set('main','CIMEROOT',cimeroot)
+
+    if case is not None:
+        case_cimeroot = os.path.abspath(case.get_value("CIMEROOT"))
+        cimeroot = os.path.abspath(cimeroot)
+        expect(cimeroot == case_cimeroot, "Inconsistant CIMEROOT variable: case %s environment %s"%(case_cimeroot, cimeroot))
 
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
@@ -848,7 +854,7 @@ def get_build_threaded(case):
     force_threaded = case.get_value("BUILD_THREADED")
     if force_threaded:
         return True
-    comp_classes = case.get_value("COMP_CLASSES").split(',')
+    comp_classes = case.get_values("COMP_CLASSES")
     for comp_class in comp_classes:
         if comp_class == "DRV":
             comp_class = "CPL"

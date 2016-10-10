@@ -22,7 +22,7 @@ sys.path.append(os.path.join(CIMEROOT, "scripts", "Tools"))
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
-from CIME.utils import expect, handle_standard_logging_options, setup_standard_logging_options 
+from CIME.utils import expect, handle_standard_logging_options, setup_standard_logging_options
 from CIME.utils import run_cmd_no_fail, convert_to_string, get_model
 from CIME.buildnml import create_namelist_infile
 
@@ -75,20 +75,20 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
     config['bfbflag'] = 'on' if case.get_value('BFBFLAG') else 'off'
     config['continue_run'] = '.true.' if case.get_value('CONTINUE_RUN') else '.false.'
     if case.get_value('RUN_TYPE') == 'startup':
-        config['run_type'] = 'startup' 
-    elif case.get_value('RUN_TYPE') == 'hybrid': 
-        config['run_type'] = 'startup' 
+        config['run_type'] = 'startup'
+    elif case.get_value('RUN_TYPE') == 'hybrid':
+        config['run_type'] = 'startup'
     elif case.get_value('RUN_TYPE') == 'branch':
-        config['run_type'] = 'branch'  
+        config['run_type'] = 'branch'
 
     #--------------------------------
     # Create nmlgen object - using config dictionary
     #--------------------------------
-    nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
+    nmlgen = NamelistGenerator(case, infiles, definition_file, config)
     entries = nmlgen.get_definition_entries()
 
     #--------------------------------
-    # Add default values for all entries in namelist_definition_drv.xml 
+    # Add default values for all entries in namelist_definition_drv.xml
     #--------------------------------
     for entry in entries:
         nmlgen.add_default(entry)
@@ -113,7 +113,7 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
         if case.get_value('CALENDAR') == 'NO_LEAP':
             basedt = 3600 * 24 * 365
         else:
-            expect(False, "Invalid CALENDAR for NCPL_BASE_PERIOD %s " %ncpl_base_period) 
+            expect(False, "Invalid CALENDAR for NCPL_BASE_PERIOD %s " %ncpl_base_period)
     elif ncpl_base_period == 'decade':
         if case.get_value('CALENDAR') == 'NO_LEAP':
             basedt = 3600 * 24 * 365 * 10
@@ -165,7 +165,7 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
         stop_n = case.get_value('STOP_N')
         stopn = tprofmult * stop_N
         tprofn = int(stopn / tprof_total)
-        if tprofn < 1: 
+        if tprofn < 1:
             tprofn = 1
         nmlgen.set_value('tprof_option', value="tprofoption")
         nmlgen.set_value('tprof_n'     , value="tprofn")
@@ -202,9 +202,9 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
 
     if len(infiles) != 0:
         config = {}
-        definition_file = [os.path.join(cimeroot, "driver_cpl", "bld", 
+        definition_file = [os.path.join(cimeroot, "driver_cpl", "bld",
                                         "namelist_files", "namelist_definition_drv_flds.xml")]
-        nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
+        nmlgen = NamelistGenerator(case, infiles, definition_file, config)
         drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
         nmlgen.write_output_file(drv_flds_in)
 
@@ -223,9 +223,7 @@ def _create_component_modelio_namelists(case):
     for model in models:
         config = {}
         config['component'] = model
-        #nmlgen = NamelistGenerator(case, infiles, definition_file, definition_file,  config)
-        #expect(False, "DEBUG")
-        with NamelistGenerator(case, infiles, definition_file, definition_file,  config) as nmlgen:
+        with NamelistGenerator(case, infiles, definition_file, config) as nmlgen:
             if model == 'cpl':
                 inst_count = 1
             else:
@@ -254,14 +252,14 @@ def _create_component_modelio_namelists(case):
                 nmlgen.set_value('diro',    value=moddiro)
 
                 if inst_count > 1:
-                    logfile = model + "_" + inst_string + ".log." + str(lid) 
+                    logfile = model + "_" + inst_string + ".log." + str(lid)
                 else:
                     logfile = model + ".log." + str(lid)
                 nmlgen.set_value('logfile', value=logfile)
 
                 # Write output file
                 if inst_count > 1:
-                    modelio_file = model + "_modelio.nml_" + str(inst_string) 
+                    modelio_file = model + "_modelio.nml_" + str(inst_string)
                 else:
                     modelio_file = model + "_modelio.nml"
                 nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
@@ -281,6 +279,7 @@ def _main_func():
             os.makedirs(confdir)
 
         # NOTE: User definition *replaces* existing definition.
+        # TODO: Append instead of replace?
         user_xml_dir = os.path.join(caseroot, "SourceMods", "src.drv")
         expect (os.path.isdir(user_xml_dir),
                 "user_xml_dir %s does not exist " %user_xml_dir)
@@ -319,7 +318,7 @@ def _main_func():
 
         drv_flds_in = os.path.join(confdir, "drv_flds_in")
         if os.path.isfile(drv_flds_in):
-            shutil.copy(drv_flds_in, rundir)  
+            shutil.copy(drv_flds_in, rundir)
 
         shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
 

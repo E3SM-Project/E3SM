@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<definitions_variables>
+<entry_id>
 
   <entry id="COMP_ATM">
     <type>char</type>
@@ -17,5 +17,5 @@
     <desc compset="_XATM">Dead atm component</desc>
   </description>
 
-</definitions_variables>
+</entry_id>
 

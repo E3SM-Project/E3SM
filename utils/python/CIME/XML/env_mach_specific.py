@@ -52,11 +52,11 @@ class EnvMachSpecific(EnvBase):
                     self.add_child(node)
 
 
-    def get_values(self, item, attribute=None, resolved=True, subgroup=None):
+    def get_full_records(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
         <element_name attribute='attribute_value>value</element_name>"""
 
-        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
+        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
@@ -67,7 +67,7 @@ class EnvMachSpecific(EnvBase):
             nodes = self.get_nodes("*",{"name" : item})
         else :
             # Return all nodes
-            logger.debug("Retrieving all parameter")
+            logger.debug("(get_full_records) Retrieving all parameter")
             nodes = self.get_nodes("env")
 
         # Return value for first occurence of node with attribute value = item
@@ -76,15 +76,14 @@ class EnvMachSpecific(EnvBase):
             group   = super(EnvMachSpecific, self)._get_group(node)
             val     = node.text
             attr    = node.attrib['name']
-            t       = self._get_type(node)
+            t       = self._get_type_info(node)
             desc    = self._get_description(node)
-            #default = super(EnvBase , self).get_default(node)
             default = self._get_default(node)
             filename    = self.filename
 
             #t   =  super(EnvBase , self).get_type( node )
             v = { 'group' : group , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : filename}
-            logger.debug("Found node with value for %s = %s" , item , v )
+            logger.debug("(get_full_records) Found node with value for %s = %s" , item , v )
             results.append(v)
 
         return results

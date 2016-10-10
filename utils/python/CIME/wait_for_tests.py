@@ -111,7 +111,7 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
             ("text/string",    "Exit Code",         test_status),
             ("text/string",    "Exit Value",        "0" if test_passed else "1"),
             ("numeric_double", "Execution Time",    str(get_test_time(test_norm_path))),
-            ("text/string",    "Completion Status", "Not Completed" if test_status == TEST_PENDING_STATUS else "Completed"),
+            ("text/string",    "Completion Status", "Not Completed" if test_status == TEST_PEND_STATUS else "Completed"),
             ("text/string",    "Command line",      "create_test")
         )
 
@@ -276,7 +276,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
                                                      check_memory=check_memory, ignore_namelists=ignore_namelists,
                                                      ignore_memleak=ignore_memleak)
 
-            if (test_status == TEST_PENDING_STATUS and (wait and not SIGNAL_RECEIVED)):
+            if (test_status == TEST_PEND_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
                 logging.debug("Waiting for test to finish")
             else:

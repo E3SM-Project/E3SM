@@ -661,7 +661,7 @@ def compress_literal_list(literals):
         compressed.append(rep_str + old_literal)
     else:
         compressed.append(rep_str + str(old_literal))
-    return compressed 
+    return compressed
 
 def merge_literal_lists(default, overwrite):
     """Merge two lists of literal value strings.
@@ -792,6 +792,7 @@ class Namelist(object):
         self._groups = {}
         if groups is not None:
             for group_name in groups:
+                expect(group_name is not None, " Got None in groups %s"%groups)
                 group_lc = group_name.lower()
                 self._groups[group_lc] = {}
                 for variable_name in groups[group_name]:

@@ -7,7 +7,7 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, handle_standard_logging_options, setup_standard_logging_options
 from CIME.case import Case
-import sys, os, shutil, glob, argparse, doctest
+import sys, os, argparse, doctest
 
 logger = logging.getLogger(__name__)
 

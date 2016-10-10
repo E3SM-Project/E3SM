@@ -38,7 +38,7 @@ class SEQ(SystemTestsCommon):
             logging.info("Copying env_mach_pes.xml to %s"%(machpes1))
             shutil.copy("env_mach_pes.xml", machpes1)
 
-        comp_classes = self._case.get_value("COMP_CLASSES").split(',')
+        comp_classes = self._case.get_values("COMP_CLASSES")
         for comp in comp_classes:
             if comp != "DRV":
                 any_changes |= self._case.get_value("ROOTPE_%s" % comp) != 0
