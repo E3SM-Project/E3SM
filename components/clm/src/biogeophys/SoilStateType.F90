@@ -124,9 +124,9 @@ contains
     allocate(this%mss_frc_cly_vld_col  (begc:endc))                     ; this%mss_frc_cly_vld_col  (:)   = nan
     allocate(this%sandfrac_patch       (begp:endp))                     ; this%sandfrac_patch       (:)   = nan
     allocate(this%clayfrac_patch       (begp:endp))                     ; this%clayfrac_patch       (:)   = nan
-    allocate(this%cellorg_col          (begc:endc,nlevsoi))             ; this%cellorg_col          (:,:) = nan 
-    allocate(this%cellsand_col         (begc:endc,nlevsoi))             ; this%cellsand_col         (:,:) = nan 
-    allocate(this%cellclay_col         (begc:endc,nlevsoi))             ; this%cellclay_col         (:,:) = nan 
+    allocate(this%cellorg_col          (begc:endc,nlevgrnd))             ; this%cellorg_col          (:,:) = nan 
+    allocate(this%cellsand_col         (begc:endc,nlevgrnd))             ; this%cellsand_col         (:,:) = nan 
+    allocate(this%cellclay_col         (begc:endc,nlevgrnd))             ; this%cellclay_col         (:,:) = nan 
     allocate(this%bd_col               (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = nan
 
     allocate(this%hksat_col            (begc:endc,nlevgrnd))            ; this%hksat_col            (:,:) = spval
