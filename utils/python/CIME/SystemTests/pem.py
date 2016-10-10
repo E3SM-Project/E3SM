@@ -37,25 +37,11 @@ class PEM(SystemTestsCompareTwo):
             ntasks = self._case.get_value("NTASKS_%s"%comp)
             if ( ntasks > 1 ):
                 self._case.set_value("NTASKS_%s"%comp, ntasks/2)
-
-    def _pem_first_phase(self):
-        stop_n = self._case.get_value("STOP_N")
-        stop_option = self._case.get_value("STOP_OPTION")
-
-        self._case.flush()
-
-        self.run_indv()
-
-    def _pem_second_phase(self):
-        stop_n = self._case.get_value("STOP_N")
-        stop_option = self._case.get_value("STOP_OPTION")
-
-        self._case.flush()
-
-        self.run_indv(suffix="modpes")
-        self._component_compare_test("base", "modpes")
+        case_setup(self._case, clean=False, test_mode=False, reset=True)
 
     def _config_run(self):
+        # These options must be set in the run phase,
+        # as their environment variables don't exist before then
         for f in (self._activate_case1, self._activate_case2):
             f()
             self._case.set_value("HIST_OPTION","$STOP_OPTION")
@@ -63,5 +49,4 @@ class PEM(SystemTestsCompareTwo):
 
     def run_phase(self):
         self._config_run()
-        self._pem_first_phase()
-        self._pem_second_phase()
+        SystemTestsCompareTwo.run_phase(self)
