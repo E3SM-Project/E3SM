@@ -28,8 +28,6 @@ class PEM(SystemTestsCompareTwo):
         self._case.set_value("SMP_BUILD","0")
         self._case.set_value("CONTINUE_RUN",False)
         self._case.set_value("REST_OPTION","none")
-        self._case.set_value("HIST_OPTION","$STOP_OPTION")
-        self._case.set_value("HIST_N","$STOP_N")
 
     def _case_one_setup(self):
         pass
@@ -57,6 +55,13 @@ class PEM(SystemTestsCompareTwo):
         self.run_indv(suffix="modpes")
         self._component_compare_test("base", "modpes")
 
+    def _config_run(self):
+        for f in (self._activate_case1, self._activate_case2):
+            f()
+            self._case.set_value("HIST_OPTION","$STOP_OPTION")
+            self._case.set_value("HIST_N","$STOP_N")
+
     def run_phase(self):
+        self._config_run()
         self._pem_first_phase()
         self._pem_second_phase()
