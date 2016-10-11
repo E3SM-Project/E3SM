@@ -192,6 +192,7 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
     caseroot = case.get_value('CASEROOT')
 
     namelist_file = os.path.join(confdir, "drv_flds_in")
+
     nmlgen.add_default('drv_flds_in_files')
     drvflds_files = nmlgen.get_default('drv_flds_in_files')
     infiles = []
@@ -315,8 +316,7 @@ def _main_func():
         rundir = case.get_value("RUNDIR")
 
         shutil.copy(os.path.join(confdir,"drv_in"), rundir)
-
-        drv_flds_in = os.path.join(confdir, "drv_flds_in")
+        drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
         if os.path.isfile(drv_flds_in):
             shutil.copy(drv_flds_in, rundir)
 
