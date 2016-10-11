@@ -18,6 +18,7 @@ from CIME.namelist import fortran_namelist_base_value, \
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
+from CIME.utils import get_cime_root
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,13 @@ class NamelistDefinition(EntryID):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
         self._attributes = attributes
+        # if the file is invalid we may not be able to check the version
+        # but we need to do it this way until we remove the version 1 files
+#        if self._get_version() == "2.0":
+#            cimeroot = get_cime_root()
+#            schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
+#            self.validate_xml_file(infile, schema)
+
 
     def _get_version(self):
         version = self.root.get("version")
