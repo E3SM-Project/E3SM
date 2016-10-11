@@ -326,7 +326,7 @@ contains
 	  nlevbed = nlev2bed(c)
 	else
 	  nlevbed = nlevsoi
-        end do
+        end if
         do j = 1, nlevbed
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
