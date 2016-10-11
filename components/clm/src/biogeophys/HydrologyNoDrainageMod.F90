@@ -74,7 +74,7 @@ contains
     use tracerfluxType       , only : tracerflux_type
     use tracerstatetype      , only : tracerstate_type
     use BeTRTracerType       , only : betrtracer_type        
-    use clm_varctl           , only : use_vsfm
+    use clm_varctl           , only : use_vsfm, do_varsoil
     use SoilHydrologyMod     , only : DrainageVSFM
     !
     ! !ARGUMENTS:
