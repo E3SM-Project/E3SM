@@ -364,6 +364,8 @@ LII    CLM initial condition interpolation test
     <DOUT_S>FALSE</DOUT_S>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
   </test>
 
   <test NAME="PET">

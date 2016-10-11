@@ -24,11 +24,6 @@ class PEM(SystemTestsCompareTwo):
         """
         SystemTestsCompareTwo.__init__(self, case, True)
 
-    def _common_setup(self):
-        self._case.set_value("SMP_BUILD","0")
-        self._case.set_value("CONTINUE_RUN",False)
-        self._case.set_value("REST_OPTION","none")
-
     def _case_one_setup(self):
         pass
 
