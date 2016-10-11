@@ -104,6 +104,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                    ! indices
+    integer  :: nlevbed                       ! # layers to bedrock
     real(r8) :: dtime                         ! land model time step (sec)
     real(r8) :: psi,vwc,fsattmp,psifrz        ! temporary variables for soilpsi calculation
     real(r8) :: watdry                        ! temporary
@@ -122,6 +123,7 @@ contains
          dz                 => col%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
          zi                 => col%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
          snl                => col%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
+         nlev2bed           =>    col%nlev2bed                          , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ctype              => col%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
          t_h2osfc           => temperature_vars%t_h2osfc_col          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
@@ -318,9 +320,14 @@ contains
             h2osoi_liqice_10cm(c) = 0._r8
          end if
       end do
-      do j = 1, nlevsoi
-         do fc = 1, num_nolakec
-            c = filter_nolakec(fc)
+      do fc = 1, num_nolakec
+        c = filter_nolakec(fc)
+	if(do_varsoil) then
+	  nlevbed = nlev2bed(c)
+	else
+	  nlevbed = nlevsoi
+        end do
+        do j = 1, nlevbed
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                ! soil T at top 17 cm added by F. Li and S. Levis
