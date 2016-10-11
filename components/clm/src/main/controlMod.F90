@@ -41,7 +41,7 @@ module controlMod
   use clm_varcon              , only: h2osno_max
   use clm_varctl              , only: use_dynroot
   use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
-  use clm_varctl              , only: nu_com
+  use clm_varctl              , only: nu_com, do_varsoil
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -721,6 +721,7 @@ contains
     write(iulog,*) '    use_lch4 = ', use_lch4
     write(iulog,*) '    use_nitrif_denitrif = ', use_nitrif_denitrif
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
+    write(iulog,*) '    do_varsoil = ', do_varsoil
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
