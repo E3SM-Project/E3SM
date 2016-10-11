@@ -174,7 +174,7 @@ module control_mod
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
-  logical, public :: se_prescribed_wind_2d=.false.
+
 #ifdef CAM
   real (kind=real_kind), public :: se_met_nudge_u = 0.D0  ! velocity nudging rate (1/sec)
   real (kind=real_kind), public :: se_met_nudge_p = 0.D0  ! pressure nudging rate (1/sec)

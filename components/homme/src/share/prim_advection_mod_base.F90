@@ -1929,7 +1929,7 @@ OMP_SIMD
   use parallel_mod,   only: abortmp
   use hybrid_mod,     only: hybrid_t
   use derivative_mod, only: interpolate_gll2fvm_points
-  use control_mod,    only: se_prescribed_wind_2d
+
   use fvm_control_volume_mod, only : fvm_struct
 
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
@@ -2018,10 +2018,9 @@ OMP_SIMD
         call remap1(ttmp,np,2,dp_star,dp)
         call t_stopf('vertical_remap1_2')
 
-        if ( .not. se_prescribed_wind_2d ) &
-             elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
-        if ( .not. se_prescribed_wind_2d ) &
-             elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
+        elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
+        elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
+
 #ifdef REMAP_TE
         ! back out T from TE
         elem(ie)%state%t(:,:,:,np1) = &
@@ -2032,29 +2031,11 @@ OMP_SIMD
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp
      if (qsize>0) then
-        if ( se_prescribed_wind_2d ) then
-           ! Peter Lauritzen et al, "The terminator 'toy'-chemistry test: A simple tool to assess errors in transport schemes",
-           !   submitted to Geosci Model Dev, Oct 2014
-           ! -- code to let dp evolve without vertical transport of tracers (consistent mass tracer coupling)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,i,j,ttmp) collapse(4)
-#endif
-           do q=1,qsize
-              do k=1,nlev
-                 do i=1,np
-                    do j=1,np
-                       !elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp) * dp(i,j,k)/dp_star(i,j,k)
-                       ttmp(i,j,k,1)= elem(ie)%state%Qdp(i,j,k,q,np1_qdp) / dp_star(i,j,k) ! This is the actual q
-                       elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = ttmp(i,j,k,1) * dp(i,j,k)
-                    enddo
-                 enddo
-              enddo
-           enddo
-        else
-           call t_startf('vertical_remap1_3')
-           call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
-           call t_stopf('vertical_remap1_3')
-        endif
+
+       call t_startf('vertical_remap1_3')
+       call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
+       call t_stopf('vertical_remap1_3')
+
      endif
 
      if (ntrac>0) then

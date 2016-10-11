@@ -3,9 +3,11 @@
 
 module dcmip_tests
 
+! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
+
 use control_mod,          only: test_case
-use dcmip2012_test1_2_3,  only: test2_steady_state_mountain, test2_schaer_mountain ,test3_gravity_wave
-use dimensions_mod,       only: np, nlev, qsize, nlevp, qsize_d, nelemd
+use dcmip2012_test1_2_3,  only: test1_advection_deformation, test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
+use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
 use element_mod,          only: element_t, elem_state_t, derived_state_t, nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
@@ -14,7 +16,7 @@ use parallel_mod,         only: abortmp
 
 implicit none
 
-! physical constants used by dcmip2012 test 3-1
+! physical constants used by dcmip2012 test 3.1
 real(rl), parameter ::              &
   g       = 9.80616,                & ! grav const
   a       = 6371229.0,              & ! earth radius in meters
@@ -24,101 +26,77 @@ real(rl), parameter ::              &
   pi      = 3.141592654,            &
   p0      = 100000.0                  ! reference pressure
 
-! storage for dcmip2-x sponge layer
-real(rl), dimension(:,:,:,:), allocatable :: u0, v0
-real(rl):: zi(nlevp), zm(nlev)                                            ! z coordinates
+real(rl), dimension(:,:,:,:), allocatable :: u0, v0                     ! storage for dcmip2-x sponge layer
+real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
+real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 
 contains
 
 !_____________________________________________________________________
-subroutine get_evenly_spaced_z(zi,zm, zb,zt)
+subroutine dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
 
-  real(rl), intent(in)    :: zb,zt      ! top and bottom coordinates
-  real(rl), intent(inout) :: zi(nlevp)  ! z at interfaces
-  real(rl), intent(inout) :: zm(nlev)   ! z at midpoints
-  integer :: k
+  ! 3d deformational flow
 
-  forall(k=1:nlevp) zi(k) = zt-(k-1)*(zt-zb)/(nlevp-1)
-  zm = 0.5_rl*( zi(2:nlevp) + zi(1:nlev) )
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  real(rl),           intent(in)            :: time                     ! current time
+  integer,            intent(in)            :: n0,n1                    ! time level indices
 
-end subroutine
+  logical ::  initialized = .false.
 
-!_____________________________________________________________________
-subroutine set_hybrid_coefficients(hv, hybrid, eta_t, c)
+  integer,  parameter :: zcoords = 0                                    ! we are not using z coords
+  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
+  real(rl), parameter ::      &
+      T0      = 300.d0,       &                                         ! temperature (K)
+      ztop    = 12000.d0,     &                                         ! model top (m)
+      H       = Rd * T0 / g                                             ! scale height
 
-  type(hvcoord_t),    intent(inout) :: hv       ! hybrid vertical coordinate stucture
-  type(hybrid_t),     intent(in)    :: hybrid   ! hybrid parallal structure
-  real(rl),           intent(in)    :: eta_t    ! top eta level
-  real(rl),           intent(in)    :: c        ! exponent
+  integer :: i,j,k,ie                                                   ! loop indices
+  real(rl):: lon,lat                                                    ! pointwise coordiantes
+  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(4),dp,eta_dot,dp_dn       ! pointwise field values
 
-  real(rl)  :: eta_c, tmp
-  integer   :: k
+  ! set analytic vertical coordinates at t=0
+  if(.not. initialized) then
+    if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 1-1: 3d deformational flow'
+    call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                        ! get evenly spaced z levels
+    hvcoord%etai  = exp(-zi/H)                                          ! set eta levels from z
+    call set_hybrid_coefficients(hvcoord,hybrid, hvcoord%etai(1),1.0_rl)! set hybrid A and B from eta levels
+    call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+    initialized = .true.
+  endif
 
-  ! place cutoff halfway between bottom and top eta coordiantes
-  eta_c = hv%etai(nlev/2)
+  ! set prescribed state at level midpoints
+  do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
+      lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
+      z = H * log(1.0d0/hvcoord%etam(k))
+      p = p0 * hvcoord%etam(k)
+      call test1_advection_deformation(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2),q(3),q(4))
 
-  do k=1,nlevp
-    tmp        = max( (hv%etai(k)-eta_c)/(1.0-eta_c), 0.0_rl)
-    hv%hybi(k) = tmp**c
-    hv%hyai(k) = hv%etai(k) - hv%hybi(k)
-    if(hybrid%par%masterproc) print *,k,': etai = ',hv%etai(k),' Ai = ',hv%hyai(k),' Bi = ',hv%hybi(k);
-  enddo
+      dp = pressure_thickness(ps,k,hvcoord)
+      call set_state(u,v,T,ps,phis,dp,zm(k), i,j,k,elem(ie),n0,n1)
+      if(time==0) call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
 
-  hv%hyam = 0.5_rl *(hv%hyai(2:nlev+1) + hv%hyai(1:nlev))
-  hv%hybm = 0.5_rl *(hv%hybi(2:nlev+1) + hv%hybi(1:nlev))
-  hv%etam = hv%hyam + hv%hybm
+  enddo; enddo; enddo; enddo
 
-end subroutine
+  ! set prescribed state at level interfaces
+  do ie = nets,nete; do k=1,nlevp; do j=1,np; do i=1,np
+      lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
+      z = H  * log(1.0d0/hvcoord%etai(k))
+      p = p0 * hvcoord%etai(k)
+      call test1_advection_deformation(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2),q(3),q(4))
 
-!_____________________________________________________________________
-subroutine get_coordinates(lat,lon,hyam,hybm, i,j,k,elem,hvcoord)
+      ! get vertical derivative of p at point i,j,k
+      dp_dn = ddn_hyai(k)*p0 + ddn_hybi(k)*ps
 
-  real(rl),         intent(out):: lon,lat,hyam,hybm
-  integer,          intent(in) :: i,j,k
-  type(element_t),  intent(in) :: elem
-  type(hvcoord_t),  intent(in) :: hvcoord
+      ! get vertical eta velocity at point i,j,k
+      eta_dot = -g*rho*w/p0
 
-  ! get horizontal coordinates at column i,j
-  lon  = elem%spherep(i,j)%lon
-  lat  = elem%spherep(i,j)%lat
+      ! store vertical mass flux
+      elem(ie)%derived%eta_dot_dpdn(i,j,k) = eta_dot * dp_dn
 
-  ! get hybrid coeffiecients at midpoint of vertical level k
-  hyam = hvcoord%hyam(k)
-  hybm = hvcoord%hybm(k)
-
-end subroutine
-
-!_____________________________________________________________________
-subroutine set_element_state(u,v,T,ps,phis,q, i,j,k,elem,hvcoord)
-
-  ! set element state variables at node i,j,k
-
-  real(rl),         intent(in)    :: u,v,T,ps,phis,q
-  integer,          intent(in)    :: i,j,k
-  type(element_t),  intent(inout) :: elem
-  type(hvcoord_t),  intent(in)    :: hvcoord
-
-  real(rl):: p_np1, p_n, dp                                             ! pressure thickness
-
-  ! get pressure level thickness
-  p_np1 = hvcoord%hyai(k+1)*p0 + hvcoord%hybi(k+1)*ps
-  p_n   = hvcoord%hyai(k  )*p0 + hvcoord%hybi(k  )*ps
-  dp = p_np1-p_n
-
-  ! set prognostic state variables at level midpoints
-  elem%state%v   (i,j,1,k,:) = u
-  elem%state%v   (i,j,2,k,:) = v
-  elem%state%T   (i,j,k,:)   = T
-  elem%state%dp3d(i,j,k,:)   = dp
-  elem%state%ps_v(i,j,:)     = ps
-  elem%state%phis(i,j)       = phis
-  elem%state%Q   (i,j,k,1)   = q
-  elem%state%Qdp (i,j,k,1,:) = q*dp
-
-  ! set some diagnostic variables
-  elem%derived%omega_p(i,j,k)      = 0.0d0
-  elem%derived%eta_dot_dpdn(i,j,k) = 0.0d0
-  elem%derived%dp(i,j,k)           = dp
+  enddo; enddo; enddo; enddo
 
 end subroutine
 
@@ -134,7 +112,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
 
   integer,  parameter :: zcoords = 0                                    ! we are not using z coords
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
-   real(8), parameter ::      &
+  real(rl), parameter ::      &
       T0      = 300.d0,       &                                         ! temperature (K)
       gamma   = 0.0065d0,     &                                         ! temperature lapse rate (K/m)
       ztop    = 12000.d0,     &                                         ! model top (m)
@@ -142,7 +120,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q          ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-0: steady state atmosphere with orography'
 
@@ -155,8 +133,10 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
   ! set initial conditions
   do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-    call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,phis,ps,rho,q)
-    call set_element_state(u,v,T,ps,phis,q, i,j,k,elem(ie),hvcoord)
+    call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,phis,ps,rho,q(1))
+    dp = pressure_thickness(ps,k,hvcoord)
+    call set_state(u,v,T,ps,phis,dp,zm(k), i,j,k,elem(ie),1,nt)
+    call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
   enddo; enddo; enddo; enddo
 
 end subroutine
@@ -174,14 +154,14 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
 
   integer,  parameter :: zcoords = 0                                    ! we are not using z coords
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
-  real(8),  parameter ::   &
+  real(rl), parameter ::   &
       Teq     = 300.d0,    &                                            ! temperature at equator
       ztop    = 30000.d0,	 &                                            ! model top (m)
       H       = Rd*Teq/g                                                ! characteristic height scale
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q          ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-x: steady state atmosphere with orography'
 
@@ -194,8 +174,10 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
   ! set initial conditions
   do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-    call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,shear,u,v,w,T,phis,ps,rho,q)
-    call set_element_state(u,v,T,ps,phis,q, i,j,k,elem(ie),hvcoord)
+    call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,shear,u,v,w,T,phis,ps,rho,q(1))
+    dp = pressure_thickness(ps,k,hvcoord)
+    call set_state(u,v,T,ps,phis,dp,zm(k), i,j,k,elem(ie),1,nt)
+    call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
   enddo; enddo; enddo; enddo
 
   ! store initial velocity fields for use in sponge layer
@@ -221,7 +203,7 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
 
   integer :: ie, k
 
-  real(8), parameter ::   &
+  real(rl), parameter ::  &
     tau     = 25.0,       &   ! rayleigh function relaxation time
     ztop    = 30000.d0,		&   ! model top
     zh      = 20000.d0        ! sponge-layer cutoff height
@@ -267,8 +249,7 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q          ! pointwise field values
-  real(rl):: p_np1, p_n, dp                                             ! pressure thickness
+  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 3-0: nonhydrostatic gravity waves'
 
@@ -281,11 +262,136 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
   ! set initial conditions
   do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-    call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q)
-    call set_element_state(u,v,T,ps,phis,q, i,j,k,elem(ie),hvcoord)
+    call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
+    dp = pressure_thickness(ps,k,hvcoord)
+    call set_state(u,v,T,ps,phis,dp,zm(k), i,j,k,elem(ie),1,nt)
+    call set_tracers(q,1, dp,i,j,k,lat,lon,elem(ie))
   enddo; enddo; enddo; enddo
 
 end subroutine
 
+!_____________________________________________________________________
+subroutine get_evenly_spaced_z(zi,zm, zb,zt)
+
+  real(rl), intent(in)    :: zb,zt      ! top and bottom coordinates
+  real(rl), intent(inout) :: zi(nlevp)  ! z at interfaces
+  real(rl), intent(inout) :: zm(nlev)   ! z at midpoints
+  integer :: k
+
+  forall(k=1:nlevp) zi(k) = zt-(k-1)*(zt-zb)/(nlevp-1)
+  zm = 0.5_rl*( zi(2:nlevp) + zi(1:nlev) )
+
+end subroutine
+
+!_____________________________________________________________________
+subroutine set_hybrid_coefficients(hv, hybrid, eta_t, c)
+
+  ! create an analytical set of A,B coefficients, given known eta levels
+
+  type(hvcoord_t),    intent(inout) :: hv       ! hybrid vertical coordinate stucture
+  type(hybrid_t),     intent(in)    :: hybrid   ! hybrid parallal structure
+  real(rl),           intent(in)    :: eta_t    ! top eta level
+  real(rl),           intent(in)    :: c        ! exponent
+
+  real(rl)  :: eta_c, tmp
+  integer   :: k
+
+  ! place cutoff halfway between bottom and top eta coordiantes
+  eta_c = hv%etai(nlev/2)
+
+  do k=1,nlevp
+    ! get values of hybrid coefficients
+    tmp        = max( (hv%etai(k)-eta_c)/(1.0-eta_c), 0.0_rl)
+    hv%hybi(k) = tmp**c
+    hv%hyai(k) = hv%etai(k) - hv%hybi(k)
+    if(hybrid%par%masterproc) print *,k,': etai = ',hv%etai(k),' Ai = ',hv%hyai(k),' Bi = ',hv%hybi(k);
+
+    ! get derivatives of hybrid coefficients
+    ddn_hybi(k) = c*tmp**(c-1)
+    if(hv%etai(k)>eta_c) ddn_hybi(k)=0.0d0
+    ddn_hyai(k) = 1.0d0 - ddn_hybi(k)
+  enddo
+
+  hv%hyam = 0.5_rl *(hv%hyai(2:nlev+1) + hv%hyai(1:nlev))
+  hv%hybm = 0.5_rl *(hv%hybi(2:nlev+1) + hv%hybi(1:nlev))
+  hv%etam = hv%hyam + hv%hybm
+
+end subroutine
+
+!_____________________________________________________________________
+subroutine get_coordinates(lat,lon,hyam,hybm, i,j,k,elem,hvcoord)
+
+  ! get lat,lon, vertical coords at node(i,j,k)
+
+  real(rl),         intent(out):: lon,lat,hyam,hybm
+  integer,          intent(in) :: i,j,k
+  type(element_t),  intent(in) :: elem
+  type(hvcoord_t),  intent(in) :: hvcoord
+
+  ! get horizontal coordinates at column i,j
+  lon  = elem%spherep(i,j)%lon
+  lat  = elem%spherep(i,j)%lat
+
+  ! get hybrid coeffiecients at midpoint of vertical level k
+  hyam = hvcoord%hyam(k)
+  hybm = hvcoord%hybm(k)
+
+end subroutine
+
+!_____________________________________________________________________
+real(rl) function pressure_thickness(ps,k,hv)
+
+  real(rl),         intent(in) :: ps
+  integer,          intent(in) :: k
+  type(hvcoord_t),  intent(in) :: hv
+  pressure_thickness = (hv%hyai(k+1)-hv%hyai(k))*p0 + (hv%hybi(k+1)-hv%hybi(k))*ps
+
+end function
+
+!_____________________________________________________________________
+subroutine set_state(u,v,T,ps,phis,dp,zm, i,j,k,elem,n0,n1)
+
+  ! set state variables at node(i,j,k) at layer midpoints
+
+  real(rl),         intent(in)    :: u,v,T,ps,phis,dp,zm
+  integer,          intent(in)    :: i,j,k,n0,n1
+  type(element_t),  intent(inout) :: elem
+
+  ! set prognostic state variables at level midpoints
+  elem%state%v   (i,j,1,k,n0:n1) = u
+  elem%state%v   (i,j,2,k,n0:n1) = v
+  elem%state%T   (i,j,k,n0:n1)   = T
+  elem%state%dp3d(i,j,k,n0:n1)   = dp
+  elem%state%ps_v(i,j,n0:n1)     = ps
+  elem%state%phis(i,j)           = phis
+
+  ! set some diagnostic variables
+  elem%derived%dp(i,j,k)         = dp
+  elem%derived%phi(i,j,k)        = g*zm
+
+end subroutine
+
+!_____________________________________________________________________
+subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
+
+  ! set tracer values at node(i,j,k)
+
+  real(rl),         intent(in)    :: q(nq), dp, lat, lon
+  integer,          intent(in)    :: i,j,k,nq
+  type(element_t),  intent(inout) :: elem
+
+  real(rl), parameter :: wl = 1.0 ! checkerboard wavelength in dg
+  integer :: qi
+
+  ! set known tracers to q and the rest to a checkerboard pattern
+  elem%state%Q(i,j,k,:)    = 0.5d0*(1.0d0+sign(1.0d0,sin(lat*360.0/wl)*sin(lon*360.0/wl)))
+  elem%state%Q(i,j,k,1:nq) = q
+
+  ! compute tracer mass qdp from mixing ratio q
+  do qi = 1,qsize_d
+    elem%state%Qdp (i,j,k,qi,:) = q(qi)*dp
+  enddo
+
+end subroutine
 end module dcmip_tests
 #endif
