@@ -16,7 +16,7 @@ use time_mod,       only: timelevel_t, time_at
 ! test case routines
 use asp_tests,            only: asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave
 use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
-use dcmip_tests,          only: dcmip2012_test1_1, dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3
+use dcmip_tests,          only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3
 use held_suarez_mod,      only: hs0_init_state
 
 implicit none
@@ -45,7 +45,7 @@ subroutine set_test_initial_conditions(elem, hybrid, hvcoord, tl, nets, nete, fv
     case('asp_tracer');         call asp_tracer       (elem, hybrid,hvcoord,nets,nete)
     case('baroclinic');         call binst_init_state (elem, hybrid, nets, nete, hvcoord)
     case('dcmip2012_test1_1');  call dcmip2012_test1_1(elem, hybrid,hvcoord,nets,nete,0.0d0,1,nt)
-    !case('dcmip2012_test1_2'); call dcmip2012_test1_2(elem, hybrid,hvcoord,nets,nete,0.0d0,1,nt)
+    case('dcmip2012_test1_2');  call dcmip2012_test1_2(elem, hybrid,hvcoord,nets,nete,0.0d0,1,nt)
     !case('dcmip2012_test1_3'); call dcmip2012_test1_3(elem, hybrid,hvcoord,nets,nete,0.0d0,1,nt)
     case('dcmip2012_test2_0');  call dcmip2012_test2_0(elem, hybrid,hvcoord,nets,nete)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x(elem, hybrid,hvcoord,nets,nete,0)
@@ -94,7 +94,7 @@ subroutine set_test_prescribed_wind(elem, hybrid, hvcoord, dt, tl, nets, nete)
   ! set prescribed quantities
   select case(test_case)
     case('dcmip2012_test1_1'); call dcmip2012_test1_1(elem, hybrid,hvcoord,nets,nete,time,np1,np1)
-    !case('dcmip2012_test1_2'); call dcmip2012_test1_2(elem, hybrid,hvcoord,nets,nete,time,np1,np1)
+    case('dcmip2012_test1_2'); call dcmip2012_test1_2(elem, hybrid,hvcoord,nets,nete,time,np1,np1)
     !case('dcmip2012_test1_3'); call dcmip2012_test1_3(elem, hybrid,hvcoord,nets,nete,time,np1,np1)
   endselect
 
