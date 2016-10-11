@@ -51,10 +51,6 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_vorticity
    real (kind=RKIND), allocatable, dimension(:,:) :: dpdz
 
-   ! Used in advance_acoustic_step
-   real (kind=RKIND), allocatable, dimension(:,:) :: ts, rs
-!   real (kind=RKIND), allocatable, dimension(:,:) :: drthetadz
-
    ! Used in atm_advance_scalars
    real (kind=RKIND), dimension(:,:,:), allocatable :: horiz_flux_array
 
@@ -272,6 +268,8 @@ module atm_time_integration
       call mpas_pool_get_dimension(state, 'nCells', nCells)
       call mpas_pool_get_dimension(state, 'nEdges', nEdges)
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+
+      allocate(qtot(nVertLevels,nCells+1))
       allocate(tend_rtheta_physics(nVertLevels,nCells+1))
       allocate(tend_ru_physics(nVertLevels,nEdges+1))
 
@@ -368,11 +366,6 @@ module atm_time_integration
          ! mesh is needed for atm_compute_moist_coefficients
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
 
-         call mpas_pool_get_dimension(state, 'nCells', nCells)
-         call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
-
-         allocate(qtot(nVertLevels,nCells+1))  ! new allocation of qtot
-
 !$OMP PARALLEL DO
          do thread=1,block % nThreads
             call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh, &     !MGD could do away with dimensions arg
@@ -390,60 +383,60 @@ module atm_time_integration
       call mpas_timer_stop('atm_compute_moist_coefficients')
 
 #ifdef DO_PHYSICS
-            call mpas_timer_start('physics_addtend')
-            block => domain % blocklist
-            do while (associated(block))
-               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-               call mpas_pool_get_subpool(block % structs, 'state', state)
-               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
-               rk_step = 1
-               dynamics_substep = 1
-               call physics_get_tend( block, &
-                                       mesh, &
-                                      state, &     
-                                       diag, &
-                                       tend, &
-                               tend_physics, &
-                            block % configs, &
-                                    rk_step, &
-                           dynamics_substep, &
-                            tend_ru_physics, &
-                        tend_rtheta_physics )
-               block => block % next
-            end do
-            call mpas_timer_stop('physics_addtend')
+      call mpas_timer_start('physics_addtend')
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+         call mpas_pool_get_subpool(block % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block % structs, 'tend', tend)
+         call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
+         rk_step = 1
+         dynamics_substep = 1
+         call physics_get_tend( block, &
+                                 mesh, &
+                                state, &     
+                                 diag, &
+                                 tend, &
+                         tend_physics, &
+                      block % configs, &
+                              rk_step, &
+                     dynamics_substep, &
+                      tend_ru_physics, &
+                  tend_rtheta_physics )
+         block => block % next
+      end do
+      call mpas_timer_stop('physics_addtend')
 #endif
 
 
-            DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
+      DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
-            !  Compute the coefficients for the vertically implicit solve in the acoustic step.
-            !  These coefficients will work for the first acoustic step in all cases.
-            call mpas_timer_start('atm_compute_vert_imp_coefs')
-            block => domain % blocklist
-            do while (associated(block))
-               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-               call mpas_pool_get_subpool(block % structs, 'state', state)
-               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-   
-               call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+         !  Compute the coefficients for the vertically implicit solve in the acoustic step.
+         !  These coefficients will work for the first acoustic step in all cases.
+         call mpas_timer_start('atm_compute_vert_imp_coefs')
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'tend', tend)
 
-               rk_step = 1
+            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+            rk_step = 1
 !$OMP PARALLEL DO
-               do thread=1,block % nThreads
-                  call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
-               end do
-!$OMP END PARALLEL DO
-               block => block % next
+            do thread=1,block % nThreads
+               call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
+                                          block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                          block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
+                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
+                                          block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
             end do
-            call mpas_timer_stop('atm_compute_vert_imp_coefs')
+!$OMP END PARALLEL DO
+            block => block % next
+         end do
+         call mpas_timer_stop('atm_compute_vert_imp_coefs')
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -699,11 +692,6 @@ MPAS_GPTL_STOP('dyn_tend')
                   call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
-! Would be more efficient to allocate these outside the acoustic loop...
-                  allocate(ts(nVertLevels,nCells+1))
-                  allocate(rs(nVertLevels,nCells+1))
-!                  allocate(drthetadz(nVertLevels,nCells+1))
-
 !$OMP PARALLEL DO
                   do thread=1,block % nThreads
                      call atm_advance_acoustic_step( state, diag, tend,  mesh, block % configs, nCells, nVertLevels, &
@@ -716,10 +704,6 @@ MPAS_GPTL_STOP('dyn_tend')
                                              block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
                   end do
 !$OMP END PARALLEL DO
-
-                  deallocate(ts)
-                  deallocate(rs)
-!                  deallocate(drthetadz)
 
                   block => block % next
                end do
@@ -1755,7 +1739,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
       integer, pointer :: nCells, nEdges, nCellsSolve
-      real (kind=RKIND), pointer :: coef_3rd_order
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
@@ -1769,11 +1752,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(:,:), pointer :: rw_p, rw_save, rw
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
-
       integer, dimension(:), pointer :: bdyMaskCell  ! regional_MPAS
-
-
-      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
@@ -1817,7 +1796,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
       call mpas_pool_get_array(diag, 'rw', rw)
 
-      call atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, coef_3rd_order, &
+      call atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
                                    rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, &
@@ -1830,7 +1809,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
    end subroutine atm_set_smlstep_pert_variables
 
 
-   subroutine atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, coef_3rd_order, &
+   subroutine atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
                                    rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, &
@@ -1848,7 +1827,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       ! Dummy arguments
       !
       integer, intent(in) :: nCells, nEdges, nCellsSolve
-      real (kind=RKIND), intent(in) :: coef_3rd_order
 
       integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
@@ -1906,7 +1884,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             do k = 2, nVertLevels
                flux = edgesOnCell_sign(i,iCell) * (fzm(k) * u_tend(k,iEdge) + fzp(k) * u_tend(k-1,iEdge))
                w_tend(k,iCell) = w_tend(k,iCell)   &
-                        - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux
+                        - (zb_cell(k,i,iCell) + sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux
             end do
          end do
 !DIR$ IVDEP
@@ -1963,7 +1941,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, rdzw, dcEdge, invDcEdge, invAreaCell, cofrz, dvEdge
 
-      real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
       integer, dimension(:), pointer :: nEdgesOnCell
       real (kind=RKIND), dimension(:), pointer :: specZoneMaskCell, specZoneMaskEdge
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
@@ -2009,8 +1986,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(diag, 'gamma_tri', gamma_tri)
 
       call mpas_pool_get_array(mesh, 'dss', dss)
-      call mpas_pool_get_array(mesh, 'pzp', pzp)
-      call mpas_pool_get_array(mesh, 'pzm', pzm)
 
       call mpas_pool_get_array(tend, 'u', tend_ru)
       call mpas_pool_get_array(tend, 'rho_zz', tend_rho)
@@ -2053,7 +2028,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
-                                   invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
+                                   invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
                                    dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3, &
                                    specZoneMaskEdge, specZoneMaskCell &
                                    )
@@ -2066,7 +2041,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
-                                   invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
+                                   invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
                                    dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3, &
                                    specZoneMaskEdge, specZoneMaskCell &
                                    )
@@ -2128,9 +2103,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(nVertLevels) :: cofrz
       real (kind=RKIND), dimension(nEdges+1) :: dvEdge
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzp
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzm
-
       integer, dimension(nCells+1) :: nEdgesOnCell
       integer, dimension(2,nEdges+1) :: cellsOnEdge
       integer, dimension(maxEdges,nCells+1) :: edgesOnCell
@@ -2142,6 +2114,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
       integer, intent(in) :: small_step
       real (kind=RKIND), intent(in) :: dts, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3
+      real (kind=RKIND), dimension(nVertLevels) :: ts, rs
 
   
       !
@@ -2239,18 +2212,27 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !$OMP BARRIER
 
+      if (small_step == 1) then  ! initialize here on first small timestep.
+         do iCell=cellStart,cellEnd
+            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+         end do
+      end if
+
+!!!OMP BARRIER -- not needed, since zz_rtheta_pp_old not used below when small_step == 1
+
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
 
          if(specZoneMaskCell(iCell) == 0.0) then  ! not specified zone, compute...
 
-         ts(:,iCell) = 0.0
-         rs(:,iCell) = 0.0
+         ts(:) = 0.0
+         rs(:) = 0.0
 
          if(small_step == 1) then  ! initialize here on first small timestep.
             wwAvg(1:nVertLevels+1,iCell) = 0.0            
             rho_pp(1:nVertLevels,iCell) = 0.0            
             rtheta_pp(1:nVertLevels,iCell) = 0.0            
-            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+!MGD moved to loop above over all cells
+!            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
             rw_p(:,iCell) = 0.0
             divergence_3d(1:nVertLevels,iCell) = 0.
          else  ! reset rtheta_pp to input value;
@@ -2267,8 +2249,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 !DIR$ IVDEP
             do k=1,nVertLevels
                flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge) * invAreaCell(iCell)
-               rs(k,iCell) = rs(k,iCell)-flux
-               ts(k,iCell) = ts(k,iCell)-flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
+               rs(k) = rs(k)-flux
+               ts(k) = ts(k)-flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
             end do
          end do
 
@@ -2278,9 +2260,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !DIR$ IVDEP
          do k=1, nVertLevels
-            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
+            rs(k) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k)                  &
                             - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell)) 
-            ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
+            ts(k) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k)                &
                                - resm*rdzw(k)*( coftz(k+1,iCell)*rw_p(k+1,iCell)     &
                                                -coftz(k,iCell)*rw_p(k,iCell))
          end do
@@ -2293,14 +2275,14 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 !DIR$ IVDEP
          do k=2, nVertLevels
             rw_p(k,iCell) = rw_p(k,iCell) +  dts*tend_rw(k,iCell)                       &
-                       - cofwz(k,iCell)*((zz(k  ,iCell)*ts (k  ,iCell)                  &
-                                     -zz(k-1,iCell)*ts (k-1,iCell))                     &
+                       - cofwz(k,iCell)*((zz(k  ,iCell)*ts(k)                           &
+                                     -zz(k-1,iCell)*ts(k-1))                            &
                                +resm*(zz(k  ,iCell)*rtheta_pp(k  ,iCell)                &
                                      -zz(k-1,iCell)*rtheta_pp(k-1,iCell)))              &
-                       - cofwr(k,iCell)*((rs (k,iCell)+rs (k-1,iCell))                  &
+                       - cofwr(k,iCell)*((rs(k)+rs(k-1))                                &
                                +resm*(rho_pp(k,iCell)+rho_pp(k-1,iCell)))               &
-                       + cofwt(k  ,iCell)*(ts (k  ,iCell)+resm*rtheta_pp(k  ,iCell))    &
-                       + cofwt(k-1,iCell)*(ts (k-1,iCell)+resm*rtheta_pp(k-1,iCell))
+                       + cofwt(k  ,iCell)*(ts(k  )+resm*rtheta_pp(k  ,iCell))           &
+                       + cofwt(k-1,iCell)*(ts(k-1)+resm*rtheta_pp(k-1,iCell))
          end do
 
          ! tridiagonal solve sweeping up and then down the column
@@ -2336,8 +2318,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !DIR$ IVDEP
          do k=1,nVertLevels
-            rho_pp(k,iCell) = rs(k,iCell) - cofrz(k) *(rw_p(k+1,iCell)-rw_p(k  ,iCell))
-            rtheta_pp(k,iCell) = ts(k,iCell) - rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)  &
+            rho_pp(k,iCell) = rs(k) - cofrz(k) *(rw_p(k+1,iCell)-rw_p(k  ,iCell))
+            rtheta_pp(k,iCell) = ts(k) - rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)  &
                                -coftz(k  ,iCell)*rw_p(k  ,iCell))
             divergence_3d(k,iCell) = (rho_pp(k,iCell) - divergence_3d(k,iCell))*rdts
          end do
@@ -2394,7 +2376,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       integer :: i, iCell, iEdge, k, cell1, cell2
       integer, pointer :: nVertLevels, nCells, nCellsSolve, nEdges, nEdgesSolve
       real (kind=RKIND) :: invNs, rcv, p0, flux
-      real (kind=RKIND), pointer :: cf1, cf2, cf3, coef_3rd_order
+      real (kind=RKIND), pointer :: cf1, cf2, cf3
 
       integer, dimension(:), pointer :: bdyMaskCell  ! MPAS_regional addition
 
@@ -2454,14 +2436,13 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(mesh, 'cf2', cf2)
       call mpas_pool_get_array(mesh, 'cf3', cf3)
 
-      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
 
       call atm_recover_large_step_variables_work(nCells, nEdges, nCellsSolve, nEdgesSolve, dt, ns, rk_step, &
                              wwAvg, rw_save, w, rw, rw_p, rtheta_p, rtheta_pp, rtheta_p_save, rt_diabatic_tend, rho_p, &
                              rho_p_save, rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, exner, exner_base, &
                              rtheta_base, pressure_p, zz, theta_m, pressure_b, scalars, fzm, fzp, &
                              zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
-                             cf1, cf2, cf3, coef_3rd_order, &
+                             cf1, cf2, cf3, &
                              bdyMaskCell, &  !  addition for regional_MPAS
                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
@@ -2474,7 +2455,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                              rho_p_save, rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, exner, exner_base, &
                              rtheta_base, pressure_p, zz, theta_m, pressure_b, scalars, fzm, fzp, &
                              zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
-                             cf1, cf2, cf3, coef_3rd_order, &
+                             cf1, cf2, cf3, &
                              bdyMaskCell, &  ! addition for regional_MPAS
                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
@@ -2531,7 +2512,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       integer, dimension(maxEdges,nCells+1) :: edgesOnCell
       integer, dimension(nCells+1) :: nEdgesOnCell
 
-      real (kind=RKIND) :: cf1, cf2, cf3, coef_3rd_order
+      real (kind=RKIND) :: cf1, cf2, cf3
 
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
@@ -2636,13 +2617,13 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
             flux = (cf1*ru(1,iEdge) + cf2*ru(2,iEdge) + cf3*ru(3,iEdge))
             w(1,iCell) = w(1,iCell) + edgesOnCell_sign(i,iCell) * &
-                                   (zb_cell(1,i,iCell) + sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(1,i,iCell))*flux
+                                   (zb_cell(1,i,iCell) + sign(1.0_RKIND,flux)*zb3_cell(1,i,iCell))*flux
 
 !DIR$ IVDEP
             do k = 2, nVertLevels
                flux = (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
                w(k,iCell) = w(k,iCell) + edgesOnCell_sign(i,iCell) * &
-                                    (zb_cell(k,i,iCell)+sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(k,i,iCell))*flux
+                                    (zb_cell(k,i,iCell)+sign(1.0_RKIND,flux)*zb3_cell(k,i,iCell))*flux
             end do
 
          end do
@@ -2925,7 +2906,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             do j=1,10
 !DIR$ IVDEP
                do k=1,nVertLevels
-                  scalar_weight2(k,j) = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
+                  scalar_weight2(k,j) = adv_coefs(j,iEdge) + sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
                end do
             end do
             do j=1,10
@@ -2956,7 +2937,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                iAdvCell = advCellsForEdge(j,iEdge)
 !DIR$ IVDEP
                do k=1,nVertLevels
-                  scalar_weight = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)   ! Assume coef_3rd_order always >= 0
+                  scalar_weight = adv_coefs(j,iEdge) + sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
 !DIR$ IVDEP
                   do iScalar=1,num_scalars
                      horiz_flux_arr(iScalar,k,iEdge) = horiz_flux_arr(iScalar,k,iEdge) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
@@ -3215,7 +3196,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             do j=1,10
 !DIR$ IVDEP
                do k=1,nVertLevels
-                  scalar_weight2(k,j) = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
+                  scalar_weight2(k,j) = adv_coefs(j,iEdge) + sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
                end do
             end do
             do j=1,10
@@ -3246,7 +3227,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                iAdvCell = advCellsForEdge(j,iEdge)
 !DIR$ IVDEP
                do k=1,nVertLevels
-                  scalar_weight = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)   ! Assume coef_3rd_order always >= 0
+                  scalar_weight = adv_coefs(j,iEdge) + sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
 !DIR$ IVDEP
                   do iScalar=1,num_scalars
                      horiz_flux_arr(iScalar,k,iEdge) = horiz_flux_arr(iScalar,k,iEdge) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
@@ -3746,15 +3727,14 @@ MPAS_GPTL_STOP('mono_exch_1')
             if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
   
                ! speclal treatment of calculations involving edges between hexagonal cells
-               ! also took advantage of fact that coef_3rd_order is never negative
                ! original code retained in select "default" case
                ! be sure to see additional declarations near top of subroutine
                select case(nAdvCellsForEdge(iEdge))
                case(10)
                   do jj=1,10
                      ica(jj)    = advCellsForEdge(jj,iEdge)
-                     swa(jj,1)  = adv_coefs(jj,iEdge)   + coef_3rd_order*adv_coefs_3rd(jj,iEdge)
-                     swa(jj,2)  = adv_coefs(jj,iEdge)   - coef_3rd_order*adv_coefs_3rd(jj,iEdge)
+                     swa(jj,1)  = adv_coefs(jj,iEdge) + adv_coefs_3rd(jj,iEdge)
+                     swa(jj,2)  = adv_coefs(jj,iEdge) - adv_coefs_3rd(jj,iEdge)
                   enddo
                   do k=1,nVertLevels
                      ii = merge(1, 2, uhAvg(k,iEdge) > 0)
@@ -3774,7 +3754,7 @@ MPAS_GPTL_STOP('mono_exch_1')
                      iCell = advCellsForEdge(i,iEdge)
 !DIR$ IVDEP
                      do k=1,nVertLevels
-                        scalar_weight = uhAvg(k,iEdge)*(adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge))
+                        scalar_weight = uhAvg(k,iEdge)*(adv_coefs(i,iEdge) + sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge))
                         flux_arr(k,iEdge) = flux_arr(k,iEdge) + scalar_weight* scalar_new(k,iCell)
                      end do
                   end do
@@ -4101,8 +4081,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), dimension(:), pointer :: rdzu, rdzw, fzm, fzp, qv_init
       real (kind=RKIND), dimension(:,:), pointer :: t_init 
 
-      real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
-
       real (kind=RKIND), pointer :: cf1, cf2, cf3
 
       real (kind=RKIND), pointer :: r_earth
@@ -4120,6 +4098,10 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc4
       real (kind=RKIND), pointer :: config_visc4_2dsmag
       real (kind=RKIND), pointer :: config_len_disp
+      real (kind=RKIND), pointer :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2
+      real (kind=RKIND), pointer :: config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
+
+      logical :: inactive_rthdynten
 
 
       call mpas_pool_get_config(mesh, 'sphere_radius', r_earth)
@@ -4129,6 +4111,10 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_config(configs, 'config_del4u_div_factor', config_del4u_div_factor)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc4', config_h_theta_eddy_visc4)
       call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc4', config_h_mom_eddy_visc4)
+      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', config_h_theta_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc2', config_h_mom_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', config_v_theta_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_mom_eddy_visc2', config_v_mom_eddy_visc2)
       call mpas_pool_get_config(configs, 'config_visc4_2dsmag', config_visc4_2dsmag)
       call mpas_pool_get_config(configs, 'config_len_disp', config_len_disp)
       call mpas_pool_get_config(configs, 'config_smagorinsky_coef', c_s)
@@ -4165,8 +4151,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(diag, 'tend_rtheta_adv', tend_rtheta_adv)
       call mpas_pool_get_array(tend_physics, 'rthdynten', rthdynten)
 
-      call mpas_pool_get_array(mesh, 'pzp', pzp)
-      call mpas_pool_get_array(mesh, 'pzm', pzm)
       call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
@@ -4241,6 +4225,17 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(mesh, 'cf2', cf2)
       call mpas_pool_get_array(mesh, 'cf3', cf3)
 
+      !
+      ! rthdynten is currently associated with packages, and if those packages
+      ! are not active at run-time, we need to produce an rthdynten array for
+      ! use in the atm_compute_dyn_tend_work routine
+      !
+      inactive_rthdynten = .false.
+      if (.not. associated(rthdynten)) then
+         allocate(rthdynten(nVertLevels,nCells+1))
+         inactive_rthdynten = .true.
+      end if
+
       call atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels, &
          nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, num_scalars, moist_start, moist_end, &
          fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
@@ -4251,13 +4246,17 @@ MPAS_GPTL_STOP('mono_exch_2')
          theta_m_save, exner, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
          cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
          latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
-         rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
+         rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
          tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+         config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
          config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
          tend_rtheta_adv, rthdynten, &
          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
+      if (inactive_rthdynten) then
+         deallocate(rthdynten)
+      end if
 
    end subroutine atm_compute_dyn_tend
 
@@ -4272,8 +4271,9 @@ MPAS_GPTL_STOP('mono_exch_2')
       theta_m_save, exner, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
       cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
       latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
-      rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
+      rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
       tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+      config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
       config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
       tend_rtheta_adv, rthdynten, &
       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -4368,9 +4368,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), dimension(nVertLevels) :: qv_init
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: t_init 
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzp
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzm
-
       real (kind=RKIND) :: cf1, cf2, cf3
       real (kind=RKIND) :: prandtl_inv, r_areaCell, rgas_cprcv
 
@@ -4392,11 +4389,13 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND) :: config_h_mom_eddy_visc4
       real (kind=RKIND) :: config_visc4_2dsmag
       real (kind=RKIND) :: config_len_disp
+      real (kind=RKIND) :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
 
       integer, intent(in) :: rk_step
       real (kind=RKIND), intent(in) :: dt
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv, rthdynten
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rthdynten
 
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
@@ -4410,18 +4409,20 @@ MPAS_GPTL_STOP('mono_exch_2')
       !real (kind=RKIND), parameter :: c_s = 0.125
       real (kind=RKIND), dimension( nVertLevels+1 ) :: d_diag, d_off_diag, flux_arr
       real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
-      real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q
+      real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q, u_mix
       real (kind=RKIND) :: theta_turb_flux, w_turb_flux, r
       real (kind=RKIND) :: scalar_weight
       real (kind=RKIND) :: inv_r_earth
 
       real (kind=RKIND) :: invDt, flux, workpv
       real (kind=RKIND) :: edge_sign, pr_scale, r_dc, r_dv, u_mix_scale
-      real (kind=RKIND) :: h_mom_eddy_visc4
-      real (kind=RKIND) :: h_theta_eddy_visc4
+      real (kind=RKIND) :: h_mom_eddy_visc4, v_mom_eddy_visc2
+      real (kind=RKIND) :: h_theta_eddy_visc4, v_theta_eddy_visc2
       real (kind=RKIND) :: u_diffusion
 
-      real (kind=RKIND) :: kdiffu
+      real (kind=RKIND) :: kdiffu, z1, z2, z3, z4, zm, z0, zp
+
+      
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
@@ -4438,6 +4439,9 @@ MPAS_GPTL_STOP('mono_exch_2')
       invDt = 1.0_RKIND / dt
       inv_r_earth = 1.0_RKIND / r_earth
 
+       v_mom_eddy_visc2   = config_v_mom_eddy_visc2
+       v_theta_eddy_visc2 = config_v_theta_eddy_visc2
+
       if (rk_step == 1) then
 
 !         tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
@@ -4445,28 +4449,37 @@ MPAS_GPTL_STOP('mono_exch_2')
          ! Smagorinsky eddy viscosity, based on horizontal deformation (in this case on model coordinate surfaces).
          ! The integration coefficients were precomputed and stored in defc_a and defc_b
 
-         do iCell = cellStart,cellEnd
-            d_diag(1:nVertLevels) = 0.0
-            d_off_diag(1:nVertLevels) = 0.0
-            do iEdge=1,nEdgesOnCell(iCell)
-               do k=1,nVertLevels
-                  d_diag(k)     = d_diag(k)     + defc_a(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
-                                                - defc_b(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
-                  d_off_diag(k) = d_off_diag(k) + defc_b(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
-                                                + defc_a(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
+         if(config_horiz_mixing == "2d_smagorinsky") then
+            do iCell = cellStart,cellEnd
+               d_diag(1:nVertLevels) = 0.0
+               d_off_diag(1:nVertLevels) = 0.0
+               do iEdge=1,nEdgesOnCell(iCell)
+                  do k=1,nVertLevels
+                     d_diag(k)     = d_diag(k)     + defc_a(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
+                                                   - defc_b(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
+                     d_off_diag(k) = d_off_diag(k) + defc_b(iEdge,iCell)*u(k,EdgesOnCell(iEdge,iCell))  &
+                                                   + defc_a(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
+                  end do
+               end do
+!DIR$ IVDEP
+               do k=1, nVertLevels
+                  ! here is the Smagorinsky formulation, 
+                  ! followed by imposition of an upper bound on the eddy viscosity
+                  kdiff(k,iCell) = min((c_s * config_len_disp)**2 * sqrt(d_diag(k)**2 + d_off_diag(k)**2),(0.01*config_len_disp**2) * invDt)
                end do
             end do
-!DIR$ IVDEP
-            do k=1, nVertLevels
-               ! here is the Smagorinsky formulation, 
-               ! followed by imposition of an upper bound on the eddy viscosity
-               kdiff(k,iCell) = min((c_s * config_len_disp)**2 * sqrt(d_diag(k)**2 + d_off_diag(k)**2),(0.01*config_len_disp**2) * invDt)
-            end do
-         end do
 
-         h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
-         h_theta_eddy_visc4 = h_mom_eddy_visc4
+            h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
+            h_theta_eddy_visc4 = h_mom_eddy_visc4
 
+         else if(config_horiz_mixing == "2d_fixed") then
+
+            kdiff(1:nVertLevels,cellStart:cellEnd) = config_h_theta_eddy_visc2
+            h_mom_eddy_visc4 = config_h_mom_eddy_visc4
+            h_theta_eddy_visc4 = config_h_theta_eddy_visc4
+
+         end if
+            
       end if
 
       ! tendency for density.
@@ -4630,64 +4643,131 @@ MPAS_GPTL_STOP('mono_exch_2')
             end do
          end do
 
+         if (h_mom_eddy_visc4 > 0.0) then  ! 4th order mixing is active
+
 !$OMP BARRIER
 
-         do iVertex=vertexStart,vertexEnd
-            delsq_vorticity(1:nVertLevels,iVertex) = 0.0
-            do i=1,vertexDegree
-               iEdge = edgesOnVertex(i,iVertex)
-               edge_sign = invAreaTriangle(iVertex) * dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
-               do k=1,nVertLevels
-                  delsq_vorticity(k,iVertex) = delsq_vorticity(k,iVertex) + edge_sign * delsq_u(k,iEdge)
+            do iVertex=vertexStart,vertexEnd
+               delsq_vorticity(1:nVertLevels,iVertex) = 0.0
+               do i=1,vertexDegree
+                  iEdge = edgesOnVertex(i,iVertex)
+                  edge_sign = invAreaTriangle(iVertex) * dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
+                  do k=1,nVertLevels
+                     delsq_vorticity(k,iVertex) = delsq_vorticity(k,iVertex) + edge_sign * delsq_u(k,iEdge)
+                  end do
                end do
             end do
-         end do
 
-         do iCell=cellStart,cellEnd
-            delsq_divergence(1:nVertLevels,iCell) = 0.0
-            r = invAreaCell(iCell)
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               edge_sign = r * dvEdge(iEdge) * edgesOnCell_sign(i,iCell)
-               do k=1,nVertLevels
-                  delsq_divergence(k,iCell) = delsq_divergence(k,iCell) + edge_sign * delsq_u(k,iEdge)
+            do iCell=cellStart,cellEnd
+               delsq_divergence(1:nVertLevels,iCell) = 0.0
+               r = invAreaCell(iCell)
+               do i=1,nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i,iCell)
+                  edge_sign = r * dvEdge(iEdge) * edgesOnCell_sign(i,iCell)
+                  do k=1,nVertLevels
+                     delsq_divergence(k,iCell) = delsq_divergence(k,iCell) + edge_sign * delsq_u(k,iEdge)
+                  end do
                end do
             end do
-         end do
 
 
 
          
 !$OMP BARRIER
 
-         do iEdge=edgeSolveStart,edgeSolveEnd
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            vertex1 = verticesOnEdge(1,iEdge)
-            vertex2 = verticesOnEdge(2,iEdge)
+            do iEdge=edgeSolveStart,edgeSolveEnd
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               vertex1 = verticesOnEdge(1,iEdge)
+               vertex2 = verticesOnEdge(2,iEdge)
 
-            u_mix_scale = meshScalingDel4(iEdge)*h_mom_eddy_visc4
-            r_dc = u_mix_scale * config_del4u_div_factor * invDcEdge(iEdge)
-            r_dv = u_mix_scale * min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
+               u_mix_scale = meshScalingDel4(iEdge)*h_mom_eddy_visc4
+               r_dc = u_mix_scale * config_del4u_div_factor * invDcEdge(iEdge)
+               r_dv = u_mix_scale * min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
 
 !DIR$ IVDEP
-            do k=1,nVertLevels
+               do k=1,nVertLevels
 
-               ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
-               !                    only valid for h_mom_eddy_visc4 == constant
-               !
-               ! Here, we scale the diffusion on the divergence part a factor of config_del4u_div_factor 
-               !    relative to the rotational part.  The stability constraint on the divergence component is much less
-               !    stringent than the rotational part, and this flexibility may be useful.
-               !
-               u_diffusion =  rho_edge(k,iEdge) *  ( ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) * r_dc  &
-                                                    -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) * r_dv )
-               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) - u_diffusion
-
-
+                  ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
+                  !                    only valid for h_mom_eddy_visc4 == constant
+                  !
+                  ! Here, we scale the diffusion on the divergence part a factor of config_del4u_div_factor 
+                  !    relative to the rotational part.  The stability constraint on the divergence component is much less
+                  !    stringent than the rotational part, and this flexibility may be useful.
+                  !
+                  u_diffusion =  rho_edge(k,iEdge) *  ( ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) * r_dc  &
+                                                       -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) * r_dv )
+                  tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) - u_diffusion
+                  
+               end do
             end do
-         end do
+         
+         end if ! 4th order mixing is active 
 
+      !
+      !  vertical mixing for u - 2nd order filter in physical (z) space
+      !
+         if ( v_mom_eddy_visc2 > 0.0 ) then
+
+            if (config_mix_full) then  ! mix full state
+
+               do iEdge=edgeSolveStart,edgeSolveEnd
+
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+
+                  do k=2,nVertLevels-1
+
+                     z1 = 0.5*(zgrid(k-1,cell1)+zgrid(k-1,cell2))
+                     z2 = 0.5*(zgrid(k  ,cell1)+zgrid(k  ,cell2))
+                     z3 = 0.5*(zgrid(k+1,cell1)+zgrid(k+1,cell2))
+                     z4 = 0.5*(zgrid(k+2,cell1)+zgrid(k+2,cell2))
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + rho_edge(k,iEdge) * v_mom_eddy_visc2*(  &
+                                        (u(k+1,iEdge)-u(k  ,iEdge))/(zp-z0)                      &
+                                       -(u(k  ,iEdge)-u(k-1,iEdge))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+            else  ! idealized cases where we mix on the perturbation from the initial 1-D state
+
+               do iEdge=edgeSolveStart,edgeSolveEnd
+
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+
+                  do k=1,nVertLevels
+#ifdef ROTATED_GRID
+                     u_mix(k) = u(k,iEdge) - u_init(k) * sin( angleEdge(iEdge) )
+#else
+                     u_mix(k) = u(k,iEdge) - u_init(k) * cos( angleEdge(iEdge) )
+#endif
+                  end do
+
+                  do k=2,nVertLevels-1
+
+                     z1 = 0.5*(zgrid(k-1,cell1)+zgrid(k-1,cell2))
+                     z2 = 0.5*(zgrid(k  ,cell1)+zgrid(k  ,cell2))
+                     z3 = 0.5*(zgrid(k+1,cell1)+zgrid(k+1,cell2))
+                     z4 = 0.5*(zgrid(k+2,cell1)+zgrid(k+2,cell2))
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + rho_edge(k,iEdge) * v_mom_eddy_visc2*(  &
+                                        (u_mix(k+1)-u_mix(k  ))/(zp-z0)                      &
+                                       -(u_mix(k  )-u_mix(k-1))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+            end if  ! mix perturbation state
+
+         end if  ! vertical mixing of horizontal momentum
 
       end if ! (rk_step 1 test for computing mixing terms)
 
@@ -4728,7 +4808,7 @@ MPAS_GPTL_STOP('mono_exch_2')
             do j=1,nAdvCellsForEdge(iEdge)
                iAdvCell = advCellsForEdge(j,iEdge)
                do k=2,nVertLevels
-                  scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order * sign(1.0_RKIND,ru_edge_w(k)) * adv_coefs_3rd(j,iEdge)
+                  scalar_weight = adv_coefs(j,iEdge) + sign(1.0_RKIND,ru_edge_w(k)) * adv_coefs_3rd(j,iEdge)
                   flux_arr(k) = flux_arr(k) + scalar_weight * w(k,iAdvCell)
                end do
             end do
@@ -4799,21 +4879,25 @@ MPAS_GPTL_STOP('mono_exch_2')
 
 !$OMP BARRIER
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
+         if (h_mom_eddy_visc4 > 0.0) then  ! 4th order mixing is active
 
-               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell) * invDcEdge(iEdge)
+            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+               r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
+               do i=1,nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i,iCell)
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
 
-               do k=2,nVertLevels
-                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edge_sign * (delsq_w(k,cell2) - delsq_w(k,cell1))
-               end do
+                  edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell) * invDcEdge(iEdge)
+
+                  do k=2,nVertLevels
+                     tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edge_sign * (delsq_w(k,cell2) - delsq_w(k,cell1))
+                  end do
            
+               end do
             end do
-         end do
+
+         end if ! 4th order mixing is active 
 
       end if ! horizontal mixing for w computed in first rk_step
 
@@ -4860,7 +4944,24 @@ MPAS_GPTL_STOP('mono_exch_2')
 
       end do
 
-! add in mixing terms for w
+      if (rk_step == 1) then
+
+         if ( v_mom_eddy_visc2 > 0.0 ) then
+
+            do iCell=cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
+               do k=2,nVertLevels
+                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + v_mom_eddy_visc2*0.5*(rho_zz(k,iCell)+rho_zz(k-1,iCell))*(  &
+                                           (w(k+1,iCell)-w(k  ,iCell))*rdzw(k)                              &
+                                          -(w(k  ,iCell)-w(k-1,iCell))*rdzw(k-1) )*rdzu(k)
+               end do
+            end do
+
+         end if
+
+      end if ! mixing term computed first rk_step
+
+      ! add in mixing terms for w
 
       do iCell = cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
@@ -4885,7 +4986,7 @@ MPAS_GPTL_STOP('mono_exch_2')
             do j=1,nAdvCellsForEdge(iEdge)
                iAdvCell = advCellsForEdge(j,iEdge)
                do k=1,nVertLevels
-                  scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order*sign(1.0_RKIND,ru(k,iEdge))*adv_coefs_3rd(j,iEdge)
+                  scalar_weight = adv_coefs(j,iEdge) + sign(1.0_RKIND,ru(k,iEdge))*adv_coefs_3rd(j,iEdge)
                   flux_arr(k) = flux_arr(k) + scalar_weight* theta_m(k,iAdvCell)
                end do
             end do
@@ -4946,27 +5047,30 @@ MPAS_GPTL_STOP('mono_exch_2')
                end do
             end do
           end do
-            
+
 !$OMP BARRIER
+            
+         if (h_theta_eddy_visc4 > 0.0) then  ! 4th order mixing is active
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            r_areaCell = h_theta_eddy_visc4 * prandtl_inv * invAreaCell(iCell)
-            do i=1,nEdgesOnCell(iCell)
+            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+               r_areaCell = h_theta_eddy_visc4 * prandtl_inv * invAreaCell(iCell)
+               do i=1,nEdgesOnCell(iCell)
 
-               iEdge = edgesOnCell(i,iCell)
-               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)*invDcEdge(iEdge)
+                  iEdge = edgesOnCell(i,iCell)
+                  edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)*invDcEdge(iEdge)
 
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
 
-               do k=1,nVertLevels
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edge_sign*(delsq_theta(k,cell2) - delsq_theta(k,cell1))
+                  do k=1,nVertLevels
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edge_sign*(delsq_theta(k,cell2) - delsq_theta(k,cell1))
+                  end do
                end do
             end do
-         end do
+
+         end if ! 4th order mixing is active 
 
       end if ! theta mixing calculated first rk_step
-
 
       !
       !  vertical advection plus diabatic term
@@ -4996,6 +5100,58 @@ MPAS_GPTL_STOP('mono_exch_2')
             tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
       end do
+
+      !
+      !  vertical mixing for theta - 2nd order 
+      !
+
+      if (rk_step == 1) then
+
+         if ( v_theta_eddy_visc2 > 0.0 ) then  ! vertical mixing for theta_m
+
+            if (config_mix_full) then
+
+               do iCell = cellSolveStart,cellSolveEnd
+                  do k=2,nVertLevels-1
+                     z1 = zgrid(k-1,iCell)
+                     z2 = zgrid(k  ,iCell)
+                     z3 = zgrid(k+1,iCell)
+                     z4 = zgrid(k+2,iCell)
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + v_theta_eddy_visc2*prandtl_inv*rho_zz(k,iCell)*(&
+                                              (theta_m(k+1,iCell)-theta_m(k  ,iCell))/(zp-z0)                 &
+                                             -(theta_m(k  ,iCell)-theta_m(k-1,iCell))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+         else  ! idealized cases where we mix on the perturbation from the initial 1-D state
+
+               do iCell = cellSolveStart,cellSolveEnd
+                  do k=2,nVertLevels-1
+                     z1 = zgrid(k-1,iCell)
+                     z2 = zgrid(k  ,iCell)
+                     z3 = zgrid(k+1,iCell)
+                     z4 = zgrid(k+2,iCell)
+
+                     zm = 0.5*(z1+z2)
+                     z0 = 0.5*(z2+z3)
+                     zp = 0.5*(z3+z4)
+
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + v_theta_eddy_visc2*prandtl_inv*rho_zz(k,iCell)*(&
+                                              ((theta_m(k+1,iCell)-t_init(k+1,iCell))-(theta_m(k  ,iCell)-t_init(k,iCell)))/(zp-z0)      &
+                                             -((theta_m(k  ,iCell)-t_init(k,iCell))-(theta_m(k-1,iCell)-t_init(k-1,iCell)))/(z0-zm) )/(0.5*(zp-zm))
+                  end do
+               end do
+
+            end if
+
+         end if
+
+      end if ! compute vertical theta mixing on first rk_step
 
       do iCell = cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
@@ -5429,7 +5585,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
       integer :: i, k, iCell, iEdge, cell1, cell2
-      real (kind=RKIND), pointer :: coef_3rd_order
       integer, pointer :: nCells, nEdges, nVertLevels
       integer, pointer :: index_qv
       real (kind=RKIND) :: p0, rcv, flux
@@ -5467,8 +5622,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
-
-      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
 
       call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
       call mpas_pool_get_array(diag, 'theta', theta)
@@ -5538,7 +5691,7 @@ MPAS_GPTL_STOP('mono_exch_2')
             do k = 2,nVertLevels
             flux = (fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge))
             rw(k,iCell) = rw(k,iCell)   &
-                          - edgesOnCell_sign(i,iCell) * (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND,flux) * zb3_cell(k,i,iCell))*flux   &
+                          - edgesOnCell_sign(i,iCell) * (zb_cell(k,i,iCell) + sign(1.0_RKIND,flux) * zb3_cell(k,i,iCell))*flux   &
                           * (fzp(k) * zz(k-1,iCell) + fzm(k) * zz(k,iCell))
             end do
          end do
