@@ -1873,6 +1873,8 @@ DOCN%COPY => docn copy mode
 <ATM_NCPL compset="_MPASO"             >  1</ATM_NCPL>  
 
 <ATM_NCPL compset=".+" grid="a%0.23x0.31">96</ATM_NCPL>
+<ATM_NCPL compset=".+" grid="a%ne4np4"   >12</ATM_NCPL>
+<ATM_NCPL compset=".+" grid="a%ne11np4"  >12</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne60np4"  >96</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne120np4" >96</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne240np4" >144</ATM_NCPL>
@@ -1907,6 +1909,8 @@ DOCN%COPY => docn copy mode
 <CPL_SEQ_OPTION compset="_MPASCICE.*_MPASO"         >RASM_OPTION1</CPL_SEQ_OPTION>
 
 <ROF_NCPL compset=".+"  >8</ROF_NCPL> 
+<ROF_NCPL compset=".+" grid="a%ne4np4"      >6</ROF_NCPL>
+<ROF_NCPL compset=".+" grid="a%ne11np4"     >6</ROF_NCPL>
 <ROF_NCPL compset="_DATM.*_POP2"            >$ATM_NCPL</ROF_NCPL>
 <ROF_NCPL compset="_DATM.*_MPASO"           >$ATM_NCPL</ROF_NCPL>
 <ROF_NCPL compset="_DATM.*_DOCN%SOM"        >$ATM_NCPL</ROF_NCPL>
