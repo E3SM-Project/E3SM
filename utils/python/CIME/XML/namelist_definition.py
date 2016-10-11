@@ -27,10 +27,9 @@ class NamelistDefinition(EntryID):
 
     """Class representing variable definitions for a namelist.
     This class inherits from `EntryID`, and supports most inherited methods;
-    however, `set_value` and `get_resolved_value` are unsupported.
+    however, `set_value` is unsupported.
 
     Additional public methods:
-    - read
     - dict_to_namelist.
     - is_valid_value
     - validate
@@ -67,7 +66,6 @@ class NamelistDefinition(EntryID):
                 entries.append(node.get("id"))
         return entries
 
-
     # Currently we don't use this object to construct new files, and it's no
     # good for that purpose anyway, so stop this function from being called.
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
@@ -78,6 +76,7 @@ class NamelistDefinition(EntryID):
     def get_valid_values(self, name):
         # The "valid_values" attribute is not required, and an empty string has
         # the same effect as not specifying it.
+        # Returns a list from a comma seperated string in xml
         valid_values = ''
         elem = self.get_optional_node("entry", attributes={'id': name})
         if self._get_version() == "1.0":
@@ -89,13 +88,6 @@ class NamelistDefinition(EntryID):
         if valid_values is not None:
             valid_values = valid_values.split(',')
         return valid_values
-
-    # There seems to be no good use for this capability in this file, so it is
-    # unimplemented.
-#    def get_resolved_value(self, raw_value):
-#        """This function is not implemented."""
-#        raise TypeError, \
-#            "NamelistDefinition does not support `get_resolved_value`."
 
     def get_value_match(self, item, attributes=None, exact_match=True):
         """Return the default value for the variable named `item`.
@@ -110,6 +102,7 @@ class NamelistDefinition(EntryID):
             all_attributes.update(self._attributes)
         if attributes is not None:
             all_attributes.update(attributes)
+
         value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match)
 
         if value is None:
@@ -118,7 +111,6 @@ class NamelistDefinition(EntryID):
             value =  self._split_defaults_text(value)
 
         return value
-
 
     @staticmethod
     def _split_defaults_text(string):
