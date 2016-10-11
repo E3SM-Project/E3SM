@@ -708,8 +708,10 @@ contains
 
           !--  water table is below the soil column  --------------------------------------
           if(jwt(c) == nlevbed) then             
-!             wa(c)  = wa(c) + qcharge(c)  * dtime
-!             zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
+	    if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
+             wa(c)  = wa(c) + qcharge(c)  * dtime
+             zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
+            end if
           else                                
              !-- water table within soil layers 1-9  -------------------------------------
              ! try to raise water table to account for qcharge
