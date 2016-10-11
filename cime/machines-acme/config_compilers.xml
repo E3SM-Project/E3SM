@@ -612,6 +612,18 @@ for mct, etc.
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="sandia-srn-sems">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>  
+  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>  
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/usr/lib64 -L/usr/lib64/atlas -lblas -llapack</ADD_SLIBS>
+  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+  <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="anlworkstation">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
@@ -697,6 +709,57 @@ for mct, etc.
   <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
+<compiler COMPILER="pgi" MACH="syrah">
+  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
+  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib -llapack -lblas</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="syrah">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH>/usr/local/tools/netcdf-intel-4.1.3</NETCDF_PATH>
+  <PNETCDF_PATH>/usr/local/tools/parallel-netcdf-intel-1.6.1</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <MPI_PATH>/usr/local/tools/mvapich2-intel-2.1/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-intel-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+</compiler>
+<compiler>
+  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="cab">
+  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
+  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib -llapack -lblas</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="cab">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH>/usr/local/tools/netcdf-intel-4.1.3</NETCDF_PATH>
+  <PNETCDF_PATH>/usr/local/tools/parallel-netcdf-intel-1.6.1</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <MPI_PATH>/usr/local/tools/mvapich2-intel-2.1/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-intel-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+</compiler>
+<compiler>
+  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
+</compiler>
 
 <compiler MACH="oic2" COMPILER="gnu">
   <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
@@ -814,10 +877,6 @@ for mct, etc.
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
   <CONFIG_ARGS> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </CONFIG_ARGS>
   <LDFLAGS>  -Wl,--relax -Wl,--allow-multiple-definition </LDFLAGS>
-</compiler>
-
-
-<compiler COMPILER="ibm" MACH="mira">
   <SFC> mpixlf2003_r </SFC>
   <MPIFC> mpixlf2003_r </MPIFC>
   <SCC> mpixlc_r </SCC>
@@ -841,27 +900,6 @@ for mct, etc.
   <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-
-<compiler COMPILER="ibm" MACH="cetus">
-  <SFC> mpixlf2003_r </SFC>
-  <MPIFC> mpixlf2003_r </MPIFC>
-  <SCC> mpixlc_r </SCC>
-  <MPICC> mpixlc_r </MPICC>
-  <NETCDF_PATH>/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/</NETCDF_PATH>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.3.1/cnk-xl/current/</PNETCDF_PATH>
-  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
-  <ADD_LDFLAGS>-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl </ADD_LDFLAGS>
-   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
-  <ADD_SLIBS compile_threaded="true"> -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </ADD_SLIBS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <CXX_LINKER>CXX</CXX_LINKER>
-  <CXX_LIBS> -llapack -lblas -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </CXX_LIBS>
-  <ADD_CPPDEFS> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </ADD_CPPDEFS>
-  <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
-  <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
-</compiler>
 
 <compiler COMPILER="pgi" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
