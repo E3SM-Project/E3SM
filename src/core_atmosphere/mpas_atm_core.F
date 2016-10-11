@@ -308,6 +308,10 @@ module atm_core
       
       !!!!! End compute inverses
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      call atm_adv_coef_compression(mesh)
+
+      call atm_couple_coef_3rd_order(mesh, block % configs)
       
       call mpas_pool_get_dimension(state, 'nVertices', nVertices)
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
@@ -395,8 +399,6 @@ module atm_core
                                                   maxval(meshScalingDel2(1:nEdgesSolve))
       write(0,*) 'min/max of meshScalingDel4 = ', minval(meshScalingDel4(1:nEdgesSolve)), &
                                                   maxval(meshScalingDel4(1:nEdgesSolve))
-
-      call atm_adv_coef_compression(mesh)
 
    end subroutine atm_mpas_init_block
    
@@ -1179,6 +1181,29 @@ module atm_core
       end do ! end loop over edges
 
    end subroutine atm_adv_coef_compression
+
+
+   subroutine atm_couple_coef_3rd_order(mesh, configs)
+
+      implicit none
+
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
+
+      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs_3rd
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb3_cell
+      real (kind=RKIND), pointer :: config_coef_3rd_order
+
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
+      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
+
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+
+      adv_coefs_3rd(:,:) = config_coef_3rd_order * adv_coefs_3rd(:,:)
+      zb3_cell(:,:,:) = config_coef_3rd_order * zb3_cell(:,:,:)
+
+   end subroutine atm_couple_coef_3rd_order
+
    
    real(kind=RKIND) function dotProduct(a, b, sz)
 
