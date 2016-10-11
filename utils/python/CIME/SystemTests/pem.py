@@ -8,10 +8,8 @@ count are modified the second time.
 (2) Do an initial run with half the number of tasks (suffix modpes)
 """
 
-import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case_setup import case_setup
-import CIME.utils
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 
 logger = logging.getLogger(__name__)
