@@ -79,6 +79,9 @@ class TestStatus(object):
         Create a TestStatus object
 
         If test_dir is not specified, it is set to the current working directory
+
+        no_io is intended only for testing, and should be kept False in
+        production code
         """
         test_dir = os.getcwd() if test_dir is None else test_dir
         self._filename = os.path.join(test_dir, TEST_STATUS_FILENAME)
