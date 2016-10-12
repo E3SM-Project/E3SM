@@ -1523,8 +1523,8 @@ module atm_core
       call mpas_pool_get_array(diag, 'ertel_pv', ertel_pv)
       call mpas_pool_get_array(diag, 'iLev_DT', iLev_DT)
       
-      allocate(candInStrato(nVertLevels, nCells))
-      allocate(inStrato(nVertLevels, nCells))
+      allocate(candInStrato(nVertLevels, nCells+1))
+      allocate(inStrato(nVertLevels, nCells+1))
       candInStrato(:,:) = 0
       inStrato(:,:) = 0
       !store whether each level above DT to avoid repeating logic. we'll use candInStrato as a isVisited marker further below.
@@ -1690,7 +1690,7 @@ module atm_core
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
                      ertel_pv, theta, theta_pv, missingVal, iLev_DT)
                      
-      allocate(vVort(nVertLevels, nCells))
+      allocate(vVort(nVertLevels, nCells+1))
       do iCell=1,nCells
          do k=1,nVertLevels
             vVort(k,iCell) = calc_verticalVorticity_cell(iCell, k, nEdgesOnCell(iCell), verticesOnCell, cellsOnVertex, &
@@ -2285,12 +2285,12 @@ module atm_core
       call mpas_pool_get_array(tend, 'u_euler', tend_u_euler)
       call mpas_pool_get_array(tend, 'w_euler', tend_w_euler)
       
-      allocate(varVerts(nVertLevels,nVertices))
-      allocate(tenduX(nVertLevels,nCells))
-      allocate(tenduY(nVertLevels,nCells))
-      allocate(tenduZ(nVertLevels,nCells))
-      allocate(tenduZonal(nVertLevels,nCells))
-      allocate(tenduMerid(nVertLevels,nCells))
+      allocate(varVerts(nVertLevels,nVertices+1))
+      allocate(tenduX(nVertLevels,nCells+1))
+      allocate(tenduY(nVertLevels,nCells+1))
+      allocate(tenduZ(nVertLevels,nCells+1))
+      allocate(tenduZonal(nVertLevels,nCells+1))
+      allocate(tenduMerid(nVertLevels,nCells+1))
       
       !diabatic component ----------------------
       do iCell=1,nCellsSolve
