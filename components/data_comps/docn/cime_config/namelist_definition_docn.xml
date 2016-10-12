@@ -106,21 +106,21 @@
     <description>Stream domain variable name(s).</description>
     <values>
       <value>
-	time    time
-	xc      lon
-	yc      lat
-	area    area
-	mask    mask
+        time    time
+        xc      lon
+        yc      lat
+        area    area
+        mask    mask
       </value>
       <value stream="copyall" sstice_stream="WW3">
-	time    time
-	gridLon lon
-	gridLat lat
+        time    time
+        gridLon lon
+        gridLat lat
       </value>
       <value stream="interannual">
-	time    time
-	lon      lon
-	lat      lat
+        time    time
+        lon      lon
+        lat      lat
       </value>
     </values>
   </entry>
@@ -145,18 +145,18 @@
     <values>
       <value>null</value>
       <value  stream="prescribed" sstice_stream="WRFDATA_wus12">
-	sst_wus12_110111.2003-10.nc
-	sst_wus12_110111.2003-11.nc
-	sst_wus12_110111.2003-12.nc
-	sst_wus12_110111.2004-01.nc
-	sst_wus12_110111.2004-02.nc
-	sst_wus12_110111.2004-03.nc
-	sst_wus12_110111.2004-04.nc
-	sst_wus12_110111.2004-05.nc
-	sst_wus12_110111.2004-06.nc
-	sst_wus12_110111.2004-07.nc
-	sst_wus12_110111.2004-08.nc
-	sst_wus12_110111.2004-09.nc
+        sst_wus12_110111.2003-10.nc
+        sst_wus12_110111.2003-11.nc
+        sst_wus12_110111.2003-12.nc
+        sst_wus12_110111.2004-01.nc
+        sst_wus12_110111.2004-02.nc
+        sst_wus12_110111.2004-03.nc
+        sst_wus12_110111.2004-04.nc
+        sst_wus12_110111.2004-05.nc
+        sst_wus12_110111.2004-06.nc
+        sst_wus12_110111.2004-07.nc
+        sst_wus12_110111.2004-08.nc
+        sst_wus12_110111.2004-09.nc
       </value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
@@ -170,26 +170,26 @@
     <description>Stream data variable name(s).</description>
     <values>
       <value>
-	sst    t
+        sst    t
       </value>
       <value stream="copyall" sstice_stream="WW3">
-	iceCon  s
+        iceCon  s
       </value>
       <value stream="som">
-	T     t
-	S     s
-	U     u
-	V     v
-	dhdx  dhdx
-	dhdy  dhdy
-	hblt  h
-	qdp   qbot
+        T     t
+        S     s
+        U     u
+        V     v
+        dhdx  dhdx
+        dhdy  dhdy
+        hblt  h
+        qdp   qbot
       </value>
       <value stream="interannual">
-	SST_cpl  t
+        SST_cpl  t
       </value>
       <value stream="prescribed" sstice_stream="CAMDATA">
-	SST_cpl    t
+        SST_cpl    t
       </value>
     </values>
   </entry>

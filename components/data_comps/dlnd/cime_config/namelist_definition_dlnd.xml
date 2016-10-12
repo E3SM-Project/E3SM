@@ -11,11 +11,11 @@
       attributes to express the dependency.  The recognized attributes
       are: grid, dlnd_presaero and all configuration
       attributes from the config_cache.xml file (with keys converted to upper-case).
-      
+
       strm_year_first is the first year of the stream data that will be used
       strm_year_last  is the last  year of the stream data that will be used
       strm_year_align is the model year that will be aligned with stream data for year_first
-      
+
       For cplhist forcing - the following substitutions will be made below
       Replace any instance of the following substring indicators with the appropriate values:
       %y    => year from the range yearfirst to yearlast
@@ -87,11 +87,11 @@
     <description>Stream domain variable name(s).</description>
     <values>
       <value>
-	time    time
-	xc      lon
-	yc      lat
-	area    area
-	mask    mask
+        time    time
+        xc      lon
+        yc      lat
+        area    area
+        mask    mask
       </value>
     </values>
   </entry>
@@ -123,9 +123,9 @@
     <description>Stream data variable name(s).</description>
     <values>
       <value     stream="sno.cplhist">
-	s2x_Ss_tsrf%glc     tsrf%glc
-	s2x_Ss_topo%glc     topo%glc
-	s2x_Fgss_qice%glc   qice%glc
+        s2x_Ss_tsrf%glc     tsrf%glc
+        s2x_Ss_topo%glc     topo%glc
+        s2x_Fgss_qice%glc   qice%glc
       </value>
     </values>
   </entry>
@@ -136,7 +136,7 @@
     <group>streams_file</group>
     <description>Stream offset.</description>
     <values>
-      <value>0</value> 
+      <value>0</value>
     </values>
   </entry>
 

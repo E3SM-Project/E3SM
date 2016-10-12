@@ -76,7 +76,7 @@
     <group>streams_file</group>
     <description>Stream domain file directory.</description>
     <values>
-      <value>null</value> 
+      <value>null</value>
       <value stream="SSMI">$DIN_LOC_ROOT/ice/dice7</value>
       <value stream="SSMI_IAF">$DIN_LOC_ROOT/ice/dice7</value>
     </values>
@@ -88,7 +88,7 @@
     <group>streams_file</group>
     <description>Stream domain file path(s).</description>
     <values>
-      <value>null</value> 
+      <value>null</value>
       <value stream="SSMI">domain.ocn.x0.5.090227.nc</value>
       <value stream="SSMI_IAF">domain.ocn.x0.5.090227.nc</value>
     </values>
@@ -101,16 +101,16 @@
     <description>Stream domain variable name(s).</description>
     <values>
       <value>
-	time    time
-	xc      lon
-	yc      lat
-	area    area
-	mask    mask
+        time    time
+        xc      lon
+        yc      lat
+        area    area
+        mask    mask
       </value>
       <value stream="copyall" sstice_stream="WW3">
-	time    time
-	gridLon lon
-	gridLat lat
+        time    time
+        gridLon lon
+        gridLat lat
       </value>
     </values>
   </entry>
@@ -136,68 +136,68 @@
       <value>null</value>
       <value stream="SSMI">ssmi_ifrac.clim.x0.5.090319.nc</value>
       <value stream="SSMI_IAF">
-	ssmi.ifrac.0.5x0.5.1948.nc
-	ssmi.ifrac.0.5x0.5.1949.nc
-	ssmi.ifrac.0.5x0.5.1950.nc
-	ssmi.ifrac.0.5x0.5.1951.nc
-	ssmi.ifrac.0.5x0.5.1952.nc
-	ssmi.ifrac.0.5x0.5.1953.nc
-	ssmi.ifrac.0.5x0.5.1954.nc
-	ssmi.ifrac.0.5x0.5.1955.nc
-	ssmi.ifrac.0.5x0.5.1956.nc
-	ssmi.ifrac.0.5x0.5.1957.nc
-	ssmi.ifrac.0.5x0.5.1958.nc
-	ssmi.ifrac.0.5x0.5.1959.nc
-	ssmi.ifrac.0.5x0.5.1960.nc
-	ssmi.ifrac.0.5x0.5.1961.nc
-	ssmi.ifrac.0.5x0.5.1962.nc
-	ssmi.ifrac.0.5x0.5.1963.nc
-	ssmi.ifrac.0.5x0.5.1964.nc
-	ssmi.ifrac.0.5x0.5.1965.nc
-	ssmi.ifrac.0.5x0.5.1966.nc
-	ssmi.ifrac.0.5x0.5.1967.nc
-	ssmi.ifrac.0.5x0.5.1968.nc
-	ssmi.ifrac.0.5x0.5.1969.nc
-	ssmi.ifrac.0.5x0.5.1970.nc
-	ssmi.ifrac.0.5x0.5.1971.nc
-	ssmi.ifrac.0.5x0.5.1972.nc
-	ssmi.ifrac.0.5x0.5.1973.nc
-	ssmi.ifrac.0.5x0.5.1974.nc
-	ssmi.ifrac.0.5x0.5.1975.nc
-	ssmi.ifrac.0.5x0.5.1976.nc
-	ssmi.ifrac.0.5x0.5.1977.nc
-	ssmi.ifrac.0.5x0.5.1978.nc
-	ssmi.ifrac.0.5x0.5.1979.nc
-	ssmi.ifrac.0.5x0.5.1980.nc
-	ssmi.ifrac.0.5x0.5.1981.nc
-	ssmi.ifrac.0.5x0.5.1982.nc
-	ssmi.ifrac.0.5x0.5.1983.nc
-	ssmi.ifrac.0.5x0.5.1984.nc
-	ssmi.ifrac.0.5x0.5.1985.nc
-	ssmi.ifrac.0.5x0.5.1986.nc
-	ssmi.ifrac.0.5x0.5.1987.nc
-	ssmi.ifrac.0.5x0.5.1988.nc
-	ssmi.ifrac.0.5x0.5.1989.nc
-	ssmi.ifrac.0.5x0.5.1990.nc
-	ssmi.ifrac.0.5x0.5.1991.nc
-	ssmi.ifrac.0.5x0.5.1992.nc
-	ssmi.ifrac.0.5x0.5.1993.nc
-	ssmi.ifrac.0.5x0.5.1994.nc
-	ssmi.ifrac.0.5x0.5.1995.nc
-	ssmi.ifrac.0.5x0.5.1996.nc
-	ssmi.ifrac.0.5x0.5.1997.nc
-	ssmi.ifrac.0.5x0.5.1998.nc
-	ssmi.ifrac.0.5x0.5.1999.nc
-	ssmi.ifrac.0.5x0.5.2000.nc
-	ssmi.ifrac.0.5x0.5.2001.nc
-	ssmi.ifrac.0.5x0.5.2002.nc
-	ssmi.ifrac.0.5x0.5.2003.nc
-	ssmi.ifrac.0.5x0.5.2004.nc
-	ssmi.ifrac.0.5x0.5.2005.nc
-	ssmi.ifrac.0.5x0.5.2006.nc
-	ssmi.ifrac.0.5x0.5.2007.nc
-	ssmi.ifrac.0.5x0.5.2008.20120420.nc
-	ssmi.ifrac.0.5x0.5.2009.20120420.nc
+        ssmi.ifrac.0.5x0.5.1948.nc
+        ssmi.ifrac.0.5x0.5.1949.nc
+        ssmi.ifrac.0.5x0.5.1950.nc
+        ssmi.ifrac.0.5x0.5.1951.nc
+        ssmi.ifrac.0.5x0.5.1952.nc
+        ssmi.ifrac.0.5x0.5.1953.nc
+        ssmi.ifrac.0.5x0.5.1954.nc
+        ssmi.ifrac.0.5x0.5.1955.nc
+        ssmi.ifrac.0.5x0.5.1956.nc
+        ssmi.ifrac.0.5x0.5.1957.nc
+        ssmi.ifrac.0.5x0.5.1958.nc
+        ssmi.ifrac.0.5x0.5.1959.nc
+        ssmi.ifrac.0.5x0.5.1960.nc
+        ssmi.ifrac.0.5x0.5.1961.nc
+        ssmi.ifrac.0.5x0.5.1962.nc
+        ssmi.ifrac.0.5x0.5.1963.nc
+        ssmi.ifrac.0.5x0.5.1964.nc
+        ssmi.ifrac.0.5x0.5.1965.nc
+        ssmi.ifrac.0.5x0.5.1966.nc
+        ssmi.ifrac.0.5x0.5.1967.nc
+        ssmi.ifrac.0.5x0.5.1968.nc
+        ssmi.ifrac.0.5x0.5.1969.nc
+        ssmi.ifrac.0.5x0.5.1970.nc
+        ssmi.ifrac.0.5x0.5.1971.nc
+        ssmi.ifrac.0.5x0.5.1972.nc
+        ssmi.ifrac.0.5x0.5.1973.nc
+        ssmi.ifrac.0.5x0.5.1974.nc
+        ssmi.ifrac.0.5x0.5.1975.nc
+        ssmi.ifrac.0.5x0.5.1976.nc
+        ssmi.ifrac.0.5x0.5.1977.nc
+        ssmi.ifrac.0.5x0.5.1978.nc
+        ssmi.ifrac.0.5x0.5.1979.nc
+        ssmi.ifrac.0.5x0.5.1980.nc
+        ssmi.ifrac.0.5x0.5.1981.nc
+        ssmi.ifrac.0.5x0.5.1982.nc
+        ssmi.ifrac.0.5x0.5.1983.nc
+        ssmi.ifrac.0.5x0.5.1984.nc
+        ssmi.ifrac.0.5x0.5.1985.nc
+        ssmi.ifrac.0.5x0.5.1986.nc
+        ssmi.ifrac.0.5x0.5.1987.nc
+        ssmi.ifrac.0.5x0.5.1988.nc
+        ssmi.ifrac.0.5x0.5.1989.nc
+        ssmi.ifrac.0.5x0.5.1990.nc
+        ssmi.ifrac.0.5x0.5.1991.nc
+        ssmi.ifrac.0.5x0.5.1992.nc
+        ssmi.ifrac.0.5x0.5.1993.nc
+        ssmi.ifrac.0.5x0.5.1994.nc
+        ssmi.ifrac.0.5x0.5.1995.nc
+        ssmi.ifrac.0.5x0.5.1996.nc
+        ssmi.ifrac.0.5x0.5.1997.nc
+        ssmi.ifrac.0.5x0.5.1998.nc
+        ssmi.ifrac.0.5x0.5.1999.nc
+        ssmi.ifrac.0.5x0.5.2000.nc
+        ssmi.ifrac.0.5x0.5.2001.nc
+        ssmi.ifrac.0.5x0.5.2002.nc
+        ssmi.ifrac.0.5x0.5.2003.nc
+        ssmi.ifrac.0.5x0.5.2004.nc
+        ssmi.ifrac.0.5x0.5.2005.nc
+        ssmi.ifrac.0.5x0.5.2006.nc
+        ssmi.ifrac.0.5x0.5.2007.nc
+        ssmi.ifrac.0.5x0.5.2008.20120420.nc
+        ssmi.ifrac.0.5x0.5.2009.20120420.nc
       </value>
     </values>
   </entry>
@@ -209,10 +209,10 @@
     <description>Stream data variable name(s).</description>
     <values>
       <value>
-	ifrac  ifrac
+        ifrac  ifrac
       </value>
       <value stream="copyall" sstice_stream="WW3">
-	iceCon  ifrac
+        iceCon  ifrac
       </value>
     </values>
   </entry>
@@ -223,7 +223,7 @@
     <group>streams_file</group>
     <description>Stream offset.</description>
     <values>
-      <value>0</value> 
+      <value>0</value>
     </values>
   </entry>
 
@@ -439,7 +439,7 @@
       array (up to 30 elements) of filenames associated with the array of
       streams.  specifies the weights file to read instead of computing
       weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored. 
+      is set, mapalgo and mapmask are ignored.
     </description>
     <values>
       <value>NOT_SET</value>
@@ -580,7 +580,7 @@
       may be added in the future.
       valid values are ['root','1d'].
       1d   = Vector decomposition
-      root = run only on the master task 
+      root = run only on the master task
     </description>
     <values>
       <value>1d</value>
