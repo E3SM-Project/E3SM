@@ -52,9 +52,6 @@ class TestScheduler(object):
         self._queue       = queue
         self._test_data   = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
 
-        # needed for perl interface
-        os.environ["CIMEROOT"] = self._cime_root
-
         self._machobj = Machines(machine=machine_name)
 
         self._no_setup = no_setup
