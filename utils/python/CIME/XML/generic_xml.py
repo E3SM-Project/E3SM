@@ -247,6 +247,8 @@ class GenericXML(object):
         """
         validate an XML file against a provided schema file using pylint
         """
+        expect(os.path.isfile(filename),"xml file not found %s"%filename)
+        expect(os.path.isfile(schema),"schema file not found %s"%schema)
         xmllint = find_executable("xmllint")
         if xmllint is not None:
             logger.info("Checking file %s against schema %s"%(filename, schema))

@@ -42,10 +42,10 @@ class NamelistDefinition(EntryID):
         self._attributes = attributes
         # if the file is invalid we may not be able to check the version
         # but we need to do it this way until we remove the version 1 files
-#        if self._get_version() == "2.0":
-#            cimeroot = get_cime_root()
-#            schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
-#            self.validate_xml_file(infile, schema)
+        if self._get_version() == "2.0":
+            cimeroot = get_cime_root()
+            schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
+            self.validate_xml_file(infile, schema)
 
 
     def _get_version(self):
