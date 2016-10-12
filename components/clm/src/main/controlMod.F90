@@ -241,6 +241,8 @@ contains
 
     namelist /clm_inparm/ use_dynroot
 
+    namelist /clm_inparm/ do_varsoil
+
     namelist /clm_inparm / &
          use_vsfm, vsfm_satfunc_type
 
