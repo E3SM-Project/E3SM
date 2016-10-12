@@ -35,8 +35,8 @@
 
      Currently the following streams are supported
         rof.cplhist
-	rof.diatren_ann_rx1
-	rof.diatren_iaf_rx1
+        rof.diatren_ann_rx1
+        rof.diatren_iaf_rx1
   -->
 
   <!-- ========================================================================================  -->
@@ -87,18 +87,18 @@
     <description>Stream domain variable name(s).</description>
     <values>
       <value>
-	time   time
-	xc     lon
-	yc     lat
-	area   area
-	mask   mask
+        time   time
+        xc     lon
+        yc     lat
+        area   area
+        mask   mask
       </value>
       <value stream="rof.diatren_iaf_rx1">
-	time   time
-	xc     lon
-	yc     lat
-	arear  area
-	mask   mask
+        time   time
+        xc     lon
+        yc     lat
+        arear  area
+        mask   mask
       </value>
     </values>
   </entry>
@@ -134,14 +134,14 @@
     <description>Stream data variable name(s).</description>
     <values>
       <value     stream="rof.diatren_ann_rx1">
-	runoff rofl
+        runoff rofl
       </value>
       <value     stream="rof.diatren_iaf_rx1">
-	runoff rofl
+        runoff rofl
       </value>
       <value     stream="rof.cplhist">
-	r2xacc_Forr_roff  rofl
-	r2xacc_Forr_ioff  rofi
+        r2xacc_Forr_roff  rofl
+        r2xacc_Forr_ioff  rofi
       </value>
     </values>
   </entry>

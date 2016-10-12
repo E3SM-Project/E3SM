@@ -10,11 +10,11 @@
      variables.  Values that depend on the model configuration use
      attributes to express the dependency.  The recognized attributes
      are: grid.attributes from the config_cache.xml file (with keys converted to upper-case).
-     
+
      strm_year_first is the first year of the stream data that will be used
      strm_year_last  is the last  year of the stream data that will be used
      strm_year_align is the model year that will be aligned with stream data for year_first
-     
+
      For cplhist forcing - the following substitutions will be made below
      Replace any instance of the following substring indicators with the appropriate values:
      %y    => year from the range yearfirst to yearlast
@@ -34,7 +34,7 @@
                'streamN.txt year_align year_first year_last '
 
      Currently the following streams are supported
-	 wav.cplhist
+         wav.cplhist
          wav.diatren_ann_rx1
          wav.diatren_iaf_rx1
    -->
@@ -81,11 +81,11 @@
     <description>Stream domain variable name(s).</description>
     <values>
       <value stream="wav.copyall">
-	time   time
-	xc     lon
-	yc     lat
-	area   area
-	mask   mask
+        time   time
+        xc     lon
+        yc     lat
+        area   area
+        mask   mask
       </value>
     </values>
   </entry>
@@ -117,9 +117,9 @@
     <description>Stream data variable name(s).</description>
     <values>
       <value stream="wav.copyall">
-	lamult  lamult
-	ustokes ustokes
-	vstokes vstokes
+        lamult  lamult
+        ustokes ustokes
+        vstokes vstokes
       </value>
     </values>
   </entry>

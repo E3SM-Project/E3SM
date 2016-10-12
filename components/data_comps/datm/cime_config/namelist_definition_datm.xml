@@ -363,86 +363,86 @@
     <desc>Stream domain variable name(s).</desc>
     <values>
       <value>
-	time    time
-	xc      lon
-	yc      lat
-	area    area
-	mask    mask
+        time    time
+        xc      lon
+        yc      lat
+        area    area
+        mask    mask
       </value>
       <value stream="CORE2_NYF.GISS">
-	time    time
-	lon      lon
-	lat      lat
-	area    area
-	mask    mask
+        time    time
+        lon      lon
+        lat      lat
+        area    area
+        mask    mask
       </value>
       <value stream="CORE2_NYF.GXGXS">
-	time    time
-	lon      lon
-	lat      lat
-	area    area
-	mask    mask
+        time    time
+        lon      lon
+        lat      lat
+        area    area
+        mask    mask
       </value>
       <value stream="CORE2_NYF.NCEP">
-	time    time
-	lon     lon
-	lat     lat
-	area    area
-	mask    mask
+        time    time
+        lon     lon
+        lat     lat
+        area    area
+        mask    mask
       </value>
       <value stream="WW3">
-	time    time
-	gridLon     lon
-	gridLat     lat
+        time    time
+        gridLon     lon
+        gridLat     lat
       </value>
       <value stream="topo.observed">
-	time   time
-	LONGXY lon
-	LATIXY lat
-	area   area
-	mask   mask
+        time   time
+        LONGXY lon
+        LATIXY lat
+        area   area
+        mask   mask
       </value>
       <value presaero_flag="active" ispresaerostream="TRUE">
-	time    time
-	lon     lon
-	lat     lat
-	area    area
-	mask    mask
+        time    time
+        lon     lon
+        lat     lat
+        area    area
+        mask    mask
       </value>
       <value stream="co2tseries.20tr">
-	time    time
-	lonc    lon
-	latc    lat
-	area    area
-	mask    mask
+        time    time
+        lonc    lon
+        latc    lat
+        area    area
+        mask    mask
       </value>
       <value stream="co2tseries.rcp2.6">
-	time    time
-	lonc    lon
-	latc    lat
-	area    area
-	mask    mask
+        time    time
+        lonc    lon
+        latc    lat
+        area    area
+        mask    mask
       </value>
       <value stream="co2tseries.rcp4.5">
-	time    time
-	lonc    lon
-	latc    lat
-	area    area
-	mask    mask
+        time    time
+        lonc    lon
+        latc    lat
+        area    area
+        mask    mask
       </value>
       <value stream="co2tseries.rcp6.0">
-	time    time
-	lonc    lon
-	latc    lat
-	area    area
-	mask    mask
+        time    time
+        lonc    lon
+        latc    lat
+        area    area
+        mask    mask
       </value>
       <value stream="co2tseries.rcp8.5">
-	time    time
-	lonc    lon
-	latc    lat
-	area    area
-	mask    mask
+        time    time
+        lonc    lon
+        latc    lat
+        area    area
+        mask    mask
       </value>
     </values>
   </entry>
@@ -544,22 +544,22 @@
       <value  stream="CLM1PT.1x1_mexicocityMEX">clm1pt-1993-12.nc</value>
       <value  stream="CLM1PT.1x1_vancouverCAN">clm1pt-1992-08.nc</value>
       <value  stream="CLM1PT.1x1_urbanc_alpha">
-	clm1pt-0001-08.nc
-	clm1pt-0001-09.nc
-	clm1pt-0001-10.nc
-	clm1pt-0001-11.nc
-	clm1pt-0001-12.nc
-	clm1pt-0002-01.nc
-	clm1pt-0002-02.nc
-	clm1pt-0002-03.nc
-	clm1pt-0002-04.nc
-	clm1pt-0002-05.nc
-	clm1pt-0002-06.nc
-	clm1pt-0002-07.nc
-	clm1pt-0002-08.nc
-	clm1pt-0002-09.nc
-	clm1pt-0002-10.nc
-	clm1pt-0002-11.nc
+        clm1pt-0001-08.nc
+        clm1pt-0001-09.nc
+        clm1pt-0001-10.nc
+        clm1pt-0001-11.nc
+        clm1pt-0001-12.nc
+        clm1pt-0002-01.nc
+        clm1pt-0002-02.nc
+        clm1pt-0002-03.nc
+        clm1pt-0002-04.nc
+        clm1pt-0002-05.nc
+        clm1pt-0002-06.nc
+        clm1pt-0002-07.nc
+        clm1pt-0002-08.nc
+        clm1pt-0002-09.nc
+        clm1pt-0002-10.nc
+        clm1pt-0002-11.nc
       </value>
       <value  stream="CLM1PT.CLM_USRDAT">%ym.nc</value>
       <value  stream="CPLHIST3HrWx.Solar">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
@@ -591,660 +591,660 @@
       <value  stream="CORE2_IAF.U.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
       <value  stream="CORE2_IAF.V.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
       <value  stream="CORE2_IAF.GCGCS.PREC">
-	gcgcs.prec.T62.1948.nc
-	gcgcs.prec.T62.1949.nc
-	gcgcs.prec.T62.1950.nc
-	gcgcs.prec.T62.1951.nc
-	gcgcs.prec.T62.1952.nc
-	gcgcs.prec.T62.1953.nc
-	gcgcs.prec.T62.1954.nc
-	gcgcs.prec.T62.1955.nc
-	gcgcs.prec.T62.1956.nc
-	gcgcs.prec.T62.1957.nc
-	gcgcs.prec.T62.1958.nc
-	gcgcs.prec.T62.1959.nc
-	gcgcs.prec.T62.1960.nc
-	gcgcs.prec.T62.1961.nc
-	gcgcs.prec.T62.1962.nc
-	gcgcs.prec.T62.1963.nc
-	gcgcs.prec.T62.1964.nc
-	gcgcs.prec.T62.1965.nc
-	gcgcs.prec.T62.1966.nc
-	gcgcs.prec.T62.1967.nc
-	gcgcs.prec.T62.1968.nc
-	gcgcs.prec.T62.1969.nc
-	gcgcs.prec.T62.1970.nc
-	gcgcs.prec.T62.1971.nc
-	gcgcs.prec.T62.1972.nc
-	gcgcs.prec.T62.1973.nc
-	gcgcs.prec.T62.1974.nc
-	gcgcs.prec.T62.1975.nc
-	gcgcs.prec.T62.1976.nc
-	gcgcs.prec.T62.1977.nc
-	gcgcs.prec.T62.1978.nc
-	gcgcs.prec.T62.1979.nc
-	gcgcs.prec.T62.1980.nc
-	gcgcs.prec.T62.1981.nc
-	gcgcs.prec.T62.1982.nc
-	gcgcs.prec.T62.1983.nc
-	gcgcs.prec.T62.1984.nc
-	gcgcs.prec.T62.1985.nc
-	gcgcs.prec.T62.1986.nc
-	gcgcs.prec.T62.1987.nc
-	gcgcs.prec.T62.1988.nc
-	gcgcs.prec.T62.1989.nc
-	gcgcs.prec.T62.1990.nc
-	gcgcs.prec.T62.1991.nc
-	gcgcs.prec.T62.1992.nc
-	gcgcs.prec.T62.1993.nc
-	gcgcs.prec.T62.1994.nc
-	gcgcs.prec.T62.1995.nc
-	gcgcs.prec.T62.1996.nc
-	gcgcs.prec.T62.1997.nc
-	gcgcs.prec.T62.1998.nc
-	gcgcs.prec.T62.1999.nc
-	gcgcs.prec.T62.2000.nc
-	gcgcs.prec.T62.2001.nc
-	gcgcs.prec.T62.2002.nc
-	gcgcs.prec.T62.2003.nc
-	gcgcs.prec.T62.2004.nc
-	gcgcs.prec.T62.2005.nc
-	gcgcs.prec.T62.2006.nc
-	gcgcs.prec.T62.2007.nc
-	gcgcs.prec.T62.2008.20120412.nc
-	gcgcs.prec.T62.2009.20120412.nc
+        gcgcs.prec.T62.1948.nc
+        gcgcs.prec.T62.1949.nc
+        gcgcs.prec.T62.1950.nc
+        gcgcs.prec.T62.1951.nc
+        gcgcs.prec.T62.1952.nc
+        gcgcs.prec.T62.1953.nc
+        gcgcs.prec.T62.1954.nc
+        gcgcs.prec.T62.1955.nc
+        gcgcs.prec.T62.1956.nc
+        gcgcs.prec.T62.1957.nc
+        gcgcs.prec.T62.1958.nc
+        gcgcs.prec.T62.1959.nc
+        gcgcs.prec.T62.1960.nc
+        gcgcs.prec.T62.1961.nc
+        gcgcs.prec.T62.1962.nc
+        gcgcs.prec.T62.1963.nc
+        gcgcs.prec.T62.1964.nc
+        gcgcs.prec.T62.1965.nc
+        gcgcs.prec.T62.1966.nc
+        gcgcs.prec.T62.1967.nc
+        gcgcs.prec.T62.1968.nc
+        gcgcs.prec.T62.1969.nc
+        gcgcs.prec.T62.1970.nc
+        gcgcs.prec.T62.1971.nc
+        gcgcs.prec.T62.1972.nc
+        gcgcs.prec.T62.1973.nc
+        gcgcs.prec.T62.1974.nc
+        gcgcs.prec.T62.1975.nc
+        gcgcs.prec.T62.1976.nc
+        gcgcs.prec.T62.1977.nc
+        gcgcs.prec.T62.1978.nc
+        gcgcs.prec.T62.1979.nc
+        gcgcs.prec.T62.1980.nc
+        gcgcs.prec.T62.1981.nc
+        gcgcs.prec.T62.1982.nc
+        gcgcs.prec.T62.1983.nc
+        gcgcs.prec.T62.1984.nc
+        gcgcs.prec.T62.1985.nc
+        gcgcs.prec.T62.1986.nc
+        gcgcs.prec.T62.1987.nc
+        gcgcs.prec.T62.1988.nc
+        gcgcs.prec.T62.1989.nc
+        gcgcs.prec.T62.1990.nc
+        gcgcs.prec.T62.1991.nc
+        gcgcs.prec.T62.1992.nc
+        gcgcs.prec.T62.1993.nc
+        gcgcs.prec.T62.1994.nc
+        gcgcs.prec.T62.1995.nc
+        gcgcs.prec.T62.1996.nc
+        gcgcs.prec.T62.1997.nc
+        gcgcs.prec.T62.1998.nc
+        gcgcs.prec.T62.1999.nc
+        gcgcs.prec.T62.2000.nc
+        gcgcs.prec.T62.2001.nc
+        gcgcs.prec.T62.2002.nc
+        gcgcs.prec.T62.2003.nc
+        gcgcs.prec.T62.2004.nc
+        gcgcs.prec.T62.2005.nc
+        gcgcs.prec.T62.2006.nc
+        gcgcs.prec.T62.2007.nc
+        gcgcs.prec.T62.2008.20120412.nc
+        gcgcs.prec.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.GISS.LWDN">
-	giss.lwdn.T62.1948.nc
-	giss.lwdn.T62.1949.nc
-	giss.lwdn.T62.1950.nc
-	giss.lwdn.T62.1951.nc
-	giss.lwdn.T62.1952.nc
-	giss.lwdn.T62.1953.nc
-	giss.lwdn.T62.1954.nc
-	giss.lwdn.T62.1955.nc
-	giss.lwdn.T62.1956.nc
-	giss.lwdn.T62.1957.nc
-	giss.lwdn.T62.1958.nc
-	giss.lwdn.T62.1959.nc
-	giss.lwdn.T62.1960.nc
-	giss.lwdn.T62.1961.nc
-	giss.lwdn.T62.1962.nc
-	giss.lwdn.T62.1963.nc
-	giss.lwdn.T62.1964.nc
-	giss.lwdn.T62.1965.nc
-	giss.lwdn.T62.1966.nc
-	giss.lwdn.T62.1967.nc
-	giss.lwdn.T62.1968.nc
-	giss.lwdn.T62.1969.nc
-	giss.lwdn.T62.1970.nc
-	giss.lwdn.T62.1971.nc
-	giss.lwdn.T62.1972.nc
-	giss.lwdn.T62.1973.nc
-	giss.lwdn.T62.1974.nc
-	giss.lwdn.T62.1975.nc
-	giss.lwdn.T62.1976.nc
-	giss.lwdn.T62.1977.nc
-	giss.lwdn.T62.1978.nc
-	giss.lwdn.T62.1979.nc
-	giss.lwdn.T62.1980.nc
-	giss.lwdn.T62.1981.nc
-	giss.lwdn.T62.1982.nc
-	giss.lwdn.T62.1983.nc
-	giss.lwdn.T62.1984.nc
-	giss.lwdn.T62.1985.nc
-	giss.lwdn.T62.1986.nc
-	giss.lwdn.T62.1987.nc
-	giss.lwdn.T62.1988.nc
-	giss.lwdn.T62.1989.nc
-	giss.lwdn.T62.1990.nc
-	giss.lwdn.T62.1991.nc
-	giss.lwdn.T62.1992.nc
-	giss.lwdn.T62.1993.nc
-	giss.lwdn.T62.1994.nc
-	giss.lwdn.T62.1995.nc
-	giss.lwdn.T62.1996.nc
-	giss.lwdn.T62.1997.nc
-	giss.lwdn.T62.1998.nc
-	giss.lwdn.T62.1999.nc
-	giss.lwdn.T62.2000.nc
-	giss.lwdn.T62.2001.nc
-	giss.lwdn.T62.2002.nc
-	giss.lwdn.T62.2003.nc
-	giss.lwdn.T62.2004.nc
-	giss.lwdn.T62.2005.nc
-	giss.lwdn.T62.2006.nc
-	giss.lwdn.T62.2007.nc
-	giss.lwdn.T62.2008.20120412.nc
-	giss.lwdn.T62.2009.20120412.nc
+        giss.lwdn.T62.1948.nc
+        giss.lwdn.T62.1949.nc
+        giss.lwdn.T62.1950.nc
+        giss.lwdn.T62.1951.nc
+        giss.lwdn.T62.1952.nc
+        giss.lwdn.T62.1953.nc
+        giss.lwdn.T62.1954.nc
+        giss.lwdn.T62.1955.nc
+        giss.lwdn.T62.1956.nc
+        giss.lwdn.T62.1957.nc
+        giss.lwdn.T62.1958.nc
+        giss.lwdn.T62.1959.nc
+        giss.lwdn.T62.1960.nc
+        giss.lwdn.T62.1961.nc
+        giss.lwdn.T62.1962.nc
+        giss.lwdn.T62.1963.nc
+        giss.lwdn.T62.1964.nc
+        giss.lwdn.T62.1965.nc
+        giss.lwdn.T62.1966.nc
+        giss.lwdn.T62.1967.nc
+        giss.lwdn.T62.1968.nc
+        giss.lwdn.T62.1969.nc
+        giss.lwdn.T62.1970.nc
+        giss.lwdn.T62.1971.nc
+        giss.lwdn.T62.1972.nc
+        giss.lwdn.T62.1973.nc
+        giss.lwdn.T62.1974.nc
+        giss.lwdn.T62.1975.nc
+        giss.lwdn.T62.1976.nc
+        giss.lwdn.T62.1977.nc
+        giss.lwdn.T62.1978.nc
+        giss.lwdn.T62.1979.nc
+        giss.lwdn.T62.1980.nc
+        giss.lwdn.T62.1981.nc
+        giss.lwdn.T62.1982.nc
+        giss.lwdn.T62.1983.nc
+        giss.lwdn.T62.1984.nc
+        giss.lwdn.T62.1985.nc
+        giss.lwdn.T62.1986.nc
+        giss.lwdn.T62.1987.nc
+        giss.lwdn.T62.1988.nc
+        giss.lwdn.T62.1989.nc
+        giss.lwdn.T62.1990.nc
+        giss.lwdn.T62.1991.nc
+        giss.lwdn.T62.1992.nc
+        giss.lwdn.T62.1993.nc
+        giss.lwdn.T62.1994.nc
+        giss.lwdn.T62.1995.nc
+        giss.lwdn.T62.1996.nc
+        giss.lwdn.T62.1997.nc
+        giss.lwdn.T62.1998.nc
+        giss.lwdn.T62.1999.nc
+        giss.lwdn.T62.2000.nc
+        giss.lwdn.T62.2001.nc
+        giss.lwdn.T62.2002.nc
+        giss.lwdn.T62.2003.nc
+        giss.lwdn.T62.2004.nc
+        giss.lwdn.T62.2005.nc
+        giss.lwdn.T62.2006.nc
+        giss.lwdn.T62.2007.nc
+        giss.lwdn.T62.2008.20120412.nc
+        giss.lwdn.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.GISS.SWDN">
-	giss.swdn.T62.1948.nc
-	giss.swdn.T62.1949.nc
-	giss.swdn.T62.1950.nc
-	giss.swdn.T62.1951.nc
-	giss.swdn.T62.1952.nc
-	giss.swdn.T62.1953.nc
-	giss.swdn.T62.1954.nc
-	giss.swdn.T62.1955.nc
-	giss.swdn.T62.1956.nc
-	giss.swdn.T62.1957.nc
-	giss.swdn.T62.1958.nc
-	giss.swdn.T62.1959.nc
-	giss.swdn.T62.1960.nc
-	giss.swdn.T62.1961.nc
-	giss.swdn.T62.1962.nc
-	giss.swdn.T62.1963.nc
-	giss.swdn.T62.1964.nc
-	giss.swdn.T62.1965.nc
-	giss.swdn.T62.1966.nc
-	giss.swdn.T62.1967.nc
-	giss.swdn.T62.1968.nc
-	giss.swdn.T62.1969.nc
-	giss.swdn.T62.1970.nc
-	giss.swdn.T62.1971.nc
-	giss.swdn.T62.1972.nc
-	giss.swdn.T62.1973.nc
-	giss.swdn.T62.1974.nc
-	giss.swdn.T62.1975.nc
-	giss.swdn.T62.1976.nc
-	giss.swdn.T62.1977.nc
-	giss.swdn.T62.1978.nc
-	giss.swdn.T62.1979.nc
-	giss.swdn.T62.1980.nc
-	giss.swdn.T62.1981.nc
-	giss.swdn.T62.1982.nc
-	giss.swdn.T62.1983.nc
-	giss.swdn.T62.1984.nc
-	giss.swdn.T62.1985.nc
-	giss.swdn.T62.1986.nc
-	giss.swdn.T62.1987.nc
-	giss.swdn.T62.1988.nc
-	giss.swdn.T62.1989.nc
-	giss.swdn.T62.1990.nc
-	giss.swdn.T62.1991.nc
-	giss.swdn.T62.1992.nc
-	giss.swdn.T62.1993.nc
-	giss.swdn.T62.1994.nc
-	giss.swdn.T62.1995.nc
-	giss.swdn.T62.1996.nc
-	giss.swdn.T62.1997.nc
-	giss.swdn.T62.1998.nc
-	giss.swdn.T62.1999.nc
-	giss.swdn.T62.2000.nc
-	giss.swdn.T62.2001.nc
-	giss.swdn.T62.2002.nc
-	giss.swdn.T62.2003.nc
-	giss.swdn.T62.2004.nc
-	giss.swdn.T62.2005.nc
-	giss.swdn.T62.2006.nc
-	giss.swdn.T62.2007.nc
-	giss.swdn.T62.2008.20120412.nc
-	giss.swdn.T62.2009.20120412.nc
+        giss.swdn.T62.1948.nc
+        giss.swdn.T62.1949.nc
+        giss.swdn.T62.1950.nc
+        giss.swdn.T62.1951.nc
+        giss.swdn.T62.1952.nc
+        giss.swdn.T62.1953.nc
+        giss.swdn.T62.1954.nc
+        giss.swdn.T62.1955.nc
+        giss.swdn.T62.1956.nc
+        giss.swdn.T62.1957.nc
+        giss.swdn.T62.1958.nc
+        giss.swdn.T62.1959.nc
+        giss.swdn.T62.1960.nc
+        giss.swdn.T62.1961.nc
+        giss.swdn.T62.1962.nc
+        giss.swdn.T62.1963.nc
+        giss.swdn.T62.1964.nc
+        giss.swdn.T62.1965.nc
+        giss.swdn.T62.1966.nc
+        giss.swdn.T62.1967.nc
+        giss.swdn.T62.1968.nc
+        giss.swdn.T62.1969.nc
+        giss.swdn.T62.1970.nc
+        giss.swdn.T62.1971.nc
+        giss.swdn.T62.1972.nc
+        giss.swdn.T62.1973.nc
+        giss.swdn.T62.1974.nc
+        giss.swdn.T62.1975.nc
+        giss.swdn.T62.1976.nc
+        giss.swdn.T62.1977.nc
+        giss.swdn.T62.1978.nc
+        giss.swdn.T62.1979.nc
+        giss.swdn.T62.1980.nc
+        giss.swdn.T62.1981.nc
+        giss.swdn.T62.1982.nc
+        giss.swdn.T62.1983.nc
+        giss.swdn.T62.1984.nc
+        giss.swdn.T62.1985.nc
+        giss.swdn.T62.1986.nc
+        giss.swdn.T62.1987.nc
+        giss.swdn.T62.1988.nc
+        giss.swdn.T62.1989.nc
+        giss.swdn.T62.1990.nc
+        giss.swdn.T62.1991.nc
+        giss.swdn.T62.1992.nc
+        giss.swdn.T62.1993.nc
+        giss.swdn.T62.1994.nc
+        giss.swdn.T62.1995.nc
+        giss.swdn.T62.1996.nc
+        giss.swdn.T62.1997.nc
+        giss.swdn.T62.1998.nc
+        giss.swdn.T62.1999.nc
+        giss.swdn.T62.2000.nc
+        giss.swdn.T62.2001.nc
+        giss.swdn.T62.2002.nc
+        giss.swdn.T62.2003.nc
+        giss.swdn.T62.2004.nc
+        giss.swdn.T62.2005.nc
+        giss.swdn.T62.2006.nc
+        giss.swdn.T62.2007.nc
+        giss.swdn.T62.2008.20120412.nc
+        giss.swdn.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.GISS.SWUP">
-	giss.swup.T62.1948.nc
-	giss.swup.T62.1949.nc
-	giss.swup.T62.1950.nc
-	giss.swup.T62.1951.nc
-	giss.swup.T62.1952.nc
-	giss.swup.T62.1953.nc
-	giss.swup.T62.1954.nc
-	giss.swup.T62.1955.nc
-	giss.swup.T62.1956.nc
-	giss.swup.T62.1957.nc
-	giss.swup.T62.1958.nc
-	giss.swup.T62.1959.nc
-	giss.swup.T62.1960.nc
-	giss.swup.T62.1961.nc
-	giss.swup.T62.1962.nc
-	giss.swup.T62.1963.nc
-	giss.swup.T62.1964.nc
-	giss.swup.T62.1965.nc
-	giss.swup.T62.1966.nc
-	giss.swup.T62.1967.nc
-	giss.swup.T62.1968.nc
-	giss.swup.T62.1969.nc
-	giss.swup.T62.1970.nc
-	giss.swup.T62.1971.nc
-	giss.swup.T62.1972.nc
-	giss.swup.T62.1973.nc
-	giss.swup.T62.1974.nc
-	giss.swup.T62.1975.nc
-	giss.swup.T62.1976.nc
-	giss.swup.T62.1977.nc
-	giss.swup.T62.1978.nc
-	giss.swup.T62.1979.nc
-	giss.swup.T62.1980.nc
-	giss.swup.T62.1981.nc
-	giss.swup.T62.1982.nc
-	giss.swup.T62.1983.nc
-	giss.swup.T62.1984.nc
-	giss.swup.T62.1985.nc
-	giss.swup.T62.1986.nc
-	giss.swup.T62.1987.nc
-	giss.swup.T62.1988.nc
-	giss.swup.T62.1989.nc
-	giss.swup.T62.1990.nc
-	giss.swup.T62.1991.nc
-	giss.swup.T62.1992.nc
-	giss.swup.T62.1993.nc
-	giss.swup.T62.1994.nc
-	giss.swup.T62.1995.nc
-	giss.swup.T62.1996.nc
-	giss.swup.T62.1997.nc
-	giss.swup.T62.1998.nc
-	giss.swup.T62.1999.nc
-	giss.swup.T62.2000.nc
-	giss.swup.T62.2001.nc
-	giss.swup.T62.2002.nc
-	giss.swup.T62.2003.nc
-	giss.swup.T62.2004.nc
-	giss.swup.T62.2005.nc
-	giss.swup.T62.2006.nc
-	giss.swup.T62.2007.nc
-	giss.swup.T62.2008.20120412.nc
-	giss.swup.T62.2009.20120412.nc
+        giss.swup.T62.1948.nc
+        giss.swup.T62.1949.nc
+        giss.swup.T62.1950.nc
+        giss.swup.T62.1951.nc
+        giss.swup.T62.1952.nc
+        giss.swup.T62.1953.nc
+        giss.swup.T62.1954.nc
+        giss.swup.T62.1955.nc
+        giss.swup.T62.1956.nc
+        giss.swup.T62.1957.nc
+        giss.swup.T62.1958.nc
+        giss.swup.T62.1959.nc
+        giss.swup.T62.1960.nc
+        giss.swup.T62.1961.nc
+        giss.swup.T62.1962.nc
+        giss.swup.T62.1963.nc
+        giss.swup.T62.1964.nc
+        giss.swup.T62.1965.nc
+        giss.swup.T62.1966.nc
+        giss.swup.T62.1967.nc
+        giss.swup.T62.1968.nc
+        giss.swup.T62.1969.nc
+        giss.swup.T62.1970.nc
+        giss.swup.T62.1971.nc
+        giss.swup.T62.1972.nc
+        giss.swup.T62.1973.nc
+        giss.swup.T62.1974.nc
+        giss.swup.T62.1975.nc
+        giss.swup.T62.1976.nc
+        giss.swup.T62.1977.nc
+        giss.swup.T62.1978.nc
+        giss.swup.T62.1979.nc
+        giss.swup.T62.1980.nc
+        giss.swup.T62.1981.nc
+        giss.swup.T62.1982.nc
+        giss.swup.T62.1983.nc
+        giss.swup.T62.1984.nc
+        giss.swup.T62.1985.nc
+        giss.swup.T62.1986.nc
+        giss.swup.T62.1987.nc
+        giss.swup.T62.1988.nc
+        giss.swup.T62.1989.nc
+        giss.swup.T62.1990.nc
+        giss.swup.T62.1991.nc
+        giss.swup.T62.1992.nc
+        giss.swup.T62.1993.nc
+        giss.swup.T62.1994.nc
+        giss.swup.T62.1995.nc
+        giss.swup.T62.1996.nc
+        giss.swup.T62.1997.nc
+        giss.swup.T62.1998.nc
+        giss.swup.T62.1999.nc
+        giss.swup.T62.2000.nc
+        giss.swup.T62.2001.nc
+        giss.swup.T62.2002.nc
+        giss.swup.T62.2003.nc
+        giss.swup.T62.2004.nc
+        giss.swup.T62.2005.nc
+        giss.swup.T62.2006.nc
+        giss.swup.T62.2007.nc
+        giss.swup.T62.2008.20120412.nc
+        giss.swup.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.DN10">
-	ncep.dn10.T62.1948.nc
-	ncep.dn10.T62.1949.nc
-	ncep.dn10.T62.1950.nc
-	ncep.dn10.T62.1951.nc
-	ncep.dn10.T62.1952.nc
-	ncep.dn10.T62.1953.nc
-	ncep.dn10.T62.1954.nc
-	ncep.dn10.T62.1955.nc
-	ncep.dn10.T62.1956.nc
-	ncep.dn10.T62.1957.nc
-	ncep.dn10.T62.1958.nc
-	ncep.dn10.T62.1959.nc
-	ncep.dn10.T62.1960.nc
-	ncep.dn10.T62.1961.nc
-	ncep.dn10.T62.1962.nc
-	ncep.dn10.T62.1963.nc
-	ncep.dn10.T62.1964.nc
-	ncep.dn10.T62.1965.nc
-	ncep.dn10.T62.1966.nc
-	ncep.dn10.T62.1967.nc
-	ncep.dn10.T62.1968.nc
-	ncep.dn10.T62.1969.nc
-	ncep.dn10.T62.1970.nc
-	ncep.dn10.T62.1971.nc
-	ncep.dn10.T62.1972.nc
-	ncep.dn10.T62.1973.nc
-	ncep.dn10.T62.1974.nc
-	ncep.dn10.T62.1975.nc
-	ncep.dn10.T62.1976.nc
-	ncep.dn10.T62.1977.nc
-	ncep.dn10.T62.1978.nc
-	ncep.dn10.T62.1979.nc
-	ncep.dn10.T62.1980.nc
-	ncep.dn10.T62.1981.nc
-	ncep.dn10.T62.1982.nc
-	ncep.dn10.T62.1983.nc
-	ncep.dn10.T62.1984.nc
-	ncep.dn10.T62.1985.nc
-	ncep.dn10.T62.1986.nc
-	ncep.dn10.T62.1987.nc
-	ncep.dn10.T62.1988.nc
-	ncep.dn10.T62.1989.nc
-	ncep.dn10.T62.1990.nc
-	ncep.dn10.T62.1991.nc
-	ncep.dn10.T62.1992.nc
-	ncep.dn10.T62.1993.nc
-	ncep.dn10.T62.1994.nc
-	ncep.dn10.T62.1995.nc
-	ncep.dn10.T62.1996.nc
-	ncep.dn10.T62.1997.nc
-	ncep.dn10.T62.1998.nc
-	ncep.dn10.T62.1999.nc
-	ncep.dn10.T62.2000.nc
-	ncep.dn10.T62.2001.nc
-	ncep.dn10.T62.2002.nc
-	ncep.dn10.T62.2003.nc
-	ncep.dn10.T62.2004.nc
-	ncep.dn10.T62.2005.20120414.nc
-	ncep.dn10.T62.2006.nc
-	ncep.dn10.T62.2007.nc
-	ncep.dn10.T62.2008.20120412.nc
-	ncep.dn10.T62.2009.20120412.nc
+        ncep.dn10.T62.1948.nc
+        ncep.dn10.T62.1949.nc
+        ncep.dn10.T62.1950.nc
+        ncep.dn10.T62.1951.nc
+        ncep.dn10.T62.1952.nc
+        ncep.dn10.T62.1953.nc
+        ncep.dn10.T62.1954.nc
+        ncep.dn10.T62.1955.nc
+        ncep.dn10.T62.1956.nc
+        ncep.dn10.T62.1957.nc
+        ncep.dn10.T62.1958.nc
+        ncep.dn10.T62.1959.nc
+        ncep.dn10.T62.1960.nc
+        ncep.dn10.T62.1961.nc
+        ncep.dn10.T62.1962.nc
+        ncep.dn10.T62.1963.nc
+        ncep.dn10.T62.1964.nc
+        ncep.dn10.T62.1965.nc
+        ncep.dn10.T62.1966.nc
+        ncep.dn10.T62.1967.nc
+        ncep.dn10.T62.1968.nc
+        ncep.dn10.T62.1969.nc
+        ncep.dn10.T62.1970.nc
+        ncep.dn10.T62.1971.nc
+        ncep.dn10.T62.1972.nc
+        ncep.dn10.T62.1973.nc
+        ncep.dn10.T62.1974.nc
+        ncep.dn10.T62.1975.nc
+        ncep.dn10.T62.1976.nc
+        ncep.dn10.T62.1977.nc
+        ncep.dn10.T62.1978.nc
+        ncep.dn10.T62.1979.nc
+        ncep.dn10.T62.1980.nc
+        ncep.dn10.T62.1981.nc
+        ncep.dn10.T62.1982.nc
+        ncep.dn10.T62.1983.nc
+        ncep.dn10.T62.1984.nc
+        ncep.dn10.T62.1985.nc
+        ncep.dn10.T62.1986.nc
+        ncep.dn10.T62.1987.nc
+        ncep.dn10.T62.1988.nc
+        ncep.dn10.T62.1989.nc
+        ncep.dn10.T62.1990.nc
+        ncep.dn10.T62.1991.nc
+        ncep.dn10.T62.1992.nc
+        ncep.dn10.T62.1993.nc
+        ncep.dn10.T62.1994.nc
+        ncep.dn10.T62.1995.nc
+        ncep.dn10.T62.1996.nc
+        ncep.dn10.T62.1997.nc
+        ncep.dn10.T62.1998.nc
+        ncep.dn10.T62.1999.nc
+        ncep.dn10.T62.2000.nc
+        ncep.dn10.T62.2001.nc
+        ncep.dn10.T62.2002.nc
+        ncep.dn10.T62.2003.nc
+        ncep.dn10.T62.2004.nc
+        ncep.dn10.T62.2005.20120414.nc
+        ncep.dn10.T62.2006.nc
+        ncep.dn10.T62.2007.nc
+        ncep.dn10.T62.2008.20120412.nc
+        ncep.dn10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.Q_10">
-	ncep.q_10.T62.1948.nc
-	ncep.q_10.T62.1949.nc
-	ncep.q_10.T62.1950.nc
-	ncep.q_10.T62.1951.nc
-	ncep.q_10.T62.1952.nc
-	ncep.q_10.T62.1953.nc
-	ncep.q_10.T62.1954.nc
-	ncep.q_10.T62.1955.nc
-	ncep.q_10.T62.1956.nc
-	ncep.q_10.T62.1957.nc
-	ncep.q_10.T62.1958.nc
-	ncep.q_10.T62.1959.nc
-	ncep.q_10.T62.1960.nc
-	ncep.q_10.T62.1961.nc
-	ncep.q_10.T62.1962.nc
-	ncep.q_10.T62.1963.nc
-	ncep.q_10.T62.1964.nc
-	ncep.q_10.T62.1965.nc
-	ncep.q_10.T62.1966.nc
-	ncep.q_10.T62.1967.nc
-	ncep.q_10.T62.1968.nc
-	ncep.q_10.T62.1969.nc
-	ncep.q_10.T62.1970.nc
-	ncep.q_10.T62.1971.nc
-	ncep.q_10.T62.1972.nc
-	ncep.q_10.T62.1973.nc
-	ncep.q_10.T62.1974.nc
-	ncep.q_10.T62.1975.nc
-	ncep.q_10.T62.1976.nc
-	ncep.q_10.T62.1977.nc
-	ncep.q_10.T62.1978.nc
-	ncep.q_10.T62.1979.nc
-	ncep.q_10.T62.1980.nc
-	ncep.q_10.T62.1981.nc
-	ncep.q_10.T62.1982.nc
-	ncep.q_10.T62.1983.nc
-	ncep.q_10.T62.1984.nc
-	ncep.q_10.T62.1985.nc
-	ncep.q_10.T62.1986.nc
-	ncep.q_10.T62.1987.nc
-	ncep.q_10.T62.1988.nc
-	ncep.q_10.T62.1989.nc
-	ncep.q_10.T62.1990.nc
-	ncep.q_10.T62.1991.nc
-	ncep.q_10.T62.1992.nc
-	ncep.q_10.T62.1993.nc
-	ncep.q_10.T62.1994.nc
-	ncep.q_10.T62.1995.nc
-	ncep.q_10.T62.1996.nc
-	ncep.q_10.T62.1997.nc
-	ncep.q_10.T62.1998.nc
-	ncep.q_10.T62.1999.nc
-	ncep.q_10.T62.2000.nc
-	ncep.q_10.T62.2001.nc
-	ncep.q_10.T62.2002.nc
-	ncep.q_10.T62.2003.nc
-	ncep.q_10.T62.2004.nc
-	ncep.q_10.T62.2005.20120414.nc
-	ncep.q_10.T62.2006.nc
-	ncep.q_10.T62.2007.nc
-	ncep.q_10.T62.2008.20120412.nc
-	ncep.q_10.T62.2009.20120412.nc
+        ncep.q_10.T62.1948.nc
+        ncep.q_10.T62.1949.nc
+        ncep.q_10.T62.1950.nc
+        ncep.q_10.T62.1951.nc
+        ncep.q_10.T62.1952.nc
+        ncep.q_10.T62.1953.nc
+        ncep.q_10.T62.1954.nc
+        ncep.q_10.T62.1955.nc
+        ncep.q_10.T62.1956.nc
+        ncep.q_10.T62.1957.nc
+        ncep.q_10.T62.1958.nc
+        ncep.q_10.T62.1959.nc
+        ncep.q_10.T62.1960.nc
+        ncep.q_10.T62.1961.nc
+        ncep.q_10.T62.1962.nc
+        ncep.q_10.T62.1963.nc
+        ncep.q_10.T62.1964.nc
+        ncep.q_10.T62.1965.nc
+        ncep.q_10.T62.1966.nc
+        ncep.q_10.T62.1967.nc
+        ncep.q_10.T62.1968.nc
+        ncep.q_10.T62.1969.nc
+        ncep.q_10.T62.1970.nc
+        ncep.q_10.T62.1971.nc
+        ncep.q_10.T62.1972.nc
+        ncep.q_10.T62.1973.nc
+        ncep.q_10.T62.1974.nc
+        ncep.q_10.T62.1975.nc
+        ncep.q_10.T62.1976.nc
+        ncep.q_10.T62.1977.nc
+        ncep.q_10.T62.1978.nc
+        ncep.q_10.T62.1979.nc
+        ncep.q_10.T62.1980.nc
+        ncep.q_10.T62.1981.nc
+        ncep.q_10.T62.1982.nc
+        ncep.q_10.T62.1983.nc
+        ncep.q_10.T62.1984.nc
+        ncep.q_10.T62.1985.nc
+        ncep.q_10.T62.1986.nc
+        ncep.q_10.T62.1987.nc
+        ncep.q_10.T62.1988.nc
+        ncep.q_10.T62.1989.nc
+        ncep.q_10.T62.1990.nc
+        ncep.q_10.T62.1991.nc
+        ncep.q_10.T62.1992.nc
+        ncep.q_10.T62.1993.nc
+        ncep.q_10.T62.1994.nc
+        ncep.q_10.T62.1995.nc
+        ncep.q_10.T62.1996.nc
+        ncep.q_10.T62.1997.nc
+        ncep.q_10.T62.1998.nc
+        ncep.q_10.T62.1999.nc
+        ncep.q_10.T62.2000.nc
+        ncep.q_10.T62.2001.nc
+        ncep.q_10.T62.2002.nc
+        ncep.q_10.T62.2003.nc
+        ncep.q_10.T62.2004.nc
+        ncep.q_10.T62.2005.20120414.nc
+        ncep.q_10.T62.2006.nc
+        ncep.q_10.T62.2007.nc
+        ncep.q_10.T62.2008.20120412.nc
+        ncep.q_10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.SLP_">
-	ncep.slp_.T62.1948.nc
-	ncep.slp_.T62.1949.nc
-	ncep.slp_.T62.1950.nc
-	ncep.slp_.T62.1951.nc
-	ncep.slp_.T62.1952.nc
-	ncep.slp_.T62.1953.nc
-	ncep.slp_.T62.1954.nc
-	ncep.slp_.T62.1955.nc
-	ncep.slp_.T62.1956.nc
-	ncep.slp_.T62.1957.nc
-	ncep.slp_.T62.1958.nc
-	ncep.slp_.T62.1959.nc
-	ncep.slp_.T62.1960.nc
-	ncep.slp_.T62.1961.nc
-	ncep.slp_.T62.1962.nc
-	ncep.slp_.T62.1963.nc
-	ncep.slp_.T62.1964.nc
-	ncep.slp_.T62.1965.nc
-	ncep.slp_.T62.1966.nc
-	ncep.slp_.T62.1967.nc
-	ncep.slp_.T62.1968.nc
-	ncep.slp_.T62.1969.nc
-	ncep.slp_.T62.1970.nc
-	ncep.slp_.T62.1971.nc
-	ncep.slp_.T62.1972.nc
-	ncep.slp_.T62.1973.nc
-	ncep.slp_.T62.1974.nc
-	ncep.slp_.T62.1975.nc
-	ncep.slp_.T62.1976.nc
-	ncep.slp_.T62.1977.nc
-	ncep.slp_.T62.1978.nc
-	ncep.slp_.T62.1979.nc
-	ncep.slp_.T62.1980.nc
-	ncep.slp_.T62.1981.nc
-	ncep.slp_.T62.1982.nc
-	ncep.slp_.T62.1983.nc
-	ncep.slp_.T62.1984.nc
-	ncep.slp_.T62.1985.nc
-	ncep.slp_.T62.1986.nc
-	ncep.slp_.T62.1987.nc
-	ncep.slp_.T62.1988.nc
-	ncep.slp_.T62.1989.nc
-	ncep.slp_.T62.1990.nc
-	ncep.slp_.T62.1991.nc
-	ncep.slp_.T62.1992.nc
-	ncep.slp_.T62.1993.nc
-	ncep.slp_.T62.1994.nc
-	ncep.slp_.T62.1995.nc
-	ncep.slp_.T62.1996.nc
-	ncep.slp_.T62.1997.nc
-	ncep.slp_.T62.1998.nc
-	ncep.slp_.T62.1999.nc
-	ncep.slp_.T62.2000.nc
-	ncep.slp_.T62.2001.nc
-	ncep.slp_.T62.2002.nc
-	ncep.slp_.T62.2003.nc
-	ncep.slp_.T62.2004.nc
-	ncep.slp_.T62.2005.20120414.nc
-	ncep.slp_.T62.2006.nc
-	ncep.slp_.T62.2007.nc
-	ncep.slp_.T62.2008.20120412.nc
-	ncep.slp_.T62.2009.20120412.nc
+        ncep.slp_.T62.1948.nc
+        ncep.slp_.T62.1949.nc
+        ncep.slp_.T62.1950.nc
+        ncep.slp_.T62.1951.nc
+        ncep.slp_.T62.1952.nc
+        ncep.slp_.T62.1953.nc
+        ncep.slp_.T62.1954.nc
+        ncep.slp_.T62.1955.nc
+        ncep.slp_.T62.1956.nc
+        ncep.slp_.T62.1957.nc
+        ncep.slp_.T62.1958.nc
+        ncep.slp_.T62.1959.nc
+        ncep.slp_.T62.1960.nc
+        ncep.slp_.T62.1961.nc
+        ncep.slp_.T62.1962.nc
+        ncep.slp_.T62.1963.nc
+        ncep.slp_.T62.1964.nc
+        ncep.slp_.T62.1965.nc
+        ncep.slp_.T62.1966.nc
+        ncep.slp_.T62.1967.nc
+        ncep.slp_.T62.1968.nc
+        ncep.slp_.T62.1969.nc
+        ncep.slp_.T62.1970.nc
+        ncep.slp_.T62.1971.nc
+        ncep.slp_.T62.1972.nc
+        ncep.slp_.T62.1973.nc
+        ncep.slp_.T62.1974.nc
+        ncep.slp_.T62.1975.nc
+        ncep.slp_.T62.1976.nc
+        ncep.slp_.T62.1977.nc
+        ncep.slp_.T62.1978.nc
+        ncep.slp_.T62.1979.nc
+        ncep.slp_.T62.1980.nc
+        ncep.slp_.T62.1981.nc
+        ncep.slp_.T62.1982.nc
+        ncep.slp_.T62.1983.nc
+        ncep.slp_.T62.1984.nc
+        ncep.slp_.T62.1985.nc
+        ncep.slp_.T62.1986.nc
+        ncep.slp_.T62.1987.nc
+        ncep.slp_.T62.1988.nc
+        ncep.slp_.T62.1989.nc
+        ncep.slp_.T62.1990.nc
+        ncep.slp_.T62.1991.nc
+        ncep.slp_.T62.1992.nc
+        ncep.slp_.T62.1993.nc
+        ncep.slp_.T62.1994.nc
+        ncep.slp_.T62.1995.nc
+        ncep.slp_.T62.1996.nc
+        ncep.slp_.T62.1997.nc
+        ncep.slp_.T62.1998.nc
+        ncep.slp_.T62.1999.nc
+        ncep.slp_.T62.2000.nc
+        ncep.slp_.T62.2001.nc
+        ncep.slp_.T62.2002.nc
+        ncep.slp_.T62.2003.nc
+        ncep.slp_.T62.2004.nc
+        ncep.slp_.T62.2005.20120414.nc
+        ncep.slp_.T62.2006.nc
+        ncep.slp_.T62.2007.nc
+        ncep.slp_.T62.2008.20120412.nc
+        ncep.slp_.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.T_10">
-	ncep.t_10.T62.1948.nc
-	ncep.t_10.T62.1949.nc
-	ncep.t_10.T62.1950.nc
-	ncep.t_10.T62.1951.nc
-	ncep.t_10.T62.1952.nc
-	ncep.t_10.T62.1953.nc
-	ncep.t_10.T62.1954.nc
-	ncep.t_10.T62.1955.nc
-	ncep.t_10.T62.1956.nc
-	ncep.t_10.T62.1957.nc
-	ncep.t_10.T62.1958.nc
-	ncep.t_10.T62.1959.nc
-	ncep.t_10.T62.1960.nc
-	ncep.t_10.T62.1961.nc
-	ncep.t_10.T62.1962.nc
-	ncep.t_10.T62.1963.nc
-	ncep.t_10.T62.1964.nc
-	ncep.t_10.T62.1965.nc
-	ncep.t_10.T62.1966.nc
-	ncep.t_10.T62.1967.nc
-	ncep.t_10.T62.1968.nc
-	ncep.t_10.T62.1969.nc
-	ncep.t_10.T62.1970.nc
-	ncep.t_10.T62.1971.nc
-	ncep.t_10.T62.1972.nc
-	ncep.t_10.T62.1973.nc
-	ncep.t_10.T62.1974.nc
-	ncep.t_10.T62.1975.nc
-	ncep.t_10.T62.1976.nc
-	ncep.t_10.T62.1977.nc
-	ncep.t_10.T62.1978.nc
-	ncep.t_10.T62.1979.nc
-	ncep.t_10.T62.1980.nc
-	ncep.t_10.T62.1981.nc
-	ncep.t_10.T62.1982.nc
-	ncep.t_10.T62.1983.nc
-	ncep.t_10.T62.1984.nc
-	ncep.t_10.T62.1985.nc
-	ncep.t_10.T62.1986.nc
-	ncep.t_10.T62.1987.nc
-	ncep.t_10.T62.1988.nc
-	ncep.t_10.T62.1989.nc
-	ncep.t_10.T62.1990.nc
-	ncep.t_10.T62.1991.nc
-	ncep.t_10.T62.1992.nc
-	ncep.t_10.T62.1993.nc
-	ncep.t_10.T62.1994.nc
-	ncep.t_10.T62.1995.nc
-	ncep.t_10.T62.1996.nc
-	ncep.t_10.T62.1997.nc
-	ncep.t_10.T62.1998.nc
-	ncep.t_10.T62.1999.nc
-	ncep.t_10.T62.2000.nc
-	ncep.t_10.T62.2001.nc
-	ncep.t_10.T62.2002.nc
-	ncep.t_10.T62.2003.nc
-	ncep.t_10.T62.2004.nc
-	ncep.t_10.T62.2005.20120414.nc
-	ncep.t_10.T62.2006.nc
-	ncep.t_10.T62.2007.nc
-	ncep.t_10.T62.2008.20120412.nc
-	ncep.t_10.T62.2009.20120412.nc
+        ncep.t_10.T62.1948.nc
+        ncep.t_10.T62.1949.nc
+        ncep.t_10.T62.1950.nc
+        ncep.t_10.T62.1951.nc
+        ncep.t_10.T62.1952.nc
+        ncep.t_10.T62.1953.nc
+        ncep.t_10.T62.1954.nc
+        ncep.t_10.T62.1955.nc
+        ncep.t_10.T62.1956.nc
+        ncep.t_10.T62.1957.nc
+        ncep.t_10.T62.1958.nc
+        ncep.t_10.T62.1959.nc
+        ncep.t_10.T62.1960.nc
+        ncep.t_10.T62.1961.nc
+        ncep.t_10.T62.1962.nc
+        ncep.t_10.T62.1963.nc
+        ncep.t_10.T62.1964.nc
+        ncep.t_10.T62.1965.nc
+        ncep.t_10.T62.1966.nc
+        ncep.t_10.T62.1967.nc
+        ncep.t_10.T62.1968.nc
+        ncep.t_10.T62.1969.nc
+        ncep.t_10.T62.1970.nc
+        ncep.t_10.T62.1971.nc
+        ncep.t_10.T62.1972.nc
+        ncep.t_10.T62.1973.nc
+        ncep.t_10.T62.1974.nc
+        ncep.t_10.T62.1975.nc
+        ncep.t_10.T62.1976.nc
+        ncep.t_10.T62.1977.nc
+        ncep.t_10.T62.1978.nc
+        ncep.t_10.T62.1979.nc
+        ncep.t_10.T62.1980.nc
+        ncep.t_10.T62.1981.nc
+        ncep.t_10.T62.1982.nc
+        ncep.t_10.T62.1983.nc
+        ncep.t_10.T62.1984.nc
+        ncep.t_10.T62.1985.nc
+        ncep.t_10.T62.1986.nc
+        ncep.t_10.T62.1987.nc
+        ncep.t_10.T62.1988.nc
+        ncep.t_10.T62.1989.nc
+        ncep.t_10.T62.1990.nc
+        ncep.t_10.T62.1991.nc
+        ncep.t_10.T62.1992.nc
+        ncep.t_10.T62.1993.nc
+        ncep.t_10.T62.1994.nc
+        ncep.t_10.T62.1995.nc
+        ncep.t_10.T62.1996.nc
+        ncep.t_10.T62.1997.nc
+        ncep.t_10.T62.1998.nc
+        ncep.t_10.T62.1999.nc
+        ncep.t_10.T62.2000.nc
+        ncep.t_10.T62.2001.nc
+        ncep.t_10.T62.2002.nc
+        ncep.t_10.T62.2003.nc
+        ncep.t_10.T62.2004.nc
+        ncep.t_10.T62.2005.20120414.nc
+        ncep.t_10.T62.2006.nc
+        ncep.t_10.T62.2007.nc
+        ncep.t_10.T62.2008.20120412.nc
+        ncep.t_10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.U_10">
-	ncep.u_10.T62.1948.nc
-	ncep.u_10.T62.1949.nc
-	ncep.u_10.T62.1950.nc
-	ncep.u_10.T62.1951.nc
-	ncep.u_10.T62.1952.nc
-	ncep.u_10.T62.1953.nc
-	ncep.u_10.T62.1954.nc
-	ncep.u_10.T62.1955.nc
-	ncep.u_10.T62.1956.nc
-	ncep.u_10.T62.1957.nc
-	ncep.u_10.T62.1958.nc
-	ncep.u_10.T62.1959.nc
-	ncep.u_10.T62.1960.nc
-	ncep.u_10.T62.1961.nc
-	ncep.u_10.T62.1962.nc
-	ncep.u_10.T62.1963.nc
-	ncep.u_10.T62.1964.nc
-	ncep.u_10.T62.1965.nc
-	ncep.u_10.T62.1966.nc
-	ncep.u_10.T62.1967.nc
-	ncep.u_10.T62.1968.nc
-	ncep.u_10.T62.1969.nc
-	ncep.u_10.T62.1970.nc
-	ncep.u_10.T62.1971.nc
-	ncep.u_10.T62.1972.nc
-	ncep.u_10.T62.1973.nc
-	ncep.u_10.T62.1974.nc
-	ncep.u_10.T62.1975.nc
-	ncep.u_10.T62.1976.nc
-	ncep.u_10.T62.1977.nc
-	ncep.u_10.T62.1978.nc
-	ncep.u_10.T62.1979.nc
-	ncep.u_10.T62.1980.nc
-	ncep.u_10.T62.1981.nc
-	ncep.u_10.T62.1982.nc
-	ncep.u_10.T62.1983.nc
-	ncep.u_10.T62.1984.nc
-	ncep.u_10.T62.1985.nc
-	ncep.u_10.T62.1986.nc
-	ncep.u_10.T62.1987.nc
-	ncep.u_10.T62.1988.nc
-	ncep.u_10.T62.1989.nc
-	ncep.u_10.T62.1990.nc
-	ncep.u_10.T62.1991.nc
-	ncep.u_10.T62.1992.nc
-	ncep.u_10.T62.1993.nc
-	ncep.u_10.T62.1994.nc
-	ncep.u_10.T62.1995.nc
-	ncep.u_10.T62.1996.nc
-	ncep.u_10.T62.1997.nc
-	ncep.u_10.T62.1998.nc
-	ncep.u_10.T62.1999.nc
-	ncep.u_10.T62.2000.nc
-	ncep.u_10.T62.2001.nc
-	ncep.u_10.T62.2002.nc
-	ncep.u_10.T62.2003.nc
-	ncep.u_10.T62.2004.nc
-	ncep.u_10.T62.2005.20120414.nc
-	ncep.u_10.T62.2006.nc
-	ncep.u_10.T62.2007.nc
-	ncep.u_10.T62.2008.20120412.nc
-	ncep.u_10.T62.2009.20120412.nc
+        ncep.u_10.T62.1948.nc
+        ncep.u_10.T62.1949.nc
+        ncep.u_10.T62.1950.nc
+        ncep.u_10.T62.1951.nc
+        ncep.u_10.T62.1952.nc
+        ncep.u_10.T62.1953.nc
+        ncep.u_10.T62.1954.nc
+        ncep.u_10.T62.1955.nc
+        ncep.u_10.T62.1956.nc
+        ncep.u_10.T62.1957.nc
+        ncep.u_10.T62.1958.nc
+        ncep.u_10.T62.1959.nc
+        ncep.u_10.T62.1960.nc
+        ncep.u_10.T62.1961.nc
+        ncep.u_10.T62.1962.nc
+        ncep.u_10.T62.1963.nc
+        ncep.u_10.T62.1964.nc
+        ncep.u_10.T62.1965.nc
+        ncep.u_10.T62.1966.nc
+        ncep.u_10.T62.1967.nc
+        ncep.u_10.T62.1968.nc
+        ncep.u_10.T62.1969.nc
+        ncep.u_10.T62.1970.nc
+        ncep.u_10.T62.1971.nc
+        ncep.u_10.T62.1972.nc
+        ncep.u_10.T62.1973.nc
+        ncep.u_10.T62.1974.nc
+        ncep.u_10.T62.1975.nc
+        ncep.u_10.T62.1976.nc
+        ncep.u_10.T62.1977.nc
+        ncep.u_10.T62.1978.nc
+        ncep.u_10.T62.1979.nc
+        ncep.u_10.T62.1980.nc
+        ncep.u_10.T62.1981.nc
+        ncep.u_10.T62.1982.nc
+        ncep.u_10.T62.1983.nc
+        ncep.u_10.T62.1984.nc
+        ncep.u_10.T62.1985.nc
+        ncep.u_10.T62.1986.nc
+        ncep.u_10.T62.1987.nc
+        ncep.u_10.T62.1988.nc
+        ncep.u_10.T62.1989.nc
+        ncep.u_10.T62.1990.nc
+        ncep.u_10.T62.1991.nc
+        ncep.u_10.T62.1992.nc
+        ncep.u_10.T62.1993.nc
+        ncep.u_10.T62.1994.nc
+        ncep.u_10.T62.1995.nc
+        ncep.u_10.T62.1996.nc
+        ncep.u_10.T62.1997.nc
+        ncep.u_10.T62.1998.nc
+        ncep.u_10.T62.1999.nc
+        ncep.u_10.T62.2000.nc
+        ncep.u_10.T62.2001.nc
+        ncep.u_10.T62.2002.nc
+        ncep.u_10.T62.2003.nc
+        ncep.u_10.T62.2004.nc
+        ncep.u_10.T62.2005.20120414.nc
+        ncep.u_10.T62.2006.nc
+        ncep.u_10.T62.2007.nc
+        ncep.u_10.T62.2008.20120412.nc
+        ncep.u_10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.V_10">
-	ncep.v_10.T62.1948.nc
-	ncep.v_10.T62.1949.nc
-	ncep.v_10.T62.1950.nc
-	ncep.v_10.T62.1951.nc
-	ncep.v_10.T62.1952.nc
-	ncep.v_10.T62.1953.nc
-	ncep.v_10.T62.1954.nc
-	ncep.v_10.T62.1955.nc
-	ncep.v_10.T62.1956.nc
-	ncep.v_10.T62.1957.nc
-	ncep.v_10.T62.1958.nc
-	ncep.v_10.T62.1959.nc
-	ncep.v_10.T62.1960.nc
-	ncep.v_10.T62.1961.nc
-	ncep.v_10.T62.1962.nc
-	ncep.v_10.T62.1963.nc
-	ncep.v_10.T62.1964.nc
-	ncep.v_10.T62.1965.nc
-	ncep.v_10.T62.1966.nc
-	ncep.v_10.T62.1967.nc
-	ncep.v_10.T62.1968.nc
-	ncep.v_10.T62.1969.nc
-	ncep.v_10.T62.1970.nc
-	ncep.v_10.T62.1971.nc
-	ncep.v_10.T62.1972.nc
-	ncep.v_10.T62.1973.nc
-	ncep.v_10.T62.1974.nc
-	ncep.v_10.T62.1975.nc
-	ncep.v_10.T62.1976.nc
-	ncep.v_10.T62.1977.nc
-	ncep.v_10.T62.1978.nc
-	ncep.v_10.T62.1979.nc
-	ncep.v_10.T62.1980.nc
-	ncep.v_10.T62.1981.nc
-	ncep.v_10.T62.1982.nc
-	ncep.v_10.T62.1983.nc
-	ncep.v_10.T62.1984.nc
-	ncep.v_10.T62.1985.nc
-	ncep.v_10.T62.1986.nc
-	ncep.v_10.T62.1987.nc
-	ncep.v_10.T62.1988.nc
-	ncep.v_10.T62.1989.nc
-	ncep.v_10.T62.1990.nc
-	ncep.v_10.T62.1991.nc
-	ncep.v_10.T62.1992.nc
-	ncep.v_10.T62.1993.nc
-	ncep.v_10.T62.1994.nc
-	ncep.v_10.T62.1995.nc
-	ncep.v_10.T62.1996.nc
-	ncep.v_10.T62.1997.nc
-	ncep.v_10.T62.1998.nc
-	ncep.v_10.T62.1999.nc
-	ncep.v_10.T62.2000.nc
-	ncep.v_10.T62.2001.nc
-	ncep.v_10.T62.2002.nc
-	ncep.v_10.T62.2003.nc
-	ncep.v_10.T62.2004.nc
-	ncep.v_10.T62.2005.20120414.nc
-	ncep.v_10.T62.2006.nc
-	ncep.v_10.T62.2007.nc
-	ncep.v_10.T62.2008.20120412.nc
-	ncep.v_10.T62.2009.20120412.nc
+        ncep.v_10.T62.1948.nc
+        ncep.v_10.T62.1949.nc
+        ncep.v_10.T62.1950.nc
+        ncep.v_10.T62.1951.nc
+        ncep.v_10.T62.1952.nc
+        ncep.v_10.T62.1953.nc
+        ncep.v_10.T62.1954.nc
+        ncep.v_10.T62.1955.nc
+        ncep.v_10.T62.1956.nc
+        ncep.v_10.T62.1957.nc
+        ncep.v_10.T62.1958.nc
+        ncep.v_10.T62.1959.nc
+        ncep.v_10.T62.1960.nc
+        ncep.v_10.T62.1961.nc
+        ncep.v_10.T62.1962.nc
+        ncep.v_10.T62.1963.nc
+        ncep.v_10.T62.1964.nc
+        ncep.v_10.T62.1965.nc
+        ncep.v_10.T62.1966.nc
+        ncep.v_10.T62.1967.nc
+        ncep.v_10.T62.1968.nc
+        ncep.v_10.T62.1969.nc
+        ncep.v_10.T62.1970.nc
+        ncep.v_10.T62.1971.nc
+        ncep.v_10.T62.1972.nc
+        ncep.v_10.T62.1973.nc
+        ncep.v_10.T62.1974.nc
+        ncep.v_10.T62.1975.nc
+        ncep.v_10.T62.1976.nc
+        ncep.v_10.T62.1977.nc
+        ncep.v_10.T62.1978.nc
+        ncep.v_10.T62.1979.nc
+        ncep.v_10.T62.1980.nc
+        ncep.v_10.T62.1981.nc
+        ncep.v_10.T62.1982.nc
+        ncep.v_10.T62.1983.nc
+        ncep.v_10.T62.1984.nc
+        ncep.v_10.T62.1985.nc
+        ncep.v_10.T62.1986.nc
+        ncep.v_10.T62.1987.nc
+        ncep.v_10.T62.1988.nc
+        ncep.v_10.T62.1989.nc
+        ncep.v_10.T62.1990.nc
+        ncep.v_10.T62.1991.nc
+        ncep.v_10.T62.1992.nc
+        ncep.v_10.T62.1993.nc
+        ncep.v_10.T62.1994.nc
+        ncep.v_10.T62.1995.nc
+        ncep.v_10.T62.1996.nc
+        ncep.v_10.T62.1997.nc
+        ncep.v_10.T62.1998.nc
+        ncep.v_10.T62.1999.nc
+        ncep.v_10.T62.2000.nc
+        ncep.v_10.T62.2001.nc
+        ncep.v_10.T62.2002.nc
+        ncep.v_10.T62.2003.nc
+        ncep.v_10.T62.2004.nc
+        ncep.v_10.T62.2005.20120414.nc
+        ncep.v_10.T62.2006.nc
+        ncep.v_10.T62.2007.nc
+        ncep.v_10.T62.2008.20120412.nc
+        ncep.v_10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value  stream="WW3">core2_G4_wns_30min_20000601_to_05.nc</value>
       <value  stream="NLDAS">
-	clmforc.nldas.1980-01.nc
-	clmforc.nldas.1980-02.nc
-	clmforc.nldas.1980-03.nc
-	clmforc.nldas.1980-04.nc
-	clmforc.nldas.1980-05.nc
-	clmforc.nldas.1980-06.nc
-	clmforc.nldas.1980-07.nc
-	clmforc.nldas.1980-08.nc
-	clmforc.nldas.1980-09.nc
-	clmforc.nldas.1980-10.nc
-	clmforc.nldas.1980-11.nc
-	clmforc.nldas.1980-12.nc
+        clmforc.nldas.1980-01.nc
+        clmforc.nldas.1980-02.nc
+        clmforc.nldas.1980-03.nc
+        clmforc.nldas.1980-04.nc
+        clmforc.nldas.1980-05.nc
+        clmforc.nldas.1980-06.nc
+        clmforc.nldas.1980-07.nc
+        clmforc.nldas.1980-08.nc
+        clmforc.nldas.1980-09.nc
+        clmforc.nldas.1980-10.nc
+        clmforc.nldas.1980-11.nc
+        clmforc.nldas.1980-12.nc
       </value>
       <value stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</value>
       <value stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</value>
@@ -1299,283 +1299,283 @@
     <values>
       <value>null</value>
       <value  stream="CLM1PT.1x1_mexicocityMEX">
-	ZBOT     z
-	TBOT     tbot
-	RH       rh
-	WIND     wind
-	PRECTmms precn
-	FSDS     swdn
-	FSDSdir  swdndr
-	FSDSdif  swdndf
-	PSRF     pbot
-	FLDS     lwdn
+        ZBOT     z
+        TBOT     tbot
+        RH       rh
+        WIND     wind
+        PRECTmms precn
+        FSDS     swdn
+        FSDSdir  swdndr
+        FSDSdif  swdndf
+        PSRF     pbot
+        FLDS     lwdn
       </value>
       <value  stream="CLM1PT.1x1_vancouverCAN">
-	ZBOT     z
-	TBOT     tbot
-	RH       rh
-	WIND     wind
-	PRECTmms precn
-	FSDS     swdn
-	FSDSdir  swdndr
-	FSDSdif  swdndf
-	PSRF     pbot
-	FLDS     lwdn
+        ZBOT     z
+        TBOT     tbot
+        RH       rh
+        WIND     wind
+        PRECTmms precn
+        FSDS     swdn
+        FSDSdir  swdndr
+        FSDSdif  swdndf
+        PSRF     pbot
+        FLDS     lwdn
       </value>
       <value   stream="CLM1PT.1x1_urbanc_alpha">
-	ZBOT     z
-	TBOT     tbot
-	QBOT     shum
-	WIND     wind
-	PRECTmms precn
-	FSDS     swdn
-	FSDSdir  swdndr
-	FSDSdif  swdndf
-	PSRF     pbot
-	FLDS     lwdn
+        ZBOT     z
+        TBOT     tbot
+        QBOT     shum
+        WIND     wind
+        PRECTmms precn
+        FSDS     swdn
+        FSDSdir  swdndr
+        FSDSdif  swdndf
+        PSRF     pbot
+        FLDS     lwdn
       </value>
       <value  stream="CLM1PT.CLM_USRDAT">
-	ZBOT     z
-	TBOT     tbot
-	RH       rh
-	WIND     wind
-	PRECTmms precn
-	FSDS     swdn
-	PSRF     pbot
-	FLDS     lwdn
+        ZBOT     z
+        TBOT     tbot
+        RH       rh
+        WIND     wind
+        PRECTmms precn
+        FSDS     swdn
+        PSRF     pbot
+        FLDS     lwdn
       </value>
       <value  stream="CPLHIST3HrWx.Solar">
-	a2x3h_Faxa_swndr     swndr
-	a2x3h_Faxa_swvdr     swvdr
-	a2x3h_Faxa_swndf     swndf
-	a2x3h_Faxa_swvdf     swvdf
+        a2x3h_Faxa_swndr     swndr
+        a2x3h_Faxa_swvdr     swvdr
+        a2x3h_Faxa_swndf     swndf
+        a2x3h_Faxa_swvdf     swvdf
       </value>
       <value  stream="CPLHIST3HrWx.Precip">
-	a2x3h_Faxa_rainc     rainc
-	a2x3h_Faxa_rainl     rainl
-	a2x3h_Faxa_snowc     snowc
-	a2x3h_Faxa_snowl     snowl
+        a2x3h_Faxa_rainc     rainc
+        a2x3h_Faxa_rainl     rainl
+        a2x3h_Faxa_snowc     snowc
+        a2x3h_Faxa_snowl     snowl
       </value>
       <value  stream="CPLHIST3HrWx.nonSolarNonPrecip">
-	a2x3h_Sa_z           z
-	a2x3h_Sa_u           u
-	a2x3h_Sa_v           v
-	a2x3h_Sa_tbot        tbot
-	a2x3h_Sa_ptem        ptem
-	a2x3h_Sa_shum        shum
-	a2x3h_Sa_pbot        pbot
-	a2x3h_Faxa_lwdn      lwdn
-	a2x3h_Sa_dens        dens
-	a2x3h_Sa_pslv        pslv
+        a2x3h_Sa_z           z
+        a2x3h_Sa_u           u
+        a2x3h_Sa_v           v
+        a2x3h_Sa_tbot        tbot
+        a2x3h_Sa_ptem        ptem
+        a2x3h_Sa_shum        shum
+        a2x3h_Sa_pbot        pbot
+        a2x3h_Faxa_lwdn      lwdn
+        a2x3h_Sa_dens        dens
+        a2x3h_Sa_pslv        pslv
       </value>
       <value  stream="CLM_QIAN.Solar">
-	FSDS swdn
+        FSDS swdn
       </value>
       <value  stream="CLM_QIAN.Precip">
-	PRECTmms precn
+        PRECTmms precn
       </value>
       <value  stream="CLM_QIAN.TPQW">
-	TBOT     tbot
-	WIND     wind
-	QBOT     shum
-	PSRF     pbot
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
       </value>
       <value  stream="CLMCRUNCEP.Solar">
-	FSDS swdn
+        FSDS swdn
       </value>
       <value  stream="CLMCRUNCEP.Precip">
-	PRECTmms precn
+        PRECTmms precn
       </value>
       <value  stream="CLMCRUNCEP.TPQW">
-	TBOT     tbot
-	WIND     wind
-	QBOT     shum
-	PSRF     pbot
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
       </value>
       <value  stream="CLMCRUNCEP_V5.Solar">
-	FSDS swdn
+        FSDS swdn
       </value>
       <value  stream="CLMCRUNCEP_V5.Precip">
-	PRECTmms precn
+        PRECTmms precn
       </value>
       <value  stream="CLMCRUNCEP_V5.TPQW">
-	TBOT     tbot
-	WIND     wind
-	QBOT     shum
-	PSRF     pbot
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
       </value>
       <value  stream="CLMGSWP3.Solar">
-	FSDS swdn
+        FSDS swdn
       </value>
       <value  stream="CLMGSWP3.Precip">
-	PRECTmms precn
+        PRECTmms precn
       </value>
       <value  stream="CLMGSWP3.TPQW">
-	TBOT     tbot
-	WIND     wind
-	QBOT     shum
-	PSRF     pbot
-	FLDS     lwdn
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
       </value>
       <value stream="CORE2_NYF.GISS">
-	lwdn  lwdn
-	swdn  swdn
-	swup  swup
+        lwdn  lwdn
+        swdn  swdn
+        swup  swup
       </value>
       <value  stream="CORE2_NYF.GXGXS">
-	prc  prec
+        prc  prec
       </value>
       <value  stream="CORE2_NYF.NCEP">
-	dn10  dens
-	slp_  pslv
-	q_10  shum
-	t_10  tbot
-	u_10  u
-	v_10  v
+        dn10  dens
+        slp_  pslv
+        q_10  shum
+        t_10  tbot
+        u_10  u
+        v_10  v
       </value>
       <value  stream="CORE2_IAF.NCEP.DENS.SOFS">
-	dn10  dens
+        dn10  dens
       </value>
       <value  stream="CORE2_IAF.NCEP.PSLV.SOFS">
-	slp_  pslv
+        slp_  pslv
       </value>
       <value  stream="CORE2_IAF.PREC.SOFS.DAILY">
-	prec  prec
+        prec  prec
       </value>
       <value  stream="CORE2_IAF.LWDN.SOFS.DAILY">
-	lwdn  lwdn
+        lwdn  lwdn
       </value>
       <value  stream="CORE2_IAF.SWDN.SOFS.DAILY">
-	swdn  swdn
+        swdn  swdn
       </value>
       <value  stream="CORE2_IAF.SWUP.SOFS.DAILY">
-	swup  swup
+        swup  swup
       </value>
       <value  stream="CORE2_IAF.SHUM.SOFS.6HOUR">
-	q3_5  shum
+        q3_5  shum
       </value>
       <value  stream="CORE2_IAF.TBOT.SOFS.6HOUR">
-	t3_5  tbot
+        t3_5  tbot
       </value>
       <value  stream="CORE2_IAF.U.SOFS.6HOUR">
-	u3_5  u
+        u3_5  u
       </value>
       <value  stream="CORE2_IAF.V.SOFS.6HOUR">
-	v3_5  v
+        v3_5  v
       </value>
       <value  stream="CORE2_IAF.GCGCS.PREC">
-	prc  prec
+        prc  prec
       </value>
       <value  stream="CORE2_IAF.GISS.LWDN">
-	lwdn  lwdn
+        lwdn  lwdn
       </value>
       <value  stream="CORE2_IAF.GISS.SWDN">
-	swdn  swdn
+        swdn  swdn
       </value>
       <value stream="CORE2_IAF.GISS.SWUP">
-	swup  swup
+        swup  swup
       </value>
       <value  stream="CORE2_IAF.NCEP.DN10">
-	dn10  dens
+        dn10  dens
       </value>
       <value  stream="CORE2_IAF.NCEP.Q_10">
-	q_10  shum
+        q_10  shum
       </value>
       <value  stream="CORE2_IAF.NCEP.SLP_">
-	slp_  pslv
+        slp_  pslv
       </value>
       <value  stream="CORE2_IAF.NCEP.T_10">
-	t_10  tbot
+        t_10  tbot
       </value>
       <value  stream="CORE2_IAF.NCEP.U_10">
-	u_10  u
+        u_10  u
       </value>
       <value  stream="CORE2_IAF.NCEP.V_10">
-	v_10  v
+        v_10  v
       </value>
       <value  stream="CORE2_IAF.CORE2.ArcFactor">
-	TarcFactor tarcf
+        TarcFactor tarcf
       </value>
       <value  stream="WW3">
-	uWind    u
-	vWind    v
-	airSeaTempDiff tbot
+        uWind    u
+        vWind    v
+        airSeaTempDiff tbot
       </value>
       <value  stream="NLDAS">
-	TBOT     tbot
-	WIND     wind
-	QBOT     shum
-	PSRF     pbot
-	FLDS     lwdn
-	PRECTmms precn
-	FSDS     swdn
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+        PRECTmms precn
+        FSDS     swdn
       </value>
       <value  stream="co2tseries.20tr">
-	CO2        co2diag
+        CO2        co2diag
       </value>
       <value  stream="co2tseries.rcp2.6">
-	CO2        co2diag
+        CO2        co2diag
       </value>
       <value  stream="co2tseries.rcp4.5">
-	CO2        co2diag
+        CO2        co2diag
       </value>
       <value  stream="co2tseries.rcp6.0">
-	CO2        co2diag
+        CO2        co2diag
       </value>
       <value  stream="co2tseries.rcp8.5">
-	CO2        co2diag
+        CO2        co2diag
       </value>
       <value  stream="BC.QIAN.Precip">
-	BC_PREC  precsf
+        BC_PREC  precsf
       </value>
       <value  stream="BC.CRUNCEP.GPCP.Precip">
-	BC_PREC  precsf
+        BC_PREC  precsf
       </value>
       <value  stream="BC.CRUNCEP.CMAP.Precip">
-	BC_PREC  precsf
+        BC_PREC  precsf
       </value>
       <value  stream="Anomaly.Forcing.Precip">
-	pr  prec_af
+        pr  prec_af
       </value>
       <value  stream="Anomaly.Forcing.Temperature">
-	tas  tbot_af
+        tas  tbot_af
       </value>
       <value  stream="Anomaly.Forcing.Pressure">
-	ps  pbot_af
+        ps  pbot_af
       </value>
       <value  stream="Anomaly.Forcing.Humidity">
-	huss  shum_af
+        huss  shum_af
       </value>
       <value  stream="Anomaly.Forcing.Uwind">
-	uas  u_af
+        uas  u_af
       </value>
       <value  stream="Anomaly.Forcing.Vwind">
-	vas  v_af
+        vas  v_af
       </value>
       <value  stream="Anomaly.Forcing.Shortwave">
-	rsds  swdn_af
+        rsds  swdn_af
       </value>
       <value  stream="Anomaly.Forcing.Longwave">
-	rlds  lwdn_af
+        rlds  lwdn_af
       </value>
       <value    presaero_flag="active" ispresaerostream="TRUE">
-	BCDEPWET   bcphiwet
-	BCPHODRY   bcphodry
-	BCPHIDRY   bcphidry
-	OCDEPWET   ocphiwet
-	OCPHIDRY   ocphidry
-	OCPHODRY   ocphodry
-	DSTX01WD   dstwet1
-	DSTX01DD   dstdry1
-	DSTX02WD   dstwet2
-	DSTX02DD   dstdry2
-	DSTX03WD   dstwet3
-	DSTX03DD   dstdry3
-	DSTX04WD   dstwet4
-	DSTX04DD   dstdry4
+        BCDEPWET   bcphiwet
+        BCPHODRY   bcphodry
+        BCPHIDRY   bcphidry
+        OCDEPWET   ocphiwet
+        OCPHIDRY   ocphidry
+        OCPHODRY   ocphodry
+        DSTX01WD   dstwet1
+        DSTX01DD   dstdry1
+        DSTX02WD   dstwet2
+        DSTX02DD   dstdry2
+        DSTX03WD   dstwet3
+        DSTX03DD   dstdry3
+        DSTX04WD   dstwet4
+        DSTX04DD   dstdry4
       </value>
       <value stream="topo.observed">
-	TOPO topo
+        TOPO topo
       </value>
     </values>
   </entry>
@@ -2117,9 +2117,9 @@
       <value stream="Anomaly.Forcing.Shortwave">nearest</value>
       <value stream="Anomaly.Forcing.Longwave">nearest</value>
       <!-- tintalgo is arbitrary here since we only have one time slice; however,
-	   setting this to 'linear' gives roundoff-level differences between time
-	   steps, which is undesirable unless we truly want linear interpolation
-	   between multiple input values -->
+           setting this to 'linear' gives roundoff-level differences between time
+           steps, which is undesirable unless we truly want linear interpolation
+           between multiple input values -->
       <value stream="topo.observed">lower</value>
     </values>
   </entry>
