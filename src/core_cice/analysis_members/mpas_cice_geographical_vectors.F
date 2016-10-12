@@ -43,7 +43,7 @@ module cice_geographical_vectors
 
    public :: cice_bootstrap_geographical_vectors, &
              cice_init_geographical_vectors, &
-             cice_precompute_geographical_vectors, &      
+             cice_precompute_geographical_vectors, &
              cice_compute_geographical_vectors, &
              cice_restart_geographical_vectors, &
              cice_finalize_geographical_vectors
@@ -155,7 +155,7 @@ contains
       err = 0
 
     end subroutine cice_init_geographical_vectors!}}}
-    
+
 !***********************************************************************
 !
 !  routine cice_precompute_geographical_vectors
@@ -224,7 +224,7 @@ contains
 
      use cice_mesh, only: &
           cice_latlon_vector_rotation_backward
-     
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -264,7 +264,7 @@ contains
            meshPool, &
            velocitySolverPool, &
            geographicalVectorsAMPool
-      
+
       ! mesh quantities
       real(kind=RKIND), dimension(:), pointer :: &
            latVertex, &
@@ -330,7 +330,7 @@ contains
          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
          call MPAS_pool_get_subpool(block % structs, "geographicalVectorsAM", geographicalVectorsAMPool)
-         
+
          ! mesh arrays
          call MPAS_pool_get_config(meshPool, "sphere_radius", sphereRadius)
          call MPAS_pool_get_array(meshPool, "latVertex", latVertex)
@@ -338,9 +338,9 @@ contains
          call MPAS_pool_get_array(meshPool, "xVertex", xVertex)
          call MPAS_pool_get_array(meshPool, "yVertex", yVertex)
          call MPAS_pool_get_array(meshPool, "zVertex", zVertex)
-         
+
          call MPAS_pool_get_dimension(meshPool, "nVerticesSolve", nVerticesSolve)
-         
+
          ! get non-geographical arrays
          call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
          call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
@@ -354,7 +354,7 @@ contains
          call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
          call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
          call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
-         
+
          ! get geographical arrays
          call MPAS_pool_get_array(geographicalVectorsAMPool, "uVelocityGeo", uVelocityGeo)
          call MPAS_pool_get_array(geographicalVectorsAMPool, "vVelocityGeo", vVelocityGeo)
@@ -368,10 +368,10 @@ contains
          call MPAS_pool_get_array(geographicalVectorsAMPool, "surfaceTiltForceVGeo", surfaceTiltForceVGeo)
          call MPAS_pool_get_array(geographicalVectorsAMPool, "uOceanVelocityVertexGeo", uOceanVelocityVertexGeo)
          call MPAS_pool_get_array(geographicalVectorsAMPool, "vOceanVelocityVertexGeo", vOceanVelocityVertexGeo)
-         
+
          ! perform rotations
          do iVertex = 1, nVerticesSolve
-            
+
             ! ice velocity
             call cice_latlon_vector_rotation_backward(&
                  uVelocityGeo(iVertex), &
@@ -457,7 +457,7 @@ contains
                  rotateCartesianGrid)
 
          enddo ! iVertex
-         
+
          block => block % next
       end do
 

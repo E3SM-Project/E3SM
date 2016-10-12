@@ -57,7 +57,7 @@ contains
        uVelocity, &
        vVelocity, &
        interiorVertex)
-    
+
     use cice_constants, only: omega
     use cice_constants, only: ciceDegreesToRadians
     use cice_debug, only: cice_init_ijpop_from_ivertex
@@ -85,7 +85,7 @@ contains
          iCell, &
          iVertex
 
-    real(kind=RKIND), parameter :: &  
+    real(kind=RKIND), parameter :: &
          initialIceEdgeLatitudeNorthernHemisphere =  70.0_RKIND * ciceDegreesToRadians, &
          initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * ciceDegreesToRadians, &
          circle_radius = 1.0e6_RKIND
@@ -322,8 +322,8 @@ contains
          x, &
          y
 
-    real(kind=RKIND), parameter :: a = 0.1_RKIND  
-   
+    real(kind=RKIND), parameter :: a = 0.1_RKIND
+
     real(kind=RKIND), parameter :: &
          Lx = 1.28e6_RKIND, &
          Ly = 1.28e6_RKIND
@@ -333,11 +333,11 @@ contains
     nPoints = size(uOceanVelocity,1)
 
     do iPoint = 1, nPoints
-       
+
        uOceanVelocity(iPoint) =  a * ((2.0_RKIND * y(iPoint) - Ly) / Ly)
 
        vOceanVelocity(iPoint) = -a * ((2.0_RKIND * x(iPoint) - Lx) / Lx)
-       
+
     enddo ! iCell
 
   end subroutine init_square_test_case_ocean
@@ -453,7 +453,7 @@ contains
          iceThickness
 
     real(kind=RKIND) :: &
-         x    
+         x
 
     real(kind=RKIND), parameter :: &
          Lx = 1.28e6_RKIND
@@ -478,7 +478,7 @@ contains
          uOceanVelocityVertex, &
          vOceanVelocityVertex
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &    
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory
@@ -505,7 +505,7 @@ contains
     call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
 
     ! thickness and area
-    
+
     iceThickness = 2.0_RKIND
 
     do iCell = 1, nCells
@@ -519,7 +519,7 @@ contains
             iceThickness * iceAreaCategory(1,:,iCell)
 
        snowVolumeCategory(1,:,iCell) = 0.0_RKIND
-          
+
     enddo ! iCell
 
   end subroutine init_square_test_case_state
@@ -561,7 +561,7 @@ contains
          radius          = 6.37e6_RKIND, &
          distanceToAngle = ciceRadiansToDegrees / radius, &
          omega           = 7.292e-5_RKIND
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
          yCell, &
@@ -689,8 +689,8 @@ contains
     !WHL - old code commented out
 !    iceAreaCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
 !    surfaceTemperature(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
-!    iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
-!    snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
+!    iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
+!    snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
 
 !!    write(stderrUnit,*) 'Initial cells with ice (localID, globalID):'
 
@@ -729,7 +729,7 @@ contains
        x, &
        y, &
        type)
-    
+
     real(kind=RKIND), dimension(:), intent(out) :: &
          uVelocity, &
          vVelocity
@@ -737,7 +737,7 @@ contains
     real(kind=RKIND), dimension(:), intent(in) :: &
          x, &
          y
-    
+
     character(len=*), intent(in) :: &
          type
 
@@ -1095,7 +1095,7 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
          yCell
-    
+
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
@@ -1141,4 +1141,3 @@ contains
 !-----------------------------------------------------------------------
 
 end module cice_testing
-

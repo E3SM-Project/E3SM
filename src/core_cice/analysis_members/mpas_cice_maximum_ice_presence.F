@@ -153,7 +153,7 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
-      
+
    end subroutine cice_init_maximum_ice_presence!}}}
 
 !***********************************************************************
@@ -224,7 +224,7 @@ contains
 
      use cice_constants, only: &
           cicePuny
-     
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -259,7 +259,7 @@ contains
 
       type(block_type), pointer :: &
            block
-      
+
       type(MPAS_pool_type), pointer :: &
            maximumIcePresenceAMPool, &
            tracersAggregatePool
@@ -279,13 +279,13 @@ contains
       type(MPAS_Time_Type) :: &
            currentTime, &
            startTime
-      
+
       integer, dimension(:,:), pointer :: &
            maximumIcePresence
 
       character(len=strKIND), pointer :: &
            config_AM_maximumIcePresence_start_time
-      
+
       err = 0
 
       ! ice domain
@@ -309,14 +309,14 @@ contains
             call MPAS_pool_get_dimension(block % dimensions, "nMonths", nMonths)
 
             do iCell = 1, nCellsSolve
-               
+
                if (iceAreaCell(iCell) > cicePuny) then
-                  
+
                   maximumIcePresence(iMonth, iCell) = 1
                   maximumIcePresence(nMonths,iCell) = 1
-                  
+
                endif
-               
+
             enddo ! iCell
 
             block => block % next

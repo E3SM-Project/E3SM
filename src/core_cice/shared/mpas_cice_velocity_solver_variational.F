@@ -27,7 +27,7 @@ module cice_velocity_solver_variational
        cice_stress_divergence_variational, &
        cice_internal_stress_variational, &
        cice_final_divergence_shear_variational
-  
+
 contains
 
 !-----------------------------------------------------------------------
@@ -53,7 +53,7 @@ contains
        rotateCartesianGrid, &
        includeMetricTerms, &
        variationalBasisType)!{{{
-    
+
     use cice_velocity_solver_wachspress, only: &
          cice_init_velocity_solver_wachspress
 
@@ -61,15 +61,15 @@ contains
          cice_init_velocity_solver_pwl
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         velocity_variational, & !< Input/Output: 
-         boundary                !< Input/Output: 
+         velocity_variational, & !< Input/Output:
+         boundary                !< Input/Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         includeMetricTerms     !< Input: 
+         rotateCartesianGrid, & !< Input:
+         includeMetricTerms     !< Input:
 
     character(len=*), intent(in) :: &
          variationalBasisType
@@ -242,7 +242,7 @@ contains
             cellVerticesAtVertex, &
             solveVelocity)
        call mpas_timer_stop("Velocity solver stress divergence")
-    
+
        block => block % next
     end do
 
@@ -271,26 +271,26 @@ contains
        basisGradientV, &
        tanLatVertexRotatedOverRadius, &
        solveStress)!{{{
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         strain11, & !< Output: 
-         strain22, & !< Output: 
-         strain12    !< Output: 
-    
+         strain11, & !< Output:
+         strain22, & !< Output:
+         strain12    !< Output:
+
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, & !< Input: 
-         vVelocity, & !< Input: 
-         tanLatVertexRotatedOverRadius !< Input: 
+         uVelocity, & !< Input:
+         vVelocity, & !< Input:
+         tanLatVertexRotatedOverRadius !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         basisGradientU, & !< Input: 
-         basisGradientV    !< Input: 
-    
+         basisGradientU, & !< Input:
+         basisGradientV    !< Input:
+
     integer, dimension(:), intent(in) :: &
-         solveStress !< Input: 
+         solveStress !< Input:
 
     integer :: &
          iCell, &
@@ -385,38 +385,38 @@ contains
        solveStress, &
        dtElastic, &
        revisedEVP)!{{{
-    
+
     use cice_velocity_solver_constitutive_relation, only: &
          cice_evp_constitutive_relation, &
          cice_evp_constitutive_relation_revised
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         stress11, & !< Input/Output: 
-         stress22, & !< Input/Output: 
-         stress12    !< Input/Output: 
+         stress11, & !< Input/Output:
+         stress22, & !< Input/Output:
+         stress12    !< Input/Output:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         replacementPressure !< Output: 
+         replacementPressure !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         strain11, & !< Input: 
-         strain22, & !< Input: 
-         strain12    !< Input: 
+         strain11, & !< Input:
+         strain22, & !< Input:
+         strain12    !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         icePressure !< Input: 
+         icePressure !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solveStress !< Input: 
+         solveStress !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input: 
-         
+         dtElastic !< Input:
+
     logical, intent(in) :: &
-         revisedEVP !< Input: 
+         revisedEVP !< Input:
 
     real(kind=RKIND), dimension(:), allocatable :: &
          replacementPressureCell
@@ -438,14 +438,14 @@ contains
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
-    
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     allocate(replacementPressureCell(maxEdges))
 
     if (.not. revisedEVP) then
-    
+
        do iCell = 1, nCells
 
           if (solveStress(iCell) == 1) then
@@ -500,7 +500,7 @@ contains
           endif ! solveStress
 
        enddo ! iCell
-       
+
     endif
 
     ! clean up
@@ -535,30 +535,30 @@ contains
        solveVelocity)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV    !< Output: 
+         stressDivergenceU, & !< Output:
+         stressDivergenceV    !< Output:
 
-    real(kind=RKIND), dimension(:,:), intent(in) :: &    
-         stress11, & !< Input: 
-         stress22, & !< Input: 
-         stress12    !< Input: 
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         stress11, & !< Input:
+         stress22, & !< Input:
+         stress12    !< Input:
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &   
-         basisIntegralsU, &   !< Input: 
-         basisIntegralsV, &   !< Input: 
-         basisIntegralsMetric !< Input: 
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         basisIntegralsU, &   !< Input:
+         basisIntegralsV, &   !< Input:
+         basisIntegralsMetric !< Input:
 
-    real(kind=RKIND), dimension(:), intent(in) :: & 
-         tanLatVertexRotatedOverRadius !< Input: 
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         tanLatVertexRotatedOverRadius !< Input:
 
     integer, dimension(:,:), intent(in) :: &
-         cellVerticesAtVertex !< Input: 
+         cellVerticesAtVertex !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solveVelocity !< Input: 
+         solveVelocity !< Input:
 
     real(kind=RKIND) :: &
          stressDivergenceUCell, &
@@ -604,10 +604,10 @@ contains
 
           ! loop over surrounding cells
           do iSurroundingCell = 1, vertexDegree
-             
+
              ! get the cell number of this cell
              iCell = cellsOnVertex(iSurroundingCell, iVertex)
-             
+
              ! get the vertexOnCell number of the iVertex velocity point from cell iCell
              iVelocityVertex = cellVerticesAtVertex(iSurroundingCell,iVertex)
 
@@ -621,11 +621,11 @@ contains
                 stressDivergenceUCell = stressDivergenceUCell - &
                      stress11(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell) - &
                      stress12(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell)
-                
+
                 stressDivergenceVCell = stressDivergenceVCell - &
                      stress22(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell) - &
                      stress12(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell)
-                
+
                 ! metric terms
                 stressDivergenceUCell = stressDivergenceUCell - &
                      stress12(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * tanLatVertexRotatedOverRadius(iVertex)
@@ -637,7 +637,7 @@ contains
 
              stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + stressDivergenceUCell
              stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + stressDivergenceVCell
-             
+
           enddo ! iSurroundingCell
 
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
@@ -665,7 +665,7 @@ contains
 
     use cice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
-    
+
     type(block_type), intent(inout) :: &
          block
 
@@ -677,16 +677,16 @@ contains
 
     integer, pointer :: &
          nCells
-    
+
     integer, dimension(:), pointer :: &
          nEdgesOnCell, &
          solveStress
-    
+
     real(kind=RKIND), dimension(:,:), pointer :: &
          strain11, &
          strain22, &
          strain12
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          divergence, &
          shear, &
@@ -707,7 +707,7 @@ contains
 
     logical, pointer :: &
          config_use_column_package
-    
+
     integer :: &
          iCell, &
          iVertexOnCell
@@ -715,11 +715,11 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-    
+
     call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
-    
+
     call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
-    
+
     call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
     call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
     call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
@@ -729,7 +729,7 @@ contains
     call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
 
     allocate(DeltaAverage(nCells))
-     
+
     do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
@@ -764,7 +764,7 @@ contains
           shear(iCell)        = 0.0_RKIND
 
        endif
-       
+
     enddo ! iCell
 
     ! ridging parameters
@@ -778,7 +778,7 @@ contains
        call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)
 
        do iCell = 1, nCells
-          
+
           if (solveStress(iCell) == 1) then
 
              ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
@@ -792,7 +792,7 @@ contains
           endif
 
        enddo ! iCell
-       
+
     endif ! config_use_column_package
 
     ! units - for comparison to CICE

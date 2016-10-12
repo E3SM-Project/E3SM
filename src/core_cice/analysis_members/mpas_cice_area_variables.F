@@ -53,7 +53,7 @@ module cice_area_variables
    ! Private module variables
    !
    !--------------------------------------------------------------------
-   
+
 !***********************************************************************
 
 contains
@@ -124,7 +124,7 @@ contains
 
       use cice_deactivate_unneeded_fields, only: &
           cice_deactivate_unneeded_stream_fields
-     
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -154,11 +154,11 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      
+
       err = 0
 
       call cice_deactivate_unneeded_stream_fields(domain, "areaVariablesAM")
-            
+
    end subroutine cice_init_area_variables!}}}
 
 !***********************************************************************
@@ -258,7 +258,7 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      
+
       type(block_type), pointer :: &
            block
 
@@ -268,7 +268,7 @@ contains
            atmosCouplingPool, &
            shortwavePool, &
            atmosFluxesPool
-      
+
       type(field1DReal), pointer :: &
            snowfallRateInitialArea, &
            rainfallRateInitialArea, &
@@ -304,13 +304,13 @@ contains
            surfaceConductiveFluxCategory, &
            latentHeatFluxCategory, &
            sensibleHeatFluxCategory
-      
+
       integer, pointer :: &
            nCellsSolve
 
       integer :: &
            iCell
-           
+
       err = 0
 
       block => domain % blocklist

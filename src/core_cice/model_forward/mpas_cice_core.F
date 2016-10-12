@@ -36,18 +36,18 @@ module cice_core
    !-----------------------------------------------------------------------
 
    function cice_core_init(domain, startTimeStamp) result(iErr)
-   
+
       use mpas_derived_types
       use mpas_stream_manager
 
       use cice_diagnostics, only: &
            cice_initialize_time_diagnostics
-   
+
       implicit none
-   
+
       type (domain_type), intent(inout) :: domain
       character(len=*), intent(out) :: startTimeStamp
-   
+
       real (kind=RKIND) :: dt
 
       character(len=strKIND), pointer :: config_initial_condition_type
@@ -79,7 +79,7 @@ module cice_core
       ! Set startTimeStamp based on the start time of the simulation clock
       !
       startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
-      call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
+      call mpas_get_time(startTime, dateTimeString=startTimeStamp)
 
       !
       ! If this is a restart run, read the restart stream, else read the input stream.
@@ -193,7 +193,7 @@ module cice_core
       end if
 
    end subroutine cice_simulation_clock_init
-   
+
    !***********************************************************************
    !
    !  routine mpas_init_block
@@ -207,9 +207,9 @@ module cice_core
    !-----------------------------------------------------------------------
 
    subroutine mpas_init_block(domain, dt)
-   
+
       use mpas_derived_types
-      
+
       use cice_initialize, only: cice_init
 
       implicit none
@@ -233,9 +233,9 @@ module cice_core
    !>  
    !
    !-----------------------------------------------------------------------
-   
+
    function cice_core_run(domain) result(iErr)
-   
+
       use mpas_derived_types
       use mpas_kind_types
       use mpas_stream_manager
@@ -244,9 +244,9 @@ module cice_core
       use cice_forcing, only: cice_forcing_get, cice_forcing_write_restart_times
       use cice_initialize, only: cice_init_post_clock_advance
       use cice_debug, only: istep
-      
+
       implicit none
-   
+
       type (domain_type), intent(inout) :: domain
 
       integer :: itimestep
@@ -255,7 +255,7 @@ module cice_core
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr
-      
+
       character(len=StrKIND), pointer :: config_restart_timestamp_name
 
       iErr = 0
@@ -264,7 +264,7 @@ module cice_core
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
       write(0,*) 'Initial timestep ', trim(timeStamp)
 
       ! compute analysis at startup if required
@@ -291,7 +291,7 @@ module cice_core
       timeLoop: do
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          write(0,*) 'Doing timestep ', trim(timeStamp)
 
          ! pre-timestep analysis computation
@@ -336,7 +336,7 @@ module cice_core
       end do timeLoop
 
    end function cice_core_run
-   
+
    !***********************************************************************
    !
    !  routine mpas_timestep
@@ -350,21 +350,21 @@ module cice_core
    !-----------------------------------------------------------------------
 
    subroutine mpas_timestep(domain, itimestep, timeStamp)
-   
+
       use mpas_derived_types
       use cice_time_integration
       use mpas_timer
-   
+
       implicit none
-   
-      type (domain_type), intent(inout) :: domain 
+
+      type (domain_type), intent(inout) :: domain
       integer, intent(in) :: itimestep
       character(len=*), intent(in) :: timeStamp
 
       call cice_timestep(domain, clock, itimestep)
 
    end subroutine mpas_timestep
-   
+
    !***********************************************************************
    !
    !  routine cice_core_finalize
@@ -376,9 +376,9 @@ module cice_core
    !>  
    !
    !-----------------------------------------------------------------------
-   
+
    function cice_core_finalize(domain) result(iErr)
-   
+
       use mpas_derived_types
       use mpas_decomp
       use cice_column, only: &
@@ -386,7 +386,7 @@ module cice_core
 
       implicit none
 
-      type (domain_type), intent(inout) :: domain 
+      type (domain_type), intent(inout) :: domain
       integer :: ierr
 
       iErr = 0
@@ -405,4 +405,3 @@ module cice_core
    !-----------------------------------------------------------------------
 
 end module cice_core
-

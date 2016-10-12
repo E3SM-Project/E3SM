@@ -27,7 +27,7 @@ module cice_initialize
   public :: &
        cice_init, &
        cice_init_post_clock_advance
-  
+
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -56,13 +56,13 @@ contains
     use cice_forcing, only: cice_forcing_init, cice_reset_coupler_fluxes
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type (MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
+         clock !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
+         dt !< Input:
 
     type(block_type), pointer :: &
          block
@@ -125,20 +125,20 @@ contains
          cice_init_column_shortwave
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type (MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
-    
+         clock !< Input:
+
     logical, pointer :: &
          config_use_column_package, &
          config_use_column_shortwave, &
          config_do_restart
-    
+
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
     call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    
+
     if (config_use_column_package .and. config_use_column_shortwave .and. .not. config_do_restart) &
          call cice_init_column_shortwave(domain, clock)
 
@@ -175,7 +175,7 @@ contains
 
     integer, pointer :: &
          nCells
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          areaCell
 
@@ -189,7 +189,7 @@ contains
        call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
        njunk = nCells + 1
-    
+
        areaCell(njunk) = value_junk
 
        block => block % next
@@ -208,7 +208,7 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine init_ice_state(&
        domain, &
        clock)!{{{
@@ -220,7 +220,7 @@ contains
          cice_column_aggregate
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(MPAS_clock_type), intent(in) :: &
          clock
@@ -420,10 +420,10 @@ contains
          ciceDegreesToRadians
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -435,7 +435,7 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          latCell
-    
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
@@ -488,7 +488,7 @@ contains
           iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
           snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
           surfaceTemperature(1,:,iCell) = -1.0_RKIND
-          
+
        else
 
           ! no ice
@@ -535,10 +535,10 @@ contains
          colpkg_enthalpy_snow
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -627,12 +627,12 @@ contains
     ! initial volumes and areas
     allocate(initialCategoryIceArea(nCategories))
     allocate(initialCategoryIceThickness(nCategories))
-    
+
     call initial_category_areas_and_volumes(&
          block, &
          initialCategoryIceArea, &
          initialCategoryIceThickness)
-    
+
     do iCell = 1, nCellsSolve
 
        if (seaSurfaceTemperature(iCell) <= seaFreezingTemperature(iCell) + 0.2_RKIND .and. &
@@ -647,7 +647,7 @@ contains
              iceVolumeCategory(1,iCategory,iCell)  = initialCategoryIceArea(iCategory) * initialCategoryIceThickness(iCategory)
              snowVolumeCategory(1,iCategory,iCell) = min(iceAreaCategory(1,iCategory,iCell) * initialCategorySnowThickness, &
                                                          0.2_RKIND * iceVolumeCategory(1,iCategory,iCell))
-             
+
              call colpkg_init_trcr(&
                   airTemperature(iCell), &
                   seaFreezingTemperature(iCell), &
@@ -717,16 +717,16 @@ contains
     use ice_colpkg, only: &
          colpkg_init_itd
 
-    ! Note: the resulting average ice thickness 
+    ! Note: the resulting average ice thickness
     ! tends to be less than hbar due to the
-    ! nonlinear distribution of ice thicknesses 
-    
+    ! nonlinear distribution of ice thicknesses
+
     type(block_type), intent(in) :: block
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          initialCategoryIceArea, &
          initialCategoryIceThickness
- 
+
     type(MPAS_pool_type), pointer :: &
          mesh, &
          initial
@@ -748,7 +748,7 @@ contains
 
     real(kind=RKIND), parameter :: &
          thicknessWithLargestArea = 3.0_RKIND ! initial ice thickness with greatest area
-    
+
     call MPAS_pool_get_subpool(block % structs, "initial", initial)
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
@@ -760,16 +760,16 @@ contains
     !--------------------------------------------------------
 
     call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
-    
+
     if (.not. config_use_column_package) then
-       
+
        call colpkg_init_itd(&
             nCategories, &
             categoryThicknessLimits, &
             stdoutUnit)
-       
+
     endif
-       
+
     !--------------------------------------------------------
     ! volumes
     !--------------------------------------------------------
@@ -780,7 +780,7 @@ contains
        ! middle of the category limits
        initialCategoryIceThickness(iCategory) = &
             0.5_RKIND * (categoryThicknessLimits(iCategory) + categoryThicknessLimits(iCategory+1))
-       
+
     enddo ! iCategory
 
     ! thicknest category
@@ -815,7 +815,7 @@ contains
     enddo ! iCategory
 
   end subroutine initial_category_areas_and_volumes
-    
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  init_ice_state_uniform_interior_ice
@@ -833,10 +833,10 @@ contains
        configs)!{{{
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -848,7 +848,7 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          latCell
-    
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
@@ -895,7 +895,7 @@ contains
           iceAreaCategory(1,:,iCell)    = config_initial_ice_area
           iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
           snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
-          
+
        else
 
           ! no ice
@@ -929,10 +929,10 @@ contains
          earthRadius
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -962,10 +962,10 @@ contains
 
     integer :: &
          iCell
-    
+
     real(kind=RKIND), parameter :: &
          circle_radius = 0.1_RKIND*earthRadius
-   
+
     call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
     call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
     call MPAS_pool_get_config(configs, "config_initial_snow_volume", config_initial_snow_volume)
@@ -988,10 +988,10 @@ contains
     if (config_rotate_cartesian_grid) then
 
        do iCell = 1, nCells
-       
+
           ! Put a circle of ice at the North Pole (which will be rotated to the grid equator)
           if (zCell(iCell) > 0.0_RKIND .and. sqrt(xCell(iCell)**2 + yCell(iCell)**2) < circle_radius) then
-          
+
              ! has ice
              iceAreaCategory(1,:,iCell)    = config_initial_ice_area
              iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
@@ -999,24 +999,24 @@ contains
              surfaceTemperature(1,:,iCell) = 1.0_RKIND
 
           else
-          
+
              ! no ice
              iceAreaCategory(1,:,iCell)    = 0.0_RKIND
              iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
              snowVolumeCategory(1,:,iCell) = 0.0_RKIND
              surfaceTemperature(1,:,iCell) = 0.0_RKIND
-          
+
           endif
-       
+
        enddo ! iCell
 
     else   ! no rotation
 
        do iCell = 1, nCells
-       
+
           ! Put a circle of ice on the equator
           if (xCell(iCell) > 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then   ! Greenwich meridian
-!          if (xCell(iCell) < 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then  ! Date Line 
+!          if (xCell(iCell) < 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then  ! Date Line
 
              ! has ice
              iceAreaCategory(1,:,iCell)    = config_initial_ice_area
@@ -1025,15 +1025,15 @@ contains
              surfaceTemperature(1,:,iCell) = 1.0_RKIND
 
           else
-          
+
              ! no ice
              iceAreaCategory(1,:,iCell)    = 0.0_RKIND
              iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
              snowVolumeCategory(1,:,iCell) = 0.0_RKIND
              surfaceTemperature(1,:,iCell) = 0.0_RKIND
-          
+
           endif
-       
+
        enddo ! iCell
 
     endif ! config_rotate_cartesian_grid
@@ -1060,10 +1060,10 @@ contains
          ciceRadiansToDegrees
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -1074,7 +1074,7 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          latCell
-    
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
@@ -1099,7 +1099,7 @@ contains
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
-    
+
     integer, dimension(:,:), pointer :: &
          edgesOnCell
 
@@ -1137,7 +1137,7 @@ contains
     iCell2 = 2052
 
     do iEdgeOnCell0 = 1, nEdgesOnCell(iCell0)
-       do iEdgeOnCell1 = 1, nEdgesOnCell(iCell1) 
+       do iEdgeOnCell1 = 1, nEdgesOnCell(iCell1)
           if (edgesOnCell(iEdgeOnCell0,iCell0) == edgesOnCell(iEdgeOnCell1,iCell1)) then
              iEdge1 = edgesOnCell(iEdgeOnCell0,iCell0)
           endif
@@ -1145,7 +1145,7 @@ contains
     enddo ! iEdgeOnCell0
 
     do iEdgeOnCell0 = 1, nEdgesOnCell(iCell0)
-       do iEdgeOnCell2 = 1, nEdgesOnCell(iCell2) 
+       do iEdgeOnCell2 = 1, nEdgesOnCell(iCell2)
           if (edgesOnCell(iEdgeOnCell0,iCell0) == edgesOnCell(iEdgeOnCell2,iCell2)) then
              iEdge2 = edgesOnCell(iEdgeOnCell0,iCell0)
           endif
@@ -1180,10 +1180,10 @@ contains
          ciceRadiansToDegrees
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -1194,7 +1194,7 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          latCell
-    
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
@@ -1234,11 +1234,11 @@ contains
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
 
     do iCell = 1, nCells
-       
+
        call random_number(random)
 
        if (random > 0.5_RKIND) then
-          
+
           call random_number(random2)
 
           ! has ice
@@ -1246,17 +1246,17 @@ contains
           iceVolumeCategory(1,:,iCell)  = 10.0_RKIND**(-11.0_RKIND * random2)!config_initial_ice_volume
           snowVolumeCategory(1,:,iCell) = 10.0_RKIND**(-11.0_RKIND * random2)!config_initial_snow_volume
           surfaceTemperature(1,:,iCell) = 1.0_RKIND
-          
+
        else
-          
+
           ! no ice
           iceAreaCategory(1,:,iCell)    = 0.0_RKIND
           iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
           snowVolumeCategory(1,:,iCell) = 0.0_RKIND
           surfaceTemperature(1,:,iCell) = 0.0_RKIND
-          
+
        endif
-       
+
     enddo ! iCell
 
   end subroutine init_ice_state_random_coverage!}}}
@@ -1276,12 +1276,12 @@ contains
   subroutine init_ice_velocity_uniform(&
        block, &
        configs)!{{{
-    
+
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -1328,10 +1328,10 @@ contains
 
        if (interiorVertex(iVertex) == 1 .and. &
            landIceMaskVertex(iVertex) == 0) then
-          
+
           uVelocity(iVertex) = config_initial_uvelocity
           vVelocity(iVertex) = config_initial_vvelocity
-          
+
        else
 
           uVelocity(iVertex) = 0.0_RKIND
@@ -1361,12 +1361,12 @@ contains
 
     use cice_mesh, only: &
          cice_interpolate_cell_to_vertex
- 
+
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -1422,7 +1422,7 @@ contains
          vOceanVelocity)
 
     do iVertex = 1, nVertices
-    
+
        if (interiorVertex(iVertex) == 1 .and. &
            landIceMaskVertex(iVertex) == 0) then
 
@@ -1458,12 +1458,12 @@ contains
   subroutine init_ice_velocity_random(&
        block, &
        configs)!{{{
- 
+
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -1504,7 +1504,7 @@ contains
     call random_seed()
 
     do iVertex = 1, nVertices
-    
+
        if (interiorVertex(iVertex) == 1) then
 
           call random_number(uVelocity(iVertex))
@@ -1539,12 +1539,12 @@ contains
   subroutine init_ice_velocity_special(&
        block, &
        configs)!{{{
- 
+
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+         configs !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -1580,7 +1580,7 @@ contains
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
-    
+
     integer, dimension(:,:), pointer :: &
          edgesOnCell
 
@@ -1609,7 +1609,7 @@ contains
     iCell2 = 2052
 
     do iEdgeOnCell0 = 1, nEdgesOnCell(iCell0)
-       do iEdgeOnCell1 = 1, nEdgesOnCell(iCell1) 
+       do iEdgeOnCell1 = 1, nEdgesOnCell(iCell1)
           write(*,*) iEdgeOnCell0, iEdgeOnCell1, edgesOnCell(iEdgeOnCell0,iCell0), edgesOnCell(iEdgeOnCell1,iCell1)
           if (edgesOnCell(iEdgeOnCell0,iCell0) == edgesOnCell(iEdgeOnCell1,iCell1)) then
              iEdge1 = edgesOnCell(iEdgeOnCell0,iCell0)
@@ -1618,7 +1618,7 @@ contains
     enddo ! iEdgeOnCell0
 
     do iEdgeOnCell0 = 1, nEdgesOnCell(iCell0)
-       do iEdgeOnCell2 = 1, nEdgesOnCell(iCell2) 
+       do iEdgeOnCell2 = 1, nEdgesOnCell(iCell2)
           if (edgesOnCell(iEdgeOnCell0,iCell0) == edgesOnCell(iEdgeOnCell2,iCell2)) then
              iEdge2 = edgesOnCell(iEdgeOnCell0,iCell0)
           endif
@@ -1708,7 +1708,7 @@ contains
          airDragCoefficient, &
          longwaveUp
 
-    real(kind=RKIND), dimension(:), pointer :: & 
+    real(kind=RKIND), dimension(:), pointer :: &
          oceanNitrateConc, &
          oceanSilicateConc, &
          oceanAmmoniumConc, &
@@ -1716,10 +1716,10 @@ contains
          oceanDMSPConc, &
          oceanHumicsConc, &
          carbonToNitrogenRatioAlgae, &
-         carbonToNitrogenRatioDON  
+         carbonToNitrogenRatioDON
 
     real(kind=RKIND), dimension(:,:), pointer :: &
-         atmosBioFluxes, & 
+         atmosBioFluxes, &
          atmosBlackCarbonFlux, &
          atmosDustFlux, &
          oceanAlgaeConc, &
@@ -1740,14 +1740,14 @@ contains
          maxBCType, &
          maxDustType, &
          maxAerosolType, &
-         nZBGCTracers         
+         nZBGCTracers
 
     logical, pointer :: &
          config_do_restart, &
          config_use_column_biogeochemistry, &
          config_use_column_package, &
          config_use_aerosols
-    
+
     integer, pointer :: &
          nCells
 
@@ -1762,7 +1762,7 @@ contains
        !-------------------------------------------------------------
        ! Physics fluxes received from atmosphere
        !-------------------------------------------------------------
-       
+
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
        call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
 
@@ -1783,7 +1783,7 @@ contains
        call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceSalinity", seaSurfaceSalinity)
-       call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)       
+       call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
 
        call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
@@ -1797,9 +1797,9 @@ contains
           seaSurfaceTemperature = seaFreezingTemperature
        endif
 
-       !------------------------------------------------------------- 
+       !-------------------------------------------------------------
        ! fluxes sent to atmosphere
-       !------------------------------------------------------------- 
+       !-------------------------------------------------------------
 
        call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
 

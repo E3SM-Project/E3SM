@@ -217,7 +217,7 @@ contains
 !> \date    6th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member. It computes ice and snow layer 
+!>  MPAS-CICE analysis member. It computes ice and snow layer
 !>  temperatures from enthalpies and salinities using CICE column
 !>  package routines.
 !
@@ -314,21 +314,21 @@ contains
          ! initialize
          iceTemperature = 0.0_RKIND
          snowTemperature = 0.0_RKIND
-                  
+
          ! compute temperatures
          do iCell = 1, nCellsSolve
             do iCategory = 1, nCategories
 
                ! check if ice present
                if (iceAreaCategory(1,iCategory,iCell) > 1e-11_RKIND) then
-               
+
                   ! ice layers
                   do iIceLayer = 1, nIceLayers
                      iceTemperature(iIceLayer, iCategory, iCell) = &
                           colpkg_ice_temperature(iceEnthalpy(iIceLayer,iCategory,iCell), &
                                                  iceSalinity(iIceLayer,iCategory,iCell))
                   enddo ! iIceLayer
-               
+
                   ! snow layers
                   if (snowVolumeCategory(1,iCategory,iCell) > 1e-11_RKIND) then
 

@@ -20,19 +20,19 @@ module cice_advection_upwind
   implicit none
 
   private
-  save 
+  save
 
   public :: &
        cice_init_advection_upwind, &
        cice_run_advection_upwind
-  
+
   ! maximum number of tracers
   integer, parameter, private :: &
        nTracerVariables = 7
 
   ! single tracer connectivity. Defines the relationship between the child and its parent
   type, private :: tracerConnectivity
-    
+
      character(len=200) :: &
           childTracerName  = "", & ! name of the child tracer
           parentTracerName = ""    ! name of the parent tracer to the child (or 'none' if none exists)
@@ -46,7 +46,7 @@ module cice_advection_upwind
      real(kind=RKIND) :: &
           childTracerMinimum, &
           parentTracerMinimum
- 
+
   end type tracerConnectivity
 
   ! array of all the tracer connectivities
@@ -58,7 +58,7 @@ contains
 !-----------------------------------------------------------------------
 ! Initialization
 !-----------------------------------------------------------------------
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  cice_init_advection_upwind
@@ -75,7 +75,7 @@ contains
 
     !use mpas_tracer_advection_helpers, only: &
     !     mpas_tracer_advection_coefficients
-    
+
     !use mpas_tracer_advection_mono, only: &
     !     mpas_tracer_advection_mono_init
 
@@ -83,7 +83,7 @@ contains
          cice_normal_vectors_polygon
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(block_type), pointer :: &
          block
@@ -197,7 +197,7 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine define_tracer_connectivities(config_use_velocity_solver)!{{{
 
     use cice_constants, only: &
@@ -258,17 +258,17 @@ contains
        childTracerMinimum)!{{{
 
     type(tracerConnectivity), dimension(:), intent(inout) :: &
-         tracerConnectivities !< Input/Output: 
+         tracerConnectivities !< Input/Output:
 
     character(len=*), intent(in) :: &
-         childTracerName, & !< Input: 
-         parentTracerName   !< Input: 
+         childTracerName, & !< Input:
+         parentTracerName   !< Input:
 
     logical, optional, intent(in) :: &
-         updateHalo !< Input: 
+         updateHalo !< Input:
 
     real(kind=RKIND), optional, intent(in) :: &
-         childTracerMinimum !< Input: 
+         childTracerMinimum !< Input:
 
     integer :: &
          iTracerVariable
@@ -317,11 +317,11 @@ contains
        tracerConnectivities)!{{{
 
     type(tracerConnectivity), dimension(:), intent(inout) :: &
-         tracerConnectivities !< Input/Output: 
+         tracerConnectivities !< Input/Output:
 
     integer :: iTracerVariable
 
-    do iTracerVariable = 1, nTracerVariables    
+    do iTracerVariable = 1, nTracerVariables
 
        tracerConnectivities(iTracerVariable) % childTracerName = ""
        tracerConnectivities(iTracerVariable) % parentTracerName = ""
@@ -348,7 +348,7 @@ contains
   subroutine write_tracer_connectivities(unit)!{{{
 
     integer, intent(in) :: &
-          unit !< Input: 
+          unit !< Input:
 
     integer :: &
          iTracerVariable
@@ -368,7 +368,7 @@ contains
             trim(tracerConnectivities(iTracerVariable) % parentTracerName), " | ", &
             tracerConnectivities(iTracerVariable) % defined, " | ", &
             tracerConnectivities(iTracerVariable) % childTracerMinimum, " | ", &
-            tracerConnectivities(iTracerVariable) % parentTracerMinimum, " | "        
+            tracerConnectivities(iTracerVariable) % parentTracerMinimum, " | "
 
     enddo ! iTracerVariable
 
@@ -392,15 +392,15 @@ contains
   subroutine add_parent_tracer_minimums(tracerConnectivities)!{{{
 
     type(tracerConnectivity), dimension(:), intent(inout) :: &
-         tracerConnectivities !< Input/Output: 
+         tracerConnectivities !< Input/Output:
 
     integer :: &
          iTracerVariable, &
          iTracerVariable2
 
-    do iTracerVariable = 1, nTracerVariables 
+    do iTracerVariable = 1, nTracerVariables
 
-       do iTracerVariable2 = 1, nTracerVariables 
+       do iTracerVariable2 = 1, nTracerVariables
 
           if (trim(tracerConnectivities(iTracerVariable) % parentTracerName) == &
               trim(tracerConnectivities(iTracerVariable2) % childTracerName)) &
@@ -435,7 +435,7 @@ contains
   subroutine cice_run_advection_upwind(domain, clock)!{{{
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
@@ -465,7 +465,7 @@ contains
     real(kind=RKIND), dimension(:), allocatable :: &
          edgeVelocity
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &    
+    real(kind=RKIND), dimension(:,:), allocatable :: &
          edgeFlux
 
     integer, dimension(:), pointer :: &
@@ -486,7 +486,7 @@ contains
 
        call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
        call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
-       call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)  
+       call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
        call prepare_advection(&
             clock, &
@@ -524,7 +524,7 @@ contains
        call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
        call MPAS_pool_get_array(velocity_solver, "dynamicsTimeStep", dynamicsTimeStep)
 
-       call MPAS_pool_get_array(boundary, "interiorEdge", interiorEdge)  
+       call MPAS_pool_get_array(boundary, "interiorEdge", interiorEdge)
 
        do iTracerVariable = 1, nTracerVariables
 
@@ -551,7 +551,7 @@ contains
           endif
 
        enddo ! iTracerVariable
-       
+
        call finalize_advection(&
             clock, &
             block % configs, &
@@ -577,7 +577,7 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine run_advection_variable(&
        clock, &
        mesh, &
@@ -598,35 +598,35 @@ contains
          clock !< Input:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-  
+         mesh !< Input:
+
     type (MPAS_pool_type), pointer :: &
-         tracers, &           !< Input/Output: 
-         tracer_tendencies, & !< Input/Output: 
-         tracer_edge_fluxes   !< Input/Output: 
-    
+         tracers, &           !< Input/Output:
+         tracer_tendencies, & !< Input/Output:
+         tracer_edge_fluxes   !< Input/Output:
+
     character(len=*), intent(in) :: &
-         childTracerName, & !< Input: 
-         parentTracerName   !< Input: 
+         childTracerName, & !< Input:
+         parentTracerName   !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         childTracerMinimum, & !< Input: 
+         childTracerMinimum, & !< Input:
          parentTracerMinimum   !< Input:
 
     logical, intent(in) :: &
-         updateHalo !< Input: 
+         updateHalo !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity !< Input: 
-         
+         edgeVelocity !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux !< Input/Output: 
+         edgeFlux !< Input/Output:
 
     integer, dimension(:), intent(in) :: &
-         InteriorEdge !< Input: 
-    
+         InteriorEdge !< Input:
+
     real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
+         dt !< Input:
 
     type (mpas_pool_field_info_type) :: childFieldInfo
 
@@ -649,7 +649,7 @@ contains
             edgeFlux, &
             InteriorEdge, &
             dt)
-       
+
     else if (childFieldInfo % nDims == 4) then
 
        call run_advection_variable_4D(&
@@ -704,35 +704,35 @@ contains
          clock !< Input:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-    
+         mesh !< Input:
+
     type (MPAS_pool_type), pointer :: &
-         tracers, &           !< Input/Output: 
-         tracer_tendencies, & !< Input/Output: 
-         tracer_edge_fluxes   !< Input/Output: 
-    
+         tracers, &           !< Input/Output:
+         tracer_tendencies, & !< Input/Output:
+         tracer_edge_fluxes   !< Input/Output:
+
     character(len=*), intent(in) :: &
-         childTracerName, & !< Input: 
-         parentTracerName   !< Input: 
+         childTracerName, & !< Input:
+         parentTracerName   !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         childTracerMinimum, & !< Input: 
-         parentTracerMinimum   !< Input: 
+         childTracerMinimum, & !< Input:
+         parentTracerMinimum   !< Input:
 
     logical, intent(in) :: &
-         updateHalo !< Input: 
+         updateHalo !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity !< Input: 
-         
+         edgeVelocity !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux !< Input/Output: 
+         edgeFlux !< Input/Output:
 
     integer, dimension(:), intent(in) :: &
-         InteriorEdge !< Input: 
-    
+         InteriorEdge !< Input:
+
     real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
+         dt !< Input:
 
     type(field3DReal), pointer :: &
          childTracerOld
@@ -765,7 +765,7 @@ contains
          iCell, &
          iEdgeOnCell, &
          iEdge
-    
+
     ! child tracer
     call MPAS_pool_get_field(tracers, trim(childTracerName), childTracerOld, 1)
     call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 2)
@@ -885,19 +885,19 @@ contains
          clock !< Input:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         childTracerOld !< Input: 
+         childTracerOld !< Input:
 
-    real(kind=RKIND), dimension(:), intent(in) :: &    
-         edgeVelocity !< Input: 
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         edgeVelocity !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         parentTracerOldNone, & !< Input/Output: 
-         parentTracerNewNone, & !< Input/Output: 
-         parentTendencyNone, &  !< Input/Output: 
-         parentEdgeFluxNone     !< Input/Output: 
+         parentTracerOldNone, & !< Input/Output:
+         parentTracerNewNone, & !< Input/Output:
+         parentTendencyNone, &  !< Input/Output:
+         parentEdgeFluxNone     !< Input/Output:
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
@@ -931,20 +931,20 @@ contains
           parentTracerOldNone(1,iCategory,iCell) = 0.0_RKIND ! need this?
           parentTracerNewNone(1,iCategory,iCell) = 0.0_RKIND ! need this?
 
-          parentTendencyNone(1,iCategory,iCell) = 0.0_RKIND 
+          parentTendencyNone(1,iCategory,iCell) = 0.0_RKIND
 
           if (childTracerOld(1,iCategory,iCell) > iceAreaMinimum) then
              parentTracerOldNone(1,iCategory,iCell) = 1.0_RKIND
              parentTracerNewNone(1,iCategory,iCell) = 1.0_RKIND
-             !parentTendencyNone(1,iCategory,iCell) = 0.0_RKIND 
+             !parentTendencyNone(1,iCategory,iCell) = 0.0_RKIND
           endif
-          
+
           do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
              if (childTracerOld(1,iCategory,cellsOnCell(iEdgeOnCell,iCell)) > iceAreaMinimum) then
                 parentTracerOldNone(1,iCategory,iCell) = 1.0_RKIND
                 parentTracerNewNone(1,iCategory,iCell) = 1.0_RKIND
-                parentTendencyNone(1,iCategory,iCell) = 0.0_RKIND 
+                parentTendencyNone(1,iCategory,iCell) = 0.0_RKIND
                 exit
              endif
 
@@ -996,37 +996,37 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
-    
+
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type (MPAS_pool_type), pointer :: &
-         tracers, &           !< Input/Output: 
-         tracer_tendencies, & !< Input/Output: 
-         tracer_edge_fluxes   !< Input/Output: 
-    
+         tracers, &           !< Input/Output:
+         tracer_tendencies, & !< Input/Output:
+         tracer_edge_fluxes   !< Input/Output:
+
     character(len=*), intent(in) :: &
-         childTracerName, & !< Input: 
-         parentTracerName   !< Input: 
+         childTracerName, & !< Input:
+         parentTracerName   !< Input:
 
     real(kind=RKIND), intent(in) :: &
          childTracerMinimum, &
          parentTracerMinimum
 
     logical, intent(in) :: &
-         updateHalo !< Input: 
+         updateHalo !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity !< Input: 
-         
+         edgeVelocity !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux !< Input/Output: 
+         edgeFlux !< Input/Output:
 
     integer, dimension(:), intent(in) :: &
          InteriorEdge
 
     real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
+         dt !< Input:
 
     type(field4DReal), pointer :: &
          childTracerOld
@@ -1080,9 +1080,9 @@ contains
             edgeFlux, &
             InteriorEdge, &
             dt)
-       
+
     enddo ! iTracerDimension
-    
+
   end subroutine run_advection_variable_4D!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -1129,38 +1129,38 @@ contains
          clock !< Input:
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     character(len=*), intent(in) :: &
          childTracerName
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         childTracerOld, & !< Input/Output: 
-         childTracerNew, & !< Input/Output: 
-         childTendency, &  !< Input/Output: 
-         childEdgeFlux     !< Input/Output: 
+         childTracerOld, & !< Input/Output:
+         childTracerNew, & !< Input/Output:
+         childTendency, &  !< Input/Output:
+         childEdgeFlux     !< Input/Output:
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         parentTracerOld, & !< Input/Output: 
-         parentTracerNew, & !< Input/Output: 
-         parentTendency, &  !< Input/Output: 
-         parentEdgeFlux     !< Input/Output: 
+         parentTracerOld, & !< Input/Output:
+         parentTracerNew, & !< Input/Output:
+         parentTendency, &  !< Input/Output:
+         parentEdgeFlux     !< Input/Output:
 
     real(kind=RKIND), intent(in) :: &
          childTracerMinimum, & !< Input
          parentTracerMinimum   !< Input
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity !< Input: 
-         
+         edgeVelocity !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux !< Input/Output: 
+         edgeFlux !< Input/Output:
 
     integer, dimension(:), intent(in) :: &
-         InteriorEdge !< Input: 
+         InteriorEdge !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
+         dt !< Input:
 
     integer, pointer :: &
          nEdges, &
@@ -1204,14 +1204,14 @@ contains
 
     monotonicityCheck = .true.
 
-    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)   
-    call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)    
+    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
-    !call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)  
-    !call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)  
-    !call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)  
-    !call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)  
+    !call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)
+    !call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)
+    !call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
+    !call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)
     !call MPAS_pool_get_array(mesh, "advCoefs3rd", advCoefs3rd)
 
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
@@ -1243,8 +1243,8 @@ contains
     !     advCellsForEdge,                 & ! (nAdvectionCells nEdges)
     !     parentEdgeFlux(1,:,:),           & ! (nCategories, nEdges)
     !     parentTracerOld(1,:,:),          & ! (nCategories, nCells)
-    !     dt,                              & ! 
-    !     mesh,                            & ! 
+    !     dt,                              & !
+    !     mesh,                            & !
     !     parentTendency(1,:,:),           & ! (nCategories, nCells)
     !     parentTracerMaskOld(1,:,:),      & ! (nCategories, nCells)
     !     parentTracerMaskNew(1,:,:),      & ! (nCategories, nCells)
@@ -1258,7 +1258,7 @@ contains
        do iCategory = 1, nCategories
 
           if (parentTracerNew(1,iCategory,iCell) > parentTracerMinimum) then
-             
+
              do iTracerDimension = 1, size(childTracerNew,1)
 
                 ! calculate the new tracer
@@ -1312,7 +1312,7 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          parentTracerMinimum
-    
+
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          childTendency, &
          childEdgeFlux
@@ -1356,9 +1356,9 @@ contains
     integer, dimension(:,:), allocatable :: &
          edgeSignOnCell
 
-    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)    
-    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)    
-    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)  
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
     call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
@@ -1394,21 +1394,21 @@ contains
        enddo ! iCell
 
        do iCell = 1, nCellsSolve
-          
+
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
-          
+
           do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-             
+
              iEdge = edgesOnCell(iEdgeOnCell, iCell)
              cell1 = cellsOnEdge(1,iEdge)
              cell2 = cellsOnEdge(2,iEdge)
 
              if (interiorEdge(iEdge) == 1) then
-             
+
                 do iCategory = 1, nCategories
 
                    if (parentTracerOld(iCategory,cell1) > parentTracerMinimum .or. &
-                       parentTracerOld(iCategory,cell2) > parentTracerMinimum) then            
+                       parentTracerOld(iCategory,cell2) > parentTracerMinimum) then
 
                       flux_upwind = dvEdge(iEdge) * (max(0.0_RKIND,parentEdgeFlux(iCategory,iEdge))*childTracerOld(iTracer,iCategory,cell1) + &
                                                      min(0.0_RKIND,parentEdgeFlux(iCategory,iEdge))*childTracerOld(iTracer,iCategory,cell2))
@@ -1426,10 +1426,10 @@ contains
                 enddo ! iCategory
 
              endif ! interiorEdge
-             
+
           enddo ! iEdgeOnCell
-          
-       enddo ! iCell  
+
+       enddo ! iCell
 
     enddo ! iTracer
 
@@ -1459,11 +1459,11 @@ contains
     type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, & !< Input: 
-         vVelocity    !< Input: 
+         uVelocity, & !< Input:
+         vVelocity    !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorEdge !< Input: 
+         normalVectorEdge !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          edgeVelocity
@@ -1482,7 +1482,7 @@ contains
     integer, pointer :: &
          nCells, &
          nCellsSolve
-    
+
     integer, dimension(:), pointer :: &
          nEdgesOnCell
 
@@ -1544,7 +1544,7 @@ contains
 
        ! get edges surrounding owned cells
     !   if (cellsOnEdge(1,iEdge) <= nCellsSolve .or. &
-    !       cellsOnEdge(2,iEdge) <= nCellsSolve) then 
+    !       cellsOnEdge(2,iEdge) <= nCellsSolve) then
 
     !      iCell = cellsOnEdge(1,iEdge)
     !      do iEdgeOnCell1 = 1, nEdgesOnCell(iCell)
@@ -1553,30 +1553,30 @@ contains
     !            exit
     !         endif
     !      enddo ! iEdgeOnCell
-          
+
           ! find u,v velocity at edge
     !      uVelocityEdge = 0.0_RKIND
     !      vVelocityEdge = 0.0_RKIND
-          
+
     !      do iVertexOnEdge = 1, 2
-             
+
     !         iVertex = verticesOnEdge(iVertexOnEdge, iEdge)
-             
+
     !         uVelocityEdge = uVelocityEdge + uVelocity(iVertex)
     !         vVelocityEdge = vVelocityEdge + vVelocity(iVertex)
-             
+
     !      enddo ! iVertexOnEdge
-          
+
     !      uVelocityEdge = uVelocityEdge / 2.0_RKIND
     !      vVelocityEdge = vVelocityEdge / 2.0_RKIND
-          
+
           ! rotate u,v velocity to normal
     !      edgeVelocity(iEdge) = &
     !           uVelocityEdge * normalVectorEdge(1,iEdgeOnCell,iCell) + &
     !           vVelocityEdge * normalVectorEdge(2,iEdgeOnCell,iCell)
-          
+
     !   endif ! interior block edge
-       
+
     !enddo ! iEdge
 
 
@@ -1611,29 +1611,29 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         configs, &  !< Input: 
-         mesh        !< Input: 
+         configs, &  !< Input:
+         mesh        !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &            !< Input/Output: 
-         tracer_tendencies, &  !< Input/Output: 
-         tracer_edge_fluxes, & !< Input/Output: 
-         tracer_conservation   !< Input/Output: 
+         tracers, &            !< Input/Output:
+         tracer_tendencies, &  !< Input/Output:
+         tracer_edge_fluxes, & !< Input/Output:
+         tracer_conservation   !< Input/Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, & !< Input: 
-         vVelocity    !< Input: 
+         uVelocity, & !< Input:
+         vVelocity    !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorEdge !< Input: 
+         normalVectorEdge !< Input:
 
     real(kind=RKIND), dimension(:), allocatable, intent(inout) :: &
-         edgeVelocity !< Input/Output: 
+         edgeVelocity !< Input/Output:
 
-    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &    
-         edgeFlux !< Input/Output: 
+    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &
+         edgeFlux !< Input/Output:
 
     integer, pointer :: &
          nEdges, &
@@ -1650,7 +1650,7 @@ contains
 
     allocate(edgeVelocity(nEdges))
     allocate(edgeFlux(nCategories,nEdges))
-    
+
     call edge_from_vertex_velocity(&
          mesh, &
          uVelocity, &
@@ -1684,7 +1684,7 @@ contains
        tracer_tendencies, &
        tracer_edge_fluxes, &
        tracer_conservation)
-    
+
     type(MPAS_pool_type), intent(inout) :: &
          tracers, &
          tracer_tendencies, &
@@ -1836,8 +1836,8 @@ contains
 
     type(domain_type), intent(inout) :: &
          domain
-    
-    type(MPAS_pool_type), pointer :: &         
+
+    type(MPAS_pool_type), pointer :: &
          tracers_fields
 
     type (MPAS_pool_field_info_type) :: &
@@ -1899,17 +1899,17 @@ contains
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          configs, &
-         mesh !< Input: 
+         mesh !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &          !< Input/Output: 
-         tracer_conservation !< Input/Output: 
+         tracers, &          !< Input/Output:
+         tracer_conservation !< Input/Output:
 
     real(kind=RKIND), dimension(:), allocatable, intent(inout) :: &
-         edgeVelocity !< Input/Output: 
+         edgeVelocity !< Input/Output:
 
-    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &    
-         edgeFlux !< Input/Output: 
+    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &
+         edgeFlux !< Input/Output:
 
     call finalize_tracers(&
          clock, &
@@ -1951,12 +1951,12 @@ contains
          clock !< Input:
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         configs, & !< Input: 
-         mesh       !< Input: 
+         configs, & !< Input:
+         mesh       !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &          !< Input/Output: 
-         tracer_conservation !< Input/Output: 
+         tracers, &          !< Input/Output:
+         tracer_conservation !< Input/Output:
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2054,12 +2054,12 @@ contains
          clock !< Input:
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         configs, & !< Input: 
-         mesh       !< Input: 
+         configs, & !< Input:
+         mesh       !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &          !< Input/Output: 
-         tracer_conservation !< Input/Output: 
+         tracers, &          !< Input/Output:
+         tracer_conservation !< Input/Output:
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2113,7 +2113,7 @@ contains
 
     if (config_limit_ice_concentration) &
          call limit_ice_concentration(mesh, tracers)
-    
+
     call scale_tracers_back(mesh, tracers)
 
     if (config_convert_volume_to_thickness) then
@@ -2168,7 +2168,7 @@ contains
          iCell
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
-        iceAreaCategory 
+        iceAreaCategory
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
@@ -2199,10 +2199,10 @@ contains
        tracers)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         tracers !< Input/Output: 
+         tracers !< Input/Output:
 
     integer :: &
          iTracerVariable
@@ -2217,23 +2217,23 @@ contains
           call mpas_pool_get_field_info(tracers, trim(tracerConnectivities(iTracerVariable) % childTracerName), childFieldInfo)
 
           if (childFieldInfo % nDims == 3) then
-             
+
              call scale_tracers_back_3D(&
                   mesh, &
                   tracers, &
                   trim(tracerConnectivities(iTracerVariable) % childTracerName), &
                   trim(tracerConnectivities(iTracerVariable) % parentTracerName))
-             
+
           else if (childFieldInfo % nDims == 4) then
-             
+
              call scale_tracers_back_4D(&
                   mesh, &
                   tracers, &
                   trim(tracerConnectivities(iTracerVariable) % childTracerName), &
                   trim(tracerConnectivities(iTracerVariable) % parentTracerName))
-             
+
           endif
-          
+
        endif
 
     enddo ! iTracer
@@ -2259,14 +2259,14 @@ contains
        parentTracerName)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         tracers !< Input/Output: 
+         tracers !< Input/Output:
 
     character(len=*), intent(in) :: &
-         childTracerName, & !< Input: 
-         parentTracerName   !< Input: 
+         childTracerName, & !< Input:
+         parentTracerName   !< Input:
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          childTracerNew, &
@@ -2283,7 +2283,7 @@ contains
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-         
+
     call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 1)
     call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerNew, 1)
 
@@ -2327,14 +2327,14 @@ contains
        parentTracerName)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         tracers !< Input/Output: 
+         tracers !< Input/Output:
 
     character(len=*), intent(in) :: &
-         childTracerName, & !< Input: 
-         parentTracerName   !< Input: 
+         childTracerName, & !< Input:
+         parentTracerName   !< Input:
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          parentTracerNew
@@ -2354,7 +2354,7 @@ contains
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-         
+
     call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 1)
     call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerNew, 1)
 
@@ -2370,7 +2370,7 @@ contains
 
                 else
 
-                   childTracerNew(iTracerDimension,iTracer,iCategory,iCell) = 0.0_RKIND                   
+                   childTracerNew(iTracerDimension,iTracer,iCategory,iCell) = 0.0_RKIND
 
                 endif
 
@@ -2449,7 +2449,7 @@ contains
              write(*,*) "surfaceTemperature: ", surfaceTemperature(1,iCategory,iCell)
              stop
           endif
-          
+
           ! fail for negative ice volume
           if (iceVolumeCategory(1,iCategory,iCell) < 0.0_RKIND) then
              curr_time = mpas_get_clock_time(clock, MPAS_NOW)
@@ -2542,7 +2542,7 @@ contains
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-     
+
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     do iTracerVariable = 1, nTracerVariables
@@ -2586,7 +2586,7 @@ contains
                       childParentTracer(iTracer,iCategory,iCell) = &
                            parentTracer(iTracer,iCategory,iCell) * childTracer(iTracer,iCategory,iCell)
 
-                   enddo ! iTracer      
+                   enddo ! iTracer
                 enddo ! iCategory
              enddo ! iCell
 
@@ -2596,8 +2596,8 @@ contains
 
     enddo ! iTracerVariable
 
-    ! erase 
-       
+    ! erase
+
     do iTracerVariable = 1, nTracerVariables
 
        if (tracerConnectivities(iTracerVariable) % defined == 1) then
@@ -2671,7 +2671,7 @@ contains
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-     
+
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     strNameHeader     = "Tracer Name"
@@ -2689,7 +2689,7 @@ contains
     do iTracerVariable = 1, nTracerVariables
 
        if (tracerConnectivities(iTracerVariable) % defined == 1) then
-          
+
           call MPAS_pool_get_array(tracers, trim(tracerConnectivities(iTracerVariable) % childTracerName), tracer, 1)
 
           call MPAS_pool_get_array(tracer_conservation, trim(tracerConnectivities(iTracerVariable) % childTracerName) // "Cons", tracerAggregate, 2)

@@ -73,11 +73,11 @@ contains
   function find_nearest_cell(mesh,x,y) result(iNear)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         x, & !< Input: 
-         y    !< Input: 
+         x, & !< Input:
+         y    !< Input:
 
     integer :: iNear
 
@@ -116,7 +116,7 @@ contains
 
        endif
 
-    enddo ! iCell    
+    enddo ! iCell
 
   end function find_nearest_cell!}}}
 
@@ -135,7 +135,7 @@ contains
   subroutine rotate_ninety(mesh)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     integer :: &
          iCell, &
@@ -148,7 +148,7 @@ contains
          nCells, &
          nVertices, &
          nEdges
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
          yCell, &
@@ -220,19 +220,19 @@ contains
   subroutine plot_vertices_spherical(mesh, cellArray, interiorVertex, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-    
+         mesh !< Input:
+
     real(kind=RKIND), dimension(:), intent(in) :: &
-         cellArray !< Input: 
+         cellArray !< Input:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     character(len=*), optional, intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, intent(in), optional :: &
-         tag !< Input: 
+         tag !< Input:
 
     real(kind=RKIND) :: &
          xc, yc, zc, &
@@ -303,7 +303,7 @@ contains
     real(kind=RKIND) :: &
          minArray, &
          maxArray
-    
+
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
@@ -343,59 +343,59 @@ contains
           xc = xVertex(iVertex) / sphere_radius
           yc = yVertex(iVertex) / sphere_radius
           zc = zVertex(iVertex) / sphere_radius
-          
+
           call perform_rotation(xc, yc, zc)
-          
+
           if (xc > 0.0_RKIND) then
 
              minArray = min(minArray,cellArray(iVertex))
              maxArray = max(maxArray,cellArray(iVertex))
 
              write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
-             
+
              do iVertexDegree = 1, vertexDegree
-                
+
                 iCell = cellsOnVertex(iVertexDegree, iVertex)
-                
+
                 xv = xCell(iCell) / sphere_radius
                 yv = yCell(iCell) / sphere_radius
                 zv = zCell(iCell) / sphere_radius
-                
+
                 call perform_rotation(xv, yv, zv)
-                
+
                 if (iVertexDegree == 1) then
                    xv0 = xv
                    yv0 = yv
                    zv0 = zv
                 endif
-                
+
                 write(stroutvertex,fmt='(e14.6,a,e14.6,a)') yv, ", ", zv, " to "
                 strout = trim(strout)//trim(stroutvertex)
-                
+
              enddo ! iVertexDegree
-             
+
              write(stroutvertex,fmt='(e14.6,a,e14.6)') yv0, ", ", zv0
              strout = trim(strout)//trim(stroutvertex)
              write(55,*) trim(strout)
-             
+
              if (lnofill) then
                 write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border lt -1'
              else
                 write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', cellArray(iVertex), ' fillstyle solid'
              endif
-             
+
              write(55,*) trim(strout)
-            
+
              iObject = iObject + 1
-             
+
           endif
-          
+
        endif ! interiorVertex
-       
+
     enddo ! iVertex
 
     write(55,*) "set cbrange [",minArray,":",maxArray,"]"
-       
+
     ! now write on latitude/longitude lines
     if (lgrid) then
        dLat = 180.0_RKIND / real(nLat,RKIND)
@@ -545,16 +545,16 @@ contains
   subroutine plot_cells_spherical(mesh, cellArray, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-    
+         mesh !< Input:
+
     real(kind=RKIND), dimension(:), intent(in) :: &
-         cellArray !< Input: 
+         cellArray !< Input:
 
     character(len=*), optional, intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, intent(in), optional :: &
-         tag !< Input: 
+         tag !< Input:
 
     real(kind=RKIND) :: &
          xc, yc, zc, &
@@ -860,16 +860,16 @@ contains
     use cice_constants, only: ciceDegreesToRadians
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         lat, & !< Input: 
-         lon    !< Input: 
+         lat, & !< Input:
+         lon    !< Input:
 
     real(kind=RKIND), intent(out) :: &
-         x, & !< Output: 
-         y, & !< Output: 
-         z    !< Output: 
+         x, & !< Output:
+         y, & !< Output:
+         z    !< Output:
 
     real(kind=RKIND), pointer :: &
          sphere_radius
@@ -901,9 +901,9 @@ contains
          ciceDegreesToRadians
 
     real(kind=RKIND), intent(inout) :: &
-         x, & !< Input/Output: 
-         y, & !< Input/Output: 
-         z    !< Input/Output: 
+         x, & !< Input/Output:
+         y, & !< Input/Output:
+         z    !< Input/Output:
 
     real(kind=RKIND), dimension(3,3) :: &
          Rx, Ry, Rz
@@ -959,16 +959,16 @@ contains
   subroutine cice_plot_pop_grid_cells(mesh, cellArray, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-    
+         mesh !< Input:
+
     real(kind=RKIND), dimension(:), intent(in) :: &
-         cellArray !< Input: 
+         cellArray !< Input:
 
     character(len=*), optional, intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, optional, intent(in) :: &
-         tag !< Input: 
+         tag !< Input:
 
     integer :: &
          i, j, iCell
@@ -985,7 +985,7 @@ contains
          POP_nx, &
          POP_ny, &
          nCells
-    
+
     integer, dimension(:), pointer :: &
          POPindxi, &
          POPindxj
@@ -1018,9 +1018,9 @@ contains
           lfound = .false.
 
           do iCell = 1, nCells
-             
+
              if (POPindxi(iCell) == i .and. POPindxj(iCell) == j) then
-                
+
                 lfound = .true.
 
                 write(55,*) real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
@@ -1028,7 +1028,7 @@ contains
                             cellArray(iCell)
 
                 exit
-                   
+
              endif
 
           enddo ! iCell
@@ -1067,19 +1067,19 @@ contains
   subroutine cice_plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-    
+         mesh !< Input:
+
     real(kind=RKIND), dimension(:), intent(in) :: &
-         vertexArray !< Input: 
+         vertexArray !< Input:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     character(len=*), optional, intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, optional, intent(in) :: &
-         tag !< Input: 
+         tag !< Input:
 
     integer :: &
          iVertex, &
@@ -1185,7 +1185,7 @@ contains
   subroutine cice_init_ijpop_from_ivertex(mesh)!{{{
 
     type(MPAS_pool_type), intent(inout) :: &
-         mesh !< Input/Output: 
+         mesh !< Input/Output:
 
     integer :: &
          iVertex, &
@@ -1212,7 +1212,7 @@ contains
 
     integer, dimension(:,:), pointer :: &
          cellsOnVertex
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          areaTriangle, &
          areaCell, &
@@ -1261,7 +1261,7 @@ contains
        POP_nx_2 = nint(real(POP_nx) / 2.0)
 
        l_boundary = .false.
-       if (imin < POP_nx_2 .and. imax > POP_nx_2) l_boundary = .true.    
+       if (imin < POP_nx_2 .and. imax > POP_nx_2) l_boundary = .true.
 
        do iVertexDegree = 1, vertexDegree
 
@@ -1283,14 +1283,14 @@ contains
        POPindxjv(iVertex) = jmin
 
     enddo ! iVertex
-    
+
     !open(11,file="vertexareas.txt")
     !do iVertex = 1, nVertices
     !   write(11,*) POPindxiv(iVertex), POPindxjv(iVertex), &
     !        areaTriangle(iVertex)
     !enddo
     !close(11)
-    
+
     !open(11,file="cellareas.txt")
     !do iCell = 1, nCells
     !   write(11,*) POPindxi(iCell), POPindxj(iCell), &
@@ -1326,17 +1326,17 @@ contains
   subroutine cice_rms_difference(array1, array2, mask, n, rms)!{{{
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         array1, & !< Input: 
-         array2    !< Input: 
+         array1, & !< Input:
+         array2    !< Input:
 
     integer, dimension(:), intent(in) :: &
-         mask !< Input: 
+         mask !< Input:
 
     integer, intent(in) :: &
-         n !< Input: 
+         n !< Input:
 
     real(kind=RKIND), intent(out) :: &
-         rms !< Output: 
+         rms !< Output:
 
     integer :: &
          i, &
@@ -1348,7 +1348,7 @@ contains
     do i = 1, n
 
        if (mask(i) == 1) then
-       
+
           rms = rms + (array1(i) - array2(i))**2
           num = num + 1
 
@@ -1379,16 +1379,16 @@ contains
   subroutine cice_plot_vertices_planar(mesh, array, interiorVertex, filename)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         array !< Input: 
+         array !< Input:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     character(len=*), intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, pointer :: &
          nVertices, &
@@ -1439,7 +1439,7 @@ contains
     do iVertex = 1, nVertices
 
        if (interiorVertex(iVertex) == 1) then
-       
+
           write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
           do iVertexDegree = 1, vertexDegree
@@ -1493,16 +1493,16 @@ contains
   subroutine cice_plot_cells_planar(mesh, array, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         array !< Input: 
+         array !< Input:
 
     character(len=*), intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, intent(in), optional :: &
-         tag !< Input: 
+         tag !< Input:
 
     integer, pointer :: &
          nCells
@@ -1511,7 +1511,7 @@ contains
          xVertex, &
          yVertex
 
-    integer, dimension(:), pointer :: &    
+    integer, dimension(:), pointer :: &
          nEdgesOnCell
 
     integer, dimension(:,:), pointer :: &
@@ -1553,7 +1553,7 @@ contains
     write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
 
     do iCell = 1, nCells
-       
+
        write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
        do iVertexOnCell = 1, nEdgesOnCell(iCell)
@@ -1603,15 +1603,15 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine open_filename_tag(unit, filename, tag)!{{{
-    
+
     integer, intent(in) :: &
-         unit !< Input: 
+         unit !< Input:
 
     character(len=*), intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, optional, intent(in) :: &
-         tag !< Input: 
+         tag !< Input:
 
     character(len=2000) :: &
          strtag, &
@@ -1649,16 +1649,16 @@ contains
          pii
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         array !< Input: 
+         array !< Input:
 
     character(len=*), intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, optional, intent(in) :: &
-         tag !< Input: 
+         tag !< Input:
 
     integer, pointer :: &
          nCells, &
@@ -1762,51 +1762,51 @@ contains
        if (plotPoint(iPoint) == 1) then
 
           write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
-          
+
           do iPointVertexOnPoint = 1, nPointVerticesOnPoint(iPoint)
-             
+
              iPointVertex = pointVertexOnPoint(iPointVertexOnPoint,iPoint)
-             
+
              plotLonPointVertex = lonPointVertex(iPointVertex)
              plotLatPointVertex = latPointVertex(iPointVertex)
- 
+
              if (lonPoint(iPoint) <= pii) then
-                
+
                 if (plotLonPointVertex >= 0.9_RKIND * 2.0_RKIND * pii) then
                    plotLonPointVertex = plotLonPointVertex - 2.0_RKIND * pii
                 endif
-                
+
              endif
-             
+
              if (lonPoint(iPoint) > pii) then
-                
+
                 if (plotLonPointVertex <= 0.1_RKIND * 2.0_RKIND * pii) then
                    plotLonPointVertex = plotLonPointVertex + 2.0_RKIND * pii
                 endif
-                
+
              endif
-             
+
              if (iPointVertexOnPoint == 1) then
-                
+
                 plotLonPointVertex0 = plotLonPointVertex
                 plotLatPointVertex0 = plotLatPointVertex
-                
+
              endif
-             
+
              write(stroutvertex,fmt='(f14.2,a,f14.2,a)') plotLonPointVertex, ",", plotLatPointVertex, " to "
              strout = trim(strout)//trim(stroutvertex)
 
           enddo ! iPointVertexOnPoint
-          
+
           write(stroutvertex,fmt='(f14.2,a,f14.2)') plotLonPointVertex0, ",", plotLatPointVertex0
           strout = trim(strout)//trim(stroutvertex)
           write(55,*) trim(strout)
-          
+
           write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', array(iPoint), ' fillstyle solid'
           write(55,*) trim(strout)
-          
+
           iObject = iObject + 1
-          
+
        endif ! plotPoint
 
     enddo ! iPoint
@@ -1839,13 +1839,13 @@ contains
   subroutine strip_plot(array, filename, tag)!{{{
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         array !< Input: 
+         array !< Input:
 
     character(len=*), intent(in) :: &
-         filename !< Input: 
+         filename !< Input:
 
     integer, intent(in) :: &
-         tag !< Input: 
+         tag !< Input:
 
     integer :: &
          iCell
@@ -1955,10 +1955,10 @@ contains
          cice_latlon_vector_rotation_backward
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     integer, intent(in) :: &
-         itimestep !< Input: 
+         itimestep !< Input:
 
     type (MPAS_pool_type), pointer :: &
          configs, &
@@ -2032,37 +2032,37 @@ contains
 
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)   
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)  
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
-    call MPAS_pool_get_array(mesh, "latVertex", latVertex)    
-    call MPAS_pool_get_array(mesh, "lonVertex", lonVertex) 
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex) 
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex) 
-    call MPAS_pool_get_array(mesh, "zVertex", zVertex) 
+    call MPAS_pool_get_array(mesh, "latVertex", latVertex)
+    call MPAS_pool_get_array(mesh, "lonVertex", lonVertex)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
 
-    call MPAS_pool_get_array(mesh, "latCell", latCell)    
-    call MPAS_pool_get_array(mesh, "lonCell", lonCell) 
-    call MPAS_pool_get_array(mesh, "xCell", xCell) 
-    call MPAS_pool_get_array(mesh, "yCell", yCell) 
-    call MPAS_pool_get_array(mesh, "zCell", zCell) 
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
-    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)    
+    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
     call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
-    call MPAS_pool_get_array(velocity_solver, "airStressVertexU", airStressVertexU)    
-    call MPAS_pool_get_array(velocity_solver, "airStressVertexV", airStressVertexV)    
-    call MPAS_pool_get_array(velocity_solver, "airStressCellU", airStressCellU)    
-    call MPAS_pool_get_array(velocity_solver, "airStressCellV", airStressCellV)    
+    call MPAS_pool_get_array(velocity_solver, "airStressVertexU", airStressVertexU)
+    call MPAS_pool_get_array(velocity_solver, "airStressVertexV", airStressVertexV)
+    call MPAS_pool_get_array(velocity_solver, "airStressCellU", airStressCellU)
+    call MPAS_pool_get_array(velocity_solver, "airStressCellV", airStressCellV)
     call MPAS_pool_get_array(velocity_solver, "totalMassVertexfVertex", totalMassVertexfVertex)
     call MPAS_pool_get_array(velocity_solver, "stressDivergenceU", stressDivergenceU)
     call MPAS_pool_get_array(velocity_solver, "stressDivergenceV", stressDivergenceV)
 
-    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)    
-    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)    
+    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
 
-    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)    
+    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
 
     allocate(uVelocityGeographical(nVertices))
     allocate(vVelocityGeographical(nVertices))
@@ -2216,10 +2216,10 @@ contains
   subroutine test_case_output_square_advection(block, itimestep)!{{{
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     integer, intent(in) :: &
-         itimestep !< Input: 
+         itimestep !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -2261,10 +2261,10 @@ contains
   subroutine test_case_output_advection(block, itimestep)!{{{
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     integer, intent(in) :: &
-         itimestep !< Input: 
+         itimestep !< Input:
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -2275,22 +2275,22 @@ contains
          iceVolumeCategory, &
          snowVolumeCategory, &
          surfaceTemperature
-    
+
     if (mod(itimestep, 24) == 0) then
-       
+
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
-       
+
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
-       
+
        call cice_plot_spherical_latlon(mesh, iceAreaCategory(1,1,:), "iceAreaCategory.txt", itimestep)
        call cice_plot_spherical_latlon(mesh, iceVolumeCategory(1,1,:), "iceVolumeCategory.txt", itimestep)
        call cice_plot_spherical_latlon(mesh, snowVolumeCategory(1,1,:), "snowVolumeCategory.txt", itimestep)
        call cice_plot_spherical_latlon(mesh, surfaceTemperature(1,1,:), "surfaceTemperature.txt", itimestep)
-       
+
     endif
 
   end subroutine test_case_output_advection!}}}
@@ -2314,7 +2314,7 @@ contains
   subroutine cice_prepare_output_variables(block)
 
     type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+         block !< Input/Output:
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
@@ -2741,7 +2741,7 @@ contains
          pool
 
     !real(kind=RKIND), dimension(:,:,:), pointer :: &
-    real(kind=RKIND), dimension(:), pointer :: &  
+    real(kind=RKIND), dimension(:), pointer :: &
          array
 
     !character(len=200), parameter :: &
@@ -2755,19 +2755,19 @@ contains
 
     block => domain % blocklist
     do while (associated(block))
-       
+
        call MPAS_pool_get_subpool(block % structs, trim(poolName), pool)
 
        call MPAS_pool_get_array(pool, trim(fieldName), array, 1)
 
        !call cice_debug_output_array(array(1,1,:))
-       call cice_debug_output_array(array(:))      
+       call cice_debug_output_array(array(:))
 
        block => block % next
     end do
 
     stop
-    
+
   end subroutine cice_debug_output_domain
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2816,7 +2816,7 @@ contains
 
     call MPAS_pool_get_field_info(pool, trim(fieldname), fieldInfo)
 
-    write(stderrUnit,*) "cice_debug_write_out_field: ", fieldInfo % nDims, " ", trim(poolname), " ", trim(fieldname), " ", trim(cicename) 
+    write(stderrUnit,*) "cice_debug_write_out_field: ", fieldInfo % nDims, " ", trim(poolname), " ", trim(fieldname), " ", trim(cicename)
 
     select case (fieldInfo % nDims)
     case(1)
@@ -2824,7 +2824,7 @@ contains
        call MPAS_pool_get_field(pool, trim(fieldname), array1D)
 
        if (trim(fieldname) == "lonCell") where(array1D % array > pii) array1D % array = array1D % array - 2.0_RKIND * pii
-       
+
        if (array1D % isActive) then
           fileout = "comparison/pop_mpas_array_comparison_"//trim(cicename)//".dat"
           call cice_debug_output_array(array1D % array, trim(fileout))
@@ -2923,10 +2923,10 @@ contains
         iStep == iStepDesired) then
 
        write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
-       
+
        ! tracer
        call cice_debug_write_out_field(domain, "tracers", "iceAreaCategory", "aicen")
-       call cice_debug_write_out_field(domain, "tracers", "iceVolumeCategory", "vicen")   
+       call cice_debug_write_out_field(domain, "tracers", "iceVolumeCategory", "vicen")
        call cice_debug_write_out_field(domain, "tracers", "snowVolumeCategory", "vsnon")
        call cice_debug_write_out_field(domain, "tracers", "surfaceTemperature", "Tsfcn")
        call cice_debug_write_out_field(domain, "tracers", "iceEnthalpy", "qicen")
@@ -3268,7 +3268,7 @@ contains
 
     ! ktherm
     case ("config_thermodynamics_type")
-       
+
        select case (trim(configValue))
        case ("zero layer")
           configValueCice = 0
@@ -3448,7 +3448,7 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine cice_debug_rotate_winds(domain)
 
     type(domain_type) :: domain
@@ -3500,7 +3500,7 @@ contains
     real(kind=RKIND), parameter :: &
          pi  = 3.14159265358979323846_RKIND, &
          pi2 = 2.0_RKIND * pi
-    
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -3566,7 +3566,7 @@ contains
        angle_w  = ANGLE(i_map(iCell)-1,j_map(iCell)  ) !   |    |
        angle_s  = ANGLE(i_map(iCell),  j_map(iCell)-1) !   |    |
        angle_sw = ANGLE(i_map(iCell)-1,j_map(iCell)-1) !   sw---s
-       
+
        if ( angle_0 < 0.0_RKIND ) then
           if ( abs(angle_w - angle_0) > pi) &
                    angle_w = angle_w  - pi2
@@ -3575,7 +3575,7 @@ contains
           if ( abs(angle_sw - angle_0) > pi) &
                    angle_sw = angle_sw - pi2
        endif
-       
+
        ANGLET(i_map(iCell),j_map(iCell)) = angle_0 * 0.25_RKIND + angle_w * 0.25_RKIND &
                                          + angle_s * 0.25_RKIND + angle_sw* 0.25_RKIND
 
@@ -3598,7 +3598,7 @@ contains
        !                      - workx*sin(ANGLET(i_map(iCell),j_map(iCell)))
 
     enddo ! iCell
-       
+
     deallocate(ULAT)
     deallocate(ULON)
     deallocate(HTN)
@@ -3616,7 +3616,7 @@ contains
     enddo
 
   end subroutine cice_debug_rotate_winds
- 
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  cice_debug_processor_number
@@ -3799,7 +3799,7 @@ contains
        atmosReferenceSpeed10mRestartTest      = atmosReferenceSpeed10mRestartTest      + atmosReferenceSpeed10m
        atmosReferenceTemperature2mRestartTest = atmosReferenceTemperature2mRestartTest + atmosReferenceTemperature2m
        atmosReferenceHumidity2mRestartTest    = atmosReferenceHumidity2mRestartTest    + atmosReferenceHumidity2m
-       
+
        ! atmosphere coupling
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling_restart_test", oceanCouplingRestartTestPool)
@@ -3845,4 +3845,3 @@ contains
 !-----------------------------------------------------------------------
 
 end module cice_debug
-

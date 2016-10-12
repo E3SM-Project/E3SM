@@ -286,7 +286,7 @@ contains
 
          call mpas_pool_get_array(icePresentAMPool, 'icePresent', icePresent)
          call mpas_pool_get_array(tracersAggregatePool, 'iceAreaCell', iceAreaCell)
-         
+
          do iCell = 1, nCellsSolve
 
             if (iceAreaCell(iCell) > cicePuny) then

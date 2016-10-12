@@ -72,13 +72,13 @@ contains
          cice_check_state
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type (MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
+         clock !< Input:
 
     integer, intent(in) :: &
-         itimestep !< Input: 
+         itimestep !< Input:
 
     type(block_type), pointer :: &
          block

@@ -309,7 +309,7 @@ contains
 
             levelIceAreaAverage(iCell)    = 0.0_RKIND
             ridgedIceAreaAverage(iCell)   = 0.0_RKIND
-            
+
             levelIceVolumeAverage(iCell)  = 0.0_RKIND
             ridgedIceVolumeAverage(iCell) = 0.0_RKIND
 
@@ -320,7 +320,7 @@ contains
 
                levelIceVolumeAverage(iCell)  = levelIceVolumeAverage(iCell)  + iceVolumeCategory(1,iCategory,iCell) *              levelIceArea(1,iCategory,iCell)
                ridgedIceVolumeAverage(iCell) = ridgedIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * (1.0_RKIND - levelIceArea(1,iCategory,iCell))
-               
+
             enddo ! iCategory
          enddo ! iCell
 

@@ -50,39 +50,39 @@ contains
 
     character(len=*), intent(in) :: &
          poolName
-    
+
     type(MPAS_pool_type), pointer :: &
          pool
-    
+
     type(MPAS_pool_iterator_type) :: &
          poolItr
-    
+
     type(MPAS_pool_field_info_type) :: &
            fieldInfo
-    
+
     logical :: &
          fieldInStream, &
          activeProperty, &
          isActive
-    
+
     integer :: &
          ierrStream, &
          ierrField, &
          directionProperty
-    
+
     character(len=strKIND) :: &
          streamID, &
          fieldName
-    
+
     type(field1DReal), pointer :: &
          variable1DReal
-    
+
     type(field2DReal), pointer :: &
          variable2DReal
 
     ! loop over area variables
     call MPAS_pool_get_subpool(domain % blocklist % structs, trim(poolName), pool)
-      
+
     call mpas_pool_begin_iteration(pool)
     do while(mpas_pool_get_next_member(pool, poolItr))
 
@@ -90,13 +90,13 @@ contains
        if (poolItr % memberType == MPAS_POOL_FIELD) then
 
           fieldInStream = .false.
-      
+
           ! start the stream iteration
           call MPAS_stream_mgr_begin_iteration(domain % streamManager, ierr=ierrStream)
           do while (MPAS_stream_mgr_get_next_stream(domain % streamManager, streamID, directionProperty, activeProperty))
-             
+
              if (activeProperty .and. directionProperty == MPAS_STREAM_OUTPUT) then
-                  
+
                 ! iterate over fields in stream
                 call MPAS_stream_mgr_begin_iteration(domain % streamManager, streamID, ierr=ierrField)
                 do while (MPAS_stream_mgr_get_next_field(domain % streamManager, streamID, fieldName, isActive))
@@ -108,36 +108,36 @@ contains
                       fieldInStream = .true.
 
                    endif
-                  
+
                 enddo ! stream field iteration
-                  
+
              endif ! active stream
-             
+
           enddo ! stream iteration
 
           ! make field inactive if not used
           if (.not. fieldInStream) then
-               
+
              call MPAS_pool_get_field_info(pool, trim(poolItr % memberName), fieldInfo)
-               
+
              if (fieldInfo % nDims == 1) then
-                  
+
                 call MPAS_pool_get_field(pool, trim(poolItr % memberName), variable1DReal)
                 variable1DReal % isActive = .false.
                 deallocate(variable1DReal % array)
-                  
+
              else if (fieldInfo % nDims == 2) then
-                  
+
                 call MPAS_pool_get_field(pool, trim(poolItr % memberName), variable2DReal)
                 variable2DReal % isActive = .false.
                 deallocate(variable2DReal % array)
-                  
+
              endif
 
           endif
-          
+
        endif ! fields only
-       
+
     enddo ! area field iteration
 
   end subroutine cice_deactivate_unneeded_stream_fields
@@ -145,4 +145,3 @@ contains
   !-----------------------------------------------------------------------
 
 end module cice_deactivate_unneeded_fields
-

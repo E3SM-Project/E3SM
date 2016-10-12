@@ -876,9 +876,9 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
-      
+
     end subroutine cice_precompute_pointwise_stats
-      
+
 !***********************************************************************
 !
 !  routine cice_compute_pointwise_stats

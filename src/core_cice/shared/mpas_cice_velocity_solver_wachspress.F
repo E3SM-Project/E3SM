@@ -62,15 +62,15 @@ contains
          cice_plot_cells_planar
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         velocity_variational, & !< Input/Output: 
-         boundary                !< Input/Output: 
+         velocity_variational, & !< Input/Output:
+         boundary                !< Input/Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         includeMetricTerms     !< Input: 
+         rotateCartesianGrid, & !< Input:
+         includeMetricTerms     !< Input:
 
     integer :: &
          iCell, &
@@ -86,7 +86,7 @@ contains
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
 
-    real(kind=RKIND), dimension(:), pointer :: &    
+    real(kind=RKIND), dimension(:), pointer :: &
          tanLatVertexRotatedOverRadius
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
@@ -154,7 +154,7 @@ contains
          basisGradientV, &
          xLocal, &
          yLocal, &
-         wachspressA, & 
+         wachspressA, &
          wachspressB, &
          wachspressKappa)
 
@@ -163,9 +163,9 @@ contains
          basisIntegralsU, &
          basisIntegralsV, &
          basisIntegralsMetric, &
-         xLocal, &        
+         xLocal, &
          yLocal, &
-         wachspressA, &   
+         wachspressA, &
          wachspressB, &
          wachspressKappa)
 
@@ -202,20 +202,20 @@ contains
        wachspressB, &
        xLocal, &
        yLocal)!{{{
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         wachspressKappa !< Output: 
+         wachspressKappa !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         wachspressA, & !< Output: 
-         wachspressB    !< Output: 
+         wachspressA, & !< Output:
+         wachspressB    !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         xLocal, & !< Input: 
-         yLocal    !< Input: 
+         xLocal, & !< Input:
+         yLocal    !< Input:
 
     integer :: &
          iCell, &
@@ -241,12 +241,12 @@ contains
 
        ! loop over vertices
        do iVertex = 1, nEdgesOnCell(iCell)
-          
+
           ! end points of line segment
           i1 = iVertex - 1
           i2 = iVertex
           if (i1 < 1) i1 = i1 + nEdgesOnCell(iCell)
-          
+
           ! solve for the line segment equation
           wachspressA(iVertex, iCell) = (yLocal(i2,iCell) - yLocal(i1,iCell)) / (xLocal(i1,iCell) * yLocal(i2,iCell) - xLocal(i2,iCell) * yLocal(i1,iCell))
           wachspressB(iVertex, iCell) = (xLocal(i1,iCell) - xLocal(i2,iCell)) / (xLocal(i1,iCell) * yLocal(i2,iCell) - xLocal(i2,iCell) * yLocal(i1,iCell))
@@ -260,21 +260,21 @@ contains
           wachspressKappa(1,iVertex,iCell) = 1.0_RKIND
 
           do jVertex = 2, nEdgesOnCell(iCell)
-             
+
              ! previous, this and next vertex
              i0 = jVertex - 1
              i1 = jVertex
              i2 = jVertex + 1
              if (i2 > nEdgesOnCell(iCell)) i2 = i2 - nEdgesOnCell(iCell)
-             
+
              wachspressKappa(jVertex,iVertex,iCell) = wachspressKappa(jVertex-1,iVertex,iCell) * &
                   (wachspressA(i2,iCell) * (xLocal(i0,iCell) - xLocal(i1,iCell)) + wachspressB(i2,iCell) * (yLocal(i0,iCell) - yLocal(i1,iCell))) / &
                   (wachspressA(i0,iCell) * (xLocal(i1,iCell) - xLocal(i0,iCell)) + wachspressB(i0,iCell) * (yLocal(i1,iCell) - yLocal(i0,iCell)))
 
           enddo ! jVertex
-          
+
        enddo ! iVertex
-       
+
     enddo ! iCell
 
   end subroutine calc_wachspress_coefficients!}}}
@@ -315,7 +315,7 @@ contains
 
     do jVertex = 1, nEdgesOnCell
 
-       i1 = jVertex 
+       i1 = jVertex
        i2 = cice_wrapped_index(jVertex + 1, nEdgesOnCell)
 
        nEdgesOnCellSubset(jVertex) = 0
@@ -361,19 +361,19 @@ contains
          cice_wrapped_index
 
     integer, intent(in) :: &
-         nEdgesOnCell, & !< Input: 
-         iVertex         !< Input: 
+         nEdgesOnCell, & !< Input:
+         iVertex         !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         x, & !< Input: 
-         y    !< Input: 
-    
+         x, & !< Input:
+         y    !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa !< Input: 
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     integer, dimension(:), intent(in) :: &
          nEdgesOnCellSubset
@@ -382,7 +382,7 @@ contains
          vertexIndexSubset
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         wachpress !< Output: 
+         wachpress !< Output:
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          numerator
@@ -448,19 +448,19 @@ contains
        wachspressV)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, & !< Input: 
-         iVertex         !< Input: 
+         nEdgesOnCell, & !< Input:
+         iVertex         !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         x, & !< Input: 
-         y    !< Input: 
-    
+         x, & !< Input:
+         y    !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa !< Input: 
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     integer, dimension(:), intent(in) :: &
          nEdgesOnCellSubset
@@ -469,8 +469,8 @@ contains
          vertexIndexSubset
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         wachspressU, & !< Output: 
-         wachspressV !< Output: 
+         wachspressU, & !< Output:
+         wachspressV !< Output:
 
     real(kind=RKIND), dimension(:,:,:), allocatable :: &
          derivative
@@ -510,7 +510,7 @@ contains
             numerator(:,jVertex))
 
        denominator(:) = denominator(:) + numerator(:,jVertex)
-       
+
        call wachspress_numerator_derivative(&
             nEdgesOnCell, jVertex, iVertex, x(:), y(:), &
             wachspressKappa, wachspressA, wachspressB, &
@@ -562,20 +562,20 @@ contains
        numerator)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, & !< Input: 
-         jVertex, &      !< Input: 
-         iVertex         !< Input: 
+         nEdgesOnCell, & !< Input:
+         jVertex, &      !< Input:
+         iVertex         !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         x, & !< Input: 
-         y    !< Input: 
-    
+         x, & !< Input:
+         y    !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa !< Input: 
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     integer, dimension(:), intent(in) :: &
          nEdgesOnCellSubset
@@ -583,11 +583,11 @@ contains
     integer, dimension(:,:), intent(in) :: &
          vertexIndexSubset
 
-    real(kind=RKIND), dimension(:), intent(inout) :: &    
+    real(kind=RKIND), dimension(:), intent(inout) :: &
          edgeEquation
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         numerator !< Output: 
+         numerator !< Output:
 
     integer :: &
          kVertex
@@ -595,7 +595,7 @@ contains
     numerator(:) = 1.0_RKIND
 
     do kVertex = 1, nEdgesOnCellSubset(jVertex)
-       
+
        call wachspress_edge_equation(&
             x(:), y(:), &
             wachspressA(vertexIndexSubset(jVertex,kVertex)), &
@@ -639,20 +639,20 @@ contains
        derivative)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, & !< Input: 
-         jVertex, &      !< Input: 
-         iVertex         !< Input: 
+         nEdgesOnCell, & !< Input:
+         jVertex, &      !< Input:
+         iVertex         !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         x, & !< Input: 
-         y    !< Input: 
-    
+         x, & !< Input:
+         y    !< Input:
+
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa !< Input: 
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     integer, dimension(:), intent(in) :: &
          nEdgesOnCellSubset
@@ -661,7 +661,7 @@ contains
          vertexIndexSubset
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         derivative !< Output: 
+         derivative !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          sum_of_products, &
@@ -677,7 +677,7 @@ contains
     sum_of_products(:,:) = 0.0_RKIND
 
     do kVertex = 1, nEdgesOnCellSubset(jVertex)
-          
+
        product(:,:) = 1.0_RKIND
 
        ! lVertex < kVertex
@@ -688,19 +688,19 @@ contains
                wachspressA(vertexIndexSubset(jVertex,lVertex)), &
                wachspressB(vertexIndexSubset(jVertex,lVertex)), &
                edgeEquation(:))
-          
+
           product(:,1) = product(:,1) * edgeEquation(:)
           product(:,2) = product(:,2) * edgeEquation(:)
-          
+
        enddo ! lVertex
 
        ! lVertex == kVertex
        product(:,1) = product(:,1) * (-wachspressA(vertexIndexSubset(jVertex,kVertex)))
        product(:,2) = product(:,2) * (-wachspressB(vertexIndexSubset(jVertex,kVertex)))
-       
+
        ! lVertex > kVertex
        do lVertex = kVertex + 1, nEdgesOnCellSubset(jVertex)
-          
+
           call wachspress_edge_equation(&
                x(:), y(:), &
                wachspressA(vertexIndexSubset(jVertex,lVertex)), &
@@ -709,9 +709,9 @@ contains
 
           product(:,1) = product(:,1) * edgeEquation(:)
           product(:,2) = product(:,2) * edgeEquation(:)
-          
+
        enddo ! lVertex
-       
+
        sum_of_products(:,:) = sum_of_products(:,:) + product(:,:)
 
     enddo ! jVertex
@@ -740,15 +740,15 @@ contains
        edgeEquation)
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         x, & !< Input: 
-         y    !< Input: 
+         x, & !< Input:
+         y    !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         edgeEquation !< Output: 
+         edgeEquation !< Output:
 
     edgeEquation(:) = 1.0_RKIND - wachspressA * x(:) - wachspressB * y(:)
 
@@ -775,29 +775,29 @@ contains
        wachspressA, &
        wachspressB, &
        wachspressKappa)!{{{
-    
+
     use mpas_timer
 
     ! basisGradientUV(jVertexOnCell,iVertexOnCell,iCell)
     ! iCell         : The cell the gradients are based in
     ! iVertexOnCell : The vertex basis function the gradient is calculated from
     ! jVertexOnCell : The vertex location the gradients are calculated at
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         basisGradientU, & !< Output: 
-         basisGradientV    !< Output: 
+         basisGradientU, & !< Output:
+         basisGradientV    !< Output:
 
-    real(kind=RKIND), dimension(:,:), intent(in) :: &    
-         wachspressA, & !< Input: 
-         wachspressB, & !< Input: 
-         xLocal,      & !< Input: 
-         yLocal         !< Input: 
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         wachspressA, & !< Input:
+         wachspressB, & !< Input:
+         xLocal,      & !< Input:
+         yLocal         !< Input:
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &  
-         wachspressKappa !< Input: 
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         wachspressKappa !< Input:
 
     integer :: &
          iCell, &
@@ -817,7 +817,7 @@ contains
     integer, dimension(:), allocatable :: &
          nEdgesOnCellSubset
 
-    integer, dimension(:,:), allocatable :: &    
+    integer, dimension(:,:), allocatable :: &
          vertexIndexSubset
 
     real(kind=RKIND), dimension(:), allocatable :: &
@@ -852,7 +852,7 @@ contains
 
           x(iGradientVertex) = xLocal(iGradientVertex,iCell)
           y(iGradientVertex) = yLocal(iGradientVertex,iCell)
-          
+
        enddo ! iGradientVertex
 
        ! loop over vertices - basis function
@@ -873,12 +873,12 @@ contains
 
           ! loop over vertices again - derivative position
           do iGradientVertex = 1, nEdgesOnCell(iCell)
-             
+
              basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
              basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
-             
+
           enddo ! iGradientVertex
-          
+
        enddo ! iBasisVertex
 
     enddo ! iCell
@@ -915,13 +915,13 @@ contains
        u2, v2)!{{{
 
     real(kind=RKIND), dimension(2,2), intent(out) :: &
-         mapping !< Output: 
+         mapping !< Output:
 
     real(kind=RKIND), intent(out) :: &
-         jacobian !< Output: 
+         jacobian !< Output:
 
     real(kind=RKIND), intent(in) :: &
-         x1, & !< Input: 
+         x1, & !< Input:
          y1, & !< Input:
          x2, & !< Input:
          y2, & !< Input:
@@ -958,7 +958,7 @@ contains
        mapping)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         u, v !< Output: 
+         u, v !< Output:
 
     real(kind=RKIND), intent(in) :: &
          x, y !< Input:
@@ -998,17 +998,17 @@ contains
 
     ! basisIntegralsUV (iStressVertex,iVelocityVertex,iCell)
     ! iCell         : cell integrals are performed on
-    ! iStressVertex : vertex number of Wachspress function 
-    ! iVelocityVertex : vertex number of Wachspress derivative function 
+    ! iStressVertex : vertex number of Wachspress function
+    ! iVelocityVertex : vertex number of Wachspress derivative function
     ! Sij
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         basisIntegralsU, &   !< Output: 
-         basisIntegralsV, &   !< Output: 
-         basisIntegralsMetric !< Output: 
+         basisIntegralsU, &   !< Output:
+         basisIntegralsV, &   !< Output:
+         basisIntegralsMetric !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          xLocal, &      !< Input:
@@ -1016,7 +1016,7 @@ contains
          wachspressA, & !< Input:
          wachspressB    !< Input:
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &    
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          wachspressKappa !< Input:
 
     real(kind=RKIND) :: &
@@ -1124,7 +1124,7 @@ contains
 
              else
 
-                integrationPointScaling(i,j) = 6.0_RKIND 
+                integrationPointScaling(i,j) = 6.0_RKIND
 
              endif
 
@@ -1240,7 +1240,7 @@ contains
     nij = ((nIntegrationTriangles+1)**2 + (nIntegrationTriangles+1)) / 2
     nij = nij * nEdgesOnCell
     allocate(x(nij))
-    allocate(y(nij)) 
+    allocate(y(nij))
 
     ij = 1
     do iSubTriangle = 1, nEdgesOnCell
@@ -1284,20 +1284,20 @@ contains
          wachspressKappa, wachspressA, wachspressB, &
          nEdgesOnCellSubset, vertexIndexSubset, &
          stressBasisFunction)
-    
+
     call wachspress_basis_function(&
          nEdgesOnCell, iVelocityVertex, x, y, &
          wachspressKappa, wachspressA, wachspressB, &
          nEdgesOnCellSubset, vertexIndexSubset, &
          velocityBasisFunction)
-    
+
     call wachspress_basis_derivative(&
          nEdgesOnCell, iVelocityVertex, x, y, &
          wachspressKappa, wachspressA, wachspressB, &
          nEdgesOnCellSubset, vertexIndexSubset, &
          velocityBasisDerivativeU, &
          velocityBasisDerivativeV)
-    
+
     ij = 1
     do iSubTriangle = 1, nEdgesOnCell
 
@@ -1341,7 +1341,7 @@ contains
     deallocate(velocityBasisFunction)
     deallocate(velocityBasisDerivativeU)
     deallocate(velocityBasisDerivativeV)
-    
+
     deallocate(x)
     deallocate(y)
 
@@ -1349,7 +1349,7 @@ contains
     deallocate(vertexIndexSubset)
 
     deallocate(jacobian)
-    
+
   end subroutine integrate_wachspress_polygon!}}}
 
 !-----------------------------------------------------------------------
@@ -1378,32 +1378,32 @@ contains
        wachspressB, &
        xLocal, &
        yLocal)!{{{
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     integer, intent(in) :: &
-         iCell, &        !< Input: 
-         nEdgesOnCell, & !< Input: 
-         iVertex         !< Input: 
+         iCell, &        !< Input:
+         nEdgesOnCell, & !< Input:
+         iVertex         !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         wachspressKappa !< Output: 
+         wachspressKappa !< Output:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         wachspressA, & !< Output: 
-         wachspressB    !< Output: 
+         wachspressA, & !< Output:
+         wachspressB    !< Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         xLocal, & !< Input: 
-         yLocal    !< Input: 
+         xLocal, & !< Input:
+         yLocal    !< Input:
 
     real(kind=RKIND) :: &
          xmin, xmax, ymin, ymax
 
     real(kind=RKIND) :: &
          jacobian
-    
+
     real(kind=RKIND), dimension(2,2) :: &
          mapping
 
@@ -1446,7 +1446,7 @@ contains
        xmax = max(xmax, xVertex(iVertex2)) + 1000.0_RKIND
        ymin = min(ymin, yVertex(iVertex2)) - 1000.0_RKIND
        ymax = max(ymax, yVertex(iVertex2)) + 1000.0_RKIND
-       
+
        open(55,file='test.txt')
        if (iVertexOnCell == iVertex) then
           write(55,*) xVertex(iVertex2), yVertex(iVertex2)
@@ -1473,8 +1473,8 @@ contains
                                  1.0_RKIND,0.0_RKIND,&
                                  0.0_RKIND,1.0_RKIND,&
                                  xLocal(i1),yLocal(i1),&
-                                 xLocal(i2),yLocal(i2))    
-       
+                                 xLocal(i2),yLocal(i2))
+
        ! plot from subtriangle
        call plot_subtriangle_2(nEdgesOnCell, iSubTriangle, iVertex, &
                              wachspressKappa, wachspressA, wachspressB, &
@@ -1512,26 +1512,26 @@ contains
        iObject)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, & !< Input: 
-         iSubTriangle, & !< Input: 
-         iVertex         !< Input: 
+         nEdgesOnCell, & !< Input:
+         iSubTriangle, & !< Input:
+         iVertex         !< Input:
 
     integer, intent(inout) :: &
-         iObject         !< Input: 
+         iObject         !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa !< Input: 
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     real(kind=RKIND), dimension(2,2), intent(in) :: &
-         mapping !< Input: 
+         mapping !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         x0, & !< Input: 
-         y0    !< Input: 
+         x0, & !< Input:
+         y0    !< Input:
 
     real(kind=RKIND) :: &
          u, v, &
@@ -1548,10 +1548,10 @@ contains
          d, &
          dx, dy
 
-    integer, dimension(:), allocatable :: &  
+    integer, dimension(:), allocatable :: &
          nEdgesOnCellSubset
 
-    integer, dimension(:,:), allocatable :: &    
+    integer, dimension(:,:), allocatable :: &
          vertexIndexSubset
 
     integer, parameter :: n = 5
@@ -1564,12 +1564,12 @@ contains
 
     allocate(nEdgesOnCellSubset(nEdgesOnCell))
     allocate(vertexIndexSubset(nEdgesOnCell,nEdgesOnCell))
-    
+
     call wachspress_indexes(&
          nEdgesOnCell, &
          nEdgesOnCellSubset, &
          vertexIndexSubset)
-    
+
     d = 1.0_RKIND / real(n, RKIND)
 
     do i = 0, n
@@ -1577,7 +1577,7 @@ contains
 
           if (i<=n-j-1) then
 
-             iObject = iObject + 1  
+             iObject = iObject + 1
 
              u = real(i,RKIND) / real(n,RKIND)
              v = real(j,RKIND) / real(n,RKIND)
@@ -1592,22 +1592,22 @@ contains
                      wachspressKappa, wachspressA, wachspressB, &
                      nEdgesOnCellSubset, vertexIndexSubset, var)
                 wachspress = var(1)
-                
+
                 dx = 0.0_RKIND
                 dy = 100.0_RKIND
-                
+
                 x1 = x + dx
                 y1 = y + dy
-                
+
                 xbasis(1) = x1 ; ybasis(1) = y1
                 call wachspress_basis_function(&
                      nEdgesOnCell, iVertex, xbasis, ybasis, &
                      wachspressKappa, wachspressA, wachspressB, &
-                     nEdgesOnCellSubset, vertexIndexSubset, var) 
+                     nEdgesOnCellSubset, vertexIndexSubset, var)
                 wachspress1 = var(1)
-                
+
                 wachspress = (wachspress1 - wachspress) / dy
-                
+
              else
 
                 xbasis(1) = x ; ybasis(1) = y
@@ -1620,22 +1620,22 @@ contains
              endif
 
              if (i<n-j-1) then
-                
+
                 call use_triangle_mapping(x1, y1, u,   v,   mapping)
                 call use_triangle_mapping(x2, y2, u,   v+d, mapping)
                 call use_triangle_mapping(x3, y3, u+d, v+d, mapping)
                 call use_triangle_mapping(x4, y4, u+d, v,   mapping)
                 x5 = x1
                 y5 = y1
-                
+
                 x1 = x1 + x0 ; y1 = y1 + y0
                 x2 = x2 + x0 ; y2 = y2 + y0
                 x3 = x3 + x0 ; y3 = y3 + y0
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
-                
+
                 write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                     x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5     
+                     x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5
 
                 write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', wachspress, ' fillstyle solid'
 
@@ -1651,11 +1651,11 @@ contains
                 x2 = x2 + x0 ; y2 = y2 + y0
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
-                
-                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                     x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5    
 
-                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', wachspress, ' fillstyle solid'  
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                     x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5
+
+                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', wachspress, ' fillstyle solid'
 
              endif
 
@@ -1694,26 +1694,26 @@ contains
        iObject)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, & !< Input: 
-         iSubTriangle, & !< Input: 
+         nEdgesOnCell, & !< Input:
+         iSubTriangle, & !< Input:
          iVertex         !< Input:
- 
+
     integer, intent(inout) :: &
-         iObject         !< Input: 
+         iObject         !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa !< Input: 
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     real(kind=RKIND), dimension(2,2), intent(in) :: &
-         mapping !< Input: 
+         mapping !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         x0, & !< Input: 
-         y0    !< Input: 
+         x0, & !< Input:
+         y0    !< Input:
 
     integer :: &
          i, j, &
@@ -1735,10 +1735,10 @@ contains
          uuu, vvv, &
          x, y
 
-    integer, dimension(:), allocatable :: &    
+    integer, dimension(:), allocatable :: &
          nEdgesOnCellSubset
 
-    integer, dimension(:,:), allocatable :: &    
+    integer, dimension(:,:), allocatable :: &
          vertexIndexSubset
 
     integer, parameter :: n = 50
@@ -1754,7 +1754,7 @@ contains
 
     allocate(nEdgesOnCellSubset(nEdgesOnCell))
     allocate(vertexIndexSubset(nEdgesOnCell,nEdgesOnCell))
-    
+
     call wachspress_indexes(&
          nEdgesOnCell, &
          nEdgesOnCellSubset, &
@@ -1772,7 +1772,7 @@ contains
              v0 = real(j,RKIND) / real(n,RKIND)
              call use_triangle_mapping(x, y, u0, v0, mapping)
 
-             xbasis(1) = x ; ybasis(1) = y 
+             xbasis(1) = x ; ybasis(1) = y
              call wachspress_basis_function(&
                   nEdgesOnCell, iVertex, xbasis, ybasis, &
                   wachspressKappa, wachspressA, wachspressB, &
@@ -1783,7 +1783,7 @@ contains
              v1 = real(j  ,RKIND) / real(n,RKIND)
              call use_triangle_mapping(x, y, u1, v1, mapping)
 
-             xbasis(1) = x ; ybasis(1) = y 
+             xbasis(1) = x ; ybasis(1) = y
              call wachspress_basis_function(&
                   nEdgesOnCell, iVertex, xbasis, ybasis, &
                   wachspressKappa, wachspressA, wachspressB, &
@@ -1794,7 +1794,7 @@ contains
              v2 = real(j+1,RKIND) / real(n,RKIND)
              call use_triangle_mapping(x, y, u2, v2, mapping)
 
-             xbasis(1) = x ; ybasis(1) = y 
+             xbasis(1) = x ; ybasis(1) = y
              call wachspress_basis_function(&
                   nEdgesOnCell, iVertex, xbasis, ybasis, &
                   wachspressKappa, wachspressA, wachspressB, &
@@ -1846,11 +1846,11 @@ contains
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
                       write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
 
-                      iObject = iObject + 1  
+                      iObject = iObject + 1
 
                    endif
 
@@ -1892,11 +1892,11 @@ contains
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
                       write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
 
-                      iObject = iObject + 1  
+                      iObject = iObject + 1
 
                    endif
 
@@ -1913,7 +1913,7 @@ contains
              v0 = real(j,RKIND) / real(n,RKIND)
              call use_triangle_mapping(x, y, u0, v0, mapping)
 
-             xbasis(1) = x ; ybasis(1) = y 
+             xbasis(1) = x ; ybasis(1) = y
              call wachspress_basis_function(&
                   nEdgesOnCell, iVertex, xbasis, ybasis, &
                   wachspressKappa, wachspressA, wachspressB, &
@@ -1924,7 +1924,7 @@ contains
              v1 = real(j  ,RKIND) / real(n,RKIND)
              call use_triangle_mapping(x, y, u1, v1, mapping)
 
-             xbasis(1) = x ; ybasis(1) = y 
+             xbasis(1) = x ; ybasis(1) = y
              call wachspress_basis_function(&
                   nEdgesOnCell, iVertex, xbasis, ybasis, &
                   wachspressKappa, wachspressA, wachspressB, &
@@ -1935,7 +1935,7 @@ contains
              v2 = real(j-1,RKIND) / real(n,RKIND)
              call use_triangle_mapping(x, y, u2, v2, mapping)
 
-             xbasis(1) = x ; ybasis(1) = y 
+             xbasis(1) = x ; ybasis(1) = y
              call wachspress_basis_function(&
                   nEdgesOnCell, iVertex, xbasis, ybasis, &
                   wachspressKappa, wachspressA, wachspressB, &
@@ -1990,11 +1990,11 @@ contains
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
                       write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
 
-                      iObject = iObject + 1  
+                      iObject = iObject + 1
 
                    endif
 
@@ -2039,11 +2039,11 @@ contains
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
                       write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
 
-                      iObject = iObject + 1  
+                      iObject = iObject + 1
 
                    endif
 
@@ -2079,14 +2079,14 @@ contains
        wachspressB)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         wachspressKappa !< Input: 
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressA, & !< Input: 
-         wachspressB    !< Input: 
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     integer :: &
          iCell, &
@@ -2106,15 +2106,15 @@ contains
 
     integer, dimension(:,:), pointer :: &
          verticesOnCell
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          xVertex, &
          yVertex
 
-    integer, dimension(:), allocatable :: &  
+    integer, dimension(:), allocatable :: &
          nEdgesOnCellSubset
 
-    integer, dimension(:,:), allocatable :: &    
+    integer, dimension(:,:), allocatable :: &
          vertexIndexSubset
 
     real(kind=RKIND), dimension(1) :: &
@@ -2133,24 +2133,24 @@ contains
 
     x0 = 1e30
     y0 = 1e30
-    
+
     do iVertexOnCell = 1, nEdgesOnCell(iCell)
-       
+
        iVertex = verticesOnCell(iVertexOnCell,iCell)
 
        x0 = min(x0,xVertex(iVertex))
        y0 = min(y0,yVertex(iVertex))
 
-    enddo ! 
-    
+    enddo !
+
     dx = 16000.0_RKIND / real(ni,RKIND)
     dy = 16000.0_RKIND / real(nj,RKIND)
-       
+
     iVertexOnCell = 1
 
     allocate(nEdgesOnCellSubset(nEdgesOnCell(iCell)))
     allocate(vertexIndexSubset(nEdgesOnCell(iCell),nEdgesOnCell(iCell)))
-    
+
     call wachspress_indexes(&
          nEdgesOnCell(iCell), &
          nEdgesOnCellSubset, &
@@ -2177,7 +2177,7 @@ contains
                varV)
           wachspress = varU(1)
 
-          write(55,*) x+0.5_RKIND*dx,x-0.5_RKIND*dx,y+0.5_RKIND*dy,y-0.5_RKIND*dy, wachspress          
+          write(55,*) x+0.5_RKIND*dx,x-0.5_RKIND*dx,y+0.5_RKIND*dy,y-0.5_RKIND*dy, wachspress
 
        enddo ! j
     enddo ! i

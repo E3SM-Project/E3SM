@@ -227,7 +227,7 @@ contains
           awtidr, &
           awtvdf, &
           awtidf
-     
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -286,7 +286,7 @@ contains
            uVelocity, &
            vVelocity, &
            totalMassVertexfVertex
-      
+
       integer, pointer :: &
            nCellsSolve, &
            nVerticesSolve, &
@@ -300,7 +300,7 @@ contains
            config_use_column_package, &
            config_use_column_shortwave, &
            config_use_velocity_solver
-      
+
       err = 0
 
       call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)

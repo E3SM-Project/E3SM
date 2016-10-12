@@ -27,7 +27,7 @@ module cice_velocity_solver_weak
        cice_stress_tensor_weak, &
        cice_stress_divergence_weak, &
        cice_final_divergence_shear_weak
-  
+
 contains
 
 !-----------------------------------------------------------------------
@@ -56,14 +56,14 @@ contains
          cice_normal_vectors
 
     type(MPAS_pool_type), pointer, intent(inout) :: &
-         mesh !< Input/Output: 
+         mesh !< Input/Output:
 
     type(MPAS_pool_type), pointer :: &
-         velocity_weak, & !< Input/Output: 
-         boundary   !< Input/Output: 
+         velocity_weak, & !< Input/Output:
+         boundary   !< Input/Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
@@ -248,23 +248,23 @@ contains
        solveStress)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         strain11, & !< Output: 
-         strain22, & !< Output: 
-         strain12    !< Output: 
+         strain11, & !< Output:
+         strain22, & !< Output:
+         strain12    !< Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &   !< Input: 
-         vVelocity, &   !< Input: 
-         latCellRotated !< Input: 
+         uVelocity, &   !< Input:
+         vVelocity, &   !< Input:
+         latCellRotated !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorPolygon !< Input: 
+         normalVectorPolygon !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solveStress !< Input: 
+         solveStress !< Input:
 
     integer :: &
          iCell, &
@@ -272,7 +272,7 @@ contains
          iEdge, &
          iVertexOnEdge, &
          iVertex
-    
+
     real(kind=RKIND) :: &
          uVelocityEdge, &
          vVelocityEdge, &
@@ -407,28 +407,28 @@ contains
          cice_evp_constitutive_relation_revised
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
-         stress11, &         !< Input/Output: 
-         stress22, &         !< Input/Output: 
-         stress12, &         !< Input/Output: 
-         replacementPressure !< Input/Output: 
+         stress11, &         !< Input/Output:
+         stress22, &         !< Input/Output:
+         stress12, &         !< Input/Output:
+         replacementPressure !< Input/Output:
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
-         strain11, & !< Input/Output: 
-         strain22, & !< Input/Output: 
-         strain12, & !< Input/Output: 
-         icePressure !< Input/Output: 
+         strain11, & !< Input/Output:
+         strain22, & !< Input/Output:
+         strain12, & !< Input/Output:
+         icePressure !< Input/Output:
 
     integer, dimension(:), intent(in) :: &
-         solveStress !< Input: 
+         solveStress !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input: 
-         
+         dtElastic !< Input:
+
     logical, intent(in) :: &
-         revisedEVP !< Input: 
+         revisedEVP !< Input:
 
     integer :: &
          iCell
@@ -445,7 +445,7 @@ contains
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     if (.not. revisedEVP) then
-    
+
        do iCell = 1, nCells
 
           if (solveStress(iCell) == 1) then
@@ -525,25 +525,25 @@ contains
        normalVectorTriangle, &
        latVertexRotated,  &
        solveVelocity)!{{{
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV    !< Output: 
+         stressDivergenceU, & !< Output:
+         stressDivergenceV    !< Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         stress11, &      !< Input: 
-         stress22, &      !< Input: 
-         stress12, &      !< Input: 
-         latVertexRotated !< Input: 
+         stress11, &      !< Input:
+         stress22, &      !< Input:
+         stress12, &      !< Input:
+         latVertexRotated !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorTriangle !< Input: 
+         normalVectorTriangle !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solveVelocity !< Input: 
+         solveVelocity !< Input:
 
     real(kind=RKIND) :: &
          stress11Edge, &
@@ -575,7 +575,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          sphere_radius
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          areaTriangle, &
          dcEdge
@@ -603,41 +603,41 @@ contains
           stress11Vertex = 0.0_RKIND
           stress22Vertex = 0.0_RKIND
           stress12Vertex = 0.0_RKIND
-          
+
           do iVertexDegree = 1, vertexDegree
-             
+
              ! vertex stresses
              iCell = cellsOnVertex(iVertexDegree,iVertex)
 
              stress11Vertex = stress11Vertex + stress11(iCell)
              stress22Vertex = stress22Vertex + stress22(iCell)
              stress12Vertex = stress12Vertex + stress12(iCell)
-             
+
              ! interpolated edge velocity
              iEdge = edgesOnVertex(iVertexDegree,iVertex)
-             
+
              stress11Edge = 0.0_RKIND
              stress22Edge = 0.0_RKIND
              stress12Edge = 0.0_RKIND
-             
+
              do iCellOnEdge = 1, 2
-                
+
                 iCell = cellsOnEdge(iCellOnEdge,iEdge)
-                
+
                 stress11Edge = stress11Edge + stress11(iCell)
                 stress22Edge = stress22Edge + stress22(iCell)
                 stress12Edge = stress12Edge + stress12(iCell)
-                
+
              enddo ! iCellOnEdge
-             
+
              stress11Edge = stress11Edge / 2.0_RKIND
              stress22Edge = stress22Edge / 2.0_RKIND
              stress12Edge = stress12Edge / 2.0_RKIND
-             
+
              stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + &
                   (stress11Edge * normalVectorTriangle(1,iVertexDegree,iVertex) + &
                    stress12Edge * normalVectorTriangle(2,iVertexDegree,iVertex)) * dcEdge(iEdge)
-             
+
              stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
                   (stress22Edge * normalVectorTriangle(2,iVertexDegree,iVertex) + &
                    stress12Edge * normalVectorTriangle(1,iVertexDegree,iVertex)) * dcEdge(iEdge)
@@ -647,7 +647,7 @@ contains
           stress11Vertex = stress11Vertex / real(vertexDegree, RKIND)
           stress22Vertex = stress22Vertex / real(vertexDegree, RKIND)
           stress12Vertex = stress12Vertex / real(vertexDegree, RKIND)
-          
+
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
 
@@ -662,7 +662,7 @@ contains
     enddo ! iVertex
 
   end subroutine cice_stress_divergence_weak!}}}
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  final_divergence_shear_weak
@@ -679,7 +679,7 @@ contains
 
     use cice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
-    
+
     type(block_type), intent(inout) :: &
          block
 
@@ -688,13 +688,13 @@ contains
          velocityWeakPool, &
          velocitySolverPool, &
          ridgingPool
-    
+
     integer, pointer :: &
          nCellsSolve
-    
+
     integer, dimension(:), pointer :: &
          nEdgesOnCell
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          strain11, &
          strain22, &
@@ -714,18 +714,18 @@ contains
 
     logical, pointer :: &
          config_use_column_package
-    
+
     integer :: &
          iCell
 
     call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-    
+
     call MPAS_pool_get_dimension(meshPool, "nCellsSolve", nCellsSolve)
-    
+
     call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
-    
+
     call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
     call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
     call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
@@ -734,13 +734,13 @@ contains
     call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
 
     allocate(Delta(nCellsSolve))
-     
+
     do iCell = 1, nCellsSolve
 
        strainDivergence = strain11(iCell) + strain22(iCell)
        strainTension    = strain11(iCell) - strain22(iCell)
        strainShearing   = strain12(iCell) * 2.0_RKIND
-       
+
        Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
 
        divergence(iCell) = strainDivergence
@@ -756,24 +756,22 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ridging", ridgingPool)
 
        call MPAS_pool_get_array(ridgingPool, "ridgeConvergence", ridgeConvergence)
-       call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)       
-    
+       call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)
+
        do iCell = 1, nCellsSolve
-          
+
           ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
           ridgeShear(iCell)       = 0.5_RKIND * (Delta(iCell) - abs(divergence(iCell)))
-          
+
        enddo ! iCell
-       
+
     endif ! config_use_column_package
 
     ! cleanup
     deallocate(Delta)
 
   end subroutine cice_final_divergence_shear_weak
-  
+
 !-----------------------------------------------------------------------
 
 end module cice_velocity_solver_weak
-
-

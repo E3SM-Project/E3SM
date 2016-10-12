@@ -65,7 +65,7 @@ contains
          cice_init_velocity_solver_variational
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(block_type), pointer :: &
          block
@@ -122,7 +122,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
 
     if (config_use_velocity_solver) then
- 
+
        ! initialize the evp solver
        call cice_init_evp(domain)
 
@@ -161,7 +161,7 @@ contains
 
              continue
 
-          else 
+          else
 
              write(stderrUnit,*) "Error: config_stress_divergence_scheme unknown: ", trim(config_stress_divergence_scheme)
              call MPAS_dmpar_global_abort('MPAS-seaice: config_stress_divergence_scheme unknown')
@@ -355,10 +355,10 @@ contains
     use cice_debug
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type (MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
+         clock !< Input:
 
     logical, pointer :: &
          config_use_velocity_solver
@@ -688,7 +688,7 @@ contains
     integer, dimension(:), pointer :: &
          nEdgesOnCell, &
          landIceMask
-    
+
     integer, dimension(:,:), pointer :: &
          cellsOnCell
 
@@ -1253,7 +1253,7 @@ contains
          iCell
 
     real(kind=RKIND), parameter :: &
-         airStressCoeff = 0.0012_RKIND 
+         airStressCoeff = 0.0012_RKIND
 
     block => domain % blocklist
     do while (associated(block))
@@ -1872,11 +1872,11 @@ contains
        clock)!{{{
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
- 
+         clock !< Input:
+
     integer, pointer :: &
          config_elastic_subcycle_number
 
@@ -1923,10 +1923,10 @@ contains
          cice_time_output_variable_real
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
+         clock !< Input:
 
     integer, intent(in) :: &
          iElasticSubcycle !< Input: !! testing
@@ -2203,7 +2203,7 @@ contains
     end do
 
   end subroutine solve_velocity
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  solve_velocity_revised
@@ -2271,7 +2271,7 @@ contains
 
     block => domain % blocklist
     do while (associated(block))
- 
+
        call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
@@ -2385,7 +2385,7 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine final_divergence_shear(domain)
 
     use cice_velocity_solver_variational, only: &
@@ -2399,7 +2399,7 @@ contains
 
     type(block_type), pointer :: &
          block
-    
+
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
 
@@ -2435,7 +2435,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine principal_stresses_driver(domain)!{{{      
+  subroutine principal_stresses_driver(domain)!{{{
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2550,8 +2550,8 @@ contains
          nPoints
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         principalStress1, & !< Output: 
-         principalStress2    !< Output: 
+         principalStress1, & !< Output:
+         principalStress2    !< Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          stress11, &         !< Input:
@@ -2580,7 +2580,7 @@ contains
           principalStress2(iPoint) = principalStress2(iPoint) / replacementPressure(iPoint)
 
        else
-          
+
           principalStress1(iPoint) = 1.0e30_RKIND
           principalStress2(iPoint) = 1.0e30_RKIND
 

@@ -124,7 +124,7 @@ contains
 
       use cice_deactivate_unneeded_fields, only: &
           cice_deactivate_unneeded_stream_fields
-     
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -299,16 +299,16 @@ contains
 
       integer :: &
            iCell
-      
+
       err = 0
 
       block => domain % blocklist
       do while (associated(block))
 
          call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
-         call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)        
+         call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
          call MPAS_pool_get_subpool(block % structs, "pondDiagnosticsAM", pondDiagnosticsAMPool)
-         
+
          call MPAS_pool_get_array(tracersAggregatePool, "pondAreaCell", pondAreaCell)
          call MPAS_pool_get_array(tracersAggregatePool, "pondDepthCell", pondDepthCell)
          call MPAS_pool_get_array(tracersAggregatePool, "pondLidThicknessCell", pondLidThicknessCell)
@@ -317,7 +317,7 @@ contains
 
          call MPAS_pool_get_array(tracersPool, "pondArea", pondArea, 1)
          call MPAS_pool_get_array(tracersPool, "pondDepth", pondDepth, 1)
-         
+
          call MPAS_pool_get_field(pondDiagnosticsAMPool, "meltPondArea", meltPondArea)
          call MPAS_pool_get_field(pondDiagnosticsAMPool, "meltPondAreaFinalArea", meltPondAreaFinalArea)
          call MPAS_pool_get_field(pondDiagnosticsAMPool, "meltPondDepth", meltPondDepth)
@@ -332,7 +332,7 @@ contains
          call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
          call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
          call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
-         
+
          if (config_use_cesm_meltponds) then
             ! cesm ponds
 
@@ -342,66 +342,66 @@ contains
                   meltPondArea % array(iCell) = pondAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondAreaFinalArea - apond_ai
             if (meltPondAreaFinalArea % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondAreaFinalArea % array(iCell) = pondAreaCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondDepth - hpond
             if (meltPondDepth % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondDepth % array(iCell) = pondAreaCell(iCell) * pondDepthCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondDepthFinalArea - hpond_ai
             if (meltPondDepthFinalArea % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondDepthFinalArea % array(iCell) = pondAreaCell(iCell) * pondDepthCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
          else if (config_use_level_meltponds) then
             ! level melt ponds
-            
+
             ! meltPondArea - apond
             if (meltPondArea % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondArea % array(iCell) = levelIceAreaCell(iCell) * pondAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondAreaFinalArea - apond_ai
             if (meltPondAreaFinalArea % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondAreaFinalArea % array(iCell) = levelIceAreaCell(iCell) * pondAreaCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondDepth - hpond
             if (meltPondDepth % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondDepth % array(iCell) = levelIceAreaCell(iCell) * pondAreaCell(iCell) * pondDepthCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondDepthFinalArea - hpond_ai
             if (meltPondDepthFinalArea % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondDepthFinalArea % array(iCell) = levelIceAreaCell(iCell) * pondAreaCell(iCell) * pondDepthCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondLidThickness - ipond
             if (meltPondLidThickness % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondLidThickness % array(iCell) = levelIceAreaCell(iCell) * pondAreaCell(iCell) * pondLidThicknessCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondLidThicknessFinalArea - ipond_ai
             if (meltPondLidThicknessFinalArea % isActive) then
                do iCell = 1, nCellsSolve
@@ -418,35 +418,35 @@ contains
                   meltPondArea % array(iCell) = pondAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondAreaFinalArea - apond_ai
             if (meltPondAreaFinalArea % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondAreaFinalArea % array(iCell) = pondAreaCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondDepth - hpond
             if (meltPondDepth % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondDepth % array(iCell) = pondAreaCell(iCell) * pondDepthCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondDepthFinalArea - hpond_ai
             if (meltPondDepthFinalArea % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondDepthFinalArea % array(iCell) = pondAreaCell(iCell) * pondDepthCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondLidThickness - ipond
             if (meltPondLidThickness % isActive) then
                do iCell = 1, nCellsSolve
                   meltPondLidThickness % array(iCell) = pondAreaCell(iCell) * pondLidThicknessCell(iCell)
                enddo ! iCell
             endif ! is active
-            
+
             ! meltPondLidThicknessFinalArea - ipond_ai
             if (meltPondLidThicknessFinalArea % isActive) then
                do iCell = 1, nCellsSolve
@@ -462,10 +462,10 @@ contains
                meltPondDepthCategory % array(:,iCell) = pondArea(1,:,iCell) * pondDepth(1,:,iCell)
             enddo ! iCell
          endif ! is active
-         
+
          block => block % next
       enddo
-         
+
    end subroutine cice_compute_pond_diagnostics!}}}
 
 !***********************************************************************

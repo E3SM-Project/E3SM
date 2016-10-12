@@ -57,17 +57,17 @@ contains
 
     use cice_debug, only: &
          cice_plot_cells_planar
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type(MPAS_pool_type), pointer :: &
-         velocity_variational, & !< Input/Output: 
-         boundary                !< Input/Output: 
+         velocity_variational, & !< Input/Output:
+         boundary                !< Input/Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         includeMetricTerms     !< Input: 
+         rotateCartesianGrid, & !< Input:
+         includeMetricTerms     !< Input:
 
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
@@ -183,18 +183,18 @@ contains
          cice_wrapped_index
 
     type(MPAS_pool_type), pointer :: &
-         mesh !< Input: 
+         mesh !< Input:
 
-    real(kind=RKIND), dimension(:,:,:), intent(out) :: &    
-         basisGradientU, &       !< Output: 
-         basisGradientV, &       !< Output: 
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
+         basisGradientU, &       !< Output:
+         basisGradientV, &       !< Output:
          basisIntegralsMetric, & !< Output:
          basisIntegralsU, &      !< Output:
          basisIntegralsV         !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         xLocal, & !< Input: 
-         yLocal    !< Input: 
+         xLocal, & !< Input:
+         yLocal    !< Input:
 
     real(kind=RKIND) :: &
          xPWLCentre, &
@@ -221,7 +221,7 @@ contains
          iVelocityVertex, &
          subCellTypeStress, &
          subCellTypeVelocity
-         
+
     real(kind=RKIND), dimension(3,3) :: &
          leftMatrix
 
@@ -273,7 +273,7 @@ contains
 
     ! loop over cells
     do iCell = 1, nCells
-       
+
        alphaPWL = 1.0_RKIND / real(nEdgesOnCell(iCell),RKIND)
 
        ! determine cell centre for piecewise linear basis
@@ -288,7 +288,7 @@ contains
        enddo ! iVertexOnCell
 
        ! calculate the area of the subcells
-       basisSubAreaSum = 0.0_RKIND 
+       basisSubAreaSum = 0.0_RKIND
 
        do iSubCell = 1, nEdgesOnCell(iCell)
 
@@ -304,7 +304,7 @@ contains
 
           s = (a + b + c) * 0.5_RKIND
 
-          ! Heron's formula 
+          ! Heron's formula
           basisSubArea(iSubCell) = sqrt(s * (s-a) * (s-b) * (s-c))
 
           basisSubAreaSum = basisSubAreaSum + basisSubArea(iSubCell)
@@ -324,11 +324,11 @@ contains
           leftMatrix(1,1) = xLocal(iVertexOnCell1,iCell) - xPWLCentre
           leftMatrix(1,2) = yLocal(iVertexOnCell1,iCell) - yPWLCentre
           leftMatrix(1,3) = 1.0_RKIND
-          
+
           leftMatrix(2,1) = xLocal(iVertexOnCell2,iCell) - xPWLCentre
           leftMatrix(2,2) = yLocal(iVertexOnCell2,iCell) - yPWLCentre
           leftMatrix(2,3) = 1.0_RKIND
-          
+
           leftMatrix(3,1) = 0.0_RKIND
           leftMatrix(3,2) = 0.0_RKIND
           leftMatrix(3,3) = 1.0_RKIND
@@ -372,7 +372,7 @@ contains
        !     subBasisConstant, &
        !     xLocal(:,iCell), &
        !     yLocal(:,iCell))!{{{
-       
+
        !stop
 
        ! use the linear sub area basis to calculate the PWL basis
@@ -398,7 +398,7 @@ contains
              endif
 
           enddo ! iSubCell
-          
+
        enddo ! iEdgeOnCell
 
        ! calculate the gradients at the cell corners
@@ -471,23 +471,23 @@ contains
                 ! set the subcell integral value
                 if      ((subCellTypeStress == 1 .and. subCellTypeVelocity == 1) .or. &
                          (subCellTypeStress == 2 .and. subCellTypeVelocity == 2)) then
-                   
+
                    basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + 2.0_RKIND * alphaPWL + 2.0_RKIND
-                   
+
                 else if ((subCellTypeStress == 1 .and. subCellTypeVelocity == 2) .or. &
                          (subCellTypeStress == 2 .and. subCellTypeVelocity == 1)) then
-                   
+
                    basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + 2.0_RKIND * alphaPWL + 1.0_RKIND
-                   
+
                 else if ((subCellTypeStress == 1 .and. subCellTypeVelocity == 3) .or. &
                          (subCellTypeStress == 3 .and. subCellTypeVelocity == 1) .or. &
                          (subCellTypeStress == 2 .and. subCellTypeVelocity == 3) .or. &
                          (subCellTypeStress == 3 .and. subCellTypeVelocity == 2)) then
-                   
+
                    basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + alphaPWL
 
                 else if  (subCellTypeStress == 3 .and. subCellTypeVelocity == 3) then
-                   
+
                    basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2
 
                 end if
@@ -533,23 +533,23 @@ contains
        basisVertexOnCell, &
        iSubCell) &
        result(grad)!{{{
-    
+
     use cice_velocity_solver_variational_shared, only: &
          cice_wrapped_index
 
     integer, intent(in) :: &
-         nEdgesOnCell, &      !< Input: 
+         nEdgesOnCell, &      !< Input:
          basisVertexOnCell, & !< Input: basis function vertex
          iSubCell             !< Input: subcell to calculate
 
     real(kind=RKIND), intent(in) :: &
-         alphaPWL !< Input: 
+         alphaPWL !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         basisGradient !< Input: 
+         basisGradient !< Input:
 
     real(kind=RKIND) :: grad
-    
+
     grad = basisGradient(1,iSubCell) * &
            (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == basisVertexOnCell)) + &
            basisGradient(2,iSubCell) * &
@@ -583,14 +583,14 @@ contains
        subBasisConstant, &
        xLocal, &
        yLocal)!{{{
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     integer, intent(in) :: &
-         iCell, &        !< Input: 
-         nEdgesOnCell, & !< Input: 
-         iVertex         !< Input: 
+         iCell, &        !< Input:
+         nEdgesOnCell, & !< Input:
+         iVertex         !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          subBasisGradientU, &
@@ -598,12 +598,12 @@ contains
          subBasisConstant
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         xLocal, & !< Input: 
-         yLocal    !< Input: 
+         xLocal, & !< Input:
+         yLocal    !< Input:
 
     real(kind=RKIND) :: &
          xmin, xmax, ymin, ymax
-    
+
     real(kind=RKIND), dimension(2,2) :: &
          mapping
 
@@ -643,7 +643,7 @@ contains
        xmax = max(xmax, xVertex(iVertex2)) + 1000.0_RKIND
        ymin = min(ymin, yVertex(iVertex2)) - 1000.0_RKIND
        ymax = max(ymax, yVertex(iVertex2)) + 1000.0_RKIND
-       
+
        open(55,file='test.txt')
        if (iVertexOnCell == iVertex) then
           write(55,*) xVertex(iVertex2), yVertex(iVertex2)
@@ -674,8 +674,8 @@ contains
                                  1.0_RKIND,0.0_RKIND,&
                                  0.0_RKIND,1.0_RKIND,&
                                  xLocal(i1),yLocal(i1),&
-                                 xLocal(i2),yLocal(i2))    
-       
+                                 xLocal(i2),yLocal(i2))
+
        ! plot from subtriangle
        call plot_subtriangle(&
             nEdgesOnCell, &
@@ -721,21 +721,21 @@ contains
          cice_wrapped_index
 
     integer, intent(in) :: &
-         nEdgesOnCell, & !< Input: 
-         iSubTriangle, & !< Input: 
-         iVertex         !< Input: 
+         nEdgesOnCell, & !< Input:
+         iSubTriangle, & !< Input:
+         iVertex         !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         subBasisGradientU, & !< Input: 
-         subBasisGradientV, & !< Input: 
-         subBasisConstant     !< Input: 
+         subBasisGradientU, & !< Input:
+         subBasisGradientV, & !< Input:
+         subBasisConstant     !< Input:
 
     real(kind=RKIND), dimension(2,2), intent(in) :: &
-         mapping !< Input: 
+         mapping !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         x0, & !< Input: 
-         y0    !< Input: 
+         x0, & !< Input:
+         y0    !< Input:
 
     real(kind=RKIND) :: &
          u, v, &
@@ -766,7 +766,7 @@ contains
 
           if (i<=n-j-1) then
 
-             iObject = iObject + 1  
+             iObject = iObject + 1
 
              u = real(i,RKIND) / real(n,RKIND)
              v = real(j,RKIND) / real(n,RKIND)
@@ -787,7 +787,7 @@ contains
                      (subBasisGradientU(iSubTriangle,1) * x + &
                       subBasisGradientV(iSubTriangle,1) * y + &
                       subBasisConstant(iSubTriangle,1))
-                
+
              else if (iSubTriangle == cice_wrapped_index(iVertex - 1, nEdgesOnCell)) then
 
                 pwl = pwl + &
@@ -798,22 +798,22 @@ contains
              endif
 
              if (i<n-j-1) then
-                
+
                 call use_triangle_mapping(x1, y1, u,   v,   mapping)
                 call use_triangle_mapping(x2, y2, u,   v+d, mapping)
                 call use_triangle_mapping(x3, y3, u+d, v+d, mapping)
                 call use_triangle_mapping(x4, y4, u+d, v,   mapping)
                 x5 = x1
                 y5 = y1
-                
+
                 x1 = x1 + x0 ; y1 = y1 + y0
                 x2 = x2 + x0 ; y2 = y2 + y0
                 x3 = x3 + x0 ; y3 = y3 + y0
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
-                
+
                 write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                     x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5     
+                     x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5
 
                 write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', pwl, ' fillstyle solid'
 
@@ -829,11 +829,11 @@ contains
                 x2 = x2 + x0 ; y2 = y2 + y0
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
-                
-                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                     x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5    
 
-                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', pwl, ' fillstyle solid'  
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                     x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5
+
+                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', pwl, ' fillstyle solid'
 
              endif
 
@@ -864,10 +864,10 @@ contains
        u2, v2)!{{{
 
     real(kind=RKIND), dimension(2,2), intent(out) :: &
-         mapping !< Output: 
+         mapping !< Output:
 
     real(kind=RKIND), intent(in) :: &
-         x1, & !< Input: 
+         x1, & !< Input:
          y1, & !< Input:
          x2, & !< Input:
          y2, & !< Input:
@@ -902,7 +902,7 @@ contains
        mapping)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         u, v !< Output: 
+         u, v !< Output:
 
     real(kind=RKIND), intent(in) :: &
          x, y !< Input:

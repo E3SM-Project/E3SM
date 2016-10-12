@@ -285,17 +285,17 @@ contains
 
       real(kind=RKIND), pointer :: &
            config_dt
-      
+
       real(kind=RKIND) :: &
            meltGrowthRateConversionFactor
-           
+
       block => domain % blocklist
       do while(associated(block))
 
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
-         
+
          call MPAS_pool_get_subpool(block % structs, "melt_growth_rates", meltGrowthRatesPool)
-         
+
          call MPAS_pool_get_array(meltGrowthRatesPool, "surfaceIceMelt", surfaceIceMelt)
          call MPAS_pool_get_array(meltGrowthRatesPool, "surfaceIceMeltCategory", surfaceIceMeltCategory)
          call MPAS_pool_get_array(meltGrowthRatesPool, "basalIceMelt", basalIceMelt)
@@ -334,7 +334,7 @@ contains
             frazilFormation(iCell)               = frazilFormation(iCell)               * meltGrowthRateConversionFactor
 
          enddo ! iCell
-            
+
          block => block % next
       enddo
 
