@@ -5,12 +5,11 @@ files for a pes file set by the argument "-pes_setby"
 """
 
 from Tools.standard_script_setup import *
-from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
 from CIME.XML.pes import Pes
 from CIME.XML.component import Component
 import argparse, sys, os, logging
-import datetime, shutil, re
+import datetime, re
 
 queryhelp = """
 Query the peslist by grid and machine
@@ -24,7 +23,7 @@ and 100,000 at X, for instance.
 
 """
 
-addhelp = """ 
+addhelp = """
 This mode is intended for adding new pe layouts to the peslist. The
 script will parse your text list, and add the new pe-layout to the
 propriate grid, machine and optional argument (i.e. compset, pesize)
@@ -103,7 +102,7 @@ def parse_command_line(args, description):
     CIME.utils.handle_standard_logging_options(args)
     CIME.utils.expect(args.add or args.query,
                       "Either --query or --add must be on command line")
-    
+
     CIME.utils.expect(not (args.add and args.query),
                       "Only one of (--query, --add) can be on command line")
 
@@ -227,7 +226,7 @@ class ManagePes(object):
 
         newxml = Pes(infile=self.filename)
 
-        gridname, machname, pesizename, compsetname = self.checkFile(newxml)
+        gridname, machname, _, compsetname = self.checkFile(newxml)
 
         # Is there already an entry with matching grid, machine, compset and
         # pesize?
@@ -265,8 +264,8 @@ class ManagePes(object):
 
         # add new node
         pesxml.add_child(newmatch)
-                    
-        
+
+
         self.print_gridnodes([newmatch])
         newfilename = "%s-%s" % (pesxml.filename,
                         datetime.datetime.now().strftime("%d%b%Y-%H%M%S"))
@@ -308,7 +307,7 @@ class ManagePes(object):
                 pesxmlfile = p2
             except ImportError:
                 pass
-            
+
             pesxml = Pes(infile=pesxmlfile)
             if not os.path.isfile(pesxmlfile):
                 logger.warning("File %s not found -- skipping", pesxmlfile)
@@ -327,7 +326,6 @@ class ManagePes(object):
 
     def print_gridnodes(self, gridnodes):
         for gridnode in gridnodes:
-            comment = None
             gridname = gridnode.get("name")
             machnode = gridnode.find("mach")
             machname = machnode.get("name")
@@ -335,7 +333,7 @@ class ManagePes(object):
             pesizename = pesnode.get("pesize")
             compsetname = pesnode.get("compset")
             logger.info("grid: %s  machine: %s  compset:%s  "
-                        "pesize: %s\n", 
+                        "pesize: %s\n",
                         gridname, machname, compsetname, pesizename)
             drv_config_file = Files().get_value("CONFIG_DRV_FILE")
             drv_comps = [x.lower() for x in

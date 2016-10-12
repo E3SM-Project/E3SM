@@ -1131,9 +1131,7 @@ class C_TestXMLQuery(unittest.TestCase):
 ###############################################################################
 class B_CheckCode(unittest.TestCase):
 ###############################################################################
-
-    ###########################################################################
-    def test_check_code(self):
+    def setUp(self):
     ###########################################################################
         from distutils.spawn import find_executable
         pylint = find_executable("pylint")
@@ -1144,8 +1142,31 @@ class B_CheckCode(unittest.TestCase):
             minor = int(pylintver.group(2))
         if pylint is None or major < 1 or (major == 1 and minor < 5):
             self.skipTest("pylint version 1.5 or newer not found")
-        else:
-            run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker -d 2>&1"))
+
+    def test_check_library_code(self):
+    ###########################################################################
+        run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker 2>&1"))
+
+    def test_check_scripts_code(self):
+    ###########################################################################
+        files_to_test =  ('create_newcase', 'create_test', 'create_clone', 'manage_case', 'manage_pes', 'query_testlists')
+        run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker  --dir %s %s    2>&1"%(SCRIPT_DIR, ' '.join(str(p) for p in files_to_test))))
+
+    def test_check_tools_code(self):
+    ###########################################################################
+        files_to_test =  ('acme_check_env','bless_test_results','case.build','case_diff','case.setup',
+                          'case.submit','check_case','check_input_data','check_lockedfiles','cime_bisect',
+                          'cimeteststatus','code_checker','compare_namelists','compare_test_results'
+                          'component_compare_baseline','component_compare_copy','component_compare_test'
+                          'component_generate_baseline','config_pes_converter.py','cs_status','getTiming'
+                          'grid_xml_converter.py','jenkins_generic_job','list_acme_tests','normalize_cases'
+                          'preview_namelists','save_provenance','simple_compare','update_acme_tests'
+                          'wait_for_tests','xmlchange','xmlquery')
+
+        run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker  --dir %s %s    2>&1"%(TOOLS_DIR, files_to_test)))
+
+
+
 
 # Machinery for Macros generation tests.
 
