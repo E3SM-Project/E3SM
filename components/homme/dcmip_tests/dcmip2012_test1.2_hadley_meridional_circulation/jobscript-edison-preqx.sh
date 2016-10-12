@@ -8,7 +8,7 @@
 #SBATCH -o out_dcmip1-2.o%j   # output and error file name (%j expands to jobID)
 #SBATCH -n 512                # total number of mpi tasks requested
 #SBATCH -p debug              # queue (partition) -- normal, development, etc.
-#SBATCH -t 00:10:00           # run time (hh:mm:ss)
+#SBATCH -t 00:05:00           # run time (hh:mm:ss)
 #SBATCH -A acme               # charge hours to account 1
 
 EXEC=../../test_execs/preqx-nlev60-interp/preqx-nlev60-interp           # set name of executable

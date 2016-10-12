@@ -134,6 +134,8 @@ begin
 
   ; draw panel with contour and lines
 
+  print("writing "+name)
+
 	gsn_panel(wks,plot,(/1,1/),pres)
 	frame(wks)
 

@@ -9,6 +9,7 @@
 module prim_advance_mod
 
   use control_mod,    only: qsplit,rsplit
+  use derivative_mod, only: derivative_t, vorticity, divergence, gradient, gradient_wk
   use dimensions_mod, only: np, nlev, nlevp, nvar, nc, nelemd
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
@@ -85,12 +86,13 @@ contains
   end subroutine prim_advance_init
 
   !_____________________________________________________________________
-  subroutine set_prescribed_wind(elem,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
+  subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
 
     use test_mod,  only: set_test_prescribed_wind
     use asp_tests, only: asp_advection_vertical
 
     type (element_t),      intent(inout), target  :: elem(:)
+    type (derivative_t),   intent(in)             :: deriv
     type (hvcoord_t),      intent(inout)          :: hv
     type (hybrid_t),       intent(in)             :: hybrid
     real (kind=real_kind), intent(in)             :: dt
@@ -99,7 +101,7 @@ contains
     integer              , intent(in)             :: nete
     real (kind=real_kind), intent(in)             :: eta_ave_w
 
-    real (kind=real_kind) :: dp(np,np)                  ! pressure thickness
+    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
     real(kind=real_kind)  :: time
 
     integer :: ie,k,n0,np1
@@ -108,16 +110,22 @@ contains
     n0    = tl%n0
     np1   = tl%np1
 
-    call set_test_prescribed_wind(elem,hybrid,hv,dt,tl,nets,nete)
+    call set_test_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete)
 
     do ie = nets,nete
-
       ! asp2008 tests:
       ! call asp_advection_vertical(time,hv,elem(ie)%state%ps_v(:,:,n0),eta_dot_dpdn)
-      ! elem(ie)%derived%eta_dot_dpdn(:,:,:) = 0
-      ! do k=1,nlev
-      !   elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%state%dp3d(:,:,k,n0) + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
-      ! enddo
+      ! accumulate mean fluxes for advection
+      !   if (rsplit==0) then
+      !      elem(ie)%derived%eta_dot_dpdn(:,:,:) = &
+      !           elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
+      !   else
+      !      ! lagrangian case.  mean vertical velocity = 0. compute dp3d on floating levels
+      !      elem(ie)%derived%eta_dot_dpdn(:,:,:) = 0
+      !     do k=1,nlev
+      !         elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%state%dp3d(:,:,k,n0) + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
+      !      enddo
+      !   end if
 
       ! get mean horizontal flux (rho*vel) for tracer advection
       do k=1,nlev
@@ -138,7 +146,6 @@ contains
 
     use bndry_mod,      only: bndry_exchangev
     use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
-    use derivative_mod, only: derivative_t, vorticity, divergence, gradient, gradient_wk
     use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t
@@ -242,7 +249,7 @@ contains
     ! if "prescribed wind" set dynamics explicitly and skip time-integration
 
     if (prescribed_wind ==1 ) then
-       call set_prescribed_wind(elem,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
+       call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
        call t_stopf('prim_advance_exp')
        return
     endif

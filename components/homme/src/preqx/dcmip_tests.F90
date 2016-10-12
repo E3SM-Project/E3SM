@@ -6,8 +6,9 @@ module dcmip_tests
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use control_mod,          only: test_case
-use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_hadley, &
+use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_hadley, test1_advection_orography, &
                                 test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
+use derivative_mod,       only: derivative_t, gradient_sphere
 use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
 use element_mod,          only: element_t, elem_state_t, derived_state_t, nt=>timelevels
 use hybrid_mod,           only: hybrid_t
@@ -128,7 +129,7 @@ subroutine dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
 
   ! set analytic vertical coordinates at t=0
   if(.not. initialized) then
-    if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 1-1: 3d deformational flow'
+    if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 1-2: Hadley-like Meridional Circulation'
     call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                        ! get evenly spaced z levels
     hvcoord%etai  = exp(-zi/H)                                          ! set eta levels from z
     call set_hybrid_coefficients(hvcoord,hybrid, hvcoord%etai(1),1.0_rl)! set hybrid A and B from eta levels
@@ -165,6 +166,77 @@ subroutine dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       elem(ie)%derived%eta_dot_dpdn(i,j,k) = eta_dot * dp_dn
 
   enddo; enddo; enddo; enddo
+
+end subroutine
+
+!_____________________________________________________________________
+subroutine dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,time,n0,n1,deriv)
+
+  !  Horizontal advection of thin cloud-like tracers over orography
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type (derivative_t),intent(in)            :: deriv
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  real(rl),           intent(in)            :: time                     ! current time
+  integer,            intent(in)            :: n0,n1                    ! time level indices
+
+  logical ::  initialized = .false.
+
+  integer,  parameter :: cfv     = 0                                    ! h-vel is not coordinate following
+  integer,  parameter :: zcoords = 0                                    ! we are not using z coords
+  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
+  real(rl), parameter ::      &
+      T0      = 300.d0,       &                                         ! temperature (K)
+      ztop    = 12000.d0,     &                                         ! model top (m)
+      H       = Rd * T0 / g                                             ! scale height
+
+  integer :: i,j,k,ie                                                   ! loop indices
+  real(rl):: lon,lat,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
+  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(4),dp,gc                 ! pointwise field values
+  real(rl):: grad_p(np,np,2),p_i(np,np),u_i(np,np),v_i(np,np)
+
+  ! set analytic vertical coordinates at t=0
+  if(.not. initialized) then
+    if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 1-3: Advection of thin clouds over orography'
+    call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                        ! get evenly spaced z levels
+    hvcoord%etai  = exp(-zi/H)                                          ! set eta levels from z
+    call set_hybrid_coefficients(hvcoord,hybrid, hvcoord%etai(1),1.0_rl)! set hybrid A and B from eta levels
+    call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+    initialized = .true.
+  endif
+
+  ! set prescribed state at level midpoints
+  do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
+      hyam=hvcoord%hyam(k); hybm=hvcoord%hybm(k)
+      lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
+      call test1_advection_orography(lon,lat,p,z,zcoords,cfv,use_eta,hyam,hybm,gc,u,v,w,t,phis,ps,rho,q(1),q(2),q(3),q(4))
+      dp = pressure_thickness(ps,k,hvcoord)
+      call set_state(u,v,T,ps,phis,dp,zm(k), i,j,k,elem(ie),n0,n1)
+      if(time==0) call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
+
+  enddo; enddo; enddo; enddo
+
+  ! set prescribed state at level interfaces
+  do ie = nets,nete;
+    do k=1,nlevp;
+      do j=1,np; do i=1,np
+        hyai=hvcoord%hyai(k); hybi=hvcoord%hybi(k)
+        lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
+        call test1_advection_orography (lon,lat,p,z,zcoords,cfv,use_eta,hyai,hybi,gc,u,v,w,t,phis,ps,rho,q(1),q(2),q(3),q(4))
+        p_i(i,j) = p
+        u_i(i,j) = u
+        v_i(i,j) = v
+      enddo; enddo
+
+      ! get vertical mass flux
+      grad_p = gradient_sphere(p_i,deriv,elem(ie)%Dinv)
+      elem(ie)%derived%eta_dot_dpdn(:,:,k) = -u_i*grad_p(:,:,1) - v_i*grad_p(:,:,2)
+    enddo;
+    elem(ie)%derived%eta_dot_dpdn(:,:,1)     = 0
+    elem(ie)%derived%eta_dot_dpdn(:,:,nlevp) = 0
+  enddo;
 
 end subroutine
 
