@@ -64,7 +64,6 @@
        <arg flag="-n" name=" $TOTALPES / $PES_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
-       <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
       </submit_args>
    </batch_system>
 
