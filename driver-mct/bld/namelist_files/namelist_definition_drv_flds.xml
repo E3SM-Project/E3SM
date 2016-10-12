@@ -77,13 +77,6 @@
     'xactive_lnd' - interactive method in CLM
   </entry>
 
-  <!-- Valid values is list of all of the potential Chemical species that can be use for Dry-Deposition
-       Anything NOT in this list - can NOT be used. As species are added in
-       seq_drydep_mod.F90 this list needs to be updated.
-       Note: Species from H2 and thereafter are species that "map"
-       to other previous species in the list. The mapping is laid
-       out in seq_drydep_mod.F90.
-  -->
 <entry id="drydep_list"
        type="char*32(300)"
        category="dry-deposition"
