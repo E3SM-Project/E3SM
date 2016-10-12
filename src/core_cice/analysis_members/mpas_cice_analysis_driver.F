@@ -395,7 +395,7 @@ contains
 
       logical :: streamFound
       character  (len=StrKIND) :: referenceTimeString, outputIntervalString
-      type (MPAS_Time_Type) :: referenceTime 
+      type (MPAS_Time_Type) :: referenceTime
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
       err = 0
@@ -428,19 +428,19 @@ contains
             ! Verify stream exists before trying to use output_interval
             if ( config_AM_output_stream /= 'none' ) then
                streamFound = .false.
-   
+
                call mpas_stream_mgr_begin_iteration(domain % streamManager)
                do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamName) )
                   if ( trim(streamName) == trim(config_AM_output_stream) ) then
                      streamFound = .true.
                   end if
                end do
-   
+
                if ( .not. streamFound ) then
                   call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Stream ' // trim(config_AM_output_stream) // ' does not exist. Exiting...')
                end if
             end if
-            
+
 
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
                call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Analysis member as compute_interval of ''output_interval'' without an output stream.')
@@ -572,7 +572,7 @@ contains
 !> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
-!>  This routine calls all pre timestep computation subroutines 
+!>  This routine calls all pre timestep computation subroutines
 !>  required for the MPAS-CICE analysis driver.
 !
 !-----------------------------------------------------------------------

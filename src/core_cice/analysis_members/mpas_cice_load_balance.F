@@ -154,7 +154,7 @@ contains
 
       type(block_type), pointer :: &
            block
-      
+
       type(MPAS_pool_type), pointer :: &
            loadBalanceAMPool
 
@@ -174,7 +174,7 @@ contains
       if (nProcs /= domain % dminfo % nprocs) then
          call MPAS_dmpar_global_abort("MPAS-seaice: Error: mpas_cice_load_balance: wrong nProcs set")
       endif
-      
+
       call MPAS_pool_get_subpool(domain % blocklist % structs, "loadBalanceAM", loadBalanceAMPool)
       call MPAS_pool_get_array(loadBalanceAMPool, "nCellsProc", nCellsProc)
 
@@ -188,16 +188,16 @@ contains
       do while (associated(block))
 
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
-         
+
          nCellsProcTmp(domain % dminfo % my_proc_id+1) = nCellsProcTmp(domain % dminfo % my_proc_id+1) + nCellsSolve
 
          block => block % next
-      enddo 
-      
+      enddo
+
       call MPAS_dmpar_max_int_array(domain % dminfo, domain % dminfo % nprocs, nCellsProcTmp, nCellsProc)
 
       deallocate(nCellsProcTmp)
-      
+
    end subroutine cice_init_load_balance!}}}
 
 !***********************************************************************
@@ -268,7 +268,7 @@ contains
 
      use cice_constants, only: &
           cicePuny
-     
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -303,7 +303,7 @@ contains
 
       type(block_type), pointer :: &
            block
-      
+
       type(MPAS_pool_type), pointer :: &
            loadBalanceAMPool, &
            tracersAggregatePool
@@ -319,10 +319,10 @@ contains
 
       integer, dimension(:), allocatable :: &
            nCellsProcWithSeaIceTmp
-      
+
       integer :: &
            iCell
-      
+
       err = 0
 
       ! cells per processor
@@ -342,7 +342,7 @@ contains
          call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
 
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
-         
+
          do iCell = 1, nCellsSolve
 
             if (iceAreaCell(iCell) > cicePuny) then
@@ -354,12 +354,12 @@ contains
          enddo ! iCell
 
          block => block % next
-      enddo 
+      enddo
 
       call MPAS_dmpar_max_int_array(domain % dminfo, domain % dminfo % nprocs, nCellsProcWithSeaIceTmp, nCellsProcWithSeaIce)
 
       deallocate(nCellsProcWithSeaIceTmp)
-         
+
    end subroutine cice_compute_load_balance!}}}
 
 !***********************************************************************

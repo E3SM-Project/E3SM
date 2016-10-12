@@ -29,7 +29,7 @@ module cice_velocity_solver_unit_tests
 contains
 
 !-----------------------------------------------------------------------
-! Spherical strain rate unit test 
+! Spherical strain rate unit test
 !-----------------------------------------------------------------------
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -47,12 +47,12 @@ contains
   subroutine cice_strain_rate_operator_unit_test(&
        domain, &
        unit_test_subtype)!{{{
-   
+
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     character(len=*), intent(in) :: &
-         unit_test_subtype !< Input: 
+         unit_test_subtype !< Input:
 
     integer, parameter :: ntests = 6
     character(len=200), dimension(ntests), parameter :: &
@@ -69,7 +69,7 @@ contains
     if (trim(unit_test_subtype) == "all") then
 
        do itest = 1, ntests
-          
+
           call cice_strain_rate_operator_unit_test_individual(&
                domain, &
                trim(test_names(itest)))
@@ -121,12 +121,12 @@ contains
 
     use cice_constants, only: &
          pii
-    
+
     type(domain_type) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     character(len=*), intent(in) :: &
-         unit_test_subtype !< Input: 
+         unit_test_subtype !< Input:
 
     type(block_type), pointer :: &
          block
@@ -137,7 +137,7 @@ contains
          velocity_solver, &
          velocity_weak, &
          velocity_variational
-    
+
     real(kind=RKIND), dimension(:), allocatable :: &
          strain11, &
          strain22, &
@@ -197,7 +197,7 @@ contains
          strain11_variational, &
          strain22_variational, &
          strain12_variational
-  
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          basisGradientU, &
          basisGradientV
@@ -219,7 +219,7 @@ contains
 
     block => domain % blocklist
     do while (associated(block))
-       
+
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
@@ -336,7 +336,7 @@ contains
             nCells,                 &
             trim(unit_test_subtype))
 
-       write(54,*) 
+       write(54,*)
        write(54,*) "Analytic solution:"
        write(54,*) "strain11 (min/max):", minval(strain11_test,mask=(solveStress(1:nCells)==1)), &
             maxval(strain11_test,mask=(solveStress(1:nCells)==1))
@@ -388,7 +388,7 @@ contains
 
        endif
 
-       write(54,*) 
+       write(54,*)
        write(54,*) "Numerical solution:"
        write(54,*) "strain11 (min/max):", minval(strain11(1:nCells),mask=(solveStress(1:nCells)==1)), &
             maxval(strain11(1:nCells),mask=(solveStress(1:nCells)==1))
@@ -402,7 +402,7 @@ contains
        strain22_diff = strain22(1:nCells) - strain22_test
        strain12_diff = strain12(1:nCells) - strain12_test
 
-       write(54,*) 
+       write(54,*)
        write(54,*) "Difference:"
        write(54,*) "strain11 (min/max):", minval(strain11_diff,mask=(solveStress(1:nCells)==1)), &
             maxval(strain11_diff,mask=(solveStress(1:nCells)==1))
@@ -543,7 +543,7 @@ contains
        strain11, &
        strain22, &
        strain12)
-    
+
     type(mpas_pool_type), intent(in) :: &
          mesh
 
@@ -619,27 +619,27 @@ contains
        test_type)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         uVelocity, & !< Output: 
-         vVelocity, & !< Output: 
-         strain11,  & !< Output: 
-         strain22,  & !< Output: 
-         strain12     !< Output: 
+         uVelocity, & !< Output:
+         vVelocity, & !< Output:
+         strain11,  & !< Output:
+         strain22,  & !< Output:
+         strain12     !< Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         longitudeVelocity, & !< Input: 
-         latitudeVelocity,  & !< Input: 
-         longitudeStrain,   & !< Input: 
-         latitudeStrain       !< Input: 
+         longitudeVelocity, & !< Input:
+         latitudeVelocity,  & !< Input:
+         longitudeStrain,   & !< Input:
+         latitudeStrain       !< Input:
 
     integer, intent(in) :: &
-         nPointsVelocity, & !< Input: 
-         nPointsStrain      !< Input: 
+         nPointsVelocity, & !< Input:
+         nPointsStrain      !< Input:
 
     character(len=*), intent(in) :: &
-         test_type !< Input: 
+         test_type !< Input:
 
     real(kind=RKIND) :: &
          uVelocity_test, &
@@ -725,19 +725,19 @@ contains
        test_type)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         u,       & !< Output: 
-         v,       & !< Output: 
-         du_dlon, & !< Output: 
-         du_dlat, & !< Output: 
-         dv_dlon, & !< Output: 
-         dv_dlat    !< Output: 
-    
+         u,       & !< Output:
+         v,       & !< Output:
+         du_dlon, & !< Output:
+         du_dlat, & !< Output:
+         dv_dlon, & !< Output:
+         dv_dlat    !< Output:
+
     real(kind=RKIND), intent(in) :: &
-         lon, & !< Input: 
-         lat    !< Input: 
-    
+         lon, & !< Input:
+         lat    !< Input:
+
     character(len=*), intent(in) :: &
-         test_type !< Input: 
+         test_type !< Input:
 
     if (trim(test_type) == "zero") then
 
@@ -874,15 +874,15 @@ contains
        result(e22)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         u,       & !< Input: 
-         v,       & !< Input: 
-         du_dlon, & !< Input: 
-         du_dlat, & !< Input: 
-         dv_dlon, & !< Input: 
-         dv_dlat, & !< Input:                               
-         r,       & !< Input: 
-         lon,     & !< Input: 
-         lat        !< Input: 
+         u,       & !< Input:
+         v,       & !< Input:
+         du_dlon, & !< Input:
+         du_dlat, & !< Input:
+         dv_dlon, & !< Input:
+         dv_dlat, & !< Input:
+         r,       & !< Input:
+         lon,     & !< Input:
+         lat        !< Input:
 
     real(kind=RKIND) :: e22
 
@@ -915,15 +915,15 @@ contains
        result(e12)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         u,       & !< Input: 
-         v,       & !< Input: 
-         du_dlon, & !< Input: 
-         du_dlat, & !< Input: 
-         dv_dlon, & !< Input: 
-         dv_dlat, & !< Input:                               
-         r,       & !< Input: 
-         lon,     & !< Input: 
-         lat        !< Input: 
+         u,       & !< Input:
+         v,       & !< Input:
+         du_dlon, & !< Input:
+         du_dlat, & !< Input:
+         dv_dlon, & !< Input:
+         dv_dlat, & !< Input:
+         r,       & !< Input:
+         lon,     & !< Input:
+         lat        !< Input:
 
     real(kind=RKIND) :: e12
 
@@ -952,10 +952,10 @@ contains
        unit_test_subtype)!{{{
 
     type(domain_type) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     character(len=*), intent(in) :: &
-         unit_test_subtype !< Input: 
+         unit_test_subtype !< Input:
 
     integer, parameter :: ntests = 8
     character(len=200), dimension(ntests), parameter :: &
@@ -1028,10 +1028,10 @@ contains
          pii
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     character(len=*), intent(in) :: &
-         unit_test_subtype !< Input: 
+         unit_test_subtype !< Input:
 
     type(block_type), pointer :: &
          block
@@ -1052,7 +1052,7 @@ contains
          lonVertexRotated0, &
          latCellRotated0, &
          lonCellRotated0
-    
+
     real(kind=RKIND) :: &
          xp, yp, zp, &
          rms_divergenceU, &
@@ -1121,7 +1121,7 @@ contains
 
     block => domain % blocklist
     do while (associated(block))
-       
+
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
@@ -1344,7 +1344,7 @@ contains
             nVertices,                      &
             rms_divergenceV)
 
-       write(54,*) 
+       write(54,*)
        write(54,*) "RMS:"
        write(54,*) "rms_divergenceU:", rms_divergenceU
        write(54,*) "rms_divergenceV:", rms_divergenceV
@@ -1416,23 +1416,23 @@ contains
        test_type)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV, & !< Output: 
-         stress11,          & !< Output: 
-         stress22,          & !< Output: 
-         stress12             !< Output: 
-    
+         stressDivergenceU, & !< Output:
+         stressDivergenceV, & !< Output:
+         stress11,          & !< Output:
+         stress22,          & !< Output:
+         stress12             !< Output:
+
     real(kind=RKIND), dimension(:), intent(in) :: &
-         longitudeStress,     & !< Input: 
-         latitudeStress,      & !< Input: 
-         longitudeDivergence, & !< Input: 
-         latitudeDivergence     !< Input: 
+         longitudeStress,     & !< Input:
+         latitudeStress,      & !< Input:
+         longitudeDivergence, & !< Input:
+         latitudeDivergence     !< Input:
 
     character(len=*), intent(in) :: &
-         test_type !< Input: 
+         test_type !< Input:
 
     real(kind=RKIND) :: &
          stress11_test,  &
@@ -1452,7 +1452,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          sphere_radius
-    
+
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     nPointsStress     = size(stress11)-1
@@ -1530,25 +1530,25 @@ contains
        test_type)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV    !< Output: 
+         stressDivergenceU, & !< Output:
+         stressDivergenceV    !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         stress11,          & !< Output: 
-         stress22,          & !< Output: 
-         stress12             !< Output: 
+         stress11,          & !< Output:
+         stress22,          & !< Output:
+         stress12             !< Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         longitudeStress,     & !< Input: 
-         latitudeStress,      & !< Input: 
-         longitudeDivergence, & !< Input: 
-         latitudeDivergence     !< Input: 
+         longitudeStress,     & !< Input:
+         latitudeStress,      & !< Input:
+         longitudeDivergence, & !< Input:
+         latitudeDivergence     !< Input:
 
     character(len=*), intent(in) :: &
-         test_type !< Input: 
+         test_type !< Input:
 
     real(kind=RKIND) :: &
          stress11_test,  &
@@ -1578,7 +1578,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          sphere_radius
-    
+
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -1665,7 +1665,7 @@ contains
        lon,            &
        lat,            &
        test_type)!{{{
-    
+
     real(kind=RKIND), intent(out) :: &
          stress11,       &
          stress22,       &
@@ -1678,18 +1678,18 @@ contains
          dstress12_dlat
 
     real(kind=RKIND), intent(in) :: &
-         lon, & !< Input: 
-         lat    !< Input: 
+         lon, & !< Input:
+         lat    !< Input:
 
     character(len=*), intent(in) :: &
-         test_type !< Input: 
+         test_type !< Input:
 
     if (trim(test_type) == "zero") then
-       
+
        stress11 = 0.0_RKIND
        stress22 = 0.0_RKIND
        stress12 = 0.0_RKIND
-       
+
        dstress11_dlon = 0.0_RKIND
        dstress11_dlat = 0.0_RKIND
        dstress22_dlon = 0.0_RKIND
@@ -1702,7 +1702,7 @@ contains
        stress11 = 1.0_RKIND
        stress22 = 0.0_RKIND
        stress12 = 0.0_RKIND
-       
+
        dstress11_dlon = 0.0_RKIND
        dstress11_dlat = 0.0_RKIND
        dstress22_dlon = 0.0_RKIND
@@ -1715,7 +1715,7 @@ contains
        stress11 = 0.0_RKIND
        stress22 = 1.0_RKIND
        stress12 = 0.0_RKIND
-       
+
        dstress11_dlon = 0.0_RKIND
        dstress11_dlat = 0.0_RKIND
        dstress22_dlon = 0.0_RKIND
@@ -1728,7 +1728,7 @@ contains
        stress11 = 0.0_RKIND
        stress22 = 0.0_RKIND
        stress12 = 1.0_RKIND
-       
+
        dstress11_dlon = 0.0_RKIND
        dstress11_dlat = 0.0_RKIND
        dstress22_dlon = 0.0_RKIND
@@ -1741,7 +1741,7 @@ contains
        stress11 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
        stress22 = 0.0_RKIND
        stress12 = 0.0_RKIND
-       
+
        dstress11_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
        dstress11_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
        dstress22_dlon = 0.0_RKIND
@@ -1754,7 +1754,7 @@ contains
        stress11 = 0.0_RKIND
        stress22 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
        stress12 = 0.0_RKIND
-       
+
        dstress11_dlon = 0.0_RKIND
        dstress11_dlat = 0.0_RKIND
        dstress22_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
@@ -1767,7 +1767,7 @@ contains
        stress11 = 0.0_RKIND
        stress22 = 0.0_RKIND
        stress12 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       
+
        dstress11_dlon = 0.0_RKIND
        dstress11_dlat = 0.0_RKIND
        dstress22_dlon = 0.0_RKIND
@@ -1780,7 +1780,7 @@ contains
        stress11 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
        stress22 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
        stress12 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       
+
        dstress11_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
        dstress11_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
        dstress22_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
@@ -1789,7 +1789,7 @@ contains
        dstress12_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
 
     else
-       
+
        write(stderrUnit,*) "Unknown test case: ", trim(test_type)
        stop
 
@@ -1825,18 +1825,18 @@ contains
        result(divu)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         stress11,       & !< Input: 
-         stress22,       & !< Input: 
-         stress12,       & !< Input: 
-         dstress11_dlon, & !< Input: 
-         dstress11_dlat, & !< Input: 
-         dstress22_dlon, & !< Input: 
-         dstress22_dlat, & !< Input: 
-         dstress12_dlon, & !< Input: 
-         dstress12_dlat, & !< Input: 
-         r,              & !< Input: 
-         lon,            & !< Input: 
-         lat               !< Input: 
+         stress11,       & !< Input:
+         stress22,       & !< Input:
+         stress12,       & !< Input:
+         dstress11_dlon, & !< Input:
+         dstress11_dlat, & !< Input:
+         dstress22_dlon, & !< Input:
+         dstress22_dlat, & !< Input:
+         dstress12_dlon, & !< Input:
+         dstress12_dlat, & !< Input:
+         r,              & !< Input:
+         lon,            & !< Input:
+         lat               !< Input:
 
     real(kind=RKIND) :: divu
 
@@ -1874,18 +1874,18 @@ contains
        result(divv)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         stress11,       & !< Input: 
-         stress22,       & !< Input: 
-         stress12,       & !< Input: 
-         dstress11_dlon, & !< Input: 
-         dstress11_dlat, & !< Input: 
-         dstress22_dlon, & !< Input: 
-         dstress22_dlat, & !< Input: 
-         dstress12_dlon, & !< Input: 
-         dstress12_dlat, & !< Input: 
-         r,              & !< Input: 
-         lon,            & !< Input: 
-         lat               !< Input: 
+         stress11,       & !< Input:
+         stress22,       & !< Input:
+         stress12,       & !< Input:
+         dstress11_dlon, & !< Input:
+         dstress11_dlat, & !< Input:
+         dstress22_dlon, & !< Input:
+         dstress22_dlat, & !< Input:
+         dstress12_dlon, & !< Input:
+         dstress12_dlat, & !< Input:
+         r,              & !< Input:
+         lon,            & !< Input:
+         lat               !< Input:
 
     real(kind=RKIND) :: divv
 
@@ -1917,11 +1917,11 @@ contains
 
     use cice_velocity_solver_constitutive_relation, only: &
          cice_evp_constitutive_relation, &
-         cice_evp_constitutive_relation_revised, &         
+         cice_evp_constitutive_relation_revised, &
          cice_init_evp
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(block_type), pointer :: &
          block
@@ -1978,7 +1978,7 @@ contains
        do iTest = 1, nTests
 
           if (.not. config_revised_evp) then
-          
+
              call cice_evp_constitutive_relation(&
                   stress11(iTest), &
                   stress22(iTest), &
@@ -2003,7 +2003,7 @@ contains
                   icePressure(iTest), &
                   replacementPressure,   &
                   areaCell)
-             
+
           endif
 
        enddo ! iTest
@@ -2044,13 +2044,13 @@ contains
        strain12)!{{{
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stress11, &    !< Output: 
-         stress22, &    !< Output: 
-         stress12, &    !< Output: 
-         icePressure, & !< Output: 
-         strain11, &    !< Output: 
-         strain22, &    !< Output: 
-         strain12       !< Output: 
+         stress11, &    !< Output:
+         stress22, &    !< Output:
+         stress12, &    !< Output:
+         icePressure, & !< Output:
+         strain11, &    !< Output:
+         strain22, &    !< Output:
+         strain12       !< Output:
 
     integer :: &
          iTest
@@ -2099,13 +2099,13 @@ contains
        stress12)!{{{
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         icePressure, & !< Input: 
-         strain11, &    !< Input: 
-         strain22, &    !< Input: 
-         strain12, &    !< Input: 
-         stress11, &    !< Input: 
-         stress22, &    !< Input: 
-         stress12       !< Input: 
+         icePressure, & !< Input:
+         strain11, &    !< Input:
+         strain22, &    !< Input:
+         strain12, &    !< Input:
+         stress11, &    !< Input:
+         stress22, &    !< Input:
+         stress12       !< Input:
 
     integer :: &
          iTest
@@ -2132,6 +2132,3 @@ contains
   !--------------------------------------------------------------------------
 
 end module cice_velocity_solver_unit_tests
-
-
-

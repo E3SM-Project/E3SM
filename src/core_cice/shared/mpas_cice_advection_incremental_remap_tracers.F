@@ -25,18 +25,18 @@ module cice_advection_incremental_remap_tracers
 
    implicit none
    private
-   save 
+   save
 
    public :: cice_add_tracers_to_linked_list, &
              cice_set_tracer_array_pointers,  &
              cice_update_tracer_halo
-   
+
    ! the type that makes up each element in the linked list
    type, public :: tracer_type
-     
+
       character(len=strKIND) :: tracerName
       character(len=strKIND) :: parentName
-      
+
       integer :: ndims     ! number of dimensions in the tracer array
                            ! (nCategories, nCells) for 2D
                            ! (nLayer1, nCategories, nCells) for 3D
@@ -45,7 +45,7 @@ module cice_advection_incremental_remap_tracers
       ! tracer arrays
       real(kind=RKIND), dimension(:,:),     pointer :: array2D => null()
       real(kind=RKIND), dimension(:,:,:),   pointer :: array3D => null()
-      
+
       ! mass*tracer products
       ! = mass for mass field
       ! = mass*tracer1 for tracers with one parent
@@ -71,7 +71,7 @@ module cice_advection_incremental_remap_tracers
       !       set at runtime in IR subroutine
       integer, dimension(:,:),     pointer :: arrayMask2D => null()
       integer, dimension(:,:,:),   pointer :: arrayMask3D => null()
-      
+
       ! fluxes across cell edges
       !                   (nCategories, nEdges) for 2D
       !          (nLayers, nCategories, nEdges) for 3D
@@ -114,13 +114,13 @@ module cice_advection_incremental_remap_tracers
       real(kind=RKIND), dimension(:,:,:),   pointer :: yGrad3D => null()
 
       ! pointer to parent tracer
-      type(tracer_type), pointer :: parent => null() 
-      
+      type(tracer_type), pointer :: parent => null()
+
       logical :: hasChild     ! true if this tracer has a child tracer
 
       integer :: nParents     ! = 1, 2 or 3 depending on place in tracer hierarchy
                               ! = 0 for mass-like field
- 
+
       logical :: isActive     ! true if tracer is active for this run
 
       ! initial pointer to the next element in the linked list (not yet ordered)
@@ -197,7 +197,7 @@ contains
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
          pkgTracerZSalinityActive
- 
+
     logical, pointer :: &
          config_use_level_meltponds
 
@@ -213,7 +213,7 @@ contains
     ! Note: The fractional ice area (iceAreaCategory) is actually a mass-like field rather than a tracer.
     !       It is included here because it is the parent (or grandparent or great-grandparent) of all tracers
     !        and is part of the tracer pool.
-    ! Note: The ice and snow volume are not tracers (since volume = area*thickness, where thickness is the tracer), 
+    ! Note: The ice and snow volume are not tracers (since volume = area*thickness, where thickness is the tracer),
     !       but they are converted to thickness before being transported.
 
     ! First the tracers that are always included:
@@ -299,7 +299,7 @@ contains
     ! brine height tracer
     if (pkgTracerBrineActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'brineFraction',               'iceVolumeCategory')
-       
+
     ! skeletal layer biogeochemistry
     if (pkgTracerSkeletalAlgaeActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalAlgaeConc',           'iceAreaCategory')
@@ -318,7 +318,7 @@ contains
     if (pkgTracerSkeletalDONActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDONConc',             'iceAreaCategory')
 
-    ! ammonium 
+    ! ammonium
     if (pkgTracerSkeletalAmmoniumActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalAmmoniumConc',        'iceAreaCategory')
 
@@ -336,7 +336,7 @@ contains
     ! nonreactive mobile tracer
     if (pkgTracerSkeletalNonreactiveActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalNonreactiveConc',     'iceAreaCategory')
-         
+
     ! humic material
     if (pkgTracerSkeletalHumicsActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalHumicsConc',          'iceAreaCategory')
@@ -347,15 +347,15 @@ contains
        call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDissolvedIronConc',   'iceAreaCategory')
     endif
 
-    ! vertical biogeochemistry 
+    ! vertical biogeochemistry
     ! fraction of tracer in the mobile phase
     if (pkgTracerMobileFractionActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'mobileFraction',              'brineFraction')
-         
+
     ! algal nitrogen
     if (pkgTracerVerticalAlgaeActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAlgaeConc',           'brineFraction')
-      
+
     ! nitrate
     if (pkgTracerVerticalNitrateActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNitrateConc',         'brineFraction')
@@ -374,7 +374,7 @@ contains
     if (pkgTracerVerticalAmmoniumActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAmmoniumConc',        'brineFraction')
 
-    ! silicate 
+    ! silicate
     if (pkgTracerVerticalSilicateActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSilicateConc',        'brineFraction')
 
@@ -404,11 +404,11 @@ contains
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsIce','brineFraction')
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsSnow','snowVolumeCategory')
     endif
-       
+
     ! vertical salinity
     if (pkgTracerZSalinityActive) &
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSalinity',            'brineFraction')
-       
+
     if (verboseTracers) then
        thisTracer => tracersHead
        write(stderrUnit,*) ' '
@@ -423,7 +423,7 @@ contains
           thisTracer => thisTracer % nextInitial
        enddo
     endif
-       
+
     ! set the connectivity in the list
     call create_tracers_connectivity(tracersHead)
 
@@ -496,7 +496,7 @@ contains
     else
 
        ! already have elements in linked list
-       
+
        ! do this so we do not alter the original pointer; it is always the head of the linked list
        newTracer => tracersHead
 
@@ -504,7 +504,7 @@ contains
        do while (associated(newTracer % nextInitial))
           newTracer => newTracer % nextInitial
        enddo
-       
+
        ! found the end so allocate
        allocate(newTracer % nextInitial)
        newTracer => newTracer % nextInitial
@@ -518,10 +518,10 @@ contains
 
     ! initialize hasChild and nParents; these are modified below
     newTracer % hasChild = .false.
-    newTracer % nParents = 0  
+    newTracer % nParents = 0
 
   end subroutine add_tracer_to_tracer_linked_list
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  routine create_tracers_connectivity
@@ -549,22 +549,22 @@ contains
        ! loop over potential parent tracers
        parentTracer => tracersHead
        do while (associated(parentTracer))
-             
+
           ! see if the potential parent tracer is the parent of the child tracer
           if (trim(parentTracer % tracerName) == trim(thisTracer % parentName)) then
-             
+
              ! set the child parent pointer to the parent tracer
              thisTracer % parent => parentTracer
-             
+
              ! set the parent tracer to have children
              parentTracer % hasChild = .true.
-             
+
           endif
-          
+
           parentTracer => parentTracer % nextInitial
 
        enddo
-       
+
        thisTracer => thisTracer % nextInitial
 
     enddo  ! associated(thisTracer)
@@ -643,7 +643,7 @@ contains
     do while (associated(tracer))
 
        call MPAS_pool_get_subpool(domain % blocklist % structs, 'tracers', tracerPool)
-       
+
        call MPAS_pool_get_field_info(tracerPool, trim(tracer % tracerName), fieldInfo)
 
        tracer % isActive = fieldInfo % isActive
@@ -653,7 +653,7 @@ contains
     enddo
 
   end subroutine set_tracers_active
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  routine remove_inactive_tracers
@@ -685,7 +685,7 @@ contains
     logical :: first ! initially true; set to false after the first active tracer is found
 
     call MPAS_pool_get_subpool(domain % blocklist % structs, 'tracers', tracerPool)
-       
+
     ! loop over the tracers in the linked list, and identify the active tracers
     tracer => tracersHead
     do while (associated(tracer))
@@ -707,7 +707,7 @@ contains
     do while (associated(tracer))
 
        if (tracer % isActive) then
-          
+
           if (verboseTracers) then
              write(stderrUnit,*) 'Active tracer: ', trim(tracer % tracerName)
           endif
@@ -776,12 +776,12 @@ contains
 
           endif  ! associated(tracer % nextInitial)
 
-       endif     ! tracer is active 
+       endif     ! tracer is active
 
     enddo        ! tracer loop
 
   end subroutine remove_inactive_tracers
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  routine set_tracer_order
@@ -812,16 +812,16 @@ contains
     ! determine the number of levels (1, 2 or 3, from max value of nParents)
 
     maxLevels = 0
-    
+
     tracer => tracersHead
     do while (associated(tracer))
-       
+
        maxLevels = max(maxLevels,tracer % nParents)
-       
+
        tracer => tracer % nextInitial
 
     enddo
-    
+
     ! loop over the levels making sure the order is by levels
     nullify(tracerPrev)
 
@@ -830,10 +830,10 @@ contains
        ! loop over tracers
        tracer => tracersHead
        do while (associated(tracer))
-          
+
           ! see if the tracer is at the current level
           if (tracer % nParents == tracerLevel) then
-             
+
              ! see if the previous tracer pointer is associated
              if (associated(tracerPrev)) then
                 ! the previous tracer is associated so set the next pointer
@@ -844,13 +844,13 @@ contains
                 tracerFirst => tracer
                 tracerPrev => tracer
              endif
-             
+
           endif
-          
+
           tracer => tracer % nextInitial
 
        enddo
-       
+
     enddo
 
     ! make the tracer object point to the new start of the list
@@ -874,7 +874,7 @@ contains
 
     type(tracer_type), pointer, intent(in) :: &
          tracersHead ! do not alter this pointer - it should always point to the first element
-    
+
     type(block_type), intent(inout) :: block
 
     integer, intent(in), optional :: timeLevelIn
@@ -927,16 +927,16 @@ contains
     thisTracer => tracersHead
 
     do while (associated(thisTracer))
-     
+
        call MPAS_pool_get_field_info(tracerPool, trim(thisTracer % tracerName), thisFieldInfo)
 
-       !NOTE: As of Aug. 2015, all tracers are formally 3D. But some (e.g., iceAreaCategory) are really 2D, 
+       !NOTE: As of Aug. 2015, all tracers are formally 3D. But some (e.g., iceAreaCategory) are really 2D,
        !       with a first (layer) index of dimension 1.
-       !      For purposes of IR, it is easier to define a 2D pointer to iceAreaCategory(1,:,:) than 
+       !      For purposes of IR, it is easier to define a 2D pointer to iceAreaCategory(1,:,:) than
        !       a 3D pointer to iceAreaCategory(:,:,:).  This avoids some artificial logic in the main remapping
        !       subroutines to handle parent and child tracers that are both 3D but with different first dimensions.
        !TODO - Remove this extra logic when fields like iceAreaCategory are formally 2D.
-               
+
        if (thisFieldInfo%nDims == 2) then
 
           thisTracer % nDims = 2
@@ -1073,7 +1073,7 @@ contains
          tracersHead ! do not alter this pointer - it should always point to the first element
 
     type(domain_type), intent(inout) :: domain
-    
+
     integer, intent(in), optional :: timeLevelIn
 
     type(tracer_type), pointer :: &
@@ -1093,14 +1093,13 @@ contains
        if (verboseTracers) write(stderrUnit,*) 'Halo update:', trim(thisTracer % tracerName)
 
        call MPAS_dmpar_field_halo_exch(domain, trim(thisTracer % tracerName), timeLevel=timeLevel)
-       
+
        thisTracer => thisTracer % next
 
-    enddo  ! associated(thisTracer)     
+    enddo  ! associated(thisTracer)
 
   end subroutine cice_update_tracer_halo
 
   !-----------------------------------------------
 
 end module cice_advection_incremental_remap_tracers
-

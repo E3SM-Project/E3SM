@@ -53,7 +53,7 @@ contains
        domain)!{{{
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     ! rescale mesh quantities
     call rescale_mesh(domain)
@@ -87,7 +87,7 @@ contains
          earthRadius
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     logical, pointer :: &
          on_a_sphere, &
@@ -132,7 +132,7 @@ contains
 
     integer, dimension(:,:), pointer :: &
          cellsOnVertex
-  
+
     real(kind=RKIND) :: &
          oldX, &
          oldY, &
@@ -151,7 +151,7 @@ contains
 
     integer :: &
          directionProperty
-    
+
     call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
 
     if (.not. config_do_restart) then
@@ -312,7 +312,7 @@ contains
          omega
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(block_type), pointer :: &
          block
@@ -346,7 +346,7 @@ contains
           call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
 
           do iVertex = 1, nVertices
-       
+
              fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
 
           enddo ! iVertex
@@ -391,10 +391,10 @@ contains
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-       
+
        call MPAS_pool_get_array(boundary, "blockIDout", blockIDout)
        blockIDout = block % blockID
-       
+
        call interior_vertices(mesh, boundary)
        call interior_cells(mesh, boundary)
        call interior_edges(mesh, boundary)
@@ -429,7 +429,7 @@ contains
          mesh
 
     type (MPAS_pool_type), pointer :: &
-         boundary !< Input: 
+         boundary !< Input:
 
     integer :: &
          nInteriorAdjacentCells
@@ -462,7 +462,7 @@ contains
     do iVertex = 1, nVerticesSolve
 
        interiorVertex(iVertex) = 0
-       
+
        nInteriorAdjacentCells = 0
 
        do iVertexDegree = 1, vertexDegree
@@ -470,18 +470,18 @@ contains
           iCell = cellsOnVertex(iVertexDegree, iVertex)
 
           if (iCell >= 1 .and. iCell <= nCells) then
-             
+
              nInteriorAdjacentCells = nInteriorAdjacentCells + 1
-             
+
           endif
-          
+
        enddo ! iVertexDegree
 
        ! vertex points we directly calculate on
        if (nInteriorAdjacentCells == vertexDegree) then
 
           interiorVertex(iVertex) = 1
-          
+
        endif
 
     enddo ! iVertex
@@ -505,10 +505,10 @@ contains
        boundary)!{{{
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type (MPAS_pool_type), pointer, intent(inout) :: &
-         boundary !< Input: 
+         boundary !< Input:
 
     integer :: &
          iCell, &
@@ -570,10 +570,10 @@ contains
        boundary)!{{{
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     type (MPAS_pool_type), pointer, intent(inout) :: &
-         boundary !< Input: 
+         boundary !< Input:
 
     integer, pointer :: &
          nCells, &
@@ -588,7 +588,7 @@ contains
     integer :: &
          iEdge, &
          iCellOnEdge
-    
+
     call MPAS_pool_get_array(boundary, "interiorEdge", interiorEdge)
 
     call MPAS_pool_get_dimension(mesh, "nEdgesSolve", nEdgesSolve)
@@ -633,12 +633,12 @@ contains
   subroutine cice_cell_vertices_at_vertex(&
        mesh, &
        cellVerticesAtVertex)!{{{
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     integer, dimension(:,:), intent(out) :: &
-         cellVerticesAtVertex !< Output: 
+         cellVerticesAtVertex !< Output:
 
     integer, pointer :: &
          nVertices, &
@@ -719,22 +719,22 @@ contains
        latVertexRotated)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon, & !< Output: 
-         normalVectorTriangle   !< Output: 
+         normalVectorPolygon, & !< Output:
+         normalVectorTriangle   !< Output:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         removeMetricTerms !< Input: 
+         rotateCartesianGrid, & !< Input:
+         removeMetricTerms !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         latCellRotated, & !< Output: 
-         latVertexRotated  !< Output: 
+         latCellRotated, & !< Output:
+         latVertexRotated  !< Output:
 
     call cice_normal_vectors_polygon(&
          mesh, &
@@ -742,7 +742,7 @@ contains
          rotateCartesianGrid, &
          removeMetricTerms, &
          latCellRotated)
-    
+
     call cice_normal_vectors_triangle(&
          mesh, &
          normalVectorTriangle, &
@@ -773,17 +773,17 @@ contains
        latCellRotated)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon !< Output: 
+         normalVectorPolygon !< Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         removeMetricTerms !< Input: 
+         rotateCartesianGrid, & !< Input:
+         removeMetricTerms !< Input:
 
     real(kind=RKIND), dimension(:), optional, intent(out) :: &
-         latCellRotated !< Output: 
+         latCellRotated !< Output:
 
     logical, pointer :: &
          on_a_sphere
@@ -792,7 +792,7 @@ contains
 
     if (on_a_sphere) then
        call normal_vectors_spherical_polygon_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorPolygon, latCellRotated)
-    else 
+    else
        call normal_vectors_planar_polygon(mesh, normalVectorPolygon)
        if (present(latCellRotated)) latCellRotated = 0.0_RKIND
     endif
@@ -820,20 +820,20 @@ contains
        latVertexRotated)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle !< Output: 
+         normalVectorTriangle !< Output:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         removeMetricTerms !< Input: 
+         rotateCartesianGrid, & !< Input:
+         removeMetricTerms !< Input:
 
     real(kind=RKIND), dimension(:), optional, intent(out) :: &
-         latVertexRotated !< Output: 
+         latVertexRotated !< Output:
 
     logical, pointer :: &
          on_a_sphere
@@ -842,7 +842,7 @@ contains
 
     if (on_a_sphere) then
        call normal_vectors_spherical_triangle_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorTriangle, interiorVertex, latVertexRotated)
-    else 
+    else
        call normal_vectors_planar_triangle(mesh, normalVectorTriangle, interiorVertex)
        if (present(latVertexRotated)) latVertexRotated = 0.0_RKIND
     endif
@@ -866,10 +866,10 @@ contains
        normalVectorPolygon)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon !< Output: 
+         normalVectorPolygon !< Output:
 
     integer, pointer :: &
          nCells
@@ -907,7 +907,7 @@ contains
     do iCell = 1, nCells
 
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-          
+
           iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
           dx = xEdge(iEdge) - xCell(iCell)
@@ -940,13 +940,13 @@ contains
        interiorVertex)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle !< Output: 
+         normalVectorTriangle !< Output:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     integer, pointer :: &
          nVertices, &
@@ -986,15 +986,15 @@ contains
        if (interiorVertex(iVertex) == 1) then
 
           do iVertexDegree = 1, vertexDegree
-             
+
              iEdge = edgesOnVertex(iVertexDegree,iVertex)
-             
+
              dx = xEdge(iEdge) - xVertex(iVertex)
              dy = yEdge(iEdge) - yVertex(iVertex)
-             
+
              normalVectorTriangle(1,iVertexDegree,iVertex) = dx / sqrt(dx**2 + dy**2)
              normalVectorTriangle(2,iVertexDegree,iVertex) = dy / sqrt(dx**2 + dy**2)
-             
+
           enddo ! iVertexDegree
 
        endif ! interiorVertex
@@ -1023,18 +1023,18 @@ contains
        latCellRotatedOut)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         removeMetricTerms !< Input: 
+         rotateCartesianGrid, & !< Input:
+         removeMetricTerms !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon !< Output: 
+         normalVectorPolygon !< Output:
 
     real(kind=RKIND), dimension(:), optional, intent(out) :: &
-         latCellRotatedOut !< Output: 
-    
+         latCellRotatedOut !< Output:
+
     real(kind=RKIND), dimension(3) :: &
          cellCentreRotated, &
          cellCentreEquator, &
@@ -1070,7 +1070,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          sphere_radius
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
          yCell, &
@@ -1131,7 +1131,7 @@ contains
           yRotationMatrix(1,3) =  sin(latCellRotated)
           yRotationMatrix(3,1) = -sin(latCellRotated)
           yRotationMatrix(3,3) =  cos(latCellRotated)
-          
+
           zRotationMatrix(1,1) =  cos(-lonCellRotated)
           zRotationMatrix(1,2) = -sin(-lonCellRotated)
           zRotationMatrix(2,1) =  sin(-lonCellRotated)
@@ -1141,7 +1141,7 @@ contains
           yRotationMatrix(1,3) = 0.0_RKIND
           yRotationMatrix(3,1) = 0.0_RKIND
           yRotationMatrix(3,3) = 1.0_RKIND
-          
+
           zRotationMatrix(1,1) = 1.0_RKIND
           zRotationMatrix(1,2) = 0.0_RKIND
           zRotationMatrix(2,1) = 0.0_RKIND
@@ -1150,9 +1150,9 @@ contains
 
        ! this should be (r, 0, 0)
        !cellCentreEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, cellCentreRotated))
-       
+
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-          
+
           iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
           ! vector in great circle plane
@@ -1164,7 +1164,7 @@ contains
                edgeRotated(1), edgeRotated(2), edgeRotated(3), &
                xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
                rotateCartesianGrid)
-          
+
           call cice_grid_rotation_forward(&
                vertexRotated1(1), vertexRotated1(2), vertexRotated1(3), &
                xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
@@ -1208,14 +1208,14 @@ contains
           call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
                                        normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                        eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
-          
+
           normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
                * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
 
        enddo ! iEdgeOnCell
 
        if (present(latCellRotatedOut)) latCellRotatedOut(iCell) = latCellRotated
-       
+
     enddo ! iCell
 
   end subroutine normal_vectors_spherical_polygon_metric!}}}
@@ -1238,13 +1238,13 @@ contains
        normalVectorPolygon)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon !< Output: 
+         normalVectorPolygon !< Output:
 
     real(kind=RKIND), dimension(3) :: &
          normalGreatCircle, &
@@ -1300,7 +1300,7 @@ contains
     do iCell = 1, nCells
 
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-          
+
           iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
           ! vector in great circle plane
@@ -1312,7 +1312,7 @@ contains
                xEdge0,       yEdge0,       zEdge0, &
                xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
                rotateCartesianGrid)
-          
+
           call cice_grid_rotation_forward(&
                xVertex1,          yVertex1,          zVertex1, &
                xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
@@ -1348,12 +1348,12 @@ contains
           call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
                                        normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                        eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
-          
+
           normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
                * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
 
        enddo ! iEdgeOnCell
-       
+
     enddo ! iCell
 
   end subroutine normal_vectors_spherical_polygon!}}}
@@ -1379,20 +1379,20 @@ contains
        latVertexRotatedOut)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         removeMetricTerms !< Input: 
+         rotateCartesianGrid, & !< Input:
+         removeMetricTerms !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle !< Output: 
+         normalVectorTriangle !< Output:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     real(kind=RKIND), dimension(:), optional, intent(out) :: &
-         latVertexRotatedOut !< Output: 
+         latVertexRotatedOut !< Output:
 
     real(kind=RKIND), dimension(3) :: &
          vertexRotated, &
@@ -1483,18 +1483,18 @@ contains
                vertexRotated(1), vertexRotated(2), vertexRotated(3), &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                rotateCartesianGrid)
- 
+
           ! calculate lon and lat of the cell centre in the rotated coordinate system
           lonVertexRotated = atan2(vertexRotated(2), vertexRotated(1))
           latVertexRotated = asin(vertexRotated(3) / sphere_radius)
-          
+
           ! rotate the cell centre onto the rotated equator
           if (removeMetricTerms) then
              yRotationMatrix(1,1) =  cos(latVertexRotated)
              yRotationMatrix(1,3) =  sin(latVertexRotated)
              yRotationMatrix(3,1) = -sin(latVertexRotated)
              yRotationMatrix(3,3) =  cos(latVertexRotated)
-             
+
              zRotationMatrix(1,1) =  cos(-lonVertexRotated)
              zRotationMatrix(1,2) = -sin(-lonVertexRotated)
              zRotationMatrix(2,1) =  sin(-lonVertexRotated)
@@ -1504,7 +1504,7 @@ contains
              yRotationMatrix(1,3) = 0.0_RKIND
              yRotationMatrix(3,1) = 0.0_RKIND
              yRotationMatrix(3,3) = 1.0_RKIND
-             
+
              zRotationMatrix(1,1) = 1.0_RKIND
              zRotationMatrix(1,2) = 0.0_RKIND
              zRotationMatrix(2,1) = 0.0_RKIND
@@ -1513,9 +1513,9 @@ contains
 
           ! this should be (r, 0, 0)
           !vertexEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, vertexRotated))
-          
+
           do iVertexDegree = 1, vertexDegree
-             
+
              iEdge = edgesOnVertex(iVertexDegree,iVertex)
 
              ! vector in great circle plane
@@ -1560,18 +1560,18 @@ contains
              normalGreatCircle(1) = normalGreatCircle(1) / normalGreatCircleNorm
              normalGreatCircle(2) = normalGreatCircle(2) / normalGreatCircleNorm
              normalGreatCircle(3) = normalGreatCircle(3) / normalGreatCircleNorm
-             
+
              ! eastwards vector at edge
              eastwardsVector(1) = -edgeEquator(2)
              eastwardsVector(2) =  edgeEquator(1)
              eastwardsVector(3) = 0.0_RKIND
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
-             
+
              call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
                                           normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                           eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
-          
+
              normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3)) &
                   * sqrt(1.0_RKIND - max(min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND),-1.0_RKIND)**2)
 
@@ -1604,16 +1604,16 @@ contains
        interiorVertex)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle !< Output: 
+         normalVectorTriangle !< Output:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     real(kind=RKIND), dimension(3) :: &
          normalGreatCircle, &
@@ -1669,7 +1669,7 @@ contains
        if (interiorVertex(iVertex) == 1) then
 
           do iVertexDegree = 1, vertexDegree
-             
+
              iEdge = edgesOnVertex(iVertexDegree,iVertex)
 
              ! vector in great circle plane
@@ -1700,21 +1700,21 @@ contains
              if (iVertex == verticesOnEdge(2,iEdge)) then
                 normalGreatCircle = -1.0_RKIND * normalGreatCircle
              endif
-             
+
              ! eastwards vector at edge
              eastwardsVector(1) = -yEdge0
              eastwardsVector(2) =  xEdge0
              eastwardsVector(3) = 0.0_RKIND
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
-             
+
              call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
                                           normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                           eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
-          
+
              normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3))&
                   * sqrt(1.0_RKIND - min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND)**2)
-             
+
           enddo ! iVertexDegree
 
        endif ! interiorVertex
@@ -1738,11 +1738,11 @@ contains
   subroutine cice_dot_product_3space(dot, x1, y1, z1, x2, y2, z2)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         dot !< Output: 
+         dot !< Output:
 
     real(kind=RKIND), intent(in) :: &
-         x1, y1, z1, & !< Input: 
-         x2, y2, z2    !< Input: 
+         x1, y1, z1, & !< Input:
+         x2, y2, z2    !< Input:
 
     dot = x1 * x2 + y1 * y2 + z1 * z2
 
@@ -1763,11 +1763,11 @@ contains
   subroutine cross_product_3space(cp1, cp2, cp3, x1, y1, z1, x2, y2, z2)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         cp1, cp2, cp3 !< Output: 
+         cp1, cp2, cp3 !< Output:
 
     real(kind=RKIND), intent(in) :: &
-         x1, y1, z1, & !< Input: 
-         x2, y2, z2    !< Input: 
+         x1, y1, z1, & !< Input:
+         x2, y2, z2    !< Input:
 
     cp1 = y1 * z2 - z1 * y2
     cp2 = z1 * x2 - x1 * z2
@@ -1794,17 +1794,17 @@ contains
        latCellRotated)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon !< Output: TWO maxEdges nCells
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         latCellRotated !< Output: 
-    
+         latCellRotated !< Output:
+
     integer :: &
          iCell, &
          iEdgeOnCell, &
@@ -1830,7 +1830,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          sphere_radius
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
          yCell, &
@@ -1888,7 +1888,7 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine normal_vectors_spherical_triangle_2(&
        mesh, &
        rotateCartesianGrid, &
@@ -1897,19 +1897,19 @@ contains
        interiorVertex)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle !< Output: TWO vertexDegree nVertices
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         latVertexRotated !< Output: 
+         latVertexRotated !< Output:
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex !< Input: 
+         interiorVertex !< Input:
 
     integer :: &
          iVertex, &
@@ -1928,7 +1928,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          sphere_radius
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          xVertex, &
          yVertex, &
@@ -1958,7 +1958,7 @@ contains
 
           ! get the rotated latitude
           latVertexRotated(iVertex) = asin(zVertex0 / sphere_radius)
-          
+
           ! loop over edges of triangle
           do iVertexDegree = 1, vertexDegree
 
@@ -2001,15 +2001,15 @@ contains
        zPoint)!{{{
 
     real(kind=RKIND), dimension(2), intent(out) :: &
-         normalVector2D !< Output: 
+         normalVector2D !< Output:
 
     real(kind=RKIND), dimension(3), intent(in) :: &
-         normalVector3D !< Input: 
+         normalVector3D !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         xPoint, & !< Input: 
-         yPoint, & !< Input: 
-         zPoint    !< Input: 
+         xPoint, & !< Input:
+         yPoint, & !< Input:
+         zPoint    !< Input:
 
     real(kind=RKIND), dimension(3) :: &
          unitVectorEast, &
@@ -2058,22 +2058,22 @@ contains
        normalVector3D)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     integer, intent(in) :: &
-         iCell, &    !< Input: 
-         iEdgeOnCell !< Input: 
+         iCell, &    !< Input:
+         iEdgeOnCell !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         xCell0, & !< Input: 
-         yCell0, & !< Input: 
-         zCell0    !< Input: 
+         xCell0, & !< Input:
+         yCell0, & !< Input:
+         zCell0    !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(3), intent(out) :: &
-         normalVector3D !< Output: 
+         normalVector3D !< Output:
 
     integer :: &
          iCell2, &
@@ -2109,7 +2109,7 @@ contains
     call MPAS_pool_get_array(mesh, "xEdge", xEdge)
     call MPAS_pool_get_array(mesh, "yEdge", yEdge)
     call MPAS_pool_get_array(mesh, "zEdge", zEdge)
-    
+
     ! get cell other side of edge
     iCell2 = cellsOnCell(iEdgeOnCell, iCell)
 
@@ -2171,28 +2171,28 @@ contains
        normalVector3D)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     integer, intent(in) :: &
-         iVertex, &    !< Input: 
-         iVertexDegree !< Input: 
+         iVertex, &    !< Input:
+         iVertexDegree !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         xVertex0, & !< Input: 
-         yVertex0, & !< Input: 
-         zVertex0    !< Input: 
+         xVertex0, & !< Input:
+         yVertex0, & !< Input:
+         zVertex0    !< Input:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(3), intent(out) :: &
-         normalVector3D !< Output: 
+         normalVector3D !< Output:
 
     integer :: &
          iEdge, &
          iVertexOnEdge, &
          iVertex2
-         
+
     real(kind=RKIND) :: &
          xVertex2, yVertex2, zVertex2
 
@@ -2219,13 +2219,13 @@ contains
        iVertex2 = verticesOnEdge(iVertexOnEdge, iEdge)
        if (iVertex2 /= iVertex) exit
     enddo ! iVertexOnEdge
-    
+
     ! get rotated three space positions
     call cice_grid_rotation_forward(&
          xVertex2,          yVertex2,          zVertex2, &
          xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
          rotateCartesianGrid)
-    
+
     normalVector3D(1) = xVertex2 - xVertex0
     normalVector3D(2) = yVertex2 - yVertex0
     normalVector3D(3) = zVertex2 - zVertex0
@@ -2252,13 +2252,13 @@ contains
        unitVectorNorth)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         xPoint, & !< Input: 
-         yPoint, & !< Input: 
-         zPoint    !< Input: 
+         xPoint, & !< Input:
+         yPoint, & !< Input:
+         zPoint    !< Input:
 
     real(kind=RKIND), dimension(3), intent(out) :: &
-         unitVectorEast, & !< Output: 
-         unitVectorNorth   !< Output: 
+         unitVectorEast, & !< Output:
+         unitVectorNorth   !< Output:
 
     real(kind=RKIND) :: &
          vectorMagnitude
@@ -2293,10 +2293,10 @@ contains
           unitVectorNorth(1) = -unitVectorNorth(1)
           unitVectorNorth(2) = -unitVectorNorth(2)
           unitVectorNorth(3) = -unitVectorNorth(3)
-       
+
        endif
 
-    else   
+    else
 
        unitVectorNorth(1) = 0.0_RKIND
        unitVectorNorth(2) = 0.0_RKIND
@@ -2425,16 +2425,16 @@ contains
          vx,  & !< Input: x component of velocity vector on geographical grid
          vy,  & !< Input: y component of velocity vector on geographical grid
          vz     !< Input: z component of velocity vector on geographical grid
-    
+
     logical, intent(in) :: &
          rotateCartesianGrid
 
     if (rotateCartesianGrid) then
-       
+
        vxp = -vz
        vyp =  vy
        vzp =  vx
-       
+
     else
 
        vxp = vx
@@ -2518,10 +2518,10 @@ contains
          x,    & !< Input: x position of point on geographical grid
          y,    & !< Input: y position of point on geographical grid
          z,    & !< Input: z position of point on geographical grid
-         r       !< Input: radius of the earth 
+         r       !< Input: radius of the earth
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND) :: &
          xp,   & ! x position of point on rotated grid
@@ -2542,7 +2542,7 @@ contains
     ! calculate latitude and longitude of the point in the rotated grid
     call cice_latlon_from_xyz(latp, lonp, xp, yp, zp, r)
 
-    ! convert lat lon vector to xyz vector on geographical grid
+    ! convert lat lon vector to xyz vector on gegraphical grid
     call latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)
 
     ! perform rotation of geographical xyz vector to rotated grid
@@ -2581,10 +2581,10 @@ contains
          x,    & !< Input: x position of point on geographical grid
          y,    & !< Input: y position of point on geographical grid
          z,    & !< Input: z position of point on geographical grid
-         r       !< Input: radius of the earth 
+         r       !< Input: radius of the earth
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND) :: &
          xp,   & ! x position of point on rotated grid
@@ -2613,7 +2613,7 @@ contains
 
     ! convert xyz vector to lat lon vector on geographical grid
     call xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)
-     
+
   end subroutine cice_latlon_vector_rotation_backward!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2640,8 +2640,8 @@ contains
     real(kind=RKIND), intent(in) :: &
          u,   & !< Input: u component of velocity
          v,   & !< Input: v component of velocity
-         lat, & !< Input: latitude of point 
-         lon    !< Input: longitude of point 
+         lat, & !< Input: latitude of point
+         lon    !< Input: longitude of point
 
     vx = (-u) * sin(lon) - v * sin(lat) * cos(lon)
     vy =   u  * cos(lon) - v * sin(lat) * sin(lon)
@@ -2673,8 +2673,8 @@ contains
          vx,  & !< Input: x component of velocity vector
          vy,  & !< Input: y component of velocity vector
          vz,  & !< Input: z component of velocity vector
-         lat, & !< Input: latitude of point 
-         lon    !< Input: longitude of point 
+         lat, & !< Input: latitude of point
+         lon    !< Input: longitude of point
 
     u = (-sin(lon)) * vx + &
           cos(lon)  * vy
@@ -2702,8 +2702,8 @@ contains
     ! given xyz coordinates determine the latitude and longitude
 
     real(kind=RKIND), intent(out) :: &
-         lat, & !< Output: latitude of point 
-         lon    !< Output: longitude of point 
+         lat, & !< Output: latitude of point
+         lon    !< Output: longitude of point
 
     real(kind=RKIND), intent(in) :: &
          x,   & !< Input: x position of point
@@ -2738,13 +2738,13 @@ contains
        variableCell)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         variableVertex !< Output: 
+         variableVertex !< Output:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         variableCell !< Input: 
+         variableCell !< Input:
 
     real(kind=RKIND) :: &
          totalArea
@@ -2774,7 +2774,7 @@ contains
 
     integer, dimension(:,:), pointer :: &
          verticesOnCell
-    
+
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVerticesSolve", nVerticesSolve)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
@@ -2789,7 +2789,7 @@ contains
 #if 0
     ! kite area
     do iVertex = 1, nVerticesSolve
-    
+
        variableVertex(iVertex) = 0.0_RKIND
 
        do iVertexDegree = 1, vertexDegree
@@ -2833,11 +2833,11 @@ contains
        do iCellOnVertex = 1, vertexDegree
 
           iCell = cellsOnVertex(iCellOnVertex,iVertex)
-          
+
           if (verticesOnCell(3,iCell) == iVertex) exit
-          
+
        enddo ! iCellOnVertex
-          
+
        variableVertex(iVertex) = variableCell(iCell)
 
     enddo ! iVertex

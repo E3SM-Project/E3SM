@@ -25,13 +25,13 @@ module cice_velocity_solver_constitutive_relation
        cice_init_evp, &
        cice_evp_constitutive_relation, &
        cice_evp_constitutive_relation_revised
-  
+
   ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
        eccentricity = 2.0_RKIND, &
        dampingTimescaleParameter = 0.36_RKIND, &
        puny = 1.0e-11_RKIND
-  
+
   real(kind=RKIND), parameter, public :: &
        eccentricitySquared = eccentricity**2
 
@@ -80,7 +80,7 @@ contains
 
     integer, pointer :: &
          nEdgesSolve
-        
+
     real(kind=RKIND) :: &
          gamma, &
          dvEdgeMin, &
@@ -93,24 +93,24 @@ contains
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
        call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
        call MPAS_pool_get_array(velocitySolver, "elasticTimeStep", elasticTimeStep)
-       
+
        dampingTimescale = dampingTimescaleParameter * dynamicsTimeStep
-       
-       evpDampingCriterion = (1230.0_RKIND * dampingTimescale) / elasticTimeStep**2 
+
+       evpDampingCriterion = (1230.0_RKIND * dampingTimescale) / elasticTimeStep**2
 
        block => block % next
     enddo
 
     ! find the minimum edge length in the grid
     dvEdgeMin = 1.0e30_RKIND
-    
+
     block => domain % blocklist
     do while (associated(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-       
+
        call MPAS_pool_get_dimension(mesh, "nEdgesSolve", nEdgesSolve)
-       
+
        call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
 
        dvEdgeMin = min(dvEdgeMin, minval(dvEdge(1:nEdgesSolve)))
@@ -122,14 +122,14 @@ contains
 
     !!!! Testing!
     !dvEdgeMinGlobal = 8558.2317072059941_RKIND
-    
+
     ! Bouillon et al. 2013
     block => domain % blocklist
     do while (associated(block))
-       
+
        gamma = 0.25_RKIND * 1.0e11_RKIND * dynamicsTimeStep
        numericalInertiaCoefficient = (2.0_RKIND * dampingRatioDenominator * dampingRatio * gamma) / dvEdgeMinGlobal**2
-       
+
        block => block % next
     enddo
 
@@ -160,9 +160,9 @@ contains
        dtElastic)
 
     real(kind=RKIND), intent(inout) :: &
-         stress11, & !< Input/Output: 
-         stress22, & !< Input/Output: 
-         stress12    !< Input/Output: 
+         stress11, & !< Input/Output:
+         stress22, & !< Input/Output:
+         stress12    !< Input/Output:
 
     real(kind=RKIND), intent(in) :: &
          strain11, & !< Input:
@@ -175,7 +175,7 @@ contains
          areaCell       !< Input:
 
     real(kind=RKIND), intent(out) :: &
-         replacementPressure !< Output: 
+         replacementPressure !< Output:
 
     real(kind=RKIND) :: &
          strainDivergence,    &
@@ -186,18 +186,18 @@ contains
          Delta,               &
          pressureCoefficient, &
          denominator
-    
+
     ! convert from stress11 to stress1 etc
     strainDivergence = strain11 + strain22
     strainTension    = strain11 - strain22
     strainShearing   = strain12 * 2.0_RKIND
-    
+
     stress1 = stress11 + stress22
     stress2 = stress11 - stress22
 
     ! perform the constituitive relation
     Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
-    
+
     pressureCoefficient = icePressure / max(Delta,puny)
     replacementPressure = pressureCoefficient * Delta
 
@@ -208,7 +208,7 @@ contains
     stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta))  / denominator
     stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension             ) / denominator
     stress12 = (stress12 + (pressureCoefficient / eccentricitysquared) *  strainShearing * 0.5_RKIND) / denominator
-    
+
     ! convert back
     stress11 = 0.5_RKIND * (stress1 + stress2)
     stress22 = 0.5_RKIND * (stress1 - stress2)
@@ -239,9 +239,9 @@ contains
        areaCell)
 
     real(kind=RKIND), intent(inout) :: &
-         stress11, & !< Input/Output: 
-         stress22, & !< Input/Output: 
-         stress12    !< Input/Output: 
+         stress11, & !< Input/Output:
+         stress22, & !< Input/Output:
+         stress12    !< Input/Output:
 
     real(kind=RKIND), intent(in) :: &
          strain11, & !< Input:
@@ -254,7 +254,7 @@ contains
 
     real(kind=RKIND), intent(out) :: &
          replacementPressure !< Output:
-    
+
     real(kind=RKIND) :: &
          strainDivergence,    &
          strainTension,       &
@@ -264,18 +264,18 @@ contains
          Delta,               &
          pressureCoefficient, &
          denominator
-    
+
     ! convert from stress11 to stress1 etc
     strainDivergence = strain11 + strain22
     strainTension    = strain11 - strain22
     strainShearing   = strain12 * 2.0_RKIND
-    
+
     stress1 = stress11 + stress22
     stress2 = stress11 - stress22
 
     ! perform the constituitive relation
     Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
-    
+
     pressureCoefficient = icePressure / max(Delta,puny)
     replacementPressure = pressureCoefficient * Delta
 
@@ -286,7 +286,7 @@ contains
     stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta))  / denominator
     stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension             ) / denominator
     stress12 = (stress12 + (pressureCoefficient / eccentricitysquared) *  strainShearing * 0.5_RKIND) / denominator
-    
+
     ! convert back
     stress11 = 0.5_RKIND * (stress1 + stress2)
     stress22 = 0.5_RKIND * (stress1 - stress2)
@@ -314,9 +314,9 @@ contains
        strain12)
 
     real(kind=RKIND), intent(out) :: &
-         stress11, & !< Output: 
-         stress22, & !< Output: 
-         stress12    !< Output: 
+         stress11, & !< Output:
+         stress22, & !< Output:
+         stress12    !< Output:
 
     real(kind=RKIND), intent(in) :: &
          strain11, & !< Input:

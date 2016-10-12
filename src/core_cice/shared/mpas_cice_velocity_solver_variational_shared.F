@@ -46,14 +46,14 @@ contains
        rotateCartesianGrid)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, & !< Output: 
-         yLocal    !< Output: 
+         xLocal, & !< Output:
+         yLocal    !< Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     logical, pointer :: &
          on_a_sphere
@@ -66,7 +66,7 @@ contains
             xLocal, &
             yLocal, &
             rotateCartesianGrid)
-    else 
+    else
        call calc_local_coords_planar(&
             mesh, &
             xLocal, &
@@ -74,7 +74,7 @@ contains
     endif
 
   end subroutine cice_calc_local_coords!}}}
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  calc_local_coords_planar
@@ -93,11 +93,11 @@ contains
        yLocal)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, & !< Output: 
-         yLocal    !< Output: 
+         xLocal, & !< Output:
+         yLocal    !< Output:
 
     integer :: &
          iCell, &
@@ -142,7 +142,7 @@ contains
     enddo ! iCell
 
   end subroutine calc_local_coords_planar!}}}
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  calc_local_coords_spherical
@@ -166,14 +166,14 @@ contains
          cice_grid_rotation_forward
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, & !< Output: 
-         yLocal    !< Output: 
+         xLocal, & !< Output:
+         yLocal    !< Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input: 
+         rotateCartesianGrid !< Input:
 
     real(kind=RKIND), dimension(3) :: &
          normalVector3D
@@ -218,11 +218,11 @@ contains
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
-    
+
     do iCell = 1, nCells
-       
+
        do iVertexOnCell = 1, nEdgesOnCell(iCell)
-          
+
           iVertex = verticesOnCell(iVertexOnCell, iCell)
 
           call cice_grid_rotation_forward(&
@@ -271,16 +271,16 @@ contains
 
     use cice_mesh, only: &
          cice_grid_rotation_forward
-    
+
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         tanLatVertexRotatedOverRadius !< Output: 
+         tanLatVertexRotatedOverRadius !< Output:
 
     logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input: 
-         includeMetricTerms     !< Input: 
+         rotateCartesianGrid, & !< Input:
+         includeMetricTerms     !< Input:
 
     integer, pointer :: &
          nVertices
@@ -312,24 +312,24 @@ contains
     if (includeMetricTerms) then
 
        do iVertex = 1, nVertices
-          
+
           call cice_grid_rotation_forward(&
                xVertexRotated,   yVertexRotated,   zVertexRotated, &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                rotateCartesianGrid)
-          
+
           latVertexRotated = asin(zVertexRotated / sphere_radius)
-          
+
           tanLatVertexRotatedOverRadius(iVertex) = tan(latVertexRotated) / sphere_radius
-          
+
        enddo ! iVertex
 
     else
 
        do iVertex = 1, nVertices
-          
+
           tanLatVertexRotatedOverRadius(iVertex) = 0.0_RKIND
-          
+
        enddo ! iVertex
 
     endif
@@ -354,8 +354,8 @@ contains
        result(output)!{{{
 
     integer, intent(in) :: &
-         input, &  !< Input: 
-         nelements !< Input: 
+         input, &  !< Input:
+         nelements !< Input:
 
     integer :: output
 

@@ -2,7 +2,7 @@
 !
 !  cice_forcing
 !
-!> \brief A core forcing module example 
+!> \brief A core forcing module example
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
@@ -31,7 +31,7 @@ module cice_forcing
        post_atmospheric_forcing,   &
        post_oceanic_coupling
 
-  type (MPAS_forcing_group_type), pointer :: ciceForcingGroups 
+  type (MPAS_forcing_group_type), pointer :: ciceForcingGroups
 
   ! forcing parameters
   real (kind=RKIND), parameter :: &
@@ -289,7 +289,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  This routine calls the MPAS_forcing routine that will perform the 
+!>  This routine calls the MPAS_forcing routine that will perform the
 !>  forcing data aquisition and interpolation during timestepping
 !
 !-----------------------------------------------------------------------
@@ -386,21 +386,21 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
-       ! convert the input forcing variables to the coupling variables       
+       ! convert the input forcing variables to the coupling variables
        select case (trim(config_atmospheric_forcing_type))
        case ("CORE")
           call prepare_atmospheric_coupling_variables_CORE(block)
        end select
-       
+
        ! perform post coupling operations
        call post_atmospheric_coupling(block)
-       
+
        ! perform post forcing
        call post_atmospheric_forcing(block)
 
        block => block % next
     end do
-    
+
   end subroutine atmospheric_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -431,7 +431,7 @@ contains
          atmosForcing, &
          oceanCoupling, &
          tracers_aggregate
-    
+
     real(kind=RKIND), dimension(:), pointer :: &
          airLevelHeight, &
          airPotentialTemperature, &
@@ -466,7 +466,7 @@ contains
          dayOfYear, &
          iCell
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
@@ -474,8 +474,8 @@ contains
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
-    call MPAS_pool_get_array(mesh, "lonCell", lonCell)    
-    call MPAS_pool_get_array(mesh, "latCell", latCell)   
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
 
     call MPAS_pool_get_array(atmosCoupling, "airLevelHeight", airLevelHeight)
     call MPAS_pool_get_array(atmosCoupling, "airPotentialTemperature", airPotentialTemperature)
@@ -516,7 +516,7 @@ contains
        if (iceAreaCell(iCell) > 0.1_RKIND) then
           airTemperature(iCell) = min(airTemperature(iCell), ciceFreshWaterFreezingPoint + 0.1_RKIND)
        endif
-       
+
        ! prevent supersaturated humidity
        call limit_specific_humidity(&
             airTemperature(iCell), &
@@ -623,7 +623,7 @@ contains
     integer :: &
          iCell
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
 
@@ -673,7 +673,7 @@ contains
             shortwaveVisibleDiffuseDown(iCell) + &
             shortwaveIRDirectDown(iCell) + &
             shortwaveIRDiffuseDown(iCell)
-       
+
     enddo ! iCell
 
   end subroutine post_atmospheric_coupling
@@ -722,7 +722,7 @@ contains
     integer :: &
          iCell
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
 
@@ -743,13 +743,13 @@ contains
        ! transfer coefficients
        sensibleTransferCoefficient(iCell) = 1.20e-3_RKIND * ciceAirSpecificHeat       * airDensity(iCell) * windSpeed(iCell)
        latentTransferCoefficient(iCell)   = 1.50e-3_RKIND * ciceLatentHeatSublimation * airDensity(iCell) * windSpeed(iCell)
-       
+
        ! air stresses
        airStressCoefficient = 0.0012_RKIND * airDensity(iCell) * windSpeed(iCell)
-       
+
        uAirStress(iCell) = uAirVelocity(iCell) * airStressCoefficient
        vAirStress(iCell) = vAirVelocity(iCell) * airStressCoefficient
-       
+
     enddo ! iCell
 
   end subroutine post_atmospheric_forcing
@@ -792,7 +792,7 @@ contains
           0.00422_RKIND * airSpecificHumidityMax
 
     ! vapor pressure
-    airSpecificHumidityMax = 10.0_RKIND**airSpecificHumidityMax ! saturated 
+    airSpecificHumidityMax = 10.0_RKIND**airSpecificHumidityMax ! saturated
     airSpecificHumidityMax = max(airSpecificHumidityMax,cicePuny) ! prevent division by zero
 
     ! specific humidity
@@ -813,11 +813,11 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date 17th Febuary 2015
 !> \details
-!>  based on 
-!   Rosati, A. and K. Miyakoda (1988), 
-!   A general-circulation model for upper ocean simulation, 
-!   J. Physical Oceanography, 18, 1601-1626, 
-!   doi:10.1175/1520-0485(1988)018<1601:AGCMFU>2.0.CO;2 
+!>  based on
+!   Rosati, A. and K. Miyakoda (1988),
+!   A general-circulation model for upper ocean simulation,
+!   J. Physical Oceanography, 18, 1601-1626,
+!   doi:10.1175/1520-0485(1988)018<1601:AGCMFU>2.0.CO;2
 !
 !-----------------------------------------------------------------------
 
@@ -855,7 +855,7 @@ contains
 
     ! get a clear sky fraction
     clearSkyFraction = 1.0_RKIND - 0.8_RKIND * cloudFraction
-    
+
     ! combined ice and ocean temperature in Kelvin
     combinedSurfaceTemperature = &
          surfaceTemperature    * iceAreaCell               + &
@@ -909,7 +909,7 @@ contains
     real(kind=RKIND), intent(out) :: &
          longWavedown
 
-    real(kind=RKIND), intent(in) :: &    
+    real(kind=RKIND), intent(in) :: &
          airTemperature, &
          cloudFraction
 
@@ -988,12 +988,12 @@ contains
     real(kind=RKIND), intent(inout) :: &
          rainfallRate
 
-    real(kind=RKIND), intent(out) :: &    
+    real(kind=RKIND), intent(out) :: &
          snowfallRate
 
-    real(kind=RKIND), intent(in) :: & 
+    real(kind=RKIND), intent(in) :: &
          airTemperature
-   
+
     rainfallRate = rainfallRate * precipitationFactor
 
     ! divide total precipitation between rain and snow
@@ -1394,13 +1394,13 @@ contains
                config_dt)
 
        endif
-       
+
     endif
 
     block => domain % blocklist
     do while (associated(block))
 
-       ! convert the input forcing variables to the coupling variables       
+       ! convert the input forcing variables to the coupling variables
        select case (trim(config_forcing_sst_type))
        case ("ncar")
           call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
@@ -1461,7 +1461,7 @@ contains
     call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(block % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
@@ -1478,7 +1478,7 @@ contains
        seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
        oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
-       ! sea freezing temperature 
+       ! sea freezing temperature
        seaFreezingTemperature(iCell) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(iCell))
 
     enddo ! iCell
@@ -1547,7 +1547,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -1705,12 +1705,12 @@ contains
        latentHeatFlux              = 0.0_RKIND
        longwaveUp                  = 0.0_RKIND
        evaporativeWaterFlux        = 0.0_RKIND
-       
+
        airStressCellU              = 0.0_RKIND
        airStressCellV              = 0.0_RKIND
-       
+
        absorbedShortwaveFlux       = 0.0_RKIND
-       
+
        atmosReferenceSpeed10m      = 0.0_RKIND
        atmosReferenceTemperature2m = 0.0_RKIND
        atmosReferenceHumidity2m    = 0.0_RKIND
@@ -1734,9 +1734,9 @@ contains
 
        block => block % next
     end do
-    
+
   end subroutine reset_atmospheric_coupler_fluxes
-    
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  reset_ocean_coupler_fluxes
@@ -1845,9 +1845,9 @@ contains
 
        block => block % next
     end do
-    
+
   end subroutine reset_ocean_coupler_fluxes
-  
+
 !-----------------------------------------------------------------------
 ! restart
 !-----------------------------------------------------------------------
@@ -1880,7 +1880,7 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
        call MPAS_forcing_write_restart_times(ciceForcingGroups, config_forcing_restart_file)
-    
+
     endif
 
   end subroutine cice_forcing_write_restart_times
@@ -1914,7 +1914,7 @@ contains
     write(stderrUnit,*) trim(poolName), " ", trim(fieldName)
 
     call MPAS_pool_get_subpool(block % structs, trim(poolName), pool)
-    
+
     call MPAS_pool_get_array(pool, trim(fieldName), array)
 
     call cice_debug_output_array(array)

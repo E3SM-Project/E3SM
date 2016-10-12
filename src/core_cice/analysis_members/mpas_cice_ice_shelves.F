@@ -275,7 +275,7 @@ contains
 
       real(kind=RKIND) :: &
            iceAreaOverIceShelvesThisProc
-      
+
       integer, pointer :: &
            nCellsSolve
 
@@ -283,24 +283,24 @@ contains
            iCell
 
       iceAreaOverIceShelvesThisProc = 0.0_RKIND
-      
+
       block => domain % blocklist
       do while (associated(block))
 
          call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
          call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         
+
          call MPAS_pool_get_array(oceanCouplingPool, "landIceMask", landIceMask)
          call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
-         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)         
+         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
 
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
-         
+
          do iCell = 1, nCellsSolve
 
             if (landIceMask(iCell) == 1) then
-            
+
                iceAreaOverIceShelvesThisProc = iceAreaOverIceShelvesThisProc + iceAreaCell(iCell) * areaCell(iCell)
 
             endif ! landIceMask
@@ -314,7 +314,7 @@ contains
       call MPAS_pool_get_subpool(domain % blocklist % structs, "iceShelvesAM", iceShelvesAMPool)
 
       call MPAS_pool_get_array(iceShelvesAMPool, "iceAreaOverIceShelves", iceAreaOverIceShelves)
-      
+
       call MPAS_dmpar_sum_real(domain % dminfo, iceAreaOverIceShelvesThisProc, iceAreaOverIceShelves)
 
    end subroutine cice_compute_ice_shelves!}}}

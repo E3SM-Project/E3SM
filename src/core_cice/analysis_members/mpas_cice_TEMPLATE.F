@@ -24,7 +24,7 @@
 !>     Typically tempLate uses camel case (variable names), like yourNewName,
 !>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
 !>     note: do not replace 'filename_template' in Registry_cice_yourNewName.xml
-!>  
+!>
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>
@@ -36,10 +36,10 @@
 !>      - Adding a compute if test can subroutine call
 !>      - Adding a restart if test can subroutine call
 !>      - Adding a finalize if test can subroutine call
-!>  
+!>
 !>  5. In src/core_cice/analysis_members/Makefile, add your
 !>     new analysis member to the list of members. See another analysis member
-!>     in that file for an example. 
+!>     in that file for an example.
 !>     NOTE: If your analysis member depends on other files, add a dependency
 !>           line for the member and list them there. See okubo weiss for an example.
 !>

@@ -25,7 +25,7 @@ module cice_core_interface
    !> \brief   Ocean core setup routine
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
-   !> \details 
+   !> \details
    !>  This routine is intended to setup the necessary variables within a core_type
    !>  for the ocean core.
    !
@@ -60,7 +60,7 @@ module cice_core_interface
    !> \brief   Ocean domain setup routine
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
-   !> \details 
+   !> \details
    !>  This routine is intended to setup the necessary variables within a domain_type
    !>  for the ocean core.
    !
@@ -79,7 +79,7 @@ module cice_core_interface
    !> \brief   Pacakge setup routine
    !> \author  Doug Jacobsen
    !> \date    03/12/2015
-   !> \details 
+   !> \details
    !>  This function is intended to correctly configure the packages for this MPAS
    !>   core. It can use any Fortran logic to properly configure packages, and it
    !>   can also make use of any namelist options. All variables in the model are
@@ -100,7 +100,7 @@ module cice_core_interface
 
       ierr = 0
 
-      ! dynamics 
+      ! dynamics
       call setup_packages_dynamics(configPool, packagePool, ierr)
 
       ! column physics
@@ -146,7 +146,7 @@ module cice_core_interface
      !pkgVariational
      !pkgWachspress
      !pkgPieceWiseLinear
-     
+
      call MPAS_pool_get_config(configPool, "config_use_velocity_solver", config_use_velocity_solver)
      call MPAS_pool_get_config(configPool, "config_stress_divergence_scheme", config_stress_divergence_scheme)
      call MPAS_pool_get_config(configPool, "config_variational_basis", config_variational_basis)
@@ -218,7 +218,7 @@ module cice_core_interface
      type (mpas_pool_type), intent(in) :: configPool
      type (mpas_pool_type), intent(in) :: packagePool
      integer, intent(out) :: ierr
-     
+
      ! column physics package packages
      logical, pointer :: &
           config_use_column_package, &
@@ -239,7 +239,7 @@ module cice_core_interface
           config_use_aerosols, &
           config_use_brine, &
           config_use_vertical_zsalinity, &
-          config_use_vertical_biochemistry, & 
+          config_use_vertical_biochemistry, &
           config_use_vertical_tracers, &
           config_use_skeletal_biochemistry, &
           config_use_nitrate, &
@@ -435,7 +435,7 @@ module cice_core_interface
      pkgTracerVerticalSilicateActive     = (config_use_vertical_tracers .and. config_use_silicate)
      pkgTracerVerticalDMSActive          = (config_use_vertical_tracers .and. config_use_DMS)
      pkgTracerVerticalNonreactiveActive  = (config_use_vertical_tracers .and. config_use_nonreactive)
-     pkgTracerVerticalHumicsActive       = (config_use_vertical_tracers .and. config_use_humics) 
+     pkgTracerVerticalHumicsActive       = (config_use_vertical_tracers .and. config_use_humics)
      pkgTracerVerticalDONActive          = (config_use_vertical_tracers .and. config_use_DON)
      pkgTracerVerticalIronActive         = (config_use_vertical_tracers .and. config_use_iron)
      pkgTracerZAerosolsActive            = config_use_zaerosols
@@ -453,25 +453,25 @@ module cice_core_interface
         pkgTracerSkeletalAlgaeActive        = .false.
         pkgTracerSkeletalNitrateActive      = .false.
         pkgTracerSkeletalCarbonActive       = .false.
-        pkgTracerSkeletalAmmoniumActive     = .false. 
-        pkgTracerSkeletalSilicateActive     = .false. 
-        pkgTracerSkeletalDMSActive          = .false. 
-        pkgTracerSkeletalNonreactiveActive  = .false. 
-        pkgTracerSkeletalHumicsActive       = .false. 
-        pkgTracerSkeletalDONActive          = .false. 
-        pkgTracerSkeletalIronActive         = .false. 
-        pkgTracerVerticalAlgaeActive        = .false. 
-        pkgTracerVerticalNitrateActive      = .false. 
+        pkgTracerSkeletalAmmoniumActive     = .false.
+        pkgTracerSkeletalSilicateActive     = .false.
+        pkgTracerSkeletalDMSActive          = .false.
+        pkgTracerSkeletalNonreactiveActive  = .false.
+        pkgTracerSkeletalHumicsActive       = .false.
+        pkgTracerSkeletalDONActive          = .false.
+        pkgTracerSkeletalIronActive         = .false.
+        pkgTracerVerticalAlgaeActive        = .false.
+        pkgTracerVerticalNitrateActive      = .false.
         pkgTracerVerticalCarbonActive       = .false.
-        pkgTracerVerticalAmmoniumActive     = .false. 
-        pkgTracerVerticalSilicateActive     = .false. 
-        pkgTracerVerticalDMSActive          = .false. 
-        pkgTracerVerticalNonreactiveActive  = .false. 
-        pkgTracerVerticalHumicsActive       = .false. 
-        pkgTracerVerticalDONActive          = .false. 
-        pkgTracerVerticalIronActive         = .false. 
-        pkgTracerZAerosolsActive            = .false. 
-        pkgTracerZSalinityActive            = .false. 
+        pkgTracerVerticalAmmoniumActive     = .false.
+        pkgTracerVerticalSilicateActive     = .false.
+        pkgTracerVerticalDMSActive          = .false.
+        pkgTracerVerticalNonreactiveActive  = .false.
+        pkgTracerVerticalHumicsActive       = .false.
+        pkgTracerVerticalDONActive          = .false.
+        pkgTracerVerticalIronActive         = .false.
+        pkgTracerZAerosolsActive            = .false.
+        pkgTracerZSalinityActive            = .false.
      endif
 
      if (.not. config_use_column_biogeochemistry .and. config_use_column_package) then
@@ -480,26 +480,26 @@ module cice_core_interface
         pkgTracerSkeletalAlgaeActive        = .false.
         pkgTracerSkeletalNitrateActive      = .false.
         pkgTracerSkeletalCarbonActive       = .false.
-        pkgTracerSkeletalAmmoniumActive     = .false. 
-        pkgTracerSkeletalSilicateActive     = .false. 
-        pkgTracerSkeletalDMSActive          = .false. 
-        pkgTracerSkeletalNonreactiveActive  = .false. 
-        pkgTracerSkeletalHumicsActive       = .false. 
-        pkgTracerSkeletalDONActive          = .false. 
-        pkgTracerSkeletalIronActive         = .false. 
-        pkgTracerVerticalAlgaeActive        = .false. 
-        pkgTracerVerticalNitrateActive      = .false. 
+        pkgTracerSkeletalAmmoniumActive     = .false.
+        pkgTracerSkeletalSilicateActive     = .false.
+        pkgTracerSkeletalDMSActive          = .false.
+        pkgTracerSkeletalNonreactiveActive  = .false.
+        pkgTracerSkeletalHumicsActive       = .false.
+        pkgTracerSkeletalDONActive          = .false.
+        pkgTracerSkeletalIronActive         = .false.
+        pkgTracerVerticalAlgaeActive        = .false.
+        pkgTracerVerticalNitrateActive      = .false.
         pkgTracerVerticalCarbonActive       = .false.
-        pkgTracerVerticalAmmoniumActive     = .false. 
-        pkgTracerVerticalSilicateActive     = .false. 
-        pkgTracerVerticalDMSActive          = .false. 
-        pkgTracerVerticalNonreactiveActive  = .false. 
-        pkgTracerVerticalHumicsActive       = .false. 
-        pkgTracerVerticalDONActive          = .false. 
-        pkgTracerVerticalIronActive         = .false. 
-        pkgTracerZAerosolsActive            = .false. 
-        pkgTracerZSalinityActive            = .false. 
-     endif    
+        pkgTracerVerticalAmmoniumActive     = .false.
+        pkgTracerVerticalSilicateActive     = .false.
+        pkgTracerVerticalDMSActive          = .false.
+        pkgTracerVerticalNonreactiveActive  = .false.
+        pkgTracerVerticalHumicsActive       = .false.
+        pkgTracerVerticalDONActive          = .false.
+        pkgTracerVerticalIronActive         = .false.
+        pkgTracerZAerosolsActive            = .false.
+        pkgTracerZSalinityActive            = .false.
+     endif
 
      !pkgColumnTracerIceAgeActive       = .true.
      !pkgColumnTracerFirstYearIceActive = .true.
@@ -531,7 +531,7 @@ module cice_core_interface
    !> \brief   Decomposition setup routine
    !> \author  Doug Jacobsen
    !> \date    04/08/2015
-   !> \details 
+   !> \details
    !>  This routine is intended to create the decomposition list within a
    !>  domain type, and register any decompositons the core wants within it.
    !
@@ -576,12 +576,12 @@ module cice_core_interface
    !> \brief   Pacakge setup routine
    !> \author  Michael Duda
    !> \date    6 August 2014
-   !> \details 
+   !> \details
    !>  The purpose of this function is to allow the core to set up a simulation
    !>  clock that will be used by the I/O subsystem for timing reads and writes
    !>  of I/O streams.
-   !>  This function is called from the superstructure after the framework 
-   !>  has been initialized but before any fields have been allocated and 
+   !>  This function is called from the superstructure after the framework
+   !>  has been initialized but before any fields have been allocated and
    !>  initial fields have been read from input files. However, all namelist
    !>  options are available.
    !
@@ -608,10 +608,10 @@ module cice_core_interface
    !> \brief   Returns the name of the stream containing mesh information
    !> \author  Michael Duda
    !> \date    8 August 2014
-   !> \details 
+   !> \details
    !>  This function returns the name of the I/O stream containing dimensions,
-   !>  attributes, and mesh fields needed by the framework bootstrapping 
-   !>  routine. At the time this routine is called, only namelist options 
+   !>  attributes, and mesh fields needed by the framework bootstrapping
+   !>  routine. At the time this routine is called, only namelist options
    !>  are available.
    !
    !-----------------------------------------------------------------------
@@ -659,7 +659,7 @@ module cice_core_interface
    !> \brief   Ocean block setup function
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
-   !> \details 
+   !> \details
    !>  This function is a wrapper function to properly setup a block to be a
    !>  ocean core block.
    !
@@ -686,4 +686,3 @@ module cice_core_interface
 #include "../inc/namelist_defines.inc"
 
 end module cice_core_interface
-
