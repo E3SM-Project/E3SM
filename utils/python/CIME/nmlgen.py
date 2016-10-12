@@ -39,13 +39,13 @@ _stream_file_template = """
 </domainInfo>
 <fieldInfo>
    <variableNames>
-      {data_varnames}
+     {data_varnames}
    </variableNames>
    <filePath>
-      {data_filepath}
+     {data_filepath}
    </filePath>
    <fileNames>
-      {data_filenames}
+    {data_filenames}
    </fileNames>
    <offset>
       {offset}
@@ -424,6 +424,7 @@ class NamelistGenerator(object):
             data_filenames=data_filenames,
             offset=offset,
         )
+
         with open(stream_path, 'w') as stream_file:
             stream_file.write(stream_file_text)
         with open(data_list_path, 'a') as input_data_list:

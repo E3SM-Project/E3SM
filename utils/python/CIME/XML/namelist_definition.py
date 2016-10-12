@@ -219,11 +219,15 @@ class NamelistDefinition(EntryID):
         name = name.lower()
         # Separate into a type, optional length, and optional size.
         type_, max_len, size = self.split_type_string(name, self.get_type_info(name))
-
+        invalid = []
         # Check value against type.
         for scalar in value:
             if not is_valid_fortran_namelist_literal(type_, scalar):
-                return False
+                invalid.append(scalar)
+        if len(invalid) > 0:
+            logger.warn("Invalid values %s"%invalid)
+            return False
+
 
         # Now that we know that the strings as input are valid Fortran, do some
         # canonicalization for further checks.
@@ -249,7 +253,10 @@ class NamelistDefinition(EntryID):
                 compare_list = valid_values
             for scalar in canonical_value:
                 if scalar not in compare_list:
-                    return False
+                    invalid.append(scalar)
+            if len(invalid) > 0:
+                logger.warn("Invalid values %s"%invalid)
+                return False
 
         # Check size of input array.
         if len(expand_literal_list(value)) > size:
