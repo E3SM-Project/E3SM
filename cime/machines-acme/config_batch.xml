@@ -122,6 +122,7 @@
        <directive>-o {{ output_error_path }}.out</directive>
        <directive>-e {{ output_error_path }}.err</directive>
        <directive>-m be</directive>
+       <directive>-A {{ project }}</directive>
      </directives>
    </batch_system>
 
