@@ -1302,7 +1302,7 @@
     </desc>
     <values>
       <value>.false.</value>
-      <value single_column=".true">.true.</value>
+      <value single_column="true">.true.</value>
     </values>
   </entry>
 
