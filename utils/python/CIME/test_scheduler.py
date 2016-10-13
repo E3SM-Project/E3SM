@@ -160,8 +160,13 @@ class TestScheduler(object):
             for test in self._tests:
                 ts = TestStatus(self._get_test_dir(test))
                 for phase, status in ts:
-                    self._update_test_status(test, phase, TEST_PEND_STATUS)
-                    self._update_test_status(test, phase, status)
+                    if phase in CORE_PHASES:
+                        if status in [TEST_PEND_STATUS, TEST_FAIL_STATUS]:
+                            # We need to pick up here
+                            break
+                        else:
+                            self._update_test_status(test, phase, TEST_PEND_STATUS)
+                            self._update_test_status(test, phase, status)
         else:
             # None of the test directories should already exist.
             for test in self._tests:
