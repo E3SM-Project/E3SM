@@ -86,13 +86,10 @@ _TEST_SUITES = {
 
     "acme_integration" : ("acme_developer",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
-                           #"ERS.ne30_g16.B1850C5",
                            "ERS.f19_f19.FAMIPC5",
                            "ERS.ne16_ne16.FC5PM",
-                           #"ERS.ne16_g37.B1850C5",
                            "ERS.ne16_ne16.FC5PLMOD",
                            "ERS.ne16_ne16.FC5MAM4",
-                           #"ERS.f45_g37.B1850C5",
                            "ERS_D_Ld5.f45_g37.B1850C5",
                            "ERS_IOP_Ld3.f19_f19.FAMIPC5",
                            "ERS_Ld3.ne16_g37.FC5",
