@@ -1,7 +1,7 @@
 """Interface to `namelist_definition.xml`.
 
 This module contains only one class, `NamelistDefinition`, inheriting from
-`GenericXML`.
+`EntryID`.
 """
 
 # Warnings we typically ignore.
@@ -50,6 +50,8 @@ class NamelistDefinition(EntryID):
 
     def _get_version(self):
         version = self.root.get("version")
+        if version is None:
+            return "1.0"
         return version
 
     def get_entries(self):
