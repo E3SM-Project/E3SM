@@ -654,7 +654,7 @@ contains
           case (COND_DIRICHLET_FRM_OTR_GOVEQ)
              ! Do nothing
           case (COND_SEEPAGE_BC)
-             ge_avars(sum_conn)%condition_value = &
+             this%aux_vars_bc(sum_conn)%condition_value = &
                   soe_avars(iconn + iauxvar_off)%condition_value
           case default
              write(string,*) cur_cond%itype
@@ -747,7 +747,7 @@ contains
              select case(cur_cond%itype)
              case (COND_MASS_RATE)
                 var_value = soe_avars(iconn + iauxvar_off)%condition_value
-                ge_avars(sum_conn)%condition_value = var_value
+                this%aux_vars_ss(sum_conn)%condition_value = var_value
                 cur_cond%value(iconn) = var_value
              case default
                 write(string,*) cur_cond%itype

@@ -982,53 +982,21 @@ contains
     PetscInt                                   :: iauxvar
     PetscInt                                   :: iauxvar_off
     PetscInt                                   :: nauxvar
+    type (sysofeqns_vsfm_auxvar_type), pointer :: auxvars(:)
 
     select case(soe_auxvar_type)
     case(AUXVAR_INTERNAL)
+       auxvars      => this%aux_vars_in
        iauxvar_off  = 0
        nauxvar      = this%num_auxvars_in
-
-       if (size(data_1d) /= nauxvar) then
-          write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) /= nauxvar'
-          write(iulog,*) 'size(data_1d) = ',size(data_1d)
-          write(iulog,*) 'nauxvar       = ', nauxvar
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       endif
-
-       do iauxvar = 1, nauxvar
-          call this%aux_vars_in(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
-       enddo
-
     case(AUXVAR_BC)
+       auxvars      => this%aux_vars_bc
        iauxvar_off  = this%soe_auxvars_bc_offset(soe_auxvar_id)
        nauxvar      = this%soe_auxvars_bc_ncells(soe_auxvar_id)
-
-       if (size(data_1d) /= nauxvar) then
-          write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) /= nauxvar'
-          write(iulog,*) 'size(data_1d) = ',size(data_1d)
-          write(iulog,*) 'nauxvar       = ', nauxvar
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       endif
-
-       do iauxvar = 1, nauxvar
-          call this%aux_vars_bc(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
-       enddo
-
     case(AUXVAR_SS)
+       auxvars      => this%aux_vars_ss
        iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
        nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
-
-       if (size(data_1d) /= nauxvar) then
-          write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) /= nauxvar'
-          write(iulog,*) 'size(data_1d) = ',size(data_1d)
-          write(iulog,*) 'nauxvar       = ', nauxvar
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       endif
-
-       do iauxvar = 1, nauxvar
-          call this%aux_vars_ss(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
-       enddo
-
     case default
        write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1129,39 +1097,28 @@ contains
     PetscInt                                   :: iauxvar_off
     PetscInt                                   :: nauxvar
     PetscReal                                  :: var_value
+    type (sysofeqns_vsfm_auxvar_type), pointer :: auxvars(:)
 
     select case(soe_auxvar_type)
     case(AUXVAR_INTERNAL)
+       auxvars      => this%aux_vars_in
        iauxvar_off  = 0
        nauxvar      = this%num_auxvars_in
-
-       if (size(data_1d) /= nauxvar) then
-          write(iulog,*) 'VSFMSOEGetDataFromCLM: size(data_1d) /= nauxvar'
-          write(iulog,*) 'size(data_1d) = ',size(data_1d)
-          write(iulog,*) 'nauxvar       = ', nauxvar
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       endif
-
-       do iauxvar = 1, nauxvar
-          call this%aux_vars_in(iauxvar + iauxvar_off)%GetValue(var_type, var_value)
-          data_1d(iauxvar) = var_value
-       enddo
-
-    case(AUXVAR_SS)
-       auxvars      => this%aux_vars_ss
-       iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
-       nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
     case(AUXVAR_BC)
        auxvars      => this%aux_vars_bc
        iauxvar_off  = this%soe_auxvars_bc_offset(soe_auxvar_id)
        nauxvar      = this%soe_auxvars_bc_ncells(soe_auxvar_id)
+    case(AUXVAR_SS)
+       auxvars      => this%aux_vars_ss
+       iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
+       nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
     case default
-       write(iulog,*) 'VSFMSOEGetDataForCLM: Unknown soe_auxvar_type'
+       write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
     if (size(data_1d) > nauxvar) then
-       write(iulog,*) 'VSFMSOEGetDataForCLM: size(data_1d) > nauxvar'
+       write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) > nauxvar'
        write(iulog,*) 'size(data_1d) = ',size(data_1d)
        write(iulog,*) 'nauxvar       = ', nauxvar
        call endrun(msg=errMsg(__FILE__, __LINE__))
