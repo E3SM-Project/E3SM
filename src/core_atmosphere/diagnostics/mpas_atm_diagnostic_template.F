@@ -12,6 +12,14 @@ module diagnostic_template
     type (MPAS_pool_type), pointer :: mesh
     type (MPAS_clock_type), pointer :: clock
 
+    public :: diagnostic_template_setup, &
+              diagnostic_template_update, &
+              diagnostic_template_compute, &
+              diagnostic_template_reset, &
+              diagnostic_template_cleanup
+
+    private
+
 
     contains
 
