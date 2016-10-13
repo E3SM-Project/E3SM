@@ -1131,42 +1131,8 @@ class C_TestXMLQuery(unittest.TestCase):
 ###############################################################################
 class B_CheckCode(unittest.TestCase):
 ###############################################################################
-    def setUp(self):
-    ###########################################################################
-        from distutils.spawn import find_executable
-        pylint = find_executable("pylint")
-        if pylint is not None:
-            output = run_cmd_no_fail("pylint --version")
-            pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
-            major = int(pylintver.group(1))
-            minor = int(pylintver.group(2))
-        if pylint is None or major < 1 or (major == 1 and minor < 5):
-            self.skipTest("pylint version 1.5 or newer not found")
-
-    def test_check_library_code(self):
-    ###########################################################################
-        run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker 2>&1"))
-
-    def test_check_scripts_code(self):
-    ###########################################################################
-        files_to_test =  ('create_newcase', 'create_test', 'create_clone', 'manage_case', 'manage_pes', 'query_testlists')
-        run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker  --dir %s %s    2>&1"%(SCRIPT_DIR, ' '.join(str(p) for p in files_to_test))))
-
-    def test_check_tools_code(self):
-    ###########################################################################
-        files_to_test =  ('acme_check_env','bless_test_results','case.build','case_diff','case.setup',
-                          'case.submit','check_case','check_input_data','check_lockedfiles','cime_bisect',
-                          'cimeteststatus','code_checker','compare_namelists','compare_test_results'
-                          'component_compare_baseline','component_compare_copy','component_compare_test'
-                          'component_generate_baseline','config_pes_converter.py','cs_status','getTiming'
-                          'grid_xml_converter.py','jenkins_generic_job','list_acme_tests','normalize_cases'
-                          'preview_namelists','save_provenance','simple_compare','update_acme_tests'
-                          'wait_for_tests','xmlchange','xmlquery')
-
-        run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker  --dir %s %s    2>&1"%(TOOLS_DIR, files_to_test)))
-
-
-
+    # Tests are generated in the main loop below
+    longMessage = True
 
 # Machinery for Macros generation tests.
 
@@ -1767,7 +1733,27 @@ class S_TestManageAndQuery(unittest.TestCase):
         self._run_and_assert_query_testlist(extra_args="--list categories")
 
 ###############################################################################
+def make_pylint_test(pyfile, cimeroot):
+    def test(self):
+        code_checker = os.path.join(TOOLS_DIR, "code_checker")
+        run_cmd_assert_result(self, "PYTHONPATH=%s:%s:$PYTHONPATH %s --dir %s %s"\
+                                  %(TOOLS_DIR, LIB_DIR, code_checker, cimeroot, pyfile))
+    return test
 
+
+def check_for_pylint():
+    ###########################################################################
+    from distutils.spawn import find_executable
+    pylint = find_executable("pylint")
+    if pylint is not None:
+        output = run_cmd_no_fail("pylint --version")
+        pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
+        major = int(pylintver.group(1))
+        minor = int(pylintver.group(2))
+    if pylint is None or major < 1 or (major == 1 and minor < 5):
+        print "pylint version 1.5 or newer not found, pylint tests skipped"
+        return False
+    return True
 
 def _main_func():
 
@@ -1791,6 +1777,26 @@ def _main_func():
             setattr(args, log_param, False)
 
     CIME.utils.handle_standard_logging_options(args)
+
+    # Find all python files in repo and create a pylint test for each
+    if check_for_pylint():
+        cimeroot = CIME.utils.get_cime_root()
+        files_to_test = run_cmd_no_fail("git ls-files --full-name %s"%cimeroot).splitlines()
+        files_to_test = [item for item in files_to_test if item.endswith(".py")]
+        files_to_test.extend(run_cmd_no_fail("git grep -l '#!/usr/bin/env python'",
+                                        from_dir=cimeroot).splitlines())
+        #TODO - get rid of this
+        list_of_directories_to_ignore = ("scripts/Tools", "point_clm", "tools", "machines", "apidocs", "unit_test")
+        for file_ in files_to_test:
+            # Dont test template files
+            test_this = True
+            for dir_ in list_of_directories_to_ignore:
+                if dir_ in file_:
+                    test_this = False
+                    break
+            if test_this:
+                pylint_test = make_pylint_test(file_, cimeroot)
+                setattr(B_CheckCode, 'test_pylint_%s'%os.path.basename(file_), pylint_test)
 
     unittest.main(verbosity=2, catchbreak=True)
 
