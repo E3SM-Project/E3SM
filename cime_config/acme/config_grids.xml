@@ -229,7 +229,7 @@
       <alias>f19_g16</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
     </grid>
-    
+
     <grid compset="SGLC.+DWAV">
       <sname>1.9x2.5_gx1v6</sname>
       <alias>f19_g16</alias>
@@ -1000,17 +1000,17 @@
 
     <domain name="gx1v6">
       <nx>320</nx>  <ny>384</ny>
-      <file atm_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
-      <file ice_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
-      <file lnd_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
-      <file ocn_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
+      <file atm_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
+      <file ice_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
+      <file lnd_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
+      <file ocn_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
       <desc>gx1v6 is displaced Greenland pole v6 1-deg grid:</desc>
     </domain>
 
     <domain name="gx3v7">
       <nx>100</nx> <ny>116</ny>
-      <file ice_mask="gx3v7">domain.ocn.gx3v7.120323.nc </file>
-      <file ocn_mask="gx3v7">domain.ocn.gx3v7.120323.nc </file>
+      <file ice_mask="gx3v7">domain.ocn.gx3v7.120323.nc</file>
+      <file ocn_mask="gx3v7">domain.ocn.gx3v7.120323.nc</file>
       <desc>gx3v7 is displaced Greenland pole v7 3-deg grid:</desc>
     </domain>
 
@@ -1024,8 +1024,8 @@
 
     <domain name="tx1v1">
       <nx>360</nx> <ny>240</ny>
-      <file ocn_mask="tx1v1">domain.ocn.tx1v1.090122.nc </file>
-      <file ice_mask="tx1v1">domain.ocn.tx1v1.090122.nc </file>
+      <file ocn_mask="tx1v1">domain.ocn.tx1v1.090122.nc</file>
+      <file ice_mask="tx1v1">domain.ocn.tx1v1.090122.nc</file>
       <desc>tripole v1 1-deg grid: testing proxy for high-res tripole ocean grids- do not use for scientific experiments</desc>
       <support>Experimental tripole ocean grid</support>
     </domain>
