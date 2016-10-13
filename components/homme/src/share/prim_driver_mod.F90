@@ -124,6 +124,8 @@ contains
 #else
     use infnan,           only: nan, assignment(=)
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
+    use cam_abortutils,   only: endrun
+
 #endif
     implicit none
     type (element_t),  pointer    :: elem(:)
@@ -162,6 +164,8 @@ contains
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
     real(kind=real_kind) :: repro_sum_rel_diff_max
+#else
+    character(len=120)   :: errormsg
 #endif
     ! =====================================
     ! Read in model control information
@@ -219,7 +223,6 @@ contains
     end if
 #endif
 
-
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
@@ -256,6 +259,16 @@ contains
 
        if(par%masterproc)       write(iulog,*)"...done."
     end if
+
+#ifdef CAM
+    ! be sure we don't try to run cam with more procs than elems
+    if (par%nprocs > nelem) then
+       write(errormsg, *) 'prim_driver_mod: CAM requires nprocs .lte. nelem ', &
+                          'but nprocs = ', par%nprocs, ' and nelem = ', nelem
+       call endrun(errormsg)
+    endif
+#endif
+
     if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
 
     !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
@@ -975,24 +988,24 @@ contains
       ! should be optimize and combined with the above caculation
       do ie=nets,nete
         do k=1,nlev
-	    do i=1,np
-	      do j=1,np
-		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-	      enddo
-	    enddo
+      do i=1,np
+        do j=1,np
+      elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+        enddo
+      enddo
           !write air density in dp_fvm field of FVM
           fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
       call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm) !boundary exchange
       do ie=nets,nete
-	    do i=1-nhc,nc+nhc
-	      do j=1-nhc,nc+nhc
+      do i=1-nhc,nc+nhc
+        do j=1-nhc,nc+nhc
           !phl is it necessary to compute psc here?
-	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
-	      enddo
-	    enddo
+          fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
+        enddo
+      enddo
       enddo
       if (hybrid%masterthread) then
          write(iulog,*) 'FVM tracers initialized.'
