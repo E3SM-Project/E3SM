@@ -28,14 +28,6 @@
 		<package name="transectTransportAMPKG" description="This package includes variables required for the transectTransport analysis member."/>
 	</packages>
 	<var_struct name="transectTransportAM" time_levs="1" packages="transectTransportAMPKG">
-		<!-- REMOVED THESE TWO VARIABLES HERE TO MOVE THEM TO "../Registry.xml", SO THAT ALL AMS CAN ACCESS THESE VARIABLES IN THE SAME WAY
-		<var name="transectEdgeMasks" type="integer" dimensions="nTransects nEdges" units="NA"
-			 description="Mask of edges for measuring transport across transects"
-		/>
-		<var name="transectEdgeMaskSigns" type="integer" dimensions="nTransects nEdges" units="NA"
-			 description="Sign of normalVelocity on edge for this transect"
-		/>
-		-->
 		<var name="transectEdgeMasksMax" type="integer" dimensions="nTransects" units="NA"
 			 description="max of transectEdgeMasks for this processor."
 		/>
