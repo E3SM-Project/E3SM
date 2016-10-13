@@ -445,6 +445,8 @@ module atm_time_integration
 
          RK3_DYNAMICS : do rk_step = 1, 3  ! Runge-Kutta loop
 
+            write(0,*) ' dynamics rk step ',rk_step
+
             ! recompute vertically implicit coefficients if necessary
             if( (config_time_integration_order == 3) .and. (rk_step == 2)) then
 
@@ -610,12 +612,14 @@ MPAS_GPTL_STOP('dyn_tend')
 
 !$OMP PARALLEL DO
                   do thread=1,block % nThreads
+                     write(0,*) ' calling spec zone tend adjust '
                      call atm_bdy_adjust_dynamics_speczone_tend( tend, state, diag, mesh, block % configs, nVertLevels,                    &
                                                                  ru_driving_tend, rt_driving_tend, rho_driving_tend,                       &
                                                                  block % cellThreadStart(thread), block % cellThreadEnd(thread),           &
                                                                  block % edgeThreadStart(thread), block % edgeThreadEnd(thread),           &
                                                                  block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
                                                                  block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread) )
+                     write(0,*) ' returned from spec zone tend adjust '
                   end do
 !$OMP END PARALLEL DO
 
@@ -643,12 +647,16 @@ MPAS_GPTL_STOP('dyn_tend')
                   allocate(ru_driving_values(nVertLevels,nEdges+1))
                   allocate(rt_driving_values(nVertLevels,nCells+1))
                   allocate(rho_driving_values(nVertLevels,nCells+1))
+
+                  write(0,*) ' getting bdy state values '
                   ru_driving_values(1:nVertLevels,1:nEdges+1) =  mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nEdges, 'ru', rk_timestep(rk_step) )
                   rt_driving_values(1:nVertLevels,1:nCells+1) =  mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'rtheta_m', rk_timestep(rk_step) )
                   rho_driving_values(1:nVertLevels,1:nCells+1) =  mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'rho_zz', rk_timestep(rk_step) )
+                  write(0,*) ' have bdy state values '
 
 !$OMP PARALLEL DO
                   do thread=1,block % nThreads
+                     write(0,*) ' calling relax zone tend adjust '
                      call atm_bdy_adjust_dynamics_relaxzone_tend( tend, state, diag, mesh, block % configs, nVertLevels, dt,                    &
                                                                   ru_driving_values, rt_driving_values, rho_driving_values,                     &
                                                                   block % cellThreadStart(thread), block % cellThreadEnd(thread),               &
@@ -657,6 +665,7 @@ MPAS_GPTL_STOP('dyn_tend')
                                                                   block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread),     &
                                                                   block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
                                                                   block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread) )
+                     write(0,*) ' returned from relax zone tend adjust '
                   end do
 !$OMP END PARALLEL DO
 
@@ -665,6 +674,8 @@ MPAS_GPTL_STOP('dyn_tend')
                   deallocate(rho_driving_values)
                   block => block % next
                end do
+
+               write(0,*) ' end relax zone tendencies for dynamics '
                  
 
             end if  ! regional_MPAS addition
@@ -676,6 +687,8 @@ MPAS_GPTL_STOP('dyn_tend')
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             do small_step = 1, number_sub_steps(rk_step)
+
+               write(0,*) ' acoustic step ',small_step
 
                call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
                call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
@@ -771,6 +784,7 @@ MPAS_GPTL_STOP('dyn_tend')
                ! First, (re)set the value of u and ru in the specified zone at the outermost edge (we will reset all for now).
                ! atm_recover_large_step_variables will not have set outermost edge velocities correctly.
                
+               write(0,*) ' resetting u spec zone values after acoustic step '
                block => domain % blocklist
                do while (associated(block))
 
@@ -809,6 +823,7 @@ MPAS_GPTL_STOP('dyn_tend')
                   block => block % next
                end do
                deallocate(ru_driving_values)
+               write(0,*) ' finished resetting u spec zone values after acoustic step '
 
             end if  ! regional_MPAS addition
 
@@ -970,6 +985,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             ! set the zero-gradient condition on w for regional_MPAS
             
             if ( regional_mpas ) then  ! regional_MPAS addition
+              write(0,*) ' setting zero-gradient bc for w '
               block => domain % blocklist
               do while (associated(block))
 
@@ -984,6 +1000,13 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
                 block => block % next
               end do
+
+              ! w halo values needs resetting after regional boundary update
+              call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+              call mpas_pool_get_field(state, 'w', w_field, 2)
+              call mpas_dmpar_exch_halo_field(w_field)
+
+              write(0,*) ' finished setting zero-gradient bc for w '
             end if ! end of regional_MPAS addition 
 
          end do RK3_DYNAMICS
@@ -1091,6 +1114,7 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
 !$OMP PARALLEL DO
                do thread=1,block % nThreads
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
+                     write(0,*) ' calling advance_scalars '
                      call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
                                              block % cellThreadStart(thread), block % cellThreadEnd(thread), &
                                              block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
@@ -1100,8 +1124,10 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
                                              block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
                                              horiz_flux_array, rk_step, config_time_integration_order, &
                                              advance_density=.true., scalar_tend=scalar_tend_array, rho_zz_int=rho_zz_int )
+                     write(0,*) ' returned from advance_scalars '
                   else
       
+                     write(0,*) ' calling advance_scalars_mono '
                      block % domain = domain 
                      call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
                                              block % cellThreadStart(thread), block % cellThreadEnd(thread), &
@@ -1113,6 +1139,7 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
                                              scalar_old_arr, scalar_new_arr, s_max_arr, s_min_arr, wdtn_arr, &
                                              scale_array, flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
                                              advance_density=.true., rho_zz_int=rho_zz_int)
+                     write(0,*) ' returned from advance_scalars_mono '
                   end if
                end do
 !$OMP END PARALLEL DO
@@ -1165,6 +1192,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
                   !  get the scalar values driving the regional boundary conditions
                   !
+                  write(0,*) ' num_scalars = ',num_scalars
                   call mpas_pool_get_dimension(state, 'index_qv', index_qv)
                   call mpas_pool_get_dimension(state, 'index_qc', index_qc)
                   call mpas_pool_get_dimension(state, 'index_qr', index_qr)
@@ -1173,6 +1201,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                   call mpas_pool_get_dimension(state, 'index_qg', index_qg)  
                   call mpas_pool_get_dimension(state, 'index_nr', index_nr)
                   call mpas_pool_get_dimension(state, 'index_ni', index_ni)
+                  write(0,*) ' scalars indices, qv, qc, qr, qi, qs, qg, nr, ni ',index_qv,index_qc,index_qr,index_qi,index_qs,index_qg,index_nr,index_ni
 
                   write(0,*) ' getting driving values, ignore error messages '
                   scalars_driving(index_qv,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qv', rk_timestep(rk_step) )
@@ -1181,8 +1210,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                   scalars_driving(index_qi,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qi', rk_timestep(rk_step) )
                   scalars_driving(index_qs,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qs', rk_timestep(rk_step) )
                   scalars_driving(index_qg,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qg', rk_timestep(rk_step) )
-                  scalars_driving(index_nr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'nr', rk_timestep(rk_step) )
-                  scalars_driving(index_ni,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'ni', rk_timestep(rk_step) )
+                  !! scalars_driving(index_nr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'nr', rk_timestep(rk_step) )
+                  !! scalars_driving(index_ni,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'ni', rk_timestep(rk_step) )
                   write(0,*) ' finished accessing driving values, end ignoring error messages '
                   
 !$OMP PARALLEL DO
@@ -3546,6 +3575,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       !  Note, however, that we enforce positive-definiteness in this update.
       !  The transport will maintain this positive definite solution and optionally, shape preservation (monotonicity).
 
+      write(0,*) ' in mono, point 1 '
+
       do iCell=cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
       do k = 1,nVertLevels
@@ -3563,6 +3594,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       end do
       end do
 
+      write(0,*) ' in mono, point 2 '
 
 !$OMP BARRIER
 !$OMP MASTER
@@ -3571,6 +3603,9 @@ MPAS_GPTL_START('mono_exch_1')
 MPAS_GPTL_STOP('mono_exch_1')
 !$OMP END MASTER
 !$OMP BARRIER
+
+
+      write(0,*) ' in mono, point 3 '
 
       !
       ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
@@ -3606,9 +3641,14 @@ MPAS_GPTL_STOP('mono_exch_1')
 !$OMP BARRIER
       end if
 
+      write(0,*) ' in mono, point 4 '
+
       ! next, do one scalar at a time
 
       do iScalar = 1, num_scalars
+
+         write(0,*) ' scalar mono ',iScalar
+
 
          do iCell=cellStart,cellEnd
 !DIR$ IVDEP
@@ -3617,6 +3657,13 @@ MPAS_GPTL_STOP('mono_exch_1')
                scalar_new(k,iCell) = scalars_new(iScalar,k,iCell)
             end do
          end do
+
+! ***** TEMPORARY TEST ******* WCS 20161012
+            do k=1,nVertLevels
+               scalar_old(k,nCells+1) = 0.
+               scalar_new(k,nCells+1) = 0.
+            end do
+
 
 !$OMP BARRIER
 
