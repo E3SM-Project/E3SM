@@ -20,7 +20,6 @@ def expect(condition, error_msg, exc_type=SystemExit):
     SystemExit: ERROR: error2
     """
     if (not condition):
-        # Uncomment these to bring up a debugger when an expect fails
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
