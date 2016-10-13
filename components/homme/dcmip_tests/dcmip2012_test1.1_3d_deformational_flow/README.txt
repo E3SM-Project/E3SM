@@ -1,4 +1,7 @@
+https://www.earthsystemcog.org/projects/dcmip-2012/cam-se_test_11_new
+
 Passive 3d advection with prescribed winds.
+
 Velocities reversed at the midpoint, returning tracers to initial position.
 Wind velocities prescribed. Dynamic updates of v, T, p disabled. 
 

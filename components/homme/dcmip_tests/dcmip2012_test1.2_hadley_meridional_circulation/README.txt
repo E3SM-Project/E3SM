@@ -1,2 +1,1 @@
-DCMIP2012 test 1-2
-http://earthsystemcog.org/projects/dcmip-2012/test_cases
+https://www.earthsystemcog.org/projects/dcmip-2012/cam-se_test_12
