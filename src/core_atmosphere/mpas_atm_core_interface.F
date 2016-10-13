@@ -100,7 +100,10 @@ module atm_core_interface
       use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
 
+#ifdef DO_PHYSICS
+      use mpas_atmphys_control
       use mpas_atmphys_packages
+#endif
 
       implicit none
 
@@ -111,10 +114,16 @@ module atm_core_interface
 
       ierr = 0
 
+#ifdef DO_PHYSICS
+      !check that all the physics options are correctly defined and that at
+      !least one physics parameterization is called (using the logical moist_physics):
+      call physics_namelist_check(configs)
+
       ierr = atmphys_setup_packages(configs,packages,iocontext)
       if(ierr /= 0) then
          call mpas_dmpar_global_abort('ERROR: Package setup failed for atmphys in core_atmosphere')
       endif
+#endif
 
    end function atm_setup_packages
 

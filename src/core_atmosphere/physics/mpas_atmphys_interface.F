@@ -22,8 +22,6 @@
           microphysics_from_MPAS,    &
           microphysics_to_MPAS
 
- integer:: i,j,k
-
 ! interface for conversion between variables used in the MPAS dynamical core and variables needed in the
 ! physics parameterizations.
 !Laura D. Fowler (send comments to laura@ucar.edu).
@@ -184,7 +182,7 @@
  end subroutine deallocate_forall_physics
 
 !=================================================================================================================
- subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics)
+ subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics,its,ite)
 !=================================================================================================================
 
 !input variables:
@@ -192,6 +190,7 @@
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
 
+ integer,intent(in):: its,ite
  integer,intent(in):: time_lev
 
 !inout variables:
@@ -200,6 +199,7 @@
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_nc,index_ni
+
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: fzm,fzp,rdzw
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,plrad
@@ -457,7 +457,7 @@
  end subroutine MPAS_to_physics
 
 !=================================================================================================================
- subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics)
+ subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
 !=================================================================================================================
 !input variables:
  type(mpas_pool_type),intent(in):: mesh
@@ -465,6 +465,7 @@
  type(mpas_pool_type),intent(in):: diag
  type(mpas_pool_type),intent(in):: diag_physics
 
+ integer,intent(in):: its,ite
  integer:: time_lev
 
 !local pointers:
@@ -632,12 +633,14 @@
  end subroutine microphysics_from_MPAS
 
 !=================================================================================================================
- subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep)
+ subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 !=================================================================================================================
+
 !input variables:
- integer,intent(in):: itimestep
- integer,intent(in):: time_lev
  type(mpas_pool_type),intent(in):: mesh
+
+ integer,intent(in):: itimestep,time_lev
+ integer,intent(in):: its,ite
 
 !output variables:
  type(mpas_pool_type),intent(inout):: state

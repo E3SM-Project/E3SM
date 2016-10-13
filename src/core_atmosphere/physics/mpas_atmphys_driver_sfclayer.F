@@ -32,8 +32,6 @@
  integer,parameter,private:: scm_force_flux = 0  !SCM surface forcing by surface fluxes.
                                                  !0=no 1=yes (WRF single column model option only).
 
- integer,private:: i,k,j
-
 
 !MPAS driver for parameterization of the surface layer.
 !Laura D. Fowler (send comments to laura@ucar.edu).
@@ -217,13 +215,18 @@
  end subroutine deallocate_sfclayer
 
 !=================================================================================================================
- subroutine sfclayer_from_MPAS(mesh,diag_physics,sfc_input)
+ subroutine sfclayer_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
+
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,j,k
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: skintemp,xland
@@ -379,11 +382,15 @@
  end subroutine sfclayer_from_MPAS
 
 !=================================================================================================================
- subroutine sfclayer_to_MPAS(diag_physics)
+ subroutine sfclayer_to_MPAS(diag_physics,its,ite)
 !=================================================================================================================
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,j
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,flhc,flqc,gz1oz0,hfx,qfx,  &
@@ -532,14 +539,10 @@
 !       write(0,*) '    end monin_obukhov initialization'
 
     case("sf_mynn")
-!      write(0,*) '    enter mynn surface layer initialization:'
        call mynn_sf_init_driver(allowed_to_read)
-!      write(0,*) '    end mynn surface layer initialization:'
 
     case("sf_mynn_wrf38")
-       write(0,*) '    enter mynn surface layer initialization (wrf 3.8):'
        call mynn_sf_init_driver_wrf38(allowed_to_read)
-       write(0,*) '    end mynn surface layer initialization (wrf 3.8):'
 
     case default
 
@@ -550,7 +553,7 @@
  end subroutine init_sfclayer
 
 !=================================================================================================================
- subroutine driver_sfclayer(itimestep,configs,mesh,diag_physics,sfc_input)
+ subroutine driver_sfclayer(itimestep,configs,mesh,diag_physics,sfc_input,its,ite)
 !=================================================================================================================
 
 !input and inout arguments:
@@ -559,6 +562,7 @@
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
 
+ integer,intent(in):: its,ite
  integer,intent(in):: itimestep
 
 !local pointers:
@@ -577,7 +581,7 @@
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
 !copy all MPAS arrays to rectanguler grid:
- call sfclayer_from_MPAS(mesh,diag_physics,sfc_input)
+ call sfclayer_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
 
  dx = sqrt(maxval(areaCell))
 
@@ -686,7 +690,7 @@
  end select sfclayer_select
 
 !copy local arrays to MPAS grid:
- call sfclayer_to_MPAS(diag_physics)
+ call sfclayer_to_MPAS(diag_physics,its,ite)
 
 !write(0,*) '--- end subroutine driver_sfclayer'
 

@@ -83,13 +83,18 @@
  end subroutine deallocate_cloudiness
 
 !=================================================================================================================
- subroutine cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input)
+ subroutine cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
 !=================================================================================================================
+
+!input arguments:
+ integer,intent(in):: its,ite
 
 !input and inout arguments:
  type(mpas_pool_type),intent(in)   :: configs
  type(mpas_pool_type),intent(in)   :: mesh
  type(mpas_pool_type),intent(in)   :: sfc_input
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local variables and pointers:
@@ -130,8 +135,11 @@
  end subroutine cloudiness_from_MPAS
 
 !=================================================================================================================
- subroutine cloudiness_to_MPAS(diag_physics)
+ subroutine cloudiness_to_MPAS(diag_physics,its,ite)
 !=================================================================================================================
+
+!input arguments:
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -156,13 +164,17 @@
  end subroutine cloudiness_to_MPAS
 
 !=================================================================================================================
- subroutine driver_cloudiness(configs,mesh,diag_physics,sfc_input)
+ subroutine driver_cloudiness(configs,mesh,diag_physics,sfc_input,its,ite)
 !=================================================================================================================
 
-!input and inout arguments:
+!input arguments:
  type(mpas_pool_type),intent(in)   :: configs
  type(mpas_pool_type),intent(in)   :: mesh
  type(mpas_pool_type),intent(in)   :: sfc_input
+
+ integer,intent(in):: its,ite
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local variables:
@@ -173,19 +185,19 @@
 !write(0,*) '--- enter subroutine driver_cloudiness:'
 
 !copy MPAS arrays to local arrays:
- call cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input)
+ call cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
 
  cld_fraction_select: select case (trim(radt_cld_scheme))
     case("cld_incidence")
       !calculate the incidence of clouds:
 !     write(0,*) '--- enter subroutine calc_cldincidence:'
-      call calc_cldincidence(cldfrac_p,qcrad_p,qirad_p,f_qc,f_qi)
+      call calc_cldincidence(cldfrac_p,qcrad_p,qirad_p,f_qc,f_qi,its,ite)
 !     write(0,*) '--- exit subroutine calc_cldincidence'
 
     case("cld_fraction")
       !calculate the cloud fraction based on the relative humidity:
 !     write(0,*) '--- enter subroutine calc_cldfraction:'
-      call calc_cldfraction(cldfrac_p,t_p,pres_p,qvrad_p,qcrad_p,qirad_p,qs_p)
+      call calc_cldfraction(cldfrac_p,t_p,pres_p,qvrad_p,qcrad_p,qirad_p,qs_p,its,ite)
 !     write(0,*) '--- exit subroutine calc_cldfraction'
 
     case("cld_fraction_thompson")
@@ -203,18 +215,19 @@
  end select cld_fraction_select
 
 !copy local arrays to MPAS grid:
- call cloudiness_to_MPAS(diag_physics)
+ call cloudiness_to_MPAS(diag_physics,its,ite)
 
 !write(0,*) '--- exit subroutine driver_cloudiness'
 
  end subroutine driver_cloudiness
 
 !=================================================================================================================
- subroutine calc_cldincidence(cldfrac,qc,qi,f_qc,f_qi)
+ subroutine calc_cldincidence(cldfrac,qc,qi,f_qc,f_qi,its,ite)
 !=================================================================================================================
 
 !input arguments:
  logical,intent(in):: f_qc,f_qi
+ integer,intent(in):: its,ite
  real(kind=RKIND),intent(in),dimension(ims:ime,kms:kme,jms:jme):: qc,qi
 
 !output arguments:
@@ -256,10 +269,11 @@
  end subroutine calc_cldincidence
 
 !=================================================================================================================
- subroutine calc_cldfraction(cldfrac,t_p,pres_p,qv,qc,qi,qs)
+ subroutine calc_cldfraction(cldfrac,t_p,pres_p,qv,qc,qi,qs,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ integer,intent(in):: its,ite
  real(kind=RKIND),intent(in),dimension(ims:ime,kms:kme,jms:jme):: qv,qc,qi,qs
  real(kind=RKIND),intent(in),dimension(ims:ime,kms:kme,jms:jme):: t_p,pres_p
 

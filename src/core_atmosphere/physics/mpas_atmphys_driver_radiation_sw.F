@@ -30,8 +30,6 @@
           init_radiation_sw,       &
           radconst
 
- integer,private:: i,j,k,kk,n
-
 !>\brief MPAS driver for parameterization of shortwave radiation codes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
 !>\date 2013-05-01.
@@ -280,7 +278,7 @@
 
 !=================================================================================================================
  subroutine radiation_sw_from_MPAS(configs,mesh,state,time_lev,diag_physics,atm_input, &
-                                   sfc_input,xtime_s)
+                                   sfc_input,xtime_s,its,ite)
 !=================================================================================================================
 
 !input arguments:
@@ -291,8 +289,13 @@
  type(mpas_pool_type),intent(in):: atm_input
  type(mpas_pool_type),intent(in):: sfc_input
 
+ integer,intent(in):: its,ite
  integer,intent(in):: time_lev
+
  real(kind=RKIND),intent(in):: xtime_s
+
+!local variables:
+ integer:: i,j,k,n
 
 !local pointers:
  logical,pointer:: config_o3climatology
@@ -529,12 +532,17 @@
  end subroutine radiation_sw_from_MPAS
 
 !=================================================================================================================
- subroutine radiation_sw_to_MPAS(diag_physics,tend_physics)
+ subroutine radiation_sw_to_MPAS(diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,j,k,n
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer  :: coszr,gsw,swcf,swdnb,swdnbc,swdnt,swdntc, &
@@ -638,7 +646,7 @@
 
 !=================================================================================================================
  subroutine driver_radiation_sw(itimestep,configs,mesh,state,time_lev,diag_physics,atm_input, &
-                                sfc_input,tend_physics,xtime_s)
+                                sfc_input,tend_physics,xtime_s,its,ite)
 !=================================================================================================================
 
 !input arguments:
@@ -646,7 +654,9 @@
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
 
+ integer,intent(in):: its,ite
  integer,intent(in):: time_lev
+
  real(kind=RKIND),intent(in):: xtime_s
 
 !inout arguments:
@@ -683,7 +693,7 @@
  xtime_m = xtime_s/60.
 
 !copy MPAS arrays to local arrays:
- call radiation_sw_from_MPAS(configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input,xtime_s)
+ call radiation_sw_from_MPAS(configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input,xtime_s,its,ite)
 
 !... calculates solar declination:
 !call radconst(declin,solcon,julday,degrad,dpd)
@@ -783,7 +793,7 @@
  end select radiation_sw_select
 
 !copy local arrays to MPAS grid:
- call radiation_sw_to_MPAS(diag_physics,tend_physics)
+ call radiation_sw_to_MPAS(diag_physics,tend_physics,its,ite)
 
 ! write(0,*) '--- end subroutine driver_radiation_sw'
 

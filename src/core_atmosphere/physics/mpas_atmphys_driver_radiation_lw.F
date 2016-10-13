@@ -32,8 +32,6 @@
           init_radiation_lw,       &
           radiation_camlw_to_MPAS
 
- integer,private:: i,j,k,kk,n
-
 
 !>\brief MPAS driver for parameterization of longwave radiation codes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -274,7 +272,8 @@
  end subroutine deallocate_radiation_lw
 
 !=================================================================================================================
- subroutine radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input)
+ subroutine radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
+                                   sfc_input,its,ite)
 !=================================================================================================================
 
 !input arguments:
@@ -284,7 +283,10 @@
  type(mpas_pool_type),intent(in):: atm_input
  type(mpas_pool_type),intent(in):: sfc_input
 
+ integer,intent(in):: its,ite
  integer,intent(in):: time_lev
+
+
  real(kind=RKIND),intent(in):: xtime_s
 
 !inout arguments:
@@ -303,6 +305,7 @@
 
 !local variables and arrays:
  integer:: ncols,nlevs
+ integer:: i,j,k,n
  real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -441,7 +444,8 @@
              enddo
              enddo
           enddo
-          if(allocated(p2d)) deallocate(p2d)
+          if(allocated(p2d))  deallocate(p2d)
+          if(allocated(o32d)) deallocate(o32d)
        else
           do k = 1, num_oznLevels
              pin_p(k) = 0.0_RKIND
@@ -488,7 +492,7 @@
        !and emstot_p are filled with the MPAS arrays abstot, absnxt, and emstot. If it
        !is a new run, these three arrays will be initialized to zero;If a restart run,
        !these three arrays will be filled with the restart values.
-       call mpas_timer_start("CAM lw: fill arrays for infrared absorption")
+!       call mpas_timer_start("CAM lw: fill arrays for infrared absorption")
        if(xtime_s .lt. 1.e-12) then
           do j = jts,jte
           do n = 1,cam_abs_dim1
@@ -513,7 +517,7 @@
           enddo
        endif
 
-       call mpas_timer_start("CAM lw: ozone and aerosols")
+!       call mpas_timer_start("CAM lw: ozone and aerosols")
        !ozone mixing ratio:
        do k = 1, num_oznlevels
           pin_p(k) = pin(k)
@@ -547,7 +551,7 @@
        enddo
        enddo
        enddo
-       call mpas_timer_stop("CAM lw: ozone and aerosols")
+!       call mpas_timer_stop("CAM lw: ozone and aerosols")
 
     case default
 
@@ -560,12 +564,14 @@
  end subroutine radiation_lw_from_MPAS
 
 !=================================================================================================================
- subroutine radiation_lw_to_MPAS(diag_physics,tend_physics)
+ subroutine radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+ integer,intent(in):: its,ite
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
@@ -575,6 +581,7 @@
 
 !local variables and arrays:
  integer:: nlay,pcols
+ integer:: i,j,k
  real(kind=RKIND),dimension(:,:),allocatable:: p1d
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -639,11 +646,16 @@
  end subroutine radiation_lw_to_MPAS
 
 !=================================================================================================================
- subroutine radiation_camlw_to_MPAS(diag_physics)
+ subroutine radiation_camlw_to_MPAS(diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
+
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,j,k,n
 
 !local pointers:
  real(kind=RKIND),dimension(:,:),pointer  :: emstot
@@ -720,12 +732,13 @@
 
 !=================================================================================================================
  subroutine driver_radiation_lw(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
-                                sfc_input,tend_physics)
+                                sfc_input,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
+ integer,intent(in):: its,ite
 
  integer,intent(in):: time_lev
  real(kind=RKIND),intent(in):: xtime_s
@@ -755,7 +768,7 @@
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
 
 !copy MPAS arrays to local arrays:
- call radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input)
+ call radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input,its,ite)
 
 !call to longwave radiation scheme:
  radiation_lw_select: select case (trim(radt_lw_scheme))
@@ -850,10 +863,9 @@
  end select radiation_lw_select
 
 !copy local arrays to MPAS grid:
- call radiation_lw_to_MPAS(diag_physics,tend_physics)
+ call radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
 
 ! write(0,*) '--- end subroutine driver_radiation_lw'
- call mpas_timer_stop("radiation_lw")
 
 !formats:
  200 format(i3,i3,8(1x,e15.8))

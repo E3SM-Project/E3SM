@@ -1310,6 +1310,59 @@ include 'mpif.h'
    end subroutine mpas_dmpar_max_real_array!}}}
 
 !-----------------------------------------------------------------------
+!  routine mpas_dmpar_maxloc_real_array
+!
+!> \brief MPAS dmpar location of maximum real value
+!> \author Michael Duda
+!> \date   03/13/14
+!> \details
+!>  Returns the maximum real among arrays of reals provided by all tasks, as
+!   well as the corresponding location of that maximum. If the maximum value
+!   occurs in more than one location, the returned location may be any of these.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_maxloc_real_array(dminfo, nElements, inArray, inLoc, maxVal, maxLoc)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      integer, intent(in) :: nElements !< Input: Length of arrays
+      real(kind=RKIND), dimension(nElements), intent(in) :: inArray   !< Input: Array of reals
+      integer, dimension(nElements), intent(in) :: inLoc              !< Input: Array of locations
+      real(kind=RKIND), intent(out) :: maxVal                         !< Output: Maximum of all reals
+      integer, intent(out) :: maxLoc                                  !< Output: Maximum of all reals
+
+      integer :: mpi_ierr
+      real(kind=RKIND), dimension(2) :: in, out
+      integer :: i
+
+      !
+      ! Find local max and maxloc
+      ! NB: We will have a problem on our hands if the maxloc value exceeds the
+      ! range of exactly representable integral values for the realkind being used
+      !
+      in(1) = inArray(1)
+      in(2) = 1.0
+      do i=2,nElements
+         if (inArray(i) > in(1)) then
+            in(1) = inArray(i)
+            in(2) = i
+         end if
+      end do
+
+#ifdef _MPI
+#ifdef SINGLE_PRECISION
+      call MPI_Allreduce(in, out, 1, MPI_2REAL, MPI_MAXLOC, dminfo % comm, mpi_ierr)
+#else
+      call MPI_Allreduce(in, out, 1, MPI_2DOUBLE_PRECISION, MPI_MAXLOC, dminfo % comm, mpi_ierr)
+#endif
+#endif
+      maxVal = out(1)
+      maxLoc = out(2)
+
+   end subroutine mpas_dmpar_maxloc_real_array!}}}
+
+!-----------------------------------------------------------------------
 !  routine mpas_dmpar_scatter_ints
 !
 !> \brief MPAS dmpar scatter integers routine

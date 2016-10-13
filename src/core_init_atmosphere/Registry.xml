@@ -192,7 +192,7 @@
                         <var name="rdzu" packages="met_stage_in"/>
                         <var name="fzm" packages="met_stage_in"/>
                         <var name="fzp" packages="met_stage_in"/>
-                        <var name="zx" packages="met_stage_in"/>
+                        <var name="zxu" packages="met_stage_in"/>
                         <var name="zz" packages="met_stage_in"/>
                         <var name="zb" packages="met_stage_in"/>
                         <var name="zb3" packages="met_stage_in"/>
@@ -286,7 +286,7 @@
                         <var name="rdzu" packages="vertical_stage_out;met_stage_out"/>
                         <var name="fzm" packages="vertical_stage_out;met_stage_out"/>
                         <var name="fzp" packages="vertical_stage_out;met_stage_out"/>
-                        <var name="zx" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zxu" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zz" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zb" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zb3" packages="vertical_stage_out;met_stage_out"/>
@@ -344,9 +344,11 @@
                         <var name="theta_base" packages="met_stage_out"/>
                         <var name="surface_pressure" packages="met_stage_out"/>
                         <var name="precipw" packages="met_stage_out"/>
+			<var name="h_oml_initial" packages="met_stage_out"/>
                         <var name="u10" packages="met_stage_out"/>
                         <var name="v10" packages="met_stage_out"/>
                         <var name="q2" packages="met_stage_out"/>
+			<var name="rh2" packages="met_stage_out"/>
                         <var name="t2m" packages="met_stage_out"/>
                         <var name="nifa_clim" packages="met_stage_out"/>
                         <var name="nwfa_clim" packages="met_stage_out"/>
@@ -463,8 +465,8 @@
                 <var name="rdzu"                       type="real"     dimensions="nVertLevels"/>
                 <var name="fzm"                        type="real"     dimensions="nVertLevels"/>
                 <var name="fzp"                        type="real"     dimensions="nVertLevels"/>
-                <var name="zx"                         type="real"     dimensions="nVertLevelsP1 nEdges"/>
-                <var name="zz"                         type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="zxu"                        type="real"     dimensions="nVertLevels nEdges"/>
+                <var name="zz"                         type="real"     dimensions="nVertLevels nCells"/>
                 <var name="zb"                         type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb3"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
 
@@ -501,6 +503,9 @@
                         <var name="nifa"    array_group="aerosols"/>
                         <var name="nwfa"    array_group="aerosols"/>
                 </var_array>
+
+                <!-- Climatology for ocean mixed-layer depth -->
+                <var name="h_oml_initial"              type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="fg" time_levs="1">
@@ -543,7 +548,7 @@
                 <var name="sfc_albbck"                        type="real"     dimensions="nCells Time"/>
                 <var name="xland"                             type="real"     dimensions="nCells Time"/>
 
-                <!-- surface fields from first-guess data -->
+                <!-- diagnostic fields that we get from first-guess data, and which we want to have at model initial output time -->
                 <var name="u10"                               type="real"     dimensions="nCells Time"/>
                 <var name="v10"                               type="real"     dimensions="nCells Time"/>
                 <var name="q2"                                type="real"     dimensions="nCells Time"/>

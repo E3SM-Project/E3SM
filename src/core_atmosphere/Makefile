@@ -5,7 +5,9 @@ PHYSICS=-DDO_PHYSICS
 
 OBJS = mpas_atm_core.o \
        mpas_atm_core_interface.o \
-       mpas_atm_interp_diagnostics.o
+       mpas_atm_soundings.o \
+       mpas_atm_interp_diagnostics.o \
+       mpas_atm_dimensions.o
 
 all: physcore dycore atmcore
 
@@ -27,13 +29,13 @@ post_build:
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
 	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
 
-physcore:
+physcore: mpas_atm_dimensions.o
 	( cd physics; $(MAKE) all )
 	( mkdir libphys; cd libphys; ar -x ../physics/libphys.a )
 	( cd ../..; ln -sf ./src/core_atmosphere/physics/physics_wrf/files/*TBL .)
 	( cd ../..; ln -sf ./src/core_atmosphere/physics/physics_wrf/files/*DATA* .)
 
-dycore:
+dycore: mpas_atm_dimensions.o
 	( cd dynamics; $(MAKE) all PHYSICS="$(PHYSICS)" )
 
 atmcore: physcore dycore $(OBJS)
@@ -41,7 +43,9 @@ atmcore: physcore dycore $(OBJS)
 
 mpas_atm_core_interface.o: mpas_atm_core.o
 
-mpas_atm_core.o: dycore mpas_atm_interp_diagnostics.o
+mpas_atm_core.o: dycore mpas_atm_interp_diagnostics.o mpas_atm_soundings.o
+
+mpas_atm_dimensions.o:
 
 clean:
 	( cd physics; $(MAKE) clean )

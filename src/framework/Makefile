@@ -14,6 +14,7 @@ OBJS = mpas_kind_types.o \
        mpas_block_decomp.o \
        mpas_block_creator.o \
        mpas_dmpar.o \
+       mpas_threading2.o \
        mpas_decomp.o \
        mpas_threading.o \
        mpas_io.o \
@@ -26,11 +27,13 @@ OBJS = mpas_kind_types.o \
        mpas_c_interfacing.o \
        random_id.o \
        streams.o \
+       timer.o \
        pool_hash.o \
        mpas_derived_types.o \
        mpas_domain_routines.o \
        mpas_field_routines.o \
        mpas_pool_routines.o \
+       mpas_performance.o \
        xml_stream_parser.o \
        mpas_field_accessor.o
 
@@ -69,6 +72,8 @@ mpas_decomp.o: mpas_derived_types.o mpas_stream_manager.o
 mpas_hash.o : mpas_derived_types.o
 
 mpas_dmpar.o: mpas_sort.o streams.o mpas_kind_types.o mpas_derived_types.o mpas_hash.o mpas_io_units.o mpas_threading.o mpas_pool_routines.o
+
+mpas_threading2.o: mpas_derived_types.o mpas_pool_routines.o
 
 mpas_sort.o: mpas_kind_types.o mpas_io_units.o
 

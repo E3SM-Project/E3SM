@@ -19,10 +19,12 @@
  use mpas_atmphys_driver_radiation_lw
  use mpas_atmphys_driver_radiation_sw 
  use mpas_atmphys_driver_sfclayer
+ use mpas_atmphys_driver_oml
  use mpas_atmphys_constants
  use mpas_atmphys_interface
  use mpas_atmphys_update
  use mpas_atmphys_vars, only: l_camlw,l_conv,l_radtlw,l_radtsw
+ use mpas_timer
 
  implicit none
  private
@@ -132,14 +134,18 @@
                                   config_radt_sw_scheme,    &
                                   config_sfclayer_scheme
 
+ logical, pointer:: config_oml1d
  real(kind=RKIND),pointer:: config_bucket_radt
 
 !local variables:
  type(block_type),pointer:: block
 
  integer:: time_lev
+ integer:: thread
 
 !=================================================================================================================
+
+ call mpas_timer_start('physics driver')
 
  call mpas_pool_get_config(domain%configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(domain%configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
@@ -150,6 +156,7 @@
  call mpas_pool_get_config(domain%configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
  call mpas_pool_get_config(domain%configs,'config_bucket_radt'      ,config_bucket_radt      )
  call mpas_pool_get_config(domain%configs,'config_bucket_update'    ,config_bucket_update    )
+ call mpas_pool_get_config(domain%configs,'config_oml1d'   ,config_oml1d   )
 
  if(config_convection_scheme .ne. 'off' .or. &
     config_lsm_scheme        .ne. 'off' .or. &
@@ -174,33 +181,60 @@
 
     !physics prep step:
     time_lev = 1
-    call MPAS_to_physics(mesh,state,time_lev,diag,diag_physics)
+
+!$OMP PARALLEL DO
+    do thread=1,block % nThreads
+       call MPAS_to_physics(mesh,state,time_lev,diag,diag_physics, &
+                            block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+    end do
+!$OMP END PARALLEL DO
 
     !call to cloud scheme:
     if(l_radtlw .or. l_radtsw) then
        call allocate_cloudiness
-       call driver_cloudiness(block%configs,mesh,diag_physics,sfc_input)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_cloudiness(block%configs,mesh,diag_physics,sfc_input, &
+                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
     endif
 
     !call to short wave radiation scheme:
     if(l_radtsw) then
        time_lev = 1
        call allocate_radiation_sw(xtime_s)
-       call driver_radiation_sw(itimestep,block%configs,mesh,state,time_lev,diag_physics, &
-                                atm_input,sfc_input,tend_physics,xtime_s)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_radiation_sw(itimestep,block%configs,mesh,state,time_lev,diag_physics, &
+                                   atm_input,sfc_input,tend_physics,xtime_s, &
+                                   block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
     endif
 
     !call to long wave radiation scheme:
     if(l_radtlw) then
        time_lev = 1
        call allocate_radiation_lw(xtime_s)
-       call driver_radiation_lw(xtime_s,block%configs,mesh,state,time_lev,diag_physics, &
-                                atm_input,sfc_input,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_radiation_lw(xtime_s,block%configs,mesh,state,time_lev,diag_physics, &
+                                   atm_input,sfc_input,tend_physics, &
+                                   block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
     endif
 
     !call to accumulate long- and short-wave diagnostics if needed:
-     if(config_bucket_update /= 'none' .and. config_bucket_radt .gt. 0._RKIND) &
-        call update_radiation_diagnostics(block%configs,mesh,diag_physics)
+     if(config_bucket_update /= 'none' .and. config_bucket_radt .gt. 0._RKIND) then
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call update_radiation_diagnostics(block%configs,mesh,diag_physics, &
+                                            block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
+     endif
 
     !deallocate all radiation arrays:
     if(config_radt_sw_scheme.ne.'off' .or. config_radt_lw_scheme.ne.'off') &
@@ -211,41 +245,80 @@
     !call to surface-layer scheme:
     if(config_sfclayer_scheme .ne. 'off') then
        call allocate_sfclayer
-       call driver_sfclayer(itimestep,block%configs,mesh,diag_physics,sfc_input)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_sfclayer(itimestep,block%configs,mesh,diag_physics,sfc_input, &
+                               block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_sfclayer
     endif
+
+    !call to 1d ocean mixed-layer model
+    if(config_oml1d) call driver_oml1d(block%configs, mesh, diag, diag_physics, sfc_input)
 
     !call to land-surface scheme:
     if(config_lsm_scheme .ne. 'off') then
        call allocate_lsm
-       call driver_lsm(itimestep,block%configs,mesh,diag_physics,sfc_input)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_lsm(itimestep,block%configs,mesh,diag_physics,sfc_input, &
+                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_lsm
     endif
 
     !call to pbl schemes:
     if(config_pbl_scheme .ne. 'off' .and. config_sfclayer_scheme .ne. 'off') then
        call allocate_pbl
-       call driver_pbl(itimestep,block%configs,sfc_input,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_pbl(itimestep,block%configs,sfc_input,diag_physics,tend_physics, &
+                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_pbl
     endif
 
     !call to gravity wave drag over orography scheme:
     if(config_gwdo_scheme .ne. 'off') then
        call allocate_gwdo
-       call driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics, &
+                           block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_gwdo
     endif
 
     !call to convection scheme:
-    call update_convection_step1(mesh,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+    do thread=1,block % nThreads
+       call update_convection_step1(mesh,diag_physics,tend_physics, &
+                            block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+    end do
+!$OMP END PARALLEL DO
     if(l_conv) then
        call allocate_convection
-       call driver_convection(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_convection(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
+                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_convection
     endif
     !update diagnostics:
-    if(config_convection_scheme .ne. 'off') &
-       call update_convection_step2(block%configs,mesh,diag_physics)
+    if(config_convection_scheme .ne. 'off') then
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call update_convection_step2(block%configs,mesh,diag_physics, &
+                               block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
+    end if
 
     !deallocate arrays shared by all physics parameterizations:
     call deallocate_forall_physics
@@ -257,6 +330,8 @@
 ! write(0,*)
 ! write(0,*) '--- end physics_driver:'
 ! write(0,*)
+
+ call mpas_timer_stop('physics driver')
 
  end subroutine physics_driver
 

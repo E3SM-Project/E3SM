@@ -29,6 +29,7 @@
           microphysics_driver  ,   &
           microphysics_init
 
+
 !MPAS driver for parameterization of cloud microphysics processes.
 !Laura D. Fowler (send comments to laura@ucar.edu).
 !2013-05-01.
@@ -291,7 +292,7 @@
  end subroutine microphysics_init
 
 !=================================================================================================================
- subroutine microphysics_driver(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep)
+ subroutine microphysics_driver(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 !=================================================================================================================
 
 !input arguments:
@@ -300,6 +301,7 @@
 
  integer,intent(in):: time_lev
  integer,intent(in):: itimestep
+ integer,intent(in):: its,ite
     
 !inout arguments:
  type(mpas_pool_type),intent(inout):: state
@@ -310,6 +312,28 @@
 !local variables and arrays:
  logical:: log_microphysics
  integer:: i,icell,icount,istep,j,k,kk
+ integer, pointer :: nCells, nVertLevels, index_qv !nick
+ real(kind=RKIND) :: rvord
+ real(kind=RKIND), dimension(:,:), pointer :: dtheta_dt_mp, theta_m
+ real (kind=RKIND), dimension(:,:,:), pointer :: scalars
+ 
+!nick szapiro 22-11-13: get dtheta/dt contribution from microphysics scheme
+ call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+ call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+ call mpas_pool_get_dimension(state, 'index_qv', index_qv)
+ 
+ call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
+ call mpas_pool_get_array(diag, 'dtheta_dt_mp', dtheta_dt_mp)
+ call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
+ 
+ !initialize to theta before microphysics call. 
+ !I think the physics call actually updates variables, not generate a tendency.
+ rvord = R_v/R_d
+ do icell=1,nCells
+  do k=1,nVertLevels
+    dtheta_dt_mp(k,icell) = theta_m(k,icell) / (1._RKIND + rvord * scalars(index_qv,k,icell))
+  end do
+ end do
 
 !-----------------------------------------------------------------------------------------------------------------
 ! write(0,*)
@@ -331,13 +355,16 @@
 ! write(0,*) '    kts= ',kts,' kte=',kte
 
 !... allocation of microphysics arrays:
+!$OMP MASTER
  call allocate_microphysics
+!$OMP END MASTER
+!$OMP BARRIER
 
 !... initialization of precipitation related arrays:
- call precip_from_MPAS(diag_physics,mesh)
+ call precip_from_MPAS(diag_physics,mesh,its,ite)
 
 !... initialization of soundings for non-hydrostatic dynamical cores.
- call microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics)
+ call microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
 
 !-----------------------------------------------------------------------------------------------------------------
 
@@ -380,6 +407,7 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme           , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
                            )
+
           istep = istep + 1
           enddo
 
@@ -462,7 +490,7 @@
        trim(microp_scheme) == "mp_wsm6_wrf381" .or. &
        trim(microp_scheme) == "mp_thompson"    .or. &
        trim(microp_scheme) == "mp_thompson_aerosols") then
-       call compute_radar_reflectivity(diag_physics)
+       call compute_radar_reflectivity(diag_physics,its,ite)
     else
        write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
        write(0,*) '            since WSM6 or Thompson microphysics scheme was not selected'
@@ -470,19 +498,24 @@
 
     ! calculate the relative humidity over water if the temperature is strictly greater than 0.C,
     ! over ice otherwise.
-    call compute_relhum(mesh,diag)
+    call compute_relhum(mesh,diag,its,ite)
 
  end if
+ write(0,*) '--- l_diags =', l_diags
+!call compute_relhum(diag_physics)
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
- call precip_to_MPAS(configs,mesh,diag_physics)
+ call precip_to_MPAS(configs,mesh,diag_physics,its,ite)
 
 !... copy updated cloud microphysics variables from the wrf-physics grid back to the geodesic-
 !    dynamics grid:
- call microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep)
+ call microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 
 !... deallocation of all microphysics arrays:
+!$OMP BARRIER
+!$OMP MASTER
  call deallocate_microphysics
+!$OMP END MASTER
 
 !formats:
  200 format(i3,i6,10(1x,e15.8))
@@ -493,11 +526,12 @@
  end subroutine microphysics_driver
 
 !=================================================================================================================
- subroutine precip_from_MPAS(diag_physics,mesh)
+ subroutine precip_from_MPAS(diag_physics,mesh,its,ite)
 !=================================================================================================================
 
 !input variables:
  type(mpas_pool_type) ,intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !output variables:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -526,7 +560,7 @@
  enddo
  enddo
 
- do iCell = 1, nCellsSolve
+ do iCell = its,ite
     rainncv(iCell) = 0._RKIND
  enddo
 
@@ -545,7 +579,7 @@
        enddo
        enddo
 
-       do iCell = 1, nCellsSolve
+       do iCell = its,ite
           snowncv(iCell)    = 0._RKIND
           graupelncv(iCell) = 0._RKIND
           sr(iCell)         = 0._RKIND
@@ -558,12 +592,14 @@
  end subroutine precip_from_MPAS
 
 !=================================================================================================================
- subroutine precip_to_MPAS(configs,mesh,diag_physics)
+ subroutine precip_to_MPAS(configs,mesh,diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
+
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -597,7 +633,7 @@
  call mpas_pool_get_array(diag_physics,'snowncv'   ,snowncv   )
  call mpas_pool_get_array(diag_physics,'sr'        ,sr        )
 
- do i = 1, nCellsSolve
+ do i = its,ite
     precipw(i) = 0._RKIND    
  enddo
 
@@ -652,24 +688,29 @@
  end subroutine precip_to_MPAS
 
 !=================================================================================================================
- subroutine compute_radar_reflectivity(diag_physics)
+ subroutine compute_radar_reflectivity(diag_physics,its,ite)
 !=================================================================================================================
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
+ integer,intent(in):: its,ite
+
 !local pointers:
- real(kind=RKIND),dimension(:),pointer:: refl10cm_max
+ real(kind=RKIND),dimension(:),pointer:: refl10cm_max, refl10cm_1km, refl10cm_1km_max
 
 !local variables and arrays:
- integer:: i,j,k
- real(kind=RKIND),dimension(:),allocatable:: qv1d,qc1d,qr1d,qs1d,qg1d,t1d,p1d,nr1d,dBZ1d
+ integer:: i,j,k,kp
+ real(kind=RKIND),dimension(:),allocatable:: qv1d,qc1d,qr1d,qs1d,qg1d,t1d,p1d,nr1d,dBZ1d,zp
+ real(kind=RKIND):: w1,w2
 
 !-----------------------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
 
  call mpas_pool_get_array(diag_physics,'refl10cm_max',refl10cm_max)
+ call mpas_pool_get_array(diag_physics,'refl10cm_1km',refl10cm_1km)
+ call mpas_pool_get_array(diag_physics,'refl10cm_1km_max',refl10cm_1km_max)
 
  microp_select: select case(microp_scheme)
 
@@ -685,6 +726,7 @@
        if(.not.allocated(qs1d) ) allocate(qs1d(kts:kte) )
        if(.not.allocated(qg1d) ) allocate(qg1d(kts:kte) )
        if(.not.allocated(dBz1d)) allocate(dBZ1d(kts:kte))
+       if(.not.allocated(zp))    allocate(zp(kts:kte))
 
        do j = jts,jte
        do i = its,ite
@@ -696,16 +738,21 @@
              qs1d(k)  = qs_p(i,k,j)
              qg1d(k)  = qg_p(i,k,j)
              dBZ1d(k) = -35._RKIND
+             zp(k) = z_p(i,k,j) - z_p(i,1,j)+0.5*dz_p(i,1,j) ! height AGL
           enddo
 
           call refl10cm_wsm6(qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d,kts,kte,i,j)
 
+          kp = 1
           do k = kts,kte
              dBZ1d(k) = max(-35._RKIND,dBZ1d(k))
-!            write(0,201) i,k,dBZ1d(k)
+             if(zp(k) .lt. 1000.) kp = k
           enddo
           refl10cm_max(i) = maxval(dBZ1d(:))
-!         if(refl10cm_max(i) .gt. 0.) write(0,201) j,i,refl10cm_max(i)
+          w1 = (zp(kp+1)-1000.)/(zp(kp+1)-zp(kp))
+          w2 = 1.0 - w1
+          refl10cm_1km(i) = w1*dBZ1d(kp) + w2*dBZ1d(kp+1)
+          refl10cm_1km_max(i) = max(refl10cm_1km_max(i),refl10cm_1km(i))
        enddo
        enddo
 
@@ -716,9 +763,9 @@
        if(allocated(qs1d) ) deallocate(qs1d )
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
+       if(allocated(zp))    deallocate(zp)
 
     case ("mp_thompson","mp_thompson_aerosols")
-
        if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
        if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
        if(.not.allocated(qv1d) ) allocate(qv1d(kts:kte) )
@@ -728,6 +775,7 @@
        if(.not.allocated(qg1d) ) allocate(qg1d(kts:kte) )
        if(.not.allocated(nr1d) ) allocate(nr1d(kts:kte) )
        if(.not.allocated(dBz1d)) allocate(dBZ1d(kts:kte))
+       if(.not.allocated(zp))    allocate(zp(kts:kte))
 
        do j = jts,jte
        do i = its,ite
@@ -741,16 +789,21 @@
              qg1d(k)  = qg_p(i,k,j)
              nr1d(k)  = nr_p(i,k,j)
              dBZ1d(k) = -35._RKIND
+             zp(k) = z_p(i,k,j) - z_p(i,1,j)+0.5*dz_p(i,1,j) ! height AGL
           enddo
 
           call calc_refl10cm(qv1d,qc1d,qr1d,nr1d,qs1d,qg1d,t1d,p1d,dBZ1d,kts,kte,i,j)
 
+          kp = 1
           do k = kts,kte
              dBZ1d(k) = max(-35._RKIND,dBZ1d(k))
-!            write(0,201) i,k,dBZ1d(k)
+             if(zp(k) .lt. 1000.) kp = k
           enddo
           refl10cm_max(i) = maxval(dBZ1d(:))
-!         if(refl10cm_max(i) .gt. 0.) write(0,201) j,i,refl10cm_max(i)
+          w1 = (zp(kp+1)-1000.)/(zp(kp+1)-zp(kp))
+          w2 = 1.0 - w1
+          refl10cm_1km(i) = w1*dBZ1d(kp) + w2*dBZ1d(kp+1)
+          refl10cm_1km_max(i) = max(refl10cm_1km_max(i),refl10cm_1km(i))
        enddo
        enddo
 
@@ -763,6 +816,7 @@
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(nr1d) ) deallocate(nr1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
+       if(allocated(zp))    deallocate(zp)
 
     case default
 
@@ -772,11 +826,13 @@
  end subroutine compute_radar_reflectivity
 
 !=================================================================================================================
- subroutine compute_relhum(mesh,diag)
+ subroutine compute_relhum(mesh,diag,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
+
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag
@@ -788,7 +844,7 @@
 !local variables and arrays:
  integer:: i,j,k
 
- real(kind=RKIND):: tempc
+ real(kind=RKIND):: tempc, rh
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qvs1d,t1d,p1d
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -798,7 +854,7 @@
 
  call mpas_pool_get_array(diag,'relhum',relhum)
 
- relhum(1:nVertLevels,1:nCellsSolve) = 0._RKIND
+ relhum(1:nVertLevels,its:ite) = 0._RKIND
 
  if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
  if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
@@ -818,9 +874,11 @@
        relhum(k,i) = qv1d(k) / qvs1d(k)
        relhum(k,i) = relhum(k,i) * 100._RKIND
     enddo
+!   write(0,*)
 
  enddo
  enddo
+ 101 format(2(1x,i8),5(1x,e15.8))
 
  if(allocated(p1d)  ) deallocate(p1d  )
  if(allocated(t1d)  ) deallocate(t1d  )

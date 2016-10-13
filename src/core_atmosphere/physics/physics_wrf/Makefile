@@ -38,6 +38,7 @@ OBJS = \
 	module_sf_mynn.wrf-3.8.o       \
 	module_sf_noahdrv.o            \
 	module_sf_noahlsm.o            \
+	module_sf_oml.o                \
 	module_sf_sfclay.o             \
 	module_sf_urban.o
 
@@ -112,7 +113,7 @@ module_sf_mynn_wrf3.8.o: \
 	../mpas_atmphys_constants.o
 
 module_sf_noahdrv.o: \
- 	module_sf_bem.o \
+	module_sf_bem.o \
 	module_sf_bep.o \
 	module_sf_bep_bem.o \
 	module_sf_noahlsm.o \

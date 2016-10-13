@@ -163,6 +163,11 @@ module init_atm_core_interface
          vertical_stage_out = (config_vertical_grid .and. .not.  config_met_interp)
          met_stage_in = (config_met_interp .and. .not. config_vertical_grid)
          met_stage_out = config_met_interp
+      else if (config_init_case == 8) then
+         vertical_stage_in = .true.
+         vertical_stage_out = .false.
+         met_stage_in = .false.
+         met_stage_out = .false.
       else
          vertical_stage_in = .false.
          vertical_stage_out = .false.

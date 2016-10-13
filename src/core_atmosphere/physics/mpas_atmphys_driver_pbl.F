@@ -25,8 +25,6 @@
           deallocate_pbl, &
           driver_pbl
 
- integer,private:: i,j,k
-
 
 !MPAS driver for parameterization of Planetary Boundary Layer (PBL) processes.
 !Laura D. Fowler (send comments to laura@ucar.edu).
@@ -238,12 +236,17 @@
  end subroutine deallocate_pbl
 
 !=================================================================================================================
- subroutine pbl_from_MPAS(sfc_input,diag_physics)
+ subroutine pbl_from_MPAS(sfc_input,diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: sfc_input
+
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,k,j
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: dcEdge_m,hfx,hpbl,qfx,ust,wspd,xland,znt
@@ -404,12 +407,17 @@
  end subroutine pbl_from_MPAS
 
 !=================================================================================================================
- subroutine pbl_to_MPAS(diag_physics,tend_physics)
+ subroutine pbl_to_MPAS(diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,k,j
 
 !local pointers:
  integer,dimension(:),pointer:: kpbl
@@ -531,16 +539,19 @@
  end subroutine pbl_to_MPAS
  
 !=================================================================================================================
- subroutine driver_pbl(itimestep,configs,sfc_input,diag_physics,tend_physics)
+ subroutine driver_pbl(itimestep,configs,sfc_input,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
-!input and output arguments:
+!input arguments:
  type(mpas_pool_type),intent(in):: configs
+
+ integer,intent(in):: its,ite
+ integer,intent(in):: itimestep
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
-
- integer,intent(in):: itimestep
 
 !local pointers:
  logical,pointer:: config_do_restart
@@ -555,7 +566,7 @@
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
 
 !copy MPAS arrays to local arrays:
- call pbl_from_MPAS(sfc_input,diag_physics)
+ call pbl_from_MPAS(sfc_input,diag_physics,its,ite)
 
  initflag = 1
  if(config_do_restart .or. itimestep > 1) initflag = 0
@@ -667,7 +678,7 @@
  end select pbl_select
 
 !copy local arrays to MPAS grid:
- call pbl_to_MPAS(diag_physics,tend_physics)
+ call pbl_to_MPAS(diag_physics,tend_physics,its,ite)
 
 !write(0,*) '--- end subroutine driver_pbl'
 

@@ -32,8 +32,6 @@
           update_convection_step1, &
           update_convection_step2
 
- integer, private:: i,k,j
-
 
 !MPAS driver for parameterization of convection.
 !Laura D. Fowler (send comments to laura@ucar.edu).
@@ -100,6 +98,11 @@
 !=================================================================================================================
  subroutine allocate_convection
 !=================================================================================================================
+
+!local variables:
+ integer:: i,k,j
+
+!-----------------------------------------------------------------------------------------------------------------
 
  if(.not.allocated(cu_act_flag)) allocate(cu_act_flag(ims:ime,jms:jme)       )
  if(.not.allocated(rthcuten_p) ) allocate(rthcuten_p(ims:ime,kms:kme,jms:jme))
@@ -387,20 +390,27 @@
  end subroutine init_convection
 
 !=================================================================================================================
- subroutine driver_convection(itimestep,configs,mesh,sfc_input,diag_physics,tend_physics)
+ subroutine driver_convection(itimestep,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
-!input and output arguments:
- integer,intent(in):: itimestep
+!input arguments:
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
+
+ integer,intent(in):: its,ite
+ integer,intent(in):: itimestep
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
 
 !local variables and arrays:
  logical:: log_convection
+
+ integer:: i,j
  integer:: icount
+
  real(kind=RKIND):: dx
 
 !local pointers:
@@ -415,7 +425,6 @@
  real(kind=RKIND):: cudtacttime
 
 !temp:
- integer:: i,j
  real(kind=RKIND):: dx_1d
  real(kind=RKIND):: max_rthcuten
  real(kind=RKIND):: min_rthcuten
@@ -430,7 +439,7 @@
 
 !initialize instantaneous precipitation, and copy convective tendencies from the dynamics to
 !the physics grid:
- call convection_from_MPAS(dt_dyn,configs,mesh,sfc_input,diag_physics,tend_physics)
+ call convection_from_MPAS(dt_dyn,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 
 !... convert the convection time-step to minutes:
  cudt = dt_cu/60.
@@ -563,7 +572,7 @@
     case("cu_tiedtke")
        call cu_tiedtke ( &
              pcps        = pres_hyd_p    , p8w             = pres2_hyd_p ,           &
-             znu         = znu_hyd_p     , t3d             = t_p         ,           &              
+             znu         = znu_hyd_p     , t3d             = t_p         ,           &
              dt          = dt_dyn        , itimestep       = itimestep   ,           &
              stepcu      = n_cu          , raincv          = raincv_p    ,           &
              pratec      = pratec_p      , hfx             = hfx_p       ,           &
@@ -642,7 +651,7 @@
 
 !copy instantaneous and accumulated precipitation, convective tendencies, and "other" arrays
 !specific to convection parameterization back to the dynamics grid:
- call convection_to_MPAS(diag_physics,tend_physics)
+ call convection_to_MPAS(diag_physics,tend_physics,its,ite)
 
  write(0,*) '--- end subroutine convection_driver'
  write(0,*)
@@ -650,8 +659,9 @@
  end subroutine driver_convection
 
 !=================================================================================================================
- subroutine convection_from_MPAS(dt_dyn,configs,mesh,sfc_input,diag_physics,tend_physics)
+ subroutine convection_from_MPAS(dt_dyn,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
+
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
@@ -659,6 +669,7 @@
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: tend_physics
  real(kind=RKIND),intent(in):: dt_dyn
+ integer,intent(in):: its,ite
 
 !local pointers:
  integer,dimension(:),pointer:: kpbl,k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
@@ -674,6 +685,7 @@
  real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten
 
 !local variables:
+ integer:: i,j,k
  integer:: iEdge
  real(kind=RKIND),pointer:: len_disp
 
@@ -880,11 +892,18 @@
  end subroutine convection_from_MPAS
 
 !=================================================================================================================
- subroutine convection_to_MPAS(diag_physics,tend_physics)
+ subroutine convection_to_MPAS(diag_physics,tend_physics,its,ite)
 !=================================================================================================================
+
+!input arguments:
+ integer,intent(in):: its,ite
+
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+!local variables:
+ integer:: i,k,j
 
 !local pointers:
  integer,dimension(:),pointer:: k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
@@ -997,10 +1016,12 @@
  end subroutine convection_to_MPAS
 
 !=================================================================================================================
- subroutine update_convection_step1(mesh,diag_physics,tend_physics)
+ subroutine update_convection_step1(mesh,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
+
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -1036,7 +1057,7 @@
       call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
       call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
-       do iCell = 1, nCellsSolve
+       do iCell = its, ite
           !decreases the characteristic time period that convection remains active. When nca_p
           !becomes less than the convective timestep, convective tendencies and precipitation
           !are reset to zero (note that this is also done in subroutine kf_eta_cps).
@@ -1067,12 +1088,13 @@
  end subroutine update_convection_step1
 
 !=================================================================================================================
- subroutine update_convection_step2(configs,mesh,diag_physics)
+ subroutine update_convection_step2(configs,mesh,diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -1098,7 +1120,7 @@
  call mpas_pool_get_array(diag_physics,'rainc'  ,rainc  )
 
 !update the accumulated precipitation at the end of each dynamic time-step:
- do iCell = 1, nCellsSolve
+ do iCell = its, ite
     rainc(iCell) = rainc(iCell) + cuprec(iCell) * dt_dyn
 
     if(l_acrain .and. bucket_rainc.gt.0._RKIND .and. &
