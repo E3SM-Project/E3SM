@@ -3193,7 +3193,6 @@
 			description="The name for each region group."
 			/>
 	</var_struct>
-	<!-- ADDED THIS STRUCT, SO THAT ALL AMS CAN ACCESS THE MASKS IN A UNIFIED WAY -->
 	<var_struct name="transects" time_levs="1">
 		<var name="transectEdgeMasks" 
 		     type="integer" 

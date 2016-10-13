@@ -45,7 +45,7 @@
 		/>
 		<nml_option name="config_AM_mocStreamfunction_transect_group" type="character" default_value="all" units="unitless"
 			description="The name of the transect group that holds the boundaries for the regions in the region group, configured in 'config_AM_mocStreamfunction_region_group'. Please note, that these two should have the same amount of entries."
-			possible_values="Either of '', 'all' or any valid transect group name."
+			possible_values="Any valid transect group name."
 		/>
 	</nml_record>
 	<dims>
@@ -63,22 +63,15 @@
 		<var name="mocStreamvalLatAndDepth" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
 		/>
-		<var name="mocStreamvalLatAndDepthRegion" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels maxRegionsInGroup Time" units="sverdrups"
+		<var name="mocStreamvalLatAndDepthRegion" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels R3 Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
 		/>
 		<var name="binBoundaryMocStreamfunction" type="real" dimensions="nMocStreamfunctionBinsP1" units="varies"
 			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
-		<var name="minMaxLatRegion" type="real" dimensions="TWO maxRegionsInGroup" units="varies"
+		<var name="minMaxLatRegion" type="real" dimensions="TWO R3" units="varies"
 			 description="Coordinates of the southern and northern boundaries of each region (for drawing)."
 		/>
-		<!-- THE FOLLOWING TWO VARIABLES SHOULD NOT BE IN THIS REGISTRY FILE. THEY BELONG IN A SEPARATE VAR STRUCT THAT IS ACCESSIBLE BY ALL AMS
-		<var name="transectEdgeMasks" type="integer" dimensions="nTransects nEdges" units="NA"
- 			 description="Mask of edges for measuring transport across transects"
- 		/>
- 		<var name="transectEdgeMaskSigns" type="integer" dimensions="nTransects nEdges" units="NA"
- 			 description="Sign of normalVelocity on edge for this transect"
- 		/> -->
 	</var_struct>
 	<streams>
 		<stream name="mocStreamfunctionOutput"
