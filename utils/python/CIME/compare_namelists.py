@@ -67,7 +67,6 @@ def parse_namelists(namelist_lines, filename):
     comment_re = re.compile(r'^[#!]')
     namelist_re = re.compile(r'^&(\S+)$')
     name_re = re.compile(r"^([^\s=']+)\s*=\s*(.+)$")
-   #name_re = re.compile(r"^([^\s=':]+)\s*=\s*(.+)$")
     rcline_re = re.compile(r"^([^&\s':]+)\s*:\s*(.+)$")
     dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
     comma_re = re.compile(r'\s*,\s*')
