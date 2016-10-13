@@ -3571,6 +3571,15 @@
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
  </entry>
 
+ <entry id="MODEL_VERSION">
+   <type>char</type>
+   <default_value>unknown</default_value>
+   <group>case_der</group>
+   <file>env_build.xml</file>
+   <desc>Apparent version of the model used for this case</desc>
+ </entry>
+
+
  <entry id="PROJECT_REQUIRED">
    <type>logical</type>
    <valid_values>TRUE,FALSE</valid_values>
