@@ -756,7 +756,7 @@ errmsg:
 	@echo "    USE_PIO2=true - links with the PIO 2 library. Default is to use the PIO 1.x library."
 	@echo "    PRECISION=single - builds with default single-precision real kind. Default is to use double-precision."
 	@echo ""
-	@echo "Ensure that NETCDF, PNETCDF, PIO, PAPI (if USE_PAPI=true), and GPTL (if USE_GTPL=true) are environment variables"
+	@echo "Ensure that NETCDF, PNETCDF, PIO, PAPI (if USE_PAPI=true), and GPTL (if USE_GPTL=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
 	@echo ""
 ifdef CORE
