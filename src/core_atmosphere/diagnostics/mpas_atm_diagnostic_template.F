@@ -7,6 +7,10 @@
 !
 module diagnostic_template
 
+    use mpas_derived_types, only : MPAS_pool_type
+
+    type (MPAS_pool_type), pointer :: mesh
+
 
     contains
 
@@ -21,11 +25,20 @@ module diagnostic_template
     !>  Initialize the diagnostic
     !
     !-----------------------------------------------------------------------
-    subroutine diagnostic_template_setup()
+    subroutine diagnostic_template_setup(all_pools)
+
+        use mpas_derived_types, only : MPAS_pool_type
+        use mpas_pool_routines, only : mpas_pool_get_subpool
 
         implicit none
 
+        type (MPAS_pool_type), pointer :: all_pools
+
         ! Perform initialization, memory allocation, etc.
+
+        ! Also, save pointers to any pools that will be used by this diagnostic
+        ! E.g.,
+        call mpas_pool_get_subpool(all_pools, 'mesh', mesh)
    
     end subroutine diagnostic_template_setup
 

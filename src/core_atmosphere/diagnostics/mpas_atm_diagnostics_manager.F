@@ -30,15 +30,17 @@ module mpas_atm_diagnostics_manager
     !>  Initialize the diagnostics manager and all diagnostics.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_atm_diag_setup(stream_mgr)
+    subroutine mpas_atm_diag_setup(stream_mgr, structs)
 
         use mpas_atm_diagnostics_utils, only : mpas_atm_diag_utils_init
-        use mpas_derived_types, only : MPAS_streamManager_type
+        use mpas_derived_types, only : MPAS_streamManager_type, MPAS_pool_type
         use diagnostic_template, only : diagnostic_template_setup
 
         implicit none
 
         type (MPAS_streamManager_type), target, intent(inout) :: stream_mgr
+        type (MPAS_pool_type), pointer :: structs
+
 
         write(stderrUnit,*) 'mpas_atm_diag_setup()'
 
@@ -47,7 +49,7 @@ module mpas_atm_diagnostics_manager
         !
         call mpas_atm_diag_utils_init(stream_mgr)
 
-        call diagnostic_template_setup()
+        call diagnostic_template_setup(structs)
 
     end subroutine mpas_atm_diag_setup
 
