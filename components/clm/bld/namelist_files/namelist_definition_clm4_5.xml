@@ -1595,4 +1595,9 @@ Type of saturation function used in VSFM.
     van_genuchten            = use the van Genuchten model
 </entry>
 
+<entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
+       group="clm_inparm" valid_values="">
+Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
+</entry>
+
 </namelist_definition>

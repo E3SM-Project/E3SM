@@ -380,6 +380,7 @@ contains
     ! !USES
     use spmdMod          , only : masterproc, iam
     use clm_time_manager , only : get_nstep
+    use clm_varctl       , only : vsfm_use_dynamic_linesearch
     !
     implicit none
 #include "finclude/petscsys.h"
@@ -493,7 +494,7 @@ contains
 
           linesearch_iter = linesearch_iter + 1
 
-          if (linesearch_iter < max_linesearch_iter) then
+          if (vsfm_use_dynamic_linesearch .and. linesearch_iter < max_linesearch_iter) then
              ! Let's try another linesearch
              write(iulog,*),'On proc ', iam, ' time_step = ', get_nstep(), &
                   linesearch_name // ' unsuccessful. Trying another one.'
