@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def _main_func():
 ###############################################################################
 
-    caseroot, libroot, bldroot = parse_input(sys.argv)
+    caseroot, libroot, _ = parse_input(sys.argv)
 
     logger.info("Building a single executable version of target coupled model")
 
