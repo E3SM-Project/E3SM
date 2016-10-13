@@ -1,5 +1,26 @@
 """
-Functions for managing the TestStatus file
+Contains the crucial TestStatus class which manages phase-state of a test
+case and ensure that this state is represented by the TestStatus file in
+the case.
+
+TestStatus objects are only modifiable via the set_status method and this
+is only allowed if the object is being accessed within the context of a
+context manager. Example:
+
+    with TestStatus(test_dir=caseroot) as ts:
+        ts.set_status(RUN_PHASE, TEST_PASS_STATUS)
+
+This file also contains all of the hardcoded phase information which includes
+the phase names, phase orders, potential phase states, and which phases are
+required (core phases).
+
+Additional important design decisions:
+1) In order to ensure that incomplete tests are always left in a PEND
+   state, updating a core phase to a PASS state will automatically set the next
+   core state to PEND.
+2) If the user repeats a core state, that invalidates all subsequent state. For
+   example, if a user rebuilds their case, then any of the post-run states like the
+   RUN state are no longer valid.
 """
 
 from CIME.XML.standard_module_setup import *
@@ -114,14 +135,6 @@ class TestStatus(object):
         """
         Update the status of this test by changing the status of given phase to the
         given status.
-
-        Key implematation details:
-        1) In order to ensure that incomplete tests are always left in a PEND
-        state, updating a core phase to a PASS state will automatically set the next
-        core state to PEND.
-        2) If the user repeats a core state, that invalidates all subsequent state. For
-        example, if a user rebuilds their case, then any of the post-run states like the
-        RUN state are no longer valid.
 
         >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
         ...     ts.set_status(CREATE_NEWCASE_PHASE, "PASS")
