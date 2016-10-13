@@ -7,11 +7,11 @@ DIAGNOSTIC_MODULES = \
 	mpas_atm_diagnostic_template.o
 
 
-OBJS = mpas_atm_diagnostics_manager.o
+OBJS = mpas_atm_diagnostics_manager.o mpas_atm_diagnostics_utils.o
 
 all: $(DIAGNOSTIC_MODULS) $(OBJS)
 
-mpas_atm_diagnostics_manager.o: $(DIAGNOSTIC_MODULES)
+mpas_atm_diagnostics_manager.o: mpas_atm_diagnostics_utils.o $(DIAGNOSTIC_MODULES)
 
 
 clean:

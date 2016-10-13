@@ -30,13 +30,22 @@ module mpas_atm_diagnostics_manager
     !>  Initialize the diagnostics manager and all diagnostics.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_atm_diag_setup()
+    subroutine mpas_atm_diag_setup(stream_mgr)
 
+        use mpas_atm_diagnostics_utils, only : mpas_atm_diag_utils_init
+        use mpas_derived_types, only : MPAS_streamManager_type
         use diagnostic_template, only : diagnostic_template_setup
 
         implicit none
 
+        type (MPAS_streamManager_type), target, intent(inout) :: stream_mgr
+
         write(stderrUnit,*) 'mpas_atm_diag_setup()'
+
+        !
+        ! Prepare the diagnostics utilities module for later use by diagnostics
+        !
+        call mpas_atm_diag_utils_init(stream_mgr)
 
         call diagnostic_template_setup()
 
@@ -124,6 +133,7 @@ module mpas_atm_diagnostics_manager
     !-----------------------------------------------------------------------
     subroutine mpas_atm_diag_cleanup()
 
+        use mpas_atm_diagnostics_utils, only : mpas_atm_diag_utils_finalize
         use diagnostic_template, only : diagnostic_template_cleanup
 
         implicit none
@@ -131,6 +141,11 @@ module mpas_atm_diagnostics_manager
         write(stderrUnit,*) 'mpas_atm_diag_cleanup()'
 
         call diagnostic_template_cleanup()
+
+        !
+        ! Take care of any needed cleanup in the diagnostics utility module
+        !
+        call mpas_atm_diag_utils_finalize()
 
     end subroutine mpas_atm_diag_cleanup
 
