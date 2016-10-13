@@ -498,11 +498,14 @@ class TESTRUNFAILEXC(TESTRUNPASS):
     def run_phase(self):
         raise RuntimeError("Exception from run_phase")
 
-class TESTBUILDFAIL(FakeTest):
+class TESTBUILDFAIL(TESTRUNPASS):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
-        if (not sharedlib_only):
-            expect(False, "Intentional fail for testing infrastructure")
+        if "TESTBUILDFAIL_PASS" in os.environ:
+            TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
+        else:
+            if (not sharedlib_only):
+                expect(False, "Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):
 

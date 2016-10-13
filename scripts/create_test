@@ -84,7 +84,7 @@ OR
                         help="Do not setup generated tests, implies --no-build and --no-run")
 
     parser.add_argument("-u", "--use-existing", action="store_true",
-                        help="Use pre-existing case directories. Requires test-id")
+                        help="Use pre-existing case directories they will pick up at the latest PEND state or re-run the first failed state. Requires test-id")
 
     parser.add_argument("--save-timing", action="store_true",
                         help="Enable archiving of performance data.")
