@@ -217,7 +217,7 @@ begin
   wks_type@wkPaperHeightF   = 8
   wks_type@wkPaperWidthF    = 6
 
-  filename ="test13_L60_t"+t_index
+  filename ="dcmip2012_test1-3_L60_t"+t_index
 	wks  = gsn_open_wks(wks_type,filename)
   print ("writing file: " + filename)
 

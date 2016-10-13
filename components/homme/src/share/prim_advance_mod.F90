@@ -85,6 +85,7 @@ contains
 
   end subroutine prim_advance_init
 
+#ifndef CAM
   !_____________________________________________________________________
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
 
@@ -140,6 +141,7 @@ contains
    end do
 
   end subroutine
+#endif
 
   !_____________________________________________________________________
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
@@ -246,13 +248,14 @@ contains
       eta_ave_w=ur_weights(qsplit_stage+1)! RK2 + LF scheme has tricky weights
     endif
 
+#ifndef CAM
     ! if "prescribed wind" set dynamics explicitly and skip time-integration
-
     if (prescribed_wind ==1 ) then
        call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
        call t_stopf('prim_advance_exp')
        return
     endif
+#endif
 
     ! integration = "explicit"
     !
