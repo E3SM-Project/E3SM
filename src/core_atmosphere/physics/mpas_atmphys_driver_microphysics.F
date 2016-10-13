@@ -312,28 +312,6 @@
 !local variables and arrays:
  logical:: log_microphysics
  integer:: i,icell,icount,istep,j,k,kk
- integer, pointer :: nCells, nVertLevels, index_qv !nick
- real(kind=RKIND) :: rvord
- real(kind=RKIND), dimension(:,:), pointer :: dtheta_dt_mp, theta_m
- real (kind=RKIND), dimension(:,:,:), pointer :: scalars
- 
-!nick szapiro 22-11-13: get dtheta/dt contribution from microphysics scheme
- call mpas_pool_get_dimension(mesh, 'nCells', nCells)
- call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
- call mpas_pool_get_dimension(state, 'index_qv', index_qv)
- 
- call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
- call mpas_pool_get_array(diag, 'dtheta_dt_mp', dtheta_dt_mp)
- call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
- 
- !initialize to theta before microphysics call. 
- !I think the physics call actually updates variables, not generate a tendency.
- rvord = R_v/R_d
- do icell=1,nCells
-  do k=1,nVertLevels
-    dtheta_dt_mp(k,icell) = theta_m(k,icell) / (1._RKIND + rvord * scalars(index_qv,k,icell))
-  end do
- end do
 
 !-----------------------------------------------------------------------------------------------------------------
 ! write(0,*)
