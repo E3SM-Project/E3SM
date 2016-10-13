@@ -5,7 +5,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
-from distutils.spawn import find_executable
+from CIME.utils import get_cime_root
 
 logger = logging.getLogger(__name__)
 
@@ -15,15 +15,13 @@ class Component(EntryID):
         """
         initialize an object
         """
-        # files = Files()
-        # # use xmllint to validate infile
-        # xmllint = find_executable("xmllint")
-        # if xmllint is not None:
-        #     # all components refer to the same schema so referencing config_drv_file is okay
-        #     schema = files.get_schema("CONFIG_DRV_FILE")
-        #     if schema is not None:
-        #         logger.debug("Checking file %s against %s"%(infile, schema))
-        #         run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, infile))
+        files = Files()
+        schema = files.get_schema("CONFIG_DRV_FILE")
+        if schema is not None:
+            # not checking schema on external components yet
+            cimeroot = get_cime_root()
+            if  cimeroot in os.path.abspath(infile):
+                self.validate_xml_file(infile, schema)
 
         EntryID.__init__(self,infile)
 

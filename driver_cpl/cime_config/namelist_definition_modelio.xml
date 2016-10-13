@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition.xsl"?>
+<?xml-stylesheet type="text/xsl"?>
 
-<namelist_definition version="2.0">
+<entry_id version="2.0">
 
     <!-- Each namelist variable is defined in an <entry> element.  The
      content of the element is the documentation of how the variable is
@@ -44,16 +44,13 @@
   <!-- group pio_inparm               -->
   <!-- =========================== -->
 
-  <entry id="pio_stride">
+  <entry id="pio_stride" modify_via_xml="PIO_STRIDE">
     <type>integer</type>
     <category>pio</category>
     <group>pio_inparm</group>
-    <unmodifiable_via_user_nl>
-      must be set via xml variable XXX_PIO_STRIDE, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
-    </unmodifiable_via_user_nl>
-    <description>
+    <desc>
       stride of tasks in pio used generically, component based value takes precedent.
-    </description>
+    </desc>
     <values>
     <value component="cpl">$CPL_PIO_STRIDE</value>
     <value component="atm">$ATM_PIO_STRIDE</value>
@@ -67,16 +64,13 @@
     </values>
   </entry>
 
-  <entry id="pio_root">
+  <entry id="pio_root" modify_via_xml="PIO_STRIDE">
     <type>integer</type>
     <category>pio</category>
     <group>pio_inparm</group>
-    <unmodifiable_via_user_nl>
-      must be set via xml variable XXX_PIO_ROOT, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
-    </unmodifiable_via_user_nl>
-    <description>
+    <desc>
       io task root in pio used generically, component based value takes precedent.
-    </description>
+    </desc>
     <values>
     <value component="cpl">$CPL_PIO_ROOT</value>
     <value component="atm">$ATM_PIO_ROOT</value>
@@ -90,17 +84,14 @@
     </values>
   </entry>
 
-  <entry id="pio_rearranger">
+  <entry id="pio_rearranger" modify_via_xml="PIO_REARRANGER">
     <type>integer</type>
     <category>pio</category>
     <group>pio_inparm</group>
-    <unmodifiable_via_user_nl>
-      must be set via xml variable XXX_PIO_REARRANGER, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
-    </unmodifiable_via_user_nl>
     <valid_values>-99,1,2</valid_values>
-    <description>
+    <desc>
       Rearranger method for pio 1=box, 2=subset.
-    </description>
+    </desc>
     <values>
     <value component="cpl">$CPL_PIO_REARRANGER</value>
     <value component="atm">$ATM_PIO_REARRANGER</value>
@@ -114,16 +105,13 @@
     </values>
   </entry>
 
-  <entry id="pio_numiotasks">
+  <entry id="pio_numiotasks" modify_via_xml="PIO_NUMTASKS">
     <type>integer</type>
     <category>pio</category>
     <group>pio_inparm</group>
-    <unmodifiable_via_user_nl>
-      must be set via xml variable XXX_PIO_NUMTASKS, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
-    </unmodifiable_via_user_nl>
-    <description>
+    <desc>
       number of io tasks in pio used generically, component based value takes precedent.
-    </description>
+    </desc>
     <values>
     <value component="cpl">$CPL_PIO_NUMTASKS</value>
     <value component="atm">$ATM_PIO_NUMTASKS</value>
@@ -137,18 +125,15 @@
     </values>
   </entry>
 
-  <entry id="pio_typename">
+  <entry id="pio_typename" modify_via_xml="PIO_TYPENAME">
     <type>char*64</type>
     <category>pio</category>
     <group>pio_inparm</group>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <unmodifiable_via_user_nl>
-      must be set via xml variable XXX_PIO_TYPENAME, where XXX=[ATM,OCN,ICE,LND,ROF,CPL,GLC,WAV]
-    </unmodifiable_via_user_nl>
-    <description>
+    <desc>
       io type in pio used generically, component based value takes precedent.
       valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
-    </description>
+    </desc>
     <values>
     <value component="cpl">$CPL_PIO_TYPENAME</value>
     <value component="atm">$ATM_PIO_TYPENAME</value>
@@ -170,7 +155,7 @@
     <type>char*256</type>
     <category>modelio</category>
     <group>modelio</group>
-    <description>input directory (no longer needed)</description>
+    <desc>input directory (no longer needed)</desc>
     <values>
       <value>UNSET</value>
     </values>
@@ -180,7 +165,7 @@
     <type>char*256</type>
     <category>modelio</category>
     <group>modelio</group>
-    <description>directory for output log files</description>
+    <desc>directory for output log files</desc>
     <values>
       <value>UNSET</value>
     </values>
@@ -190,10 +175,10 @@
     <type>char*256</type>
     <category>modelio</category>
     <group>modelio</group>
-    <description>name of component output log file</description>
+    <desc>name of component output log file</desc>
     <values>
     <value>UNSET</value>
     </values>
   </entry>
 
-</namelist_definition>
+</entry_id>

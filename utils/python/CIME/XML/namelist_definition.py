@@ -18,6 +18,7 @@ from CIME.namelist import fortran_namelist_base_value, \
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
+from CIME.utils import get_cime_root
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,13 @@ class NamelistDefinition(EntryID):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
         self._attributes = attributes
+        # if the file is invalid we may not be able to check the version
+        # but we need to do it this way until we remove the version 1 files
+        if self._get_version() == "2.0":
+            cimeroot = get_cime_root()
+            schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
+            self.validate_xml_file(infile, schema)
+
 
     def _get_version(self):
         version = self.root.get("version")
@@ -211,11 +219,15 @@ class NamelistDefinition(EntryID):
         name = name.lower()
         # Separate into a type, optional length, and optional size.
         type_, max_len, size = self.split_type_string(name, self.get_type_info(name))
-
+        invalid = []
         # Check value against type.
         for scalar in value:
             if not is_valid_fortran_namelist_literal(type_, scalar):
-                return False
+                invalid.append(scalar)
+        if len(invalid) > 0:
+            logger.warn("Invalid values %s"%invalid)
+            return False
+
 
         # Now that we know that the strings as input are valid Fortran, do some
         # canonicalization for further checks.
@@ -241,7 +253,10 @@ class NamelistDefinition(EntryID):
                 compare_list = valid_values
             for scalar in canonical_value:
                 if scalar not in compare_list:
-                    return False
+                    invalid.append(scalar)
+            if len(invalid) > 0:
+                logger.warn("Invalid values %s"%invalid)
+                return False
 
         # Check size of input array.
         if len(expand_literal_list(value)) > size:
