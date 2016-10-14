@@ -676,6 +676,56 @@ class O_TestTestScheduler(TestCreateTestCommon):
                 if (test_name == mem_pass_test):
                     self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_PASS_STATUS)
 
+    ###########################################################################
+    def test_c_use_existing(self):
+    ###########################################################################
+        tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL.f19_g16_rx1.A", "TESTRUNPASS.f19_g16_rx1.A"],
+                                                      self._machine, self._compiler)
+        test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True)
+
+        build_fail_test     = [item for item in tests if "TESTBUILDFAIL." in item][0]
+        pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
+
+        log_lvl = logging.getLogger().getEffectiveLevel()
+        logging.disable(logging.CRITICAL)
+        try:
+            ct.run_tests()
+        finally:
+            logging.getLogger().setLevel(log_lvl)
+
+        test_statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, test_id))
+        self.assertEqual(len(tests), len(test_statuses))
+
+        for test_status in test_statuses:
+            ts = TestStatus(test_dir=os.path.dirname(test_status))
+            test_name = ts.get_name()
+            if test_name == build_fail_test:
+                self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+            else:
+                self.assertTrue(test_name == pass_test)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PEND_STATUS)
+
+        os.environ["TESTBUILDFAIL_PASS"] = "True"
+        ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True)
+
+        log_lvl = logging.getLogger().getEffectiveLevel()
+        logging.disable(logging.CRITICAL)
+        try:
+            ct2.run_tests()
+        finally:
+            logging.getLogger().setLevel(log_lvl)
+
+        if (self._hasbatch):
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot,
+                                  expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+
+        for test_status in test_statuses:
+            ts = TestStatus(test_dir=os.path.dirname(test_status))
+            self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_PASS_STATUS)
+            self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE),         TEST_PASS_STATUS)
+
 ###############################################################################
 class P_TestJenkinsGenericJob(TestCreateTestCommon):
 ###############################################################################

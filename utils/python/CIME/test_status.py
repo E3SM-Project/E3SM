@@ -1,5 +1,26 @@
 """
-Functions for managing the TestStatus file
+Contains the crucial TestStatus class which manages phase-state of a test
+case and ensure that this state is represented by the TestStatus file in
+the case.
+
+TestStatus objects are only modifiable via the set_status method and this
+is only allowed if the object is being accessed within the context of a
+context manager. Example:
+
+    with TestStatus(test_dir=caseroot) as ts:
+        ts.set_status(RUN_PHASE, TEST_PASS_STATUS)
+
+This file also contains all of the hardcoded phase information which includes
+the phase names, phase orders, potential phase states, and which phases are
+required (core phases).
+
+Additional important design decisions:
+1) In order to ensure that incomplete tests are always left in a PEND
+   state, updating a core phase to a PASS state will automatically set the next
+   core state to PEND.
+2) If the user repeats a core state, that invalidates all subsequent state. For
+   example, if a user rebuilds their case, then any of the post-run states like the
+   RUN state are no longer valid.
 """
 
 from CIME.XML.standard_module_setup import *
@@ -16,7 +37,7 @@ TEST_FAIL_STATUS = "FAIL"
 ALL_PHASE_STATUSES = [TEST_PEND_STATUS, TEST_PASS_STATUS, TEST_FAIL_STATUS]
 
 # Special statuses that the overall test can be in
-TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in one of the COMPARE phases
+TEST_DIFF_STATUS     = "DIFF"   # Implies a failure in the BASELINE phase
 NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
 
 # Special strings that can appear in comments, indicating particular types of failures
@@ -33,7 +54,8 @@ RUN_PHASE             = "RUN"
 THROUGHPUT_PHASE      = "TPUTCOMP"
 MEMCOMP_PHASE         = "MEMCOMP"
 MEMLEAK_PHASE         = "MEMLEAK"
-COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT
+COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT, this is for internal test comparisons, there could be multiple variations of this phase in one test
+BASELINE_PHASE        = "BASELINE"
 GENERATE_PHASE        = "GENERATE"
 
 ALL_PHASES = [CREATE_NEWCASE_PHASE,
@@ -44,6 +66,7 @@ ALL_PHASES = [CREATE_NEWCASE_PHASE,
               MODEL_BUILD_PHASE,
               RUN_PHASE,
               COMPARE_PHASE,
+              BASELINE_PHASE,
               THROUGHPUT_PHASE,
               MEMCOMP_PHASE,
               MEMLEAK_PHASE,
@@ -77,6 +100,9 @@ class TestStatus(object):
         Create a TestStatus object
 
         If test_dir is not specified, it is set to the current working directory
+
+        no_io is intended only for testing, and should be kept False in
+        production code
         """
         test_dir = os.getcwd() if test_dir is None else test_dir
         self._filename = os.path.join(test_dir, TEST_STATUS_FILENAME)
@@ -110,30 +136,23 @@ class TestStatus(object):
         Update the status of this test by changing the status of given phase to the
         given status.
 
-        Key implematation details:
-        1) In order to ensure that incomplete tests are always left in a PEND
-        state, updating a core phase to a PASS state will automatically set the next
-        core state to PEND.
-        2) If the user repeats a core state, that invalidates all subsequent state. For
-        example, if a user rebuilds their case, then any of the post-run states like the
-        RUN state are no longer valid.
-
         >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
         ...     ts.set_status(CREATE_NEWCASE_PHASE, "PASS")
         ...     ts.set_status(XML_PHASE, "PASS")
         ...     ts.set_status(SETUP_PHASE, "FAIL")
         ...     ts.set_status(SETUP_PHASE, "PASS")
-        ...     ts.set_status("%s_baseline" % COMPARE_PHASE, "FAIL")
+        ...     ts.set_status("%s_base_rest" % COMPARE_PHASE, "FAIL")
         ...     ts.set_status(SHAREDLIB_BUILD_PHASE, "PASS", comments='Time=42')
         >>> ts._phase_statuses
-        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42')), ('COMPARE_baseline', ('FAIL', '')), ('MODEL_BUILD', ('PEND', ''))])
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42')), ('COMPARE_base_rest', ('FAIL', '')), ('MODEL_BUILD', ('PEND', ''))])
 
         >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
         ...     ts.set_status(CREATE_NEWCASE_PHASE, "PASS")
         ...     ts.set_status(XML_PHASE, "PASS")
         ...     ts.set_status(SETUP_PHASE, "FAIL")
         ...     ts.set_status(SETUP_PHASE, "PASS")
-        ...     ts.set_status("%s_baseline" % COMPARE_PHASE, "FAIL")
+        ...     ts.set_status(BASELINE_PHASE, "PASS")
+        ...     ts.set_status("%s_base_rest" % COMPARE_PHASE, "FAIL")
         ...     ts.set_status(SHAREDLIB_BUILD_PHASE, "PASS", comments='Time=42')
         ...     ts.set_status(SETUP_PHASE, "PASS")
         >>> ts._phase_statuses
@@ -206,11 +225,11 @@ class TestStatus(object):
         ... PASS ERS.foo.A CREATE_NEWCASE
         ... PASS ERS.foo.A XML
         ... FAIL ERS.foo.A SETUP
-        ... PASS ERS.foo.A COMPARE_baseline
+        ... PASS ERS.foo.A COMPARE_base_rest
         ... PASS ERS.foo.A SHAREDLIB_BUILD Time=42
         ... '''
         >>> _test_helper1(contents)
-        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', '')), ('COMPARE_baseline', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42'))])
+        OrderedDict([('CREATE_NEWCASE', ('PASS', '')), ('XML', ('PASS', '')), ('SETUP', ('FAIL', '')), ('COMPARE_base_rest', ('PASS', '')), ('SHAREDLIB_BUILD', ('PASS', 'Time=42'))])
         """
         for line in file_contents.splitlines():
             line = line.strip()
@@ -266,9 +285,9 @@ class TestStatus(object):
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A COMPARE_1\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'FAIL'
-        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'DIFF'
-        >>> _test_helper2('FAIL ERS.foo.A COMPARE_baseline\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD')
         'PASS'
@@ -304,7 +323,7 @@ class TestStatus(object):
                     if (rv == TEST_PASS_STATUS):
                         rv = NAMELIST_FAIL_STATUS
 
-                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == "COMPARE_baseline"):
+                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == BASELINE_PHASE):
                     rv = TEST_DIFF_STATUS
 
                 else:

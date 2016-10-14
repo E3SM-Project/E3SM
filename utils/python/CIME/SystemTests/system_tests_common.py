@@ -339,7 +339,7 @@ class SystemTestsCommon(object):
             append_status(comments, sfile="TestStatus.log")
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             ts_comments = comments if "\n" not in comments else None
-            self._test_status.set_status("%s_baseline" % COMPARE_PHASE, status, comments=ts_comments)
+            self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASECMP_CASE"))
 
             # compare memory usage to baseline
@@ -498,11 +498,14 @@ class TESTRUNFAILEXC(TESTRUNPASS):
     def run_phase(self):
         raise RuntimeError("Exception from run_phase")
 
-class TESTBUILDFAIL(FakeTest):
+class TESTBUILDFAIL(TESTRUNPASS):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
-        if (not sharedlib_only):
-            expect(False, "Intentional fail for testing infrastructure")
+        if "TESTBUILDFAIL_PASS" in os.environ:
+            TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
+        else:
+            if (not sharedlib_only):
+                expect(False, "Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):
 

@@ -305,7 +305,7 @@ sub getTestStatus
         $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";
 
         #Compare to baseline
-        my @testsummarylines = grep { /COMPARE_baseline/} @statuslines;
+        my @testsummarylines = grep { /BASELINE/} @statuslines;
         my @testsummary_arr = (split(/\s+/, $testsummarylines[0]));
         $teststatushash{$testcase}{'compare'} = ($#testsummarylines > -1) ? @testsummary_arr[0] : "----";
         $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";

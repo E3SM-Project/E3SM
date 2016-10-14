@@ -35,9 +35,6 @@ def submit(case, job=None, resubmit=False, no_batch=False):
                 with open(".original_host","w") as fd:
                     fd.write( socket.gethostname())
 
-    cimeroot = case.get_value("CIMEROOT")
-    os.environ["CIMEROOT"] = cimeroot
-
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")

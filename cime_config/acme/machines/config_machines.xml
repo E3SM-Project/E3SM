@@ -81,7 +81,7 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <arg name="thread_count" > -c {{ thread_count }}</arg>
+      <arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
 
     </arguments>
   </mpirun>
@@ -197,7 +197,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-	<arg name="thread_count" > -c {{ thread_count }}</arg>
+	<arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -475,15 +475,17 @@
       </arguments>
     </mpirun>
     <module_system type="soft">
-      <init_path lang="csh">/software/common/adm/packages/softenv-1.4.2/etc/softenv-load.csh</init_path>
-      <init_path lang="sh">/software/common/adm/packages/softenv-1.4.2/etc/softenv-load.sh</init_path>
-      <cmd_path lang="csh">source /software/common/adm/packages/softenv-1.4.2/etc/softenv-aliases.csh ; soft</cmd_path>
-      <cmd_path lang="sh">source /software/common/adm/packages/softenv-1.4.2/etc/softenv-aliases.sh ; soft</cmd_path>
+      <init_path lang="csh">/software/common/adm/packages/softenv-1.6.2/etc/softenv-load.csh</init_path>
+      <init_path lang="sh">/software/common/adm/packages/softenv-1.6.2/etc/softenv-load.sh</init_path>
+      <cmd_path lang="csh">source /software/common/adm/packages/softenv-1.6.2/etc/softenv-aliases.csh ; soft</cmd_path>
+      <cmd_path lang="sh">source /software/common/adm/packages/softenv-1.6.2/etc/softenv-aliases.sh ; soft</cmd_path>
       <modules compiler="gnu">
-	<command name="add">+gcc-5.1.0</command>
-	<command name="add" mpilib="!mpi-serial">+mpich-3.2-gcc-5.1</command>
-	<command name="add">+netcdf-4.3.3.1-parallel-gcc5.1-mpich3.2</command>
-	<command name="add" mpilib="!mpi-serial">+pnetcdf-1.6.1-gcc-5.1-mpich-3.2</command>
+	<command name="add">+gcc-6.2.0</command>
+	<command name="add">+szip-2.1-gcc-6.2.0</command>
+	<command name="add" mpilib="!mpi-serial">+mpich-3.2-gcc-6.2.0</command>
+	<command name="add">+hdf5-1.8.16-gcc-6.2.0-mpich-3.2-parallel</command>
+	<command name="add">+netcdf-4.3.3.1c-4.2cxx-4.4.2f-parallel-gcc6.2.0-mpich3.2</command>
+	<command name="add" mpilib="!mpi-serial">+pnetcdf-1.6.1-gcc-6.2.0-mpich-3.2</command>
 	<command name="add">+cmake-2.8.12</command>
       </modules>
     </module_system>
@@ -744,7 +746,7 @@
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -843,7 +845,7 @@
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1109,7 +1111,7 @@
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
         <arg name="num_tasks" > -n $TOTALPES</arg>
         <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-        <arg name="thread_count" > -d {{ thread_count }}</arg>
+        <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
         <arg name="numa_node" > -cc numa_node </arg>
       </arguments>
 
@@ -1276,7 +1278,7 @@
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
              <arg name="num_tasks" > -n $TOTALPES</arg>
              <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-             <arg name="thread_count" > -d {{ thread_count }}</arg>
+             <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
              <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
          </mpirun>
@@ -1641,7 +1643,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d {{ thread_count }}</arg>
+                <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
 </machine>
@@ -1680,7 +1682,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d {{ thread_count }} </arg>
+                <arg name="thread_count"> -d $OMP_NUM_THREADS </arg>
              </arguments>
          </mpirun>
 </machine>
