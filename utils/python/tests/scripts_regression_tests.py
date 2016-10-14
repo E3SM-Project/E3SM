@@ -679,12 +679,12 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
     def test_c_use_existing(self):
     ###########################################################################
-        tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL.f19_g16_rx1.A", "TESTRUNPASS.f19_g16_rx1.A"],
+        tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True)
 
-        build_fail_test     = [item for item in tests if "TESTBUILDFAIL." in item][0]
+        build_fail_test     = [item for item in tests if "TESTBUILDFAIL" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
 
         log_lvl = logging.getLogger().getEffectiveLevel()
@@ -718,8 +718,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
             logging.getLogger().setLevel(log_lvl)
 
         if (self._hasbatch):
-            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot,
-                                  expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
 
         for test_status in test_statuses:
             ts = TestStatus(test_dir=os.path.dirname(test_status))
@@ -1181,21 +1180,8 @@ class C_TestXMLQuery(unittest.TestCase):
 ###############################################################################
 class B_CheckCode(unittest.TestCase):
 ###############################################################################
-
-    ###########################################################################
-    def test_check_code(self):
-    ###########################################################################
-        from distutils.spawn import find_executable
-        pylint = find_executable("pylint")
-        if pylint is not None:
-            output = run_cmd_no_fail("pylint --version")
-            pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
-            major = int(pylintver.group(1))
-            minor = int(pylintver.group(2))
-        if pylint is None or major < 1 or (major == 1 and minor < 5):
-            self.skipTest("pylint version 1.5 or newer not found")
-        else:
-            run_cmd_assert_result(self, os.path.join(TOOLS_DIR, "code_checker -d 2>&1"))
+    # Tests are generated in the main loop below
+    longMessage = True
 
 # Machinery for Macros generation tests.
 
@@ -1796,7 +1782,27 @@ class S_TestManageAndQuery(unittest.TestCase):
         self._run_and_assert_query_testlist(extra_args="--list categories")
 
 ###############################################################################
+def make_pylint_test(pyfile, cimeroot):
+    def test(self):
+        code_checker = os.path.join(TOOLS_DIR, "code_checker")
+        run_cmd_assert_result(self, "PYTHONPATH=%s:%s:$PYTHONPATH %s --dir %s %s"\
+                                  %(TOOLS_DIR, LIB_DIR, code_checker, cimeroot, pyfile))
+    return test
 
+
+def check_for_pylint():
+    ###########################################################################
+    from distutils.spawn import find_executable
+    pylint = find_executable("pylint")
+    if pylint is not None:
+        output = run_cmd_no_fail("pylint --version")
+        pylintver = re.search(r"pylint\s+(\d+)[.](\d+)[.](\d+)", output)
+        major = int(pylintver.group(1))
+        minor = int(pylintver.group(2))
+    if pylint is None or major < 1 or (major == 1 and minor < 5):
+        print "pylint version 1.5 or newer not found, pylint tests skipped"
+        return False
+    return True
 
 def _main_func():
 
@@ -1820,6 +1826,26 @@ def _main_func():
             setattr(args, log_param, False)
 
     CIME.utils.handle_standard_logging_options(args)
+
+    # Find all python files in repo and create a pylint test for each
+    if check_for_pylint():
+        cimeroot = CIME.utils.get_cime_root()
+        files_to_test = run_cmd_no_fail("git ls-files --full-name %s"%cimeroot).splitlines()
+        files_to_test = [item for item in files_to_test if item.endswith(".py")]
+        files_to_test.extend(run_cmd_no_fail("git grep -l '#!/usr/bin/env python'",
+                                        from_dir=cimeroot).splitlines())
+        #TODO - get rid of this
+        list_of_directories_to_ignore = ("scripts/Tools", "point_clm", "tools", "machines", "apidocs", "unit_test")
+        for file_ in files_to_test:
+            # Dont test template files
+            test_this = True
+            for dir_ in list_of_directories_to_ignore:
+                if dir_ in file_:
+                    test_this = False
+                    break
+            if test_this:
+                pylint_test = make_pylint_test(file_, cimeroot)
+                setattr(B_CheckCode, 'test_pylint_%s'%os.path.basename(file_), pylint_test)
 
     unittest.main(verbosity=2, catchbreak=True)
 

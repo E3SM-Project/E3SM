@@ -132,11 +132,11 @@ class Testlist(GenericXML):
         return tests
 
     def get_tests(self, machine=None, category=None, compiler=None):
-        if self.version == "1.0":
+        if self.get_version() == "1.0":
             return self._get_testsv1(machine, category, compiler)
-        elif self.version == "2.0":
+        elif self.get_version() == "2.0":
             return self._get_testsv2(machine, category, compiler)
         else:
             logger.critical("Did not recognize testlist file version %s for file %s"
-                             % (self.version, self.filename))
+                             % (self.get_version(), self.filename))
 

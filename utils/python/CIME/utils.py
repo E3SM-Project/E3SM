@@ -20,9 +20,9 @@ def expect(condition, error_msg, exc_type=SystemExit):
     SystemExit: ERROR: error2
     """
     if (not condition):
-        # Uncomment these to bring up a debugger when an expect fails
-        #import pdb
-        #pdb.set_trace()
+        if logger.isEnabledFor(logging.DEBUG):
+            import pdb
+            pdb.set_trace()
         raise exc_type("ERROR: %s" % error_msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):

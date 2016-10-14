@@ -18,7 +18,6 @@ class GenericXML(object):
 
         logger.debug("Initializing %s" , infile)
         self.tree = None
-        self.version = None
 
         if infile == None:
             # if file is not defined just return
@@ -38,7 +37,6 @@ class GenericXML(object):
 
             self.filename = infile
             root = ET.Element("xml")
-            root.set("version", "1.0")
             self.root = ET.SubElement(root, "file")
             self.root.set("id", os.path.basename(infile))
             self.tree = ET.ElementTree(root)
@@ -53,9 +51,13 @@ class GenericXML(object):
         else:
             self.tree = ET.parse(infile)
             self.root = self.tree.getroot()
-        self.version = self.root.get("version")
-        self.version = "1.0" if self.version is None else self.version
-        logger.debug("File version is "+self.version)
+
+        logger.debug("File version is "+self.get_version())
+
+    def get_version(self):
+        version = self.root.get("version")
+        version = "1.0" if version is None else version
+        return version
 
     def write(self, outfile=None):
         """
@@ -125,7 +127,8 @@ class GenericXML(object):
 
             for key, value in attributes.iteritems():
                 if value is not None:
-                    expect(isinstance(value, str), " Bad value passed for key %s"%key)
+                    expect(isinstance(value, basestring),
+                           " Bad value passed for key %s"%key)
                     xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
                     logger.debug("xpath is %s"%xpath)
 
@@ -241,3 +244,17 @@ class GenericXML(object):
         subnode.text = subnode_text
         node.append(subnode)
         return node
+
+    def validate_xml_file(self, filename, schema):
+        """
+        validate an XML file against a provided schema file using pylint
+        """
+        expect(os.path.isfile(filename),"xml file not found %s"%filename)
+        expect(os.path.isfile(schema),"schema file not found %s"%schema)
+        xmllint = find_executable("xmllint")
+        if xmllint is not None:
+            logger.debug("Checking file %s against schema %s"%(filename, schema))
+            run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, filename))
+        else:
+            logger.warn("xmllint not found, could not validate file %s"%filename)
+

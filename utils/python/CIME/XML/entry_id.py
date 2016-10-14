@@ -47,7 +47,7 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_value_match(self, vid, attributes=None):
+    def get_value_match(self, vid, attributes=None, exact_match=False):
         # Handle this case:
         # <entry id ...>
         #  <values>
@@ -57,98 +57,88 @@ class EntryID(GenericXML):
         #  </values>
         # </entry>
 
-        node = self.get_optional_node(vid)
+        node = self.get_optional_node("entry", {"id":vid})
         value = None
         if node is not None:
-            value = self._get_value_match(node, attributes)
+            value = self._get_value_match(node, attributes, exact_match)
+        logger.debug("(get_value_match) vid %s value %s"%(vid, value))
         return value
 
-    def _get_value_match(self, node, attributes=None):
+    def _get_value_match(self, node, attributes=None, exact_match=False):
         '''
         Note that the component class has a specific version of this function
         '''
-        match_value = None
-        match_max = -1
-        match_count = 0
-        expect(node is not None," Empty node in _get_value_match")
+        # Store nodes that match the attributes and their scores.
+        matches = []
+        nodes = self.get_nodes("value", root=node)
+        for vnode in nodes:
+            # For each node in the list start a score.
+            score = 0
+            for attribute in vnode.keys():
+                # For each attribute, add to the score.
+                score += 1
+                # If some attribute is specified that we don't know about,
+                # or the values don't match, it's not a match we want.
+                if exact_match:
+                    if attribute not in attributes or \
+                            attributes[attribute] != vnode.get(attribute):
+                        score = -1
+                        break
+                else:
+                    if attribute not in attributes or \
+                            not re.search(vnode.get(attribute),
+                                          attributes[attribute]):
+                        score = -1
+                        break
 
-        values = self.get_optional_node("values", root=node)
-        if values is None:
-            return
+            # Add valid matches to the list.
+            if score >= 0:
+                matches.append((score, vnode))
 
-        for valnode in self.get_nodes("value", root=values):
-            # loop through all the keys in valnode (value nodes) attributes
-            if len(valnode.attrib) == 0:
-                match_count = 0
-            else:
-                for key,value in valnode.attrib.iteritems():
-                    # determine if key is in attributes dictionary
-                    match_count = 0
-                    if attributes is not None and key in attributes:
-                        if re.search(value, attributes[key]):
-                            logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
-                            match_count += 1
-                        else:
-                            match_count = -1
-                            break
+        if not matches:
+            return None
 
-            if match_count > match_max:
-                match_max = match_count
-                match_value = valnode.text
-            elif match_count == match_max:
-                logger.debug("Ambiguous match for node '%s' for attributes '%s', falling back to order precedence" %
-                             (node.attrib["id"], attributes))
+        # Get maximum score using custom `key` function, extract the node.
+        _, mnode = max(matches, key=lambda x: x[0])
 
-        return match_value
+        return mnode.text
 
-    def _get_type_info(self, node):
-        type_node = self.get_optional_node("type", root=node)
-        if type_node is not None:
-            return type_node.text
-        else:
-            # Default to string
-            return "char"
-
-    def get_type_info(self, vid):
+    def get_node_element_info(self, vid, element_name):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
             return None
         else:
-            return self._get_type_info(node)
+            return self._get_node_element_info(node, element_name)
+
+    def _get_node_element_info(self, node, element_name):
+        element_node = self.get_optional_node(element_name, root=node)
+        if element_node is not None:
+            return element_node.text
+        return None
+
+    def _get_type_info(self, node):
+        val = self._get_node_element_info(node, "type")
+        if val is None:
+            return "char"
+        return val
+
+    def get_type_info(self, vid):
+        val = self.get_node_element_info(vid, "type")
+        if val is None:
+            return "char"
+        return val
 
     def _get_default(self, node):
-        default = self.get_optional_node("default_value", root=node)
-        if default is not None:
-            return default.text
-        else:
-            return None
-
-    # Get type description , expect child with tag "type" for node
-    def _get_type (self, node):
-        type_node = self.get_optional_node("type", root=node)
-        if type_node is not None:
-            return type_node.text
-        else:
-            # Default to string
-            return "char"
+        return self._get_node_element_info(node, "default_value")
 
     # Get description , expect child with tag "description" for parent node
     def _get_description (self, node):
-        type_node = self.get_optional_node("desc", root=node)
-        if type_node is not None:
-            return type_node.text
-        else:
-            return None
+        return self._get_node_element_info(node, "desc")
 
     # Get group , expect node with tag "group"
     # entry id nodes are children of group nodes
     def _get_group (self, node):
-
-        if node is not None:
-            return node.get('id')
-        else:
-            # Default to None
-            return None
+        return self._get_node_element_info(node, "group")
 
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
         """
@@ -286,7 +276,7 @@ class EntryID(GenericXML):
                 g       = self._get_group(group)
                 val     = node.attrib['value']
                 attr    = node.attrib['id']
-                t       = self._get_type(node)
+                t       = self._get_type_info(node)
                 desc    = self._get_description(node)
                 default = self._get_default(node)
                 file_   = None

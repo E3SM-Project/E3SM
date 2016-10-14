@@ -11,7 +11,6 @@ from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root
 from copy import deepcopy
 
-
 logger = logging.getLogger(__name__)
 
 # pragma pylint: disable=attribute-defined-outside-init
@@ -143,7 +142,7 @@ class EnvBatch(EnvBase):
                         group_name = root.get('id')
 
                     val             = node.get('value')
-                    attribute_type  = self._get_type(node)
+                    attribute_type  = self._get_type_info(node)
                     desc            = self._get_description(node)
                     default         = super(EnvBatch , self)._get_default(node)
                     filename        = self.filename
