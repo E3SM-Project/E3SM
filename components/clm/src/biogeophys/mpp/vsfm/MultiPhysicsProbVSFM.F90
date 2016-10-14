@@ -1473,7 +1473,7 @@ contains
   end subroutine VSFMMPPGovEqnSetCouplingVars
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetupProblem(this)
+  subroutine VSFMMPPSetupProblem(this, dyn_linesearch)
     !
     ! !DESCRIPTION:
     ! Sets up the PETSc related data structure
@@ -1486,6 +1486,7 @@ contains
     !
     ! !ARGUMENTS
     class(mpp_vsfm_type) :: this
+    PetscBool, optional  :: dyn_linesearch
 
     select case(this%solver_type)
     case (PETSC_SNES)
@@ -1497,6 +1498,10 @@ contains
 
     this%sysofeqns%solver_type = this%solver_type
     this%sysofeqns%itype       = SOE_RE_ODE
+
+    if (present(dyn_linesearch)) then
+       this%sysofeqns%use_dynamic_linesearch = dyn_linesearch
+    endif
 
   end subroutine VSFMMPPSetupProblem
 

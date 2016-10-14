@@ -53,6 +53,8 @@ module SystemOfEquationsBaseType
      PetscInt                        :: cumulative_newton_iterations ! Total number of Newton iterations
      PetscInt                        :: cumulative_linear_iterations ! Total number of Linear iterations
 
+     PetscBool                       :: use_dynamic_linesearch       ! Try another linesearch before cutting timestep
+
      PetscInt                        :: solver_type                  ! type of PETSc equation being solved (KSP, SNES, TS)
      DM                              :: dm                           ! PETSc DM
      TS                              :: ts                           ! PETSc TS
@@ -118,6 +120,8 @@ contains
 
     this%cumulative_newton_iterations = 0
     this%cumulative_linear_iterations = 0
+
+    this%use_dynamic_linesearch       = PETSC_FALSE
 
     this%solver_type                  = 0
     this%dm                           = 0
@@ -391,7 +395,6 @@ contains
     ! Solves SoE via PETSc SNES
     !
     ! !USES
-    use clm_varctl       , only : vsfm_use_dynamic_linesearch
     !
     implicit none
 #include "finclude/petscsys.h"
@@ -510,7 +513,7 @@ contains
 
           linesearch_iter = linesearch_iter + 1
 
-          if (vsfm_use_dynamic_linesearch .and. linesearch_iter < max_linesearch_iter) then
+          if (soe%use_dynamic_linesearch .and. linesearch_iter < max_linesearch_iter) then
              ! Let's try another linesearch
              write(iulog,*),'On proc ', soe%mpi_rank, ' time_step = ', soe%nstep, &
                   linesearch_name // ' unsuccessful. Trying another one.'
