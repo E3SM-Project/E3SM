@@ -18,7 +18,6 @@ class GenericXML(object):
 
         logger.debug("Initializing %s" , infile)
         self.tree = None
-        self.version = None
 
         if infile == None:
             # if file is not defined just return
@@ -53,9 +52,13 @@ class GenericXML(object):
         else:
             self.tree = ET.parse(infile)
             self.root = self.tree.getroot()
-        self.version = self.root.get("version")
-        self.version = "1.0" if self.version is None else self.version
-        logger.debug("File version is "+self.version)
+
+        logger.debug("File version is "+self.get_version())
+
+    def get_version(self):
+        version = self.root.get("version")
+        version = "1.0" if version is None else version
+        return version
 
     def write(self, outfile=None):
         """

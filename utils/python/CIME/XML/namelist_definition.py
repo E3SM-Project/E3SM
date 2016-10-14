@@ -42,17 +42,10 @@ class NamelistDefinition(EntryID):
         self._attributes = attributes
         # if the file is invalid we may not be able to check the version
         # but we need to do it this way until we remove the version 1 files
-        if self._get_version() == "2.0":
+        if self.get_version() == "2.0":
             cimeroot = get_cime_root()
             schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
             self.validate_xml_file(infile, schema)
-
-
-    def _get_version(self):
-        version = self.root.get("version")
-        if version is None:
-            return "1.0"
-        return version
 
     def get_entries(self):
         """Return all variables in the namelist definition file
@@ -89,9 +82,9 @@ class NamelistDefinition(EntryID):
         # Returns a list from a comma seperated string in xml
         valid_values = ''
         elem = self.get_optional_node("entry", attributes={'id': name})
-        if self._get_version() == "1.0":
+        if self.get_version() == "1.0":
             valid_values = elem.get('valid_values')
-        elif self._get_version() == "2.0":
+        elif self.get_version() == "2.0":
             valid_values = self._get_node_element_info(elem, "valid_values")
         if valid_values == '':
             valid_values = None
@@ -346,27 +339,27 @@ class NamelistDefinition(EntryID):
     def get_input_pathname(self, name):
         elem = self.get_optional_node("entry", attributes={'id': name})
 
-        if self._get_version() == "1.0":
+        if self.get_version() == "1.0":
             input_pathname = elem.get('input_pathname')
-        elif self._get_version() == "2.0":
+        elif self.get_version() == "2.0":
             input_pathname = self._get_node_element_info(elem, "input_pathname")
         return(input_pathname)
 
     def get_type_info(self, name):
         elem = self.get_optional_node("entry", attributes={'id': name})
 
-        if self._get_version() == "1.0":
+        if self.get_version() == "1.0":
             type_info = elem.get('type')
-        elif self._get_version() == "2.0":
+        elif self.get_version() == "2.0":
             type_info = self._get_type_info(elem)
         return(type_info)
 
     def get_group_name(self, name):
         elem = self.get_optional_node("entry", attributes={'id': name})
 
-        if self._get_version() == "1.0":
+        if self.get_version() == "1.0":
             group = elem.get('group')
-        elif self._get_version() == "2.0":
+        elif self.get_version() == "2.0":
             group = self._get_node_element_info(elem, "group")
         return(group)
 
