@@ -37,7 +37,6 @@ class GenericXML(object):
 
             self.filename = infile
             root = ET.Element("xml")
-            root.set("version", "1.0")
             self.root = ET.SubElement(root, "file")
             self.root.set("id", os.path.basename(infile))
             self.tree = ET.ElementTree(root)

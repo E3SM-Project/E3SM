@@ -138,5 +138,5 @@ class Testlist(GenericXML):
             return self._get_testsv2(machine, category, compiler)
         else:
             logger.critical("Did not recognize testlist file version %s for file %s"
-                             % (self.version, self.filename))
+                             % (self.get_version(), self.filename))
 
