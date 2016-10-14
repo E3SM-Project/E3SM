@@ -24,7 +24,6 @@ OBJS = \
 	module_mp_radar.o              \
 	module_mp_thompson.o           \
 	module_mp_thompson_cldfra3.o   \
-	module_mp_wsm6.o               \
 	module_mp_wsm6.wrf-3.8.1.o     \
 	module_ra_cam.o                \
 	module_ra_cam_support.o        \
@@ -76,10 +75,6 @@ module_mp_thompson.o: \
 	module_mp_radar.o \
 	../mpas_atmphys_functions.o \
 	../mpas_atmphys_utilities.o
-
-module_mp_wsm6.o: \
-	libmassv.o \
-	module_mp_radar.o
 
 module_ra_cam.o: \
 	module_cam_support.o \
