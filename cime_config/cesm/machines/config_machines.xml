@@ -1354,6 +1354,7 @@
 	<command name="load">gmake/4.1</command>
 	<command name="load">python</command>
 	<command name="load">all-python-libs</command>
+	<command name="load">git</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/15.0.3</command>

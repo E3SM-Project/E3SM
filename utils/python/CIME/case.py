@@ -10,7 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_build_threaded
+from CIME.utils                     import get_build_threaded, get_current_commit
 from CIME.XML.build                 import Build
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -688,6 +688,7 @@ class Case(object):
 
         # Turn on short term archiving as cesm default setting
         model = get_model()
+        self.set_model_version(model)
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
         if test:
@@ -979,3 +980,29 @@ class Case(object):
             mpi_arg_string += " : "
 
         return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+
+
+    def set_model_version(self, model):
+        version = "unknown"
+        if model == "cesm":
+            srcroot = self.get_value("SRCROOT")
+            changelog = os.path.join(srcroot,"ChangeLog")
+            expect(os.path.isfile(changelog), " No CESM ChangeLog file found")
+            for line in open(changelog, "r"):
+                m = re.search("Tag name: (cesm.*)$", line)
+                if m is not None:
+                    version = m.group(1)
+                    break
+        elif model == "acme":
+            cimeroot = self.get_value("CIMEROOT")
+            version = get_current_commit(True, cimeroot)
+        self.set_value("MODEL_VERSION", version)
+
+
+
+
+
+
+
+
+
