@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, get_current_commit
+from CIME.utils import touch, gzip_existing_file
 
 import tarfile, getpass, signal, glob, shutil
 
@@ -30,7 +30,6 @@ def save_build_provenance_acme(case, lid=None):
     exeroot = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
     lid = os.environ["LID"] if lid is None else lid
-    case.set_value("MODEL_VERSION",get_current_commit(True, cimeroot))
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.%s" % lid)
     if os.path.exists(describe_prov):
@@ -73,23 +72,13 @@ def save_build_provenance_acme(case, lid=None):
                 os.remove(generic_name)
             os.symlink(the_match, generic_name)
 
+
 def save_build_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
     version = case.get_value("MODEL_VERSION")
     # version has already been recorded
-    if version != "unknown":
-        return
-    srcroot = case.get_value("SRCROOT")
-    changelog = os.path.join(srcroot,"ChangeLog")
-    expect(os.path.isfile(changelog), " No CESM ChangeLog file found")
-    for line in open(changelog, "r"):
-        m = re.search("Tag name: (cesm.*)$", line)
-        if m is not None:
-            version = m.group(1)
-            break
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "README.case"), "a") as fd:
         fd.write("CESM version is %s\n"%version)
-    case.set_value("MODEL_VERSION", version)
 
 def save_build_provenance(case, lid=None):
     model = case.get_value("MODEL")

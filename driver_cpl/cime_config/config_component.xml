@@ -3575,7 +3575,7 @@
    <type>char</type>
    <default_value>unknown</default_value>
    <group>case_der</group>
-   <file>env_build.xml</file>
+   <file>env_case.xml</file>
    <desc>Apparent version of the model used for this case</desc>
  </entry>
 
