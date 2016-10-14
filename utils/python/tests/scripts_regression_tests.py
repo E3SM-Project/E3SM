@@ -679,12 +679,12 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
     def test_c_use_existing(self):
     ###########################################################################
-        tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL.f19_g16_rx1.A", "TESTRUNPASS.f19_g16_rx1.A"],
+        tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True)
 
-        build_fail_test     = [item for item in tests if "TESTBUILDFAIL." in item][0]
+        build_fail_test     = [item for item in tests if "TESTBUILDFAIL" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
 
         log_lvl = logging.getLogger().getEffectiveLevel()
@@ -718,8 +718,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
             logging.getLogger().setLevel(log_lvl)
 
         if (self._hasbatch):
-            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot,
-                                  expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot)
 
         for test_status in test_statuses:
             ts = TestStatus(test_dir=os.path.dirname(test_status))
