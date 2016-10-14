@@ -382,6 +382,7 @@
       <queue walltimemax="24:00" jobmin="1" jobmax="8" >caldera</queue>
       <queue walltimemax="12:00" jobmin="9" jobmax="16384" default="true">regular</queue>
       <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
+      <queue walltimemax="12:00" jobmin="1" jobmax="16384">premium</queue>
     </queues>
   </batch_system>
 
