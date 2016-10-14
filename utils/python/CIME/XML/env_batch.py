@@ -34,12 +34,10 @@ class EnvBatch(EnvBase):
         """
         val = None
         if item == "JOB_WALLCLOCK_TIME":
-            """
-            Most systems use %H:%M:%S format for wallclock but LSF
-            uses %H:%M this code corrects the value passed in to be
-            the correct format - if we find we have more exceptions
-            than this we may need to generalize this further
-            """
+            #Most systems use %H:%M:%S format for wallclock but LSF
+            #uses %H:%M this code corrects the value passed in to be
+            #the correct format - if we find we have more exceptions
+            #than this we may need to generalize this further
             walltime_format = self.get_value("walltime_format", subgroup=None)
             if walltime_format is not None and walltime_format.count(":") != value.count(":"): # pylint: disable=maybe-no-member
                 if value.count(":") == 1:
@@ -275,10 +273,8 @@ class EnvBatch(EnvBase):
             walltime = self.get_max_walltime(queue) if walltime is None else walltime
             if walltime is None:
                 logger.warn("Could not find a queue matching task count %d, falling back to depreciated default walltime parameter"%task_count)
-                """
-                if the user names a queue which is not defined in config_batch.xml and does not set a
-                walltime, fall back to the max walltime in the default queue
-                """
+                #if the user names a queue which is not defined in config_batch.xml and does not set a
+                #walltime, fall back to the max walltime in the default queue
                 if force_queue:
                     self.get_default_queue()
                 walltime = self._default_walltime
