@@ -790,11 +790,12 @@ contains
     !
     ! !USES:
     use MultiPhysicsProbConstants , only : GE_RE
+    use MultiPhysicsProbConstants , only : MESH_CLM_SOIL_COL
     !
     ! !ARGUMENTS
     implicit none
 
-    call vsfm_mpp%AddGovEqn(GE_RE, 'Richards Equation ODE')
+    call vsfm_mpp%AddGovEqn(GE_RE, 'Richards Equation ODE', MESH_CLM_SOIL_COL)
 
     call vsfm_mpp%SetMeshesOfGoveqns()
     

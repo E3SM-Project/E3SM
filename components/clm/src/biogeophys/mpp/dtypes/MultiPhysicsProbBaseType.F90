@@ -143,6 +143,8 @@ contains
     !
     use MultiPhysicsProbConstants, only : MPP_VSFM_SNES_CLM
     use MultiPhysicsProbConstants, only : MPP_THERMAL_TBASED_KSP_CLM
+    use MultiPhysicsProbConstants, only : MPP_THERMAL_EBASED_SNES_CLM
+    use MultiPhysicsProbConstants, only : MPP_TH_SNES_CLM
     use MultiPhysicsProbConstants, only : PETSC_SNES
     use MultiPhysicsProbConstants, only : PETSC_KSP
     use MultiPhysicsProbConstants, only : SOE_RE_ODE
@@ -155,7 +157,7 @@ contains
     PetscInt                          :: id
 
     select case (id)
-    case (MPP_VSFM_SNES_CLM)
+    case (MPP_VSFM_SNES_CLM, MPP_THERMAL_EBASED_SNES_CLM, MPP_TH_SNES_CLM)
        this%id                    = id
        this%solver_type           = PETSC_SNES
 

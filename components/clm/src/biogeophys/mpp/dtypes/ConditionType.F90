@@ -14,22 +14,25 @@ module ConditionType
 
   type, public :: condition_type
 
-     character (len=256)                :: name                   ! name for condition
-     character (len=256)                :: units                  ! units
+     character (len=256)                :: name                       ! name for condition
+     character (len=256)                :: units                      ! units
 
-     PetscInt                           :: id                     ! identifier of condition within the list
-     PetscInt                           :: itype                  ! identifier for type of condition
-     PetscInt                           :: region_itype           ! identifier for region
+     PetscInt                           :: id                         ! identifier of condition within the list
+     PetscInt                           :: itype                      ! identifier for type of condition
+     PetscInt                           :: region_itype               ! identifier for region
      PetscInt                           :: ncells
-     PetscReal, pointer                 :: value(:)               ! Magnitude of the condition
+     PetscReal, pointer                 :: value(:)                   ! Magnitude of the condition
 
-     PetscInt                           :: list_id_of_other_goveq ! List ID of other governing equation
-     PetscInt                           :: itype_of_other_goveq   ! Type of other governing equation (e.g. GE_THERM_SSW_TBASED, GE_THERM_SNOW_TBASED, etc)
-     PetscBool                          :: swap_order             ! FALSE(default): "upwind cell  " = BC; "downwind cell" = Internal cell
-                                                                  ! TRUE          : "downwind cell" = BC; "upwind cell  " = Internal cell
+     PetscInt                           :: num_other_goveqs           ! Number of other governing equations
+     PetscInt, pointer                  :: list_id_of_other_goveqs(:) ! List ID of other governing equations
+     PetscInt, pointer                  :: itype_of_other_goveqs(:)   ! Type of other governing equations (e.g. GE_THERM_SSW_TBASED, GE_THERM_SNOW_TBASED, etc)
+     PetscBool                          :: swap_order                 ! FALSE(default): "upwind cell  " = BC; "downwind cell" = Internal cell
+                                                                      ! TRUE          : "downwind cell" = BC; "upwind cell  " = Internal cell
+     PetscBool, pointer                 :: swap_order_of_other_goveqs(:)
+     PetscBool, pointer                 :: coupled_via_intauxvar_with_other_goveqns(:)
 
-     type(connection_set_type), pointer :: conn_set               ! Applicable to BC condition type
-     type(condition_type), pointer      :: next                   ! Pointer to next condition
+     type(connection_set_type), pointer :: conn_set                   ! Applicable to BC condition type
+     type(condition_type), pointer      :: next                       ! Pointer to next condition
 
   end type condition_type
 
@@ -71,13 +74,16 @@ contains
     cond%region_itype           = -1
     cond%ncells                 = 0
 
-    cond%list_id_of_other_goveq = -1
-    cond%itype_of_other_goveq   = -1
+    cond%num_other_goveqs       = 0
     cond%swap_order             = PETSC_FALSE
 
-    nullify(cond%value    )
-    nullify(cond%conn_set )
-    nullify(cond%next     )
+    nullify(cond%value                                   )
+    nullify(cond%list_id_of_other_goveqs                 )
+    nullify(cond%itype_of_other_goveqs                   )
+    nullify(cond%conn_set                                )
+    nullify(cond%next                                    )
+    nullify(cond%swap_order_of_other_goveqs              )
+    nullify(cond%coupled_via_intauxvar_with_other_goveqns)
 
     ConditionNew => cond
 

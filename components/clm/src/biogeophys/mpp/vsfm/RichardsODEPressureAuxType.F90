@@ -4,8 +4,8 @@ module RichardsODEPressureAuxType
 
   ! !USES:
   use mpp_varctl          , only : iulog
-  use mpp_abortutils          , only : endrun
-  use mpp_shr_log_mod         , only : errMsg => shr_log_errMsg
+  use mpp_abortutils      , only : endrun
+  use mpp_shr_log_mod     , only : errMsg => shr_log_errMsg
   use PorosityFunctionMod , only : porosity_params_type
   use SaturationFunction  , only : saturation_params_type
   !
@@ -46,10 +46,12 @@ module RichardsODEPressureAuxType
      PetscReal :: den             ! [kg m^{-3}]
 
      PetscReal :: dvis_dP         ! [s]
+     PetscReal :: dvis_dT         ! [Pa s K^{-1}]
      PetscReal :: dpor_dP         ! [Pa^{-1}]
      PetscReal :: dkr_dP          ! [Pa^{-1}]
      PetscReal :: dsat_dP         ! [Pa^{-1}]
      PetscReal :: dden_dP         ! [kg m^{-3} Pa^{-1}]
+     PetscReal :: dden_dT         ! [kmol m^{-3} K^{-1}]
 
      type(porosity_params_type)   :: porParams
      type(saturation_params_type) :: satParams
@@ -101,10 +103,13 @@ contains
 
     this%vis                     = 0.d0
     this%dvis_dP                 = 0.d0
+    this%dvis_dT                 = 0.d0
     this%dpor_dP                 = 0.d0
     this%dkr_dP                  = 0.d0
     this%dsat_dP                 = 0.d0
     this%dden_dP                 = 0.d0
+    this%dden_dT                 = 0.d0
+
     this%density_type            = DENSITY_CONSTANT
 
   end subroutine RichODEPressureAuxVarInit
@@ -238,8 +243,6 @@ contains
     !
     ! !ARGUMENTS
     class(rich_ode_pres_auxvar_type)   :: this
-    !
-    ! LOCAL VARIABLES
 
     ! Compute saturation
     call SatFunc_PressToSat(this%satParams , &
@@ -261,14 +264,16 @@ contains
          this%temperature                           , &
          this%density_type                          , &
          this%den                                   , &
-         this%dden_dP                                 &
+         this%dden_dP                               , &
+         this%dden_dT                                 &
          )
 
     ! Compute viscosity
     call Viscosity(this%pressure                    , &
          this%temperature                           , &
          this%vis                                   , &
-         this%dvis_dP                                 &
+         this%dvis_dP                               , &
+         this%dvis_dT                                 &
          )
 
     ! Compute porosity

@@ -22,22 +22,29 @@ module MultiPhysicsProbConstants
   ! mpp_itype
   PetscInt, parameter, public :: MPP_VSFM_SNES_CLM                 = 11
   PetscInt, parameter, public :: MPP_THERMAL_TBASED_KSP_CLM        = 12
+  PetscInt, parameter, public :: MPP_THERMAL_EBASED_SNES_CLM       = 13
+  PetscInt, parameter, public :: MPP_TH_SNES_CLM                   = 14
 
   ! soe_itype
   PetscInt, parameter, public :: SOE_RE_ODE                        = 101
   PetscInt, parameter, public :: SOE_THERMAL_TBASED                = 102
+  PetscInt, parameter, public :: SOE_THERMAL_EBASED                = 103
+  PetscInt, parameter, public :: SOE_TH                            = 104
 
   ! ge_itype
   PetscInt, parameter, public :: GE_RE                             = 201
   PetscInt, parameter, public :: GE_THERM_SOIL_TBASED              = 202
   PetscInt, parameter, public :: GE_THERM_SNOW_TBASED              = 203
   PetscInt, parameter, public :: GE_THERM_SSW_TBASED               = 204
+  PetscInt, parameter, public :: GE_THERM_SOIL_EBASED              = 205
 
   ! mesh_itype
   PetscInt, parameter, public :: MESH_CLM_SOIL_COL                 = 301
   PetscInt, parameter, public :: MESH_CLM_THERMAL_SOIL_COL         = 302
   PetscInt, parameter, public :: MESH_CLM_SNOW_COL                 = 303
   PetscInt, parameter, public :: MESH_CLM_SSW_COL                  = 304
+  PetscInt, parameter, public :: MESH_SPAC_ROOT_COL                = 305
+  PetscInt, parameter, public :: MESH_SPAC_XYLEM_COL               = 306
   PetscInt, parameter, public :: MESH_ALONG_GRAVITY                = 311
   PetscInt, parameter, public :: MESH_AGAINST_GRAVITY              = 312
 

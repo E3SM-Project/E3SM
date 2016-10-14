@@ -64,6 +64,11 @@ module MeshType
   end type mesh_type
 
   public :: MeshCreateConnectionSet
+
+  interface MeshCreateConnectionSet
+    module procedure MeshCreateConnectionSet1
+    module procedure MeshCreateConnectionSet2
+  end interface
   !------------------------------------------------------------------------
 
 contains
@@ -471,7 +476,7 @@ contains
   end subroutine CreateFromCLMCols
 
 !------------------------------------------------------------------------
-  subroutine MeshCreateConnectionSet(mesh, region_itype, conn_set, ncells_local, &
+  subroutine MeshCreateConnectionSet1(mesh, region_itype, conn_set, ncells_local, &
        soil_top_cell_offset, use_clm_dist_to_interface, begc, endc, z, zi)
     !
     ! !DESCRIPTION:
@@ -646,7 +651,79 @@ contains
 
     ncells_local = nconn
 
-  end subroutine MeshCreateConnectionSet
+  end subroutine MeshCreateConnectionSet1
+
+  !------------------------------------------------------------------------
+  subroutine MeshCreateConnectionSet2(this, conn_type, nconn, id_up, id_dn, &
+       dist_up, dist_dn, area, unit_vec, conn_set)
+    !
+    ! !DESCRIPTION:
+    ! Creates a connection set based on information passed
+    !
+    use ConnectionSetType         , only : connection_set_type
+    use ConnectionSetType         , only : ConnectionSetListAddSet
+    use ConnectionSetType         , only : ConnectionSetNew
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mesh_type)                  :: this
+    PetscInt                          :: conn_type
+    PetscInt                          :: nconn
+    PetscInt, pointer                 :: id_up(:)
+    PetscInt, pointer                 :: id_dn(:)
+    PetscReal, pointer                :: dist_up(:)
+    PetscReal, pointer                :: dist_dn(:)
+    PetscReal, pointer                :: area(:)
+    PetscReal, pointer, optional      :: unit_vec(:,:)
+    type(connection_set_type),pointer :: conn_set
+    !
+    ! !LOCAL VARIABLES:
+    PetscInt                          :: iconn
+    PetscReal                         :: dist_x
+    PetscReal                         :: dist_y
+    PetscReal                         :: dist_z
+    PetscReal                         :: dist
+
+    conn_set => ConnectionSetNew(nconn)
+
+    do iconn = 1, nconn
+
+       if (id_up(iconn) > this%ncells_all) then
+          write(iulog,*)'Cell id up is greater than total number of cells '
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       if (id_dn(iconn) > this%ncells_all) then
+          write(iulog,*)'Cell id down is greater than total number of cells '
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       conn_set%id_up(iconn) = id_up(iconn)
+       conn_set%id_dn(iconn) = id_dn(iconn)
+       conn_set%area(iconn)  = area(iconn)
+
+       conn_set%dist_up(iconn) = dist_up(iconn)
+       conn_set%dist_dn(iconn) = dist_dn(iconn)
+
+       if (.not.present(unit_vec)) then
+          dist_x = this%x(id_dn(iconn)) - this%x(id_up(iconn))
+          dist_y = this%y(id_dn(iconn)) - this%y(id_up(iconn))
+          dist_z = this%z(id_dn(iconn)) - this%z(id_up(iconn))
+          dist   = (dist_x**2.d0 + dist_y**2.d0 + dist_z**2.d0)**0.5d0
+
+          conn_set%dist_unitvec(iconn)%arr(1) = dist_x/dist
+          conn_set%dist_unitvec(iconn)%arr(2) = dist_y/dist
+          conn_set%dist_unitvec(iconn)%arr(3) = dist_z/dist
+       else
+          conn_set%dist_unitvec(iconn)%arr(1) = unit_vec(iconn,1)
+          conn_set%dist_unitvec(iconn)%arr(2) = unit_vec(iconn,2)
+          conn_set%dist_unitvec(iconn)%arr(3) = unit_vec(iconn,3)
+       endif
+
+    end do
+
+  end subroutine MeshCreateConnectionSet2
 
   !------------------------------------------------------------------------
   subroutine MeshSetName(this, name)
@@ -674,6 +751,8 @@ contains
     use MultiPhysicsProbConstants, only : MESH_CLM_THERMAL_SOIL_COL
     use MultiPhysicsProbConstants, only : MESH_CLM_SNOW_COL
     use MultiPhysicsProbConstants, only : MESH_CLM_SSW_COL
+    use MultiPhysicsProbConstants, only : MESH_SPAC_ROOT_COL
+    use MultiPhysicsProbConstants, only : MESH_SPAC_XYLEM_COL
     !
     implicit none
     !
@@ -683,7 +762,8 @@ contains
 
     select case(id)
     case (MESH_CLM_SOIL_COL, MESH_CLM_THERMAL_SOIL_COL, &
-          MESH_CLM_SNOW_COL, MESH_CLM_SSW_COL)
+         MESH_CLM_SNOW_COL, MESH_CLM_SSW_COL, MESH_SPAC_ROOT_COL, &
+         MESH_SPAC_XYLEM_COL)
        this%itype = id
 
     case default
@@ -958,37 +1038,8 @@ contains
     PetscReal                         :: dist_z
     PetscReal                         :: dist
 
-    conn_set => ConnectionSetNew(nconn)
-
-    do iconn = 1, nconn
-
-       if (id_up(iconn) > this%ncells_all) then
-          write(iulog,*)'Cell id up is greater than total number of cells '
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       endif
-
-       if (id_dn(iconn) > this%ncells_all) then
-          write(iulog,*)'Cell id down is greater than total number of cells '
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       endif
-
-       conn_set%id_up(iconn) = id_up(iconn)
-       conn_set%id_dn(iconn) = id_dn(iconn)
-       conn_set%area(iconn)  = area(iconn)
-
-       conn_set%dist_up(iconn) = dist_up(iconn)
-       conn_set%dist_dn(iconn) = dist_dn(iconn)
-
-       dist_x = this%x(id_dn(iconn)) - this%x(id_up(iconn))
-       dist_y = this%y(id_dn(iconn)) - this%y(id_up(iconn))
-       dist_z = this%z(id_dn(iconn)) - this%z(id_up(iconn))
-       dist   = (dist_x**2.d0 + dist_y**2.d0 + dist_z**2.d0)**0.5d0
-
-       conn_set%dist_unitvec(iconn)%arr(1) = dist_x/dist
-       conn_set%dist_unitvec(iconn)%arr(2) = dist_y/dist
-       conn_set%dist_unitvec(iconn)%arr(3) = dist_z/dist
-
-    end do
+    call MeshCreateConnectionSet(this, conn_type, nconn, id_up, id_dn, &
+         dist_up, dist_dn, area, conn_set=conn_set)
 
     select case(conn_type)
     case (CONN_SET_INTERNAL)

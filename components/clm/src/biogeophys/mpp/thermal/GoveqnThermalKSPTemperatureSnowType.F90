@@ -760,6 +760,7 @@ contains
     !
     ! !LOCAL VARIABLES
     type(connection_set_type), pointer       :: conn_set
+    PetscInt                                 :: ieqn
     PetscInt                                 :: iconn
     PetscInt                                 :: cell_id
     PetscInt                                 :: offset
@@ -783,10 +784,12 @@ contains
           top_hflux_cond_found = PETSC_TRUE
        endif
        
-       if (cur_cond%itype_of_other_goveq == GE_THERM_SOIL_TBASED) then
-          soil_temp_cond => cur_cond
-          soil_temp_cond_found = PETSC_TRUE
-       endif
+       do ieqn = 1, cur_cond%num_other_goveqs
+          if (cur_cond%itype_of_other_goveqs(ieqn) == GE_THERM_SOIL_TBASED) then
+             soil_temp_cond => cur_cond
+             soil_temp_cond_found = PETSC_TRUE
+          endif
+       enddo
 
        if (.not.soil_temp_cond_found) then
           offset = offset + cur_cond%conn_set%num_connections
@@ -1265,6 +1268,7 @@ contains
     PetscErrorCode                           :: ierr
     !
     ! !LOCAL VARIABLES
+    PetscInt                                 :: ieqn
     PetscInt                                 :: iconn, sum_conn
     PetscInt                                 :: cell_id_up, cell_id_dn
     PetscReal                                :: dist, dist_up, dist_dn
@@ -1290,40 +1294,42 @@ contains
 
        cur_conn_set => cur_cond%conn_set
 
-       if (cur_cond%itype == COND_DIRICHLET_FRM_OTR_GOVEQ .and. &
-           cur_cond%list_id_of_other_goveq == list_id_of_other_goveq) then
-          do iconn = 1, cur_conn_set%num_connections
+       if (cur_cond%itype == COND_DIRICHLET_FRM_OTR_GOVEQ) then
+          do ieqn = 1, cur_cond%num_other_goveqs
+             if (cur_cond%list_id_of_other_goveqs(ieqn) == list_id_of_other_goveq) then
+                do iconn = 1, cur_conn_set%num_connections
 
-             cell_id_dn = cur_conn_set%id_dn(iconn)
-             cell_id_up = cur_conn_set%id_up(iconn)
-             sum_conn = sum_conn + 1
+                   cell_id_dn = cur_conn_set%id_dn(iconn)
+                   cell_id_up = cur_conn_set%id_up(iconn)
+                   sum_conn = sum_conn + 1
 
-             if ((.not.this%aux_vars_in(cell_id_dn)%is_active)) cycle
+                   if ((.not.this%aux_vars_in(cell_id_dn)%is_active)) cycle
 
+                   area          = cur_conn_set%area(iconn)
+                   dist_up       = cur_conn_set%dist_up(iconn)
+                   dist_dn       = cur_conn_set%dist_dn(iconn)
+                   dist          = dist_up + dist_dn
 
-                area          = cur_conn_set%area(iconn)
-                dist_up       = cur_conn_set%dist_up(iconn)
-                dist_dn       = cur_conn_set%dist_dn(iconn)
-                dist          = dist_up + dist_dn
+                   therm_cond_up = this%aux_vars_bc(sum_conn)%therm_cond
+                   therm_cond_dn = this%aux_vars_in(cell_id_dn)%therm_cond
 
-                therm_cond_up = this%aux_vars_bc(sum_conn)%therm_cond
-                therm_cond_dn = this%aux_vars_in(cell_id_dn)%therm_cond
+                   ! Distance weighted harmonic average
+                   therm_cond_aveg = therm_cond_up*therm_cond_dn*dist/ &
+                        (therm_cond_up*dist_dn + therm_cond_dn*dist_up)
 
-                ! Distance weighted harmonic average
-                therm_cond_aveg = therm_cond_up*therm_cond_dn*dist/ &
-                     (therm_cond_up*dist_dn + therm_cond_dn*dist_up)
+                   T        = this%aux_vars_in(cell_id_dn)%temperature
+                   heat_cap = this%aux_vars_in(cell_id_dn)%heat_cap_pva
+                   tfactor  = this%aux_vars_in(cell_id_dn)%tuning_factor
+                   vol      = this%mesh%vol(cell_id_dn)
+                   factor =  (dt*tfactor)/(heat_cap*vol)
 
-                T        = this%aux_vars_in(cell_id_dn)%temperature
-                heat_cap = this%aux_vars_in(cell_id_dn)%heat_cap_pva
-                tfactor  = this%aux_vars_in(cell_id_dn)%tuning_factor
-                vol      = this%mesh%vol(cell_id_dn)
-                factor =  (dt*tfactor)/(heat_cap*vol)
+                   value = (1.d0 - cnfac)*therm_cond_aveg/dist*area!*factor
 
-                value = (1.d0 - cnfac)*therm_cond_aveg/dist*area!*factor
+                   call MatSetValuesLocal(B, 1, cell_id_dn-1, 1, cell_id_up-1, -value, &
+                        ADD_VALUES, ierr); CHKERRQ(ierr)
 
-                call MatSetValuesLocal(B, 1, cell_id_dn-1, 1, cell_id_up-1, -value, &
-                     ADD_VALUES, ierr); CHKERRQ(ierr)
-             
+                enddo
+             endif
           enddo
        else
           sum_conn = sum_conn + cur_conn_set%num_connections

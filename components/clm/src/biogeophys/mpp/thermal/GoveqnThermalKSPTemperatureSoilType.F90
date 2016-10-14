@@ -8,8 +8,8 @@ module GoveqnThermalKSPTemperatureSoilType
 
   ! !USES:
   use mpp_varctl                       , only : iulog
-  use mpp_abortutils                       , only : endrun
-  use mpp_shr_log_mod                      , only : errMsg => shr_log_errMsg
+  use mpp_abortutils                   , only : endrun
+  use mpp_shr_log_mod                  , only : errMsg => shr_log_errMsg
   use GoverningEquationBaseType        , only : goveqn_base_type
   use ThermalKSPTemperatureSoilAuxType , only : therm_ksp_temp_soil_auxvar_type
   use SystemOfEquationsThermalAuxType  , only : sysofeqns_thermal_auxvar_type
@@ -795,6 +795,7 @@ contains
     PetscReal, dimension(:), intent(out)     :: b_p
     !
     ! !LOCAL VARIABLES
+    PetscInt                                 :: ieqn
     PetscInt                                 :: iconn
     PetscInt                                 :: sum_conn
     PetscInt                                 :: cell_id_dn
@@ -871,9 +872,11 @@ contains
        if (.not.associated(cur_cond)) exit
 
        is_bc_sh2o = PETSC_FALSE
-       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
-          is_bc_sh2o = PETSC_TRUE
-       endif
+       do ieqn = 1, cur_cond%num_other_goveqs
+          if (cur_cond%itype_of_other_goveqs(ieqn) == GE_THERM_SSW_TBASED) then
+             is_bc_sh2o = PETSC_TRUE
+          endif
+       enddo
 
        cur_conn_set => cur_cond%conn_set
 
@@ -1040,6 +1043,7 @@ contains
     PetscErrorCode                           :: ierr
     !
     ! !LOCAL VARIABLES
+    PetscInt                                 :: ieqn
     PetscInt                                 :: iconn
     PetscInt                                 :: sum_conn
     PetscInt                                 :: cell_id
@@ -1146,9 +1150,11 @@ contains
        if (.not.associated(cur_cond)) exit
 
        is_bc_sh2o = PETSC_FALSE
-       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
-          is_bc_sh2o = PETSC_TRUE
-       endif
+       do ieqn = 1, cur_cond%num_other_goveqs
+          if (cur_cond%itype_of_other_goveqs(ieqn) == GE_THERM_SSW_TBASED) then
+             is_bc_sh2o = PETSC_TRUE
+          endif
+       enddo
 
        cur_conn_set => cur_cond%conn_set
 
@@ -1250,6 +1256,7 @@ contains
     PetscErrorCode                           :: ierr
     !
     ! !LOCAL VARIABLES
+    PetscInt                                 :: ieqn
     PetscInt                                 :: iconn
     PetscInt                                 :: sum_conn
     PetscInt                                 :: cell_id_up
@@ -1263,15 +1270,15 @@ contains
     PetscReal                                :: therm_cond_dn
     PetscReal                                :: frac
     PetscReal                                :: value
-    type(connection_set_type), pointer       :: cur_conn_set
-    type(condition_type),pointer             :: cur_cond
-    PetscReal :: factor
+    PetscReal                                :: factor
     PetscReal                                :: T
     PetscReal                                :: heat_cap
     PetscReal                                :: tfactor
     PetscReal                                :: vol
     PetscReal                                :: dt
-    PetscBool :: is_bc_sh2o
+    PetscBool                                :: is_bc_sh2o
+    type(connection_set_type), pointer       :: cur_conn_set
+    type(condition_type)     , pointer       :: cur_cond
 
     dt = this%dtime
 
@@ -1282,55 +1289,60 @@ contains
        if (.not.associated(cur_cond)) exit
 
        is_bc_sh2o = PETSC_FALSE
-       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
-          is_bc_sh2o = PETSC_TRUE
-       endif
+       do ieqn = 1, cur_cond%num_other_goveqs
+          if (cur_cond%itype_of_other_goveqs(ieqn) == GE_THERM_SSW_TBASED) then
+             is_bc_sh2o = PETSC_TRUE
+          endif
+       enddo
        cur_conn_set => cur_cond%conn_set
 
-       if (cur_cond%itype == COND_DIRICHLET_FRM_OTR_GOVEQ .and. &
-           cur_cond%list_id_of_other_goveq == list_id_of_other_goveq) then
+       if (cur_cond%itype == COND_DIRICHLET_FRM_OTR_GOVEQ) then
+          do ieqn = 1, cur_cond%num_other_goveqs
+             if (cur_cond%list_id_of_other_goveqs(ieqn) == list_id_of_other_goveq) then
 
-          do iconn = 1, cur_conn_set%num_connections
+                do iconn = 1, cur_conn_set%num_connections
 
-             cell_id_dn = cur_conn_set%id_dn(iconn)
-             cell_id_up = cur_conn_set%id_up(iconn)
+                   cell_id_dn = cur_conn_set%id_dn(iconn)
+                   cell_id_up = cur_conn_set%id_up(iconn)
 
-             sum_conn = sum_conn + 1
+                   sum_conn = sum_conn + 1
 
-             if ((.not.this%aux_vars_in(cell_id_dn)%is_active)) cycle
+                   if ((.not.this%aux_vars_in(cell_id_dn)%is_active)) cycle
 
-             if (.not. this%aux_vars_bc(sum_conn)%is_active) cycle
+                   if (.not. this%aux_vars_bc(sum_conn)%is_active) cycle
 
-             frac          = this%aux_vars_bc(sum_conn)%frac
-             area          = cur_conn_set%area(iconn)
-             dist_up       = cur_conn_set%dist_up(iconn)
-             dist_dn       = cur_conn_set%dist_dn(iconn)
-             dist          = dist_up + dist_dn
+                   frac          = this%aux_vars_bc(sum_conn)%frac
+                   area          = cur_conn_set%area(iconn)
+                   dist_up       = cur_conn_set%dist_up(iconn)
+                   dist_dn       = cur_conn_set%dist_dn(iconn)
+                   dist          = dist_up + dist_dn
 
-             therm_cond_up = this%aux_vars_bc(sum_conn)%therm_cond
-             therm_cond_dn = this%aux_vars_in(cell_id_dn)%therm_cond             
+                   therm_cond_up = this%aux_vars_bc(sum_conn)%therm_cond
+                   therm_cond_dn = this%aux_vars_in(cell_id_dn)%therm_cond
 
-             ! Distance weighted harmonic average
-             if (is_bc_sh2o) then
-                therm_cond_aveg = therm_cond_up*therm_cond_dn*(dist_up + dist_dn)/ &
-                     (therm_cond_up*dist_dn + therm_cond_dn*dist_up)
-                dist = dist_dn + max(1.d-6, dist_up*2.d0)/2.d0
-             else
-                therm_cond_aveg = therm_cond_up*therm_cond_dn*dist/ &
-                     (therm_cond_up*dist_dn + therm_cond_dn*dist_up)
+                   ! Distance weighted harmonic average
+                   if (is_bc_sh2o) then
+                      therm_cond_aveg = therm_cond_up*therm_cond_dn*(dist_up + dist_dn)/ &
+                           (therm_cond_up*dist_dn + therm_cond_dn*dist_up)
+                      dist = dist_dn + max(1.d-6, dist_up*2.d0)/2.d0
+                   else
+                      therm_cond_aveg = therm_cond_up*therm_cond_dn*dist/ &
+                           (therm_cond_up*dist_dn + therm_cond_dn*dist_up)
+                   endif
+
+                   T        = this%aux_vars_in(cell_id_dn)%temperature
+                   heat_cap = this%aux_vars_in(cell_id_dn)%heat_cap_pva
+                   tfactor  = this%aux_vars_in(cell_id_dn)%tuning_factor
+                   vol      = this%mesh%vol(cell_id_dn)
+                   factor =  (dt*tfactor)/(heat_cap*vol)
+
+                   value = frac*(1.d0 - cnfac)*therm_cond_aveg/dist*area!*factor
+
+                   call MatSetValuesLocal(B, 1, cell_id_dn-1, 1, cell_id_up-1, -value, &
+                        ADD_VALUES, ierr); CHKERRQ(ierr)
+
+                enddo
              endif
-
-             T        = this%aux_vars_in(cell_id_dn)%temperature
-             heat_cap = this%aux_vars_in(cell_id_dn)%heat_cap_pva
-             tfactor  = this%aux_vars_in(cell_id_dn)%tuning_factor
-             vol      = this%mesh%vol(cell_id_dn)
-             factor =  (dt*tfactor)/(heat_cap*vol)
-
-             value = frac*(1.d0 - cnfac)*therm_cond_aveg/dist*area!*factor
-
-             call MatSetValuesLocal(B, 1, cell_id_dn-1, 1, cell_id_up-1, -value, &
-                  ADD_VALUES, ierr); CHKERRQ(ierr)
-             
           enddo
        else
           sum_conn = sum_conn + cur_conn_set%num_connections
@@ -1361,6 +1373,7 @@ contains
     ! !ARGUMENTS
     class(goveqn_thermal_ksp_temp_soil_type) :: this
     !
+    PetscInt                                 :: ieqn
     PetscInt                                 :: iconn
     PetscInt                                 :: cell_id
     PetscInt                                 :: sum_conn
@@ -1378,13 +1391,17 @@ contains
        is_bc_snow = PETSC_FALSE
        is_bc_sh2o = PETSC_FALSE
 
-       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
+       do ieqn = 1, cur_cond%num_other_goveqs
+       if (cur_cond%itype_of_other_goveqs(ieqn) == GE_THERM_SSW_TBASED) then
           is_bc_sh2o = PETSC_TRUE
        endif
+       enddo
        
-       if (cur_cond%itype_of_other_goveq == GE_THERM_SNOW_TBASED) then
+       do ieqn = 1, cur_cond%num_other_goveqs
+       if (cur_cond%itype_of_other_goveqs(ieqn) == GE_THERM_SNOW_TBASED) then
           is_bc_snow = PETSC_TRUE
        endif
+       enddo
 
        cur_conn_set => cur_cond%conn_set
 

@@ -104,7 +104,7 @@ contains
   end subroutine ThermalSOEInit
 
   !------------------------------------------------------------------------
-  subroutine ThermalSOEAddGovEqn(this, geq_type, name)
+  subroutine ThermalSOEAddGovEqn(this, geq_type, name, mesh_itype)
     !
     ! !DESCRIPTION:
     ! Adds a governing equation to system-of-equations
@@ -124,6 +124,7 @@ contains
     class(sysofeqns_thermal_type) :: this
     PetscInt                      :: geq_type
     character(len=*)              :: name
+    PetscInt                      :: mesh_itype
     !
     ! !LOCAL VARIABLES:
     class (goveqn_thermal_ksp_temp_snow_type) , pointer :: goveq_snow
@@ -148,7 +149,7 @@ contains
 
           goveq_snow%name        = trim(name)
           goveq_snow%id_in_list  = this%ngoveqns
-          goveq_snow%mesh_itype  = MESH_CLM_SNOW_COL
+          goveq_snow%mesh_itype  = mesh_itype
 
           if (this%ngoveqns == 1) then
              this%goveqns => goveq_snow
@@ -163,7 +164,7 @@ contains
 
           goveq_sh2o%name        = trim(name)
           goveq_sh2o%id_in_list  = this%ngoveqns
-          goveq_sh2o%mesh_itype  = MESH_CLM_SSW_COL
+          goveq_sh2o%mesh_itype  = mesh_itype
 
           if (this%ngoveqns == 1) then
              this%goveqns => goveq_sh2o
@@ -178,7 +179,7 @@ contains
 
           goveq_soil%name        = trim(name)
           goveq_soil%id_in_list  = this%ngoveqns
-          goveq_soil%mesh_itype  = MESH_CLM_THERMAL_SOIL_COL
+          goveq_soil%mesh_itype  = mesh_itype
 
           if (this%ngoveqns == 1) then
              this%goveqns => goveq_soil

@@ -512,17 +512,23 @@ contains
     use MultiPhysicsProbConstants , only : GE_THERM_SNOW_TBASED
     use MultiPhysicsProbConstants , only : GE_THERM_SSW_TBASED
     use MultiPhysicsProbConstants , only : GE_THERM_SOIL_TBASED
+    use MultiPhysicsProbConstants , only : MESH_CLM_SNOW_COL
+    use MultiPhysicsProbConstants , only : MESH_CLM_SSW_COL
+    use MultiPhysicsProbConstants , only : MESH_CLM_THERMAL_SOIL_COL
     !
     implicit none
 
-    call thermal_mpp%AddGovEqn(GE_THERM_SNOW_TBASED, &
-         'Thermal equation using temprature formulation in snow (KSP formulation)')
+    call thermal_mpp%AddGovEqn(GE_THERM_SNOW_TBASED,                                                  &
+         'Thermal equation using temprature formulation in snow (KSP formulation)',                   &
+         MESH_CLM_SNOW_COL)
 
-    call thermal_mpp%AddGovEqn(GE_THERM_SSW_TBASED, &
-         'Thermal equation using temprature formulation in standing surface water (KSP formulation)')
+    call thermal_mpp%AddGovEqn(GE_THERM_SSW_TBASED,                                                   &
+         'Thermal equation using temprature formulation in standing surface water (KSP formulation)', &
+         MESH_CLM_SSW_COL)
 
-    call thermal_mpp%AddGovEqn(GE_THERM_SOIL_TBASED, &
-         'Thermal equation using temprature formulation in soil (KSP formulation)')
+    call thermal_mpp%AddGovEqn(GE_THERM_SOIL_TBASED,                                                  &
+         'Thermal equation using temprature formulation in soil (KSP formulation)',                   &
+         MESH_CLM_THERMAL_SOIL_COL)
 
     call thermal_mpp%SetMeshesOfGoveqns()
     
