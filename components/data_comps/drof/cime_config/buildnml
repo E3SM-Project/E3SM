@@ -9,15 +9,10 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os
-import shutil
-import sys
-import glob
+import os, shutil, sys, glob
 
-CIMEROOT = os.environ.get("CIMEROOT")
-if CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
-sys.path.append(os.path.join(CIMEROOT, "scripts", "Tools"))
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
@@ -41,7 +36,7 @@ def _parse_input(argv):
 
     setup_standard_logging_options(parser)
 
-    parser.add_argument("caseroot", 
+    parser.add_argument("caseroot",
                         help="case directory")
 
     args = parser.parse_args()
@@ -111,7 +106,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     streams = nmlgen.get_streams()
 
     #----------------------------------------------------
-    # For each stream, create stream text file and update  
+    # For each stream, create stream text file and update
     # shr_strdata_nml group and input data list.
     #----------------------------------------------------
     for stream in streams:
@@ -176,7 +171,7 @@ def _main_func():
             os.makedirs(din_loc_root)
             logger.info("Created input root directory %s" %din_loc_root)
 
-        # determine directory for user modified namelist_definitions.xml 
+        # determine directory for user modified namelist_definitions.xml
         user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
         expect (os.path.isdir(user_xml_dir),
                 "user_xml_dir %s does not exist " %user_xml_dir)

@@ -9,15 +9,10 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os
-import shutil
-import sys
-import glob
+import os, shutil, sys, glob
 
-CIMEROOT = os.environ.get("CIMEROOT")
-if CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
-sys.path.append(os.path.join(CIMEROOT, "scripts", "Tools"))
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
