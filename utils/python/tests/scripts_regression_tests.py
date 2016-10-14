@@ -539,11 +539,11 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
         # exclude the MEMLEAK tests here.
         tests = update_acme_tests.get_full_test_names(["cime_test_only",
-                                                       "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
-                                                       "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X",
-                                                       "^TESTTESTDIFF_Mmpi-serial.f19_g16_rx1.A",
-                                                       "^TESTBUILDFAILEXC.f19_g16_rx1.A",
-                                                       "^TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A"],
+                                                       "^TESTMEMLEAKFAIL_P1.f19_g16.X",
+                                                       "^TESTMEMLEAKPASS_P1.f19_g16.X",
+                                                       "^TESTTESTDIFF_P1.f19_g16_rx1.A",
+                                                       "^TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
+                                                       "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
         ct = TestScheduler(tests)
@@ -618,7 +618,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH)
 
-        build_fail_test     = [item for item in tests if "TESTBUILDFAIL." in item][0]
+        build_fail_test     = [item for item in tests if "TESTBUILDFAIL_" in item][0]
         build_fail_exc_test = [item for item in tests if "TESTBUILDFAILEXC" in item][0]
         run_fail_test       = [item for item in tests if "TESTRUNFAIL_" in item][0]
         run_fail_exc_test   = [item for item in tests if "TESTRUNFAILEXC" in item][0]
@@ -823,7 +823,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
 class Q_TestBlessTestResults(TestCreateTestCommon):
 ###############################################################################
 
-    _test_name = "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A"
+    _test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
 
     ###########################################################################
     def tearDown(self):
@@ -998,7 +998,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         run_cmd_assert_result(self, "%s/create_test cime_test_only -t %s --no-build" % (SCRIPT_DIR, self._baseline_name))
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=False) as case:
@@ -1023,10 +1023,23 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
-            self.assertEqual(case.get_value("MPILIB"), "mpi-serial")
+
+    ###########################################################################
+    def test_cime_case_mpi_serial(self):
+    ###########################################################################
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build" % (SCRIPT_DIR, self._baseline_name))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        with Case(casedir, read_only=True) as case:
 
             # Serial cases should not be using pnetcdf
             self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
+
+            # Serial cases should be using 1 task
+            self.assertEqual(case.get_value("TOTALPES"), 1)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
@@ -1055,7 +1068,7 @@ class L_TestSaveTimings(TestCreateTestCommon):
     def simple_test(self, manual_timing=False):
     ###########################################################################
         timing_flag = "" if manual_timing else "--save-timing"
-        create_test_cmd =  "%s/create_test SMS_Ln9_Mmpi-serial.f19_g16_rx1.A %s --walltime 0:15:00 -t %s" % (SCRIPT_DIR, timing_flag, self._baseline_name)
+        create_test_cmd =  "%s/create_test SMS_Ln9_P1.f19_g16_rx1.A %s --walltime 0:15:00 -t %s" % (SCRIPT_DIR, timing_flag, self._baseline_name)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
