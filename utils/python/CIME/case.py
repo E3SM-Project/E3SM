@@ -997,12 +997,13 @@ class Case(object):
                     if m is not None:
                         version = m.group(1)
                         break
-            else:
-                logger.warn("No CESM ChangeLog file found")
         elif model == "acme":
             version = get_current_commit(True, srcroot)
         self.set_value("MODEL_VERSION", version)
-
+        if version != "unknown":
+            logger.info("%s model version found: %s"%(model, version))
+        else:
+            logger.warn("WARNING: No %s Model version found."%(model))
 
 
 
