@@ -52,7 +52,7 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
 ! * renamed "ysu" to "bl_ysu", "ysu_gwdo" to "bl_gwdo_ysu", and "monin_obukhov" to "sf_monin_obukhov".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
-! * added the options mp_thompson_aerosols and mp_thompson.
+! * added the option mp_thompson.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
 ! * added the options cu_grell_freitas and cu_grell_freitas_momentum.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
@@ -65,8 +65,6 @@
 ! * added the option cu_ntiedtke_wrf381 for the "new" Tiedtke parameterization of convection from WRF
 !   version 3.8.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
-! * added the option mp_wsm6_wrf381 for the WSM6 parameterization of cloud microphysics from WRF version 3.8.1.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-09-16.
 
 
  contains
@@ -111,27 +109,27 @@
  !
  if (trim(config_physics_suite) == 'mesoscale_reference') then
 
-    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'mp_wsm6'
+    if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'mp_wsm6'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_tiedtke'
-    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'bl_ysu'
-    if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
-    if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'rrtmg_lw'
-    if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'rrtmg_sw'
-    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'cld_fraction'
-    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'sf_monin_obukhov'
-    if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'noah'
+    if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'bl_ysu'
+    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'off'
+    if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'rrtmg_lw'
+    if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'rrtmg_sw'
+    if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'cld_fraction'
+    if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'sf_monin_obukhov'
+    if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'noah'
 
  else if (trim(config_physics_suite) == 'none') then
 
-    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'off'
+    if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'off'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'off'
-    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'off'
-    if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
-    if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'off'
-    if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'off'
-    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'off'
-    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'off'
-    if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'off'
+    if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'off'
+    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'off'
+    if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'off'
+    if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'off'
+    if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'off'
+    if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'off'
+    if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'off'
 
  else
 
@@ -142,10 +140,9 @@
  end if
 
 !cloud microphysics scheme:
- if(.not. (config_microp_scheme .eq. 'off'                  .or. &
-           config_microp_scheme .eq. 'mp_kessler'           .or. &
-           config_microp_scheme .eq. 'mp_thompson_aerosols' .or. &
-           config_microp_scheme .eq. 'mp_thompson'          .or. &
+ if(.not. (config_microp_scheme .eq. 'off'         .or. &
+           config_microp_scheme .eq. 'mp_kessler'  .or. &
+           config_microp_scheme .eq. 'mp_thompson' .or. &
            config_microp_scheme .eq. 'mp_wsm6')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_microp_scheme:', &
@@ -307,9 +304,11 @@
  subroutine physics_registry_init(mesh,configs,sfc_input)
 !=================================================================================================================
 
-!input and inout arguments:
+!input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !local pointers:

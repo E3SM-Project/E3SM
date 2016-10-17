@@ -224,12 +224,9 @@
     has_reqs
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    nwfa2d_p,         &!
     ntc_p,            &!
     muc_p              !
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    nifa_p,           &!
-    nwfa_p,           &!
     rainprod_p,       &!
     evapprod_p,       &!
     recloud_p,        &!

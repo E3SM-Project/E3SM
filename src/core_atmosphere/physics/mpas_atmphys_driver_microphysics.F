@@ -25,7 +25,7 @@
  private
  public:: allocate_microphysics,   &
           deallocate_microphysics, &
-          microphysics_driver  ,   &
+          driver_microphysics,     &
           microphysics_init
 
 
@@ -35,18 +35,20 @@
 !
 ! subroutines in mpas_atmphys_driver_microphysics:
 ! ------------------------------------------------
-! allocate_microphysics  : allocate local arrays for parameterization of cloud microphysics.
-! deallocate_microphysics: deallocate local arrays for parameterization of cloud microphysics.
-! microphysics_init      : initialization of individual cloud microphysics schemes.
-! microphysics_driver    : main driver (called from mpas_atm_time_integration).
-! precip_from_MPAS       : initialize timestep local arrays for precipitation.
-! precip_to_MPAS         : copy local arrays to MPAS arrays.
+! allocate_microphysics     : allocate local arrays for parameterization of cloud microphysics.
+! deallocate_microphysics   : deallocate local arrays for parameterization of cloud microphysics.
+! microphysics_init         : initialization of individual cloud microphysics schemes.
+! driver_microphysics       : main driver (called from mpas_atm_time_integration).
+! precip_from_MPAS          : initialize timestep local arrays for precipitation.
+! precip_to_MPAS            : copy local arrays to MPAS arrays.
 ! compute_radar_reflectivity: compute radar reflectivities.
+! compute_relhum            : compute relative humidity.
 !
 ! WRF physics called from microphysics_driver:
 ! --------------------------------------------
-!    * module_mp_kessler : Kessler cloud microphysics.
-!    * module_mp_wsm6    : WSM6 cloud microphysics.
+! * module_mp_kessler : Kessler cloud microphysics.
+! * module_mp_thompson: Thompson cloud microphysics.   
+! * module_mp_wsm6    : WSM6 cloud microphysics.
 !
 ! comments:
 ! unlike all the other physics parameterizations, parameterizations of cloud microphysics schemes
@@ -111,7 +113,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        !mass mixing ratios:
        if(.not.allocated(qi_p)        ) allocate(qi_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(qs_p)        ) allocate(qs_p(ims:ime,kms:kme,jms:jme))
@@ -125,13 +127,13 @@
        if(.not.allocated(graupelncv_p)) allocate(graupelncv_p(ims:ime,jms:jme))
 
        !cloud water,cloud ice,and snow effective radii:
-       if(.not.allocated(recloud_p) ) allocate(recloud_p(ims:ime,kms:kme,jms:jme) )
-       if(.not.allocated(reice_p)   ) allocate(reice_p(ims:ime,kms:kme,jms:jme)   )
-       if(.not.allocated(resnow_p)  ) allocate(resnow_p(ims:ime,kms:kme,jms:jme)  )
+       if(.not.allocated(recloud_p) ) allocate(recloud_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(reice_p)   ) allocate(reice_p(ims:ime,kms:kme,jms:jme)  )
+       if(.not.allocated(resnow_p)  ) allocate(resnow_p(ims:ime,kms:kme,jms:jme) )
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
+       case("mp_thompson")
           !number concentrations:
           if(.not.allocated(ntc_p)) allocate(ntc_p(ims:ime,jms:jme))
           if(.not.allocated(muc_p)) allocate(muc_p(ims:ime,jms:jme))
@@ -140,20 +142,6 @@
 
           if(.not.allocated(rainprod_p)) allocate(rainprod_p(ims:ime,kms:kme,jms:jme))
           if(.not.allocated(evapprod_p)) allocate(evapprod_p(ims:ime,kms:kme,jms:jme))
-
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             !number concentrations:
-             if(.not.allocated(nc_p)) allocate(nc_p(ims:ime,kms:kme,jms:jme))
-             !aerosol concentrations:
-             if(.not.allocated(nifa_p)  ) allocate(nifa_p(ims:ime,kms:kme,jms:jme))
-             if(.not.allocated(nwfa_p)  ) allocate(nwfa_p(ims:ime,kms:kme,jms:jme))
-             if(.not.allocated(nwfa2d_p)) allocate(nwfa2d_p(ims:ime,jms:jme)      )
-
-          case default
-
-       end select microp3_select
 
        case default
 
@@ -189,7 +177,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        !mass mixing ratios:
        if(allocated(qi_p)         ) deallocate(qi_p         )
        if(allocated(qs_p)         ) deallocate(qs_p         )
@@ -209,7 +197,7 @@
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
+       case("mp_thompson")
           !number concentrations:
           if(allocated(ntc_p)) deallocate(ntc_p)
           if(allocated(muc_p)) deallocate(muc_p)
@@ -218,20 +206,6 @@
 
           if(allocated(rainprod_p)) deallocate(rainprod_p)
           if(allocated(evapprod_p)) deallocate(evapprod_p)
-
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             !number concentrations:
-             if(allocated(nc_p)) deallocate(nc_p)
-             !aerosol concentrations:
-             if(allocated(nifa_p)  ) deallocate(nifa_p  )
-             if(allocated(nwfa_p)  ) deallocate(nwfa_p  )
-             if(allocated(nwfa2d_p)) deallocate(nwfa2d_p)
-
-          case default
-
-       end select microp3_select
 
        case default
 
@@ -244,35 +218,24 @@
  end subroutine deallocate_microphysics
 
 !=================================================================================================================
- subroutine microphysics_init(dminfo,mesh,state,time_lev,sfc_input,diag_physics)
+ subroutine microphysics_init(dminfo,mesh,sfc_input,diag_physics)
 !=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
- integer,intent(in):: time_lev
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
- type(mpas_pool_type),intent(inout):: state
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter cloud microphysics initialization:'
 
   microp_select: select case(microp_scheme)
 
      case("mp_thompson")
-!       write(0,*) '--- enter subroutine thompson_init:'
         call thompson_init
         call init_thompson_clouddroplets_forMPAS(mesh,sfc_input,diag_physics)
-!       write(0,*) '--- end subroutine thompson'
-
-     case("mp_thompson_aerosols")
-        call thompson_init
-        call init_thompson_clouddroplets_forMPAS(mesh,sfc_input,diag_physics)
-        call init_thompson_aerosols_forMPAS(dminfo,mesh,state,time_lev,diag_physics)
 
      case("mp_wsm6")
         call wsm6init(rho_a,rho_r,rho_s,cliq,cpv,hail_opt,.false.)
@@ -281,12 +244,10 @@
     
   end select microp_select
 
- !write(0,*) '--- end cloud microphysics initialization'
-
  end subroutine microphysics_init
 
 !=================================================================================================================
- subroutine microphysics_driver(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
+ subroutine driver_microphysics(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 !=================================================================================================================
 
 !input arguments:
@@ -308,23 +269,6 @@
  integer:: i,icell,icount,istep,j,k,kk
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine microphysics_driver: itimestep=', itimestep
-! write(0,*) '    dt_microp=',dt_microp
-! write(0,*) '    n_microp =',n_microp
- 
-!initialization:
-! write(0,*) '    ims= ',ims,' ime=',ime
-! write(0,*) '    jms= ',jms,' jme=',jme
-! write(0,*) '    kms= ',kms,' kme=',kme
-! write(0,*)
-! write(0,*) '    ids= ',ids,' ide=',ide
-! write(0,*) '    jds= ',jds,' jde=',jde
-! write(0,*) '    kds= ',kds,' kde=',kde
-! write(0,*)
-! write(0,*) '    its= ',its,' ite=',ite
-! write(0,*) '    jts= ',jts,' jte=',jte
-! write(0,*) '    kts= ',kts,' kte=',kte
 
 !... allocation of microphysics arrays:
 !$OMP MASTER
@@ -333,17 +277,12 @@
 !$OMP BARRIER
 
 !... initialization of precipitation related arrays:
- call precip_from_MPAS(diag_physics,mesh,its,ite)
+ call precip_from_MPAS(diag_physics,its,ite)
 
 !... initialization of soundings for non-hydrostatic dynamical cores.
  call microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
 
-!-----------------------------------------------------------------------------------------------------------------
-
 !... call to different cloud microphysics schemes:
-
-!-----------------------------------------------------------------------------------------------------------------
-
  microp_select: select case(microp_scheme)
     
     case ("mp_kessler")
@@ -360,10 +299,10 @@
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                    )
 
-       case ("mp_thompson")
-          istep = 1
-          do while (istep .le. n_microp)
-          call mp_gt_driver( &
+    case ("mp_thompson")
+       istep = 1
+       do while (istep .le. n_microp)
+       call mp_gt_driver( &
                   th        = th_p        , qv         = qv_p         , qc         = qc_p         , &
                   qr        = qr_p        , qi         = qi_p         , qs         = qs_p         , &
                   qg        = qg_p        , ni         = ni_p         , nr         = nr_p         , &
@@ -379,53 +318,28 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme           , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
                            )
-
-          istep = istep + 1
-          enddo
-
-       case ("mp_thompson_aerosols")
-          istep = 1
-          do while (istep .le. n_microp)
-          call mp_gt_driver( &
-                  th        = th_p        , qv         = qv_p         , qc         = qc_p         , &
-                  qr        = qr_p        , qi         = qi_p         , qs         = qs_p         , &
-                  qg        = qg_p        , ni         = ni_p         , nr         = nr_p         , &
-                  pii       = pi_p        , p          = pres_p       , dz         = dz_p         , & 
-                  w         = w_p         , dt_in      = dt_microp    , itimestep  = itimestep    , &
-                  rainnc    = rainnc_p    , rainncv    = rainncv_p    , snownc     = snownc_p     , &
-                  snowncv   = snowncv_p   , graupelnc  = graupelnc_p  , graupelncv = graupelncv_p , &
-                  sr        = sr_p        , rainprod   = rainprod_p   , evapprod   = evapprod_p   , &
-                  re_cloud  = recloud_p   , re_ice     = reice_p      , re_snow    = resnow_p     , &
-                  has_reqc  = has_reqc    , has_reqi   = has_reqi     , has_reqs   = has_reqs     , &
-                  nc        = nc_p        , nifa       = nifa_p       , nwfa       = nwfa_p       , & 
-                  nwfa2d    = nwfa2d_p    , ntc        = ntc_p        , muc        = muc_p        , &
-                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde           , &
-                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme           , &
-                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
-                           )
-          write(0,*) '--- end mp_thompson_aerosols:',istep
-          istep = istep + 1
-          enddo
+       istep = istep + 1
+       enddo
 
     case ("mp_wsm6")
-      call wsm6( &
-                th       = th_p        , q          = qv_p         , qc       = qc_p      , &
-                qr       = qr_p        , qi         = qi_p         , qs       = qs_p      , &
-                qg       = qg_p        , den        = rho_p        , pii      = pi_p      , &
-                p        = pres_p      , delz       = dz_p         , delt     = dt_microp , &
-                g        = gravity     , cpd        = cp           , cpv      = cpv       , &
-                rd       = R_d         , rv         = R_v          , t0c      = svpt0     , &
-                ep1      = ep_1        , ep2        = ep_2         , qmin     = epsilon   , &
-                xls      = xls         , xlv0       = xlv          , xlf0     = xlf       , &
-                den0     = rho_a       , denr       = rho_w        , cliq     = cliq      , &
-                cice     = cice        , psat       = psat         , rain     = rainnc_p  , &
-                rainncv  = rainncv_p   , snow       = snownc_p     , snowncv  = snowncv_p , &
-                graupel  = graupelnc_p , graupelncv = graupelncv_p , sr       = sr_p      , &
-                re_cloud = recloud_p   , re_ice     = reice_p      , re_snow  = resnow_p  , &
-                has_reqc = has_reqc    , has_reqi   = has_reqi     , has_reqs = has_reqs  , &
-                ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde     , &
-                ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme     , &
-                its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte       &
+       call wsm6( &
+                  th       = th_p        , q          = qv_p         , qc       = qc_p      , &
+                  qr       = qr_p        , qi         = qi_p         , qs       = qs_p      , &
+                  qg       = qg_p        , den        = rho_p        , pii      = pi_p      , &
+                  p        = pres_p      , delz       = dz_p         , delt     = dt_microp , &
+                  g        = gravity     , cpd        = cp           , cpv      = cpv       , &
+                  rd       = R_d         , rv         = R_v          , t0c      = svpt0     , &
+                  ep1      = ep_1        , ep2        = ep_2         , qmin     = epsilon   , &
+                  xls      = xls         , xlv0       = xlv          , xlf0     = xlf       , &
+                  den0     = rho_a       , denr       = rho_w        , cliq     = cliq      , &
+                  cice     = cice        , psat       = psat         , rain     = rainnc_p  , &
+                  rainncv  = rainncv_p   , snow       = snownc_p     , snowncv  = snowncv_p , &
+                  graupel  = graupelnc_p , graupelncv = graupelncv_p , sr       = sr_p      , &
+                  re_cloud = recloud_p   , re_ice     = reice_p      , re_snow  = resnow_p  , &
+                  has_reqc = has_reqc    , has_reqi   = has_reqi     , has_reqs = has_reqs  , &
+                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde     , &
+                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme     , &
+                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte       &
                )
 
     case default
@@ -435,27 +349,24 @@
 !... calculate the 10cm radar reflectivity and relative humidity, if needed:
  if (l_diags) then
  
-    ! Ensure that we only call compute_radar_reflectivity() if we are using an MPS that
-    !    supports the computation of simulated radar reflectivity
-    if(trim(microp_scheme) == "mp_wsm6"        .or. &
-       trim(microp_scheme) == "mp_thompson"    .or. &
-       trim(microp_scheme) == "mp_thompson_aerosols") then
+    !ensure that we only call compute_radar_reflectivity() if we are using an MPS that supports
+    !the computation of simulated radar reflectivity:
+    if(trim(microp_scheme) == "mp_wsm6"     .or. &
+       trim(microp_scheme) == "mp_thompson") then
        call compute_radar_reflectivity(diag_physics,its,ite)
     else
        write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
        write(0,*) '            since WSM6 or Thompson microphysics scheme was not selected'
     end if
 
-    ! calculate the relative humidity over water if the temperature is strictly greater than 0.C,
-    ! over ice otherwise.
-    call compute_relhum(mesh,diag,its,ite)
+    !calculate the relative humidity over water if the temperature is strictly greater than 0.C,
+    !over ice otherwise.
+    call compute_relhum(diag,its,ite)
 
  end if
- write(0,*) '--- l_diags =', l_diags
-!call compute_relhum(diag_physics)
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
- call precip_to_MPAS(configs,mesh,diag_physics,its,ite)
+ call precip_to_MPAS(configs,diag_physics,its,ite)
 
 !... copy updated cloud microphysics variables from the wrf-physics grid back to the geodesic-
 !    dynamics grid:
@@ -467,20 +378,13 @@
  call deallocate_microphysics
 !$OMP END MASTER
 
-!formats:
- 200 format(i3,i6,10(1x,e15.8))
- 201 format(3i6,10(1x,e15.8))
- 203 format('microphysics begins:',3i6,2(1x,f6.1))
- 204 format('microphysics precip:',3i6,8(1x,e15.8))
-
- end subroutine microphysics_driver
+ end subroutine driver_microphysics
 
 !=================================================================================================================
- subroutine precip_from_MPAS(diag_physics,mesh,its,ite)
+ subroutine precip_from_MPAS(diag_physics,its,ite)
 !=================================================================================================================
 
 !input variables:
- type(mpas_pool_type) ,intent(in):: mesh
  integer,intent(in):: its,ite
 
 !output variables:
@@ -491,11 +395,9 @@
  real,dimension(:),pointer:: graupelncv,rainncv,snowncv,sr 
 
 !local variables and arrays:
- integer:: i,iCell,j
+ integer:: i,j
 
 !-----------------------------------------------------------------------------------------------------------------
-
- call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
  call mpas_pool_get_array(diag_physics,'graupelncv',graupelncv)
  call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
@@ -510,15 +412,14 @@
  enddo
  enddo
 
- do iCell = its,ite
-    rainncv(iCell) = 0._RKIND
+ do i = its,ite
+    rainncv(i) = 0._RKIND
  enddo
 
 !variables specific to different cloud microphysics schemes:
-
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        do j = jts, jte
        do i = its, ite
           snowncv_p(i,j)    = 0._RKIND
@@ -529,10 +430,10 @@
        enddo
        enddo
 
-       do iCell = its,ite
-          snowncv(iCell)    = 0._RKIND
-          graupelncv(iCell) = 0._RKIND
-          sr(iCell)         = 0._RKIND
+       do i = its,ite
+          snowncv(i)    = 0._RKIND
+          graupelncv(i) = 0._RKIND
+          sr(i)         = 0._RKIND
        enddo 
 
     case default
@@ -542,12 +443,11 @@
  end subroutine precip_from_MPAS
 
 !=================================================================================================================
- subroutine precip_to_MPAS(configs,mesh,diag_physics,its,ite)
+ subroutine precip_to_MPAS(configs,diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
- type(mpas_pool_type),intent(in):: mesh
 
  integer,intent(in):: its,ite
 
@@ -555,7 +455,6 @@
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
- integer,pointer:: nCellsSolve
  integer,dimension(:),pointer:: i_rainnc
 
  real(kind=RKIND),pointer:: config_bucket_rainnc
@@ -570,8 +469,6 @@
 !-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_bucket_rainnc',config_bucket_rainnc)
-
- call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
  call mpas_pool_get_array(diag_physics,'i_rainnc'  ,i_rainnc  )
  call mpas_pool_get_array(diag_physics,'precipw'   ,precipw   )
@@ -588,7 +485,6 @@
  enddo
 
 !variables common to all cloud microphysics schemes:
-
  do j = jts,jte
  do i = its,ite
 
@@ -614,10 +510,9 @@
  enddo
 
 !variables specific to different cloud microphysics schemes:
-
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        do j = jts,jte
        do i = its,ite
           !time-step precipitation:
@@ -641,13 +536,14 @@
  subroutine compute_radar_reflectivity(diag_physics,its,ite)
 !=================================================================================================================
 
+!input arguments:
+ integer,intent(in):: its,ite
+
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
- integer,intent(in):: its,ite
-
 !local pointers:
- real(kind=RKIND),dimension(:),pointer:: refl10cm_max, refl10cm_1km, refl10cm_1km_max
+ real(kind=RKIND),dimension(:),pointer:: refl10cm_max,refl10cm_1km,refl10cm_1km_max
 
 !local variables and arrays:
  integer:: i,j,k,kp
@@ -655,8 +551,6 @@
  real(kind=RKIND):: w1,w2
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
 
  call mpas_pool_get_array(diag_physics,'refl10cm_max',refl10cm_max)
  call mpas_pool_get_array(diag_physics,'refl10cm_1km',refl10cm_1km)
@@ -676,7 +570,7 @@
        if(.not.allocated(qs1d) ) allocate(qs1d(kts:kte) )
        if(.not.allocated(qg1d) ) allocate(qg1d(kts:kte) )
        if(.not.allocated(dBz1d)) allocate(dBZ1d(kts:kte))
-       if(.not.allocated(zp))    allocate(zp(kts:kte))
+       if(.not.allocated(zp)   ) allocate(zp(kts:kte)   )
 
        do j = jts,jte
        do i = its,ite
@@ -713,9 +607,9 @@
        if(allocated(qs1d) ) deallocate(qs1d )
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
-       if(allocated(zp))    deallocate(zp)
+       if(allocated(zp)   ) deallocate(zp   )
 
-    case ("mp_thompson","mp_thompson_aerosols")
+    case ("mp_thompson")
        if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
        if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
        if(.not.allocated(qv1d) ) allocate(qv1d(kts:kte) )
@@ -725,7 +619,7 @@
        if(.not.allocated(qg1d) ) allocate(qg1d(kts:kte) )
        if(.not.allocated(nr1d) ) allocate(nr1d(kts:kte) )
        if(.not.allocated(dBz1d)) allocate(dBZ1d(kts:kte))
-       if(.not.allocated(zp))    allocate(zp(kts:kte))
+       if(.not.allocated(zp)   ) allocate(zp(kts:kte)   )
 
        do j = jts,jte
        do i = its,ite
@@ -766,29 +660,25 @@
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(nr1d) ) deallocate(nr1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
-       if(allocated(zp))    deallocate(zp)
+       if(allocated(zp)   ) deallocate(zp   )
 
     case default
 
  end select microp_select
-!write(0,*) '--- end subroutine COMPUTE_RADAR_REFLECTIVITY'
 
  end subroutine compute_radar_reflectivity
 
 !=================================================================================================================
- subroutine compute_relhum(mesh,diag,its,ite)
+ subroutine compute_relhum(diag,its,ite)
 !=================================================================================================================
 
 !input arguments:
- type(mpas_pool_type),intent(in):: mesh
-
  integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag
 
 !local pointers:
- integer,pointer:: nCellsSolve,nVertLevels
  real(kind=RKIND),dimension(:,:),pointer:: relhum
 
 !local variables and arrays:
@@ -799,12 +689,12 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
- call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
-
  call mpas_pool_get_array(diag,'relhum',relhum)
-
- relhum(1:nVertLevels,its:ite) = 0._RKIND
+ do k = kts,kte
+    do i = its,ite
+       relhum(k,i) = 0._RKIND
+    enddo
+ enddo
 
  if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
  if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
@@ -813,7 +703,6 @@
 
  do j = jts,jte
  do i = its,ite
-
     do k = kts,kte
        p1d(k)  = pres_p(i,k,j)
        t1d(k)  = th_p(i,k,j) * pi_p(i,k,j)
@@ -824,11 +713,8 @@
        relhum(k,i) = qv1d(k) / qvs1d(k)
        relhum(k,i) = relhum(k,i) * 100._RKIND
     enddo
-!   write(0,*)
-
  enddo
  enddo
- 101 format(2(1x,i8),5(1x,e15.8))
 
  if(allocated(p1d)  ) deallocate(p1d  )
  if(allocated(t1d)  ) deallocate(t1d  )

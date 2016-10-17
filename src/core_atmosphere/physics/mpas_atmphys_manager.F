@@ -680,7 +680,7 @@
 !... cloud microphysics:
  dt_microp = dt_dyn
  n_microp  = 1
- if(trim(microp_scheme)=='mp_thompson' .or. trim(microp_scheme)=='mp_thompson_aerosols') then
+ if(trim(microp_scheme)=='mp_thompson') then
     dt_microp = 90._RKIND
     n_microp  = max(nint(dt_dyn/dt_microp),1)
     dt_microp = dt_dyn / n_microp
@@ -741,9 +741,8 @@
  has_reqi = 0
  has_reqs = 0
  if(config_microp_re) then
-    if(trim(microp_scheme)=='mp_thompson'          .or. &
-       trim(microp_scheme)=='mp_thompson_aerosols' .or. &
-       trim(microp_scheme)=='mp_wsm6_wrf381') then
+    if(trim(microp_scheme)=='mp_thompson' .or. &
+       trim(microp_scheme)=='mp_wsm6') then
        if(trim(radt_lw_scheme)=='rrtmg_lw' .and. trim(radt_sw_scheme)=='rrtmg_sw') then
           has_reqc = 1
           has_reqi = 1

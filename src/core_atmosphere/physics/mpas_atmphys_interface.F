@@ -65,8 +65,6 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 ! * corrected the calculation of the surface pressure, mainly extrapolation of the air density to the surface.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-25.
-! * added the option mp_wsm6_wrf381 for the WSM6 parameterization of cloud microphysics from WRF version 3.8.1.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-09-16.
 
 
  contains
@@ -351,6 +349,7 @@
 
 !check that the pressure in the layer above the surface is greater than that in the layer
 !above it:
+ 201 format(3i8,10(1x,e15.8))
  do j = jts,jte
  do i = its,ite
     if(pres_p(i,1,j) .le. pres_p(i,2,j)) then
@@ -449,11 +448,6 @@
  enddo
  enddo
 
-!formats: 
- 201 format(3i8,10(1x,e15.8))
- 202 format(2i6,10(1x,e15.8))
- 203 format(i6,10(1x,e15.8))
-
  end subroutine MPAS_to_physics
 
 !=================================================================================================================
@@ -470,13 +464,13 @@
 
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
- integer,pointer:: index_ni,index_nr,index_nc,index_nifa,index_nwfa
- real(kind=RKIND),dimension(:),pointer    :: nwfa2d,nt_c,mu_c
+ integer,pointer:: index_ni,index_nr
+ real(kind=RKIND),dimension(:),pointer    :: nt_c,mu_c
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid,w
- real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b,rtheta_p,rtheta_b
+ real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p
  real(kind=RKIND),dimension(:,:),pointer  :: qv,qc,qr,qi,qs,qg
- real(kind=RKIND),dimension(:,:),pointer  :: ni,nr,nc,nifa,nwfa
+ real(kind=RKIND),dimension(:,:),pointer  :: ni,nr
  real(kind=RKIND),dimension(:,:),pointer  :: rainprod,evapprod
  real(kind=RKIND),dimension(:,:),pointer  :: re_cloud,re_ice,re_snow
  real(kind=RKIND),dimension(:,:,:),pointer:: scalars
@@ -485,8 +479,6 @@
  integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine microphysics_from_MPAS:'
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -494,10 +486,7 @@
  call mpas_pool_get_array(diag,'exner'        ,exner     )
  call mpas_pool_get_array(diag,'pressure_base',pressure_b)
  call mpas_pool_get_array(diag,'pressure_p'   ,pressure_p)
- call mpas_pool_get_array(diag,'rtheta_base'  ,rtheta_b  )
- call mpas_pool_get_array(diag,'rtheta_p'     ,rtheta_p  )
 
- call mpas_pool_get_array(diag_physics,'nwfa2d'  ,nwfa2d  )
  call mpas_pool_get_array(diag_physics,'nt_c'    ,nt_c    )
  call mpas_pool_get_array(diag_physics,'mu_c'    ,mu_c    )
  call mpas_pool_get_array(diag_physics,'rainprod',rainprod)
@@ -518,9 +507,6 @@
  call mpas_pool_get_dimension(state,'index_qg'  ,index_qg  )
  call mpas_pool_get_dimension(state,'index_ni'  ,index_ni  )
  call mpas_pool_get_dimension(state,'index_nr'  ,index_nr  )
- call mpas_pool_get_dimension(state,'index_nc'  ,index_nc  )
- call mpas_pool_get_dimension(state,'index_nifa',index_nifa)
- call mpas_pool_get_dimension(state,'index_nwfa',index_nwfa)
 
  call mpas_pool_get_array(state,'scalars',scalars,time_lev)
  qv   => scalars(index_qv,:,:)
@@ -531,9 +517,6 @@
  qg   => scalars(index_qg,:,:)
  ni   => scalars(index_ni,:,:)
  nr   => scalars(index_nr,:,:)
- nc   => scalars(index_nc,:,:)
- nifa => scalars(index_nifa,:,:)
- nwfa => scalars(index_nwfa,:,:)
 
 !initialize variables needed in the cloud microphysics schemes:
  do j = jts, jte
@@ -559,7 +542,7 @@
 !additional initialization as function of cloud microphysics scheme:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -572,8 +555,7 @@
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
-          !number concentrations:
+       case("mp_thompson")
           do j = jts,jte
           do i = its,ite
              muc_p(i,j) = mu_c(i)
@@ -594,29 +576,6 @@
           enddo
           enddo
 
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             do j = jts, jte
-             do i = its, ite
-                nwfa2d_p(i,j) = nwfa2d(i)
-             enddo
-             enddo
-
-             do j = jts, jte
-             do k = kts, kte
-             do i = its, ite
-                nc_p(i,k,j)   = nc(k,i)
-                nwfa_p(i,k,j) = nwfa(k,i)
-                nifa_p(i,k,j) = nifa(k,i)
-             enddo
-             enddo
-             enddo
-             
-          case default
-
-       end select microp3_select
-
        case default
 
     end select microp2_select
@@ -624,11 +583,6 @@
     case default
 
  end select microp_select_init
-
-!write(0,*) '--- end subroutine microphysics_from_MPAS.'
-
-!formats:
- 201 format(2i6,10(1x,e15.8))
 
  end subroutine microphysics_from_MPAS
 
@@ -650,16 +604,14 @@
 
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
- integer,pointer:: index_ni,index_nr,index_nc,index_nifa,index_nwfa
- real(kind=RKIND),dimension(:),pointer    :: nwfa2d
- real(kind=RKIND),dimension(:),pointer    :: rdzw
+ integer,pointer:: index_ni,index_nr
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,tend_sfc_pressure
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,exner_b,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p
  real(kind=RKIND),dimension(:,:),pointer  :: rt_diabatic_tend
  real(kind=RKIND),dimension(:,:),pointer  :: qv,qc,qr,qi,qs,qg
- real(kind=RKIND),dimension(:,:),pointer  :: ni,nr,nc,nifa,nwfa
+ real(kind=RKIND),dimension(:,:),pointer  :: ni,nr
  real(kind=RKIND),dimension(:,:),pointer  :: rainprod,evapprod
  real(kind=RKIND),dimension(:,:),pointer  :: re_cloud,re_ice,re_snow
  real(kind=RKIND),dimension(:,:,:),pointer:: scalars
@@ -671,11 +623,6 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
-! write(0,*)
-! write(0,*) '--- enter subroutine microphysics_to_MPAS:'
-
-!initialization:
- call mpas_pool_get_array(mesh,'rdzw' ,rdzw )
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
 
@@ -687,7 +634,6 @@
  call mpas_pool_get_array(diag,'rtheta_p'        ,rtheta_p        )
  call mpas_pool_get_array(diag,'surface_pressure',surface_pressure)
 
- call mpas_pool_get_array(diag_physics,'nwfa2d'  ,nwfa2d  )
  call mpas_pool_get_array(diag_physics,'rainprod',rainprod)
  call mpas_pool_get_array(diag_physics,'evapprod',evapprod)
  call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
@@ -707,9 +653,6 @@
  call mpas_pool_get_dimension(state,'index_qg'  ,index_qg  )
  call mpas_pool_get_dimension(state,'index_ni'  ,index_ni  )
  call mpas_pool_get_dimension(state,'index_nr'  ,index_nr  )
- call mpas_pool_get_dimension(state,'index_nc'  ,index_nc  )
- call mpas_pool_get_dimension(state,'index_nifa',index_nifa)
- call mpas_pool_get_dimension(state,'index_nwfa',index_nwfa)
 
  call mpas_pool_get_array(state,'scalars',scalars,time_lev)
  qv   => scalars(index_qv,:,:)
@@ -720,9 +663,6 @@
  qg   => scalars(index_qg,:,:)
  ni   => scalars(index_ni,:,:)
  nr   => scalars(index_nr,:,:)
- nc   => scalars(index_nc,:,:)
- nifa => scalars(index_nifa,:,:)
- nwfa => scalars(index_nwfa,:,:)
 
  call mpas_pool_get_array(tend,'rt_diabatic_tend',rt_diabatic_tend)
 
@@ -774,7 +714,7 @@
 !variables specific to different cloud microphysics schemes:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -787,8 +727,7 @@
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
-          !number concentrations:
+       case("mp_thompson")
           do j = jts, jte
           do k = kts, kte
           do i = its, ite
@@ -803,29 +742,6 @@
           enddo
           enddo
 
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             do j = jts, jte
-             do i = its, ite
-                nwfa2d(i) = nwfa2d_p(i,j)
-             enddo
-             enddo
-
-             do j = jts, jte
-             do k = kts, kte
-             do i = its, ite
-                nc(k,i)   = nc_p(i,k,j)
-                nwfa(k,i) = nwfa_p(i,k,j)
-                nifa(k,i) = nifa_p(i,k,j)
-             enddo
-             enddo
-             enddo
-             
-          case default
-
-       end select microp3_select
-
        case default
 
     end select microp2_select
@@ -834,13 +750,8 @@
 
  end select microp_select_init
 
-!formats:
- 201 format(2i6,10(1x,e15.8))
-
-! write(0,*) '--- end subroutine microphysics_to_MPAS'
-
  end subroutine microphysics_to_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_interface
-!==================================================================================================
+!=================================================================================================================

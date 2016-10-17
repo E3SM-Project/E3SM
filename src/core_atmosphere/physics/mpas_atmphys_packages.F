@@ -36,7 +36,7 @@
  character(len=StrKIND),pointer:: config_microp_scheme
  character(len=StrKIND),pointer:: config_convection_scheme
  character(len=StrKIND),pointer:: config_pbl_scheme
- logical,pointer:: mp_kessler_in,mp_thompson_aerosols_in,mp_thompson_in,mp_wsm6_in
+ logical,pointer:: mp_kessler_in,mp_thompson_in,mp_wsm6_in
  logical,pointer:: cu_grell_freitas_in,cu_kain_fritsch_in,cu_tiedtke_in
  logical,pointer:: bl_mynn_in,bl_ysu_in
 
@@ -56,19 +56,15 @@
  nullify(mp_kessler_in)
  call mpas_pool_get_package(packages,'mp_kessler_inActive',mp_kessler_in)
 
- nullify(mp_thompson_aerosols_in)
- call mpas_pool_get_package(packages,'mp_thompson_aerosols_inActive',mp_thompson_aerosols_in)
-
  nullify(mp_thompson_in)
  call mpas_pool_get_package(packages,'mp_thompson_inActive',mp_thompson_in)
 
  nullify(mp_wsm6_in)
  call mpas_pool_get_package(packages,'mp_wsm6_inActive',mp_wsm6_in)
 
- if(.not.associated(mp_kessler_in)            .or. &
-    .not.associated(mp_thompson_aerosols_in)  .or. &
-    .not.associated(mp_thompson_in)           .or. &
-    .not.associated(mp_wsm6_in)             ) then
+ if(.not.associated(mp_kessler_in)  .or. &
+    .not.associated(mp_thompson_in) .or. &
+    .not.associated(mp_wsm6_in)) then
     write(stderrUnit,*) '===================================================================================='
     write(stderrUnit,*) '* Error while setting up packages for cloud microphysics options in atmosphere core.'
     write(stderrUnit,*) '===================================================================================='
@@ -77,14 +73,11 @@
  endif
 
  mp_kessler_in           = .false.
- mp_thompson_aerosols_in = .false.
  mp_thompson_in          = .false.
  mp_wsm6_in              = .false.
 
  if(config_microp_scheme == 'mp_kessler') then
     mp_kessler_in = .true.
- elseif(config_microp_scheme == 'mp_thompson_aerosols') then
-    mp_thompson_aerosols_in = .true.
  elseif(config_microp_scheme == 'mp_thompson') then
     mp_thompson_in = .true.
  elseif(config_microp_scheme == 'mp_wsm6') then
@@ -94,7 +87,6 @@
  write(0,*) '--- microp_scheme           = ', trim(config_microp_scheme)
  write(0,*) '--- mp_kessler_in           = ', mp_kessler_in
  write(0,*) '--- mp_thompson_in          = ', mp_thompson_in
- write(0,*) '--- mp_thompson_aerosols_in = ', mp_thompson_aerosols_in
  write(0,*) '--- mp_wsm6_in              = ', mp_wsm6_in
 
 !--- initialization of all packages for parameterizations of convection:
