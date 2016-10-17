@@ -988,20 +988,22 @@ class Case(object):
 
     def set_model_version(self, model):
         version = "unknown"
+        srcroot = self.get_value("SRCROOT")
         if model == "cesm":
-            srcroot = self.get_value("SRCROOT")
             changelog = os.path.join(srcroot,"ChangeLog")
-            expect(os.path.isfile(changelog), " No CESM ChangeLog file found")
-            for line in open(changelog, "r"):
-                m = re.search("Tag name: (cesm.*)$", line)
-                if m is not None:
-                    version = m.group(1)
-                    break
+            if os.path.isfile(changelog):
+                for line in open(changelog, "r"):
+                    m = re.search("Tag name: (cesm.*)$", line)
+                    if m is not None:
+                        version = m.group(1)
+                        break
         elif model == "acme":
-            cimeroot = self.get_value("CIMEROOT")
-            version = get_current_commit(True, cimeroot)
+            version = get_current_commit(True, srcroot)
         self.set_value("MODEL_VERSION", version)
-
+        if version != "unknown":
+            logger.info("%s model version found: %s"%(model, version))
+        else:
+            logger.warn("WARNING: No %s Model version found."%(model))
 
 
 

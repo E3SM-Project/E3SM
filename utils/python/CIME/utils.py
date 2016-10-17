@@ -366,8 +366,11 @@ def get_current_commit(short=False, repo=None):
     >>> get_current_commit() is not None
     True
     """
-    output = run_cmd_no_fail("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
-    return output
+    rc, output, _ = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
+    if rc == 0:
+        return output
+    else:
+        return 'unknown'
 
 def get_scripts_location_within_cime():
     """
