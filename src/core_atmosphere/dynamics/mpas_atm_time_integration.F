@@ -1041,7 +1041,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             call mpas_timer_start('microphysics')
 !$OMP PARALLEL DO
             do thread=1,block % nThreads
-               call microphysics_driver ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep, &
+               call driver_microphysics ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep, &
                                           block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
             end do
 !$OMP END PARALLEL DO
