@@ -19,7 +19,7 @@
  use module_cu_gf
  use module_cu_gf_momentum
  use module_cu_kfeta
- use module_cu_tiedtke_wrf381
+ use module_cu_tiedtke
  use module_cu_ntiedtke_wrf381
 
  implicit none
@@ -49,8 +49,8 @@
 !
 ! WRF physics called from driver_convection:
 ! ------------------------------------------
-!    * module_cu_kfeta      : Kain-Fritsch convection scheme.
-!    * module_cu_tiedtke    : Tiedtke convection scheme.
+! * module_cu_kfeta   : Kain-Fritsch convection scheme.
+! * module_cu_tiedtke : Tiedtke convection scheme.
 
 ! add-ons and modifications to sourcecode:
 ! ----------------------------------------
@@ -82,8 +82,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 ! * in the call to subroutine cu_grell_freitas, removed the argument ktop_deep.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-20.
-! * added the call to the Tiedtke parameterization of convection from WRF version 3.8.1. This option is triggered
-!   using the option cu_tiedtke_wrf381.
+! * updated the call to the Tiedtke parameterization of convection to WRF version 3.8.1. This option is
+!   triggered using the option cu_tiedtke.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-08-18.
 ! * added the call to the "new" Tiedtke parameterization of convection from WRF version 3.8.1. This option is
 !   triggered using the option cu_ntiedtke_wrf381.
@@ -188,7 +188,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke_wrf381")
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
@@ -214,7 +214,7 @@
 
        cu_tiedtke_select: select case(convection_scheme)
 
-          case ("cu_tiedtke_wrf381")
+          case ("cu_tiedtke")
              if(.not.allocated(rqvdynten_p)  ) allocate(rqvdynten_p(ims:ime,kms:kme,jms:jme)  )
              if(.not.allocated(rqvdynblten_p)) allocate(rqvdynblten_p(ims:ime,kms:kme,jms:jme))
 
@@ -306,7 +306,7 @@
        if(allocated(rqrcuten_p)   ) deallocate(rqrcuten_p   )
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
-    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke_wrf381")
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
@@ -315,7 +315,7 @@
 
        cu_tiedtke_select: select case(convection_scheme)
 
-          case ("cu_tiedtke_wrf381")
+          case ("cu_tiedtke")
              if(allocated(rqvdynten_p)  ) deallocate(rqvdynten_p  )
              if(allocated(rqvdynblten_p)) deallocate(rqvdynblten_p)
 
@@ -561,8 +561,8 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                         )
 
-    case("cu_tiedtke_wrf381")
-       call cu_tiedtke_wrf381 ( &
+    case("cu_tiedtke")
+       call cu_tiedtke( &
              pcps        = pres_hyd_p    , p8w       = pres2_hyd_p   ,               &
              znu         = znu_hyd_p     , t3d       = t_p           ,               &
              dt          = dt_dyn        , itimestep = itimestep     ,               &
@@ -583,7 +583,7 @@
              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-                    )
+                      )
 
     case("cu_ntiedtke_wrf381")
        write(0,*) '--- enter subroutine cu_ntiedtke_wrf381:'
@@ -784,7 +784,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke_wrf381")
        call mpas_pool_get_array(sfc_input,'xland',xland)
        call mpas_pool_get_array(diag_physics,'hfx',hfx)
        call mpas_pool_get_array(diag_physics,'qfx',qfx)
@@ -811,7 +811,7 @@
 
        cu_tiedtke_select: select case(convection_scheme)
 
-          case ("cu_tiedtke_wrf381")
+          case ("cu_tiedtke")
              do j = jts,jte
              do k = kts,kte
              do i = its,ite
@@ -961,7 +961,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke_wrf381")
        call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
        call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
 
