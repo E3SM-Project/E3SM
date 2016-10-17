@@ -52,19 +52,6 @@ ERRPUT: %s
     return output
 
 ###############################################################################
-class AA_ReportProvenance(unittest.TestCase):
-###############################################################################
-
-    def test_report_provenance(self):
-        # This doesn't really test anything. Rather, it abuses the test system
-        # to print some provenance information about what we're testing.
-        curr_commit = get_current_commit(repo=LIB_DIR)
-        logging.info("\nTesting commit %s" % curr_commit)
-        cime_model = CIME.utils.get_model()
-        logging.info("Using cime_model = %s" % cime_model)
-
-
-###############################################################################
 class A_RunUnitTests(unittest.TestCase):
 ###############################################################################
 
@@ -1822,6 +1809,12 @@ def check_for_pylint():
         return False
     return True
 
+def write_provenance_info():
+    curr_commit = get_current_commit(repo=LIB_DIR)
+    logging.info("\nTesting commit %s" % curr_commit)
+    cime_model = CIME.utils.get_model()
+    logging.info("Using cime_model = %s" % cime_model)
+
 def _main_func():
 
     if "--fast" in sys.argv:
@@ -1844,6 +1837,8 @@ def _main_func():
             setattr(args, log_param, False)
 
     CIME.utils.handle_standard_logging_options(args)
+
+    write_provenance_info()
 
     # Find all python files in repo and create a pylint test for each
     if check_for_pylint():
