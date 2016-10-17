@@ -40,7 +40,7 @@
 !
 !###########################################################
 
-module module_cu_ntiedtke_wrf381
+module module_cu_ntiedtke
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #if defined(mpas)
@@ -134,7 +134,7 @@ module module_cu_ntiedtke_wrf381
 !
 contains
 !-----------------------------------------------------------------------
-     subroutine cu_ntiedtke_wrf381(                             &
+     subroutine cu_ntiedtke(                                    &
                  dt,itimestep,stepcu                            &
                 ,raincv,pratec,qfx,hfx                          &
                 ,u3d,v3d,w,t3d,qv3d,qc3d,qi3d,pi3d,rho3d        &
@@ -448,7 +448,7 @@ contains
 
    enddo
 
-   end subroutine cu_ntiedtke_wrf381
+   end subroutine cu_ntiedtke
 
 !====================================================================
    subroutine ntiedtkeinit(rthcuten,rqvcuten,rqccuten,rqicuten,         &
@@ -3854,5 +3854,5 @@ contains
       return
       end function  foeldcpm
 
-end module module_cu_ntiedtke_wrf381
-                                                                                         
+end module module_cu_ntiedtke
+
