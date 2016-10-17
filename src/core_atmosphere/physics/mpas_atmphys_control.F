@@ -60,8 +60,7 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 ! * added the options sf_mynn_wrf38 and bl_mynn_wrf38 for the MYNN parameterization from WRF version 3.8.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
-! * added the option cu_ntiedtke_wrf381 for the "new" Tiedtke parameterization of convection from WRF
-!   version 3.8.1.
+! * added the option cu_ntiedtke for the "new" Tiedtke parameterization of convection from WRF version 3.8.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
 
 
@@ -155,7 +154,7 @@
            config_convection_scheme .eq. 'cu_grell_freitas_momentum' .or. &
            config_convection_scheme .eq. 'cu_kain_fritsch'           .or. &
            config_convection_scheme .eq. 'cu_tiedtke'                .or. &
-           config_convection_scheme .eq. 'cu_ntiedtke_wrf381'        )) then
+           config_convection_scheme .eq. 'cu_ntiedtke')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
           trim(config_convection_scheme)

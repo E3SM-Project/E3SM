@@ -121,7 +121,7 @@
  elseif(config_convection_scheme == 'cu_kain_fritsch') then
     cu_kain_fritsch_in = .true.
  elseif(config_convection_scheme == 'cu_tiedtke' .or. &
-        config_convection_scheme == 'cu_ntiedtke_wrf381') then
+        config_convection_scheme == 'cu_ntiedtke') then
     cu_tiedtke_in = .true.
  endif
 

@@ -20,7 +20,7 @@
  use module_cu_gf_momentum
  use module_cu_kfeta
  use module_cu_tiedtke
- use module_cu_ntiedtke_wrf381
+ use module_cu_ntiedtke
 
  implicit none
  private
@@ -86,7 +86,7 @@
 !   triggered using the option cu_tiedtke.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-08-18.
 ! * added the call to the "new" Tiedtke parameterization of convection from WRF version 3.8.1. This option is
-!   triggered using the option cu_ntiedtke_wrf381.
+!   triggered using the option cu_ntiedtke.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-20.
 
 
@@ -188,7 +188,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke")
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
@@ -227,7 +227,7 @@
              enddo
              enddo
 
-          case("cu_ntiedtke_wrf381")
+          case("cu_ntiedtke")
              if(.not.allocated(dx_p)     ) allocate(dx_p(ims:ime,jms:jme)             )
              if(.not.allocated(rqvften_p)) allocate(rqvften_p(ims:ime,kms:kme,jms:jme))
              if(.not.allocated(rthften_p)) allocate(rthften_p(ims:ime,kms:kme,jms:jme))
@@ -306,7 +306,7 @@
        if(allocated(rqrcuten_p)   ) deallocate(rqrcuten_p   )
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
-    case ("cu_tiedtke","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke")
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
@@ -319,7 +319,7 @@
              if(allocated(rqvdynten_p)  ) deallocate(rqvdynten_p  )
              if(allocated(rqvdynblten_p)) deallocate(rqvdynblten_p)
 
-          case ("cu_ntiedtke_wrf381")
+          case ("cu_ntiedtke")
              if(allocated(dx_p)     ) deallocate(dx_p)
              if(allocated(rqvften_p)) deallocate(rqvften_p)
              if(allocated(rthften_p)) deallocate(rthften_p)
@@ -585,9 +585,8 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                       )
 
-    case("cu_ntiedtke_wrf381")
-       write(0,*) '--- enter subroutine cu_ntiedtke_wrf381:'
-       call cu_ntiedtke_wrf381( &
+    case("cu_ntiedtke")
+       call cu_ntiedtke( &
              pcps      = pres_hyd_p  , p8w         = pres2_hyd_p ,                   &
              t3d       = t_p         , dz8w        = dz_p        ,                   &
              dt        = dt_dyn      , itimestep   = itimestep   ,                   &
@@ -610,7 +609,6 @@
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                               )
-       write(0,*) '--- end subroutine cu_ntiedtke_wrf381.'
 
     case default
 
@@ -784,7 +782,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke")
        call mpas_pool_get_array(sfc_input,'xland',xland)
        call mpas_pool_get_array(diag_physics,'hfx',hfx)
        call mpas_pool_get_array(diag_physics,'qfx',qfx)
@@ -821,7 +819,7 @@
              enddo
              enddo
  
-          case("cu_ntiedtke_wrf381")
+          case("cu_ntiedtke")
              call mpas_pool_get_config(configs,'config_len_disp',len_disp)
              call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
 
@@ -961,7 +959,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke","cu_ntiedtke")
        call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
        call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
 
