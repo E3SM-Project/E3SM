@@ -1813,7 +1813,7 @@ def write_provenance_info():
     curr_commit = get_current_commit(repo=LIB_DIR)
     logging.info("\nTesting commit %s" % curr_commit)
     cime_model = CIME.utils.get_model()
-    logging.info("Using cime_model = %s" % cime_model)
+    logging.info("Using cime_model = %s\n" % cime_model)
 
 def _main_func():
 
