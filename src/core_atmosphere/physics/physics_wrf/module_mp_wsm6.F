@@ -1,6 +1,16 @@
 !=================================================================================================================
 !module_mp_wsm6.F was originally copied from ./phys/module_mp_wsm6.F from WRF version 3.8.1.
 !Laura D. Fowler (laura@ucar.edu) / 2016-09-23.
+
+!modifications to sourcecode for MPAS:
+!   * replaced the line "#if ( RWORDSIZE == 4 )" with "#ifdef SINGLE_PRECISION".
+!   * commented out the lines:
+!     USE module_utility, ONLY: WRFU_Clock, WRFU_Alarm
+!     USE module_domain, ONLY : HISTORY_ALARM, Is_alarm_tstep
+!   * changed the declaration of refl_10cm to optional since subroutine refl10cm_wsm6 is called
+!     in mpas_atmphys_driver_microphysics.F.
+!     Laura D. Fowler (laura@ucar.edu) / 2016-10-17.
+
 !=================================================================================================================
 #ifdef SINGLE_PRECISION
 #  define VREC vsrec
@@ -214,7 +224,7 @@ CONTAINS
                   qs1d(k)=qs(i,k,j)
                   qg1d(k)=qg(i,k,j)
                ENDDO
-               call refl10cm_wsm6(qv1d, qr1d, qs1d, qg1d,              &
+               call refl10cm_wsm6 (qv1d, qr1d, qs1d, qg1d,              &
                        t1d, p1d, dBZ, kts, kte, i, j)
                do k = kts, kte
                   refl_10cm(i,k,j) = MAX(-35., dBZ(k))
