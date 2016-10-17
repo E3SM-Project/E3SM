@@ -21,7 +21,7 @@
 !                       (2004, mon. wea. rev., 132, 274-296), improvements for pbl clouds
 !                       (2007,mon. wea. rev., 135, 567-585), diurnal cycle of precipitation
 !###########################################################
-module module_cu_tiedtke_wrf381
+module module_cu_tiedtke
 !
 #if defined(mpas)
  use mpas_atmphys_constants, only: &
@@ -131,7 +131,7 @@ module module_cu_tiedtke_wrf381
 !
 contains
 !-----------------------------------------------------------------------
-      subroutine cu_tiedtke_wrf381(                             &
+      subroutine cu_tiedtke(                                    &
                  dt,itimestep,stepcu                            &
                 ,raincv,pratec,qfx,znu                          &
                 ,u3d,v3d,w,t3d,qv3d,qc3d,qi3d,pi3d,rho3d        &
@@ -494,10 +494,10 @@ contains
 
    enddo
 
-   end subroutine cu_tiedtke_wrf381
+   end subroutine cu_tiedtke
 
 !====================================================================
-   subroutine tiedtkeinit_wrf381(rthcuten,rqvcuten,rqccuten,rqicuten,   &
+   subroutine tiedtkeinit(rthcuten,rqvcuten,rqccuten,rqicuten,          &
                      rucuten,rvcuten,                                   &
                      restart,p_qc,p_qi,p_first_scalar,                  &
                      allowed_to_read,                                   &
@@ -559,7 +559,7 @@ contains
      endif
    endif
 
-      end subroutine tiedtkeinit_wrf381
+      end subroutine tiedtkeinit
 
 ! ------------------------------------------------------------------------
 
@@ -3107,5 +3107,5 @@ contains
       end function tlucuc
 !
 
-end module module_cu_tiedtke_wrf381
+end module module_cu_tiedtke
 
