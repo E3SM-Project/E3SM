@@ -182,9 +182,9 @@
 
    <batch_system MACH="wolf" version="x.y">
      <batch_directive>#MSUB</batch_directive>
-	<directives>
-		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-	</directives>
+  <directives>
+    <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+  </directives>
     </batch_system>
 
    <batch_system MACH="oic2" version="x.y">
@@ -197,6 +197,14 @@
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
          </directives>
+   </batch_system>
+
+   <batch_system MACH="metis" version="x.y">
+     <jobid_pattern>(\d+)</jobid_pattern>
+     <directives>
+       <directive>-A {{ project }}</directive>
+       <directive>-l nodes={{ num_nodes }}</directive>
+     </directives>
    </batch_system>
 
    <batch_system MACH="titan" version="x.y">

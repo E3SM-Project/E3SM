@@ -69,7 +69,7 @@ if (-e $run_dir/cesm_prerun_done) then
 endif
 
 if ($app_jobid == 'unknown') then
-  if ($machine == 'titan') then
+  if ($machine == 'titan' || $machine == 'metis') then
 
     set app_jobid = $PBS_JOBID
 
@@ -84,7 +84,7 @@ if ($app_jobid == 'unknown') then
   endif  
 endif
 
-if ($machine == 'titan') then
+if ($machine == 'titan' || $machine == 'metis') then
 
   set string = `qstat -f $app_jobid | grep ctime`
   echo "job $app_jobid created: $string" >>& $caseroot/CaseStatus

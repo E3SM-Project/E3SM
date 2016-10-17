@@ -750,6 +750,17 @@ for mct, etc.
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
+<compiler COMPILER="pgi" MACH="metis">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>  
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+</compiler>
+
 <compiler COMPILER="pgi" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
@@ -763,6 +774,15 @@ for mct, etc.
   <MPICC> cc </MPICC>
   <MPICXX> /opt/cray/craype/2.4.0/bin/CC </MPICXX>
   <ALBANY_PATH>/ccs/proj/cli106/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+</compiler>
+
+<compiler COMPILER="pgi_acc" MACH="metis">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler COMPILER="pgi_acc" MACH="titan">
@@ -1058,25 +1078,25 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="mustang" COMPILER="pgi">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>pgfortran</SFC>
-	<SCC>pgcc</SCC>
-	<SCXX>pgc++</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>pgfortran</SFC>
+  <SCC>pgcc</SCC>
+  <SCXX>pgc++</SCXX>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="mustang" COMPILER="intel">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>ifort</SFC>
-	<SCC>icc</SCC>
-	<SCXX>icpc</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>ifort</SFC>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
   <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
@@ -1087,68 +1107,68 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="mustang" COMPILER="gnu">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>gfortran</SFC>
-	<SCC>gcc</SCC>
-	<SCXX>g++</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>gfortran</SFC>
+  <SCC>gcc</SCC>
+  <SCXX>g++</SCXX>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
         <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
+  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+  <ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="pgi">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>pgfortran</SFC>
-	<SCC>pgcc</SCC>
-	<SCXX>pgc++</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>pgfortran</SFC>
+  <SCC>pgcc</SCC>
+  <SCXX>pgc++</SCXX>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="intel">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>ifort</SFC>
-	<SCC>icc</SCC>
-	<SCXX>icpc</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-	<ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-	<ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-	<ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-	<ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-	<ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-	<ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-	<ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>ifort</SFC>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="gnu">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>gfortran</SFC>
-	<SCC>gcc</SCC>
-	<SCXX>g++</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>gfortran</SFC>
+  <SCC>gcc</SCC>
+  <SCXX>g++</SCXX>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
         <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
+  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+  <ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="lawrencium-lr2">
-	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
-	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+  <ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+  <GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="lawrencium-lr3">
-	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
-	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+  <ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+  <GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="mesabi">

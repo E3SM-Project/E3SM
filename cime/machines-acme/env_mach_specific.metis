@@ -1,0 +1,107 @@
+#! /bin/csh -f
+
+#===============================================================================
+# Titan machine specific settings
+#===============================================================================
+
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
+  set MPILIB   = `./xmlquery MPILIB   -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
+
+#-------------------------------------------------------------------------------
+# Modules
+#-------------------------------------------------------------------------------
+
+if (-e /opt/modules/default/init/csh) then
+  source /opt/modules/default/init/csh
+  module rm pgi intel cray gcc
+  module rm PrgEnv-pgi PrgEnv-intel PrgEnv-gnu PrgEnv-cray
+  module rm cray-mpich cray-libsci atp cudatoolkit cray-netcdf cray-netcdf-hdf5parallel cray-parallel-netcdf subversion cmake
+  
+  #Add based on COMPILER specification
+  if ($COMPILER == "pgi_acc") then
+      setenv MODULEPATH ${MODULEPATH}:/ccs/home/norton/.modules
+      module add    PrgEnv-pgi
+      module rm     cray-mpich cray-libsci atp
+      module switch pgi pgi/15.9.lustre
+      module add    cray-mpich/7.4.3
+      module add    cray-libsci/16.09.1
+      module add    atp/2.0.2
+      module add    cudatoolkit
+      # NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility
+      setenv CRAY_CPU_TARGET istanbul
+      setenv CRAY_CUDA_MPS 1
+  endif  
+  
+  if ( $COMPILER == "pgi" ) then
+      module add    PrgEnv-pgi
+      module rm     cray-mpich cray-libsci atp
+      module switch pgi pgi/15.7.0 
+      module add    cray-mpich/7.4.3
+      module add    cray-libsci/16.09.1
+      module add    atp/2.0.2
+      # NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility
+      setenv CRAY_CPU_TARGET istanbul
+  endif
+
+  if ( $COMPILER == "intel" ) then
+      module add    PrgEnv-intel 
+      module rm     cray-mpich cray-libsci atp
+      module switch intel intel/15.0.2.164
+      module add    cray-libsci/16.06.1
+      module add    cray-mpich/7.4.0
+      module add    atp/2.0.2
+  endif
+  
+  if ( $COMPILER == "cray" ) then
+      module add    PrgEnv-cray
+      module rm     cray-mpich
+      module switch cce cce/8.5.0
+      module add    cray-mpich/7.4.0
+  endif
+
+  if ( $MPILIB == "mpi-serial") then
+      module add cray-netcdf/4.4.0
+  else
+      module add cray-netcdf-hdf5parallel/4.4.0
+      module add cray-parallel-netcdf/1.7.0
+  endif
+
+#  module add subversion/1.9.4
+#  module add cmake/3.6.2
+endif
+
+module list >& software_environment.txt
+#-------------------------------------------------------------------------------
+# Runtime environment variables
+#-------------------------------------------------------------------------------
+
+limit coredumpsize unlimited
+limit stacksize unlimited
+
+# Capture logical to physics PE assignment and active environment variable
+# settings
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1
+setenv MPICH_CPUMASK_DISPLAY 1
+#setenv MPICH_RANK_REORDER_DISPLAY 1
+
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine. 
+setenv MPSTKZ 128M 
+setenv OMP_STACKSIZE 128M
+
+if ( $COMPILER == "intel" ) then
+  setenv CRAYPE_LINK_TYPE dynamic
+endif 
+if ( $?PERL ) then
+  printenv
+endif
+
+
