@@ -74,7 +74,7 @@ if (-e /opt/modules/default/init/csh) then
   endif
 
 #  module add subversion/1.9.4
-#  module add cmake/3.6.2
+  module add cmake/3.0.2
 endif
 
 module list >& software_environment.txt
