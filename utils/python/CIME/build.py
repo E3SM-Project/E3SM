@@ -3,8 +3,6 @@ functions for building CIME models
 """
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status
-from CIME.preview_namelists     import preview_namelists
-from CIME.check_input_data      import check_all_input_data
 from CIME.provenance            import save_build_provenance
 
 import glob, shutil, time, threading, gzip, subprocess
@@ -165,9 +163,6 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     comp_classes = case.get_values("COMP_CLASSES")
 
-    if not sharedlib_only:
-        check_all_input_data(case)
-
     run_cmd_no_fail("./Tools/check_lockedfiles --caseroot %s" % caseroot)
 
     # Retrieve relevant case data
@@ -278,17 +273,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     os.environ["USE_ALBANY"] = use_albany
 
     # Load modules
-    env_module = case.get_env("mach_specific")
-    env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
-                                 debug=case.get_value("DEBUG"),
-                                 mpilib=case.get_value("MPILIB"))
-
-
-    # Need to flush case xml to disk before calling preview_namelists
-    case.flush()
-
-    if not sharedlib_only:
-        preview_namelists(case)
+    case.load_env()
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
                  sharedlibroot, complist, ninst_build, smp_value)

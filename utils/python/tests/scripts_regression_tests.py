@@ -492,15 +492,22 @@ class N_TestCreateTest(TestCreateTestCommon):
     ###############################################################################
         # Generate some namelist baselines
         if CIME.utils.get_model() == "acme":
-            genarg = "-g -o -b %s"%self._baseline_name
-            comparg = "-c -b %s"%self._baseline_name
+            genarg = "-g -o -b %s" % self._baseline_name
+            comparg = "-c -b %s" % self._baseline_name
         else:
-            genarg = "-g %s -o"%self._baseline_name
-            comparg = "-c %s"%self._baseline_name
-        self.simple_test(True, "%s -n -t %s-%s" % (genarg,self._baseline_name, CIME.utils.get_timestamp()))
+            genarg = "-g %s -o" % self._baseline_name
+            comparg = "-c %s" % self._baseline_name
+
+        self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))
 
         # Basic namelist compare
-        self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
+        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+        self.simple_test(True, "%s -n -t %s" % (comparg, test_id))
+
+        # Check standalone case.do_namelists
+        casedir = os.path.join(self._testroot,
+                               "%s.C.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), test_id))
+        run_cmd_assert_result(self, "./case.do_namelists", from_dir=casedir)
 
         # Modify namelist
         fake_nl = """
@@ -512,17 +519,21 @@ class N_TestCreateTest(TestCreateTestCommon):
         baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "TEST*"))
         self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
 
-        baseline_dir = baseline_glob[0]
-        nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
-        self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
-
         import stat
-        os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
-        with open(nl_path, "a") as nl_file:
-            nl_file.write(fake_nl)
+        for baseline_dir in baseline_glob:
+            nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+            self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+            with open(nl_path, "a") as nl_file:
+                nl_file.write(fake_nl)
 
         # Basic namelist compare should now fail
-        self.simple_test(False, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
+        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+        self.simple_test(True, "%s -n -t %s" % (comparg, test_id))
+        casedir = os.path.join(self._testroot,
+                               "%s.C.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), test_id))
+        run_cmd_assert_result(self, "./case.do_namelists", from_dir=casedir, expected_stat=1)
 
         # Regen
         self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))

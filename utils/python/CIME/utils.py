@@ -946,3 +946,8 @@ def get_lids(case):
     model = case.get_value("MODEL")
     rundir = case.get_value("RUNDIR")
     return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (rundir, model)))
+
+def new_lid():
+    lid = time.strftime("%y%m%d-%H%M%S")
+    os.environ["LID"] = lid
+    return lid

@@ -5,7 +5,7 @@ Library for case.setup.
 from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
-from CIME.preview_namelists import preview_namelists
+from CIME.preview_namelists import create_dirs
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.compilers     import Compilers
 from CIME.utils             import append_status, parse_test_name, get_cime_root
@@ -248,8 +248,7 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
 
         # Run preview namelists for scripts
-        logger.info("preview_namelists")
-        preview_namelists(case)
+        create_dirs(case)
 
         logger.info("See ./CaseDoc for component namelists")
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")

@@ -102,7 +102,10 @@ class EnvMachSpecific(EnvBase):
 
         return modules_to_load, envs_to_set
 
-    def load_env_for_case(self, compiler, debug, mpilib):
+    def load_env(self, compiler, debug, mpilib):
+        """
+        Should only be called by case.load_env
+        """
         modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
 
         if (modules_to_load is not None):

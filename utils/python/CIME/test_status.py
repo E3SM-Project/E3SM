@@ -177,7 +177,7 @@ class TestStatus(object):
                 expect(self._phase_statuses[previous_core_phase][0] == TEST_PASS_STATUS,
                        "Cannot move past core phase '%s', it didn't pass" % previous_core_phase)
 
-        reran_phase = (phase in self._phase_statuses and self._phase_statuses[phase][0] != TEST_PEND_STATUS)
+        reran_phase = (phase in self._phase_statuses and self._phase_statuses[phase][0] != TEST_PEND_STATUS and phase in CORE_PHASES)
         if reran_phase:
             # All subsequent phases are invalidated
             phase_idx = ALL_PHASES.index(phase)

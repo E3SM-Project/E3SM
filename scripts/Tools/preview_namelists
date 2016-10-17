@@ -40,9 +40,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
 
-    parser.add_argument("--dryrun", action="store_true",
-                        help="Do not attempt to load modules or create directories")
-
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -56,9 +53,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, dryrun = parse_command_line(sys.argv, description)
+    caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        preview_namelists(case, dryrun=False)
+        preview_namelists(case)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

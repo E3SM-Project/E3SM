@@ -93,6 +93,8 @@ class Case(object):
         self._components = []
         self._component_classes = []
 
+        self._is_env_loaded = False
+
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
     def __enter__(self):
@@ -733,6 +735,7 @@ class Case(object):
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
+                    os.path.join(toolsdir, "case.do_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
@@ -985,7 +988,6 @@ class Case(object):
 
         return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
-
     def set_model_version(self, model):
         version = "unknown"
         if model == "cesm":
@@ -1002,11 +1004,10 @@ class Case(object):
             version = get_current_commit(True, cimeroot)
         self.set_value("MODEL_VERSION", version)
 
-
-
-
-
-
-
-
-
+    def load_env(self):
+        if not self._is_env_loaded:
+            env_module = self.get_env("mach_specific")
+            env_module.load_env(compiler=self.get_value("COMPILER"),
+                                debug=self.get_value("DEBUG"),
+                                mpilib=self.get_value("MPILIB"))
+            self._is_env_loaded = True
