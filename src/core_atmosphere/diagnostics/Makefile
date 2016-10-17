@@ -4,7 +4,10 @@
 # Add new diagnostic modules to DIAGNOSTIC_MODULES
 #
 DIAGNOSTIC_MODULES = \
-	mpas_atm_diagnostic_template.o
+	mpas_atm_diagnostic_template.o \
+	convective_diagnostics.o
+
+convective_diagnostics.o: mpas_atm_diagnostics_utils.o
 
 
 ################### Generally no need to modify below here ###################

@@ -1,0 +1,50 @@
+<!-- ******************************* -->
+<!-- Convective diagnostics          -->
+<!-- ******************************* -->
+
+<var_struct name="diag" time_levs="1">
+
+        <var name="cape"                   type="real"     dimensions="nCells Time" units="J kg^{-1}"
+             description="Convective available potential energy"/>
+
+        <var name="cin"                    type="real"     dimensions="nCells Time" units="J kg^{-1}"
+             description="Convective inhibition"/>
+
+        <var name="lcl"                    type="real"     dimensions="nCells Time" units="m"
+             description="Lifted condensation level"/>
+
+        <var name="lfc"                    type="real"     dimensions="nCells Time" units="m"
+             description="Level of free convection"/>
+
+        <var name="srh_0_1km"              type="real"     dimensions="nCells Time" units="m^2 s^{-2}"
+             description="Storm relative helicity, 0-1 km AGL"/>
+
+        <var name="srh_0_3km"              type="real"     dimensions="nCells Time" units="m^2 s^{-2}"
+             description="Storm relative helicity, 0-3 km AGL"/>
+
+        <var name="uzonal_surface"         type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Zonal wind component at midpoint of lowest model layer"/>
+
+        <var name="uzonal_1km"             type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Zonal wind component at 1 km AGL"/>
+
+        <var name="uzonal_6km"             type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Zonal wind component at 6 km AGL"/>
+
+        <var name="umeridional_surface"    type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Meridional wind component at midpoint of lowest model layer"/>
+
+        <var name="umeridional_1km"        type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Meridional wind component at 1 km AGL"/>
+
+        <var name="umeridional_6km"        type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Meridional wind component at 6 km AGL"/>
+
+        <var name="temperature_surface"    type="real"     dimensions="nCells Time" units="K"
+             description="Temperature at midpoint of lowest model layer"/>
+
+        <var name="dewpoint_surface"       type="real"     dimensions="nCells Time" units="Degrees C"
+             description="Dewpoint temperature at midpoint of lowest model layer"/>
+
+</var_struct>
+

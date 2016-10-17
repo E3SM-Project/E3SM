@@ -35,6 +35,7 @@ module mpas_atm_diagnostics_manager
         use mpas_atm_diagnostics_utils, only : mpas_atm_diag_utils_init
         use mpas_derived_types, only : MPAS_streamManager_type, MPAS_pool_type, MPAS_clock_type
         use diagnostic_template, only : diagnostic_template_setup
+        use convective_diagnostics, only : convective_diagnostics_setup
 
         implicit none
 
@@ -51,6 +52,7 @@ module mpas_atm_diagnostics_manager
         call mpas_atm_diag_utils_init(stream_mgr)
 
         call diagnostic_template_setup(structs, clock)
+        call convective_diagnostics_setup(structs, clock)
 
     end subroutine mpas_atm_diag_setup
 
@@ -91,12 +93,14 @@ module mpas_atm_diagnostics_manager
     subroutine mpas_atm_diag_compute()
 
         use diagnostic_template, only : diagnostic_template_compute
+        use convective_diagnostics, only : convective_diagnostics_compute
 
         implicit none
 
         write(stderrUnit,*) 'mpas_atm_diag_compute()'
 
         call diagnostic_template_compute()
+        call convective_diagnostics_compute()
 
     end subroutine mpas_atm_diag_compute
 

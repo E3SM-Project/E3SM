@@ -981,20 +981,24 @@
 			<var name="updraft_helicity_max"/>
 			<var name="w_velocity_max"/>
 			<var name="wind_speed_level1_max"/>
-			<var name="cape"/>
-			<var name="cin"/>
-			<var name="lcl"/>
-			<var name="lfc"/>
-			<var name="srh_0_1km"/>
-			<var name="srh_0_3km"/>
-			<var name="uzonal_surface"/>
-			<var name="uzonal_1km"/>
-			<var name="uzonal_6km"/>
-			<var name="umeridional_surface"/>
-			<var name="umeridional_1km"/>
-			<var name="umeridional_6km"/>
-			<var name="temperature_surface"/>
-			<var name="dewpoint_surface"/>
+
+                        <!-- Begin convective diagnostics defined in diagnostics/Registry_convective.xml -->
+                        <var name="cape"/>
+                        <var name="cin"/>
+                        <var name="lcl"/>
+                        <var name="lfc"/>
+                        <var name="srh_0_1km"/>
+                        <var name="srh_0_3km"/>
+                        <var name="uzonal_surface"/>
+                        <var name="uzonal_1km"/>
+                        <var name="uzonal_6km"/>
+                        <var name="umeridional_surface"/>
+                        <var name="umeridional_1km"/>
+                        <var name="umeridional_6km"/>
+                        <var name="temperature_surface"/>
+                        <var name="dewpoint_surface"/>
+                        <!-- End convective diagnostics defined in diagnostics/Registry_convective.xml -->
+
 			<var name="t_oml"/>
 			<var name="t_oml_initial"/>
 			<var name="t_oml_200m_initial"/>
@@ -1793,48 +1797,6 @@
                      description="TBD"/>
 
                 <var name="wind_speed_level1_max"  type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="cape"                   type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="cin"                    type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="lcl"                    type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="lfc"                    type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="srh_0_1km"              type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="srh_0_3km"              type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="uzonal_surface"         type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="uzonal_1km"             type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="uzonal_6km"             type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="umeridional_surface"    type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="umeridional_1km"        type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="umeridional_6km"        type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="temperature_surface"    type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="dewpoint_surface"       type="real"     dimensions="nCells Time" units="TBD"
                      description="TBD"/>
 
         </var_struct>
