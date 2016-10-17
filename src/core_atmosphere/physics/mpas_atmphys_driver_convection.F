@@ -19,7 +19,6 @@
  use module_cu_gf
  use module_cu_gf_momentum
  use module_cu_kfeta
- use module_cu_tiedtke
  use module_cu_tiedtke_wrf381
  use module_cu_ntiedtke_wrf381
 
@@ -76,7 +75,6 @@
 ! * added the implementation of the Grell-Freitas convection scheme (options cu_grell_freitas and
 !   cu_grell_freitas_momentum).
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
-! * reorganized the calls to mpas_pool_.. as functions of the parameterization of convection. this makes the
 !   code cleaner, now that we are using physics packages.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-01.
 ! * in the calls to subroutine cu_grell_freitas and cu_grell_freitas_momentum, added the array pratec for the
@@ -190,7 +188,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
@@ -216,7 +214,7 @@
 
        cu_tiedtke_select: select case(convection_scheme)
 
-          case ("cu_tiedtke","cu_tiedtke_wrf381")
+          case ("cu_tiedtke_wrf381")
              if(.not.allocated(rqvdynten_p)  ) allocate(rqvdynten_p(ims:ime,kms:kme,jms:jme)  )
              if(.not.allocated(rqvdynblten_p)) allocate(rqvdynblten_p(ims:ime,kms:kme,jms:jme))
 
@@ -308,7 +306,7 @@
        if(allocated(rqrcuten_p)   ) deallocate(rqrcuten_p   )
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
@@ -317,7 +315,7 @@
 
        cu_tiedtke_select: select case(convection_scheme)
 
-          case ("cu_tiedtke","cu_tiedtke_wrf381")
+          case ("cu_tiedtke_wrf381")
              if(allocated(rqvdynten_p)  ) deallocate(rqvdynten_p  )
              if(allocated(rqvdynblten_p)) deallocate(rqvdynblten_p)
 
@@ -356,8 +354,6 @@
  integer:: iCell
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine init_convection:'
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
@@ -384,8 +380,6 @@
     case default
 
  end select convection_select
-
-!write(0,*) '--- end subroutine init_convection'
 
  end subroutine init_convection
 
@@ -430,8 +424,6 @@
  real(kind=RKIND):: min_rthcuten
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
 
  call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
  call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
@@ -569,31 +561,6 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                         )
 
-    case("cu_tiedtke")
-       call cu_tiedtke ( &
-             pcps        = pres_hyd_p    , p8w             = pres2_hyd_p ,           &
-             znu         = znu_hyd_p     , t3d             = t_p         ,           &
-             dt          = dt_dyn        , itimestep       = itimestep   ,           &
-             stepcu      = n_cu          , raincv          = raincv_p    ,           &
-             pratec      = pratec_p      , hfx             = hfx_p       ,           &
-             qfx         = qfx_p         , u3d             = u_p         ,           &
-             v3d         = v_p           , w               = w_p         ,           &
-             qv3d        = qv_p          , qc3d            = qc_p        ,           &
-             qi3d        = qi_p          , pi3d            = pi_p        ,           &
-             rho3d       = rho_p         , qvften          = rqvdynten_p ,           &
-             qvpblten    = rqvdynblten_p , dz8w            = dz_p        ,           &
-             xland       = xland_p       , cu_act_flag     = cu_act_flag ,           &
-             f_qv        = f_qv          , f_qc            = f_qc        ,           &
-             f_qr        = f_qr          , f_qi            = f_qi        ,           &
-             f_qs        = f_qs          , rthcuten        = rthcuten_p  ,           &
-             rqvcuten    = rqvcuten_p    , rqccuten        = rqccuten_p  ,           &
-             rqicuten    = rqicuten_p    , rucuten         = rucuten_p   ,           &
-             rvcuten     = rvcuten_p     ,                                           &
-             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
-             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
-             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-                    )
-
     case("cu_tiedtke_wrf381")
        call cu_tiedtke_wrf381 ( &
              pcps        = pres_hyd_p    , p8w       = pres2_hyd_p   ,               &
@@ -653,9 +620,6 @@
 !specific to convection parameterization back to the dynamics grid:
  call convection_to_MPAS(diag_physics,tend_physics,its,ite)
 
- write(0,*) '--- end subroutine convection_driver'
- write(0,*)
-
  end subroutine driver_convection
 
 !=================================================================================================================
@@ -668,8 +632,9 @@
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: tend_physics
- real(kind=RKIND),intent(in):: dt_dyn
+
  integer,intent(in):: its,ite
+ real(kind=RKIND),intent(in):: dt_dyn
 
 !local pointers:
  integer,dimension(:),pointer:: kpbl,k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
@@ -819,7 +784,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        call mpas_pool_get_array(sfc_input,'xland',xland)
        call mpas_pool_get_array(diag_physics,'hfx',hfx)
        call mpas_pool_get_array(diag_physics,'qfx',qfx)
@@ -846,7 +811,7 @@
 
        cu_tiedtke_select: select case(convection_scheme)
 
-          case ("cu_tiedtke","cu_tiedtke_wrf381")
+          case ("cu_tiedtke_wrf381")
              do j = jts,jte
              do k = kts,kte
              do i = its,ite
@@ -996,7 +961,7 @@
        enddo
        enddo
 
-    case ("cu_tiedtke","cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
+    case ("cu_tiedtke_wrf381","cu_ntiedtke_wrf381")
        call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
        call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
 
@@ -1016,11 +981,10 @@
  end subroutine convection_to_MPAS
 
 !=================================================================================================================
- subroutine update_convection_step1(mesh,diag_physics,tend_physics,its,ite)
+ subroutine update_convection_step1(diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
- type(mpas_pool_type),intent(in):: mesh
  integer,intent(in):: its,ite
 
 !inout arguments:
@@ -1028,18 +992,13 @@
  type(mpas_pool_type),intent(inout):: tend_physics
 
 !local pointers:
- integer,pointer:: nCellsSolve,nVertLevels
-
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten
 
 !local variables and arrays:
- integer:: iCell,k
+ integer:: i,k
 
 !-----------------------------------------------------------------------------------------------------------------
-
- call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
- call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
 
  convection_select: select case(convection_scheme)
 
@@ -1057,26 +1016,26 @@
       call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
       call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
-       do iCell = its, ite
+       do i = its, ite
           !decreases the characteristic time period that convection remains active. When nca_p
           !becomes less than the convective timestep, convective tendencies and precipitation
           !are reset to zero (note that this is also done in subroutine kf_eta_cps).
-          if(nca(iCell) .gt. 0.) then
-             nca(iCell) = nca(iCell) - dt_dyn
+          if(nca(i) .gt. 0.) then
+             nca(i) = nca(i) - dt_dyn
              
-             if(nca(iCell) .lt. 0.5*dt_dyn) then
-                do k = 1, nVertLevels
-                   rthcuten(k,iCell) = 0._RKIND
-                   rqvcuten(k,iCell) = 0._RKIND
-                   rqccuten(k,iCell) = 0._RKIND
-                   rqrcuten(k,iCell) = 0._RKIND
-                   rqicuten(k,iCell) = 0._RKIND
-                   rqscuten(k,iCell) = 0._RKIND
+             if(nca(i) .lt. 0.5*dt_dyn) then
+                do k = kts,kte
+                   rthcuten(k,i) = 0._RKIND
+                   rqvcuten(k,i) = 0._RKIND
+                   rqccuten(k,i) = 0._RKIND
+                   rqrcuten(k,i) = 0._RKIND
+                   rqicuten(k,i) = 0._RKIND
+                   rqscuten(k,i) = 0._RKIND
                 enddo
-                raincv(iCell) = 0._RKIND
-                cuprec(iCell) = 0._RKIND
-                cubot(iCell)  = kte+1
-                cutop(iCell)  = kts
+                raincv(i) = 0._RKIND
+                cuprec(i) = 0._RKIND
+                cubot(i)  = kte+1
+                cutop(i)  = kts
              endif
           endif
        enddo
@@ -1088,45 +1047,41 @@
  end subroutine update_convection_step1
 
 !=================================================================================================================
- subroutine update_convection_step2(configs,mesh,diag_physics,its,ite)
+ subroutine update_convection_step2(configs,diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
- type(mpas_pool_type),intent(in):: mesh
  integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
- integer,pointer:: nCellsSolve
  integer,dimension(:),pointer:: i_rainc
 
  real(kind=RKIND),pointer:: bucket_rainc
  real(kind=RKIND),dimension(:),pointer:: cuprec,rainc
 
 !local variables and arrays:
- integer:: iCell
+ integer:: i
 
 !-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_bucket_rainc',bucket_rainc)
-
- call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
  call mpas_pool_get_array(diag_physics,'i_rainc',i_rainc)
  call mpas_pool_get_array(diag_physics,'cuprec' ,cuprec )
  call mpas_pool_get_array(diag_physics,'rainc'  ,rainc  )
 
 !update the accumulated precipitation at the end of each dynamic time-step:
- do iCell = its, ite
-    rainc(iCell) = rainc(iCell) + cuprec(iCell) * dt_dyn
+ do i = its, ite
+    rainc(i) = rainc(i) + cuprec(i) * dt_dyn
 
     if(l_acrain .and. bucket_rainc.gt.0._RKIND .and. &
-       rainc(iCell).gt.bucket_rainc) then
-       i_rainc(iCell) = i_rainc(iCell) + 1
-       rainc(iCell)   = rainc(iCell) - bucket_rainc
+       rainc(i).gt.bucket_rainc) then
+       i_rainc(i) = i_rainc(i) + 1
+       rainc(i)   = rainc(i) - bucket_rainc
     endif
  enddo
 

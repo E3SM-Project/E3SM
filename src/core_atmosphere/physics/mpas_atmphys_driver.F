@@ -296,7 +296,7 @@
     !call to convection scheme:
 !$OMP PARALLEL DO
     do thread=1,block % nThreads
-       call update_convection_step1(mesh,diag_physics,tend_physics, &
+       call update_convection_step1(diag_physics,tend_physics, &
                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
     end do
 !$OMP END PARALLEL DO
@@ -314,7 +314,7 @@
     if(config_convection_scheme .ne. 'off') then
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
-          call update_convection_step2(block%configs,mesh,diag_physics, &
+          call update_convection_step2(block%configs,diag_physics, &
                                block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO

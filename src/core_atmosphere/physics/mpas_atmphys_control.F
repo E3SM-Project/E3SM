@@ -156,7 +156,6 @@
            config_convection_scheme .eq. 'cu_grell_freitas'          .or. &
            config_convection_scheme .eq. 'cu_grell_freitas_momentum' .or. &
            config_convection_scheme .eq. 'cu_kain_fritsch'           .or. &
-           config_convection_scheme .eq. 'cu_tiedtke'                .or. &
            config_convection_scheme .eq. 'cu_tiedtke_wrf381'         .or. &
            config_convection_scheme .eq. 'cu_ntiedtke_wrf381'        )) then
 
