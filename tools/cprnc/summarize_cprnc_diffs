@@ -132,7 +132,7 @@ sub process_cprnc_output {
    foreach my $test_dir (@test_dirs) {
       my $test_dir_base = basename($test_dir);
 
-      my @cprnc_files = glob "${test_dir}/run/*.base.cprnc.out";
+      my @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out";
 
       foreach my $cprnc_file (@cprnc_files) {
          my $cprnc_file_base = basename($cprnc_file);
