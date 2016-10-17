@@ -125,7 +125,7 @@ mpas_atmphys_driver_microphysics.o: \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_mp_kessler.o \
 	./physics_wrf/module_mp_thompson.o \
-	./physics_wrf/module_mp_wsm6.wrf-3.8.1.o
+	./physics_wrf/module_mp_wsm6.o
 
 mpas_atmphys_driver_pbl.o: \
 	mpas_atmphys_constants.o \

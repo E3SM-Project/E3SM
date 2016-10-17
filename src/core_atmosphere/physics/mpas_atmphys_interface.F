@@ -559,7 +559,7 @@
 !additional initialization as function of cloud microphysics scheme:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6_wrf381")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -774,7 +774,7 @@
 !variables specific to different cloud microphysics schemes:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6_wrf381")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite

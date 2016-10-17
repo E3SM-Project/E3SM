@@ -19,7 +19,7 @@
 !wrf physics:
  use module_mp_kessler
  use module_mp_thompson
- use module_mp_wsm6_wrf381
+ use module_mp_wsm6
 
  implicit none
  private
@@ -111,7 +111,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6_wrf381")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        !mass mixing ratios:
        if(.not.allocated(qi_p)        ) allocate(qi_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(qs_p)        ) allocate(qs_p(ims:ime,kms:kme,jms:jme))
@@ -189,7 +189,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6_wrf381")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        !mass mixing ratios:
        if(allocated(qi_p)         ) deallocate(qi_p         )
        if(allocated(qs_p)         ) deallocate(qs_p         )
@@ -274,10 +274,8 @@
         call init_thompson_clouddroplets_forMPAS(mesh,sfc_input,diag_physics)
         call init_thompson_aerosols_forMPAS(dminfo,mesh,state,time_lev,diag_physics)
 
-     case("mp_wsm6_wrf381")
-        write(0,*) '--- enter subroutine wsm6init_wrf381:' 
-        call wsm6init_wrf381(rho_a,rho_r,rho_s,cliq,cpv,hail_opt,.false.)
-        write(0,*) '--- end subroutine wsm6init_wrf381:' 
+     case("mp_wsm6")
+        call wsm6init(rho_a,rho_r,rho_s,cliq,cpv,hail_opt,.false.)
 
      case default
     
@@ -409,28 +407,26 @@
           istep = istep + 1
           enddo
 
-    case ("mp_wsm6_wrf381")
-      write(0,*) '--- enter subroutine mp_wsm6_wrf381:'
-      call wsm6_wrf381( &
-                  th       = th_p        , q          = qv_p         , qc       = qc_p      , &
-                  qr       = qr_p        , qi         = qi_p         , qs       = qs_p      , &
-                  qg       = qg_p        , den        = rho_p        , pii      = pi_p      , &
-                  p        = pres_p      , delz       = dz_p         , delt     = dt_microp , &
-                  g        = gravity     , cpd        = cp           , cpv      = cpv       , &
-                  rd       = R_d         , rv         = R_v          , t0c      = svpt0     , &
-                  ep1      = ep_1        , ep2        = ep_2         , qmin     = epsilon   , &
-                  xls      = xls         , xlv0       = xlv          , xlf0     = xlf       , &
-                  den0     = rho_a       , denr       = rho_w        , cliq     = cliq      , &
-                  cice     = cice        , psat       = psat         , rain     = rainnc_p  , &
-                  rainncv  = rainncv_p   , snow       = snownc_p     , snowncv  = snowncv_p , &
-                  graupel  = graupelnc_p , graupelncv = graupelncv_p , sr       = sr_p      , &
-                  re_cloud = recloud_p   , re_ice     = reice_p      , re_snow  = resnow_p  , &
-                  has_reqc = has_reqc    , has_reqi   = has_reqi     , has_reqs = has_reqs  , &
-                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde     , &
-                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme     , &
-                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte       &
-                      )
-      write(0,*) '--- end subroutine mp_wsm6_wrf381.'
+    case ("mp_wsm6")
+      call wsm6( &
+                th       = th_p        , q          = qv_p         , qc       = qc_p      , &
+                qr       = qr_p        , qi         = qi_p         , qs       = qs_p      , &
+                qg       = qg_p        , den        = rho_p        , pii      = pi_p      , &
+                p        = pres_p      , delz       = dz_p         , delt     = dt_microp , &
+                g        = gravity     , cpd        = cp           , cpv      = cpv       , &
+                rd       = R_d         , rv         = R_v          , t0c      = svpt0     , &
+                ep1      = ep_1        , ep2        = ep_2         , qmin     = epsilon   , &
+                xls      = xls         , xlv0       = xlv          , xlf0     = xlf       , &
+                den0     = rho_a       , denr       = rho_w        , cliq     = cliq      , &
+                cice     = cice        , psat       = psat         , rain     = rainnc_p  , &
+                rainncv  = rainncv_p   , snow       = snownc_p     , snowncv  = snowncv_p , &
+                graupel  = graupelnc_p , graupelncv = graupelncv_p , sr       = sr_p      , &
+                re_cloud = recloud_p   , re_ice     = reice_p      , re_snow  = resnow_p  , &
+                has_reqc = has_reqc    , has_reqi   = has_reqi     , has_reqs = has_reqs  , &
+                ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde     , &
+                ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme     , &
+                its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte       &
+               )
 
     case default
        
@@ -441,7 +437,7 @@
  
     ! Ensure that we only call compute_radar_reflectivity() if we are using an MPS that
     !    supports the computation of simulated radar reflectivity
-    if(trim(microp_scheme) == "mp_wsm6_wrf381" .or. &
+    if(trim(microp_scheme) == "mp_wsm6"        .or. &
        trim(microp_scheme) == "mp_thompson"    .or. &
        trim(microp_scheme) == "mp_thompson_aerosols") then
        call compute_radar_reflectivity(diag_physics,its,ite)
@@ -522,7 +518,7 @@
 
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6_wrf381")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        do j = jts, jte
        do i = its, ite
           snowncv_p(i,j)    = 0._RKIND
@@ -621,7 +617,7 @@
 
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6_wrf381")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        do j = jts,jte
        do i = its,ite
           !time-step precipitation:
@@ -672,7 +668,7 @@
        call physics_error_fatal('--- calculation of radar reflectivity is not available' // &
                                  'with kessler cloud microphysics')
 
-    case ("mp_wsm6_wrf381")
+    case ("mp_wsm6")
        if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
        if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
        if(.not.allocated(qv1d) ) allocate(qv1d(kts:kte) )
@@ -695,7 +691,7 @@
              zp(k) = z_p(i,k,j) - z_p(i,1,j)+0.5*dz_p(i,1,j) ! height AGL
           enddo
 
-          call refl10cm_wsm6_wrf381(qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d,kts,kte,i,j)
+          call refl10cm_wsm6(qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d,kts,kte,i,j)
 
           kp = 1
           do k = kts,kte
