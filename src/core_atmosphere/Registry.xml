@@ -471,10 +471,6 @@
 			<var name="ol3"/>
 			<var name="ol4"/>
 			<var name="h_oml_initial"/>
-			<var name="u10"/>
-			<var name="v10"/>
-			<var name="q2"/>
-			<var name="t2m"/>
 		</stream>
 
 		<stream name="restart" 
