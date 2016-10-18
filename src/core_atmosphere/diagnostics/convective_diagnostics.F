@@ -134,7 +134,42 @@ module convective_diagnostics
 
         real (kind=RKIND) :: tempC, logrelhum
 
-        if (MPAS_field_will_be_written('cape')) then
+        logical :: need_cape, need_cin, need_lcl, need_lfc, need_srh_01km, need_srh_03km, need_uzonal_sfc, need_uzonal_1km, &
+                   need_uzonal_6km, need_umerid_sfc, need_umerid_1km, need_umerid_6km, need_tsfc, need_tdsfc
+        logical :: need_any_diags
+
+        need_any_diags = .false.
+
+        need_cape = MPAS_field_will_be_written('cape')
+        need_any_diags = need_any_diags .or. need_cape
+        need_cin = MPAS_field_will_be_written('cin')
+        need_any_diags = need_any_diags .or. need_cin
+        need_lcl = MPAS_field_will_be_written('lcl')
+        need_any_diags = need_any_diags .or. need_lcl
+        need_lfc = MPAS_field_will_be_written('lfc')
+        need_any_diags = need_any_diags .or. need_lfc
+        need_srh_01km = MPAS_field_will_be_written('srh_0_1km')
+        need_any_diags = need_any_diags .or. need_srh_01km
+        need_srh_03km = MPAS_field_will_be_written('srh_0_3km')
+        need_any_diags = need_any_diags .or. need_srh_03km
+        need_uzonal_sfc = MPAS_field_will_be_written('uzonal_surface')
+        need_any_diags = need_any_diags .or. need_uzonal_sfc
+        need_uzonal_1km = MPAS_field_will_be_written('uzonal_1km')
+        need_any_diags = need_any_diags .or. need_uzonal_1km
+        need_uzonal_6km = MPAS_field_will_be_written('uzonal_6km')
+        need_any_diags = need_any_diags .or. need_uzonal_6km
+        need_umerid_sfc = MPAS_field_will_be_written('umeridional_surface')
+        need_any_diags = need_any_diags .or. need_umerid_sfc
+        need_umerid_1km = MPAS_field_will_be_written('umeridional_1km')
+        need_any_diags = need_any_diags .or. need_umerid_1km
+        need_umerid_6km = MPAS_field_will_be_written('umeridional_6km')
+        need_any_diags = need_any_diags .or. need_umerid_6km
+        need_tsfc = MPAS_field_will_be_written('temperature_surface')
+        need_any_diags = need_any_diags .or. need_tsfc
+        need_tdsfc = MPAS_field_will_be_written('dewpoint_surface')
+        need_any_diags = need_any_diags .or. need_tdsfc
+
+        if (need_any_diags) then
 
             call mpas_pool_get_dimension(mesh, 'nCells', nCells)
             call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
@@ -202,76 +237,92 @@ module convective_diagnostics
               umeridional_surface(iCell) = umeridional(1,iCell)
               temperature_surface(iCell) = temperature(1,iCell)
               dewpoint_surface(iCell) = dewpoint(1,iCell)
-              uzonal_1km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 1000., nVertLevels)
-              umeridional_1km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 1000., nVertLevels)
-              uzonal_6km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 6000., nVertLevels)
-              umeridional_6km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 6000., nVertLevels)
+              if (need_uzonal_1km) then
+                  uzonal_1km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 1000., nVertLevels)
+              end if
+              if (need_umerid_1km) then
+                  umeridional_1km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 1000., nVertLevels)
+              end if
+              if (need_uzonal_6km) then
+                  uzonal_6km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 6000., nVertLevels)
+              end if
+              if (need_umerid_6km) then
+                  umeridional_6km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 6000., nVertLevels)
+              end if
 
            !  storm-relative helicity
            !  first, calculate storm motion, using Bunkers formula for right-moving storms
 
-               u_srh_bot = uzonal(1,iCell)
-               v_srh_bot = umeridional(1,iCell)
-               if(z_bunker_bot .gt. zp(1)) then
-                 u_srh_bot = column_height_value( uzonal(1:nVertLevels,iCell), zp, z_bunker_bot, nVertLevels)
-                 v_srh_bot = column_height_value( umeridional(1:nVertLevels,iCell), zp, z_bunker_bot, nVertLevels)
+               if (need_srh_01km .or. need_srh_03km) then
+                   u_srh_bot = uzonal(1,iCell)
+                   v_srh_bot = umeridional(1,iCell)
+                   if(z_bunker_bot .gt. zp(1)) then
+                     u_srh_bot = column_height_value( uzonal(1:nVertLevels,iCell), zp, z_bunker_bot, nVertLevels)
+                     v_srh_bot = column_height_value( umeridional(1:nVertLevels,iCell), zp, z_bunker_bot, nVertLevels)
+                   end if
+                   u_srh_top = column_height_value( uzonal(1:nVertLevels,iCell), zp, z_bunker_top, nVertLevels)
+                   v_srh_top = column_height_value( umeridional(1:nVertLevels,iCell), zp, z_bunker_top, nVertLevels)
+                   u_shear = u_srh_top - u_srh_bot
+                   v_shear = v_srh_top - v_srh_bot
+                   u_mean = integral_zstaggered(uzonal(1:nVertLevels,iCell),zrel,z_bunker_bot,z_bunker_top,nVertLevels,nVertLevelsP1)/(z_bunker_top-z_bunker_bot)
+                   v_mean = integral_zstaggered(umeridional(1:nVertLevels,iCell),zrel,z_bunker_bot,z_bunker_top,nVertLevels,nVertLevelsP1)/(z_bunker_top-z_bunker_bot)
+                   shear_magnitude = max(0.0001,sqrt(u_shear**2 + v_shear**2))
+                   u_storm = u_mean + dev_motion * v_shear/shear_magnitude
+                   v_storm = v_mean - dev_motion * u_shear/shear_magnitude
+
+                   !  calculate horizontal vorticity
+
+                   do k=2, nVertLevels-1
+                       dudz(k) = (uzonal(k,iCell)     -uzonal(k-1,iCell)     )/(0.5*(height(k+1,iCell)-height(k-1,iCell)))      
+                       dvdz(k) = (umeridional(k,iCell)-umeridional(k-1,iCell))/(0.5*(height(k+1,iCell)-height(k-1,iCell)))
+                   end do
+                   dudz(1) = dudz(2)
+                   dvdz(1) = dvdz(2)
+                   dudz(nVertLevels) = dudz(nVertLevels-1)
+                   dvdz(nVertLevels) = dvdz(nVertLevels-1)
+
+                   do k=2,nVertLevels
+                     srh(k) = - (0.5*(uzonal(k,iCell)      + uzonal(k-1,iCell)      )-u_storm)*dvdz(k) &
+                              + (0.5*(umeridional(k,iCell) + umeridional(k-1,iCell) )-v_storm)*dudz(k)
+                   end do
+                   srh(1) = - (uzonal(1,iCell)     - u_storm)*dvdz(1) &
+                            + (umeridional(1,iCell)- v_storm)*dudz(1)
+                   srh(nVertLevelsP1) = srh(nVertLevels)
+
+                   do k=1, nVertLevels+1
+                     srh(k) = max(0.,srh(k))  ! discounting negative SRH
+                   end do
+
+                   if (need_srh_01km) then
+                       srh_0_1km(iCell) = integral_zpoint(srh, zrel, 0., 1000., nVertLevelsP1)
+                   end if
+                   if (need_srh_03km) then
+                       srh_0_3km(iCell) = integral_zpoint(srh, zrel, 0., 3000., nVertLevelsP1)
+                   end if
                end if
-               u_srh_top = column_height_value( uzonal(1:nVertLevels,iCell), zp, z_bunker_top, nVertLevels)
-               v_srh_top = column_height_value( umeridional(1:nVertLevels,iCell), zp, z_bunker_top, nVertLevels)
-               u_shear = u_srh_top - u_srh_bot
-               v_shear = v_srh_top - v_srh_bot
-               u_mean = integral_zstaggered(uzonal(1:nVertLevels,iCell),zrel,z_bunker_bot,z_bunker_top,nVertLevels,nVertLevelsP1)/(z_bunker_top-z_bunker_bot)
-               v_mean = integral_zstaggered(umeridional(1:nVertLevels,iCell),zrel,z_bunker_bot,z_bunker_top,nVertLevels,nVertLevelsP1)/(z_bunker_top-z_bunker_bot)
-               shear_magnitude = max(0.0001,sqrt(u_shear**2 + v_shear**2))
-               u_storm = u_mean + dev_motion * v_shear/shear_magnitude
-               v_storm = v_mean - dev_motion * u_shear/shear_magnitude
-
-               !  calculate horizontal vorticity
-
-               do k=2, nVertLevels-1
-                   dudz(k) = (uzonal(k,iCell)     -uzonal(k-1,iCell)     )/(0.5*(height(k+1,iCell)-height(k-1,iCell)))      
-                   dvdz(k) = (umeridional(k,iCell)-umeridional(k-1,iCell))/(0.5*(height(k+1,iCell)-height(k-1,iCell)))
-               end do
-               dudz(1) = dudz(2)
-               dvdz(1) = dvdz(2)
-               dudz(nVertLevels) = dudz(nVertLevels-1)
-               dvdz(nVertLevels) = dvdz(nVertLevels-1)
-
-               do k=2,nVertLevels
-                 srh(k) = - (0.5*(uzonal(k,iCell)      + uzonal(k-1,iCell)      )-u_storm)*dvdz(k) &
-                          + (0.5*(umeridional(k,iCell) + umeridional(k-1,iCell) )-v_storm)*dudz(k)
-               end do
-               srh(1) = - (uzonal(1,iCell)     - u_storm)*dvdz(1) &
-                        + (umeridional(1,iCell)- v_storm)*dudz(1)
-               srh(nVertLevelsP1) = srh(nVertLevels)
-
-               do k=1, nVertLevels+1
-                 srh(k) = max(0.,srh(k))  ! discounting negative SRH
-               end do
-
-               srh_0_1km(iCell) = integral_zpoint(srh, zrel, 0., 1000., nVertLevelsP1)
-               srh_0_3km(iCell) = integral_zpoint(srh, zrel, 0., 3000., nVertLevelsP1)
 
             end do
 
             !  calculate cape and cin
-            do iCell=1, nCellsSolve
-                p_in(1:nVertLevels) = (pressure_p(1:nVertLevels,iCell) + pressure_base(1:nVertLevels,iCell)) / 100.0_RKIND
-                t_in(1:nVertLevels) = temperature(1:nVertLevels,iCell) - 273.15
-                td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell)
+            if (need_cape .or. need_cin) then
+                do iCell=1, nCellsSolve
+                    p_in(1:nVertLevels) = (pressure_p(1:nVertLevels,iCell) + pressure_base(1:nVertLevels,iCell)) / 100.0_RKIND
+                    t_in(1:nVertLevels) = temperature(1:nVertLevels,iCell) - 273.15
+                    td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell)
 
-             !   do k=1,nVertLevels
-             !     relhum(k,iCell) = max(1.e-08,min(1.,relhum(k,iCell)))
-             !     td_in(k) = 243.04*(log(relhum(k,iCell))+((17.625*t_in(k))/(243.04+t_in(k)))) & 
-             !                      /(17.625-log(relhum(k,iCell))-((17.625*t_in(k))/(243.04+t_in(k)))) 
-             !   end do
+                 !   do k=1,nVertLevels
+                 !     relhum(k,iCell) = max(1.e-08,min(1.,relhum(k,iCell)))
+                 !     td_in(k) = 243.04*(log(relhum(k,iCell))+((17.625*t_in(k))/(243.04+t_in(k)))) & 
+                 !                      /(17.625-log(relhum(k,iCell))-((17.625*t_in(k))/(243.04+t_in(k)))) 
+                 !   end do
 
-                call getcape( nVertLevels, p_in, t_in, td_in, cape_out, cin_out )
+                    call getcape( nVertLevels, p_in, t_in, td_in, cape_out, cin_out )
 
-                cape(iCell) = cape_out
-                cin(iCell) = cin_out
+                    cape(iCell) = cape_out
+                    cin(iCell) = cin_out
 
-            end do
+                end do
+            end if
 
             deallocate(temperature)
             deallocate(dewpoint)
