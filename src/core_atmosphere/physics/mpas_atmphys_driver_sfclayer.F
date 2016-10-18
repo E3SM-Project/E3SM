@@ -558,6 +558,8 @@
  real(kind=RKIND):: dx
 
 !-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_sfclayer:'
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
@@ -640,6 +642,9 @@
 
 !copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(diag_physics,its,ite)
+
+!write(0,*) '--- end subroutine driver_sfclayer.'
+!write(0,*)
 
  end subroutine driver_sfclayer
 

@@ -10,7 +10,6 @@
  use mpas_kind_types
  use mpas_pool_routines
  use mpas_derived_types
- use mpas_timer
 
  use mpas_atmphys_driver_radiation_sw, only: radconst
  use mpas_atmphys_constants
@@ -33,57 +32,56 @@
           radiation_camlw_to_MPAS
 
 
-!>\brief MPAS driver for parameterization of longwave radiation codes.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_driver_radiation_lw:
-!> ------------------------------------------------
-!> allocate_radiation_lw     : allocate local arrays for parameterization of lw radiation codes.
-!> deallocate_radiation_lw   : deallocate local arrays for parameterization of lw radiation codes.
-!> init_radiation_lw         : initialization of individual lw radiation codes.
-!> driver_radiation_lw       : main driver (called from subroutine physics_driver).
-!> radiation_lw_from_MPAS    : initialize local arrays.
-!> radiation_lw_to_MPAS      : copy local arrays to MPAS arrays.
-!> radiation_camlw_to_MPAS   : save local arrays (absorption, emission) for CAM lw radiation code.
-!>
-!> WRF physics called from driver_radiation_lw:
-!> --------------------------------------------
-!>    * module_ra_cam        : CAM long wave radiation code.
-!>    * module_ra_rrtmg_lw   : RRTMG long wave radiation code.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutines
-!>      rrtmg_lw and camrad.
-!>      Laura D. Fowler (birch.mmm,ucar.edu) / 2013-05-29.
-!>    * added structure diag in the call to subroutine init_radiation_lw.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
-!>    * modified the call to subroutine rrtmg_lwrad to include the option of using the same ozone
-!>      climatology as the one used in the CAM radiation codes.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-17.
-!>    * in call to subroutine rrtmg_lwrad, replaced the variable g (that originally pointed to 
-!>      gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * cleaned-up the call to rrtmg_lwrad after cleaning up subroutine rrtmg_lwrad in module_ra_rrtmg_lw.F.
-!>      Laura D. Fowler (laura@ucar.edu) / 2016-06-30.
-!>    * added the cloud radii for cloud water, cloud ice, and snow calculated in the Thompson cloud microphysics
-!>      scheme in the call to subroutine rrtmg_lwrad.
-!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
-!>    * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
-!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
-!>    * removed qr_p, and qg_p in the call to rrtmg_lwrad since not used in the calculation of the cloud optical
-!>      properties.
-!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
-!>    * in the call to rrtmg_lwrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
-!>      qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
-!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
+!MPAS driver for parameterization of longwave radiation codes.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+!
+! subroutines in mpas_atmphys_driver_radiation_lw:
+! ------------------------------------------------
+! allocate_radiation_lw  : allocate local arrays for parameterization of lw radiation codes.
+! deallocate_radiation_lw: deallocate local arrays for parameterization of lw radiation codes.
+! init_radiation_lw      : initialization of individual lw radiation codes.
+! driver_radiation_lw    : main driver (called from subroutine physics_driver).
+! radiation_lw_from_MPAS : initialize local arrays.
+! radiation_lw_to_MPAS   : copy local arrays to MPAS arrays.
+! radiation_camlw_to_MPAS: save local arrays (absorption, emission) for CAM lw radiation code.
+!
+! WRF physics called from driver_radiation_lw:
+! --------------------------------------------
+! * module_ra_cam        : CAM long wave radiation code.
+! * module_ra_rrtmg_lw   : RRTMG long wave radiation code.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutines
+!   rrtmg_lw and camrad.
+!   Laura D. Fowler (birch.mmm,ucar.edu) / 2013-05-29.
+! * added structure diag in the call to subroutine init_radiation_lw.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
+! * modified the call to subroutine rrtmg_lwrad to include the option of using the same ozone
+!   climatology as the one used in the CAM radiation codes.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-07-17.
+! * in call to subroutine rrtmg_lwrad, replaced the variable g (that originally pointed to 
+!   gravity) with gravity, for simplicity.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * cleaned-up the call to rrtmg_lwrad after cleaning up subroutine rrtmg_lwrad in module_ra_rrtmg_lw.F.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-06-30.
+! * added the cloud radii for cloud water, cloud ice, and snow calculated in the Thompson cloud microphysics
+!   scheme in the call to subroutine rrtmg_lwrad.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
+! * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * removed qr_p, and qg_p in the call to rrtmg_lwrad since not used in the calculation of the cloud optical
+!   properties.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * in the call to rrtmg_lwrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
+!   qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
 
 
  contains
@@ -492,7 +490,6 @@
        !and emstot_p are filled with the MPAS arrays abstot, absnxt, and emstot. If it
        !is a new run, these three arrays will be initialized to zero;If a restart run,
        !these three arrays will be filled with the restart values.
-!       call mpas_timer_start("CAM lw: fill arrays for infrared absorption")
        if(xtime_s .lt. 1.e-12) then
           do j = jts,jte
           do n = 1,cam_abs_dim1
@@ -517,7 +514,6 @@
           enddo
        endif
 
-!       call mpas_timer_start("CAM lw: ozone and aerosols")
        !ozone mixing ratio:
        do k = 1, num_oznlevels
           pin_p(k) = pin(k)
@@ -551,7 +547,6 @@
        enddo
        enddo
        enddo
-!       call mpas_timer_stop("CAM lw: ozone and aerosols")
 
     case default
 
@@ -709,24 +704,17 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
-! write(0,*)
-! write(0,*) '--- enter radiation_lw initialization:'
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case ("rrtmg_lw")
-!       write(0,*) '    enter subroutine rrtmg_lwinit:'
        call rrtmg_initlw_forMPAS(dminfo)
-!       write(0,*) '    end subroutine rrtmg_lwinit'
 
     case("cam_lw")
-!       write(0,*) '    enter subroutine camradinit:'
        call camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
-!       write(0,*) '    end subroutine camradinit'
     
     case default
 
  end select radiation_lw_select
-! write(0,*) '--- end radiation_lw initialization'
 
  end subroutine init_radiation_lw
 
@@ -758,7 +746,6 @@
  real(kind=RKIND):: radt,xtime_m
 
 !-----------------------------------------------------------------------------------------------------------------
- call mpas_timer_start("radiation_lw")
 !write(0,100)
 
 !formats:
@@ -807,7 +794,6 @@
 !... convert the radiation time_step to minutes:
        radt = dt_radtlw/60.
 
-       call mpas_timer_start("camrad")
 !      write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
@@ -865,10 +851,7 @@
 !copy local arrays to MPAS grid:
  call radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
 
-! write(0,*) '--- end subroutine driver_radiation_lw'
-
-!formats:
- 200 format(i3,i3,8(1x,e15.8))
+!write(0,*) '--- end subroutine driver_radiation_lw.'
 
  end subroutine driver_radiation_lw
 

@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_driver_oml
  use mpas_kind_types
  use mpas_derived_types
@@ -26,21 +26,22 @@
 
  integer,private:: i,j,k,n
 
-!>\brief MPAS driver for 1d ocean mixed layer
-!>\author Bill Skamarock (send comments to skamaroc@ucar.edu).
-!>\date 2014-06-11.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!> * added update of te sea-surface temperature below call to subroutine oml1d.
-!>   Laura D. Fowler (2014-07-24.).
+!MPAS driver for 1d ocean mixed layer
+!Bill Skamarock (send comments to skamaroc@ucar.edu).
+!2014-06-11.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * added update of the sea-surface temperature below call to subroutine oml1d.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-07-24.
 
 
  contains
 
-!==================================================================================================
+
+!=================================================================================================================
  subroutine driver_oml1d(configs,mesh,diag,diag_physics,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -83,9 +84,9 @@
   integer :: iCell
   real(kind=RKIND):: f_coriolis
 
-!---------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine driver_oml1d:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_oml1d:'
 
 ! namelist parameters for ocean mixed layer model
  call mpas_pool_get_config(configs,'config_oml1d'               ,config_oml1d )
@@ -143,8 +144,10 @@
 
  end if
 
+!write(0,*) '--- end subroutine driver_oml1d.'
+
  end subroutine driver_oml1d
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_driver_oml
-!==================================================================================================
+!=================================================================================================================

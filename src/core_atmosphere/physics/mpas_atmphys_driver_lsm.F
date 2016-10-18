@@ -607,21 +607,15 @@
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter land surface model initialization:'
 
  lsm_select: select case (trim(lsm_scheme))
 
     case ("noah")
-!       write(0,*) '    enter subroutine noah_init_forMPAS:'
        call noah_init_forMPAS(dminfo,mesh,configs,diag_physics,sfc_input)
-!       write(0,*) '    end subroutine noah_init_forMPAS'
     
     case default
  
  end select lsm_select
-
-! write(0,*) '--- end land surface model initialization'
 
  end subroutine init_lsm
 
@@ -645,11 +639,8 @@
  character(len=StrKIND),pointer:: mminlu
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine driver_lsm:'
-! write(0,*) '--- isice   = ',isice
-! write(0,*) '--- iswater = ', iswater
-! write(0,*) '--- isurban = ', isurban
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_lsm:'
 
  call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
@@ -720,7 +711,8 @@
 
 !copy local arrays to MPAS grid:
  call lsm_to_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
-! write(0,*) '--- end subroutine driver_lsm'
+
+!write(0,*) '--- end subroutine driver_lsm.'
 
  end subroutine driver_lsm
 

@@ -269,6 +269,8 @@
  integer:: i,icell,icount,istep,j,k,kk
 
 !-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '---enter subroutine driver_microphysics:'
 
 !... allocation of microphysics arrays:
 !$OMP MASTER
@@ -377,6 +379,9 @@
 !$OMP MASTER
  call deallocate_microphysics
 !$OMP END MASTER
+
+!write(0,*) '---enter subroutine driver_microphysics:'
+!write(0,*)
 
  end subroutine driver_microphysics
 

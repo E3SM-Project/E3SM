@@ -530,6 +530,8 @@
  integer:: initflag
 
 !-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_pbl:'
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
 
@@ -602,6 +604,9 @@
 
 !copy local arrays to MPAS grid:
  call pbl_to_MPAS(diag_physics,tend_physics,its,ite)
+
+!write(0,*) '--- end subroutine driver_pbl.'
+!write(0,*)
 
  end subroutine driver_pbl
 

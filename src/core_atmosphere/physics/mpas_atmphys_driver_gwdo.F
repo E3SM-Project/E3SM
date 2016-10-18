@@ -264,7 +264,7 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 !write(0,*)
-!write(0,*) '--- enter subroutine driver_gwdo: dt_pbl=',dt_pbl
+!write(0,*) '--- enter subroutine driver_gwdo:'
 
 !copy MPAS arrays to local arrays:
  call gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics,its,ite)
@@ -296,7 +296,9 @@
 
 !copy local arrays to MPAS grid:
  call gwdo_to_MPAS(diag_physics,tend_physics,its,ite)
-!write(0,*) '--- end subroutine driver_gwdo'
+
+!write(0,*) '--- end subroutine driver_gwdo.'
+!write(0,*)
 
  end subroutine driver_gwdo
 

@@ -189,16 +189,10 @@
 
  cld_fraction_select: select case (trim(radt_cld_scheme))
     case("cld_incidence")
-      !calculate the incidence of clouds:
-!     write(0,*) '--- enter subroutine calc_cldincidence:'
       call calc_cldincidence(cldfrac_p,qcrad_p,qirad_p,f_qc,f_qi,its,ite)
-!     write(0,*) '--- exit subroutine calc_cldincidence'
 
     case("cld_fraction")
-      !calculate the cloud fraction based on the relative humidity:
-!     write(0,*) '--- enter subroutine calc_cldfraction:'
       call calc_cldfraction(cldfrac_p,t_p,pres_p,qvrad_p,qcrad_p,qirad_p,qs_p,its,ite)
-!     write(0,*) '--- exit subroutine calc_cldfraction'
 
     case("cld_fraction_thompson")
       call cal_cldfra3( &
@@ -217,7 +211,7 @@
 !copy local arrays to MPAS grid:
  call cloudiness_to_MPAS(diag_physics,its,ite)
 
-!write(0,*) '--- exit subroutine driver_cloudiness'
+!write(0,*) '--- end subroutine driver_cloudiness.'
 
  end subroutine driver_cloudiness
 
@@ -351,13 +345,9 @@
 
     endif
 
-!   if(qcld .ge. qcldmin) write(0,101) i,k,qcld,rhum,cldfrac(i,k,j) 
-
  enddo
  enddo
  enddo
-
- 101 format(i8,1x,i3,3(1x,e15.8))
 
  end subroutine calc_cldfraction
 

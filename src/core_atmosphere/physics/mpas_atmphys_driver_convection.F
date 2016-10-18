@@ -358,7 +358,6 @@
  convection_select: select case(convection_scheme)
 
     case ("cu_kain_fritsch")
-!      write(0,*) '    enter kain-fritsch initialization:'
        call mpas_pool_get_array(diag_physics,'nca',nca)
        if(.not. config_do_restart) then
           do iCell = 1, nCells
@@ -366,13 +365,6 @@
           enddo
        endif
        call kf_lutab(svp1,svp2,svp3,svpt0)
-!      write(0,*) '    end kain-kritsch initialization'
-
-    case ("cu_tiedtke")
-!      write(0,*) '    enter tiedtke initialization:'
-!      write(mpas_err_message,'(A,A10)') &
-!        'Tiedtke is being tested. Do not use right now. Thanks '
-!      call physics_error_fatal(mpas_err_message)
 
     case default
 
@@ -415,12 +407,9 @@
  real(kind=RKIND):: cudt
  real(kind=RKIND):: cudtacttime
 
-!temp:
- real(kind=RKIND):: dx_1d
- real(kind=RKIND):: max_rthcuten
- real(kind=RKIND):: min_rthcuten
-
 !-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_convection:'
 
  call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
  call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
@@ -446,10 +435,6 @@
  convection_select: select case(convection_scheme)
 
     case ("cu_grell_freitas")
-       dx_1d = len_disp
-!      write(0,*) '--- enter subroutine cu_grell_freitas:',dx_1d
-!      write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
-!      write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
        call cu_grell_freitas( &
              itimestep       = itimestep              , dt            = dt_dyn          , &
              dxCell          = dx_p                   , areaCell      = area_p          , &
@@ -575,6 +560,9 @@
 !copy instantaneous and accumulated precipitation, convective tendencies, and "other" arrays
 !specific to convection parameterization back to the dynamics grid:
  call convection_to_MPAS(diag_physics,tend_physics,its,ite)
+
+!write(0,*) '--- end subroutine driver_convection.'
+!write(0,*)
 
  end subroutine driver_convection
 
