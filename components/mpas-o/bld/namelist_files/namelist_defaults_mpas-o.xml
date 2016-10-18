@@ -236,6 +236,7 @@
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oQU240wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oEC60to30wLI">'standalone'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oRRS30to10wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>

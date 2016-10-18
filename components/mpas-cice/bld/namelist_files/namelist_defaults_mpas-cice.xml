@@ -12,6 +12,7 @@
 <config_dt ice_grid="oEC60to30">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30wLI">1800.0</config_dt>
 <config_dt ice_grid="oRRS30to10">900.0</config_dt>
+<config_dt ice_grid="oRRS30to10wLI">900.0</config_dt>
 <config_dt ice_grid="oRRS18to6">900.0</config_dt>
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
