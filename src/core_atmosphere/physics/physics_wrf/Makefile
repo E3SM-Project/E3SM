@@ -9,7 +9,6 @@ OBJS = \
 	libmassv.o                     \
 	module_bl_gwdo.o               \
 	module_bl_mynn.o               \
-	module_bl_mynn.wrf-3.8.o       \
 	module_bl_ysu.o                \
 	module_cam_error_function.o    \
 	module_cam_shr_kind_mod.o      \
@@ -32,7 +31,6 @@ OBJS = \
 	module_sf_bep_bem.o            \
 	module_sf_sfcdiags.o           \
 	module_sf_mynn.o               \
-	module_sf_mynn.wrf-3.8.o       \
 	module_sf_noahdrv.o            \
 	module_sf_noahlsm.o            \
 	module_sf_oml.o                \
@@ -46,11 +44,6 @@ physics_wrf: $(OBJS)
 module_bl_mynn.o: \
 	module_cam_error_function.o \
 	../mpas_atmphys_constants.o
-
-module_bl_mynn.wrf3.8.o: \
-	module_cam_error_function.o \
-	../mpas_atmphys_constants.o \
-	../mpas_atmphys_utilities.o
 
 module_cam_support.o: \
 	module_cam_shr_kind_mod.o  \
@@ -94,11 +87,6 @@ module_sf_bep_bem.o: \
 
 module_sf_mynn.o: \
 	module_bl_mynn.o \
-	module_sf_sfclay.o \
-	../mpas_atmphys_constants.o
-
-module_sf_mynn_wrf3.8.o: \
-	module_bl_mynn_wrf-3.8.o \
 	module_sf_sfclay.o \
 	../mpas_atmphys_constants.o
 
