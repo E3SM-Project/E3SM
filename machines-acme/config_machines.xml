@@ -561,14 +561,14 @@
          <TESTS>acme_integration</TESTS>
          <COMPILERS>gnu,intel,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/lcrc/group/acme/$USER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lcrc/project/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/lcrc/group/acme/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lcrc/group/earthscience/acme_baselines</CCSM_BASELINE>
+         <CCSM_BASELINE>/lcrc/group/acme/acme_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
@@ -576,8 +576,8 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
          <batch_system type="pbs" version="x.y">
             <queues>
               <queue default="true">acme</queue>
