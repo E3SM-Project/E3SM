@@ -891,7 +891,7 @@
 </machine>
 
 <machine MACH="metis">
-         <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
+         <DESC>ORNL XK6, os is CNL, 8 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>metis</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
    <COMPILERS>pgi,pgi_acc</COMPILERS>
@@ -912,7 +912,7 @@
    <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="pbs">
@@ -922,11 +922,17 @@
             </queues>
             <walltimes>
               <walltime default="true">00:45:00</walltime>
-              <walltime ccsm_estcost="1">02:00:00</walltime>
+              <walltime ccsm_estcost="1">00:30:00</walltime>
             </walltimes>
          </batch_system>
          <mpirun mpilib="default">
            <executable args="default">aprun</executable>
+           <arguments>
+             <arg name="hyperthreading" default="1"> -j {{ hyperthreading }}</arg>
+             <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
+             <arg name="thread_count" > -d {{ thread_count }}</arg>
+           </arguments>
          </mpirun>
 </machine>
 
