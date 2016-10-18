@@ -1200,10 +1200,10 @@ contains
     do eri = 1,num_inst_rof
        r2x_rx => component_get_c2x_cx(rof(eri))
        call seq_map_map(mapper_Rr2o_liq, r2x_rx, r2x_ox(eri), &
-            fldlist='Forr_rofl:Forr_rofl_16O:Forr_rofl_18O:Forr_rofl_HDO', norm=.false.)
+            fldlist=seq_flds_r2o_liq_fluxes, norm=.false.)
 
        call seq_map_map(mapper_Rr2o_ice, r2x_rx, r2x_ox(eri), &
-            fldlist='Forr_rofi:Forr_rofi_16O:Forr_rofi_18O:Forr_rofi_HDO', norm=.false.)
+            fldlist=seq_flds_r2o_ice_fluxes, norm=.false.)
 
        if (flood_present) then
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
