@@ -15,7 +15,6 @@ OBJS = \
 	module_cam_shr_kind_mod.o      \
 	module_cam_support.o           \
 	module_cu_gf.mpas.o            \
-	module_cu_gf_momentum.mpas.o   \
 	module_cu_tiedtke.o            \
 	module_cu_ntiedtke.o           \
 	module_cu_kfeta.o              \
