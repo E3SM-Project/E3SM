@@ -460,10 +460,10 @@ module atm_core
          call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='diagnostics', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
       end if
 
+      call mpas_dmpar_get_time(diag_start_time)
       call mpas_atm_diag_compute()
 
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-         call mpas_dmpar_get_time(diag_start_time)
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
@@ -475,8 +475,8 @@ module atm_core
 
             block_ptr => block_ptr % next
          end do
-         call mpas_dmpar_get_time(diag_stop_time)
       end if
+      call mpas_dmpar_get_time(diag_stop_time)
       call mpas_dmpar_get_time(output_start_time)
       call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       call mpas_dmpar_get_time(output_stop_time)
@@ -563,6 +563,7 @@ module atm_core
 
          call mpas_atm_diag_update()
 
+         call mpas_dmpar_get_time(diag_start_time)
          call mpas_atm_diag_compute()
 
          !
@@ -570,7 +571,6 @@ module atm_core
          !
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-           call mpas_dmpar_get_time(diag_start_time)
            block_ptr => domain % blocklist
            do while (associated(block_ptr))
               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
@@ -585,7 +585,6 @@ module atm_core
 
               block_ptr => block_ptr % next
            end do
-           call mpas_dmpar_get_time(diag_stop_time)
          end if
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
@@ -600,6 +599,7 @@ module atm_core
                block_ptr => block_ptr % next
             end do
          end if
+         call mpas_dmpar_get_time(diag_stop_time)
 
          call mpas_dmpar_get_time(output_start_time)
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
