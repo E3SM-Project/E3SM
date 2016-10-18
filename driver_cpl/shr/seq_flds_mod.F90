@@ -211,6 +211,8 @@ module seq_flds_mod
    character(CXX) :: seq_flds_r2x_fluxes
    character(CXX) :: seq_flds_x2r_states
    character(CXX) :: seq_flds_x2r_fluxes
+   character(CXX) :: seq_flds_r2o_liq_fluxes
+   character(CXX) :: seq_flds_r2o_ice_fluxes
 
    !----------------------------------------------------------------------------
    ! combined state/flux fields
@@ -321,6 +323,8 @@ module seq_flds_mod
      character(CXX) :: w2x_fluxes = ''
      character(CXX) :: x2w_states = ''
      character(CXX) :: x2w_fluxes = ''
+     character(CXX) :: r2o_liq_fluxes = ''
+     character(CXX) :: r2o_ice_fluxes = ''
 
      character(CXX) :: stringtmp  = ''
 
@@ -2464,6 +2468,10 @@ module seq_flds_mod
 
      endif
 
+     ! Runoff to ocean fluxes
+     call seq_flds_add(r2o_liq_fluxes,'Forr_rofl')
+     call seq_flds_add(r2o_ice_fluxes,'Forr_rofi')
+
      if (flds_wiso) then
         call seq_flds_add(o2x_states, "So_roce_16O")
         call seq_flds_add(x2i_states, "So_roce_16O")
@@ -2838,7 +2846,14 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
 
        !Iso-Runoff
-       ! l2x, x2r
+       ! r2o, l2x, x2r
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_16O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_18O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_HDO')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_16O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_18O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_HDO')
+
        units    = 'kg m-2 s-1'
        call seq_flds_add(l2x_fluxes,'Flrl_rofi_16O')
        call seq_flds_add(x2r_fluxes,'Flrl_rofi_16O')
@@ -3162,6 +3177,8 @@ module seq_flds_mod
      seq_flds_x2r_fluxes = trim(x2r_fluxes)
      seq_flds_w2x_fluxes = trim(w2x_fluxes)
      seq_flds_x2w_fluxes = trim(x2w_fluxes)
+     seq_flds_r2o_liq_fluxes = trim(r2o_liq_fluxes)
+     seq_flds_r2o_ice_fluxes = trim(r2o_ice_fluxes)
 
      if (seq_comm_iamroot(ID)) then
         write(logunit,"(A)") subname//': seq_flds_a2x_states= ',trim(seq_flds_a2x_states)
