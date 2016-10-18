@@ -1,5 +1,5 @@
 !==================================================================================================
-! copied for implementation in MPAS from WRF version 3.6.1
+! copied for implementation in MPAS from WRF version 3.6.1.
 
 ! modifications made to sourcecode:
 ! * used preprocessing option to replace module_model_constants with mpas_atmphys_constants.

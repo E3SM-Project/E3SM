@@ -1,10 +1,10 @@
 !==================================================================================================
-! copied for implementation in MPAS from WRF version 3.6.1
+! copied for implementation in MPAS from WRF version 3.6.1.
 
 ! modifications made to sourcecode:
 ! * used preprocessing option to replace module_model_constants with mpas_atmphys_constants.
 ! * used preprocessing option to not compile subroutine mynn_bl_init_driver.
-!   Laura D. Fowler (laura@ucar.edu / 2014-09-25).
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-25.
 
 !==================================================================================================
 
