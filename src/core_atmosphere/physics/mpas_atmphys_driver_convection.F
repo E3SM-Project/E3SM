@@ -85,6 +85,9 @@
 ! * added the call to the "new" Tiedtke parameterization of convection from WRF version 3.8.1. This option is
 !   triggered using the option cu_ntiedtke.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-20.
+! * for the kain_fritsch parameterization of convection, change the definition of dx_p to match that used in the
+!   Grell-Freitas and "new Tiedtke" parameterization.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
 
 
  contains
@@ -582,7 +585,7 @@
 
 !local pointers:
  integer,dimension(:),pointer:: kpbl,k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
- real(kind=RKIND),dimension(:),pointer  :: areaCell,meshDensity,dcEdge_m
+ real(kind=RKIND),dimension(:),pointer  :: areaCell,meshDensity
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
  real(kind=RKIND),dimension(:),pointer  :: gsw,hfx,qfx,xland
  real(kind=RKIND),dimension(:),pointer  :: xmb_total,xmb_shallow
@@ -693,9 +696,11 @@
        enddo
 
     case ("cu_kain_fritsch")
-       call mpas_pool_get_array(mesh,'areaCell',areaCell)
+       call mpas_pool_get_config(configs,'config_len_disp',len_disp)
 
-       call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
+       call mpas_pool_get_array(mesh,'areaCell',areaCell)
+       call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
+
        call mpas_pool_get_array(diag_physics,'cubot'   ,cubot   )
        call mpas_pool_get_array(diag_physics,'cutop'   ,cutop   )
        call mpas_pool_get_array(diag_physics,'nca'     ,nca     )
@@ -707,8 +712,8 @@
        do j = jts,jte
        do i = its,ite
           !area of grid-cell:       
+          dx_p(i,j)    = len_disp / meshDensity(i)**0.25
           area_p(i,j)  = areaCell(i)
-          dx_p(i,j)    = dcEdge_m(i)
           cubot_p(i,j) = cubot(i)
           cutop_p(i,j) = cutop(i)
 
