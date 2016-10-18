@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------
-! $Id: constants_clubb.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
+! $Id: constants_clubb.F90 7723 2015-06-07 01:03:43Z janhft@uwm.edu $
 !=============================================================================
 module constants_clubb
 
@@ -134,6 +134,10 @@ module constants_clubb
   real( kind = dp ), parameter, public :: &
     radians_per_deg_dp = pi_dp / 180._dp
 #endif
+
+  real( kind = dp ), parameter, public :: &
+    sqrt_2pi_dp = 2.5066282746310005024_dp, &  ! sqrt(2*pi)
+    sqrt_2_dp   = 1.4142135623730950488_dp     ! sqrt(2)
 
   real( kind = core_rknd ), parameter, public :: &
     sqrt_2pi = 2.5066282746310005024_core_rknd, &  ! sqrt(2*pi)

@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------
-! $Id: surface_varnce_module.F90 6952 2014-06-17 15:59:47Z schemena@uwm.edu $
+! $Id: surface_varnce_module.F90 8220 2016-07-21 18:48:32Z raut@uwm.edu $
 !===============================================================================
 module surface_varnce_module
 
@@ -66,6 +66,9 @@ module surface_varnce_module
 
     use clubb_precision, only: &
         core_rknd ! Variable(s)
+
+    use parameters_tunable, only: &
+        up2_vp2_factor ! Variable
 
     implicit none
 
@@ -333,8 +336,8 @@ module surface_varnce_module
 
        ! Compute estimate for surface second order moments
        wp2_sfc = a_const * uf**2
-       up2_sfc = 2.0_core_rknd * a_const * uf**2  ! From Andre, et al. 1978
-       vp2_sfc = 2.0_core_rknd * a_const * uf**2  ! "  "
+       up2_sfc = up2_vp2_factor * a_const * uf**2  ! From Andre, et al. 1978
+       vp2_sfc = up2_vp2_factor * a_const * uf**2  ! "  "
 
        ! Vince Larson changed to make correlations between [-1,1]  31 Jan 2008
 !        thlp2_sfc   = 0.1 * a * ( wpthlp_sfc / uf )**2

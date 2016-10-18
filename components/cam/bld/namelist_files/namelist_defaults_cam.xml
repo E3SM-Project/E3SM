@@ -793,6 +793,7 @@
 <do_clubb_sgs  clubb_sgs="1" > .true.  </do_clubb_sgs>
 
 <!-- CLUBB options -->
+<ice_supersat                > .true. </ice_supersat>
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
 <clubb_rainevap_turb microphys="mg2" clubb_sgs="1"> .false.  </clubb_rainevap_turb>
 <clubb_cloudtop_cooling                           > .false. </clubb_cloudtop_cooling>
@@ -986,6 +987,27 @@
 <!-- sub-column SILHS switches -->
 <subcol_silhs_weight >.true.</subcol_silhs_weight>
 <subcol_silhs_numsubcol >4</subcol_silhs_numsubcol>
+<subcol_silhs_corr_file_path >.</subcol_silhs_corr_file_path>
+<subcol_silhs_corr_file_name>default</subcol_silhs_corr_file_name>
+<subcol_silhs_kk_adj_mean>.true.</subcol_silhs_kk_adj_mean>
+<subcol_silhs_meanice>.false.</subcol_silhs_meanice>
+<subcol_silhs_q_to_micro>.false.</subcol_silhs_q_to_micro>
+<subcol_silhs_n_to_micro>.false.</subcol_silhs_n_to_micro>
+<subcol_silhs_constrainmn>.false.</subcol_silhs_constrainmn>
+<subcol_silhs_predictnc>.true.</subcol_silhs_predictnc>
+<subcol_silhs_use_clear_col>.false.</subcol_silhs_use_clear_col>
+<subcol_silhs_ncnp2_on_ncnm2>0.55</subcol_silhs_ncnp2_on_ncnm2>
+<subcol_silhs_rrp2_on_rrm2>1.0</subcol_silhs_rrp2_on_rrm2>
+<subcol_silhs_nrp2_on_nrm2>1.0</subcol_silhs_nrp2_on_nrm2>
+<subcol_silhs_ricep2_on_ricem2>1.0</subcol_silhs_ricep2_on_ricem2>
+<subcol_silhs_c6rt>4.0</subcol_silhs_c6rt>
+<subcol_silhs_c7>0.5</subcol_silhs_c7>
+<subcol_silhs_c8>3.0</subcol_silhs_c8>
+<subcol_silhs_c11>0.65</subcol_silhs_c11>
+<subcol_silhs_c11b>0.53</subcol_silhs_c11b>
+<subcol_silhs_gamma_coef>0.32</subcol_silhs_gamma_coef>
+<subcol_silhs_mult_coef>1.5</subcol_silhs_mult_coef>
+<subcol_silhs_mu>0.001</subcol_silhs_mu>
 
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>

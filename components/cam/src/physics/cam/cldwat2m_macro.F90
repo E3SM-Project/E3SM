@@ -866,8 +866,11 @@
           call astG_PDF(U_nc(:,k),p(:,k),qv(:,k),landfrac(:),snowh(:),al_st_nc(:,k),G_nc(:,k),ncol,&
                         rhminl_arr(:,k), rhminl_adj_land_arr(:,k), rhminh_arr(:,k))
       endif
+
+#ifndef CLUBB_SGS
       call aist_vector(qv(:,k),T(:,k),p(:,k),qi(:,k),ni(:,k),landfrac(:),snowh(:),ai_st_nc(:,k),ncol,&
                        rhmaxi, rhmini_arr(:,k), rhminl_arr(:,k), rhminl_adj_land_arr(:,k), rhminh_arr(:,k))
+#endif
 
       ai_st(:ncol,k)  =  (1._r8-a_cu(:ncol,k))*ai_st_nc(:ncol,k)
       al_st(:ncol,k)  =  (1._r8-a_cu(:ncol,k))*al_st_nc(:ncol,k)
@@ -1598,6 +1601,9 @@ end subroutine rhcrit_calc
    ! Main Computation ! 
    ! ---------------- !
 
+   ! initialize, necessary when using CLUBB_SGS and not calling aist_vector
+   ai0_st_nc_in(:) = 0.0_r8
+
    call qsat_water(T0_in(1:ncol), p_in(1:ncol), &
         esat_in(1:ncol), qsat_in(1:ncol))
    U0_in(:ncol) = qv0_in(:ncol)/qsat_in(:ncol)
@@ -1608,8 +1614,11 @@ end subroutine rhcrit_calc
        call astG_PDF(U0_in(:),p_in(:),qv0_in(:),landfrac(:),snowh(:),al0_st_nc_in(:),G0_nc_in(:),ncol,&
                      rhminl_in(:), rhminl_adj_land_in(:), rhminh_in(:))
    endif
+
+#ifndef CLUBB_SGS
    call aist_vector(qv0_in(:),T0_in(:),p_in(:),qi0_in(:),ni0_in(:),landfrac(:),snowh(:),ai0_st_nc_in(:),ncol,&
                     rhmaxi, rhmini_in(:), rhminl_in(:), rhminl_adj_land_in(:), rhminh_in(:))
+#endif
 
    do i = 1, ncol
 

@@ -1,5 +1,5 @@
 !---------------------------------------------------------------------------
-! $Id: stats_zt_module.F90 7377 2014-11-11 02:43:45Z bmg2@uwm.edu $
+! $Id: stats_zt_module.F90 8205 2016-07-19 22:35:55Z raut@uwm.edu $
 !===============================================================================
 module stats_zt_module
 
@@ -58,6 +58,8 @@ module stats_zt_module
  
     use stats_variables, only: & 
         iwp3, & ! Variable(s)
+        ithlp3, &
+        irtp3, &
         iwpthlp2, & 
         iwp2thlp, & 
         iwprtp2, & 
@@ -70,14 +72,14 @@ module stats_zt_module
         iwp2rcp, & 
         iwprtpthlp, & 
         isigma_sqd_w_zt, &
-        iSkw_zt
+        iSkw_zt, &
+        iSkthl_zt, &
+        iSkrt_zt, &
+        ircm_supersat_adj
 
     use stats_variables, only: & 
-        icorr_w_hm_ov_adj, & ! Variable(s)
-        ihm1, &
-        ihm2, &
-        iLWP1, &
-        iLWP2, &
+        ihm_1, & ! Variable(s)
+        ihm_2, &
         iprecip_frac, &
         iprecip_frac_1, &
         iprecip_frac_2, &
@@ -211,6 +213,7 @@ module stats_zt_module
         iwp3_bp2, & 
         iwp3_pr1, & 
         iwp3_pr2, & 
+        iwp3_pr3, &
         iwp3_dp1, &
         iwp3_cl
 
@@ -239,8 +242,9 @@ module stats_zt_module
         irrm_cond, & 
         irrm_auto, & 
         irrm_accr, & 
-        irrm_cond_adj, & 
-        irrm_src_adj, & 
+        irrm_cond_adj, &
+        irrm_src_adj, &
+        irrm_mc_nonadj, &
         irrm_mc, & 
         irrm_hf
 
@@ -373,7 +377,7 @@ module stats_zt_module
         iNsm, & ! Variable(s)
         iNrm, &
         iNgm, &
-        iNim, & 
+        iNim, &
         iNsm_bt, &
         iNsm_mc, &
         iNsm_ma, &
@@ -566,8 +570,6 @@ module stats_zt_module
 
     character(len=10) :: hm_type, hmx_type, hmy_type
 
-    logical :: l_found
-
     character(len=50) :: sclr_idx
 
 
@@ -575,9 +577,8 @@ module stats_zt_module
     ! stats_variables)
 
     ! Allocate and initialize hydrometeor statistical variables.
-    allocate( icorr_w_hm_ov_adj(1:hydromet_dim) )
-    allocate( ihm1(1:hydromet_dim) )
-    allocate( ihm2(1:hydromet_dim) )
+    allocate( ihm_1(1:hydromet_dim) )
+    allocate( ihm_2(1:hydromet_dim) )
     allocate( imu_hm_1(1:hydromet_dim) )
     allocate( imu_hm_2(1:hydromet_dim) )
     allocate( imu_hm_1_n(1:hydromet_dim) )
@@ -613,9 +614,8 @@ module stats_zt_module
 
     allocate( iwp2hmp(1:hydromet_dim) )
 
-    icorr_w_hm_ov_adj(:) = 0
-    ihm1(:) = 0
-    ihm2(:) = 0
+    ihm_1(:) = 0
+    ihm_2(:) = 0
     imu_hm_1(:) = 0
     imu_hm_2(:) = 0
     imu_hm_1_n(:) = 0
@@ -668,19 +668,12 @@ module stats_zt_module
 
     tot_zt_loops = stats_zt%num_output_fields
 
-    if ( any( vars_zt == "corr_w_hm_ov_adj" ) ) then
-       ! Correct for number of variables found under "corr_w_hm_ov_adj".
-       ! Subtract 1 from the loop size for each hydrometeor.
-       tot_zt_loops = tot_zt_loops - hydromet_dim
-       ! Add 1 for "corr_w_hm_ov_adj" to the loop size.
-       tot_zt_loops = tot_zt_loops + 1
-    endif
-    if ( any( vars_zt == "hmi" ) ) then
-       ! Correct for number of variables found under "hmi".
+    if ( any( vars_zt == "hm_i" ) ) then
+       ! Correct for number of variables found under "hm_i".
        ! Subtract 2 from the loop size (1st PDF component and 2nd PDF component)
        ! for each hydrometeor.
        tot_zt_loops = tot_zt_loops - 2 * hydromet_dim
-       ! Add 1 for "hmi" to the loop size.
+       ! Add 1 for "hm_i" to the loop size.
        tot_zt_loops = tot_zt_loops + 1
     endif
     if ( any( vars_zt == "mu_hm_i" ) ) then
@@ -863,7 +856,7 @@ module stats_zt_module
     if ( any( vars_zt == "corr_hmx_hmy_i_n" ) ) then
        ! Correct for number of variables found under "corr_hmxhmy_i_n".
        ! Subtract 2 (1st PDF component and 2nd PDF component) multipled by the
-       ! number of normalized correlations of two hydrometeors, which is found
+       ! number of normal space correlations of two hydrometeors, which is found
        ! by:  (1/2) * hydromet_dim * ( hydromet_dim - 1 );
        ! from the loop size.
        tot_zt_loops = tot_zt_loops - hydromet_dim * ( hydromet_dim - 1 )
@@ -884,6 +877,39 @@ module stats_zt_module
        ! Subtract 1 from the loop size for each hydrometeor.
        tot_zt_loops = tot_zt_loops - hydromet_dim
        ! Add 1 for "wp2hmp" to the loop size.
+       tot_zt_loops = tot_zt_loops + 1
+    endif
+    
+    if ( any( vars_zt == "sclrm" ) ) then
+       ! Correct for number of variables found under "sclrm".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zt_loops = tot_zt_loops - sclr_dim
+       
+       ! Add 1 for "sclrm" to the loop size.
+       tot_zt_loops = tot_zt_loops + 1
+    endif
+
+    if ( any( vars_zt == "sclrm_f" ) ) then
+       ! Correct for number of variables found under "sclrm_f".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zt_loops = tot_zt_loops - sclr_dim
+       ! Add 1 for "sclrm_f" to the loop size.
+       tot_zt_loops = tot_zt_loops + 1
+    endif
+
+    if ( any( vars_zt == "edsclrm" ) ) then
+       ! Correct for number of variables found under "edsclrm".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zt_loops = tot_zt_loops - edsclr_dim
+       ! Add 1 for "edsclrm" to the loop size.
+       tot_zt_loops = tot_zt_loops + 1
+    endif
+
+    if ( any( vars_zt == "edsclrm_f" ) ) then
+       ! Correct for number of variables found under "edsclrm_f".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zt_loops = tot_zt_loops - edsclr_dim
+       ! Add 1 for "edsclrm_f" to the loop size.
        tot_zt_loops = tot_zt_loops + 1
     endif
 
@@ -993,7 +1019,7 @@ module stats_zt_module
       case ('cloud_frac')
         icloud_frac = k
         call stat_assign( var_index=icloud_frac, var_name="cloud_frac", &
-             var_description="Cloud fraction (between 0 and 1) [-]", var_units="count", &
+             var_description="Cloud fraction (between 0 and 1) [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zt )
         k = k + 1
       
@@ -1190,6 +1216,20 @@ module stats_zt_module
         iwp3 = k
         call stat_assign( var_index=iwp3, var_name="wp3", &
              var_description="w third order moment [m^3/s^3]", var_units="m^3/s^3", &
+             l_silhs=.false., grid_kind=stats_zt )
+        k = k + 1
+
+      case ('thlp3')
+        ithlp3 = k
+        call stat_assign( var_index=ithlp3, var_name="thlp3", &
+             var_description="thl third order moment [K^3]", var_units="m^3/s^3", &
+             l_silhs=.false., grid_kind=stats_zt )
+        k = k + 1
+
+      case ('rtp3')
+        irtp3 = k
+        call stat_assign( var_index=irtp3, var_name="rtp3", &
+             var_description="rt third order moment [kg^3/kg^3]", var_units="m^3/s^3", &
              l_silhs=.false., grid_kind=stats_zt )
         k = k + 1
 
@@ -1720,6 +1760,14 @@ module stats_zt_module
 
         k = k + 1
 
+      case ('wp3_pr3')
+        iwp3_pr3 = k
+        call stat_assign( var_index=iwp3_pr3, var_name="wp3_pr3", &
+             var_description="wp3 budget: wp3 pressure term 3 [m^{3} s^{-4}]", &
+             var_units="m^{3} s^{-4}", l_silhs=.false., grid_kind=stats_zt )
+
+        k = k + 1
+
       case ('wp3_dp1')
         iwp3_dp1 = k
         call stat_assign( var_index=iwp3_dp1, var_name="wp3_dp1", &
@@ -1820,6 +1868,14 @@ module stats_zt_module
         call stat_assign( var_index=irrm_src_adj, var_name="rrm_src_adj", &
              var_description="rrm source term adjustment due to over-depletion &
              &[kg kg^{-1} s^{-1}]", &
+             var_units="kg kg^{-1} s^{-1}", l_silhs=.false., grid_kind=stats_zt )
+        k = k + 1
+
+      case ('rrm_mc_nonadj')
+        irrm_mc_nonadj = k
+
+        call stat_assign( var_index=irrm_mc_nonadj, var_name="rrm_mc_nonadj", &
+             var_description="Value of rrm_mc tendency before adjustment [kg kg^{-1} s^{-1}]", &
              var_units="kg kg^{-1} s^{-1}", l_silhs=.false., grid_kind=stats_zt )
         k = k + 1
 
@@ -3485,7 +3541,7 @@ module stats_zt_module
       case ('cloud_frac_1')
         icloud_frac_1 = k
         call stat_assign( var_index=icloud_frac_1, var_name="cloud_frac_1", &
-             var_description="pdf parameter cloud_frac_1 [count]", var_units="count", &
+             var_description="pdf parameter cloud_frac_1 [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zt )
         k = k + 1
 
@@ -3493,7 +3549,7 @@ module stats_zt_module
         icloud_frac_2 = k
 
         call stat_assign( var_index=icloud_frac_2, var_name="cloud_frac_2", &
-             var_description="pdf parameter cloud_frac_2 [count]", var_units="count", &
+             var_description="pdf parameter cloud_frac_2 [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zt )
         k = k + 1
 
@@ -3719,6 +3775,27 @@ module stats_zt_module
              var_units="-", l_silhs=.false., grid_kind=stats_zt )
         k = k + 1
 
+      case ('Skthl_zt')
+        iSkthl_zt = k
+        call stat_assign( var_index=iSkthl_zt, var_name="Skthl_zt", &
+             var_description="Skewness of thl on thermodynamic levels [-]", &
+             var_units="-", l_silhs=.false., grid_kind=stats_zt )
+        k = k + 1
+
+      case ('Skrt_zt')
+        iSkrt_zt = k
+        call stat_assign( var_index=iSkrt_zt, var_name="Skrt_zt", &
+             var_description="Skewness of rt on thermodynamic levels [-]", &
+             var_units="-", l_silhs=.false., grid_kind=stats_zt )
+        k = k + 1
+
+      case ('rcm_supersat_adj')
+        ircm_supersat_adj = k
+        call stat_assign( var_index=ircm_supersat_adj, var_name="rcm_supersat_adj", &
+             var_description="rcm adjustment due to spurious supersaturation [kg/kg]", &
+             var_units="kg/kg", l_silhs=.false., grid_kind=stats_zt )
+        k = k + 1
+
       ! Hydrometeor overall variances for each hydrometeor type.
       case('hmp2_zt')
 
@@ -3787,48 +3864,21 @@ module stats_zt_module
              l_silhs=.false., grid_kind=stats_zt )
         k = k + 1
 
-      ! Adjusted overall correlation of w and a hydrometeor for each hydrometeor
-      ! type.  The adjusted overall correlation is the overall correlation of w
-      ! and a hydrometeor multiplied by a constant tunable parameter that has a
-      ! value between 0 and 1, inclusive.
-      case ( 'corr_w_hm_ov_adj' )
-
-         do hm_idx = 1, hydromet_dim, 1
-
-            hm_type = hydromet_list(hm_idx)
-
-            ! The adjusted overall correlation of w and the hydrometeor.
-            icorr_w_hm_ov_adj(hm_idx) = k
-
-            call stat_assign( var_index=icorr_w_hm_ov_adj(hm_idx), &
-                              var_name="corr_w_"//trim( hm_type(1:2) ) &
-                                       //"_ov_adj", &
-                              var_description="Adjusted overall correlation " &
-                              // "of w and " &
-                              // hm_type(1:1)//"_"//trim( hm_type(2:2) ) &
-                              // " [-]", &
-                              var_units="-", l_silhs=.false., &
-                              grid_kind=stats_zt )
-
-            k = k + 1
-
-         enddo ! hm_idx = 1, hydromet_dim, 1
-
       ! Hydrometeor component mean values for each PDF component and hydrometeor
       ! type.
-      case ( "hmi" )
+      case ( "hm_i" )
 
          do hm_idx = 1, hydromet_dim, 1
 
             hm_type = hydromet_list(hm_idx)
 
             ! The mean of the hydrometeor in the 1st PDF component.
-            ihm1(hm_idx) = k
+            ihm_1(hm_idx) = k
 
             if ( l_mix_rat_hm(hm_idx) ) then
 
-               call stat_assign( var_index=ihm1(hm_idx), &
-                                 var_name=trim( hm_type(1:2) )//"1", &
+               call stat_assign( var_index=ihm_1(hm_idx), &
+                                 var_name=trim( hm_type(1:2) )//"_1", &
                                  var_description="Mean of " &
                                  // hm_type(1:1)//"_"//trim( hm_type(2:2) ) &
                                  // " (1st PDF component) [kg/kg]", &
@@ -3837,8 +3887,8 @@ module stats_zt_module
 
             else ! Concentration
 
-               call stat_assign( var_index=ihm1(hm_idx), &
-                                 var_name=trim( hm_type(1:2) )//"1", &
+               call stat_assign( var_index=ihm_1(hm_idx), &
+                                 var_name=trim( hm_type(1:2) )//"_1", &
                                  var_description="Mean of " &
                                  // hm_type(1:1)//"_"//trim( hm_type(2:2) ) &
                                  // " (1st PDF component) [num/kg]", &
@@ -3850,12 +3900,12 @@ module stats_zt_module
             k = k + 1
 
             ! The mean of the hydrometeor in the 2nd PDF component.
-            ihm2(hm_idx) = k
+            ihm_2(hm_idx) = k
 
             if ( l_mix_rat_hm(hm_idx) ) then
 
-               call stat_assign( var_index=ihm2(hm_idx), &
-                                 var_name=trim( hm_type(1:2) )//"2", &
+               call stat_assign( var_index=ihm_2(hm_idx), &
+                                 var_name=trim( hm_type(1:2) )//"_2", &
                                  var_description="Mean of " &
                                  // hm_type(1:1)//"_"//trim( hm_type(2:2) ) &
                                  // " (2nd PDF component) [kg/kg]", &
@@ -3864,8 +3914,8 @@ module stats_zt_module
 
             else ! Concentration
 
-               call stat_assign( var_index=ihm2(hm_idx), &
-                                 var_name=trim( hm_type(1:2) )//"2", &
+               call stat_assign( var_index=ihm_2(hm_idx), &
+                                 var_name=trim( hm_type(1:2) )//"_2", &
                                  var_description="Mean of " &
                                  // hm_type(1:1)//"_"//trim( hm_type(2:2) ) &
                                  // " (2nd PDF component) [num/kg]", &
@@ -3877,20 +3927,6 @@ module stats_zt_module
             k = k + 1
 
          enddo ! hm_idx = 1, hydromet_dim, 1
-
-      case ( 'LWP1' )
-        iLWP1 = k
-        call stat_assign( var_index=iLWP1, var_name="LWP1", &
-             var_description="Liquid water path (1st PDF component) [kg/m^2]", &
-             var_units="kg/m^2", l_silhs=.false., grid_kind=stats_zt )
-        k = k + 1
-
-      case ( 'LWP2' )
-        iLWP2 = k
-        call stat_assign( var_index=iLWP2, var_name="LWP2", &
-             var_description="Liquid water path (2nd PDF component) [kg/m^2]", &
-             var_units="kg/m^2", l_silhs=.false., grid_kind=stats_zt )
-        k = k + 1
 
       case ( 'precip_frac' )
         iprecip_frac = k
@@ -4923,92 +4959,54 @@ module stats_zt_module
                           var_units="kg/kg", l_silhs=.true., grid_kind=stats_zt)
         k = k + 1
 
+      case ( 'sclrm' )
+        do j = 1, sclr_dim, 1
+          write(sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          isclrm(j) = k
+          call stat_assign( var_index=isclrm(j), var_name="sclr"//trim(sclr_idx)//"m", &
+            var_description="passive scalar "//trim(sclr_idx), var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zt )
+          k = k + 1
+        end do
+
+      case ( 'sclrm_f' )
+        do j = 1, sclr_dim, 1
+          write(sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          isclrm_f(j) = k
+          call stat_assign( var_index=isclrm_f(j), var_name="sclr"//trim(sclr_idx)//"m_f", &
+            var_description="passive scalar forcing "//trim(sclr_idx), var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zt )
+          k = k + 1
+        end do
+
+      case ( 'edsclrm' )
+        do j = 1, edsclr_dim, 1
+          write(sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iedsclrm(j) = k
+          call stat_assign( var_index=iedsclrm(j), var_name="edsclr"//trim(sclr_idx)//"m", &
+            var_description="passive scalar "//trim(sclr_idx), var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zt )
+          k = k + 1
+        end do
+
+      case ( 'edsclrm_f' )
+        do j = 1, edsclr_dim, 1
+          write(sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iedsclrm_f(j) = k
+          call stat_assign( var_index=iedsclrm_f(j), var_name="edsclr"//trim(sclr_idx)//"m_f", &
+            var_description="passive scalar forcing "//trim(sclr_idx), var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zt )
+          k = k + 1
+        end do
 
       case default
-
-        l_found = .false.
-
-        j = 1
-
-        do while( j <= sclr_dim .and. .not. l_found)
-          write(sclr_idx, * ) j
-
-          sclr_idx = adjustl(sclr_idx)
-
-          if(trim(vars_zt(i)) == "sclr"//trim(sclr_idx)//"m" .and. .not. l_found) then
-
-            isclrm(j) = k
-
-        call stat_assign( var_index=isclrm(j), var_name="sclr"//trim(sclr_idx)//"m", &
-             var_description="passive scalar "//trim(sclr_idx), var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zt )
-
-            k = k + 1
-
-            l_found = .true.
-
-          else if(trim(vars_zt(i)) == "sclr"//trim(sclr_idx)//"m_f" .and. .not. l_found) then
-
-            isclrm_f(j) = k
-
-        call stat_assign( var_index=isclrm_f(j), var_name="sclr"//trim(sclr_idx)//"m_f", &
-             var_description="passive scalar forcing "//trim(sclr_idx), var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zt )
-
-            k = k + 1
-
-            l_found = .true.
-
-          endif
-
-          j = j + 1
-        end do
-
-        j = 1
-
-        do while( j <= edsclr_dim .and. .not. l_found)
-
-          write(sclr_idx, * ) j
-
-          sclr_idx = adjustl(sclr_idx)
-
-          if(trim(vars_zt(i)) == "edsclr"//trim(sclr_idx)//"m" .and. .not. l_found ) then
-
-            iedsclrm(j) = k
-
-        call stat_assign( var_index=iedsclrm(j), var_name="edsclr"//trim(sclr_idx)//"m", &
-             var_description="passive scalar "//trim(sclr_idx), var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zt )
-
-            k = k + 1
-
-            l_found = .true.
-
-          else if(trim(vars_zt(i)) == "edsclr"//trim(sclr_idx)//"m_f" .and. .not. l_found) then
-
-            iedsclrm_f(j) = k
-
-        call stat_assign( var_index=iedsclrm_f(j), var_name="edsclr"//trim(sclr_idx)//"m_f", &
-             var_description="passive scalar forcing "//trim(sclr_idx), var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zt )
-
-            k = k + 1
-
-            l_found = .true.
-
-          endif
-
-          j = j + 1
-
-        end do
-
-        if (.not. l_found ) then
-
-          write(fstderr,*) 'Error:  unrecognized variable in vars_zt:  ', trim( vars_zt(i) )
-
-          l_error = .true.  ! This will stop the run.
-
-        end if
+          
+        write(fstderr,*) 'Error:  unrecognized variable in vars_zt:  ', trim( vars_zt(i) )
+        l_error = .true.  ! This will stop the run.
 
       end select ! trim( vars_zt )
 

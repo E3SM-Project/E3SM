@@ -276,6 +276,20 @@ subroutine convect_deep_tend( &
     jctop = pver
     jcbot = 1._r8
 
+   ! initialize the variables that are passed into aero_model_wetdep
+   ! but not available when ZM is not used. lengath=0 most essential (wlin)
+    
+    lengath = 0
+    dsubcld(:ncol) = 0.0_r8
+    maxg(:ncol) = 1
+    ideep(:ncol) = 0
+    jt(:ncol) = pver
+    mu = 0.0_r8
+    eu = 0.0_r8
+    du = 0.0_r8
+    md = 0.0_r8
+    ed = 0.0_r8
+
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      call pbuf_get_field(pbuf, pblh_idx,  pblh)
      call pbuf_get_field(pbuf, tpert_idx, tpert)

@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id: output_grads.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
+! $Id: output_grads.F90 8216 2016-07-20 16:23:46Z raut@uwm.edu $
 !===============================================================================
 module output_grads
 
@@ -287,7 +287,7 @@ module output_grads
 
     real( kind = core_rknd ), dimension(:), allocatable :: z_in
 
-    type (variable), dimension(:), pointer :: var_in
+    type (variable), dimension(:), allocatable :: var_in
 
 !-------------------------------------------------------------------------------
 

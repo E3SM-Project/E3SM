@@ -3464,6 +3464,9 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_history');
    add_default($nl, 'clubb_rad_history');
 
+   if ($nl->get_value('clubb_history') =~ "true" &&  $nl->get_value('atm_nthreads') > 1) {
+     die "$ProgName - ERROR: clubb_history = .true. with multiple threads is not supported. \n";
+   }
    # Check compatibility of clubb_do_deep (if set) with deep_scheme
    my $clubb_do_deep = $nl->get_value('clubb_do_deep');
    if (defined $clubb_do_deep) {
@@ -3882,6 +3885,9 @@ if ($waccm_phys or $cfg->get('nlev') >= 60) {
     # Spectral gravity waves are part of WACCM physics, and also drive the
     # QBO in the high vertical resolution configuration.
     add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
+    # UWM_MISC: Commented out the following two lines. It appears that
+    # gravity waves are not supported by the Eulerian dycore, so we need
+    # to keep these flags to get SCAM to run.
     add_default($nl, 'use_gw_front'  , 'val'=>'.true.');
     add_default($nl, 'use_gw_convect', 'val'=>'.true.');
 } else {

@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id: parameter_indices.F90 7361 2014-11-04 21:51:02Z bmg2@uwm.edu $
+! $Id: parameter_indices.F90 8220 2016-07-21 18:48:32Z raut@uwm.edu $
 !===============================================================================
 module parameter_indices
 
@@ -17,7 +17,7 @@ module parameter_indices
 !   need to have the variable added to their list, but the order
 !   doesn't actually matter, since the i variables in here determine
 !   where in the params vector the number is placed.
-!   Finally, the namelists initvars and initspread will need to
+!   Finally, the namelists clubb_params_nl and initspread will need to
 !   have the parameter added to them.
 !-------------------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ module parameter_indices
   private ! Default Scope
 
   integer, parameter, public ::  & 
-    nparams = 67 ! Total tunable parameters
+    nparams = 72 ! Total tunable parameters
 
 !***************************************************************
 !                    ***** IMPORTANT *****
@@ -99,17 +99,23 @@ module parameter_indices
     imu                          = 54, & 
     ibeta                        = 55, & 
     ilmin_coef                   = 56, &
-    icoef_hm_1_hm_2_corr_adj     = 57, & 
-    imult_coef                   = 58, &
-    itaumin                      = 59, & 
-    itaumax                      = 60, &
-    iLscale_mu_coef              = 61, &
-    iLscale_pert_coef            = 62, &
-    ialpha_corr                  = 63, &
-    iSkw_denom_coef              = 64, &
-    ic_K10                       = 65, &
-    ithlp2_rad_coef              = 66, &
-    ithlp2_rad_cloud_frac_thresh = 67
+    iomicron                     = 57, &
+    izeta_vrnce_rat              = 58, &
+    iupsilon_precip_frac_rat     = 59, &
+    ilambda0_stability_coef      = 60, &
+    imult_coef                   = 61, &
+    itaumin                      = 62, &
+    itaumax                      = 63, &
+    iLscale_mu_coef              = 64, &
+    iLscale_pert_coef            = 65, &
+    ialpha_corr                  = 66, &
+    iSkw_denom_coef              = 67, &
+    ic_K10                       = 68, &
+    ic_K10h                      = 69, &
+    ithlp2_rad_coef              = 70, &
+    ithlp2_rad_cloud_frac_thresh = 71, &
+    iup2_vp2_factor              = 72
+
 
 end module parameter_indices
 !-----------------------------------------------------------------------

@@ -433,16 +433,18 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname='CUSH'
     m = pbuf_get_index('cush')
-    call infld(fieldname, fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-         tptr, found, gridname='physgrid')
-    if(.not.found) then
-       if(masterproc) write(iulog,*) trim(fieldname), ' initialized to 1000.'
-       tptr=1000._r8
+    if (m > 0) then
+       call infld(fieldname, fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            tptr, found, gridname='physgrid')
+       if(.not.found) then
+          if(masterproc) write(iulog,*) trim(fieldname), ' initialized to 1000.'
+          tptr=1000._r8
+       end if
+       do n=1,dyn_time_lvls
+          call pbuf_set_field(pbuf2d, m, tptr, start=(/1,n/), kount=(/pcols,1/))
+       end do
+       deallocate(tptr)
     end if
-    do n=1,dyn_time_lvls
-       call pbuf_set_field(pbuf2d, m, tptr, start=(/1,n/), kount=(/pcols,1/))
-    end do
-    deallocate(tptr)
 
     do lchnk=begchunk,endchunk
        cam_out(lchnk)%tbot(:) = posinf
@@ -477,7 +479,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                tptr3d, found, gridname='physgrid')
           if (found) then
              if (masterproc) write(iulog,*) trim(fieldname), ' initialized with Q'
-             if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+             if(dycore_is('LR')) call polar_average(pver, tptr3d)
           else
              call endrun('  '//trim(subname)//' Error:  Q must be on Initial File')
           end if
@@ -548,7 +550,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
              do n = 1, dyn_time_lvls
                 call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
              end do
-             if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+             if(dycore_is('LR')) call polar_average(pver, tptr3d)
           else
              call pbuf_set_field(pbuf2d, m, 0._r8)
              if (masterproc)  write(iulog,*) trim(fieldname), ' initialized to 0.0'
@@ -619,18 +621,20 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname = 'CONCLD'
     m = pbuf_get_index('CONCLD')
-    call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
-         tptr3d, found, gridname='physgrid')
-    if(found) then
-       do n = 1, dyn_time_lvls
-          call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
-       end do
-    else
-       call pbuf_set_field(pbuf2d, m, 0._r8)
-       if (masterproc) write(iulog,*) trim(fieldname), ' initialized to 0.'
-    end if
+    if (m > 0) then
+       call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+            tptr3d, found, gridname='physgrid')
+       if(found) then
+          do n = 1, dyn_time_lvls
+             call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
+          end do
+       else
+          call pbuf_set_field(pbuf2d, m, 0._r8)
+          if (masterproc) write(iulog,*) trim(fieldname), ' initialized to 0.'
+       end if
 
-    deallocate (tptr3d)
+       deallocate (tptr3d)
+    end if
 
     call initialize_short_lived_species(fh_ini, pbuf2d)
 end subroutine phys_inidat
@@ -970,7 +974,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        ! Advance time information
        !-----------------------------------------------------------------------
 
-       call phys_timestep_init( phys_state, cam_out, pbuf2d)
+       call phys_timestep_init( phys_state, cam_in, cam_out, pbuf2d)
 
        call t_stopf ('physpkg_st1')
 
@@ -1780,6 +1784,10 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
 
+#if defined(UWM_MISC) && defined(SILHS)
+    use subcol_SILHS,    only: subcol_SILHS_var_covar_driver, subcol_SILHS_massless_droplet_destroyer
+#endif
+
     implicit none
 
     !
@@ -1833,7 +1841,7 @@ subroutine tphysbc (ztodt,               &
     integer ierr
 
     integer  i,k,m                             ! Longitude, level, constituent indices
-    integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
+    integer :: ixcldice, ixcldliq, ixq         ! constituent indices for cloud liquid and ice water.
     ! for macro/micro co-substepping
     integer :: macmic_it                       ! iteration variables
     real(r8) :: cld_macmic_ztodt               ! modified timestep
@@ -1899,6 +1907,12 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: flx_heat(pcols)
     type(check_tracers_data):: tracerint             ! energy integrals and cummulative boundary fluxes
     real(r8) :: zero_tracers(pcols,pcnst)
+    real(r8) :: preclipice(pcols,pver)         ! Debugging output to look at ice tendencies due to hard
+    real(r8) :: icecliptend(pcols,pver)        ! clipping negative values
+    real(r8) :: preclipliq(pcols,pver)
+    real(r8) :: liqcliptend(pcols,pver)
+    real(r8) :: preclipvap(pcols,pver)
+    real(r8) :: vapcliptend(pcols,pver)
 
     logical   :: lq(pcnst)
 
@@ -1967,6 +1981,10 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
+    ! Initialize to zero
+    liqcliptend(:,:) = 0._r8
+    icecliptend(:,:) = 0._r8
+    vapcliptend(:,:) = 0._r8
 
     ! Associate pointers with physics buffer fields
     itim_old = pbuf_old_tim_idx()
@@ -2000,9 +2018,16 @@ subroutine tphysbc (ztodt,               &
     fracis (:ncol,:,1:pcnst) = 1._r8
 
     ! Set physics tendencies to 0
-    tend %dTdt(:ncol,:pver)  = 0._r8
-    tend %dudt(:ncol,:pver)  = 0._r8
-    tend %dvdt(:ncol,:pver)  = 0._r8
+    tend%dTdt(:ncol,:pver)  = 0._r8
+    tend%dudt(:ncol,:pver)  = 0._r8
+    tend%dvdt(:ncol,:pver)  = 0._r8
+
+    !
+    ! Make sure that input tracers are all positive (probably unnecessary)
+    !
+    call cnst_get_ind('CLDLIQ', ixcldliq)
+    call cnst_get_ind('CLDICE', ixcldice)
+    call cnst_get_ind('Q', ixq)
 
 !!== KZ_WCON
     call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
@@ -2107,8 +2132,6 @@ if (l_bc_energy_fix) then
     ! Save state for convective tendency calculations.
     call diag_conv_tend_ini(state, pbuf)
 
-    call cnst_get_ind('CLDLIQ', ixcldliq)
-    call cnst_get_ind('CLDICE', ixcldice)
     qini     (:ncol,:pver) = state%q(:ncol,:pver,       1)
     cldliqini(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     cldiceini(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
@@ -2414,9 +2437,19 @@ end if
 
           if (use_subcol_microp) then
              call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf)
+#if defined(UWM_MISC) && defined(SILHS)
+             ! Parameterize subcolumn effects on covariances, if enabled
+             call subcol_SILHS_var_covar_driver( cld_macmic_ztodt, state_sc, ptend_sc, &
+                                                 pbuf )
+#endif
 
              ! Average the sub-column ptend for use in gridded update - will not contain ptend_aero
              call subcol_ptend_avg(ptend_sc, state_sc%ngrdcol, lchnk, ptend)
+#if defined(UWM_MISC) && defined(SILHS)
+             ! Destroy massless droplets!
+             call subcol_SILHS_massless_droplet_destroyer( cld_macmic_ztodt, state, & ! Intent(in)
+                                                           ptend )                    ! Intent(inout)
+#endif
 
              ! Copy ptend_aero field to one dimensioned by sub-columns before summing with ptend
              call subcol_ptend_copy(ptend_aero, state_sc, ptend_aero_sc)
@@ -2447,6 +2480,17 @@ end if
           ! Have to scale and apply for full timestep to get tend right
           ! (see above note for macrophysics).
           call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
+
+          preclipliq(:ncol,:) = state%q(:ncol,:,ixcldliq)+(ptend%q(:ncol,:,ixcldliq)*ztodt)
+          preclipice(:ncol,:) = state%q(:ncol,:,ixcldice)+(ptend%q(:ncol,:,ixcldice)*ztodt)
+          preclipvap(:ncol,:) = state%q(:ncol,:,ixq)+(ptend%q(:ncol,:,ixq)*ztodt)
+          vapcliptend(:ncol,:) = (state%q(:ncol,:,ixq)-preclipvap(:ncol,:))*rtdt
+          icecliptend(:ncol,:) = (state%q(:ncol,:,ixcldice)-preclipice(:ncol,:))*rtdt
+          liqcliptend(:ncol,:) = (state%q(:ncol,:,ixcldliq)-preclipliq(:ncol,:))*rtdt
+
+          call outfld('INEGCLPTEND', icecliptend, pcols, lchnk   )
+          call outfld('LNEGCLPTEND', liqcliptend, pcols, lchnk   )
+          call outfld('VNEGCLPTEND', vapcliptend, pcols, lchnk   )
 
           call physics_update (state, ptend, ztodt, tend)
           call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
@@ -2606,7 +2650,7 @@ end if ! l_rad
 
 end subroutine tphysbc
 
-subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
+subroutine phys_timestep_init(phys_state, cam_in, cam_out, pbuf2d)
 !-----------------------------------------------------------------------------------
 !
 ! Purpose: The place for parameterizations to call per timestep initializations.
@@ -2647,11 +2691,14 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   implicit none
 
   type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
+  type(cam_in_t),      intent(inout), dimension(begchunk:endchunk) :: cam_in
   type(cam_out_t),     intent(inout), dimension(begchunk:endchunk) :: cam_out
   
   type(physics_buffer_desc), pointer                 :: pbuf2d(:,:)
 
   !-----------------------------------------------------------------------------
+
+  if (single_column) call scam_use_iop_srf(cam_in)
 
   ! Chemistry surface values
   call chem_surfvals_set()

@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: file_functions.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: file_functions.F90 7482 2015-02-05 20:54:25Z schemena@uwm.edu $
 !===============================================================================
 module file_functions
 
@@ -63,6 +63,13 @@ module file_functions
     integer :: ierr
 
     ! ---- Begin Code ----
+! A ThreadLock is necessary here because FORTRAN can only have each file open on
+! one file_unit at a time. For example, suppose we are running CLUBB in parallel
+! with OpenMP using two threads. Suppose the first thread opens the file with file_unit = 0
+! (file_unit is assigned a value based on thread number).
+! Then suppose, that before thread 1 exits, thread 2 opens the same file with file_unit = 1.
+! This would cause FORTRAN to crash.
+!$omp critical
 
     ! Open data file.
     open( unit=file_unit, file=path_and_filename, action='read', status='old', &
@@ -91,6 +98,8 @@ module file_functions
 
     ! Close data file.
     close( file_unit )
+
+!$omp end critical
 
     return
 

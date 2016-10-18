@@ -1,5 +1,5 @@
 !----------------------------------------------------------------------------
-! $Id: gmres_cache.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: gmres_cache.F90 8014 2016-03-12 00:54:18Z raut@uwm.edu $
 !==============================================================================
 module gmres_cache
 
@@ -22,7 +22,7 @@ module gmres_cache
 
   private ! Default scope
 
-  real( kind = dp ), public, pointer, dimension(:,:) :: &
+  real( kind = dp ), public, allocatable, dimension(:,:) :: &
     gmres_prev_soln, &    ! Stores the previous solution vectors from earlier
                           ! GMRES solve runs. The first dimension is for the
                           ! actual vector; the second dimension is to determine
@@ -34,9 +34,10 @@ module gmres_cache
                           ! determine which cached array to access--this is
                           ! done via the GMRES indices for each of the
                           ! different matrices.
-!$omp threadprivate(gmres_prev_soln, gmres_prev_precond_a)
 
-  real( kind = dp ), public, pointer, dimension(:) :: &
+!$omp threadprivate( gmres_prev_soln, gmres_prev_precond_a )
+
+  real( kind = dp ), public, allocatable, dimension(:) :: &
     gmres_temp_intlc, &   ! Temporary array that stores GMRES internal values
                           ! for the interlaced matrices (2 x gr%nz grid
                           ! levels)
@@ -44,14 +45,15 @@ module gmres_cache
                           ! for the non-interlaced matrices (gr%nz grid
                           ! levels)
 
-!$omp threadprivate(gmres_temp_intlc, gmres_temp_norm)
+!$omp threadprivate( gmres_tmp_intlc, gmres_temp_norm )
 
   integer, public :: &
     gmres_tempsize_norm, &     ! Size of the temporary array for
                                ! non-interlaced matrices
     gmres_tempsize_intlc       ! Size of the temporary array for
                                ! interlaced matrices
-!$omp threadprivate(gmres_tempsize_norm, gmres_tempsize_intlc)
+
+!$omp threadprivate( gmres_tempsize_norm, gmres_tempsize_intlc )
 
   integer, public, parameter :: &
     maximum_gmres_idx = 1 ! Maximum number of different types of solves the
@@ -68,6 +70,7 @@ module gmres_cache
                     ! initial solution has been passed in for that particular
                     ! cache index. This defaults to false and is set to true
                     ! when a solution is updated.
+
 !$omp threadprivate(l_gmres_soln_ok)
 
   contains

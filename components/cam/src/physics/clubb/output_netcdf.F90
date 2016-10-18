@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: output_netcdf.F90 7169 2014-08-05 21:42:25Z dschanen@uwm.edu $
+! $Id: output_netcdf.F90 7672 2015-05-13 22:57:31Z betlej@uwm.edu $
 !===============================================================================
 module output_netcdf
 #ifdef NETCDF
@@ -13,7 +13,7 @@ module output_netcdf
 
   implicit none
 
-  public :: open_netcdf, write_netcdf, close_netcdf
+  public :: open_netcdf_for_writing, write_netcdf, close_netcdf
 
   private :: define_netcdf, write_grid, first_write, format_date
 
@@ -27,7 +27,7 @@ module output_netcdf
 
   contains
 !-------------------------------------------------------------------------------
-  subroutine open_netcdf( nlat, nlon, fdir, fname, ia, iz, zgrid,  & 
+  subroutine open_netcdf_for_writing( nlat, nlon, fdir, fname, ia, iz, zgrid,  & 
                           day, month, year, rlat, rlon, & 
                           time, dtwrite, nvar, ncf )
 
@@ -128,7 +128,7 @@ module output_netcdf
         write(fstderr,*) "To override this warning, set l_allow_small_stats_tout = &
                          &.true. in the stats_setting namelist in the &
                          &appropriate *_model.in file."
-        stop "Fatal error in open_netcdf"
+        stop "Fatal error in open_netcdf_for_writing"
       end if
     end if ! dtwrite < sec_per_min
 
@@ -166,7 +166,7 @@ module output_netcdf
                         ncf%LatVarId, ncf%LongVarId, ncf%AltVarId, ncf%TimeVarId ) ! Out
 
     return
-  end subroutine open_netcdf
+  end subroutine open_netcdf_for_writing
 
 !-------------------------------------------------------------------------------
 
@@ -352,15 +352,15 @@ module output_netcdf
 
     ! Define the initial variables for the dimensions
     ! Longitude = deg_E = X
-    stat = nf90_def_var( ncid, "longitude", NF90_FLOAT, & 
+    stat = nf90_def_var( ncid, "longitude", NF90_DOUBLE, & 
                          (/LongDimId/), LongVarId )
 
     ! Latitude = deg_N = Y
-    stat = nf90_def_var( ncid, "latitude", NF90_FLOAT, & 
+    stat = nf90_def_var( ncid, "latitude", NF90_DOUBLE, & 
                          (/LatDimId/), LatVarId )
 
     ! Altitude = meters above the surface = Z
-    stat = nf90_def_var( ncid, "altitude", NF90_FLOAT, & 
+    stat = nf90_def_var( ncid, "altitude", NF90_DOUBLE, & 
                         (/AltDimId/), AltVarId )
 
     ! grads2nc stores time as a double prec. value, so we follow that
@@ -553,7 +553,7 @@ module output_netcdf
     character(len=10) :: current_time
     character(len=8)  :: current_date
     ! Range for NetCDF variables
-    real(kind=4), dimension(2) :: var_range
+    real( kind = core_rknd ), dimension(2) :: var_range
 
     ! Dimensions for variables
     integer, dimension(4) :: var_dim
@@ -566,7 +566,6 @@ module output_netcdf
 !      real(kind=8): +/- 1.797693134862316E+308
 !      real(kind=16):+/- 1.189731495357231765085759326628007E+4932
 
-!      We use a 4 byte data model for NetCDF and GrADS to save disk space
 !-------------------------------------------------------------------------------
 
     ! ---- Begin Code ----
@@ -851,6 +850,12 @@ module output_netcdf
     write(date(23:24),'(i2.2)') iday
     write(date(26:27),'(i2.2)') floor( st_time / 3600._time_precision )
     write(date(29:30),'(i2.2)') int( mod( nint( st_time ),3600 ) / 60 )
+    
+    if ( .not. l_grads_netcdf_boost_ts ) then
+      write(date(32:33),'(i2.2)') nint(((real(mod( nint( st_time ),3600),kind=time_precision) / &
+                     60._time_precision) - (real(int(mod( nint( st_time ),3600 ) / 60 ), & 
+                                               kind=time_precision) ) )*60._time_precision)
+    end if
 
     return
   end subroutine format_date
