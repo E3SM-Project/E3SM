@@ -1967,6 +1967,7 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Forr_rofl')
      call seq_flds_add(x2o_fluxes,'Foxx_rofl')
+     call seq_flds_add(r2o_liq_fluxes,'Forr_rofl')
      longname = 'Water flux due to runoff (liquid)'
      stdname  = 'water_flux_into_sea_water'
      units    = 'kg m-2 s-1'
@@ -1977,6 +1978,7 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Forr_rofi')
      call seq_flds_add(x2o_fluxes,'Foxx_rofi')
+     call seq_flds_add(r2o_ice_fluxes,'Forr_rofi')
      longname = 'Water flux due to runoff (frozen)'
      stdname  = 'frozen_water_flux_into_sea_water'
      units    = 'kg m-2 s-1'
@@ -2468,10 +2470,6 @@ module seq_flds_mod
 
      endif
 
-     ! Runoff to ocean fluxes
-     call seq_flds_add(r2o_liq_fluxes,'Forr_rofl')
-     call seq_flds_add(r2o_ice_fluxes,'Forr_rofi')
-
      if (flds_wiso) then
         call seq_flds_add(o2x_states, "So_roce_16O")
         call seq_flds_add(x2i_states, "So_roce_16O")
@@ -2847,12 +2845,6 @@ module seq_flds_mod
 
        !Iso-Runoff
        ! r2o, l2x, x2r
-       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_16O')
-       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_18O')
-       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_HDO')
-       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_16O')
-       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_18O')
-       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_HDO')
 
        units    = 'kg m-2 s-1'
        call seq_flds_add(l2x_fluxes,'Flrl_rofi_16O')
@@ -2896,6 +2888,7 @@ module seq_flds_mod
        ! r2x, x2o
        call seq_flds_add(r2x_fluxes,'Forr_rofl_16O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_16O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_16O')
        longname = 'H2_16O Water flux due to liq runoff '
        stdname  = 'H2_16O_water_flux_into_sea_water'
        attname  = 'Forr_rofl_16O'
@@ -2904,6 +2897,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofl_18O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_18O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_18O')
        longname = 'H2_18O Water flux due to liq runoff '
        stdname  = 'H2_18O_water_flux_into_sea_water'
        attname  = 'Forr_rofl_18O'
@@ -2912,6 +2906,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofl_HDO')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_HDO')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_HDO')
        longname = 'HDO Water flux due to liq runoff '
        stdname  = 'HDO_water_flux_into_sea_water'
        attname  = 'Forr_rofl_HDO'
@@ -2921,6 +2916,7 @@ module seq_flds_mod
 
        call seq_flds_add(r2x_fluxes,'Forr_rofi_16O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_16O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_16O')
        longname = 'H2_16O Water flux due to ice runoff '
        stdname  = 'H2_16O_water_flux_into_sea_water'
        attname  = 'Forr_rofi_16O'
@@ -2929,6 +2925,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofi_18O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_18O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_18O')
        longname = 'H2_18O Water flux due to ice runoff '
        stdname  = 'H2_18O_water_flux_into_sea_water'
        attname  = 'Forr_rofi_18O'
@@ -2937,6 +2934,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofi_HDO')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_HDO')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_HDO')
        longname = 'HDO Water flux due to ice runoff '
        stdname  = 'HDO_water_flux_into_sea_water'
        attname  = 'Forr_rofi_HDO'
