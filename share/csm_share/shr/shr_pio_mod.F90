@@ -434,20 +434,6 @@ contains
           close(unitn)
           call shr_file_freeUnit( unitn )
 
-          ! BUG(wjs, 2015-11-09, cime issue #292) It should be up to the scripts to
-          ! ensure that the runtime pio_typename is compatible with the build-time
-          ! setting of whether pnetcdf or netcdf4p are included in the build. But the
-          ! scripts currently are not handling this correctly, so we need this workaround
-          ! in the code. Once issue #292 is resolved, we can remove this workaround, so
-          ! that the code listens to whatever the runtime settings dictate. (See also
-          ! comments in cime PR #291.)
-          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
-               pio_typename .eq. "netcdf4p") then
-             write(shr_log_unit,*) 'WARNING: for npes == 1, using netcdf instead of '//&
-                  trim(pio_typename)
-             pio_typename = "netcdf"
-          endif
-
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_iotype_netcdf)
        end if
     end if
@@ -538,21 +524,6 @@ contains
           end do
           close(unitn)
           call shr_file_freeUnit( unitn )
-
-          ! BUG(wjs, 2015-11-09, cime issue #292) It should be up to the scripts to
-          ! ensure that the runtime pio_typename is compatible with the build-time
-          ! setting of whether pnetcdf or netcdf4p are included in the build. But the
-          ! scripts currently are not handling this correctly, so we need this workaround
-          ! in the code. Once issue #292 is resolved, we can remove this workaround, so
-          ! that the code listens to whatever the runtime settings dictate. (See also
-          ! comments in cime PR #291.)
-          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
-               pio_typename .eq. "netcdf4p") then
-             write(shr_log_unit,*) 'WARNING: for npes == 1, using netcdf instead of '//&
-                  trim(pio_typename)
-             pio_typename = "netcdf"
-          endif
-
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
        end if
