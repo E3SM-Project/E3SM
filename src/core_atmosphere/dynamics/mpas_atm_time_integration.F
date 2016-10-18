@@ -1016,11 +1016,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
          if(config_convection_scheme == 'cu_grell_freitas'          .or. &
-            config_convection_scheme == 'cu_grell_freitas_momentum' .or. &
             config_convection_scheme == 'cu_tiedtke'                .or. &
-            config_convection_scheme == 'cu_tiedtke_wrf381'         .or. &
-            config_convection_scheme == 'cu_ntiedtke_wrf381'           ) then
-            call mpas_pool_get_array(tend_physics, 'rqvdynten', rqvdynten)
+            config_convection_scheme == 'cu_ntiedtke') then
+            call mpas_pool_get_array(tend_physics,'rqvdynten', rqvdynten)
 
             !NOTE: The calculation of the tendency due to horizontal and vertical advection for the water vapor mixing ratio
             !requires that the subroutine atm_advance_scalars_mono was called on the third Runge Kutta step, so that a halo
