@@ -43,11 +43,10 @@
  integer :: ierr
 
 !-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine atmphys_setup_packages:'
 
  ierr = 0
-
- write(0,*)
- write(0,*) '--- enter subroutine atmphys_setup_packages:'
 
 !--- initialization of all packages for parameterizations of cloud microphysics:
 
@@ -152,7 +151,7 @@
  bl_mynn_in = .false.
  bl_ysu_in  = .false.
 
- if(config_pbl_scheme=='bl_mynn' .or. config_pbl_scheme=='bl_mynn_wrf38') then
+ if(config_pbl_scheme=='bl_mynn') then
     bl_mynn_in = .true.
  elseif(config_pbl_scheme == 'bl_ysu') then
     bl_ysu_in = .true.

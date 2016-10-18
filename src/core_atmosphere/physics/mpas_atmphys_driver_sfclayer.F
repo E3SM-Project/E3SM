@@ -16,7 +16,6 @@
 
 !wrf physics:
  use module_sf_mynn
- use module_sf_mynn_wrf38
  use module_sf_sfclay
 
  implicit none
@@ -31,7 +30,6 @@
  integer,parameter,private:: iz0tlnd  = 0        !=0,(Carlson-Boland).
  integer,parameter,private:: scm_force_flux = 0  !SCM surface forcing by surface fluxes.
                                                  !0=no 1=yes (WRF single column model option only).
-
 
 !MPAS driver for parameterization of the surface layer.
 !Laura D. Fowler (send comments to laura@ucar.edu).
@@ -73,8 +71,6 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
 ! * added the implementation of the MYNN surface layer scheme from WRF 3.6.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
-! * added the implementation of the MYNN surface layer scheme from WRF 3.8.
-!   Laura D. Fowler (laura@ucar.edu) /2016-04-14..
 
 
  contains
@@ -128,7 +124,7 @@
        if(.not.allocated(fh_p)) allocate(fh_p(ims:ime,jms:jme))
        if(.not.allocated(fm_p)) allocate(fm_p(ims:ime,jms:jme))
 
-    case("sf_mynn","sf_mynn_wrf38")
+    case("sf_mynn")
        if(.not.allocated(snowh_p)) allocate(snowh_p(ims:ime,jms:jme))
        if(.not.allocated(ch_p)   ) allocate(ch_p(ims:ime,jms:jme)   )
        if(.not.allocated(qcg_p)  ) allocate(qcg_p(ims:ime,jms:jme)  )
@@ -138,8 +134,6 @@
        if(.not.allocated(tsq_p)     ) allocate(tsq_p(ims:ime,kms:kme,jms:jme)     )
        if(.not.allocated(sh3d_p)    ) allocate(sh3d_p(ims:ime,kms:kme,jms:jme)    )
        if(.not.allocated(elpbl_p)   ) allocate(elpbl_p(ims:ime,kms:kme,jms:jme)   )
-       if(.not.allocated(qcbl_p)    ) allocate(qcbl_p(ims:ime,kms:kme,jms:jme)    )
-       if(.not.allocated(cldfrabl_p)) allocate(cldfrabl_p(ims:ime,kms:kme,jms:jme))
 
     case default
 
@@ -195,7 +189,7 @@
        if(allocated(fh_p)) deallocate(fh_p)
        if(allocated(fm_p)) deallocate(fm_p)
 
-    case("sf_mynn","sf_mynn_wrf38")
+    case("sf_mynn")
        if(allocated(snowh_p)) deallocate(snowh_p)
        if(allocated(ch_p)   ) deallocate(ch_p   )
        if(allocated(qcg_p)  ) deallocate(qcg_p  )
@@ -205,8 +199,6 @@
        if(allocated(tsq_p)     ) deallocate(tsq_p     )
        if(allocated(sh3d_p)    ) deallocate(sh3d_p    )
        if(allocated(elpbl_p)   ) deallocate(elpbl_p   )
-       if(allocated(qcbl_p)    ) deallocate(qcbl_p    )
-       if(allocated(cldfrabl_p)) deallocate(cldfrabl_p)
 
     case default
 
@@ -338,7 +330,7 @@
        enddo
        enddo
 
-    case("sf_mynn","sf_mynn_wrf38")
+    case("sf_mynn")
        !input variables:
        call mpas_pool_get_array(diag_physics,'qcg'   ,qcg   )
        call mpas_pool_get_array(sfc_input   ,'snowh' ,snowh )
@@ -369,8 +361,6 @@
           tsq_p(i,k,j)      = tsq(k,i)
           sh3d_p(i,k,j)     = sh3d(k,i)
           elpbl_p(i,k,j)    = el_pbl(k,i)
-          qcbl_p(i,k,j)     = 0._RKIND
-          cldfrabl_p(i,k,j) = 0._RKIND
        enddo
        enddo
        enddo
@@ -505,7 +495,7 @@
        enddo
        enddo
 
-    case("sf_mynn","sf_mynn_wrf38")
+    case("sf_mynn")
        call mpas_pool_get_array(diag_physics,'ch',ch)
 
        do j = jts,jte
@@ -528,27 +518,19 @@
  logical, parameter:: allowed_to_read = .false. !actually not used in subroutine sfclayinit.
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter sfclayer_initialization:'
 
  sfclayer_select: select case (trim(sfclayer_scheme))
 
     case("sf_monin_obukhov")
-!       write(0,*) '    enter monin_obukhov initialization:'
        call sfclayinit(allowed_to_read)
-!       write(0,*) '    end monin_obukhov initialization'
 
     case("sf_mynn")
        call mynn_sf_init_driver(allowed_to_read)
-
-    case("sf_mynn_wrf38")
-       call mynn_sf_init_driver_wrf38(allowed_to_read)
 
     case default
 
  end select sfclayer_select
 
-!write(0,*) '--- end sfclayer_initialization'
 
  end subroutine init_sfclayer
 
@@ -560,10 +542,12 @@
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: sfc_input
- type(mpas_pool_type),intent(inout):: diag_physics
 
  integer,intent(in):: its,ite
  integer,intent(in):: itimestep
+
+!inout arguments:
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
  logical,pointer:: config_do_restart
@@ -574,8 +558,6 @@
  real(kind=RKIND):: dx
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_sfclayer:'
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
@@ -652,47 +634,12 @@
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                        )
 
-    case("sf_mynn_wrf38")
-       call sfclay_mynn_wrf38( &
-                   p3d       = pres_hyd_p , pi3d      = pi_p       , psfcpa    = psfc_p     , &
-                   th3d      = th_p       , t3d       = t_p        , u3d       = u_p        , &
-                   v3d       = v_p        , qv3d      = qv_p       , qc3d      = qc_p       , &
-                   rho3d     = rho_p      , dz8w      = dz_p       , cp        = cp         , &
-                   g         = gravity    , rovcp     = rcp        , R         = R_d        , &
-                   xlv       = xlv        , chs       = chs_p      , chs2      = chs2_p     , &
-                   cqs2      = cqs2_p     , cpm       = cpm_p      , znt       = znt_p      , &
-                   ust       = ust_p      , pblh      = hpbl_p     , mavail    = mavail_p   , &
-                   zol       = zol_p      , mol       = mol_p      , regime    = regime_p   , &
-                   psim      = psim_p     , psih      = psih_p     , xland     = xland_p    , &
-                   hfx       = hfx_p      , qfx       = qfx_p      , lh        = lh_p       , &
-                   tsk       = tsk_p      , flhc      = flhc_p     , flqc      = flqc_p     , &
-                   qgh       = qgh_p      , qsfc      = qsfc_p     , rmol      = rmol_p     , &
-                   u10       = u10_p      , v10       = v10_p      , th2       = th2m_p     , &
-                   t2        = t2m_p      , q2        = q2_p       , snowh     = snowh_p    , &
-                   gz1oz0    = gz1oz0_p   , wspd      = wspd_p     , br        = br_p       , &
-                   isfflx    = isfflx     , dxCell    = dx_p       , svp1      = svp1       , &
-                   svp2      = svp2       , svp3      = svp3       , svpt0     = svpt0      , &
-                   ep1       = ep_1       , ep2       = ep_2       , karman    = karman     , &
-                   ustm      = ustm_p     , ck        = ck_p       , cka       = cka_p      , &
-                   cd        = cd_p       , cda       = cda_p      , isftcflx  = isftcflx   , &
-                   iz0tlnd   = iz0tlnd    , itimestep = initflag   , ch        = ch_p       , &
-                   cov       = cov_p      , tsq       = tsq_p      , qsq       = qsq_p      , &
-                   sh3d      = sh3d_p     , el_pbl    = elpbl_p    , qcg       = qcg_p      , &
-                   icloud_bl = icloud_bl  , qc_bl     = qcbl_p     , cldfra_bl = cldfrabl_p , &
-                   bl_mynn_cloudpdf = bl_mynn_cloudpdf           ,                            &
-                   ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde    , &
-                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme    , &
-                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte      &
-                       )
-
     case default
 
  end select sfclayer_select
 
 !copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(diag_physics,its,ite)
-
-!write(0,*) '--- end subroutine driver_sfclayer'
 
  end subroutine driver_sfclayer
 

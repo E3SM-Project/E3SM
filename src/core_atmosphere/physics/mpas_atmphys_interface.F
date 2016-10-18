@@ -61,7 +61,7 @@
 !   we want to compute rt_diabatic_tend at constant volume.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-01-015. 
 ! * added the initialization of local variables needed in the parameterization of the MYNN surface layer scheme
-!   and planetary boundary layer scheme from WRF 3.6.1 and WRF 3.8..
+!   and planetary boundary layer scheme from WRF 3.6.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 ! * corrected the calculation of the surface pressure, mainly extrapolation of the air density to the surface.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-25.
@@ -106,9 +106,8 @@
  if(.not.allocated(qg_p)   ) allocate(qg_p(ims:ime,kms:kme,jms:jme)   )
 
  pbl_select: select case (trim(pbl_scheme))
-    case("bl_mynn","bl_mynn_wrf38")
+    case("bl_mynn")
        if(.not.allocated(ni_p)) allocate(ni_p(ims:ime,kms:kme,jms:jme))
-       if(.not.allocated(nc_p)) allocate(nc_p(ims:ime,kms:kme,jms:jme))
 
     case default
 
@@ -161,9 +160,8 @@
  if(allocated(qg_p)    ) deallocate(qg_p    )
 
  pbl_select: select case (trim(pbl_scheme))
-    case("bl_mynn","bl_mynn_wrf38")
+    case("bl_mynn")
        if(allocated(ni_p)) deallocate(ni_p)
-       if(allocated(nc_p)) deallocate(nc_p)
 
     case default
 
@@ -196,7 +194,7 @@
 
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
- integer,pointer:: index_nc,index_ni
+ integer,pointer:: index_ni
 
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: fzm,fzp,rdzw
@@ -205,7 +203,7 @@
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p,u,v,w
  real(kind=RKIND),dimension(:,:),pointer  :: qv,qc,qr,qi,qs,qg
- real(kind=RKIND),dimension(:,:),pointer  :: nc,ni
+ real(kind=RKIND),dimension(:,:),pointer  :: ni
  real(kind=RKIND),dimension(:,:,:),pointer:: scalars
 
 !local variables:
@@ -297,16 +295,13 @@
  enddo
 
  pbl_select: select case (trim(pbl_scheme))
-    case("bl_mynn","bl_mynn_wrf38")
-       call mpas_pool_get_dimension(state,'index_nc',index_nc)
+    case("bl_mynn")
        call mpas_pool_get_dimension(state,'index_ni',index_ni)
-       nc => scalars(index_nc,:,:)
        ni => scalars(index_ni,:,:)
 
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
-          nc_p(i,k,j) = max(0.,nc(k,i))
           ni_p(i,k,j) = max(0.,ni(k,i))
        enddo
        enddo
@@ -453,6 +448,7 @@
 !=================================================================================================================
  subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
 !=================================================================================================================
+
 !input variables:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state

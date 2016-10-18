@@ -16,7 +16,6 @@
 
 !wrf physics:
  use module_bl_mynn
- use module_bl_mynn_wrf38
  use module_bl_ysu
 
  implicit none
@@ -24,7 +23,6 @@
  public:: allocate_pbl,   &
           deallocate_pbl, &
           driver_pbl
-
 
 !MPAS driver for parameterization of Planetary Boundary Layer (PBL) processes.
 !Laura D. Fowler (send comments to laura@ucar.edu).
@@ -59,8 +57,6 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * corrected the initialization of sh3d for the mynn parameterization.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-13.
-! * added the implementation of the MYNN PBL scheme from WRF 3.8.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 
 
  contains
@@ -106,7 +102,7 @@
        if(.not.allocated(v10_p)   ) allocate(v10_p(ims:ime,jms:jme)         )
        if(.not.allocated(exch_p)  ) allocate(exch_p(ims:ime,kms:kme,jms:jme))
 
-    case("bl_mynn","bl_mynn_wrf38")
+    case("bl_mynn")
        if(.not.allocated(dx_p)   ) allocate(dx_p(ims:ime,jms:jme)   )
        if(.not.allocated(ch_p)   ) allocate(ch_p(ims:ime,jms:jme)   )
        if(.not.allocated(delta_p)) allocate(delta_p(ims:ime,jms:jme))
@@ -133,15 +129,6 @@
        if(.not.allocated(qdiss_p) ) allocate(qdiss_p(ims:ime,kms:kme,jms:jme) )
        if(.not.allocated(qshear_p)) allocate(qshear_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(qwt_p)   ) allocate(qwt_p(ims:ime,kms:kme,jms:jme)   )
-
-       if(.not.allocated(edmfa_p)   ) allocate(edmfa_p(ims:ime,kms:kme,jms:jme)   )
-       if(.not.allocated(edmfw_p)   ) allocate(edmfw_p(ims:ime,kms:kme,jms:jme)   )
-       if(.not.allocated(edmfqt_p)  ) allocate(edmfqt_p(ims:ime,kms:kme,jms:jme)  )
-       if(.not.allocated(edmfthl_p) ) allocate(edmfthl_p(ims:ime,kms:kme,jms:jme) )
-       if(.not.allocated(edmfent_p) ) allocate(edmfent_p(ims:ime,kms:kme,jms:jme) )
-       if(.not.allocated(edmfqc_p)  ) allocate(edmfqc_p(ims:ime,kms:kme,jms:jme)  )
-       if(.not.allocated(qcbl_p)    ) allocate(qcbl_p(ims:ime,kms:kme,jms:jme)    )
-       if(.not.allocated(cldfrabl_p)) allocate(cldfrabl_p(ims:ime,kms:kme,jms:jme))
 
        if(.not.allocated(rniblten_p)) allocate(rniblten_p(ims:ime,kms:kme,jms:jme))
 
@@ -191,7 +178,7 @@
        if(allocated(v10_p)   ) deallocate(v10_p   )
        if(allocated(exch_p)  ) deallocate(exch_p  )
 
-    case("bl_mynn","bl_mynn_wrf38")
+    case("bl_mynn")
        if(allocated(dx_p)   ) deallocate(dx_p   )
        if(allocated(ch_p)   ) deallocate(ch_p   )
        if(allocated(delta_p)) deallocate(delta_p)
@@ -217,15 +204,6 @@
        if(allocated(qdiss_p) ) deallocate(qdiss_p )
        if(allocated(qshear_p)) deallocate(qshear_p)
        if(allocated(qwt_p)   ) deallocate(qwt_p   )
-
-       if(allocated(edmfa_p)   ) deallocate(edmfa_p   )
-       if(allocated(edmfw_p)   ) deallocate(edmfw_p   )
-       if(allocated(edmfqt_p)  ) deallocate(edmfqt_p  )
-       if(allocated(edmfthl_p) ) deallocate(edmfthl_p )
-       if(allocated(edmfent_p) ) deallocate(edmfent_p )
-       if(allocated(edmfqc_p)  ) deallocate(edmfqc_p  )
-       if(allocated(qcbl_p)    ) deallocate(qcbl_p    )
-       if(allocated(cldfrabl_p)) deallocate(cldfrabl_p)
 
        if(allocated(rniblten_p)) deallocate(rniblten_p)
 
@@ -315,7 +293,7 @@
        enddo
        enddo
 
-    case("bl_mynn","bl_mynn_wrf38")
+    case("bl_mynn")
        call mpas_pool_get_array(sfc_input   ,'skintemp',skintemp)
        call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
        call mpas_pool_get_array(diag_physics,'ch'      ,ch      )
@@ -363,14 +341,6 @@
           tkepbl_p(i,k,j)   = tke_pbl(k,i)
           qkeadv_p(i,k,j)   = qke_adv(k,i)
           sh3d_p(i,k,j)     = sh3d(k,i)
-          qcbl_p(i,k,j)     = 0._RKIND
-          cldfrabl_p(i,k,j) = 0._RKIND
-          edmfa_p(i,k,j)    = 0._RKIND
-          edmfw_p(i,k,j)    = 0._RKIND
-          edmfqt_p(i,k,j)   = 0._RKIND
-          edmfthl_p(i,k,j)  = 0._RKIND
-          edmfent_p(i,k,j)  = 0._RKIND
-          edmfqc_p(i,k,j)   = 0._RKIND
           rniblten_p(i,k,j) = 0._RKIND
 
           !... outputs:
@@ -486,7 +456,7 @@
        enddo
        enddo
 
-    case("bl_mynn","bl_mynn_wrf38")
+    case("bl_mynn")
        call mpas_pool_get_array(diag_physics,'delta'   ,delta   )
        call mpas_pool_get_array(diag_physics,'wstar'   ,wstar   )
        call mpas_pool_get_array(diag_physics,'el_pbl'  ,el_pbl  )
@@ -560,8 +530,6 @@
  integer:: initflag
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_pbl: dt_pbl=',dt_pbl
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
 
@@ -628,59 +596,12 @@
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                             )
 
-    case("bl_mynn_wrf38")
-       write(0,*) '--- enter subroutine mynn_bl_driver_wrf38:'
-       write(0,*) '--- icloud_bl = ', icloud_bl
-       call  mynn_bl_driver_wrf38 ( &
-                 p         = pres_hyd_p  , exner     = pi_p        , ps        = psfc_p     , &
-                 th        = th_p        , t3d       = t_p         , dz        = dz_p       , &
-                 dxCell    = dx_p        , u         = u_p         , v         = v_p        , &
-                 w         = w_p         , qv        = qv_p        , qc        = qc_p       , &
-                 qi        = qi_p        , qni       = ni_p        , qnc       = nc_p       , &
-                 rho       = rho_p       , rublten   = rublten_p   , rvblten   = rvblten_p  , &
-                 rthblten  = rthblten_p  , rqvblten  = rqvblten_p  , rqcblten  = rqcblten_p , &
-                 rqiblten  = rqiblten_p  , rqniblten = rniblten_p  , flag_qc   = f_qc       , &
-                 flag_qnc  = f_qnc       , flag_qi   = f_qi        , flag_qni  = f_qni      , &
-                 kpbl      = kpbl_p      , pblh      = hpbl_p      , xland     = xland_p    , &
-                 ts        = tsk_p       , hfx       = hfx_p       , qfx       = qfx_p      , &
-                 ch        = ch_p        , znt       = znt_p       , sh3d      = sh3d_p     , &
-                 tsq       = tsq_p       , qsq       = qsq_p       , cov       = cov_p      , &
-                 el_pbl    = elpbl_p     , qsfc      = qsfc_p      , qcg       = qcg_p      , &
-                 ust       = ust_p       , rmol      = rmol_p      , wspd      = wspd_p     , &
-                 wstar     = wstar_p     , delta     = delta_p     , delt      = dt_pbl     , &
-                 exch_h    = kzh_p       , exch_m    = kzm_p       , uoce      = uoce_p     , &
-                 voce      = voce_p      , qke       = qke_p       , qke_adv   = qkeadv_p   , &
-                 vdfg      = vdfg_p      , tke_pbl   = tkepbl_p    , dqke      = dqke_p     , &
-                 qwt       = qwt_p       , qshear    = qshear_p    , qbuoy     = qbuoy_p    , &
-                 qdiss     = qdiss_p     , qc_bl     = qcbl_p      , cldfra_bl = cldfrabl_p , &
-                 icloud_bl = icloud_bl   , edmf_a    = edmfa_p     , edmf_w    = edmfw_p    , &
-                 edmf_qt   = edmfqt_p    , edmf_thl  = edmfthl_p   , edmf_ent  = edmfent_p  , &
-                 edmf_qc   = edmfqc_p    , initflag  = initflag    ,                          &
-                 grav_settling     = grav_settling     ,                                      &
-                 bl_mynn_cloudpdf  = bl_mynn_cloudpdf  ,                                      &
-                 bl_mynn_cloudmix  = bl_mynn_cloudmix  ,                                      &
-                 bl_mynn_mixlength = bl_mynn_mixlength ,                                      &
-                 bl_mynn_mixqt     = bl_mynn_mixqt     ,                                      &
-                 bl_mynn_tkeadvect = bl_mynn_tkeadvect ,                                      &
-                 bl_mynn_tkebudget = bl_mynn_tkebudget ,                                      &
-                 bl_mynn_edmf      = bl_mynn_edmf      ,                                      &
-                 bl_mynn_edmf_mom  = bl_mynn_edmf_mom  ,                                      &
-                 bl_mynn_edmf_part = bl_mynn_edmf_part ,                                      &
-                 bl_mynn_edmf_tke  = bl_mynn_edmf_tke  ,                                      &
-                 ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde      , &
-                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme      , &
-                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
-                            )
-       write(0,*) '--- end subroutine mynn_bl_driver_wrf38'
-
     case default
 
  end select pbl_select
 
 !copy local arrays to MPAS grid:
  call pbl_to_MPAS(diag_physics,tend_physics,its,ite)
-
-!write(0,*) '--- end subroutine driver_pbl'
 
  end subroutine driver_pbl
 

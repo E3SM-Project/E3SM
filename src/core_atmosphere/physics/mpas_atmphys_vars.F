@@ -40,14 +40,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-28.
 ! * added local variables needed for the Grell-Freitas parameterization of deep and shallow convection.
 ! * Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
-! * added local parameter imomentum to include the calculation of the momentum tendencies due to convection
-!   in the Grell-Freitas parameterization of convection.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
-! * added local arrays needed in the MYNN surface layer scheme and PBL scheme (for versions WRF 3.6.1 and 3.8).
+! * added local arrays needed in the MYNN surface layer scheme and PBL scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
-! * changed the value of bl_mynn_cloudpdf from 2 to 0 which is the closure option used when the MYNN surface
-!   layer scheme and PBL scheme were originally implemented.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 ! * added the logical ua_phys needed in the call to subroutine sfcdiags. ua_phys is set to false.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-05-13.
 ! * added the integers has_reqc,has_reqi,and has_reqs. when initialized to zero, the effective radii for cloud
@@ -149,8 +143,7 @@
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     ni_p,             &!
-    nr_p,             &!
-    nc_p               !
+    nr_p               !
 
 !... arrays located at w (vertical velocity) points, or at interface between layers:
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
@@ -275,7 +268,6 @@
 
 !... grell-freitas specific parameters and arrays:
     integer, parameter:: ishallow  = 1 !shallow convection used with grell scheme.
-    integer, parameter:: imomentum = 1 !momentum used with grell scheme.
 
  integer,dimension(:,:),allocatable:: &
     k22_shallow_p,    &!
@@ -339,18 +331,10 @@
 
 !... MYNN PBL scheme (module_bl_mynn.F):
  integer,parameter:: grav_settling = 0
- integer,parameter:: icloud_bl     = 0          !no coupling of subgrid-scale clouds with radiation. 
 
  logical,parameter:: bl_mynn_tkeadvect = .false.!
  integer,parameter:: bl_mynn_tkebudget = 0      !
  integer,parameter:: bl_mynn_cloudpdf  = 0      !
- integer,parameter:: bl_mynn_cloudmix  = 1      !
- integer,parameter:: bl_mynn_mixlength = 1      !
- integer,parameter:: bl_mynn_mixqt     = 0      !
- integer,parameter:: bl_mynn_edmf      = 0      !option to activate mass-flux scheme (=0:regular MYNN).
- integer,parameter:: bl_mynn_edmf_mom  = 0
- integer,parameter:: bl_mynn_edmf_tke  = 0
- integer,parameter:: bl_mynn_edmf_part = 0
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
     delta_p,          &
@@ -370,15 +354,7 @@
     tkepbl_p           !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    rniblten_p,       &!
-    edmfa_p,          &!
-    edmfw_p,          &!
-    edmfqt_p,         &!
-    edmfthl_p,        &!
-    edmfent_p,        &!
-    edmfqc_p,         &!
-    qcbl_p,           &!
-    cldfrabl_p         !
+    rniblten_p         !
 
 !=================================================================================================================
 !... variables and arrays related to parameterization of gravity wave drag over orography:

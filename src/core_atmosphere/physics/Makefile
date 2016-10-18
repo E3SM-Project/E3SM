@@ -87,7 +87,7 @@ mpas_atmphys_driver.o: \
 
 mpas_atmphys_driver_cloudiness.o: \
 	mpas_atmphys_constants.o \
-	mpas_atmphys_vars.o      \
+	mpas_atmphys_vars.o \
 	./physics_wrf/module_mp_thompson_cldfra3.o
 
 mpas_atmphys_driver_convection.o: \
@@ -125,11 +125,15 @@ mpas_atmphys_driver_microphysics.o: \
 	./physics_wrf/module_mp_thompson.o \
 	./physics_wrf/module_mp_wsm6.o
 
+mpas_atmphys_driver_oml.o: \
+	mpas_atmphys_constants.o \
+	mpas_atmphys_vars.o \
+	./physics_wrf/module_sf_oml.o
+
 mpas_atmphys_driver_pbl.o: \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_bl_mynn.o \
-	./physics_wrf/module_bl_mynn.wrf-3.8.o \
 	./physics_wrf/module_bl_ysu.o
 
 mpas_atmphys_driver_radiation_lw.o: \
@@ -155,13 +159,7 @@ mpas_atmphys_driver_sfclayer.o: \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_sf_mynn.o \
-	./physics_wrf/module_sf_mynn.wrf-3.8.o \
 	./physics_wrf/module_sf_sfclay.o
-
-mpas_atmphys_driver_oml.o: \
-	mpas_atmphys_constants.o \
-	mpas_atmphys_vars.o \
-	./physics_wrf/module_sf_oml.o
 
 mpas_atmphys_init.o: \
 	mpas_atmphys_driver_convection.o \

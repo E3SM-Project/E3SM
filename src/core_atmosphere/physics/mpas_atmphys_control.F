@@ -29,7 +29,6 @@
 ! -------------------------------------------
 ! * physics_namelist_check: checks that physics namelist parameters are defined correctly.
 ! * physics_registry_init : initializes thicknesses of soil layers for NOAH land-surface scheme.
-! * physics_idealized_init: initializes physics variables needed to run idealized cases.
 !
 ! add-ons and modifications to sourcecode:
 ! ----------------------------------------
@@ -41,8 +40,7 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 ! * modified sourcecode to use pools.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-! * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
-!   core_init_atmosphere.
+! * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in core_init_atmosphere.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
 ! * renamed config_conv_deep_scheme to config_convection_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
@@ -54,12 +52,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
 ! * added the option mp_thompson.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
-! * added the options cu_grell_freitas.
+! * added the option cu_grell_freitas.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
 ! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF version 3.6.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
-! * added the options sf_mynn_wrf38 and bl_mynn_wrf38 for the MYNN parameterization from WRF version 3.8.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 ! * added the option cu_ntiedtke for the "new" Tiedtke parameterization of convection from WRF version 3.8.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
 
@@ -87,8 +83,8 @@
                                   config_sfclayer_scheme
 
 !-----------------------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine physics_namelist_check:'
+!write(0,*)
+!write(0,*) '--- enter subroutine physics_namelist_check:'
 
  call mpas_pool_get_config(configs,'config_physics_suite'    ,config_physics_suite    )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
@@ -102,7 +98,7 @@
  call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
  !
- ! Setup schemes according to the selected physics suite
+ !setup schemes according to the selected physics suite:
  !
  if (trim(config_physics_suite) == 'mesoscale_reference') then
 
@@ -149,10 +145,10 @@
  endif
 
 !convection scheme:
- if(.not. (config_convection_scheme .eq. 'off'                       .or. &
-           config_convection_scheme .eq. 'cu_grell_freitas'          .or. &
-           config_convection_scheme .eq. 'cu_kain_fritsch'           .or. &
-           config_convection_scheme .eq. 'cu_tiedtke'                .or. &
+ if(.not. (config_convection_scheme .eq. 'off'              .or. &
+           config_convection_scheme .eq. 'cu_grell_freitas' .or. &
+           config_convection_scheme .eq. 'cu_kain_fritsch'  .or. &
+           config_convection_scheme .eq. 'cu_tiedtke'       .or. &
            config_convection_scheme .eq. 'cu_ntiedtke')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
@@ -162,10 +158,9 @@
  endif
 
 !pbl scheme:
- if(.not. (config_pbl_scheme .eq. 'off'           .or. &
-           config_pbl_scheme .eq. 'bl_mynn'       .or. &
-           config_pbl_scheme .eq. 'bl_mynn_wrf38' .or. &
-           config_pbl_scheme .eq. 'bl_ysu'        )) then
+ if(.not. (config_pbl_scheme .eq. 'off'     .or. &
+           config_pbl_scheme .eq. 'bl_mynn' .or. &
+           config_pbl_scheme .eq. 'bl_ysu')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for pbl_scheme: ', &
           trim(config_pbl_scheme)
@@ -212,9 +207,9 @@
  endif
 
 !cloud fraction for radiation schemes:
- if(.not. (config_radt_cld_scheme .eq. 'off'                  .or. &
-           config_radt_cld_scheme .eq. 'cld_incidence'        .or. &
-           config_radt_cld_scheme .eq. 'cld_fraction'         .or. &
+ if(.not. (config_radt_cld_scheme .eq. 'off'           .or. &
+           config_radt_cld_scheme .eq. 'cld_incidence' .or. &
+           config_radt_cld_scheme .eq. 'cld_fraction'  .or. &
            config_radt_cld_scheme .eq. 'cld_fraction_thompson')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for calculation of cloud fraction: ', &
@@ -237,9 +232,8 @@
  endif
 
 !surface-layer scheme:
- if(.not. (config_sfclayer_scheme .eq. 'off'           .or.    &
-           config_sfclayer_scheme .eq. 'sf_mynn'       .or. &
-           config_sfclayer_scheme .eq. 'sf_mynn_wrf38' .or. &
+ if(.not. (config_sfclayer_scheme .eq. 'off'     .or. &
+           config_sfclayer_scheme .eq. 'sf_mynn' .or. &
            config_sfclayer_scheme .eq. 'sf_monin_obukhov')) then
  
     write(mpas_err_message,'(A,A10)') 'illegal value for surface layer scheme: ', &
@@ -248,8 +242,6 @@
  else
     if(config_pbl_scheme == 'bl_mynn') then
        config_sfclayer_scheme = 'sf_mynn'
-    elseif(config_pbl_scheme == 'bl_mynn_wrf38') then
-       config_sfclayer_scheme = 'sf_mynn_wrf38'
     elseif(config_pbl_scheme == 'bl_ysu') then
        config_sfclayer_scheme = 'sf_monin_obukhov'
     endif
@@ -282,6 +274,7 @@
     config_radt_sw_scheme    .eq. 'off' .and. &
     config_sfclayer_scheme   .eq. 'off') moist_physics = .false.
 
+ write(0,*) ' '
  write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
  write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
  write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
@@ -349,6 +342,9 @@
     end select lsm_select
     
  endif
+
+!write(0,*) '--- enter subroutine physics_namelist_check.'
+!write(0,*)
 
  end subroutine physics_registry_init
 
