@@ -583,7 +583,6 @@
 			<var name="surface_pressure"/>
                         <var name="tend_sfc_pressure"/>
 			<var name="rt_diabatic_tend"/>
-			<var name="dcEdge_m"/>
 			<var name="nsteps_accum"/>
 			<var name="ndays_accum"/>
 			<var name="tlag"/>
@@ -2164,9 +2163,6 @@
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
-
-                <var name="dcEdge_m" type="real" dimensions="nCells" units="m"
-                     description="mean distance between cells centers"/>
 
 
                 <!-- ================================================================================================= -->
