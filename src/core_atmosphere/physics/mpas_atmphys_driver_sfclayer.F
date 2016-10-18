@@ -71,6 +71,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
 ! * added the implementation of the MYNN surface layer scheme from WRF 3.6.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * changed the definition of dx_p to match that used in other physics parameterizations.
+!   parameterizations.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
 
 
  contains
@@ -207,10 +210,11 @@
  end subroutine deallocate_sfclayer
 
 !=================================================================================================================
- subroutine sfclayer_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
+ subroutine sfclayer_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -221,8 +225,10 @@
  integer:: i,j,k
 
 !local pointers:
+ real(kind=RKIND),pointer:: len_disp
+ real(kind=RKIND),dimension(:),pointer:: meshDensity
  real(kind=RKIND),dimension(:),pointer:: skintemp,xland
- real(kind=RKIND),dimension(:),pointer:: dcEdge_m,hpbl,mavail
+ real(kind=RKIND),dimension(:),pointer:: hpbl,mavail
  real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,flhc,flqc,gz1oz0,hfx,qfx,  &
                                          qgh,qsfc,lh,mol,psim,psih,regime,rmol,ust,ustm, &
                                          wspd,znt,zol
@@ -237,7 +243,9 @@
 !-----------------------------------------------------------------------------------------------------------------
 
 !input variables:
- call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
+ call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+ call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
+
  call mpas_pool_get_array(diag_physics,'hpbl'    ,hpbl    )
  call mpas_pool_get_array(diag_physics,'mavail'  ,mavail  )
  call mpas_pool_get_array(sfc_input   ,'skintemp',skintemp)
@@ -271,7 +279,7 @@
  do j = jts,jte
  do i = its,ite
     !input variables:
-    dx_p(i,j)     = dcEdge_m(i)
+    dx_p(i,j)     = len_disp / meshDensity(i)**0.25
     hpbl_p(i,j)   = hpbl(i)
     mavail_p(i,j) = mavail(i)
     tsk_p(i,j)    = skintemp(i)
@@ -565,7 +573,7 @@
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
 !copy all MPAS arrays to rectanguler grid:
- call sfclayer_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
+ call sfclayer_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
 
  dx = sqrt(maxval(areaCell))
 

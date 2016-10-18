@@ -275,8 +275,8 @@
        call allocate_pbl
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
-          call driver_pbl(itimestep,block%configs,sfc_input,diag_physics,tend_physics, &
-                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+          call driver_pbl(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
+                          block%cellSolveThreadStart(thread),block%cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
        call deallocate_pbl
@@ -287,8 +287,8 @@
        call allocate_gwdo
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
-          call driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics, &
-                           block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+          call driver_gwdo(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
+                           block%cellSolveThreadStart(thread),block%cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
        call deallocate_gwdo

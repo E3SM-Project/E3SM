@@ -57,6 +57,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * corrected the initialization of sh3d for the mynn parameterization.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-13.
+! * for the mynn parameterization, change the definition of dx_p to match that used in other physics
+!   parameterizations.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
 
 
  contains
@@ -214,10 +217,12 @@
  end subroutine deallocate_pbl
 
 !=================================================================================================================
- subroutine pbl_from_MPAS(sfc_input,diag_physics,its,ite)
+ subroutine pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: sfc_input
 
@@ -227,12 +232,14 @@
  integer:: i,k,j
 
 !local pointers:
- real(kind=RKIND),dimension(:),pointer:: dcEdge_m,hfx,hpbl,qfx,ust,wspd,xland,znt
+ real(kind=RKIND),dimension(:),pointer:: hfx,hpbl,qfx,ust,wspd,xland,znt
 
 !local pointers for YSU scheme:
  real(kind=RKIND),dimension(:),pointer:: br,fh,fm,regime,u10,v10
 
 !local pointers for MYNN scheme:
+ real(kind=RKIND),pointer:: len_disp
+ real(kind=RKIND),dimension(:),pointer  :: meshDensity
  real(kind=RKIND),dimension(:),pointer  :: ch,delta,qsfc,qcg,rmol,skintemp,wstar
  real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,tke_pbl,qke_adv,el_pbl
 
@@ -294,8 +301,10 @@
        enddo
 
     case("bl_mynn")
+       call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+       call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
+
        call mpas_pool_get_array(sfc_input   ,'skintemp',skintemp)
-       call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
        call mpas_pool_get_array(diag_physics,'ch'      ,ch      )
        call mpas_pool_get_array(diag_physics,'qcg'     ,qcg     )
        call mpas_pool_get_array(diag_physics,'qsfc'    ,qsfc    )
@@ -314,7 +323,7 @@
 
        do j = jts,jte
        do i = its,ite
-          dx_p(i,j)    = dcEdge_m(i)
+          dx_p(i,j)    = len_disp / meshDensity(i)**0.25
           ch_p(i,j)    = ch(i)
           delta_p(i,j) = delta(i)
           qcg_p(i,j)   = qcg(i)
@@ -509,11 +518,12 @@
  end subroutine pbl_to_MPAS
  
 !=================================================================================================================
- subroutine driver_pbl(itimestep,configs,sfc_input,diag_physics,tend_physics,its,ite)
+ subroutine driver_pbl(itimestep,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: mesh
 
  integer,intent(in):: its,ite
  integer,intent(in):: itimestep
@@ -536,7 +546,7 @@
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
 
 !copy MPAS arrays to local arrays:
- call pbl_from_MPAS(sfc_input,diag_physics,its,ite)
+ call pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,its,ite)
 
  initflag = 1
  if(config_do_restart .or. itimestep > 1) initflag = 0

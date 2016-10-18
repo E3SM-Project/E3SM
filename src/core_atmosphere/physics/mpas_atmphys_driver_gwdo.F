@@ -55,6 +55,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 ! * renamed "ysu_gwdo" to "bl_gwdo_ysu".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
+! * change the definition of dx_p to match that used in other physics parameterizations.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
 
 
  contains
@@ -113,10 +115,11 @@
  end subroutine deallocate_gwdo
 
 !=================================================================================================================
- subroutine gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics,its,ite)
+ subroutine gwdo_from_MPAS(configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(in):: diag_physics
@@ -129,11 +132,16 @@
 
 !local pointers:
  integer,dimension(:),pointer:: kpbl
+ real(kind=RKIND),pointer:: len_disp
+ real(kind=RKIND),dimension(:),pointer  :: meshDensity
  real(kind=RKIND),dimension(:),pointer  :: oa1,oa2,oa3,oa4,ol1,ol2,ol3,ol4,con,var2d
- real(kind=RKIND),dimension(:),pointer  :: dcEdge_m,dusfcg,dvsfcg
+ real(kind=RKIND),dimension(:),pointer  :: dusfcg,dvsfcg
  real(kind=RKIND),dimension(:,:),pointer:: dtaux3d,dtauy3d,rublten,rvblten
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+ call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
 
  call mpas_pool_get_array(sfc_input,'oa1'  ,oa1  )
  call mpas_pool_get_array(sfc_input,'oa2'  ,oa2  )
@@ -146,7 +154,6 @@
  call mpas_pool_get_array(sfc_input,'con'  ,con  )
  call mpas_pool_get_array(sfc_input,'var2d',var2d)
 
- call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
  call mpas_pool_get_array(diag_physics,'kpbl'    ,kpbl    )
  call mpas_pool_get_array(diag_physics,'dusfcg'  ,dusfcg  )
  call mpas_pool_get_array(diag_physics,'dvsfcg'  ,dvsfcg  )
@@ -172,7 +179,7 @@
 
  do j = jts,jte
  do i = its,ite
-    dx_p(i,j)     = dcEdge_m(i)
+    dx_p(i,j) = len_disp / meshDensity(i)**0.25
     kpbl_p(i,j)   = kpbl(i)
     dusfcg_p(i,j) = dusfcg(i)
     dvsfcg_p(i,j) = dvsfcg(i)
@@ -244,10 +251,11 @@
  end subroutine gwdo_to_MPAS
  
 !=================================================================================================================
- subroutine driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics,its,ite)
+ subroutine driver_gwdo(itimestep,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
 
@@ -267,7 +275,7 @@
 !write(0,*) '--- enter subroutine driver_gwdo:'
 
 !copy MPAS arrays to local arrays:
- call gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics,its,ite)
+ call gwdo_from_MPAS(configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 
  gwdo_select: select case (trim(gwdo_scheme))
 
