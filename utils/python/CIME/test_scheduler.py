@@ -464,7 +464,7 @@ class TestScheduler(object):
         # A little subtle. If namelists_only, the RUN phase, when the namelists would normally
         # be handled, is not going to happen, so we have to do it here.
         if self._namelists_only:
-            run_cmd("case.do_namelists", from_dir=test_dir)
+            run_cmd("case.cmpgen_namelists", from_dir=test_dir)
 
         return rv
 

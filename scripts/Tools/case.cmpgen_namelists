@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+"""
+case.cmpgen_namelists - perform namelist baseline operations (compare,
+generate, or both) for this case.
+"""
+
+from standard_script_setup import *
+
+from CIME.case_setup        import case_setup
+from CIME.case              import Case
+from CIME.case_do_namelists import case_do_namelists
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [<casedir>] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Setup case \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to setup")
+
+    parser.add_argument("-c", "--compare", action="store_true",
+                        help="Force a namelist comparison against baselines. "
+                        "Default will be to follow the case specification")
+
+    parser.add_argument("-g", "--generate", action="store_true",
+                        help="Force a generation of namelist baselines. "
+                        "Default will be to follow the case specification")
+
+    parser.add_argument("--compare-name",
+                        help="Force comparison to use baselines with this name. "
+                        "Default will be to follow the case specification")
+
+    parser.add_argument("--generate-name",
+                        help="Force generation to use baselines with this name. "
+                        "Default will be to follow the case specification")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.caseroot, args.compare, args.generate, args.compare_name, args.generate_name
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot, compare, generate, compare_name, generate_name = parse_command_line(sys.argv, description)
+    with Case(caseroot, read_only=True) as case:
+        success = case_do_namelists(case, compare, generate, compare_name, generate_name)
+
+    sys.exit(0 if success else 1)
+
+if __name__ == "__main__":
+    _main_func(__doc__)

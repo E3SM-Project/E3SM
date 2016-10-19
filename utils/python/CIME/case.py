@@ -735,7 +735,7 @@ class Case(object):
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
-                    os.path.join(toolsdir, "case.do_namelists"),
+                    os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),

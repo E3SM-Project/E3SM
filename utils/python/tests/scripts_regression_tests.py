@@ -504,10 +504,10 @@ class N_TestCreateTest(TestCreateTestCommon):
         test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         self.simple_test(True, "%s -n -t %s" % (comparg, test_id))
 
-        # Check standalone case.do_namelists
+        # Check standalone case.cmpgen_namelists
         casedir = os.path.join(self._testroot,
                                "%s.C.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), test_id))
-        run_cmd_assert_result(self, "./case.do_namelists", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir)
 
         # Modify namelist
         fake_nl = """
@@ -533,7 +533,7 @@ class N_TestCreateTest(TestCreateTestCommon):
         self.simple_test(True, "%s -n -t %s" % (comparg, test_id))
         casedir = os.path.join(self._testroot,
                                "%s.C.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), test_id))
-        run_cmd_assert_result(self, "./case.do_namelists", from_dir=casedir, expected_stat=1)
+        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=1)
 
         # Regen
         self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))

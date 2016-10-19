@@ -1,5 +1,5 @@
 """
-Library for case.do_namelists.
+Library for case.cmpgen_namelists.
 """
 
 from CIME.XML.standard_module_setup import *
@@ -79,7 +79,7 @@ def _do_full_nl_gen(case, test, generate_name):
         shutil.copy2(item, baseline_dir)
         os.chmod(preexisting_baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
-def case_do_namelists(case, compare=False, generate=False, compare_name=None, generate_name=None):
+def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None, generate_name=None):
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     expect(case.get_value("TEST"), "Only makes sense to run this for a test case")
 

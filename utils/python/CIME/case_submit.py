@@ -11,7 +11,7 @@ from CIME.utils                     import expect
 from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
-from CIME.case_do_namelists         import case_do_namelists
+from CIME.case_cmpgen_namelists     import case_cmpgen_namelists
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ def check_case(case, caseroot):
     check_all_input_data(case)
     # Now that we have baselines, do baseline operations
     if case.get_value("TEST"):
-        case_do_namelists(case)
+        case_cmpgen_namelists(case)
 
     expect(case.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")
