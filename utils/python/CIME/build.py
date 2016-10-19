@@ -432,13 +432,16 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
 
     for lib in libs:
         full_lib_path = os.path.join(sharedpath, lib)
-        if (not os.path.exists(full_lib_path)):
+        # pio build creates its own directory
+        if (lib != "pio" and not os.path.exists(full_lib_path)):
             os.makedirs(full_lib_path)
 
         file_build = os.path.join(sharedpath, "%s.bldlog.%s" % (lib, lid))
         my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
+        if lib == "pio":
+            my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts"),
+                                                          os.path.join(cimeroot,"utils","python"), my_file)
         with open(file_build, "w") as fd:
-            fd.write("Current env:\n%s" % "\n".join(["  %s = %s" % (env, os.environ[env]) for env in sorted(os.environ)]))
             stat = run_cmd("%s %s %s" %
                            (my_file, sharedpath, caseroot),
                            from_dir=exeroot,
@@ -446,6 +449,12 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
                            arg_stderr=subprocess.STDOUT)[0]
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
+        if lib == "pio":
+            bldlog = open(file_build, "r")
+            for line in bldlog:
+                if re.search("Current setting for", line):
+                    logger.warn(line)
+
 
     comp_lnd = case.get_value("COMP_LND")
     clm_config_opts = case.get_value("CLM_CONFIG_OPTS")

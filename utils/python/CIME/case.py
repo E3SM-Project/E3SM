@@ -317,10 +317,6 @@ class Case(object):
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
-        If a file has not been defined, set an id/value pair in the
-        case dictionary, this will be used later. Note that in
-        create_newcase, when this is called and are setting the
-        command line options none of these files have been defined
         If a file has been defined, and the variable is in the file,
         then that value will be set in the file object and the file
         name is returned
@@ -330,6 +326,20 @@ class Case(object):
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
+            if (result is not None):
+                logger.debug("Will rewrite file %s %s",env_file.filename, item)
+                self._env_files_that_need_rewrite.add(env_file)
+                return result
+
+    def set_valid_values(self, item, valid_values):
+        """
+        Update or create a valid_values entry for item and populate it
+        """
+        if item == "CASEROOT":
+            self._caseroot = value
+        result = None
+        for env_file in self._env_entryid_files:
+            result = env_file.set_valid_values(item, valid_values)
             if (result is not None):
                 logger.debug("Will rewrite file %s %s",env_file.filename, item)
                 self._env_files_that_need_rewrite.add(env_file)
