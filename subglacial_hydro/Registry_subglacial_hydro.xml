@@ -29,7 +29,7 @@
 		/>
 		<nml_option name="config_SGH_pressure_calc" type="character" default_value="cavity" units="unitless"
 		            description="Selection of the method for calculating water pressure.
-'cavity' closes they hydrology equations by assuming cavities are always completely full.
+'cavity' closes the hydrology equations by assuming cavities are always completely full.
 'overburden' assumes water pressure is always equal to ice overburden pressure."
 		            possible_values="'cavity', 'overburden'"
                 />
@@ -41,7 +41,7 @@
 		            description="power in flux formula"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_conduc_coeff" type="real" default_value="0.001" units="COMPLICATED"
+		<nml_option name="config_SGH_conduc_coeff" type="real" default_value="0.001" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
 		            description="conductivity coefficient"
 		            possible_values="positive real number"
 		/>
@@ -139,7 +139,7 @@
                 <var name="waterThicknessEdge" type="real" dimensions="nEdges Time" units="m"
 		     description="water layer thickness on edges" />
                 <var name="waterThicknessEdgeUpwind" type="real" dimensions="nEdges Time" units="m"
-		     description="water layer thickness on edges, upwind" />
+		     description="water layer thickness of cell upwind of edge" />
                 <var name="diffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
 		     description="effective Darcy hydraulic conductivity" />
                 <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"

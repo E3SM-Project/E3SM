@@ -154,7 +154,7 @@ module li_subglacial_hydro
          if (config_SGH_adaptive_timestep) then
             deltatSGH = 1.0_RKIND  ! Until init is done properly, make this tiny
          else
-            ! Fr now, force hydro dt to be master dt
+            ! For now, force hydro dt to be master dt
             deltatSGH = deltat
          endif
 
@@ -607,7 +607,10 @@ module li_subglacial_hydro
       ! Calculate tangent slope of hydropotentialBase
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
-         do iEdge = 1, nEdgesSolve
+         ! TODO: add these options if desired
+         write (stdErrUnit,*) "Error: 'from_vertex_barycentric' and 'from_vertex_barycentric_kiteareas' are not yet supported for the config_SGH_tangent_slope_calculation option."
+         err = 1
+!         do iEdge = 1, nEdgesSolve
 !            ! Only calculate slope for edges that have ice on at least one side.
 !            if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
 !               hydropotentialBaseSlopeTangent(iEdge) = ( upperSurfaceVertex(verticesOnEdge(1,iEdge)) -  &
@@ -615,7 +618,7 @@ module li_subglacial_hydro
 !            else
 !               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
 !            endif
-         end do  ! edges
+!         end do  ! edges
       case ('from_normal_slope')
          call mpas_tangential_vector_1d(hydropotentialBaseSlopeNormal, meshPool, &
                   includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
@@ -628,7 +631,7 @@ module li_subglacial_hydro
       gradMagPhiEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
 
       ! calculate effective conductivity on edges
-      effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) * (gradMagPhiEdge(:)+1.0e-10_RKIND)**(beta - 2.0_RKIND)
+      effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) * (gradMagPhiEdge(:)+1.0e-10_RKIND)**(beta - 2.0_RKIND)   ! 1e-10 used for regularization
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
@@ -715,6 +718,8 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: deltat
       integer, pointer :: nEdgesSolve
       logical, pointer :: config_SGH_adaptive_timestep
+      ! in the following variables, "Proc" indicates the value on the current processor,
+      ! and "Block" indicates value on current block
       real (kind=RKIND) :: dtSGHadvecBlock, dtSGHadvecProc
       real (kind=RKIND) :: dtSGHdiffuBlock, dtSGHdiffuProc
       real (kind=RKIND) :: dtSGHpressureBlock, dtSGHpressureProc
