@@ -144,6 +144,7 @@ contains
     PetscReal, pointer   :: mflx_lateral_col_1d(:)
     PetscReal, pointer   :: lat_mass_exc_col_1d(:)
     PetscReal, pointer   :: seepage_mass_exc_col_1d(:)
+    PetscReal, pointer   :: seepage_press_1d(:)
     !-----------------------------------------------------------------------
 
     associate(& 
@@ -472,6 +473,13 @@ contains
          allocate(vsfm_fliq_col_ghosted_1d( (bounds_proc%endc_all - bounds_proc%begc_all+1)*nlevgrnd))
          allocate(mflx_lateral_col_1d( (bounds_proc%endc - bounds_proc%begc+1)*nlevgrnd))
 
+         soe_auxvar_id = 1;
+         call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL   , &
+                                               VAR_PRESSURE      , &
+                                               soe_auxvar_id     , &
+                                               vsfm_soilp_col_1d   &
+                                               )
+
          call ExchangeColumnLevelGhostData(bounds, nlevgrnd, vsfm_soilp_col_1d, vsfm_soilp_col_ghosted_1d)
          call ExchangeColumnLevelGhostData(bounds, nlevgrnd, vsfm_fliq_col_1d,  vsfm_fliq_col_ghosted_1d )
 
@@ -526,6 +534,24 @@ contains
          deallocate(vsfm_soilp_col_ghosted_1d )
          deallocate(vsfm_fliq_col_ghosted_1d  )
          deallocate(mflx_lateral_col_1d       )
+
+         allocate(seepage_press_1d( (bounds_proc%endc - bounds_proc%begc+1)))
+         seepage_press_1d(:) = 101325.d0
+         soe_auxvar_id = 1
+         call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_BC,  &
+              VAR_BC_SS_CONDITION, soe_auxvar_id, seepage_press_1d)
+         deallocate(seepage_press_1d)
+
+      else if (vsfm_lateral_model_type == 'three_dimensional') then
+
+         call get_proc_bounds(bounds_proc)
+
+         allocate(seepage_press_1d( (bounds_proc%endc - bounds_proc%begc+1)))
+         seepage_press_1d(:) = 101325.d0
+         soe_auxvar_id = 1
+         call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_BC,  &
+              VAR_BC_SS_CONDITION, soe_auxvar_id, seepage_press_1d)
+         deallocate(seepage_press_1d)
 
       endif
 

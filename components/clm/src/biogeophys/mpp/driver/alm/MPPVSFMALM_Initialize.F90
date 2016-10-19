@@ -184,7 +184,7 @@ contains
     PetscReal, pointer :: vert_conn_dist_up(:) !
     PetscReal, pointer :: vert_conn_dist_dn(:) !
     PetscReal, pointer :: vert_conn_area(:)    !
-    PetscReal, pointer :: vert_conn_type(:)    !
+    PetscInt , pointer :: vert_conn_type(:)    !
 
     PetscInt, pointer  :: horz_conn_id_up(:)   !
     PetscInt, pointer  :: horz_conn_id_dn(:)   !
@@ -287,6 +287,9 @@ contains
             area_col, grid_owner )
 
        call setup_lateral_connections (grid_owner, &
+            bounds_proc%begg_all, bounds_proc%endg_all, &
+            bounds_proc%begc_all, bounds_proc%endc_all, &
+            zc_col,                                     &
             horz_nconn,                            &
             horz_conn_id_up, horz_conn_id_dn,      &
             horz_conn_dist_up, horz_conn_dist_dn,  &
@@ -375,18 +378,18 @@ contains
 
        call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
             vert_nconn,  vert_conn_id_up, vert_conn_id_dn, &
-            vert_conn_dist_up, vert_conn_dist_dn,  vert_conn_area)
+            vert_conn_dist_up, vert_conn_dist_dn,  vert_conn_area, vert_conn_type)
 
     else if (vsfm_lateral_model_type == 'source_sink') then
        discretization_type = DISCRETIZATION_VERTICAL_WITH_SS
 
        call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
             vert_nconn,  vert_conn_id_up, vert_conn_id_dn, &
-            vert_conn_dist_up, vert_conn_dist_dn, vert_conn_area)
+            vert_conn_dist_up, vert_conn_dist_dn, vert_conn_area, vert_conn_type)
 
        call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_LATERAL, &
             horz_nconn,  horz_conn_id_up, horz_conn_id_dn, &
-            horz_conn_dist_up, horz_conn_dist_dn, horz_conn_area)
+            horz_conn_dist_up, horz_conn_dist_dn, horz_conn_area, horz_conn_type)
 
     else if (vsfm_lateral_model_type == 'three_dimensional') then
        discretization_type = DISCRETIZATION_THREE_DIM
@@ -416,7 +419,7 @@ contains
 
        call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
             comb_nconn,  comb_conn_id_up, comb_conn_id_dn, &
-            comb_conn_dist_up, comb_conn_dist_dn, comb_conn_area)
+            comb_conn_dist_up, comb_conn_dist_dn, comb_conn_area, comb_conn_type)
 
        deallocate (comb_conn_id_up  )
        deallocate (comb_conn_id_dn  )
@@ -581,6 +584,7 @@ contains
   !------------------------------------------------------------------------
 
   subroutine setup_lateral_connections (grid_owner, &
+       begg, endg, begc, endc, zc_col,              &
        nconn_horz,                                  &
        horz_conn_id_up, horz_conn_id_dn,            &
        horz_conn_dist_up, horz_conn_dist_dn,        &
@@ -599,6 +603,9 @@ contains
     implicit none
     !
     integer, pointer   :: grid_owner(:)        ! MPI rank owner of grid cell
+    integer            :: begg,endg
+    integer            :: begc,endc
+    real(r8), pointer  :: zc_col(:)            ! z-position of grid cell [m]
     PetscInt           :: nconn_horz
     PetscInt, pointer  :: horz_conn_type(:)    !
     PetscInt, pointer  :: horz_conn_id_up(:)   !
@@ -609,8 +616,6 @@ contains
     !
     ! !LOCAL VARIABLES:
     PetscInt           :: c,j,l                !indices
-    integer            :: begg,endg
-    integer            :: begc,endc
     PetscInt           :: icell
     PetscInt           :: iconn
     PetscInt           :: nconn
@@ -654,7 +659,7 @@ contains
              g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
 
              l_idx_up = grc%landunit_indices(ltype, g_up)
-             l_idx_up = grc%landunit_indices(ltype, g_dn)
+             l_idx_dn = grc%landunit_indices(ltype, g_dn)
 
              c_idx_up = -1
              c_idx_dn = -1
@@ -701,6 +706,7 @@ contains
     allocate (horz_conn_area    (nconn_horz))
     allocate (horz_conn_type    (nconn_horz))
 
+    iconn = 0
     do icell = 1, ldomain_lateral%ugrid%ngrid_local
 
        do iedge = 1, ldomain_lateral%ugrid%maxEdges
@@ -709,7 +715,7 @@ contains
              g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
 
              l_idx_up = grc%landunit_indices(ltype, g_up)
-             l_idx_up = grc%landunit_indices(ltype, g_dn)
+             l_idx_dn = grc%landunit_indices(ltype, g_dn)
 
              c_idx_up = -1
              c_idx_dn = -1
@@ -769,6 +775,7 @@ contains
                    !this%is_active(id_dn) = PETSC_TRUE
 
                    horz_conn_area(iconn) = dz(c_idx_up,j)*dv
+                   dist = (dc**2.d0 + (zc_col(c_idx_up) - zc_col(c_idx_dn))**2.d0)**0.5d0
 
                    horz_conn_dist_up(iconn) = 0.5d0*dist
                    horz_conn_dist_dn(iconn) = 0.5d0*dist
@@ -847,15 +854,20 @@ contains
          'Sublimation_Flux', 'kg/s', COND_MASS_RATE, &
          SOIL_TOP_CELLS)
 
-    if (vsfm_lateral_model_type == 'source_sink' .or. &
-        vsfm_lateral_model_type == 'three_dimensional') then
+    if (vsfm_lateral_model_type == 'source_sink' ) then
 
        call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
-            'Lateral_Flux', 'kg/s', COND_MASS_RATE, &
+            'Lateral_flux', 'kg/s', COND_MASS_RATE, &
             SOIL_CELLS)
 
        call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
-            'Seepage_bc', 'kg/s', COND_SEEPAGE_BC, &
+            'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
+            SOIL_TOP_CELLS)
+
+    else if (vsfm_lateral_model_type == 'three_dimensional') then
+
+       call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
+            'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
             SOIL_TOP_CELLS)
 
     endif
@@ -1066,7 +1078,7 @@ contains
     !DESCRIPTION
     !  Determines the IDs of various source-sink conditions in VSFM
     !
-    use clm_varctl                       , only : use_vsfm, lateral_connectivity
+    use clm_varctl                       , only : vsfm_lateral_model_type
     use MultiPhysicsProbVSFM             , only : vsfm_mpp
     use MultiPhysicsProbConstants        , only : COND_SS
     use MultiPhysicsProbConstants        , only : COND_NULL
@@ -1084,10 +1096,19 @@ contains
     character (len=256)          :: cond_name
     !------------------------------------------------------------------------------
 
+    vsfm_cond_id_for_infil        = -1
+    vsfm_cond_id_for_et           = -1
+    vsfm_cond_id_for_dew          = -1
+    vsfm_cond_id_for_drainage     = -1
+    vsfm_cond_id_for_snow         = -1
+    vsfm_cond_id_for_sublimation  = -1
+    vsfm_cond_id_for_lateral_flux = -1
 
     num_conds_expected = 6
 
-    if (lateral_connectivity) num_conds_expected = num_conds_expected + 1
+    if (vsfm_lateral_model_type == 'source_sink' ) then
+       num_conds_expected = num_conds_expected + 1
+    end if
 
     ! Get the number of conditions
     call vsfm_mpp%sysofeqns%GetConditionNames(COND_SS, COND_NULL, num_conds, cond_names)
@@ -1099,23 +1120,32 @@ contains
 
     do nn = 1, num_conds
        select case(trim(cond_names(nn)))
+
        case ("Infiltration_Flux")
-         vsfm_cond_id_for_infil = nn
+          vsfm_cond_id_for_infil        = nn
+
        case ("Evapotranspiration_Flux")
-         vsfm_cond_id_for_et = nn
+          vsfm_cond_id_for_et           = nn
+
        case ("Dew_Flux")
-         vsfm_cond_id_for_dew = nn
+          vsfm_cond_id_for_dew          = nn
+
        case ("Drainage_Flux")
-         vsfm_cond_id_for_drainage = nn
+          vsfm_cond_id_for_drainage     = nn
+
        case ("Snow_Disappearance_Flux")
-         vsfm_cond_id_for_snow = nn
+          vsfm_cond_id_for_snow         = nn
+
        case ("Sublimation_Flux")
-         vsfm_cond_id_for_sublimation = nn
+          vsfm_cond_id_for_sublimation  = nn
+
        case ("Lateral_flux")
-         vsfm_cond_id_for_lateral_flux = nn
+          vsfm_cond_id_for_lateral_flux = nn
+
        case default
-         write(iulog,*)'In init_vsfm_condition_ids: Unknown flux.'
-         call endrun(msg=errMsg(__FILE__, __LINE__))
+          write(iulog,*) trim(cond_names(nn))
+          write(iulog,*)'In init_vsfm_condition_ids: Unknown flux.'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
        end select
     enddo
 
@@ -1149,9 +1179,12 @@ contains
       call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
-    if (lateral_connectivity .and. vsfm_cond_id_for_lateral_flux == -1) then
-      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_lateral_flux not defined.'
-      call endrun(msg=errMsg(__FILE__, __LINE__))
+    if (vsfm_lateral_model_type == 'source_sink') then
+       if (vsfm_cond_id_for_lateral_flux == -1) then
+          write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_lateral_flux not defined.'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
     endif
 
     deallocate(cond_names)

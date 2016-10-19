@@ -12,7 +12,7 @@ module ConnectionSetType
   type, public :: connection_set_type
 
      PetscInt                                     :: id              ! identifier
-     PetscInt                                     :: type            ! horizontal or vertical
+     PetscInt, pointer                            :: type(:)         ! horizontal or vertical
 
      PetscInt                                     :: num_connections ! total num. of connections
      PetscInt, pointer                            :: id_up(:)        ! IDs of upwind cells [-]
@@ -53,6 +53,8 @@ contains
     ! Return a new connection set
     !
     ! !USES:
+    use MultiPhysicsProbConstants   , only : CONN_VERTICAL
+    !
     implicit none
     !
     ! !ARGUMENTS
@@ -65,9 +67,9 @@ contains
     allocate(conn_set)
 
     conn_set%id                = 0
-    conn_set%type              = 0
     conn_set%num_connections   = num_connections
 
+    allocate(conn_set%type        (num_connections)); conn_set%type   (:) = CONN_VERTICAL
     allocate(conn_set%id_up       (num_connections)); conn_set%id_up  (:) = 0
     allocate(conn_set%id_dn       (num_connections)); conn_set%id_dn  (:) = 0
     allocate(conn_set%area        (num_connections)); conn_set%area   (:) = 0.d0
@@ -139,6 +141,7 @@ contains
 
     if (.not.(associated(conn_set))) return
 
+    if (associated(conn_set%type         )) deallocate(conn_set%type)
     if (associated(conn_set%id_up        )) deallocate(conn_set%id_up)
     if (associated(conn_set%id_dn        )) deallocate(conn_set%id_dn)
     if (associated(conn_set%area         )) deallocate(conn_set%area)
@@ -146,6 +149,7 @@ contains
     if (associated(conn_set%dist_dn      )) deallocate(conn_set%dist_dn)
     if (associated(conn_set%dist_unitvec )) deallocate(conn_set%dist_unitvec)
 
+    nullify(conn_set%type         )
     nullify(conn_set%id_up        )
     nullify(conn_set%id_up        )
     nullify(conn_set%area         )

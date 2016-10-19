@@ -973,7 +973,7 @@ contains
              cell_id_up = cur_conn_set%id_up(sum_conn)
              cell_id_dn = cur_conn_set%id_dn(sum_conn)
 
-             if (cur_conn_set%type == CONN_HORIZONTAL) then
+             if (cur_conn_set%type(sum_conn) == CONN_HORIZONTAL) then
 
                 this%lat_mass_exc(cell_id_up) = this%lat_mass_exc(cell_id_up) + &
                      this%internal_flux(sum_conn)*this%dtime

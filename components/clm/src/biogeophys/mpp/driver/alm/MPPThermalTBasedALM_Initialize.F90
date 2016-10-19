@@ -136,6 +136,7 @@ contains
     use MultiPhysicsProbConstants , only : VAR_ACTIVE
     use MultiPhysicsProbConstants , only : VAR_DIST_UP
     use MultiPhysicsProbConstants , only : VAR_DIST_DN
+    use MultiPhysicsProbConstants , only : CONN_VERTICAL
     !
     ! !ARGUMENTS
     implicit none
@@ -182,6 +183,7 @@ contains
     real(r8), pointer :: snow_conn_dist_up(:)     !
     real(r8), pointer :: snow_conn_dist_dn(:)     !
     real(r8), pointer :: snow_conn_area(:)        !
+    integer , pointer :: snow_conn_type(:)        !
 
     real(r8), pointer :: ssw_xc(:)                ! x-position of grid cell [m]
     real(r8), pointer :: ssw_yc(:)                ! y-position of grid cell [m]
@@ -199,6 +201,7 @@ contains
     real(r8), pointer :: soil_dy(:)               ! layer thickness of grid cell [m]
     real(r8), pointer :: soil_dz(:)               ! layer thickness of grid cell [m]
     real(r8), pointer :: soil_area(:)             ! area of grid cell [m^2]
+    integer , pointer :: soil_conn_type(:)        !
     integer , pointer :: soil_filter(:)           ! 
     integer, pointer  :: soil_conn_id_up(:)       !
     integer, pointer  :: soil_conn_id_dn(:)       !
@@ -237,6 +240,7 @@ contains
     allocate (snow_conn_dist_up ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevsno-1)  ))
     allocate (snow_conn_dist_dn ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevsno-1)  ))
     allocate (snow_conn_area    ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevsno-1)  ))
+    allocate (snow_conn_type    ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevsno-1)  ))
 
     allocate (ssw_xc            ((bounds_proc%endc_all-bounds_proc%begc_all+1                )))
     allocate (ssw_yc            ((bounds_proc%endc_all-bounds_proc%begc_all+1                )))
@@ -260,6 +264,7 @@ contains
     allocate (soil_conn_dist_up ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevgrnd-1) ))
     allocate (soil_conn_dist_dn ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevgrnd-1) ))
     allocate (soil_conn_area    ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevgrnd-1) ))
+    allocate (soil_conn_type    ((bounds_proc%endc_all-bounds_proc%begc_all+1 )*(nlevgrnd-1) ))
 
     first_active_soil_col_id = -1
     do c = bounds_proc%begc, bounds_proc%endc
@@ -362,6 +367,7 @@ contains
           snow_conn_dist_up(iconn) = zi(c,j)   - z(c,j)
           snow_conn_dist_dn(iconn) = z( c,j+1) - zi(c,j)
           snow_conn_area(iconn)    = 1.d0
+          snow_conn_type(iconn)    = CONN_VERTICAL
 
        end do
     end do
@@ -379,6 +385,7 @@ contains
           soil_conn_dist_up(iconn) = zi(c,j)   - z(c,j)
           soil_conn_dist_dn(iconn) = z( c,j+1) - zi(c,j)
           soil_conn_area(iconn)    = 1.d0
+          soil_conn_type(iconn)    = CONN_VERTICAL
 
        end do
     end do
@@ -415,7 +422,7 @@ contains
 
     call thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, snow_nconn,  &
          snow_conn_id_up, snow_conn_id_dn, snow_conn_dist_up, snow_conn_dist_dn, &
-         snow_conn_area)
+         snow_conn_area, snow_conn_type)
 
     !
     ! Set mesh for standing water
@@ -464,7 +471,7 @@ contains
 
     call thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, soil_nconn,  &
          soil_conn_id_up, soil_conn_id_dn, soil_conn_dist_up, soil_conn_dist_dn, &
-         soil_conn_area)
+         soil_conn_area, soil_conn_type)
 
     ! Free up memory
 
@@ -479,6 +486,7 @@ contains
     deallocate (snow_conn_dist_up )
     deallocate (snow_conn_dist_dn )
     deallocate (snow_conn_area    )
+    deallocate (snow_conn_type    )
 
     deallocate (ssw_xc            )
     deallocate (ssw_yc            )
@@ -498,6 +506,7 @@ contains
     deallocate (soil_conn_dist_up )
     deallocate (soil_conn_dist_dn )
     deallocate (soil_conn_area    )
+    deallocate (soil_conn_type    )
 
   end subroutine add_meshes
 
