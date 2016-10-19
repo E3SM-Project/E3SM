@@ -46,5 +46,14 @@
         <var name="dewpoint_surface"       type="real"     dimensions="nCells Time" units="Degrees C"
              description="Dewpoint temperature at midpoint of lowest model layer"/>
 
+        <var name="updraft_helicity_max"   type="real"     dimensions="nCells Time" units="m^2 s^{-2}"
+             description="Maximum updraft helicity since last output"/>
+
+        <var name="w_velocity_max"         type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Maximum column w velocity since last output"/>
+
+        <var name="wind_speed_level1_max"  type="real"     dimensions="nCells Time" units="m s^{-1}"
+             description="Maximum wind speed in lowest model level since last output"/>
+
 </var_struct>
 

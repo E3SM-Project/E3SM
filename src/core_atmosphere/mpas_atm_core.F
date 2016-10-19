@@ -778,19 +778,10 @@ module atm_core
       type (mpas_pool_type), intent(inout) :: diag
       type (mpas_pool_type), intent(inout) :: diag_physics
    
-      real (kind=RKIND), dimension(:), pointer :: updraft_helicity_max
-      real (kind=RKIND), dimension(:), pointer :: w_velocity_max
-      real (kind=RKIND), dimension(:), pointer :: wind_speed_level1_max
       real (kind=RKIND), dimension(:), pointer :: refl10cm_1km_max
 
-      call mpas_pool_get_array(diag, 'updraft_helicity_max', updraft_helicity_max)
-      call mpas_pool_get_array(diag, 'w_velocity_max', w_velocity_max)
-      call mpas_pool_get_array(diag, 'wind_speed_level1_max', wind_speed_level1_max)
       call mpas_pool_get_array(diag_physics, 'refl10cm_1km_max', refl10cm_1km_max)
 
-      updraft_helicity_max(:) = 0.
-      w_velocity_max(:) = 0.
-      wind_speed_level1_max(:) = 0.
       refl10cm_1km_max(:) = 0.
    
    end subroutine atm_reset_diagnostics

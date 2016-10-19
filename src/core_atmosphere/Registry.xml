@@ -974,9 +974,6 @@
 			<var name="vorticity_700hPa"/>
 			<var name="vorticity_850hPa"/>
 			<var name="vorticity_925hPa"/>
-			<var name="updraft_helicity_max"/>
-			<var name="w_velocity_max"/>
-			<var name="wind_speed_level1_max"/>
 
                         <!-- Begin convective diagnostics defined in diagnostics/Registry_convective.xml -->
                         <var name="cape"/>
@@ -993,6 +990,9 @@
                         <var name="umeridional_6km"/>
                         <var name="temperature_surface"/>
                         <var name="dewpoint_surface"/>
+			<var name="updraft_helicity_max"/>
+			<var name="w_velocity_max"/>
+			<var name="wind_speed_level1_max"/>
                         <!-- End convective diagnostics defined in diagnostics/Registry_convective.xml -->
 
 			<var name="t_oml"/>
@@ -1784,16 +1784,6 @@
 
                 <var name="meanT_500_300"    type="real" dimensions="nCells Time" units="K"
                      description="Mean temperature in the 300 hPa - 500 hPa layer"/>
-
-                <!-- convective diagnostics, WCS 201503 -->
-                <var name="updraft_helicity_max"   type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="w_velocity_max"         type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="wind_speed_level1_max"  type="real"     dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
 
         </var_struct>
 

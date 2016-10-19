@@ -17,10 +17,22 @@ module convective_diagnostics
     type (MPAS_clock_type), pointer :: clock
 
     public :: convective_diagnostics_setup, &
-              convective_diagnostics_compute
+              convective_diagnostics_update, &
+              convective_diagnostics_compute, &
+              convective_diagnostics_reset
 
     private
 
+    !
+    ! For any fields where we need the min/max/mean, it is helpful to determine
+    ! in the setup routine whether these fields will actually appear in any
+    ! output streams; if so, we need to handle the field in the update/reset
+    ! routines, but if not, we can save some computation
+    !
+    logical :: is_needed_updraft_helicity
+    logical :: is_needed_w_max
+    logical :: is_needed_lml_wsp_max
+  
 
     contains
 
@@ -39,8 +51,10 @@ module convective_diagnostics
     !-----------------------------------------------------------------------
     subroutine convective_diagnostics_setup(all_pools, simulation_clock)
 
-        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type
+        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, MPAS_STREAM_OUTPUT, MPAS_STREAM_INPUT, &
+                                       MPAS_STREAM_INPUT_OUTPUT
         use mpas_pool_routines, only : mpas_pool_get_subpool
+        use mpas_atm_diagnostics_utils, only : mpas_stream_inclusion_count
 
         implicit none
 
@@ -52,8 +66,135 @@ module convective_diagnostics
         call mpas_pool_get_subpool(all_pools, 'diag', diag)
 
         clock => simulation_clock
+
+        is_needed_updraft_helicity = .false.
+        is_needed_w_max = .false.
+        is_needed_lml_wsp_max = .false.
+
+        if (mpas_stream_inclusion_count('updraft_helicity_max', direction=MPAS_STREAM_OUTPUT) > 0) then
+            is_needed_updraft_helicity = .true.
+        end if
+        if (mpas_stream_inclusion_count('w_velocity_max', direction=MPAS_STREAM_OUTPUT) > 0) then
+            is_needed_w_max = .true.
+        end if
+        if (mpas_stream_inclusion_count('wind_speed_level1_max', direction=MPAS_STREAM_OUTPUT) > 0) then
+            is_needed_lml_wsp_max = .true.
+        end if
    
     end subroutine convective_diagnostics_setup
+
+
+    !-----------------------------------------------------------------------
+    !  routine convective_diagnostics_update
+    !
+    !> \brief Updates the maximum pointwise values for convective diagnostics
+    !> \author Michael Duda
+    !> \date   18 October 2016
+    !> \details
+    !>  Updates the maximum pointwise values for updraft helicity, w velocity,
+    !>  and lowest-model-level wind speed.
+    !
+    !-----------------------------------------------------------------------
+    subroutine convective_diagnostics_update()
+
+        use mpas_pool_routines, only : mpas_pool_get_dimension, mpas_pool_get_array
+
+        implicit none
+
+!  - subroutine to compute max values of convective diagnostics over some time period
+!  - called at the end of every timestep
+!  - values must be zeroed out after output, and this determines the period for the max.
+!
+!  WCS, March 2015, for the SPC spring experiment forecasts
+
+        integer :: iCell, k, nVertLevelsP1, i, j
+        integer, pointer :: nCells, nVertLevels, nCellsSolve, nVertexDegree, nVertices
+        integer, pointer :: moist_start, moist_end
+        integer, dimension(:,:), pointer :: cellsOnVertex
+        real (kind=RKIND), dimension(:,:,:), pointer :: scalars
+        real (kind=RKIND), dimension(:,:), pointer :: cqu
+
+        real (kind=RKIND), allocatable, dimension(:,:) :: updraft_helicity
+        real (kind=RKIND), allocatable, dimension(:) :: z_agl
+        real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex, vorticity, w, zgrid
+        real (kind=RKIND), dimension(:), pointer :: areaCell, updraft_helicity_max, w_velocity_max
+        real (kind=RKIND), dimension(:), pointer :: wind_speed_level1_max
+        real (kind=RKIND), dimension(:,:), pointer :: uzonal, umeridional
+        real (kind=RKIND) :: uph
+
+        if (is_needed_updraft_helicity .or. is_needed_w_max .or. is_needed_lml_wsp_max) then
+
+            call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+            call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+            call mpas_pool_get_dimension(mesh, 'vertexDegree', nVertexDegree)
+            call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+            call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+            call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
+            call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+
+            call mpas_pool_get_array(diag, 'vorticity', vorticity)
+            call mpas_pool_get_array(diag, 'updraft_helicity_max', updraft_helicity_max)
+            call mpas_pool_get_array(diag, 'w_velocity_max', w_velocity_max)
+            call mpas_pool_get_array(diag, 'wind_speed_level1_max', wind_speed_level1_max)
+            call mpas_pool_get_array(diag, 'uReconstructZonal', uzonal)
+            call mpas_pool_get_array(diag, 'uReconstructMeridional', umeridional)
+
+            call mpas_pool_get_array(state, 'w', w, 1)
+
+            nVertLevelsP1 = nVertLevels + 1
+
+            allocate(z_agl(nVertLevelsP1))
+!
+!  updraft helicity, first compute vorticity at cell center, then mulitply by w
+!  *** where does cellOnVertex point if cell is outside block and block halo?  -> cell nCell+1
+!
+            if (is_needed_w_max) then
+                do iCell=1, nCellsSolve
+                  w_velocity_max(iCell) = max( w_velocity_max(iCell), maxval(w(1:nVertLevels,iCell)))
+                end do
+            end if
+
+            if (is_needed_lml_wsp_max) then
+                do iCell=1, nCellsSolve
+                  wind_speed_level1_max(iCell) = max(wind_speed_level1_max(iCell), sqrt(uzonal(1,iCell)**2+umeridional(1,iCell)**2))
+                end do
+            end if
+
+            if (is_needed_updraft_helicity) then
+                allocate(updraft_helicity(nVertLevels,nCells+1))
+                updraft_helicity(:,:) = 0.
+                do i=1,nVertices
+                  do j=1,nvertexDegree
+                    iCell = cellsOnVertex(j,i)
+                    updraft_helicity(1:nVertLevels,iCell) = updraft_helicity(1:nVertLevels,iCell) + kiteAreasOnVertex(j,i)*vorticity(1:nVertLevels,i)
+                  end do
+                end do
+                do iCell=1,nCellsSolve
+                  do k=1,nVertLevels
+                    updraft_helicity(k,iCell) =  max(0.,0.5*(w(k,iCell)+w(k+1,iCell)))  &                  
+                                                           * max(0.,updraft_helicity(k,iCell)/areaCell(iCell))                     
+                  end do
+                end do
+!
+!  compute diagnostics
+!
+                do iCell=1,nCellsSolve
+    
+                  ! compute above ground level (AGL) heights
+                  z_agl(1:nVertLevelsP1) = zgrid(1:nVertLevelsP1,iCell) - zgrid(1,iCell)
+                  uph = integral_zstaggered(updraft_helicity(1:nVertLevels,iCell),z_agl,2000.,5000.,nVertLevels,nVertLevelsP1)
+                  updraft_helicity_max(iCell) = max( updraft_helicity_max(iCell),uph)
+        
+                end do
+                deallocate(updraft_helicity)
+            end if
+    
+            deallocate(z_agl)
+        end if
+   
+    end subroutine convective_diagnostics_update
 
 
     !-----------------------------------------------------------------------
@@ -338,6 +479,44 @@ module convective_diagnostics
         end if
 
     end subroutine convective_diagnostics_compute
+
+
+    !-----------------------------------------------------------------------
+    !  routine convective_diagnostics_reset
+    !
+    !> \brief Reset maximum values for convective diagnostics
+    !> \author 
+    !> \date   
+    !> \details
+    !>  Resets the maximum pointwise values for updraft helicity, w velocity,
+    !>  and lowest-model-level wind speed.
+    !
+    !-----------------------------------------------------------------------
+    subroutine convective_diagnostics_reset()
+
+        use mpas_atm_diagnostics_utils, only : MPAS_field_will_be_written
+        use mpas_pool_routines, only : mpas_pool_get_array
+
+        implicit none
+
+        real (kind=RKIND), dimension(:), pointer :: updraft_helicity_max
+        real (kind=RKIND), dimension(:), pointer :: w_velocity_max
+        real (kind=RKIND), dimension(:), pointer :: wind_speed_level1_max
+
+        if (MPAS_field_will_be_written('updraft_helicity_max')) then
+            call mpas_pool_get_array(diag, 'updraft_helicity_max', updraft_helicity_max)
+            updraft_helicity_max(:) = 0.
+        end if
+        if (MPAS_field_will_be_written('w_velocity_max')) then
+            call mpas_pool_get_array(diag, 'w_velocity_max', w_velocity_max)
+            w_velocity_max(:) = 0.
+        end if
+        if (MPAS_field_will_be_written('wind_speed_level1_max')) then
+            call mpas_pool_get_array(diag, 'wind_speed_level1_max', wind_speed_level1_max)
+            wind_speed_level1_max(:) = 0.
+        end if
+   
+    end subroutine convective_diagnostics_reset
 
 
       real (kind=RKIND) function column_height_value( column_values, z, z_interp, n )

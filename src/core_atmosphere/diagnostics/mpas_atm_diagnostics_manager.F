@@ -70,12 +70,14 @@ module mpas_atm_diagnostics_manager
     subroutine mpas_atm_diag_update()
 
         use diagnostic_template, only : diagnostic_template_update
+        use convective_diagnostics, only : convective_diagnostics_update
 
         implicit none
 
         write(stderrUnit,*) 'mpas_atm_diag_update()'
 
         call diagnostic_template_update()
+        call convective_diagnostics_update()
 
     end subroutine mpas_atm_diag_update
 
@@ -118,12 +120,14 @@ module mpas_atm_diagnostics_manager
     subroutine mpas_atm_diag_reset()
 
         use diagnostic_template, only : diagnostic_template_reset
+        use convective_diagnostics, only : convective_diagnostics_reset
 
         implicit none
 
         write(stderrUnit,*) 'mpas_atm_diag_reset()'
 
         call diagnostic_template_reset()
+        call convective_diagnostics_reset()
 
     end subroutine mpas_atm_diag_reset
 
