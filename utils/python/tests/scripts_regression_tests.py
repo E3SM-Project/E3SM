@@ -535,6 +535,12 @@ class N_TestCreateTest(TestCreateTestCommon):
                                "%s.C.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), test_id))
         run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=1)
 
+        # preview namelists should work
+        run_cmd_assert_result(self, "./preview_namelists", from_dir=casedir)
+
+        # This should still fail
+        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=1)
+
         # Regen
         self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))
 

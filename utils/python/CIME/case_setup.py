@@ -247,10 +247,9 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                 apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
 
 
-        # Run preview namelists for scripts
+        # Create needed directories for case
         create_dirs(case)
 
-        logger.info("See ./CaseDoc for component namelists")
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
         # Create test script if appropriate

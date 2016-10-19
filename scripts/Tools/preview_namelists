@@ -8,7 +8,7 @@ copies those files to the CaseDocs subdirectory for inspection
 
 from standard_script_setup import *
 
-from CIME.preview_namelists import preview_namelists
+from CIME.preview_namelists import create_namelists
 from CIME.case              import Case
 
 import argparse, doctest
@@ -44,7 +44,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.dryrun
+    return args.caseroot
 
 ###############################################################################
 def _main_func(description):
@@ -55,7 +55,7 @@ def _main_func(description):
 
     caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        preview_namelists(case)
+        create_namelists(case)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
