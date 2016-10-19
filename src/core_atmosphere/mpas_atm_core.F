@@ -461,6 +461,8 @@ module atm_core
       end if
 
       call mpas_dmpar_get_time(diag_start_time)
+      call mpas_atm_diag_reset()
+      call mpas_atm_diag_update()
       call mpas_atm_diag_compute()
 
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
@@ -492,9 +494,10 @@ module atm_core
          write(0,'(a,f9.4,a)') ' Timing for diagnostic computation: ', (diag_stop_time - diag_start_time), ' s'
          write(0,'(a,f9.4,a)') ' Timing for stream output: ', (output_stop_time - output_start_time), ' s'
       end if
-      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       call mpas_atm_diag_reset()
+
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       block_ptr => domain % blocklist
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
@@ -561,9 +564,9 @@ module atm_core
          call mpas_advance_clock(clock)
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
 
-         call mpas_atm_diag_update()
 
          call mpas_dmpar_get_time(diag_start_time)
+         call mpas_atm_diag_update()
          call mpas_atm_diag_compute()
 
          !
