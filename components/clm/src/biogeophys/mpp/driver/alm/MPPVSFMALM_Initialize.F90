@@ -816,6 +816,7 @@ contains
     !
     ! !USES:
     use clm_varctl                , only : vsfm_lateral_model_type
+    use clm_varctl                , only : vsfm_include_seepage_bc
     use MultiPhysicsProbConstants , only : SOIL_CELLS
     use MultiPhysicsProbConstants , only : SOIL_TOP_CELLS
     use MultiPhysicsProbConstants , only : COND_SS
@@ -860,15 +861,19 @@ contains
             'Lateral_flux', 'kg/s', COND_MASS_RATE, &
             SOIL_CELLS)
 
-       call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
-            'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
-            SOIL_TOP_CELLS)
+       if (vsfm_include_seepage_bc) then
+          call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
+               'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
+               SOIL_TOP_CELLS)
+       endif
 
     else if (vsfm_lateral_model_type == 'three_dimensional') then
 
-       call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
-            'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
-            SOIL_TOP_CELLS)
+       if (vsfm_include_seepage_bc) then
+          call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
+               'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
+               SOIL_TOP_CELLS)
+       endif
 
     endif
 
