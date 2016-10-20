@@ -1,0 +1,278 @@
+<?xml version="1.0"?>
+<config case="2000m">
+
+        <!-- Set up needed files and executables -->
+        <add_executable source="periodic_hex" dest="periodic_grid"/>
+        <add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+        <add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+        <add_executable source="grid_to_li_grid" dest="create_landice_grid_from_generic_MPAS_grid.py"/>
+        <add_executable source="model" dest="landice_model"/>
+        <add_executable source="metis" dest="metis"/>
+        <add_link source_path="script_configuration_dir" source="cull_cells_for_MISMIP.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="setup_mismip+_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="setup_mismip+_subdirectories.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="mismip+WriteGL.py" dest="."/> -->
+        <add_link source_path="script_configuration_dir" source="mismip+PlotGL.py" dest="."/> -->
+        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_test_dir" source="namelist.input" dest="namelist.input"/>
+        <add_link source_path="work_case_dir" source="culled_graph.info" dest="graph.info"/>
+
+
+        <namelist name="namelist.landice.Spinup" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+        </namelist>
+
+        <streams name="streams.landice.Spinup" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+        </streams>
+
+        <namelist name="namelist.landice.Ice0" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_stop_time">00100-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice0" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0010-00-00_00:00:00</attribute>
+               </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+               </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice1r" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_stop_time">00100-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
+		<option name="config_basal_mass_bal_float">'mismip'</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice1r" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+	       <stream name="output">
+                        <attribute name="output_interval">0010-00-00_00:00:00</attribute>
+                </stream> 
+		<stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice1ra" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice1ra" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0010-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice1rax" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice1rax" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice1rr" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
+		<option name="config_basal_mass_bal_float">'mismip'</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice1rr" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+		<stream name="output">
+                        <attribute name="output_interval">0010-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice1rrx" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
+		<option name="config_basal_mass_bal_float">'mismip'</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice1rrx" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+		<stream name="output">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice2r" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_stop_time">00100-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
+		<option name="config_basal_mass_bal_float">'constant'</option>
+		<option name="config_bmlt_float_flux">975.17</option>
+		<option name="config_bmlt_float_xlimit">480000.0</option>  
+        </namelist>
+
+        <streams name="streams.landice.Ice2r" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0010-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice2ra" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice2ra" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0010-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice2rax" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
+        </namelist>
+
+        <streams name="streams.landice.Ice2rax" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice2rr" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00100-01-01_00:00:00</option>
+                <option name="config_stop_time">00200-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00010-00-00_00:00:00</option>
+		<option name="config_basal_mass_bal_float">'constant'</option>
+		<option name="config_bmlt_float_flux">975.17</option>
+		<option name="config_bmlt_float_xlimit">480000.0</option>  
+        </namelist>
+
+        <streams name="streams.landice.Ice2rr" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0010-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+        <namelist name="namelist.landice.Ice2rrx" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_do_restart">.true.</option>
+		<option name="config_start_time">00200-01-01_00:00:00</option>
+                <option name="config_stop_time">01000-01-01_00:00:00</option>
+		<option name="config_adaptive_timestep_force_interval">00100-00-00_00:00:00</option>
+		<option name="config_basal_mass_bal_float">'constant'</option>
+		<option name="config_bmlt_float_flux">975.17</option>
+		<option name="config_bmlt_float_xlimit">480000.0</option>  
+        </namelist>
+
+        <streams name="streams.landice.Ice2rrx" keep="immutable" mode="forward">
+                <template file="mismip+_template.xml" path_base="script_configuration_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream> 
+        </streams>
+
+
+        <run_script name="setup_test.py">
+
+                <!-- make base mesh -->
+                <step executable="./periodic_grid" pre_message="\n\n### Creating periodic_hex mesh\n\n" post_message="\n\n### periodic_hex mesh creation complete\n\n">
+                </step>
+
+                <!-- mark cells for culling -->
+                <step executable="./cull_cells_for_MISMIP.py" >
+                        <argument flag="-f">grid.nc</argument>
+                </step>
+
+                <!-- cull cells -->
+                <step executable="./MpasCellCuller.x" >
+                        <argument flag="">grid.nc</argument>
+                        <argument flag="">culled_grid.nc</argument>
+                </step>
+
+                <!-- Convert from basic MPAS mesh to MPASLI mesh -->
+                <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                        <argument flag="-i">culled_grid.nc</argument>
+                        <argument flag="-o">landice_grid.nc</argument>
+                        <argument flag="-l">10</argument>
+                        <argument flag="--diri"></argument>
+                        <argument flag="--beta"></argument>
+                        <argument flag="--thermal"></argument>
+                </step>
+
+                <!-- Set up initial condition on to landice mesh -->
+                <step executable="./setup_mismip+_initial_conditions.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
+                        <argument flag="-f">landice_grid.nc</argument>
+                </step>
+
+                <!-- Set up needed graph file -->
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">16</argument>
+                </step>
+
+                <!-- Set up subdirectories for the various MISMIP tests, and move namelist and streams files to these directories-->
+                <step executable="./setup_mismip+_subdirectories.py" pre_message="\n\n### Setting up subdirectories\n\n" post_message="\n\n### Subdirectory setup complete\n\n">
+                        <argument flag="-x">all</argument>
+                </step>
+
+        </run_script>
+
+</config>

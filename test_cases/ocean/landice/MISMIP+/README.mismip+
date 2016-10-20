@@ -1,0 +1,249 @@
+Instructions for setting up and running the MISMIP+ experiments with MPAS Landice
+
+See this paper for details on MISMIP+:
+
+X. S. Asay-Davis et al. (2016), Experimental design for three interrelated
+marine ice sheet and ocean model intercomparison projects:
+MISMIP v. 3 (MISMIP+), ISOMIP v. 2 (ISOMIP+) and MISOMIP v. 1 (MISOMIP1),
+Geosci. Model Devel., 9, 2471-2497, doi: 10.5194/gmd-9-2471-2016.
+
+The following experiments are included in MISMIP+:
+
+Ice0          100-year control simulation with no melting 
+Ice1r         100-year run with melt-induced retreat
+Ice1ra        100-year (or optionally up to 900-year) simulation from end of Ice1r with no melting
+Ice1rr        Continue Ice1r for a further 900 years (optional) 
+Ice2r         100-year “calving-event” simulation
+Ice2ra        100-year (or optionally up to 900-year) simulation from end of Ice2r with no melting
+Ice2rr        Continue Ice2r for a further 900 years (optional)
+
+Each starts from a spun-up state with a stable grounding line (GL).
+Reaching a stable state typically requires ~10,000 to 20,000 years.
+
+The first step is to set up the MISMIP+ test cases in a work directory.
+Go to your MPAS-Code directory.  You should see a directory structure like this:
+
+|–– test_cases
+    |––ocean
+       |–– list_testcases.py
+       |–– setup_testcase.py
+       |–– general.config.landice
+       |–– [Other files and directories}
+       |–– landice
+           |–– [dome, EISMINT2, greenland, MISMIP3d, etc.]
+           |–– MISMIP+
+               |–– README.mismip+
+               |–– albany_input.xml
+               |–– cull_cells_for_MISMIP.py
+               |–– mismip+PlotGL.py
+               |–– mismip+WriteGL.py
+               |–– mismip+_template.xml
+               |–– setup_mismip+_initial_conditions.py
+               |── setup_mismip+_subdirectories.py
+               |── standard_resolution
+                   |── standard_test
+                       |–– README
+                       |–– config_setup_experiments.xml
+                       |–– namelist.input
+                       |–– namelist.input.500m
+                       |–– namelist.input.1000m
+                       |–– namelist.input.2000m
+                       |–– namelist.input.4000m
+                       |── namelist.input.8000m
+
+First decide what resolution you would like to run. The resolution is set by the
+files namelist.input and config_setup_experiments.xml in the lowest-level directory.
+The default is 2000 m. To change the default (say, to 1000 m):
+
+    > cp namelist.input.1000m namelist.input
+
+Then change "2000m" to "1000m" in the second line of config_setup_experiments.xml.
+
+For testing and debugging, you may prefer a coarser resolution (say, 8000 m) that is 
+less accurate but will run quickly.
+
+Next, go up to ...MPAS-Code/test_cases/ocean
+You will need a custom version of general.config.landice containing the paths on
+your machine to various files and directories. See the general instructions here:
+https://docs.google.com/document/d/1aURr4UdEm0AMeYlc478yL_46biD19naVp3nCMYgrYLI/edit?pref=2&pli=1#heading=h.ri8fp83u0zch
+
+List the available tests:
+
+     > ./list_testcases.py
+
+The MISMIP+ test should be listed with a number (say, 26). To set up the tests:
+
+     > ./setup_testcase.py -o landice -n 26 -f general.config.landice --work_dir myWorkDir
+
+Go to your work directory (myWorkDir).  Say you set up a test with 2000m resolution.
+You should have a directory structure like this:
+
+|––myWorkDir
+   |––landice
+      |––MISMIP+
+         |––standard_resolution
+            |––standard_test
+               |––2000m
+
+Go to subdirectory 2000m (or whichever resolution you set up).
+
+There should be a link to your executable (landice_model) and other files needed for setup.
+Note: The executable must have been built with support for the Albany first-order dycore.
+      (e.g., with 'make CORE=landice ALBANY=true gfortran')
+
+Run the setup script:
+
+     > python setup_test.py
+
+This script will create the required input file, landice_grid.nc.
+The grid information for this resolution is contained in namelist.input.
+
+In addition, this script will create the following subdirectories:
+- Spinup
+- Ice0
+- Ice1r
+- Ice1ra
+- Ice1rr
+- Ice1rax
+- Ice1rrx
+- Ice2r
+- Ice2ra
+- Ice2rr
+- Ice2rax
+- Ice2rrx
+Note: Ice1ra and Ice1rax are two parts of the same 900-year experiment,
+      and similarly for the other Ice*x files.
+      Ice1ra runs from year 100 to year 200 with output every 10 years,
+      whereas Ice1rax runs from year 200 to year 1000 with output every 100 years.
+
+Each subdirectory should contain the following files:
+- a link to the executable
+- a link to the graph.info.part.* files in the parent directory
+- namelist and streams files for the experiment. These files are modified from a template
+  file to include the correct start time, stop time, and output intervals, along with 
+  basal melt settings appropriate to each experiment.
+- a link to landice_grid.nc (in the Spinup directory)
+- a link to ../Spinup/landice_grid.nc (for Ice0, Ice1r and Ice2r)
+- a restart_timestamp file and a link to the appropriate restart file
+  (for the Ice* experiments that restart from Ice1r or Ice2r)
+
+Initially, the links in the Ice* directories will be empty, but they will be populated as the user
+carries out the experiments. Experiments should be done in this order:
+- Run the Spinup.
+- Ice0, Ice1r and Ice2r can be done once the spinup is complete.
+- Ice1ra and Ice1rr must follow Ice1r; Ice2ra and Ice2rr must follow Ice2r.
+- Ice1rax must follow Ice1ra, and similarly for the other Ice*x.
+
+The first step is to run the Spinup experiment. By default, this experiment runs for 15,000 years.
+
+Note 1: You may want to change the length of the Spinup.  To do this, go to the Spinup directory 
+        and edit config_stop_time in namelist.landice. For instance, you could change this:
+             config_stop_time = '15000-01-01_00:00:00'
+        to this:
+             config_stop_time = '10000-01-01_00:00:00'
+
+Note 2: Each subdirectory will have links to the graph.info.part files in the parent directory.
+        To run on a different number of cores, you can make your own file using METIS.
+        For example, to run on 128 cores on the LANL IC machines:
+        > module load metis
+        > gpmetis graph.info 128
+
+Note 3: There is a namelist parameter called config_default_flowParamA.  
+        However, this parameter does *not* determine the flow parameter for the higher-order model.
+        To change this parameter, open the file .../MPAS-Code/test_cases/ocean/landice/MISMIP+/albany_input.xml
+        Scroll down to these lines:
+
+             <!-- Note that because of the units used in Albany, the value for A in input file is 10^12 times the usual value in Pa^{-n} yr^{-1}. -->
+             <Parameter name="Glen's Law A" type="double" value="0.00002"/>
+
+        The default value corresponds to A = 2.0e-17 Pa^{-3} yr^{-1}, as suggested by Asay-Davis et al. (2016).
+        To set A = 4.0-17 Pa^{-3} yr^{-1} (for example), you would set value="0.00004".
+
+Note 4: The MISMIP+ protocols allow one of three kinds of basal sliding law. 
+        MPAS LI uses a Weertman-type power law (Eq. 6 of Asay-Davis et al.).
+        This basal sliding law is set in albany_input.xml:
+
+             <!-- power law basal friction law: -->
+             <Parameter name="BetaXY" type="string" value="Power Law Scalar Field"/>
+
+        The basal traction coefficient beta is created by setup_mismip+_initial_conditions.py.
+        The power-law exponent m = 1/3 is currently hardwired in Albany.
+        The other two MISMIP+ sliding laws, based on Tsai et al. (2015) and Schoof (2005), are not yet supported in MPAS LI.
+
+Once you are satisfied with the configuration, you can launch the Spinup run. For example:
+
+     > cd Spinup
+     > mpirun -n 16 landice_model
+
+Or alternatively, you can submit a batch job with a simple run script. (I usually use msub on LANL IC machines.)
+
+At resolutions of 2 km or finer, you will probably want more than 16 cores.
+I usually use 128 to 256 cores at 2 km resolution on the IC machines.
+
+At coarse resolution (e.g, 8 km), a 15,000-year run typically takes only a couple of hours.
+At finer resolutions it will take longer, and you may need to restart the run.
+Say you want to restart from year 10000, and you have a file called restart_10000.nc.
+You also have a one-line file called restart_timestamp, which is overwritten at each restart interval.
+Say the timestamp is '10000-01-01_00:00:00'. Then you would edit namelist.landice:
+
+     config_do_restart = .true.
+     config_start_time = 'file'
+
+Continue restarting as needed until the Spinup is complete.
+
+After a 15,000-year run, you should have a restart file called restart_15000.nc.
+This file provides the initial condition for Ice0, Ice1r and Ice2r, but you first have to rename it
+and removed the 'xtime' variable so that MPASLI will launch an initial run (rather than a restart)
+and will not be confused about the start time.
+
+An easy way to process the restart file is with the 'ncks' command of NCO.
+You may first need to load NCO:
+
+     > module load nco
+
+In the Spinup directory, remove the existing symbolic link to landice_grid.nc:
+
+     > rm landice_grid.nc
+
+Then remove the xtime variable and rename the final restart file to landice_grid.nc:
+
+     > ncks -x -v xtime restart_15000.nc landice_grid.nc
+
+The Ice0, Ice1r and Ice2r directories should already contain a symbolic link
+to the file you just created.
+
+Then go to the Ice0 directory. Simply launch the run, e.g.:
+
+     > mpirun -n 16 landice_model
+
+Continue in the required order (as described above) until the MISMIP+ run suite is complete.
+
+Each Ice* subdirectory should contain a standard output file called output_00000.nc,
+with output written at the appropriate interval (every 10 years to year 200, then
+every 100 years to year 1000). These files need to be converted to the format
+specified by Asay-Davis et al. (2016). To do this, go to the main directory
+(e.g., .../standard_test/8000m) and run a python script:
+
+     > python mismip+WriteGL.py -x all
+
+For each experiment, you should get a netCDF file in MISMIP+ format and a test plot.
+For example, the Ice0 directory should contain the files Ice0_MPASLI.nc
+and plot_Ice0_MPASLI.pdf. The plot should show the advance or retreat of the GL
+during the course of the experiment.
+
+This script can also be run for one experiment at a time. For example:
+
+      > python mismip+WriteGL.py -x Ice1r
+
+The script will not work if the output file does not contain all the expected time slices.
+
+Finally, there is another python script that makes two plots (in one file,
+called mismip+PlotGL.pdf) synthesizing the results of all the experiments:
+
+     > python mismip+PlotGL.py
+
+The upper plot shows the GL location at the start and end of different experiments.
+The lower plot shows the total grounded area over time for each experiment, in analogy 
+to Figure 4 of Asay-Davis et al. (2016).
+
+Good luck!  Please let me know (lipscomb@lanl.gov) if you have questions or run into problems.

@@ -1,0 +1,21 @@
+&periodic_grid
+! Notes for MISMIP+:
+! (1) We want ymax - ymin = 80 km for MISMIP+, where ymax and ymin are cell center coordinates.
+!     Let dy be the spacing between cell centers in the y direction.
+!     Then let ny = 80/dy + 4.  For example, dy = 8 km => ny = 10 + 4 = 14.
+!     The reason for the addition of 4 is that 3 horizontal rows will later be culled, and we will ignore
+!     the two half-rows where y < ymin or y > ymax.
+! (2) To choose dc = the x distance between cell centers: Divide dy by sqrt(3)/2.
+!     For example, dy = 8000 m ==>  dc = 8000 m / (sqrt(3)/2) = 9237.604307 m.
+! (3) For MISMIP+, the cells should extend past x = 640 km.
+!     Let nx = int(650/dc) + 3 where dc is in km.  The extra 10 km gives some leeway, 
+!     and the addition of 3 accounts for the culling of 4 vertical rows. 
+! (4) nVertLevels does not matter, since it will be redefined later.
+! (5) can set nproc = 1, since the mesh will need culling later to remove periodicity.
+   dc = 9237.604307,
+   nx = 73,
+   ny = 14,
+   nVertLevels = 1,
+   nTracers = 1,
+   nproc = 1
+/

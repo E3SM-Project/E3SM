@@ -134,6 +134,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:), pointer :: &
            thickness,             & ! ice thickness (updated in this subroutine)
+           bedTopography,         & ! bed topography
            sfcMassBal,            & ! surface mass balance
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
@@ -179,7 +180,8 @@ module li_advection
            config_print_thickness_advection_info   !TODO - change to config_print_advection_info?
 
       real (kind=RKIND), pointer :: &
-           config_ice_density
+           config_ice_density,    & ! rhoi
+           config_sea_level         ! sea level relative to z = 0
 
       logical :: advectTracers     ! if true, then advect tracers as well as thickness
 
@@ -225,6 +227,7 @@ module li_advection
 
       ! get arrays from the geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
       call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
       call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
@@ -245,6 +248,7 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
       !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -327,6 +331,7 @@ module li_advection
          !        energy conservation).
 
          if (config_print_thickness_advection_info) then
+
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   write(stdoutUnit,*) 'Before thickness advection, iCell (local, global), thickness, layer 1 tracer:', &
@@ -371,7 +376,15 @@ module li_advection
          ! Add the surface and basal mass balance to the layer thickness
          !-----------------------------------------------------------------
 
-         ! Combine various basal mass balance fields based on mask
+         ! Zero out any positive surface mass balance for ice-free ocean cells
+
+         where ( sfcMassBal > 0.0_RKIND .and. bedTopography < config_sea_level .and. .not.(li_mask_is_ice(cellMask) ) )
+
+            sfcMassBal = 0.0_RKIND
+
+         end where
+
+         ! Combine various basal mass balance fields based on mask.
          ! Grounded and floating basal mass balance should come from the thermal solver.
 
          ! TODO: more complicated treatment at GL?
@@ -505,16 +518,16 @@ module li_advection
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(in) ::  &
-           dt,                 & ! time step (s)
-           rhoi                  ! ice density (kg/m^3)
+           dt,                 & !< Input: time step (s)
+           rhoi                  !< Input: ice density (kg/m^3)
 
       real (kind=RKIND), dimension(:), intent(in) ::  &
-           sfcMassBal,         & ! surface mass balance (kg/m^2/s)
-           basalMassBal          ! basal mass balance (kg/m^2/s)
+           sfcMassBal,         & !< Input: surface mass balance (kg/m^2/s)
+           basalMassBal          !< Input: basal mass balance (kg/m^2/s)
 
       real(kind=RKIND), dimension(:,:), intent(in) :: &
-           surfaceTracers,     & ! tracer values of new ice at upper surface
-           basalTracers          ! tracer values of new ice at lower surface
+           surfaceTracers,     & !< Input: tracer values of new ice at upper surface
+           basalTracers          !< Input: tracer values of new ice at lower surface
 
       !-----------------------------------------------------------------
       !

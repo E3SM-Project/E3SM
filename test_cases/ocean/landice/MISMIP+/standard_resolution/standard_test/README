@@ -1,0 +1,33 @@
+This directory contains namelist.input files for several resolutions of the MISMIP+ experiments
+(8000 m, 4000 m, 2000 m, 1000 m and 500 m).  The resolution set up in the test directory is determined
+by the namelist.input file.  The default resolution is 2000 m.  (The default namelist.input is 
+identical to namelist.input.2000m, and the default config_setup_experiment.xml will set up the 
+experiment in a directory called '2000m'.)
+
+If you would like to run at a different resolution, you can do the following:
+
+(1) Copy your preferred namelist.input.* file to namelist.input, e.g.:
+
+    > cp namelist.input.1000m namelist.input
+
+    If there is no such file at your preferred resolution, see the comments in namelist.input
+    for guidance on making a new one.
+
+(2) In config_setup_experiment.xml, edit the case name.  E.g., change this line:
+
+    <config case="2000m">
+
+    to this:
+
+    <config case="1000m">
+
+(3) Go to the testcase setup directory and set up the case in the usual way, e.g.:
+
+    > cd my_mpas_directory/MPAS-Core/test_cases/ocean
+    > ./list_testcases.py [Say the test case you just created is #26]
+    > ./setup_testcase.py -o landice -n 26 -f general.config.landice --work_dir /full_path_to_my_test_dir
+
+Note: Resolutions coarser than 2 km are unlikely to give physically accurate results, but can be useful
+for testing and debugging.  Resolutions of 1 km or higher are expected to be accurate, but can take
+a long time to spin up.
+

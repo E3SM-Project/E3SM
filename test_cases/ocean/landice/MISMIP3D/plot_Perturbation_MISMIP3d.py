@@ -121,6 +121,10 @@ for run in results:
 
   plt.plot(year, GLx / 1000.0, '.', color=color)
 
+  # save year, GL position
+  txtfname = "MPASLI_MISMIP3D_P75_GLposition_" + run + ".txt"
+  np.savetxt(txtfname, np.column_stack((year, GLx)), fmt='%10.2f', delimiter=',', newline='\n', header='', footer='', comments='# ')
+
   f.close()
 
 plt.xlabel('Time (yr)')
