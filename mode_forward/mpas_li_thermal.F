@@ -646,12 +646,14 @@ module li_thermal
            config_print_thermal_info   ! if true, print debug info
 
       character(len=StrKIND), pointer :: &
-           config_thermal_solver,     &! option for thermal solver
+           config_thermal_solver,    & ! option for thermal solver
            config_basal_mass_bal_float ! option for basal mass balance of floating ice
 
       real(kind=RKIND), pointer :: &
-           config_thermal_thickness,  &! minimum thickness for temperature calculations
-           config_sea_level            ! sea level relative to z = 0
+           config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
+           config_sea_level,         & ! sea level (m) relative to z = 0
+           config_bmlt_float_flux,   & ! constant heat flux (W/m^2) applied to the base of floating ice; positive upward
+           config_bmlt_float_xlimit    ! x value (m) defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit
 
       integer, pointer :: &
            config_stats_cell_ID        ! global ID for diagnostic cell
@@ -789,6 +791,8 @@ module li_thermal
          call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
          call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+         call mpas_pool_get_config(liConfigs, 'config_bmlt_float_flux', config_bmlt_float_flux)
+         call mpas_pool_get_config(liConfigs, 'config_bmlt_float_xlimit', config_bmlt_float_xlimit)
          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
          if (config_print_thermal_info) then
@@ -1249,6 +1253,8 @@ module li_thermal
               lowerSurface,                 &
               bedTopography,                &
               config_sea_level,             &
+              config_bmlt_float_flux,       &
+              config_bmlt_float_xlimit,     &
               floatingBasalMassBal)
 
          do iCell = 1, nCellsSolve
@@ -2593,14 +2599,16 @@ module li_thermal
 !-----------------------------------------------------------------------
 
     subroutine basal_melt_floating_ice(&
-         config_basal_mass_bal_float, &
-         nCellsSolve,                 &
-         xCell,                       &
-         iceMask,                     &
-         floatingMask,                &
-         lowerSurface,                &
-         bedTopography,               &
-         config_sea_level,            &
+         config_basal_mass_bal_float,   &
+         nCellsSolve,                   &
+         xCell,                         &
+         iceMask,                       &
+         floatingMask,                  &
+         lowerSurface,                  &
+         bedTopography,                 &
+         config_sea_level,              &
+         config_bmlt_float_flux,        &
+         config_bmlt_float_xlimit,      &
          floatingBasalMassBal)
 
       !-----------------------------------------------------------------
@@ -2608,7 +2616,7 @@ module li_thermal
       !-----------------------------------------------------------------
 
       character(len=strKIND), intent(in) :: &
-           config_basal_mass_bal_float  !< Input: option for computing basal mbal balance for floating ice
+           config_basal_mass_bal_float  !< Input: option for computing basal mass balance for floating ice
 
       integer, intent(in) :: &
            nCellsSolve              !< Input: number of locally owned cells
@@ -2627,6 +2635,13 @@ module li_thermal
            iceMask,               & !< Input: = 1 where ice exists (thickness > config_thermal_thickness), else = 0
            floatingMask             !< Input: = 1 where ice is floating, else = 0
 
+      ! inputs for constant melt rate as in MISMIP+ Ice2 experiments 
+      real(kind=RKIND), intent(in) ::  &
+           config_bmlt_float_flux,   & !< Input: constant heat flux (W/m^2) applied to the base of floating ice; positive upward
+                                       !         MISMIP+ default value = 975.17 W/m^2 (gives melt rate of 100 m/yr)
+           config_bmlt_float_xlimit    !< Input: x value (m) defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit
+                                       !         MISMIP+ default value = 480 km
+
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -2638,19 +2653,18 @@ module li_thermal
       ! local variables
       !-----------------------------------------------------------------
 
+      real(kind=RKIND) :: &
+           bmlt_float_rate                          ! constant basal melt rate (m/s)
+                                                    ! = config_bmlt_float_flux / (rhoi*latent_heat_ice)
       integer :: iCell
 
       real(kind=RKIND) :: hCavity               ! depth of ice cavity beneath floating ice (m)
       real(kind=RKIND) :: zDraft                ! draft of floating ice (m below sea level)
 
       ! basal melting parameters for MISMIP+ experiment
-      ! TODO - Make the MISMIP+ parameters user-configurable?
+      ! Note: These could be made user-configurable, but are hardwired for now because there are no plans
+      !       to run MISMIP+ with different values
       real(kind=RKIND), parameter :: &
-           bmlt_float_rate = 100._RKIND / scyr,   & ! constant basal melt rate (m/s)
-                                                    ! MISMIP+ default value = 100 m/yr
-           bmlt_float_xlimit = 0.0_RKIND,         & ! melting is allowed only for |xCell| > xLimit
-!!           bmlt_float_xlimit = 480000._RKIND,     & ! uncomment this line for MISMIP+ experiment Ice2r
-                                                    ! MISMIP+ default value = 480 km
            bmlt_float_omega = 0.20_RKIND / scyr,  & ! time scale for basal melting (s^-1)
                                                     ! MISMIP+ default value = 0.2 yr^-1
            bmlt_float_h0 = 75._RKIND,             & ! scale for sub-shelf cavity thickness (m)
@@ -2660,26 +2674,33 @@ module li_thermal
 
       ! Compute melt rate for floating ice
 
+      ! initialize to zero melt
+      floatingBasalMassBal(:) = 0.0_RKIND
+
       if (trim(config_basal_mass_bal_float) == 'none') then
 
-         ! Set floating BMB to 0 to have 'none'
-         floatingBasalMassBal(:) = 0.0_RKIND
+         ! nothing to do; bmlt_float already set to zero
 
       elseif (trim(config_basal_mass_bal_float) == 'file') then
 
-         ! Do nothing in this routine - use whatever value was input as data
+         ! Do nothing in this routine -- use whatever value was input as data
 
       elseif (trim(config_basal_mass_bal_float) == 'constant') then
+
+         ! set melt rate to a constant value for floating ice 
+         ! allow basal melt in ice-free ocean cells, in case ice is advected to those cells by the transport scheme
+
+         bmlt_float_rate = config_bmlt_float_flux / (rhoi*latent_heat_ice)  ! convert W/m^2 to m/s
 
          floatingBasalMassBal(:) = 0.0_RKIND
 
          do iCell = 1, nCellsSolve
-            if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
+            if ( floatingMask(iCell) == 1 .or.  &
+                 (bedTopography(iCell) < config_sea_level .and. iceMask(iCell) == 0) ) then   ! ice is present and floating, or ice-free ocean
 
-
-               ! Provided xCell > bmlt_float_xlimit, prescribe a uniform basal melt rate
-               ! For MISMIP+, the default value of xlimit is 480 km
-               if (abs(xCell(iCell)) >= bmlt_float_xlimit) then  ! basal melting is allowed
+               ! Provided xCell > bmlt_float_xlimit, prescribe a uniform basal melt rate.
+               ! The default is 0.0, but for MISMIP+ the prescribed value of xlimit is 480 km.
+               if (abs(xCell(iCell)) >= config_bmlt_float_xlimit) then  ! basal melting is allowed
                   floatingBasalMassBal(iCell) = -bmlt_float_rate
                endif
 
@@ -2702,19 +2723,18 @@ module li_thermal
          !       H_0 = 75 m by default
          !       z_0 = -100 m by default
 
-         !WHL - debug
-!!         write(stdoutUnit,*) 'iCell, lowerSurface, hCavity, tanh, zDraft, dzdraft, mass bal (m/yr):'
+         ! allow basal melt in ice-free ocean cells, in case ice is advected to those cells by the transport scheme
 
          floatingBasalMassBal(:) = 0.0_RKIND
 
          do iCell = 1, nCellsSolve
-            if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
+
+            if ( floatingMask(iCell) == 1 .or.  &
+                 (bedTopography(iCell) < config_sea_level .and. iceMask(iCell) == 0) ) then   ! ice is present and floating, or ice-free ocean
 
                hCavity = lowerSurface(iCell) - bedTopography(iCell)
                zDraft = lowerSurface(iCell) - config_sea_level
                floatingBasalMassBal(iCell) = -bmlt_float_omega * tanh(hCavity/bmlt_float_h0) * max(bmlt_float_z0 - zDraft, 0.0_RKIND)
-
-!!               write(stdoutUnit,*) iCell, lowerSurface(iCell), hCavity, tanh(hCavity/bmlt_float_h0), zDraft, max(bmlt_float_z0 - zDraft, 0.0_RKIND), floatingBasalMassBal(iCell)*scyr
 
             endif   ! ice is present and floating
          enddo   ! iCell
