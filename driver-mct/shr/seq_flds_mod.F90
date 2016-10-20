@@ -637,7 +637,7 @@ module seq_flds_mod
      call seq_flds_add(a2x_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
-     if (cime_model == 'acme') then
+     if (trim(cime_model) == 'acme') then
         call seq_flds_add(x2o_states,"Sa_pbot")
      end if
      longname = 'Pressure at the lowest model level'
@@ -1103,7 +1103,6 @@ module seq_flds_mod
      units    = 'm'
      attname  = 'Sl_snowh'
      call metadata_set(attname, longname, stdname, units)
-
 
      ! Surface snow depth (ice/atm only)
      call seq_flds_add(i2x_states,"Si_snowh")
@@ -1960,6 +1959,26 @@ module seq_flds_mod
      units    = 'kg m-2 s-1'
      attname  = 'Flrl_rofi'
      call metadata_set(attname, longname, stdname, units)
+
+     ! Currently only the CESM land and runoff models treat irrigation as a separate
+     ! field: in ACME, this field is folded in to the other runoff fields. Eventually,
+     ! ACME may want to update its land and runoff models to map irrigation specially, as
+     ! CESM does.
+     !
+     ! (Once ACME is using this irrigation field, all that needs to be done is to remove
+     ! this conditional: Code in other places in the coupler is written to trigger off of
+     ! whether Flrl_irrig has been added to the field list, so it should Just Work if this
+     ! conditional is removed.)
+     if (trim(cime_model) == 'cesm') then
+        ! Irrigation flux (land/rof only)
+        call seq_flds_add(l2x_fluxes,"Flrl_irrig")
+        call seq_flds_add(x2r_fluxes,"Flrl_irrig")
+        longname = 'Irrigation flux (withdrawal from rivers)'
+        stdname  = 'irrigation'
+        units    = 'kg m-2 s-1'
+        attname  = 'Flrl_irrig'
+        call metadata_set(attname, longname, stdname, units)
+     end if
 
      !-----------------------------
      ! rof->ocn (runoff) and rof->lnd (flooding)
