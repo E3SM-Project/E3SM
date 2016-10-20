@@ -88,6 +88,9 @@ module ColumnWaterFluxType
   contains
       procedure, public :: Init => init_col_wf
       procedure, public :: InitAllocate => initallocate_col_wf
+      procedure, public :: InitCold => initcold_col_wf
+      procedure, public :: InitHistory => inithistory_col_wf
+
       procedure, public :: Clean => clean_col_wf
 
   subroutine init_col_wf(this, bounds)
@@ -179,6 +182,141 @@ module ColumnWaterFluxType
     allocate(this%mflx_drain_perched_col_1d(   ncells))              ; this%mflx_drain_perched_col_1d(:)  = nan
 
   end subroutine init_col_wf
+
+
+  ----------------------------------------------------------------------
+  subroutine inithistory_col_wf(this, bounds)
+    !
+    ! !USES:
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
+    use clm_varpar     , only : nlevsno, crop_prog, nlevsoi 
+    use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
+    !
+    ! !ARGUMENTS:
+    class(soilcol_water_flux) :: this
+    type(bounds_type), intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: begp, endp
+    integer           :: begc, endc
+    integer           :: begg, endg
+    character(10)     :: active
+    real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
+    !------------------------------------------------------------------------
+
+    begp = bounds%begp; endp= bounds%endp
+    begc = bounds%begc; endc= bounds%endc
+    begg = bounds%begg; endg= bounds%endg
+
+    this%qflx_top_soil_col(begc:endc) = spval
+    call hist_addfld1d (fname='QTOPSOIL',  units='mm/s',  &
+         avgflag='A', long_name='water input to surface', &
+         ptr_col=this%qflx_top_soil_col, c2l_scale_type='urbanf', default='inactive')
+
+    this%qflx_infl_col(begc:endc) = spval
+    call hist_addfld1d (fname='QINFL',  units='mm/s',  &
+         avgflag='A', long_name='infiltration', &
+         ptr_col=this%qflx_infl_col, c2l_scale_type='urbanf')
+
+    this%qflx_surf_col(begc:endc) = spval
+    call hist_addfld1d (fname='QOVER',  units='mm/s',  &
+         avgflag='A', long_name='surface runoff', &
+         ptr_col=this%qflx_surf_col, c2l_scale_type='urbanf')
+
+    this%qflx_qrgwl_col(begc:endc) = spval
+    call hist_addfld1d (fname='QRGWL',  units='mm/s',  &
+         avgflag='A', long_name='surface runoff at glaciers (liquid only), wetlands, lakes', &
+         ptr_col=this%qflx_qrgwl_col, c2l_scale_type='urbanf')
+
+    this%dwb_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWB',  units='mm/s',  &
+         avgflag='A', long_name='net change in total water mass', &
+         ptr_col=this%dwb_col, c2l_scale_type='urbanf')
+
+    this%qflx_drain_col(begc:endc) = spval
+    call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
+         avgflag='A', long_name='sub-surface drainage', &
+         ptr_col=this%qflx_drain_col, c2l_scale_type='urbanf')
+
+    this%qflx_runoff_col(begc:endc) = spval
+    call hist_addfld1d (fname='QRUNOFF_NODYNLNDUSE',  units='mm/s',  &
+         avgflag='A', &
+         long_name='total liquid runoff (does not include QSNWCPICE) not including correction for land use change', &
+         ptr_col=this%qflx_runoff_col, c2l_scale_type='urbanf')
+
+    this%qflx_runoff_u_col(begc:endc) = spval
+    call hist_addfld1d (fname='QRUNOFF_U', units='mm/s',  &
+         avgflag='A', long_name='Urban total runoff', &
+         ptr_col=this%qflx_runoff_u_col, set_nourb=spval, c2l_scale_type='urbanf')
+
+    this%qflx_runoff_r_col(begc:endc) = spval
+    call hist_addfld1d (fname='QRUNOFF_R', units='mm/s',  &
+         avgflag='A', long_name='Rural total runoff', &
+         ptr_col=this%qflx_runoff_r_col, set_spec=spval)
+
+    this%qflx_snow_melt_col(begc:endc) = spval
+    call hist_addfld1d (fname='QSNOMELT',  units='mm/s',  &
+         avgflag='A', long_name='snow melt', &
+         ptr_col=this%qflx_snow_melt_col, c2l_scale_type='urbanf')
+
+    this%qflx_snofrz_col(begc:endc) = spval
+    call hist_addfld1d (fname='QSNOFRZ', units='kg/m2/s', &
+         avgflag='A', long_name='column-integrated snow freezing rate', &
+         ptr_col=this%qflx_snofrz_col, set_lake=spval, c2l_scale_type='urbanf', &
+         default='inactive')
+
+    if (create_glacier_mec_landunit) then
+       this%qflx_glcice_frz_col(begc:endc) = spval
+       call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
+            avgflag='A', long_name='ice growth', &
+            ptr_col=this%qflx_glcice_frz_col, l2g_scale_type='ice')
+    end if
+
+    if (create_glacier_mec_landunit) then
+       this%qflx_glcice_melt_col(begc:endc) = spval
+       call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
+            avgflag='A', long_name='ice melt', &
+            ptr_col=this%qflx_glcice_melt_col, l2g_scale_type='ice')
+
+    ! Use qflx_snwcp_ice_col rather than qflx_snwcp_ice_patch, because the column version 
+    ! is the final version, which includes some  additional corrections beyond the patch-level version
+    end if
+
+    this%qflx_h2osfc_surf_col(begc:endc) = spval
+    call hist_addfld1d (fname='QH2OSFC',  units='mm/s',  &
+         avgflag='A', long_name='surface water runoff', &
+         ptr_col=this%qflx_h2osfc_surf_col)
+
+    this%qflx_drain_perched_col(begc:endc) = spval
+    call hist_addfld1d (fname='QDRAI_PERCH',  units='mm/s',  &
+         avgflag='A', long_name='perched wt drainage', &
+         ptr_col=this%qflx_drain_perched_col, c2l_scale_type='urbanf')
+
+    this%qflx_rsub_sat_col(begc:endc) = spval
+    call hist_addfld1d (fname='QDRAI_XS',  units='mm/s',  &
+         avgflag='A', long_name='saturation excess drainage', &
+         ptr_col=this%qflx_rsub_sat_col, c2l_scale_type='urbanf')
+
+    ! As defined here, snow_sources - snow_sinks will equal the change in h2osno at any
+    ! given time step but only if there is at least one snow layer (for all landunits 
+    ! except lakes).  Also note that monthly average files of snow_sources and snow_sinks
+    ! sinks must be weighted by number of days in the month to diagnose, for example, an 
+    ! annual value of the change in h2osno. 
+
+    this%snow_sources_col(begc:endc) = spval
+    call hist_addfld1d (fname='SNOW_SOURCES',  units='mm/s',  &
+         avgflag='A', long_name='snow sources (liquid water)', &
+         ptr_col=this%snow_sources_col, c2l_scale_type='urbanf')
+
+    this%snow_sinks_col(begc:endc) = spval
+    call hist_addfld1d (fname='SNOW_SINKS',  units='mm/s',  &
+         avgflag='A', long_name='snow sinks (liquid water)', &
+         ptr_col=this%snow_sinks_col, c2l_scale_type='urbanf')
+
+  end subroutine inithistory_col_wf
+
+  !-----------------------------------------------------------------------
 
 
   subroutine clean_col_wf(this)
