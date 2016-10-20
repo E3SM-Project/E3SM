@@ -681,6 +681,14 @@
 					description="Controls if fluxes related to frazil ice process are computed."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_frazil_in_open_ocean" type="logical" default_value=".true." units="unitless"
+					description="If frazil formation is used, controls if frazil fluxes are computed in the open ocean (as opposed to under land ice)."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_frazil_under_land_ice" type="logical" default_value=".true." units="unitless"
+					description="If frazil formation is used, controls if frazil fluxes are computed under land ice."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_frazil_heat_of_fusion" type="real" default_value="3.34e5" units="J kg^{-1}"
 					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME."
 					possible_values="Any positive real number."
@@ -711,11 +719,19 @@
 		/>
 		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="C"
 			description="Maximum freezing temperature for the creation of frazil"
-			possible_values="Any positive real number."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_frazil_use_surface_pressure" type="logical" default_value=".true." units="unitless"
 			description="Flag that controls if frazil formation will exert a surface pressure as it is formed."
 			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_frazil_use_constant_open_ocean_freezing_temperature" type="logical" default_value=".false." units="unitless"
+			description="Flag that controls if frazil formation in the open ocean (not in land-ice cavities) uses a constant freezing temperature instead of a function of P and S."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_frazil_open_ocean_freezing_temperature" type="real" default_value="-1.8" units="C"
+			description="Freezing temperature for the creation of frazil in the open ocean if config_frazil_use_constant_open_ocean_freezing_temperature == .true."
+			possible_values="Any real number."
 		/>
 	</nml_record>
 	<nml_record name="land_ice_fluxes" mode="init;forward">
