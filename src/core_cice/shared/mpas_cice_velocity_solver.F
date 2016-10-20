@@ -72,7 +72,8 @@ contains
 
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme, &
-         config_variational_basis
+         config_variational_basis, &
+         config_wachspress_integration_type
 
     logical, pointer :: &
          config_use_velocity_solver, &
@@ -94,7 +95,8 @@ contains
 
     integer, pointer :: &
          config_dynamics_subcycle_number, &
-         config_elastic_subcycle_number
+         config_elastic_subcycle_number, &
+         config_wachspress_integration_order
 
     ! set up the dynamically locked cell mask
     call dynamically_locked_cell_mask(domain)
@@ -138,6 +140,8 @@ contains
           call MPAS_pool_get_config(block % configs, "config_variational_basis", config_variational_basis)
           call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
           call MPAS_pool_get_config(block % configs, "config_include_metric_terms", config_include_metric_terms)
+          call MPAS_pool_get_config(block % configs, "config_wachspress_integration_type", config_wachspress_integration_type)
+          call MPAS_pool_get_config(block % configs, "config_wachspress_integration_order", config_wachspress_integration_order)
 
           if (trim(config_stress_divergence_scheme) == "weak") then
 
@@ -155,7 +159,9 @@ contains
                   boundary, &
                   config_rotate_cartesian_grid, &
                   config_include_metric_terms, &
-                  config_variational_basis)
+                  config_variational_basis, &
+                  config_wachspress_integration_type, &
+                  config_wachspress_integration_order)
 
           else if (trim(config_stress_divergence_scheme) == "none") then
 
@@ -1752,15 +1758,24 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
-         velocityVariationalPool
+         velocityVariationalPool, &
+         velocityWeakPool
 
     real(kind=RKIND), dimension(:,:), pointer :: &
-         strain11, &
-         strain22, &
-         strain12, &
-         stress11, &
-         stress22, &
-         stress12
+         strain11Var, &
+         strain22Var, &
+         strain12Var, &
+         stress11Var, &
+         stress22Var, &
+         stress12Var
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11Weak, &
+         strain22Weak, &
+         strain12Weak, &
+         stress11Weak, &
+         stress22Weak, &
+         stress12Weak
 
     real(kind=RKIND), dimension(:), pointer :: &
          stressDivergenceU, &
@@ -1777,45 +1792,19 @@ contains
          nCells, &
          nVerticesSolve
 
+    character(len=strKIND), pointer :: &
+         config_stress_divergence_scheme
+
     integer :: &
          iCell, &
          iVertex
+
+    call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
     block => domain % blocklist
     do while (associated(block))
 
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
-
-       ! strains
-       call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
-       call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
-       call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
-
-       strain11 = 0.0_RKIND
-       strain22 = 0.0_RKIND
-       strain12 = 0.0_RKIND
-
-       ! stresses
-       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
-
-       call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12)
-
-       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
-
-       do iCell = 1, nCells
-
-          if (solveStress(iCell) /= 1) then
-
-             stress11(:,iCell) = 0.0_RKIND
-             stress22(:,iCell) = 0.0_RKIND
-             stress12(:,iCell) = 0.0_RKIND
-
-          endif
-
-       enddo ! iCell
 
        ! divergence of stress
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
@@ -1845,6 +1834,77 @@ contains
           endif
 
        enddo ! iVertex
+
+       if (trim(config_stress_divergence_scheme) == "variational") then
+          ! variational
+
+          call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+
+          ! strains
+          call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11Var)
+          call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22Var)
+          call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12Var)
+
+          strain11Var = 0.0_RKIND
+          strain22Var = 0.0_RKIND
+          strain12Var = 0.0_RKIND
+
+          ! stresses
+          call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+
+          call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11Var)
+          call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22Var)
+          call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12Var)
+
+          call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+
+          do iCell = 1, nCells
+
+             if (solveStress(iCell) /= 1) then
+
+                stress11Var(:,iCell) = 0.0_RKIND
+                stress22Var(:,iCell) = 0.0_RKIND
+                stress12Var(:,iCell) = 0.0_RKIND
+
+             endif
+
+          enddo ! iCell
+
+       else if (trim(config_stress_divergence_scheme) == "weak") then
+
+          call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
+
+          ! strains
+          call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11Weak)
+          call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22Weak)
+          call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12Weak)
+
+          strain11Weak = 0.0_RKIND
+          strain22Weak = 0.0_RKIND
+          strain12Weak = 0.0_RKIND
+
+          ! stresses
+          call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+
+          call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11Weak)
+          call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22Weak)
+          call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12Weak)
+
+          call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+
+          do iCell = 1, nCells
+
+             if (solveStress(iCell) /= 1) then
+
+                stress11Weak(iCell) = 0.0_RKIND
+                stress22Weak(iCell) = 0.0_RKIND
+                stress12Weak(iCell) = 0.0_RKIND
+
+             endif
+
+          enddo ! iCell
+
+       endif ! config_stress_divergence_scheme
 
        block => block % next
     enddo

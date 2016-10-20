@@ -283,9 +283,7 @@ contains
          nCells
 
     integer, dimension(:), pointer :: &
-         nEdgesOnCell, &
-         POPindxi, &
-         POPindxj
+         nEdgesOnCell
 
     integer, dimension(:,:), pointer :: &
          verticesOnCell, &
@@ -295,6 +293,9 @@ contains
     real(kind=RKIND), pointer :: &
          sphere_radius
 
+    real(kind=RKIND) :: &
+         sphereRadius
+
     real(kind=RKIND), dimension(:), pointer :: &
          dvEdge, &
          areaCell
@@ -303,13 +304,15 @@ contains
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
-    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
     call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+
+    ! planar cases with zero sphere radius
+    sphereRadius = sphere_radius
+    if (sphereRadius == 0.0_RKIND) sphereRadius = 1.0_RKIND
 
     do iCell = 1, nCells
 
@@ -365,8 +368,8 @@ contains
           strain12(iCell) = strain12(iCell) / areaCell(iCell)
 
           ! metric terms
-          strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / sphere_radius
-          strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / sphere_radius
+          strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / sphereRadius
+          strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / sphereRadius
 
           !if (abs(strain11(iCell)) < 1e-10_RKIND) strain11(iCell) = 0.0_RKIND
 
@@ -564,10 +567,6 @@ contains
          nVerticesSolve, &
          vertexDegree
 
-    integer, dimension(:), pointer :: &
-         POPindxiv, &
-         POPindxjv
-
     integer, dimension(:,:), pointer :: &
          cellsOnVertex, &
          edgesOnVertex, &
@@ -575,6 +574,9 @@ contains
 
     real(kind=RKIND), pointer :: &
          sphere_radius
+
+    real(kind=RKIND) :: &
+         sphereRadius
 
     real(kind=RKIND), dimension(:), pointer :: &
          areaTriangle, &
@@ -585,13 +587,15 @@ contains
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
-    call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
-    call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
     call MPAS_pool_get_array(mesh, "dcEdge", dcEdge)
+
+    ! planar cases with zero sphere radius
+    sphereRadius = sphere_radius
+    if (sphereRadius == 0.0_RKIND) sphereRadius = 1.0_RKIND
 
     do iVertex = 1, nVerticesSolve
 
@@ -653,9 +657,9 @@ contains
 
           ! metric terms
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - &
-               (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / sphere_radius
+               (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / sphereRadius
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
-               (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / sphere_radius
+               (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / sphereRadius
 
        endif ! solveVelocity
 

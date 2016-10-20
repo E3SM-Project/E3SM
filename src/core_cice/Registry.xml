@@ -136,7 +136,9 @@
 		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"         possible_values="any positive integer"/> 
 		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="variational" possible_values="'weak' or 'variational'"/>
 		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress"  possible_values="'wachspress' or 'pwl'"/>
-		<nml_option name="config_revised_evp"                 type="logical"	   default_value="false"       possible_values="true or false"/>		
+		<nml_option name="config_wachspress_integration_type" type="character"     default_value="dunavant"    possible_values="'trapezoidal', 'dunavant' or 'fekete'"/>
+                <nml_option name="config_wachspress_integration_order" type="integer"      default_value="8"           possible_values="positive integers"/>
+                <nml_option name="config_revised_evp"                 type="logical"	   default_value="false"       possible_values="true or false"/>
 		<nml_option name="config_use_air_stress"                 type="logical"	   default_value="true"       possible_values="true or false"/>
 		<nml_option name="config_use_ocean_stress"                 type="logical"	   default_value="true"       possible_values="true or false"/>
 		<nml_option name="config_use_surface_tilt"                 type="logical"	   default_value="true"       possible_values="true or false"/>
