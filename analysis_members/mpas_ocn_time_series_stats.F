@@ -85,6 +85,8 @@ module ocn_time_series_stats
   integer, parameter :: AVG_OP = 1
   integer, parameter :: MIN_OP = 2
   integer, parameter :: MAX_OP = 3
+  integer, parameter :: SUM_OP = 4
+  integer, parameter :: SOS_OP = 5
 
   integer, parameter :: START_TIMES = 11
   integer, parameter :: DURATION_INTERVALS = 12
@@ -94,6 +96,8 @@ module ocn_time_series_stats
   character (len=3), parameter :: AVG_TOKEN = 'avg'
   character (len=3), parameter :: MIN_TOKEN = 'min'
   character (len=3), parameter :: MAX_TOKEN = 'max'
+  character (len=3), parameter :: SUM_TOKEN = 'sum'
+  character (len=3), parameter :: SOS_TOKEN = 'sos'
 
   character (len=11), parameter :: TIME_START_PREFIX = 'xtime_start'
   character (len=9), parameter :: TIME_END_PREFIX = 'xtime_end'
@@ -1258,6 +1262,10 @@ character (len=StrKIND) function operator_naming (operator_enum)
     operator_naming = MIN_TOKEN
   else if (operator_enum == MAX_OP) then
     operator_naming = MAX_TOKEN
+  else if (operator_enum == SUM_OP) then
+    operator_naming = SUM_TOKEN
+  else if (operator_enum == SOS_OP) then
+    operator_naming = SOS_TOKEN
   else
     call mpas_dmpar_global_abort( &
       trim(CURRENT_CORE_NAME) // ' ERROR: the impossible happened - ' // &
@@ -1285,6 +1293,10 @@ integer function operator_enum (token)
     operator_enum = MIN_OP
   else if (trim(token) == MAX_TOKEN) then
     operator_enum = MAX_OP
+  else if (trim(token) == SUM_TOKEN) then
+    operator_enum = SUM_OP
+  else if (trim(token) == SOS_TOKEN) then
+    operator_enum = SOS_OP
   else
     call mpas_dmpar_global_abort( &
       trim(CURRENT_CORE_NAME) // ' ERROR: unknown operation "' // &
@@ -1856,53 +1868,102 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
       call operate0r_avg(block, variable, buffers)
     else if (operation == MIN_OP) then
       call operate0r_min(block, variable, buffers)
-    else
+    else if (operation == MAX_OP) then
       call operate0r_max(block, variable, buffers)
+    else if (operation == SUM_OP) then
+      call operate0r_sum(block, variable, buffers)
+    else if (operation == SOS_OP) then
+      call operate0r_sos(block, variable, buffers)
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an ' // &
+        'unknown operator in the time series stats AM')
     end if
   else if (info % nDims == 1) then
     if (operation == AVG_OP) then
       call operate1r_avg(block, variable, buffers)
     else if (operation == MIN_OP) then
       call operate1r_min(block, variable, buffers)
-    else
+    else if (operation == MAX_OP) then
       call operate1r_max(block, variable, buffers)
+    else if (operation == SUM_OP) then
+      call operate1r_sum(block, variable, buffers)
+    else if (operation == SOS_OP) then
+      call operate1r_sos(block, variable, buffers)
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an ' // &
+        'unknown operator in the time series stats AM')
     end if
   else if (info % nDims == 2) then
     if (operation == AVG_OP) then
       call operate2r_avg(block, variable, buffers)
     else if (operation == MIN_OP) then
       call operate2r_min(block, variable, buffers)
-    else
+    else if (operation == MAX_OP) then
       call operate2r_max(block, variable, buffers)
+    else if (operation == SUM_OP) then
+      call operate2r_sum(block, variable, buffers)
+    else if (operation == SOS_OP) then
+      call operate2r_sos(block, variable, buffers)
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an ' // &
+        'unknown operator in the time series stats AM')
     end if
   else if (info % nDims == 3) then
     if (operation == AVG_OP) then
       call operate3r_avg(block, variable, buffers)
     else if (operation == MIN_OP) then
       call operate3r_min(block, variable, buffers)
-    else
+    else if (operation == MAX_OP) then
       call operate3r_max(block, variable, buffers)
+    else if (operation == SUM_OP) then
+      call operate3r_sum(block, variable, buffers)
+    else if (operation == SOS_OP) then
+      call operate3r_sos(block, variable, buffers)
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an ' // &
+        'unknown operator in the time series stats AM')
     end if
   else if (info % nDims == 4) then
     if (operation == AVG_OP) then
       call operate4r_avg(block, variable, buffers)
     else if (operation == MIN_OP) then
       call operate4r_min(block, variable, buffers)
-    else
+    else if (operation == MAX_OP) then
       call operate4r_max(block, variable, buffers)
+    else if (operation == SUM_OP) then
+      call operate4r_sum(block, variable, buffers)
+    else if (operation == SOS_OP) then
+      call operate4r_sos(block, variable, buffers)
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an ' // &
+        'unknown operator in the time series stats AM')
     end if
   else if (info % nDims == 5) then
     if (operation == AVG_OP) then
       call operate5r_avg(block, variable, buffers)
     else if (operation == MIN_OP) then
       call operate5r_min(block, variable, buffers)
-    else
+    else if (operation == MAX_OP) then
       call operate5r_max(block, variable, buffers)
+    else if (operation == SUM_OP) then
+      call operate5r_sum(block, variable, buffers)
+    else if (operation == SOS_OP) then
+      call operate5r_sos(block, variable, buffers)
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an ' // &
+        'unknown operator in the time series stats AM')
     end if
   else
     call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
       'the impossible happened - tried to operate on a real field "' // &
-      trim(variable % input_name) // '" that does not have 0-5 dimensionality')
+      trim(variable % input_name) // '" that does not have 0-5 ' // &
+      'dimensionality in the time series stats AM')
   end if
 
 end subroutine typed_operate!}}}
@@ -1965,7 +2026,7 @@ end subroutine copy_field_5r!}}}
 !> \author  Jon Woodring
 !> \date    September 1, 2015
 !> \details
-!>  These subroutines encapsulate the different opertions that can occur
+!>  These subroutines encapsulate the different operations that can occur
 !>  based on the run-time types. (This would likely be
 !>  instantiated generics/templates in other languages.)
 !>
@@ -1983,7 +2044,7 @@ subroutine operate0r_avg (start_block, variable, buffers)
 #include "time_series_inc/operate_2.inc"
   out_array = (out_array * &
     (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
+    / buffers(b) % counter 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate0r_avg
 
@@ -1993,7 +2054,7 @@ subroutine operate1r_avg (start_block, variable, buffers)
 #include "time_series_inc/operate_2.inc"
   out_array = (out_array * &
     (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
+    / buffers(b) % counter 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate1r_avg
 
@@ -2003,7 +2064,7 @@ subroutine operate2r_avg (start_block, variable, buffers)
 #include "time_series_inc/operate_2.inc"
   out_array = (out_array * &
     (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
+    / buffers(b) % counter 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate2r_avg
 
@@ -2013,7 +2074,7 @@ subroutine operate3r_avg (start_block, variable, buffers)
 #include "time_series_inc/operate_2.inc"
   out_array = (out_array * &
     (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
+    / buffers(b) % counter 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate3r_avg
 
@@ -2023,7 +2084,7 @@ subroutine operate4r_avg (start_block, variable, buffers)
 #include "time_series_inc/operate_2.inc"
   out_array = (out_array * &
     (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
+    / buffers(b) % counter 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate4r_avg
 
@@ -2033,7 +2094,7 @@ subroutine operate5r_avg (start_block, variable, buffers)
 #include "time_series_inc/operate_2.inc"
   out_array = (out_array * &
     (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
+    / buffers(b) % counter 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate5r_avg
 
@@ -2041,7 +2102,7 @@ subroutine operate0r_min (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
+  out_array = min(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate0r_min
 
@@ -2049,7 +2110,7 @@ subroutine operate1r_min (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
+  out_array = min(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate1r_min
 
@@ -2057,7 +2118,7 @@ subroutine operate2r_min (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
+  out_array = min(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate2r_min
 
@@ -2065,7 +2126,7 @@ subroutine operate3r_min (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
+  out_array = min(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate3r_min
 
@@ -2073,7 +2134,7 @@ subroutine operate4r_min (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
+  out_array = min(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate4r_min
 
@@ -2081,7 +2142,7 @@ subroutine operate5r_min (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
+  out_array = min(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate5r_min
 
@@ -2089,7 +2150,7 @@ subroutine operate0r_max (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
+  out_array = max(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate0r_max
 
@@ -2097,7 +2158,7 @@ subroutine operate1r_max (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
+  out_array = max(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate1r_max
 
@@ -2105,7 +2166,7 @@ subroutine operate2r_max (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
+  out_array = max(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate2r_max
 
@@ -2113,7 +2174,7 @@ subroutine operate3r_max (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
+  out_array = max(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate3r_max
 
@@ -2121,7 +2182,7 @@ subroutine operate4r_max (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
+  out_array = max(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate4r_max
 
@@ -2129,9 +2190,117 @@ subroutine operate5r_max (start_block, variable, buffers)
 #include "time_series_inc/operate_1.inc"
   real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array, out_array
 #include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
+  out_array = max(out_array, in_array) 
 #include "time_series_inc/operate_3.inc"
 end subroutine operate5r_max
+
+subroutine operate0r_sum (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), pointer :: in_array, out_array
+#include "time_series_inc/operate_2.inc"
+  out_array = out_array + in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate0r_sum
+
+subroutine operate1r_sum (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:), pointer :: in_array, out_array
+#include "time_series_inc/operate_2.inc"
+  out_array = out_array + in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate1r_sum
+
+subroutine operate2r_sum (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :), pointer :: in_array, out_array
+#include "time_series_inc/operate_2.inc"
+  out_array = out_array + in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate2r_sum
+
+subroutine operate3r_sum (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :, :), pointer :: in_array, out_array
+#include "time_series_inc/operate_2.inc"
+  out_array = out_array + in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate3r_sum
+
+subroutine operate4r_sum (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array, out_array
+#include "time_series_inc/operate_2.inc"
+  out_array = out_array + in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate4r_sum
+
+subroutine operate5r_sum (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array, out_array
+#include "time_series_inc/operate_2.inc"
+  out_array = out_array + in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate5r_sum
+
+subroutine operate0r_sos (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), pointer :: in_array, out_array
+! note sum of squares has a different operate_2 inc
+! because it has to square the input to initialize itself
+#include "time_series_inc/operate_2_sos.inc"
+  out_array = out_array + in_array * in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate0r_sos
+
+subroutine operate1r_sos (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:), pointer :: in_array, out_array
+! note sum of squares has a different operate_2 inc
+! because it has to square the input to initialize itself
+#include "time_series_inc/operate_2_sos.inc"
+  out_array = out_array + in_array * in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate1r_sos
+
+subroutine operate2r_sos (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :), pointer :: in_array, out_array
+! note sum of squares has a different operate_2 inc
+! because it has to square the input to initialize itself
+#include "time_series_inc/operate_2_sos.inc"
+  out_array = out_array + in_array * in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate2r_sos
+
+subroutine operate3r_sos (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :, :), pointer :: in_array, out_array
+! note sum of squares has a different operate_2 inc
+! because it has to square the input to initialize itself
+#include "time_series_inc/operate_2_sos.inc"
+  out_array = out_array + in_array * in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate3r_sos
+
+subroutine operate4r_sos (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array, out_array
+! note sum of squares has a different operate_2 inc
+! because it has to square the input to initialize itself
+#include "time_series_inc/operate_2_sos.inc"
+  out_array = out_array + in_array * in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate4r_sos
+
+subroutine operate5r_sos (start_block, variable, buffers)
+#include "time_series_inc/operate_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array, out_array
+! note sum of squares has a different operate_2 inc
+! because it has to square the input to initialize itself
+#include "time_series_inc/operate_2_sos.inc"
+  out_array = out_array + in_array * in_array 
+#include "time_series_inc/operate_3.inc"
+end subroutine operate5r_sos
 
 end module ocn_time_series_stats
 ! vim: foldmethod=marker
