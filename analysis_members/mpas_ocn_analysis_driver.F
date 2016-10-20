@@ -93,6 +93,10 @@ module ocn_analysis_driver
    character (len=StrKIND), parameter :: timeSeriesMonthlyTAG = 'Monthly'
    character (len=StrKIND), parameter :: timeSeriesClimatologyTAG = 'Climatology'
    character (len=StrKIND), parameter :: timeSeriesCustomTAG = 'Custom'
+   character (len=StrKIND), parameter :: regionalStatsDailyTAG = 'Daily'
+   character (len=StrKIND), parameter :: regionalStatsMonthlyTAG = 'Monthly'
+   character (len=StrKIND), parameter :: regionalStatsWeeklyTAG = 'Weekly'
+   character (len=StrKIND), parameter :: regionalStatsCustomTAG = 'Custom'
 
    type (mpas_pool_type), pointer :: analysisMemberList
 
@@ -175,6 +179,10 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsClimatology', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsCustom', 1)
+      call mpas_pool_add_config(analysisMemberList, 'regionalStatsDaily', 1)
+      call mpas_pool_add_config(analysisMemberList, 'regionalStatsWeekly', 1)
+      call mpas_pool_add_config(analysisMemberList, 'regionalStatsMonthly', 1)
+      call mpas_pool_add_config(analysisMemberList, 'regionalStatsCustom', 1)
       call mpas_pool_add_config(analysisMemberList, 'pointwiseStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'debugDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'transectTransport', 1)
@@ -1073,8 +1081,14 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
          call ocn_init_rpn_calculator(domain, err_tmp)
       ! regional is second to last
-      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
-         call ocn_init_regional_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsDaily' ) then
+         call ocn_init_regional_stats(domain, regionalStatsDailyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsMonthly' ) then
+         call ocn_init_regional_stats(domain, regionalStatsMonthlyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsWeekly' ) then
+         call ocn_init_regional_stats(domain, regionalStatsWeeklyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsCustom' ) then
+         call ocn_init_regional_stats(domain, regionalStatsCustomTAG, err_tmp)
       ! time is last
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call ocn_init_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
@@ -1151,8 +1165,14 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
          call ocn_compute_rpn_calculator(domain, timeLevel, err_tmp)
       ! regional is second to last
-      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
-         call ocn_compute_regional_stats(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsDaily' ) then
+         call ocn_compute_regional_stats(domain, timeLevel, regionalStatsDailyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsMonthly' ) then
+         call ocn_compute_regional_stats(domain, timeLevel, regionalStatsMonthlyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsWeekly' ) then
+         call ocn_compute_regional_stats(domain, timeLevel, regionalStatsWeeklyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsCustom' ) then
+         call ocn_compute_regional_stats(domain, timeLevel, regionalStatsCustomTAG, err_tmp)
       ! time is last
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
@@ -1232,8 +1252,14 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
          call ocn_restart_rpn_calculator(domain, err_tmp)
       ! regional is second to last
-      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
-         call ocn_restart_regional_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsDaily' ) then
+         call ocn_restart_regional_stats(domain, regionalStatsDailyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsMonthly' ) then
+         call ocn_restart_regional_stats(domain, regionalStatsMonthlyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsWeekly' ) then
+         call ocn_restart_regional_stats(domain, regionalStatsWeeklyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsCustom' ) then
+         call ocn_restart_regional_stats(domain, regionalStatsCustomTAG, err_tmp)
       ! time is last
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call ocn_restart_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
@@ -1309,8 +1335,14 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
          call ocn_finalize_rpn_calculator(domain, err_tmp)
       ! regional is second to last
-      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
-         call ocn_finalize_regional_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsDaily' ) then
+         call ocn_finalize_regional_stats(domain, regionalStatsDailyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsMonthly' ) then
+         call ocn_finalize_regional_stats(domain, regionalStatsMonthlyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsWeekly' ) then
+         call ocn_finalize_regional_stats(domain, regionalStatsWeeklyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatsCustom' ) then
+         call ocn_finalize_regional_stats(domain, regionalStatsCustomTAG, err_tmp)
       ! time is last
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call ocn_finalize_time_series_stats(domain, timeSeriesDailyTAG, &
