@@ -47,7 +47,7 @@
 					default_value="avg"
 					units="unitless"
 					description="An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension."
-					possible_values="An operation, where it can be 'avg', 'min', or 'max'."
+					possible_values="An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares)."
 		/>
 
 		<nml_option name="config_AM_timeSeriesStatsClimatology_reference_times"
