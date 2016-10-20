@@ -91,8 +91,13 @@ module ColumnWaterFluxType
       procedure, public :: InitCold => initcold_col_wf
       procedure, public :: InitHistory => inithistory_col_wf
       procedure, public :: Restart => restart_col_wf
-
+      procedure, public :: Reset => reset_col_wf
       procedure, public :: Clean => clean_col_wf
+
+  end type soilcol_water_flux
+
+  ! Declare public API
+  type(soilcol_water_flux), public, target :: col_wf
 
   subroutine init_col_wf(this, bounds)
 
@@ -434,6 +439,28 @@ module ColumnWaterFluxType
          interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr_col)
 
   end subroutine restart_col_wf
+
+
+  subroutine reset_col_wf(this, bounds, numf, filter)
+  !
+  ! !DESCRIPTION:
+  ! Intitialize SNICAR variables for fresh snow column
+  !
+  ! !ARGUMENTS:
+  class(waterflux_type)              :: this
+  type(bounds_type)    , intent(in)  :: bounds
+  integer              , intent(in)  :: numf
+  integer              , intent(in)  :: filter(:)
+  !-----------------------------------------------------------------------
+  
+  integer :: fc, column
+  
+  do fc = 1, numf
+    column = filter(fc)
+    this%qflx_snow2topsoi_col     (column)   = 0._r8
+    this%qflx_h2osfc2topsoi_col   (column)   = 0._r8      
+  enddo  
+end subroutine reset_col_wf
 
 
   subroutine clean_col_wf(this)
