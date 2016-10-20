@@ -32,6 +32,7 @@
     Currently the following streams are supported (term definitions precede the streams)
 
     CLM_QIAN        = Run with the CLM Qian dataset valid from 1948 to 2004 (force CLM)
+    CLM_QIAN_WISO   = Run with the CLM Qian dataset with isotopes valid from 2000 to 2004 (force CLM)
     CLMCRUNCEP      = Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
     CLMCRUNCEP_V5   = Run with the CLM CRU NCEP V5 forcing valid from 1900 to 2010 (force CLM)
     CLMGSWP3        = Run with the CLM GSWP3 forcing (force CLM)
@@ -78,6 +79,10 @@
     CLM_QIAN.Solar
     CLM_QIAN.Precip
     CLM_QIAN.TPQW
+
+    CLM_QIAN_WISO.Solar
+    CLM_QIAN_WISO.Precip
+    CLM_QIAN_WISO.TPQW
 
     CLMCRUNCEP.Solar
     CLMCRUNCEP.Precip
@@ -158,6 +163,7 @@
     <desc>List of streams used for the given datm_mode</desc>
     <values>
       <value datm_mode="CLM_QIAN">CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</value>
+      <value datm_mode="CLM_QIAN_WISO">CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW</value>
       <value datm_mode="CLM1PT">CLM1PT.$ATM_GRID</value>
       <value datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
@@ -187,8 +193,10 @@
       <value stream="CPLHIST3HrWx.nonSolarNonPrecip">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7</value>
+      <value stream="CLM_QIAN_WISO.Solar">$DIN_LOC_ROOT/atm/datm7</value>
+      <value stream="CLM_QIAN_WISO.Precip">$DIN_LOC_ROOT/atm/datm7</value>
+      <value stream="CLM_QIAN_WISO.TPQW">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT/share/domains/domain.clm</value>
@@ -276,6 +284,9 @@
       <value stream="CLM_QIAN.Solar">domain.T62.050609.nc</value>
       <value stream="CLM_QIAN.Precip">domain.T62.050609.nc</value>
       <value stream="CLM_QIAN.TPQW">domain.T62.050609.nc</value>
+      <value stream="CLM_QIAN_WISO.Solar">domain.T62.050609.nc</value>
+      <value stream="CLM_QIAN_WISO.Precip">domain.T62.050609.nc</value>
+      <value stream="CLM_QIAN_WISO.TPQW">domain.T62.050609.nc</value>
       <value stream="CLMCRUNCEP.Solar">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMCRUNCEP.Precip">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMCRUNCEP.TPQW">domain.lnd.360x720.130305.nc</value>
@@ -465,6 +476,9 @@
       <value stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Solar6Hrly</value>
       <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Precip6Hrly</value>
       <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
+      <value stream="CLM_QIAN_WISO.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Solar6Hrly</value>
+      <value stream="CLM_QIAN_WISO.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Precip6Hrly</value>
+      <value stream="CLM_QIAN_WISO.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
       <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Solar6Hrly</value>
       <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Precip6Hrly</value>
       <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/TPHWL6Hrly</value>
@@ -568,6 +582,9 @@
       <value  stream="CLM_QIAN.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
       <value  stream="CLM_QIAN.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</value>
       <value  stream="CLM_QIAN.TPQW">clmforc.Qian.c2006.T62.TPQW.%ym.nc</value>
+      <value  stream="CLM_QIAN_WISO.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
+      <value  stream="CLM_QIAN_WISO.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</value>
+      <value  stream="CLM_QIAN_WISO.TPQW">clmforc.Qian.c2006.T62.TPQW.%ym.nc</value>
       <value  stream="CLMCRUNCEP.Solar">clmforc.cruncep.V4.c2011.0.5d.Solr.%ym.nc</value>
       <value  stream="CLMCRUNCEP.Precip">clmforc.cruncep.V4.c2011.0.5d.Prec.%ym.nc</value>
       <value  stream="CLMCRUNCEP.TPQW">clmforc.cruncep.V4.c2011.0.5d.TPQWL.%ym.nc</value>
@@ -1380,6 +1397,18 @@
         QBOT     shum
         PSRF     pbot
       </value>
+      <value  stream="CLM_QIAN_WISO.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM_QIAN_WISO.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM_QIAN_WISO.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+      </value>
       <value  stream="CLMCRUNCEP.Solar">
         FSDS swdn
       </value>
@@ -1597,6 +1626,9 @@
       <value stream="CLM_QIAN.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLM_QIAN.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLM_QIAN.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CLM_QIAN_WISO.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CLM_QIAN_WISO.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CLM_QIAN_WISO.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMCRUNCEP.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMCRUNCEP.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMCRUNCEP.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
@@ -1681,6 +1713,9 @@
       <value stream="CLM_QIAN.Solar">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLM_QIAN.Precip">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLM_QIAN.TPQW">$DATM_CLMNCEP_YR_START</value>
+      <value stream="CLM_QIAN_WISO.Solar">2000</value>
+      <value stream="CLM_QIAN_WISO.Precip">2000</value>
+      <value stream="CLM_QIAN_WISO.TPQW">2000</value>
       <value stream="CLMCRUNCEP.Solar">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMCRUNCEP.Precip">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMCRUNCEP.TPQW">$DATM_CLMNCEP_YR_START</value>
@@ -1765,6 +1800,9 @@
       <value stream="CLM_QIAN.Solar">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLM_QIAN.Precip">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLM_QIAN.TPQW">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="CLM_QIAN_WISO.Solar">2004  </value>
+      <value stream="CLM_QIAN_WISO.Precip">2004  </value>
+      <value stream="CLM_QIAN_WISO.TPQW">2004  </value>
       <value stream="CLMCRUNCEP.Solar">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMCRUNCEP.Precip">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMCRUNCEP.TPQW">$DATM_CLMNCEP_YR_END  </value>
@@ -1907,6 +1945,7 @@
     <values>
       <value>NULL</value>
       <value datm_mode="CLM_QIAN"      >CLMNCEP</value>
+      <value datm_mode="CLM_QIAN_WISO" >CLMNCEP</value>
       <value datm_mode="CLM1PT"        >CLMNCEP</value>
       <value datm_mode="CLMCRUNCEP"    >CLMNCEP</value>
       <value datm_mode="CLMCRUNCEP_V5" >CLMNCEP</value>
@@ -2100,6 +2139,8 @@
       <value stream="CPLHIST3HrWx.Precip">nearest</value>
       <value stream="CLM_QIAN.Solar">coszen</value>
       <value stream="CLM_QIAN.Precip">nearest</value>
+      <value stream="CLM_QIAN_WISO.Solar">coszen</value>
+      <value stream="CLM_QIAN_WISO.Precip">nearest</value>
       <value stream="CLMCRUNCEP.Solar">coszen</value>
       <value stream="CLMCRUNCEP.Precip">nearest</value>
       <value stream="CLMCRUNCEP_V5.Solar">coszen</value>
@@ -2190,6 +2231,7 @@
     <values>
       <value>null</value>
       <value datm_mode="CLM_QIAN"      >null</value>
+      <value datm_mode="CLM_QIAN_WISO" >null</value>
       <value datm_mode="CLMCRUNCEP"    >null</value>
       <value datm_mode="CLMCRUNCEP_V5" >null</value>
       <value datm_mode="CLMGSWP3"      >null</value>
@@ -2354,6 +2396,19 @@
     </desc>
     <values>
       <value>undefined</value>
+    </values>
+  </entry>
+
+  <entry id="wiso_datm">
+    <type>logical</type>
+    <category>datm</category>
+    <group>datm_nml</group>
+    <desc>
+      flag which if true, says to turn on water isotopes
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value datm_mode="CLM_QIAN_WISO">.true.</value>
     </values>
   </entry>
 
