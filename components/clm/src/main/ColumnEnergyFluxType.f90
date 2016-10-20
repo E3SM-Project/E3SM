@@ -41,6 +41,7 @@ module ColumnEnergyFluxType
     procedure, public :: InitAcclocate => initallocate_col_ef
     procedure, public :: InitHistory => inithistory_col_ef
     procedure, public :: InitCold => initcold_col_ef
+    procedure, public :: Restart => restart_col_ef
     procedure, public :: Clean => clean_col_ef
 
   end type soilcol_energy_flux
@@ -215,6 +216,40 @@ module ColumnEnergyFluxType
   end subroutine initcold_col_ef
 
   !------------------------------------------------------------------------
+
+
+  subroutine restart_col_ef(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write module information to/from restart file.
+    !
+    ! !USES:
+    use shr_log_mod, only : errMsg => shr_log_errMsg
+    use spmdMod    , only : masterproc
+    use abortutils , only : endrun
+    use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
+    use restUtilMod
+    !
+    ! !ARGUMENTS:
+    class(soilcol_energy_flux) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    integer :: j,c ! indices
+    logical :: readvar      ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='URBAN_AC', xtype=ncd_double,  dim1name='column', &
+         long_name='urban air conditioning flux', units='watt/m^2', &
+         interpinic_flag='interp', readvar=readvar, data=this%eflx_urban_ac_col)
+
+    call restartvar(ncid=ncid, flag=flag, varname='URBAN_HEAT', xtype=ncd_double, dim1name='column', &
+         long_name='urban heating flux', units='watt/m^2', &
+         interpinic_flag='interp', readvar=readvar, data=this%eflx_urban_heat_col)
+
+  end subroutine restart_col_ef
 
 
   subroutine clean_col_ef(this)
