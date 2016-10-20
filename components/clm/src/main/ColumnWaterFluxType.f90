@@ -184,7 +184,7 @@ module ColumnWaterFluxType
   end subroutine init_col_wf
 
 
-  ----------------------------------------------------------------------
+  !----------------------------------------------------------------------
   subroutine inithistory_col_wf(this, bounds)
     !
     ! !USES:
@@ -317,6 +317,41 @@ module ColumnWaterFluxType
   end subroutine inithistory_col_wf
 
   !-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+  subroutine initcold_col_wf(this, bounds)
+    !
+    ! !USES:
+    use landunit_varcon, only : istsoil, istcrop
+    !
+    ! !ARGUMENTS:
+    class(soilcol_water_flux) :: this
+    type(bounds_type) , intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p,c,l
+    !-----------------------------------------------------------------------
+
+    this%qflx_evap_grnd_col(bounds%begc:bounds%endc) = 0.0_r8
+    this%qflx_dew_grnd_col (bounds%begc:bounds%endc) = 0.0_r8
+    this%qflx_dew_snow_col (bounds%begc:bounds%endc) = 0.0_r8
+
+    this%qflx_h2osfc_surf_col(bounds%begc:bounds%endc) = 0._r8
+    this%qflx_snow_melt_col(bounds%begc:bounds%endc)   = 0._r8
+
+    this%dwb_col(bounds%begc:bounds%endc) = 0._r8
+    ! needed for CNNLeaching 
+    do c = bounds%begc, bounds%endc
+       l = col%landunit(c)
+       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          this%qflx_drain_col(c) = 0._r8
+          this%qflx_surf_col(c)  = 0._r8
+       end if
+    end do
+
+
+  end subroutine initcold_col_wf
 
 
   subroutine clean_col_wf(this)
