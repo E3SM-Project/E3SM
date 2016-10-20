@@ -143,9 +143,9 @@ module ColumnCarbonFluxType
       procedure, public :: Init => init_col_cf
       procedure, public :: InitAllocate => initallocate_col_cf
       procedure, public :: Clean => clean_col_cf
-      procedure, public :: InitHistory => inithistory_cf_col
-      procedure, public :: InitCold => initcold_cf_col
-      procedure, public :: Restart => restart_cf_col
+      procedure, public :: InitHistory => inithistory_col_cf
+      procedure, public :: InitCold => initcold_col_cf
+      procedure, public :: Restart => restart_col_cf
 
   end type soilcol_carbon_flux
 
@@ -498,7 +498,7 @@ module ColumnCarbonFluxType
   end subroutine clean_col_cf
 
 ! Finished
-  subroutine inithistory_cf_col(this, bounds, carbon_type)
+  subroutine inithistory_col_cf(this, bounds, carbon_type)
     !
     ! !DESCRIPTION:
     ! add history fields for all CN variables, always set as default='inactive'
@@ -1357,7 +1357,7 @@ module ColumnCarbonFluxType
     
     
 
-  end subroutine inithistory_cf_col
+  end subroutine inithistory_col_cf
 
 ! Finished
 
@@ -1656,7 +1656,7 @@ module ColumnCarbonFluxType
 
 
 ! Finished
-  subroutine initcold_cf_col(this, bounds)
+  subroutine initcold_col_cf(this, bounds)
     !
     ! !ARGUMENTS:
     class(carbonflux_type) :: this
@@ -1756,7 +1756,7 @@ module ColumnCarbonFluxType
 
   ! Finished
   ! KB - Most of this seems to deal with patches. Keep?? !!!!!!!
-  subroutine restart_cf_col ( this, bounds, ncid, flag )
+  subroutine restart_col_cf ( this, bounds, ncid, flag )
     !
     ! !DESCRIPTION: 
     ! Read/write CN restart data for carbon state
