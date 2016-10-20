@@ -55,7 +55,7 @@
 					default_value="avg"
 					units="unitless"
 					description="An operation describing the statistic to apply to all variables in the output stream."
-					possible_values="An operation, where it can be 'avg', 'min', or 'max'."
+					possible_values="An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares)."
 		/>
 
 		<nml_option name="config_AM_regionalStatsCustom_region_type"
