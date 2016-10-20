@@ -155,7 +155,7 @@ module ColumnCarbonFluxType
 ! Subroutines
   subroutine init_col_cf(this, bounds, carbon_type)
 
-     class(carbonflux_type) :: this
+     class(soilcol_carbon_flux) :: this
      type(bounds_type), intent(in) :: bounds  
      character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']
 
@@ -512,7 +512,7 @@ module ColumnCarbonFluxType
     use clm_varctl,  only : get_carbontag
    !
     ! !ARGUMENTS:
-    class(carbonflux_type) :: this    
+    class(soilcol_carbon_flux) :: this    
     type(bounds_type)         , intent(in) :: bounds 
     character(len=3)          , intent(in) :: carbon_type ! one of ['c12', c13','c14']
     !
@@ -1376,7 +1376,7 @@ module ColumnCarbonFluxType
     use MathfuncMod      , only : dot_sum
     !
     ! !ARGUMENTS:
-    class(carbonflux_type)                 :: this
+    class(soilcol_carbon_flux)                 :: this
     type(bounds_type)      , intent(in)    :: bounds          
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -1659,7 +1659,7 @@ module ColumnCarbonFluxType
   subroutine initcold_col_cf(this, bounds)
     !
     ! !ARGUMENTS:
-    class(carbonflux_type) :: this
+    class(soilcol_carbon_flux) :: this
     type(bounds_type), intent(in) :: bounds  
     !
     ! !LOCAL VARIABLES:
@@ -1773,7 +1773,7 @@ module ColumnCarbonFluxType
 !    use clm_varctl       , only : use_pflotran, pf_cmode, use_vertsoilc
     !
     ! !ARGUMENTS:
-    class (carbonflux_type) :: this
+    class (soilcol_carbon_flux) :: this
     type(bounds_type) , intent(in)    :: bounds 
     type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
     character(len=*)  , intent(in)    :: flag   !'read' or 'write'
@@ -1847,7 +1847,7 @@ module ColumnCarbonFluxType
     ! Set carbon state fluxes
     !
     ! !ARGUMENTS:
-    class (carbonflux_type) :: this
+    class (soilcol_carbon_flux) :: this
     integer , intent(in) :: num_patch
     integer , intent(in) :: filter_patch(:)
     real(r8), intent(in) :: value_patch
@@ -2014,7 +2014,7 @@ module ColumnCarbonFluxType
     ! Initialize flux variables needed for dynamic land use.
     !
     ! !ARGUMENTS:
-    class(carbonflux_type) :: this
+    class(soilcol_carbon_flux) :: this
     type(bounds_type), intent(in)  :: bounds 
     !
     ! !LOCAL VARIABLES:
@@ -2063,7 +2063,7 @@ module ColumnCarbonFluxType
 	  !
 	  ! !ARGUMENTS:
 	     implicit none
-	     class(carbonflux_type)          :: this
+	     class(soilcol_carbon_flux)          :: this
 	     type(bounds_type) ,  intent(in) :: bounds
 	     integer,             intent(in) :: num_soilc       ! number of soil columns in filter
 	     integer,             intent(in) :: filter_soilc(:) ! filter for soil columns
@@ -2260,7 +2260,7 @@ module ColumnCarbonFluxType
     ! summarize root respiration
 
     ! use subgridAveMod    , only: p2c
-    ! class(carbonflux_type) :: this  
+    ! class(soilcol_carbon_flux) :: this  
 
     ! type(bounds_type), intent(in) :: bounds  
     ! integer, intent(in) :: num_soilp
@@ -2300,7 +2300,7 @@ module ColumnCarbonFluxType
 	    use tracer_varcon    , only : is_active_betr_bgc
 	    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
 	  ! !ARGUMENTS:
-	    class(carbonflux_type) :: this
+	    class(soilcol_carbon_flux) :: this
 	    type(bounds_type), intent(in)  :: bounds
 	    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
 	    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
