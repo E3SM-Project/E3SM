@@ -6,12 +6,12 @@ use File::Path;
 # Purpose: Build csm_share library
 #===============================================================================
 
-if ($#ARGV == -1) {
-    die " ERROR buildlib_csm_share: must specify a caseroot input argument";
+if ($#ARGV < 2) {
+    die " ERROR buildlib_csm_share: must specify a caseroot input argument @ARGV";
 }
-my ($sharedlibroot, $CASEROOT) = @ARGV;
+my ($sharedlibroot, $installroot, $CASEROOT) = @ARGV;
 
-chdir "${CASEROOT}";
+chdir "${CASEROOT}" or die "Could not cd to \"$CASEROOT\"";
 
 my $CIMEROOT		= `./xmlquery CIMEROOT		-value`;
 my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	-value`;
@@ -40,6 +40,7 @@ my $useesmf = "noesmf";
 $useesmf = "esmf" if ($USE_ESMF_LIB eq "TRUE");
 
 my $libdir = "$sharedlibroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}/csm_share";
+my $installdir = "$installroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}";
 mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
@@ -99,8 +100,11 @@ if ($rc==0xff00){
     }
     die "signal $rc\n";
 }
-
-#system("cp -p -f libcsm_share.a $sharedlibroot/lib");
-#system("cp -p -f *.mod $sharedlibroot/include/");
+if ( ! -d "$installdir/lib"){
+    mkpath("$installdir/lib");
+    mkpath("$installdir/include");
+}
+system("cp -p -f libcsm_share.a $installdir/lib/");
+system("cp -p -f *.mod $installdir/include/");
 
 

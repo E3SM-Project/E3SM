@@ -137,7 +137,8 @@ endif
 
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
 include $(CASEROOT)/Macros
@@ -277,7 +278,7 @@ ifeq ($(strip $(MPILIB)), mpi-serial)
   MPIFC   := $(SFC)
   MPICC   := $(SCC)
   MPICXX  := $(SCXX)
-  CONFIG_ARGS += --enable-mpiserial MCT_PATH=$(SHAREDPATH)/mct/mpi-serial
+  CONFIG_ARGS += --enable-mpiserial MCT_PATH=$(INSTALL_SHAREDPATH)/mct/mpi-serial
 else
   CC  := $(MPICC)
   FC  := $(MPIFC)
@@ -291,14 +292,7 @@ endif
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
-INCLDIR += -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
-
-#
-#  Tell gmake to look in the csm_share directory for shr_*.mod files
-#
-
-vpath  shr%.mod $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
-
+INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 
 ifdef INC_NETCDF
   INCLDIR += -I$(INC_NETCDF)
@@ -343,15 +337,15 @@ ifeq ($(COMP_OCN), pop)
 endif
 
 ifndef MCT_LIBDIR
-  MCT_LIBDIR=$(SHAREDPATH)/mct
+  MCT_LIBDIR=$(INSTALL_SHAREDPATH)/mct
 endif
 
 ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(SHAREDPATH)/pio$(PIO_VERSION)
+  PIO_LIBDIR=$(INSTALL_SHAREDPATH)/pio$(PIO_VERSION)
 endif
 
 ifndef GPTL_LIBDIR
-  GPTL_LIBDIR=$(SHAREDPATH)/gptl
+  GPTL_LIBDIR=$(INSTALL_SHAREDPATH)/gptl
 endif
 
 ifndef GLC_DIR
@@ -361,7 +355,7 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
@@ -514,7 +508,7 @@ MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a
 
 GPTLLIB = $(GPTL_LIBDIR)/libgptl.a
 
-ULIBS += -L$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -lcsm_share -L$(SHAREDPATH)/lib $(PIOLIBNAME) -lgptl -lmct -lmpeu
+ULIBS += -L$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/lib -lcsm_share -L$(INSTALL_SHAREDPATH)/lib $(PIOLIBNAME) -lgptl -lmct -lmpeu
 
 #------------------------------------------------------------------------------
 # Drive cmake script for cism and pio
@@ -532,7 +526,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
-              -D GPTL_PATH:STRING=$(SHAREDPATH) \
+              -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
               -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
@@ -652,8 +646,8 @@ ifeq ($(CLMVER),$(null))
   LNDLIBDIR=$(LIBROOT)
   LNDLIB := liblnd.a
 else
-  LNDOBJDIR = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
-  LNDLIBDIR = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
+  LNDOBJDIR = $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
+  LNDLIBDIR = $(EXEROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
   LNDLIB := libclm.a
 endif
 INCLDIR += -I$(LNDOBJDIR)
@@ -698,7 +692,7 @@ endif
 
 # libcsm_share.a is in ULIBDEP, but -lcsm_share is in ULIBS rather than CLIBS,
 # so this needs to be added after creating CLIBS above
-CSMSHARELIB = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share/libcsm_share.a
+CSMSHARELIB = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/lib/libcsm_share.a
 ULIBDEP += $(CSMSHARELIB)
 
 #-------------------------------------------------------------------------------
@@ -711,10 +705,10 @@ ULIBDEP += $(CSMSHARELIB)
 ifeq ($(MPILIB),mpi-serial)
   MPISERIAL = $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a
   MLIBS += $(MPISERIAL)
-  CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(SHAREDPATH)/include \
-      -DMPI_Fortran_INCLUDE_PATH=$(SHAREDPATH)/include \
-      -DMPI_C_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a \
-      -DMPI_Fortran_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a
+  CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(INSTALL_SHAREDPATH)/include \
+      -DMPI_Fortran_INCLUDE_PATH=$(INSTALL_SHAREDPATH)/include \
+      -DMPI_C_LIBRARIES=$(INSTALL_SHAREDPATH)/lib/libmpi-serial.a \
+      -DMPI_Fortran_LIBRARIES=$(INSTALL_SHAREDPATH)/lib/libmpi-serial.a
 endif
 
 $(MCTLIBS)  : $(MPISERIAL)
@@ -791,7 +785,7 @@ cleancsmshare:
 	$(RM) -fr $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
 cleanpio:
-	$(RM) -f $(SHAREDPATH)/lib/libpio*
+	$(RM) -f $(INSTALL_SHAREDPATH)/lib/libpio*
 	$(RM) -fr $(PIO_LIBDIR)
 
 cleanmct:

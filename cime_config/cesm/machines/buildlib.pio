@@ -32,6 +32,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("buildroot",
                         help="build path root")
 
+    parser.add_argument("installpath",
+                        help="install path ")
+
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
 
@@ -39,7 +42,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.buildroot, args.caseroot
+    return args.buildroot, args.installpath, args.caseroot
 
 def _main_func(description):
 ###############################################################################
@@ -47,7 +50,7 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    bldroot, caseroot = parse_command_line(sys.argv, description)
+    bldroot, installpath, caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
         pio_version = case.get_value("PIO_VERSION")
         pio_model = "pio%s"% pio_version
@@ -70,7 +73,7 @@ def _main_func(description):
         output += run_cmd_no_fail("%s -j %s"%(gmake_cmd, case.get_value("GMAKE_J")), from_dir=pio_dir)
         logger.info(output)
         if pio_version == 1:
-            installed_lib = os.path.join(bldroot,"lib","libpio.a")
+            installed_lib = os.path.join(installpath,"lib","libpio.a")
             installed_lib_time = 0
             if os.path.isfile(installed_lib):
                 installed_lib_time = os.path.getmtime(installed_lib)
@@ -81,7 +84,7 @@ def _main_func(description):
                 shutil.copy(newlib, installed_lib)
                 for glob_to_copy in ("*.h", "*.mod"):
                     for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
-                        shutil.copy(item, "%s/include"%bldroot)
+                        shutil.copy(item, "%s/include"%installpath)
             expect_string = "D_NETCDF;"
             pnetcdf_string = "D_PNETCDF"
             netcdf4_string = "D_NETCDF4P"
@@ -97,7 +100,7 @@ def _main_func(description):
                         installdir = "lib"
                     else:
                         installdir = "include"
-                    installed_file = os.path.join(bldroot,installdir,os.path.basename(item))
+                    installed_file = os.path.join(installpath,installdir,os.path.basename(item))
                     item_time = os.path.getmtime(item)
                     if os.path.isfile(installed_file):
                         installed_file_time = os.path.getmtime(installed_file)
@@ -134,8 +137,6 @@ def _main_func(description):
         valid_values += ",nothing"
         for comp in ("ATM","CPL","OCN","WAV","GLC","ICE","ROF","LND"):
             case.set_valid_values("%s_PIO_TYPENAME"%comp,valid_values)
-
-
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
