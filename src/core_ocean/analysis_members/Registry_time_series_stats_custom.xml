@@ -1,0 +1,129 @@
+	<nml_record name="AM_timeSeriesStatsCustom" mode="forward;analysis">
+		<nml_option name="config_AM_timeSeriesStatsCustom_enable"
+					type="logical"
+					default_value=".false."
+					units="unitless"
+					description="If true, ocean analysis member time series stats is called."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_compute_on_startup"
+					type="logical"
+					default_value=".false."
+					units="unitless"
+					description="Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step)."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_write_on_startup"
+					type="logical"
+					default_value=".false."
+					units="unitless"
+					description="Logical flag determining if an analysis member output occurs on start-up."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_compute_interval"
+					type="character"
+					default_value="00-00-00_01:00:00"
+					units="unitless"
+					description="Interval that determines frequency of computation for the time series stats analysis member."
+					possible_values="Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series)."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_output_stream"
+					type="character"
+					default_value="timeSeriesStatsCustomOutput"
+					units="unitless"
+					description="Name of stream the time series stats analysis member will operate on."
+					possible_values="An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_restart_stream"
+					type="character"
+					default_value="timeSeriesStatsCustomRestart"
+					units="unitless"
+					description="Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled."
+					possible_values="A restart stream with state of the time series stats."
+		/>
+
+		<nml_option name="config_AM_timeSeriesStatsCustom_operation"
+					type="character"
+					default_value="avg"
+					units="unitless"
+					description="An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension."
+					possible_values="An operation, where it can be 'avg', 'min', or 'max'."
+		/>
+
+		<nml_option name="config_AM_timeSeriesStatsCustom_reference_times"
+					type="character"
+					default_value="initial_time"
+					units="unitless"
+					description="A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)"
+					possible_values="A list of absolute times or 'initial_time's, separated by ;."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_duration_intervals"
+					type="character"
+					default_value="repeat_interval"
+					units="unitless"
+					description="A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times."
+					possible_values="A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)"
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_repeat_intervals"
+					type="character"
+					default_value="reset_interval"
+					units="unitless"
+		  description="A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times."
+					positive_values="A list of time durations in d_h:m:s or 'reset_interval's, separated by ;. Each must be less than or equal to reset_interval. This can be larger than duration_interval to allow for climatologies (every January, every spring, etc.)"
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_reset_intervals"
+					type="character"
+					default_value="00-00-07_00:00:00"
+					units="unitless"
+		  description="A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times."
+					possible_values="A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member)."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsCustom_backward_output_offset"
+					type="character"
+					default_value="00-00-01_00:00:00"
+					units="unitless"
+					description="Backward offset for filename timestamps when writing the output stream"
+					possible_values="A time interval in YYYY-MM-DD_hh:mm:ss."
+		/>
+	</nml_record>
+
+	<streams>
+		<stream name="timeSeriesStatsCustomOutput"
+				type="output"
+				mode="forward;analysis"
+				filename_template="analysis_members/timeSeriesStatsCustom.$Y$M-$D.nc"
+				filename_interval="00-00-07_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				packages="timeSeriesStatsCustomAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<var name="xtime"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var name="ssh"/>
+			<var name="normalVelocity"/>
+			<var name="velocityZonal"/>
+			<var name="velocityMeridional"/>
+			<var name="vertVelocityTop"/>
+			<var name="normalTransportVelocity"/>
+			<var name="transportVelocityZonal"/>
+			<var name="transportVelocityMeridional"/>
+			<var name="vertTransportVelocityTop"/>
+		</stream>
+
+		<stream name="timeSeriesStatsCustomRestart"
+				runtime_format="single_file"
+				type="input;output"
+				filename_template="restarts/restart.AM.timeSeriesStatsCustom.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="truncate"
+				input_interval="initial_only"
+				packages="timeSeriesStatsCustomAMPKG"
+				output_interval="stream:restart:output_interval"
+				immutable="false"
+				mode="forward;analysis" />
+	</streams>
