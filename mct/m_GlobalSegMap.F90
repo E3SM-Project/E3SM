@@ -1884,14 +1884,36 @@
 
 ! !REVISION HISTORY:
 ! 	18Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!       18Oct16 - P. Worley <worleyph@gmail.com> - added algorithm options:
+!                 new default changes complexity from O(npoints*ngseg) to 
+!                 O(gsize + ngseg) (worst case), and much better in current 
+!                 usage. Worst case memory requirements are O(gsize), but
+!                 not seen in current usage. Other new algorithm is a little
+!                 slower in practice, and worst case memory requirement is 
+!                 O(ngseg), which is also not seen in current usage.
+!                 Original algorithm is recovered if compiled with 
+!                 LOW_MEMORY_PELOCS defined. Otherwise nondefault new
+!                 algorithm is enabled if compiled with MEDIUM_MEMORY_PELOCS
+!                 defined.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::peLocs_'
   integer :: ierr
   integer :: iseg, ngseg, ipoint
   integer :: lower_index, upper_index
+  integer :: min_points_index, max_points_index
+#if defined MEDIUM_MEMORY_PELOCS
+  integer :: ifseg, nfseg
+  integer, dimension(:), allocatable :: feasible_seg
+#else
+  integer, dimension(:), allocatable :: pindices_to_pes
+#endif
 
 ! Input argument checks:
+
+  if (npoints < 1) then
+     return
+  endif
 
   if(size(points) < npoints) then
      ierr = size(points)
@@ -1915,20 +1937,157 @@
 
   ngseg = ngseg_(pointGSMap)
 
+#if defined LOW_MEMORY_PELOCS
+
   do ipoint=1,npoints ! loop over points
 
      do iseg=1,ngseg  ! loop over segments
 
-	lower_index = pointGSMap%start(iseg)
-	upper_index = lower_index + pointGSMap%length(iseg) - 1
+        lower_index = pointGSMap%start(iseg)
+        upper_index = lower_index + pointGSMap%length(iseg) - 1
 
-	if((points(ipoint) >= lower_index) .and. &
-	     (points(ipoint) <= upper_index)) then
-	   pe_locs(ipoint) = pointGSMap%pe_loc(iseg)
-	endif
-     
+        if((points(ipoint) >= lower_index) .and. &
+           (points(ipoint) <= upper_index)) then
+           pe_locs(ipoint) = pointGSMap%pe_loc(iseg)
+
+           exit
+
+        endif
+
      end do ! do iseg=1, ngseg
+
   end do ! do ipoint=1,npoints
+
+#elif defined MEDIUM_MEMORY_PELOCS
+
+! Determine index range for points vector
+  max_points_index = 0
+  min_points_index = pointGSMap%gsize + 1
+  do ipoint=1,npoints ! loop over points
+
+     max_points_index = max(points(ipoint), max_points_index)
+     min_points_index = min(points(ipoint), min_points_index)
+
+  end do ! do ipoint=1,npoints
+
+! Determine number of segments that need to be examined
+  nfseg = 0
+  do iseg=1,ngseg  ! loop over segments
+
+     lower_index = pointGSMap%start(iseg)
+     upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+     if ((lower_index <= max_points_index) .and. &
+         (upper_index >= min_points_index)       ) then
+
+        nfseg = nfseg + 1
+
+     endif
+
+  end do ! do iseg=1, ngseg
+
+  if(nfseg < 1) then
+     ierr = nfseg
+     call die(myname_,'no feasible segments',ierr)
+  endif
+
+  ! Allocate temporary array
+  allocate(feasible_seg(nfseg), stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'allocate(feasible_seg)',ierr)
+  endif
+
+  ! Determine segments that need to be examined
+  feasible_seg(:) = 1
+  nfseg = 0
+  do iseg=1,ngseg  ! loop over segments
+
+     lower_index = pointGSMap%start(iseg)
+     upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+     if ((lower_index <= max_points_index) .and. &
+         (upper_index >= min_points_index)       ) then
+
+        nfseg = nfseg + 1
+        feasible_seg(nfseg) = iseg
+
+     endif
+
+  end do ! do iseg=1, ngseg
+
+  ! Calculate map from local points to pes
+  do ipoint=1,npoints ! loop over points
+
+     do ifseg=1,nfseg  ! loop over feasible segments
+
+        iseg = feasible_seg(ifseg)
+        lower_index = pointGSMap%start(iseg)
+        upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+        if((points(ipoint) >= lower_index) .and. &
+           (points(ipoint) <= upper_index)       ) then
+           pe_locs(ipoint) = pointGSMap%pe_loc(iseg)
+           exit
+        endif
+     
+     end do ! do ifseg=1,nfseg
+  end do ! do ipoint=1,npoints
+
+  ! Clean up
+  deallocate(feasible_seg, stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'deallocate(feasible_seg)',ierr)
+  endif
+
+#else
+
+! Determine index range for points assigned to points vector
+  max_points_index = 0
+  min_points_index = pointGSMap%gsize + 1
+  do ipoint=1,npoints ! loop over points
+
+     max_points_index = max(points(ipoint), max_points_index)
+     min_points_index = min(points(ipoint), min_points_index)
+
+  end do ! do ipoint=1,npoints
+
+! Allocate temporary array
+  allocate(pindices_to_pes(min_points_index:max_points_index), stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'allocate(pindices_to_pes)',ierr)
+  endif
+
+! Calculate map from (global) point indices to pes
+  do iseg=1,ngseg  ! loop over segments
+
+     lower_index = pointGSMap%start(iseg)
+     upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+     lower_index = max(lower_index, min_points_index)
+     upper_index = min(upper_index, max_points_index)
+
+     if (lower_index <= upper_index) then
+        do ipoint=lower_index,upper_index
+           pindices_to_pes(ipoint) = pointGSMap%pe_loc(iseg)
+        enddo
+     endif
+
+  end do ! do iseg=1, ngseg
+  
+! Calculate map from local point indices to pes
+  do ipoint=1,npoints ! loop over points
+
+     pe_locs(ipoint) = pindices_to_pes(points(ipoint))
+
+  end do ! do ipoint=1,npoints
+
+! Clean up
+  deallocate(pindices_to_pes, stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'deallocate(pindices_to_pes)',ierr)
+  endif
+
+#endif
 
  end subroutine peLocs_
 
