@@ -90,6 +90,7 @@ module ColumnWaterFluxType
       procedure, public :: InitAllocate => initallocate_col_wf
       procedure, public :: InitCold => initcold_col_wf
       procedure, public :: InitHistory => inithistory_col_wf
+      procedure, public :: Restart => restart_col_wf
 
       procedure, public :: Clean => clean_col_wf
 
@@ -319,7 +320,7 @@ module ColumnWaterFluxType
   !-----------------------------------------------------------------------
 
 
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
   subroutine initcold_col_wf(this, bounds)
     !
     ! !USES:
@@ -352,6 +353,87 @@ module ColumnWaterFluxType
 
 
   end subroutine initcold_col_wf
+
+
+
+  !------------------------------------------------------------------------
+  subroutine restart_col_wf(this, bounds, ncid, flag)
+    ! 
+    ! !USES:
+    use spmdMod          , only : masterproc
+    use clm_varcon       , only : denice, denh2o, pondmx, watmin
+    use landunit_varcon  , only : istcrop, istdlak, istsoil 
+    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
+    use clm_varpar       , only : nlevgrnd, nlevurb, nlevsno   
+    use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
+    use restUtilMod
+    !
+    ! !ARGUMENTS:
+    class(soilcol_water_flux) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar      ! determine if variable is on initial file
+    integer :: dimlen       ! dimension length
+    integer :: nump_global  ! total number of pfts, globally
+    integer :: err_code     ! error code
+    logical :: do_io
+    !-----------------------------------------------------------------------
+
+    ! Get expected total number of points, for later error checks
+    call get_proc_global(np=nump_global)
+
+    ! needed for SNICAR
+    call restartvar(ncid=ncid, flag=flag, varname='qflx_snofrz_lyr', xtype=ncd_double,  &
+         dim1name='column', dim2name='levsno', switchdim=.true., lowerb2=-nlevsno+1, upperb2=0, &
+         long_name='snow layer ice freezing rate', units='kg m-2 s-1', &
+         interpinic_flag='interp', readvar=readvar, data=this%qflx_snofrz_lyr_col)
+    if (flag == 'read' .and. .not. readvar) then
+       ! initial run, not restart: initialize qflx_snofrz_lyr to zero
+       this%qflx_snofrz_lyr_col(bounds%begc:bounds%endc,-nlevsno+1:0) = 0._r8
+    endif
+
+    call restartvar(ncid=ncid, flag=flag, varname='qflx_snow_melt', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='net snow melt', units='mm/s', &
+         interpinic_flag='interp', readvar=readvar, data=this%qflx_snow_melt_col)
+    if (flag == 'read' .and. .not. readvar) then
+       ! initial run, not restart: initialize qflx_snow_melt to zero
+       this%qflx_snow_melt_col(bounds%begc:bounds%endc) = 0._r8
+    endif
+
+    do_io = .true.
+    readvar = .false.
+    if (flag == 'read') then
+       ! On a read, confirm that this variable has the expected size; if not, don't read
+       ! it (instead give it a default value). This is needed to support older initial
+       ! conditions for which this variable had a different size.
+       call ncd_inqvdlen(ncid, 'n_irrig_steps_left', 1, dimlen, err_code)
+       if (dimlen /= nump_global) then
+          do_io = .false.
+       end if
+    end if
+
+    do_io = .true.
+    readvar = .false.
+    if (flag == 'read') then
+       ! On a read, confirm that this variable has the expected size; if not, don't read
+       ! it (instead give it a default value). This is needed to support older initial
+       ! conditions for which this variable had a different size.
+       call ncd_inqvdlen(ncid, 'irrig_rate', 1, dimlen, err_code)
+       if (dimlen /= nump_global) then
+          do_io = .false.
+       end if
+    end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='MFLX_SNOW_LYR', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='mass flux due to disapperance of last snow layer', units='kg/s', &
+         interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr_col)
+
+  end subroutine restart_col_wf
 
 
   subroutine clean_col_wf(this)
