@@ -84,6 +84,8 @@ module ocn_regional_stats
   integer, parameter :: AVG_OP = 1
   integer, parameter :: MIN_OP = 2
   integer, parameter :: MAX_OP = 3
+  integer, parameter :: SUM_OP = 4
+  integer, parameter :: SOS_OP = 5
 
   integer, parameter :: ID_FUNC = 11
   integer, parameter :: MUL_FUNC = 12
@@ -95,6 +97,8 @@ module ocn_regional_stats
   character (len=3), parameter :: AVG_TOKEN = 'avg'
   character (len=3), parameter :: MIN_TOKEN = 'min'
   character (len=3), parameter :: MAX_TOKEN = 'max'
+  character (len=3), parameter :: SUM_TOKEN = 'sum'
+  character (len=3), parameter :: SOS_TOKEN = 'sos'
 
   character (len=StrKIND), parameter :: COUNT_TOKEN = 'count'
   character (len=StrKIND), parameter :: WEIGHT_TOKEN = 'weight'
@@ -693,6 +697,10 @@ character (len=StrKIND) function operator_naming(enum)
     operator_naming = MIN_TOKEN
   else if (enum == MAX_OP) then
     operator_naming = MAX_TOKEN
+  else if (enum == SUM_OP) then
+    operator_naming = SUM_TOKEN
+  else if (enum == SOS_OP) then
+    operator_naming = SOS_TOKEN
   else
     call mpas_dmpar_global_abort( &
       trim(CURRENT_CORE_NAME) // ' ERROR: The impossible happened. ' // &
@@ -1276,6 +1284,10 @@ subroutine start_state(domain, instance, err)
     regions % operation = MIN_OP
   else if (config_results == MAX_TOKEN) then
     regions % operation = MAX_OP
+  else if (config_results == SUM_TOKEN) then
+    regions % operation = SUM_OP
+  else if (config_results == SOS_TOKEN) then
+    regions % operation = SOS_OP
   else
     ! error if unknown operation
     call mpas_dmpar_global_abort( &
@@ -1371,13 +1383,12 @@ subroutine start_state(domain, instance, err)
       'regional stats analysis member configuration.')
   end if
 
-  if (regions % function_oned /= ID_FUNC .and. &
-      regions % operation /= AVG_OP) then
+  if (regions % function_oned == MUL_FUNC .and. &
+      (regions % operation == MIN_OP .or. regions % operation == MAX_OP)) then
     call mpas_dmpar_global_abort( &
       trim(CURRENT_CORE_NAME) // ' ERROR: 1d weighting function in ' // &
-      'regional stats analysis member can only be something other than ' // &
-      '"id" if the operation is not "avg" ' // &
-      '(i.e., "mul" is only valid for "avg").')
+      'regional stats analysis member can only "mul" if the' // &
+      'if the operation is "avg", "sum", or "sos"')
   end if
 
   ! 2d weighting function
@@ -1400,13 +1411,12 @@ subroutine start_state(domain, instance, err)
       'regional stats analysis member configuration.')
   end if
 
-  if (regions % function_twod /= ID_FUNC .and. &
-      regions % operation /= AVG_OP) then
+  if (regions % function_twod == MUL_FUNC .and. &
+      (regions % operation == MIN_OP .or. regions % operation == MAX_OP)) then
     call mpas_dmpar_global_abort( &
       trim(CURRENT_CORE_NAME) // ' ERROR: 2d weighting function in ' // &
-      'regional stats analysis member can only be something other than ' // &
-      '"id" if the operation is not "avg" ' // &
-      '(i.e., "mul" is only valid for "avg").')
+      'regional stats analysis member can only "mul" if the' // &
+      'if the operation is "avg", "sum", or "sos"')
   end if
 
   ! group index
@@ -2046,8 +2056,16 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
       call operate1r_avg(dminfo, blocklist, regions, variable)
     else if (regions % operation == MIN_OP) then
       call operate1r_min(dminfo, blocklist, regions, variable)
-    else
+    else if (regions % operation == MAX_OP) then
       call operate1r_max(dminfo, blocklist, regions, variable)
+    else if (regions % operation == SUM_OP) then
+      call operate1r_sum(dminfo, blocklist, regions, variable)
+    else if (regions % operation == SOS_OP) then
+      call operate1r_sos(dminfo, blocklist, regions, variable)
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an unknown ' // &
+        'operator in the regional stats AM')
     end if
   else if (info % nDims == 2) then
     if (regions % operation == AVG_OP) then
@@ -2062,12 +2080,28 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
       else
         call operate2r_min(dminfo, blocklist, regions, variable)
       end if
-    else
+    else if (regions % operation == MAX_OP) then
       if (variable % has_vertical /= 0) then
         call operatevert2r_max(dminfo, blocklist, regions, variable, levels)
       else
         call operate2r_max(dminfo, blocklist, regions, variable)
       end if
+    else if (regions % operation == SUM_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert2r_sum(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate2r_sum(dminfo, blocklist, regions, variable)
+      end if
+    else if (regions % operation == SOS_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert2r_sos(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate2r_sos(dminfo, blocklist, regions, variable)
+      end if
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an unknown ' // &
+        'operator in the regional stats AM')
     end if
   else if (info % nDims == 3) then
     if (regions % operation == AVG_OP) then
@@ -2082,12 +2116,28 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
       else
         call operate3r_min(dminfo, blocklist, regions, variable)
       end if
-    else
+    else if (regions % operation == MAX_OP) then
       if (variable % has_vertical /= 0) then
         call operatevert3r_max(dminfo, blocklist, regions, variable, levels)
       else
         call operate3r_max(dminfo, blocklist, regions, variable)
       end if
+    else if (regions % operation == SUM_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert3r_sum(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate3r_sum(dminfo, blocklist, regions, variable)
+      end if
+    else if (regions % operation == SOS_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert3r_sos(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate3r_sos(dminfo, blocklist, regions, variable)
+      end if
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an unknown ' // &
+        'operator in the regional stats AM')
     end if
   else if (info % nDims == 4) then
     if (regions % operation == AVG_OP) then
@@ -2102,14 +2152,30 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
       else
         call operate4r_min(dminfo, blocklist, regions, variable)
       end if
-    else
+    else if (regions % operation == MAX_OP) then
       if (variable % has_vertical /= 0) then
         call operatevert4r_max(dminfo, blocklist, regions, variable, levels)
       else
         call operate4r_max(dminfo, blocklist, regions, variable)
       end if
+    else if (regions % operation == SUM_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert4r_sum(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate4r_sum(dminfo, blocklist, regions, variable)
+      end if
+    else if (regions % operation == SOS_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert4r_sos(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate4r_sos(dminfo, blocklist, regions, variable)
+      end if
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an unknown ' // &
+        'operator in the regional stats AM')
     end if
-  else
+  else if (info % nDims == 5) then
     if (regions % operation == AVG_OP) then
       if (variable % has_vertical /= 0) then
         call operatevert5r_avg(dminfo, blocklist, regions, variable, levels)
@@ -2122,13 +2188,34 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
       else
         call operate5r_min(dminfo, blocklist, regions, variable)
       end if
-    else
+    else if (regions % operation == MAX_OP) then
       if (variable % has_vertical /= 0) then
         call operatevert5r_max(dminfo, blocklist, regions, variable, levels)
       else
         call operate5r_max(dminfo, blocklist, regions, variable)
       end if
+    else if (regions % operation == SUM_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert5r_sum(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate5r_sum(dminfo, blocklist, regions, variable)
+      end if
+    else if (regions % operation == SOS_OP) then
+      if (variable % has_vertical /= 0) then
+        call operatevert5r_sos(dminfo, blocklist, regions, variable, levels)
+      else
+        call operate5r_sos(dminfo, blocklist, regions, variable)
+      end if
+    else
+      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+        'the impossible happened - tried to operate with an unknown ' // &
+        'operator in the regional stats AM')
     end if
+  else
+    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      'the impossible happened - tried to operate on a real field "' // &
+      trim(variable % input_name) // '"that does not have 1-5 ' // &
+      'dimensionality in the regional stats AM')
   end if
 
 end subroutine typed_operate!}}}
@@ -2477,6 +2564,175 @@ subroutine operate1r_max (dminfo, start_block, regions, variable)
 end subroutine operate1r_max
 
 
+subroutine operate2r_sum (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :), pointer :: in_array
+  real (kind=RKIND), dimension(:), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate2r_sum
+
+
+subroutine operate5r_sum (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, :, :, :, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, :, :, :, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate5r_sum
+
+
+subroutine operate4r_sum (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, :, :, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, :, :, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate4r_sum
+
+
+subroutine operate3r_sum (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, :, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, :, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate3r_sum
+
+
+subroutine operate1r_sum (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:), pointer :: in_array
+  real (kind=RKIND), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos1d_1.inc"
+  out_array = out_array + in_array(i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos1d_2.inc"
+  out_array = out_array + in_array(i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos1d_3.inc"
+end subroutine operate1r_sum
+
+
+subroutine operate2r_sos (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :), pointer :: in_array
+  real (kind=RKIND), dimension(:), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, i) * in_array(:, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, i) * &
+    in_array(:, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate2r_sos
+
+
+subroutine operate5r_sos (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, :, :, :, i) * &
+    in_array(:, :, :, :, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, :, :, :, i) * &
+    in_array(:, :, :, :, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate5r_sos
+
+
+subroutine operate4r_sos (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, :, :, i) * &
+    in_array(:, :, :, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, :, :, i) * &
+    in_array(:, :, :, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate4r_sos
+
+
+subroutine operate3r_sos (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos_1.inc"
+  out_array = out_array + in_array(:, :, i) * &
+    in_array(:, :, i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos_2.inc"
+  out_array = out_array + in_array(:, :, i) * &
+    in_array(:, :, i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos_3.inc"
+end subroutine operate3r_sos
+
+
+subroutine operate1r_sos (dminfo, start_block, regions, variable)
+#include "regional_stats_inc/regional_op_start_1.inc"
+  real (kind=RKIND), dimension(:), pointer :: in_array
+  real (kind=RKIND), pointer :: out_array
+#include "regional_stats_inc/regional_op_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_op_start_3.inc"
+
+#include "regional_stats_inc/regional_op_sumsos1d_1.inc"
+  out_array = out_array + in_array(i) * &
+    in_array(i) * mask(m, i)
+#include "regional_stats_inc/regional_op_sumsos1d_2.inc"
+  out_array = out_array + in_array(i) * &
+    in_array(i) * (weights(i) * mask(m, i))
+#include "regional_stats_inc/regional_op_sumsos1d_3.inc"
+end subroutine operate1r_sos
+
+
 subroutine operatevert2r_avg (dminfo, start_block, regions, variable, levels)
 #include "regional_stats_inc/regional_opvert_start_1.inc"
   real (kind=RKIND), dimension(:, :), pointer :: in_array
@@ -2715,6 +2971,154 @@ subroutine operatevert3r_max (dminfo, start_block, regions, variable, levels)
     DEFAULT_MPAS_MIN_VALUE * (1 - (mask(m, i) * vertical_mask(v, i))))
 #include "regional_stats_inc/regional_opvert_max_2.inc"
 end subroutine operatevert3r_max
+
+
+subroutine operatevert2r_sum (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :), pointer :: in_array
+  real (kind=RKIND), dimension(:), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(v) = out_array(v) + in_array(v, i) * &
+    (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(v) = out_array(v) + in_array(v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert2r_sum
+
+
+subroutine operatevert5r_sum (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(:, :, :, v) = out_array(:, :, :, v) + in_array(:, :, :, v, i) * &
+    (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(:, :, :, v) = out_array(:, :, :, v) + in_array(:, :, :, v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert5r_sum
+
+
+subroutine operatevert4r_sum (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(:, :, v) = out_array(:, :, v) + in_array(:, :, v, i) * &
+    (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(:, :, v) = out_array(:, :, v) + in_array(:, :, v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert4r_sum
+
+
+subroutine operatevert3r_sum (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(:, v) = out_array(:, v) + in_array(:, v, i) * &
+    (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(:, v) = out_array(:, v) + in_array(:, v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert3r_sum
+
+
+subroutine operatevert2r_sos (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :), pointer :: in_array
+  real (kind=RKIND), dimension(:), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(v) = out_array(v) + in_array(v, i) * &
+    in_array(v, i) * (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(v) = out_array(v) + in_array(v, i) * &
+    in_array(v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert2r_sos
+
+
+subroutine operatevert5r_sos (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(:, :, :, v) = out_array(:, :, :, v) + in_array(:, :, :, v, i) * &
+    in_array(:, :, :, v, i) * (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(:, :, :, v) = out_array(:, :, :, v) + in_array(:, :, :, v, i) * &
+    in_array(:, :, :, v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert5r_sos
+
+
+subroutine operatevert4r_sos (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :, :), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(:, :, v) = out_array(:, :, v) + in_array(:, :, v, i) * &
+    in_array(:, :, v, i) * (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(:, :, v) = out_array(:, :, v) + in_array(:, :, v, i) * &
+    in_array(:, :, v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert4r_sos
+
+
+subroutine operatevert3r_sos (dminfo, start_block, regions, variable, levels)
+#include "regional_stats_inc/regional_opvert_start_1.inc"
+  real (kind=RKIND), dimension(:, :, :), pointer :: in_array
+  real (kind=RKIND), dimension(:, :), pointer :: out_array
+#include "regional_stats_inc/regional_opvert_start_2.inc"
+  out_array = 0
+#include "regional_stats_inc/regional_opvert_start_3.inc"
+
+#include "regional_stats_inc/regional_opvert_sumsos_1.inc"
+  out_array(:, v) = out_array(:, v) + in_array(:, v, i) * &
+    in_array(:, v, i) * (mask(m, i) * vertical_mask(v, i))
+#include "regional_stats_inc/regional_opvert_sumsos_2.inc"
+  out_array(:, v) = out_array(:, v) + in_array(:, v, i) * &
+    in_array(:, v, i) * &
+    (weights(v, i) * (mask(m, i) * vertical_mask(v, i)))
+#include "regional_stats_inc/regional_opvert_sumsos_3.inc"
+end subroutine operatevert3r_sos
 
 
 end module ocn_regional_stats
