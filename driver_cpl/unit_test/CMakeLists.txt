@@ -55,4 +55,4 @@ add_subdirectory(glc_elevclass_test)
 add_subdirectory(vertical_gradient_calculator_test)
 add_subdirectory(map_lnd2glc_test)
 add_subdirectory(map_glc2lnd_test)
-
+add_subdirectory(map_lnd2rof_irrig_test)
