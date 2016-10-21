@@ -87,26 +87,22 @@ def _main_func(description):
             netcdf4_string = "D_NETCDF4P"
         else:
             globs_to_copy = (os.path.join("src","clib","libpioc.*"),
-                             os.path.join("src","flib","libpiof.*"))
+                             os.path.join("src","flib","libpiof.*"),
+                             os.path.join("src","clib","*.h"),
+                             os.path.join("src","flib","*.mod"))
             for glob_to_copy in globs_to_copy:
                 installed_file_time = 0
                 for item in glob.glob(os.path.join(pio_dir,glob_to_copy)):
-                    installed_file = os.path.join(bldroot,"lib",os.path.basename(item))
+                    if item.endswith(".a") or item.endswith(".so"):
+                        installdir = "lib"
+                    else:
+                        installdir = "include"
+                    installed_file = os.path.join(bldroot,installdir,os.path.basename(item))
                     item_time = os.path.getmtime(item)
                     if os.path.isfile(installed_file):
                         installed_file_time = os.path.getmtime(installed_file)
                     if item_time  > installed_file_time:
-                        logger.info("Installing pio version 2")
-                        shutil.copy(item, "%s/lib"%bldroot)
-            for glob_to_copy in (os.path.join("src","clib","*.h"),
-                                 os.path.join("src","flib","*.mod")):
-                for item in glob.glob(os.path.join(pio_dir,glob_to_copy)):
-                    installed_file = os.path.join(bldroot,"include",os.path.basename(item))
-                    item_time = os.path.getmtime(item)
-                    if os.path.isfile(installed_file):
-                        installed_file_time = os.path.getmtime(installed_file)
-                    if item_time > installed_file_time:
-                        shutil.copy(item, "%s/include"%bldroot)
+                        shutil.copy(item, installed_file)
             expect_string = "NetCDF_C_LIBRARY-ADVANCED"
             pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
             netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
