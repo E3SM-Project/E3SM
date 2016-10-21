@@ -851,23 +851,27 @@
 			<var name="ke"/>
 			<var name="uReconstructZonal"/>
 			<var name="uReconstructMeridional"/>
-			  <var name="ertel_pv"/>
-			  <var name="u_pv"/>
-			  <var name="v_pv"/>
-			  <var name="theta_pv"/>
-			  <var name="vort_pv"/>
-			  <var name="depv_dt_lw"/>
-			  <var name="depv_dt_sw"/>
-			  <var name="depv_dt_bl"/>
-			  <var name="depv_dt_cu"/>
-			  <var name="depv_dt_mix"/>
-			  <var name="dtheta_dt_mp"/>
-			  <var name="depv_dt_mp"/>
-			  <var name="depv_dt_diab"/>
-			  <var name="depv_dt_fric"/>
-			  <var name="depv_dt_diab_pv"/>
-			  <var name="depv_dt_fric_pv"/>
-			  <var name="iLev_DT"/>
+
+                        <!-- Begin Ertel PV diagnostics defined in diagnostics/Registry_pv.xml -->
+			<var name="ertel_pv"/>
+			<var name="u_pv"/>
+			<var name="v_pv"/>
+			<var name="theta_pv"/>
+			<var name="vort_pv"/>
+			<var name="depv_dt_lw"/>
+			<var name="depv_dt_sw"/>
+			<var name="depv_dt_bl"/>
+			<var name="depv_dt_cu"/>
+			<var name="depv_dt_mix"/>
+			<var name="dtheta_dt_mp"/>
+			<var name="depv_dt_mp"/>
+			<var name="depv_dt_diab"/>
+			<var name="depv_dt_fric"/>
+			<var name="depv_dt_diab_pv"/>
+			<var name="depv_dt_fric_pv"/>
+			<var name="iLev_DT"/>
+                        <!-- End Ertel PV diagnostics defined in diagnostics/Registry_pv.xml -->
+
 			<var name="i_rainnc"/>
 			<var name="rainnc"/>
 			<var name="precipw"/>
@@ -1440,64 +1444,6 @@
 
                 <var name="pv_cell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} kg^{-1} m^3"
                      description="absolute vorticity/rho_zz averaged to the cell center from the vertices"/>
-
-                <!-- nick PV budget -->
-                <var name="ertel_pv" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="u_pv" type="real" dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="v_pv" type="real" dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="theta_pv" type="real" dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="vort_pv" type="real" dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_lw" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_sw" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_bl" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_cu" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="dtheta_dt_mp" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_mp" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="dtheta_dt_mix" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_mix" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_diab" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_fric" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="tend_u_phys" type="real" dimensions="nVertLevels nEdges Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_diab_pv" type="real" dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="depv_dt_fric_pv" type="real" dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
-
-                <var name="iLev_DT" type="integer" dimensions="nCells Time" units="TBD"
-                     description="TBD"/>
 
                 <!-- reconstructed horizontal velocity vectors at cell centers -->
                 <var name="uReconstructX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"

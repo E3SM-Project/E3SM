@@ -1,0 +1,65 @@
+<!-- ***************************************** -->
+<!-- PV diagnostics from Nicholas Szapiro (OU) -->
+<!-- ***************************************** -->
+
+<var_struct name="diag" time_levs="1">
+
+        <var name="ertel_pv" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="u_pv" type="real" dimensions="nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="v_pv" type="real" dimensions="nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="theta_pv" type="real" dimensions="nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="vort_pv" type="real" dimensions="nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_lw" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_sw" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_bl" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_cu" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="dtheta_dt_mp" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_mp" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="dtheta_dt_mix" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_mix" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_diab" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_fric" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="tend_u_phys" type="real" dimensions="nVertLevels nEdges Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_diab_pv" type="real" dimensions="nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="depv_dt_fric_pv" type="real" dimensions="nCells Time" units="TBD"
+             description="TBD"/>
+
+        <var name="iLev_DT" type="integer" dimensions="nCells Time" units="TBD"
+             description="TBD"/>
+
+</var_struct>
+

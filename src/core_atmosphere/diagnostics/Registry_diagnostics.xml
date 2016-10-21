@@ -7,6 +7,9 @@
 <!-- convective diagnostics -->
 #include "Registry_convective.xml"
 
+<!-- PV diagnostics -->
+#include "Registry_pv.xml"
+
 <!-- ******************************* -->
 <!-- End includes from diagnostics -->
 <!-- ******************************* -->
