@@ -1900,9 +1900,9 @@ module ocn_time_integration_split
 
       if (trim(config_time_integrator) == 'split_explicit') then
          write(stderrUnit, *) ''
-         write(stderrUnit, *) '*********************************************************************************************************'
+         write(stderrUnit, *) '*******************************************************************************'
          write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, ' barotropic subcycles'
-         write(stderrUnit, *) '*********************************************************************************************************'
+         write(stderrUnit, *) '*******************************************************************************'
          write(stderrUnit, *) ''
       end if
 
@@ -1942,9 +1942,9 @@ module ocn_time_integration_split
             elseif (trim(config_time_integrator) == 'split_explicit') then
 
                write(stderrUnit, *) ''
-               write(stderrUnit, *) '*********************************************************************************************************'
+               write(stderrUnit, *) '*******************************************************************************'
                write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, ' barotropic subcycles'
-               write(stderrUnit, *) '*********************************************************************************************************'
+               write(stderrUnit, *) '*******************************************************************************'
                write(stderrUnit, *) ''
 
                if (config_filter_btr_mode) then
