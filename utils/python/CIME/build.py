@@ -277,7 +277,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib,
                                         debug, compiler, mpilib, sharedlibroot, complist,
-                                        ninst_build, smp_value, sharedlib_only)
+                                        ninst_build, smp_value, model_only)
 
     t2 = time.time()
     logs = []
@@ -302,7 +302,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
 ###############################################################################
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
-                 sharedlibroot, complist, ninst_build, smp_value, sharedlib_only):
+                 sharedlibroot, complist, ninst_build, smp_value, model_only):
 ###############################################################################
 
     ninst_value  = case.get_value("NINST_VALUE")
@@ -311,8 +311,7 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
 
     smpstr = ""
     inststr = ""
-    run_create_namelist = False
-    for model, _, nthrds, ninst, _ in complist:
+    for model, comp, nthrds, ninst, _ in complist:
         if nthrds > 1:
             build_threaded = True
         if build_threaded:
@@ -320,9 +319,6 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
         else:
             smpstr += "%s0"%model[0]
         inststr += "%s%d"%(model[0],ninst)
-        if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % model.upper()):
-            run_create_namelist = True
-
 
     if build_threaded:
         os.environ["SMP"] = "TRUE"
@@ -401,7 +397,7 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     case.set_value("BUILD_COMPLETE", False)
 
     case.flush()
-    if not sharedlib_only and run_create_namelist:
+    if not model_only:
         create_namelists(case)
 
     return
