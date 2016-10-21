@@ -1,0 +1,32 @@
+#! /usr/bin/env perl
+use strict;
+
+print " -------------------------------------------------------------------------\n";
+print " Building a single executable version of CESM \n";
+print " -------------------------------------------------------------------------\n";
+
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $EXEROOT   = `./xmlquery EXEROOT   -value`;
+my $MACH      = `./xmlquery MACH      -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE   -value`;
+
+chdir "${OBJROOT}/cesm/obj";
+
+open(file,">Filepath") or die "Could not open file Filepath to write";
+print file "${CASEROOT}/SourceMods/src.drv\n";
+print file "${CIMEROOT}/driver_cpl/driver\n";
+close(file);
+
+my $sysmod = "${GMAKE} exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/cesm.exe MODEL=driver  -f ${CASETOOLS}/Makefile ";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+exit(0);
+
+
+
