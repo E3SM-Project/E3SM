@@ -275,12 +275,9 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     # Load modules
     case.load_env()
 
-    run_create_namelist = build_checks(case, build_threaded, comp_interface, use_esmf_lib,
+    build_checks(case, build_threaded, comp_interface, use_esmf_lib,
                                         debug, compiler, mpilib, sharedlibroot, complist,
-                                        ninst_build, smp_value)
-
-    if not sharedlib_only and run_create_namelist:
-        create_namelists(case)
+                                        ninst_build, smp_value, sharedlib_only)
 
     t2 = time.time()
     logs = []
@@ -305,7 +302,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
 ###############################################################################
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
-                 sharedlibroot, complist, ninst_build, smp_value):
+                 sharedlibroot, complist, ninst_build, smp_value, sharedlib_only):
 ###############################################################################
 
     ninst_value  = case.get_value("NINST_VALUE")
@@ -404,7 +401,10 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     case.set_value("BUILD_COMPLETE", False)
 
     case.flush()
-    return run_create_namelist
+    if not sharedlib_only and run_create_namelist:
+        create_namelists(case)
+
+    return
 
 ###############################################################################
 def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
