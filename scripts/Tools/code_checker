@@ -57,7 +57,7 @@ def run_pylint(on_file):
 ###############################################################################
     pylint = find_executable("pylint")
 
-    cmd = "%s --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % (pylint, on_file)
+    cmd = "%s --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % (pylint, on_file)
     stat, out, err = run_cmd(cmd, verbose=False)
     if stat != 0:
         logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
@@ -92,7 +92,7 @@ def check_code(dir_to_check, num_procs, files):
         os.environ["PYTHONPATH"] = dir_to_check
 
     # Get list of files to check
-    files_to_check = run_cmd_no_fail('git ls-files %s' % dir_to_check, verbose=False).splitlines()
+    files_to_check = run_cmd_no_fail('git ls-files --full-name %s' % dir_to_check, verbose=False).splitlines()
     if files:
         files_to_check = [item for item in files_to_check if matches(item, files)]
     else:
@@ -100,7 +100,6 @@ def check_code(dir_to_check, num_procs, files):
 
     pool = ThreadPool(num_procs)
     results = pool.map(run_pylint, files_to_check)
-
     return False not in results
 
 ###############################################################################
