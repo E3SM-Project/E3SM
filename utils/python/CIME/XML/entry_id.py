@@ -140,6 +140,27 @@ class EntryID(GenericXML):
     def _get_group (self, node):
         return self._get_node_element_info(node, "group")
 
+    def set_valid_values(self, vid, new_valid_values):
+        node = self.get_optional_node("entry", {"id":vid})
+        if node is None:
+            return None
+        vv_node = self.get_optional_node("valid_values", root=node)
+        if vv_node is None:
+            vv_node = ET.Element("valid_values")
+            vv_node.text = new_valid_values
+            self.add_child(vv_node)
+        else:
+            logger.debug("Replacing valid_values %s for %s"%(vv_node.text, vid))
+            vv_node.text = new_valid_values
+        logger.debug("Adding valid_values %s for %s"%(new_valid_values, vid))
+
+        current_value = node.get("value")
+        valid_values_list = new_valid_values.split(',')
+        if current_value is not None and current_value not in valid_values_list:
+            logger.warn("WARNING: Current setting for %s not in new valid values. Updating setting to \"%s\""%(vid, valid_values_list[0]))
+            self._set_value(node, valid_values_list[0])
+        return new_valid_values
+
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
         """
         Set the value of an entry-id field to value
