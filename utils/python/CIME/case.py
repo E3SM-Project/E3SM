@@ -319,10 +319,6 @@ class Case(object):
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
-        If a file has not been defined, set an id/value pair in the
-        case dictionary, this will be used later. Note that in
-        create_newcase, when this is called and are setting the
-        command line options none of these files have been defined
         If a file has been defined, and the variable is in the file,
         then that value will be set in the file object and the file
         name is returned
@@ -332,6 +328,20 @@ class Case(object):
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
+            if (result is not None):
+                logger.debug("Will rewrite file %s %s",env_file.filename, item)
+                self._env_files_that_need_rewrite.add(env_file)
+                return result
+
+    def set_valid_values(self, item, valid_values):
+        """
+        Update or create a valid_values entry for item and populate it
+        """
+        if item == "CASEROOT":
+            self._caseroot = value
+        result = None
+        for env_file in self._env_entryid_files:
+            result = env_file.set_valid_values(item, valid_values)
             if (result is not None):
                 logger.debug("Will rewrite file %s %s",env_file.filename, item)
                 self._env_files_that_need_rewrite.add(env_file)
@@ -990,19 +1000,23 @@ class Case(object):
 
     def set_model_version(self, model):
         version = "unknown"
+        srcroot = self.get_value("SRCROOT")
         if model == "cesm":
-            srcroot = self.get_value("SRCROOT")
             changelog = os.path.join(srcroot,"ChangeLog")
-            expect(os.path.isfile(changelog), " No CESM ChangeLog file found")
-            for line in open(changelog, "r"):
-                m = re.search("Tag name: (cesm.*)$", line)
-                if m is not None:
-                    version = m.group(1)
-                    break
+            if os.path.isfile(changelog):
+                for line in open(changelog, "r"):
+                    m = re.search("Tag name: (cesm.*)$", line)
+                    if m is not None:
+                        version = m.group(1)
+                        break
         elif model == "acme":
-            cimeroot = self.get_value("CIMEROOT")
-            version = get_current_commit(True, cimeroot)
+            version = get_current_commit(True, srcroot)
         self.set_value("MODEL_VERSION", version)
+
+        if version != "unknown":
+            logger.info("%s model version found: %s"%(model, version))
+        else:
+            logger.warn("WARNING: No %s Model version found."%(model))
 
     def load_env(self):
         if not self._is_env_loaded:
