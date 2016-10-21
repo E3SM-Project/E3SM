@@ -7,11 +7,18 @@
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
-		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
-		<option name="config_do_restart">.true.</option>
-		<option name="config_run_duration">0000_00:05:00</option>
-		<option name="config_start_time">0001-01-01_00:05:00</option>
+                <template file="template_forward.xml" path_base="script_resolution_dir"/>
+                <template file="restart_setup_template.xml" path_base="script_test_dir"/>
+                <option name="config_do_restart">.true.</option>
+                <option name="config_run_duration">0000_00:05:00</option>
+                <option name="config_start_time">0001-01-01_00:05:00</option>
+		<option name="config_use_frazil_ice_formation">.true.</option>
+		<option name="config_frazil_maximum_depth">2000.0</option>
+		<option name="config_freezing_temperature_coeff_0">-1.8</option>
+		<option name="config_freezing_temperature_coeff_S">0.0</option>
+		<option name="config_freezing_temperature_coeff_p">6.64670038e-08</option>
+		<option name="config_freezing_temperature_coeff_pS">-4.44655526e-09</option>
+		<option name="config_freezing_temperature_reference_pressure">1e5</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -22,6 +29,10 @@
 		</stream>
 		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="land_ice_fluxes">
+			<attribute name="output_interval">0000-00-00_00:05:00</attribute>
+		</stream>
+		<template file="frazil.xml" path_base="script_core_dir" path="templates/streams"/>
+		<stream name="frazil">
 			<attribute name="output_interval">0000-00-00_00:05:00</attribute>
 		</stream>
 	</streams>

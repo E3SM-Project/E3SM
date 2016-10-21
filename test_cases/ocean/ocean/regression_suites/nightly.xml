@@ -32,12 +32,6 @@
 	<test name="Global Ocean 240km - Smoke Test with land ice" core="ocean" configuration="global_ocean" resolution="QU_240km" test="with_land_ice">
 		<script name="run_test.py"/>
 	</test>
-	<test name="sub-ice-shelf 2D - Smoke Test" core="ocean" configuration="sub_ice_shelf_2D" resolution="5km" test="Haney_number_iterative_init">
-		<script name="run_test.py"/>
-	</test>
-	<test name="sub-ice-shelf 2D - Smoke Test with frazil" core="ocean" configuration="sub_ice_shelf_2D" resolution="5km" test="with_frazil">
-		<script name="run_test.py"/>
-	</test>
 	<test name="sub-ice-shelf 2D - restart test" core="ocean" configuration="sub_ice_shelf_2D" resolution="5km" test="restart_test">
 		<script name="run_test.py"/>
 	</test>
