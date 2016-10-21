@@ -3260,9 +3260,6 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>never</default_value>
-    <values>
-      <value compset="CISM\d">nyears</value>
-    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver snapshot history file frequency (like REST_OPTION)</desc>
@@ -3272,9 +3269,6 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values>
-      <value compset="CISM\d">1</value>
-    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver snapshot history file frequency (like REST_N)
