@@ -26,7 +26,6 @@
 			<attribute name="packages">okuboWeissAMPKG</attribute>
 			<attribute name="type">output</attribute>
 			<add_contents>
-				<member name="mesh" type="stream"/>
 				<member name="xtime" type="var"/>
 				<member name="okuboWeiss" type="var"/>
 				<member name="vorticity" type="var"/>
