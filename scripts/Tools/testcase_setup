@@ -1,0 +1,597 @@
+#!/usr/bin/env perl
+
+#-----------------------------------------------------------------------------------------------
+# testcase_setup - create the $caseroot/$case.test script
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+
+*STDOUT->autoflush();
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains this script.
+
+my $eol = "\n";
+my $banner = '-' x 80;
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+
+SYNOPSIS
+     Creates batch test script (case.test) for target machine
+
+USAGE
+     testcase_setup [options]
+OPTIONS
+     -help [or -h]        Print usage to STDOUT.
+     -caseroot            Full pathname of directory that contains this script
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = ();
+
+GetOptions(
+    "h|help"     => \$opts{'help'},
+    "caseroot=s"   => \$opts{'caseroot'},
+)  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV $eol";
+    usage();
+}
+
+# Check for required arguments
+my $caseroot;
+if ($opts{'caseroot'}) {
+    $caseroot = $opts{'caseroot'};
+} else {
+    die "ERROR:  caseroot must be a supplied argument $eol";
+}
+
+# Check for presence of xmlquery in caseroot
+if (! -e "$caseroot/xmlquery" ) {
+    die "ERROR:  xmlquery is not present in $caseroot $eol";
+}
+
+#-----------------------------------------------------------------------------------------------
+# Test case setup
+#-----------------------------------------------------------------------------------------------
+
+my $mach		=  `./xmlquery MACH			-value`;
+my $ccsm_machdir	=  `./xmlquery CCSM_MACHDIR		-value`;
+my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
+my $rundir              =  `./xmlquery RUNDIR			-value`;
+my $exeroot             =  `./xmlquery EXEROOT			-value`;
+my $libroot             =  `./xmlquery LIBROOT			-value`;
+my $scriptsroot         =  `./xmlquery SCRIPTSROOT		-value`;
+my $dout_s_root         =  `./xmlquery DOUT_S_ROOT		-value`;
+my $caseroot		=  `./xmlquery CASEROOT			-value`;
+my $case		=  `./xmlquery CASE			-value`;
+my $casebaseid		=  `./xmlquery CASEBASEID		-value`;
+my $testcase		=  `./xmlquery TESTCASE			-value`;
+my $test_argv		=  `./xmlquery TEST_ARGV		-value`;
+my $test_testid		=  `./xmlquery TEST_TESTID		-value`;
+my $baselineroot	=  `./xmlquery BASELINE_ROOT		-value`;
+my $basegen_case	=  `./xmlquery BASEGEN_CASE		-value`;
+my $basecmp_case        =  `./xmlquery BASECMP_CASE		-value`;
+my $basegen_name	=  `./xmlquery BASELINE_NAME_GEN	-value`;
+my $basecmp_name        =  `./xmlquery BASELINE_NAME_CMP	-value`;
+my $compare_baseline	=  `./xmlquery COMPARE_BASELINE		-value`;
+my $generate_baseline	=  `./xmlquery GENERATE_BASELINE	-value`;
+my $cleanup             =  `./xmlquery CLEANUP	                -value`;
+my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
+my $casetools           =  `./xmlquery CASETOOLS            -value`;
+my $compiler            =  `./xmlquery COMPILER             -value`;
+my $mpilib              =  `./xmlquery MPILIB               -value`;
+my $build_threaded      =  `./xmlquery BUILD_THREADED       -value`;
+
+# generate baseline test flag
+my $basegen_dir;
+if ( "$generate_baseline" eq "TRUE" ) {
+    $basegen_dir  = "$baselineroot/$basegen_case";
+} else {
+    $basegen_dir  = "";
+}
+
+# compare baseline test flag
+my $basecmp_dir;
+if ( "$compare_baseline" eq "TRUE" ) {
+    $basecmp_dir  = "$baselineroot/$basecmp_case";
+} else {
+    $basecmp_dir  = "";
+}
+
+if (! $test_argv) {$test_argv = '/UNSET'};
+if (! $test_testid) {$test_testid = ''};
+if (! $baselineroot) {
+    if ($ccsm_baseline) {
+	$baselineroot = $ccsm_baseline;
+    } else {
+	$baselineroot = '/UNSET';
+    }
+}
+
+chdir($caseroot);
+
+push(@INC, $casetools);
+my $perl5libdir = "$cimeroot/utils/perl5lib/";
+push(@INC, $perl5libdir);
+require Batch::BatchMaker;
+require Task::TaskMaker;
+require ConfigCase;
+# ------------------ testcase_begin ------------------------------------------
+# -- Make batch script using the BatchMaker module ---
+my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot,
+                                                     ccsmroot => $cimeroot,
+                                                     case     => $case,
+                                                     mpilib => $mpilib,
+                                                     scriptsroot => $scriptsroot,
+                                                     machroot => $ccsm_machdir,
+                                                     machine     => $mach,
+                                                     compiler => $compiler,
+                                                     threaded => $build_threaded);
+
+my $batchdirectives = $batchmaker->getBatchDirectives();
+
+
+# create batch header for testing script
+#my $batchfile = "$ENV{'HOME'}/.cesm/mkbatch.${mach}";
+#if ( ! -e $batchfile ) {
+#    $batchfile = "${ccsm_machdir}/mkbatch.${mach}";
+#}
+#my $sysmod = "env PHASE=set_batch env TESTMODE=test $batchfile";
+#system ($sysmod); if ($? == -1) {die "$sysmod failed: $! $eol";};
+#exit(1);
+#
+## create test file
+my $sysmod;
+
+my $testfilewrapper = "$caseroot/${case}.test";
+my $testfile = "$caseroot/${case}.testdriver";
+
+my $tfwfh = new IO::File;
+$tfwfh->open(">>$testfilewrapper") or die "can't open file: $testfilewrapper $eol";
+print $tfwfh "#!/bin/csh -f $eol";
+
+print $tfwfh $batchdirectives . $eol;
+
+print $tfwfh "@ teststart_sec = `date -u +%s`$eol";
+print $tfwfh "$testfile$eol";
+print $tfwfh "@ testrc = \$status$eol";
+print $tfwfh "@ testend_sec = `date -u +%s`$eol";
+
+print $tfwfh "sed '/ RUN\$/d' $caseroot/TestStatus > $caseroot/TestStatus.new$eol";
+print $tfwfh "mv -f $caseroot/TestStatus.new $caseroot/TestStatus$eol";
+
+print $tfwfh "if (\$testrc != 0) then$eol";
+print $tfwfh "  echo 'FAIL $casebaseid RUN' >> $caseroot/TestStatus$eol";
+print $tfwfh "else$eol";
+print $tfwfh "  echo 'PASS $casebaseid RUN' >> $caseroot/TestStatus$eol";
+print $tfwfh "endif$eol";
+
+print $tfwfh "@ testtime = \$testend_sec - \$teststart_sec$eol";
+print $tfwfh "echo COMMENT TIME \$testtime >>& $caseroot/TestStatus$eol";
+
+print $tfwfh "exit \$testrc$eol";
+print $tfwfh "";
+$tfwfh->close();
+
+$sysmod = "chmod 755 $testfilewrapper";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
+
+my $testfh = new IO::File;
+$testfh->open(">>$testfile") or die "can't open file: $testfile $eol";
+print $testfh "#!/bin/csh -f $eol";
+print $testfh "#$banner$eol";
+print $testfh "# This is a CESM test-specific job script$eol";
+print $testfh "#$banner$eol";
+
+# cleanup option
+if ( "$cleanup" eq "TRUE" ) {
+    print $testfh "set cleanup  $eol";
+} else {
+    print $testfh "unset cleanup  $eol";
+}
+
+print $testfh " $eol cd $caseroot  $eol";
+
+# interpolate variables in following EOF block
+my $testcase_interp = <<END_INTERP;
+
+    setenv CASEROOT  $caseroot
+
+    source env_mach_specific
+
+    # valid test output states are:
+    #   PASS      Test passed
+    #   FAIL      Test failed
+    #   BFAIL     Baseline results do not exist for comparison
+    #   GFAIL     Baseline generation failed
+    #   GEN       Case generated
+    #   ERROR     Error underfined, test may or may not have passed
+    #   UNDEF     Undefined
+    #   BUILT     Build completed                           NOT YET IMPLEMENTED
+    #   PEND      Test submitted
+    #   RUN       Test started running, it may or may not have completed
+
+    ./Tools/check_lockedfiles || exit -1
+
+    #======================================================================
+    # (Don't) Remove test status files! create_test puts the namelist comparision
+    # status and output into these files, respectively.
+    #======================================================================
+
+    set CASE			=  $case
+    set CASEBASEID		=  $casebaseid
+    set TEST_TESTID		=  $test_testid
+    set CIMEROOT		=  $cimeroot
+    set SCRIPTSROOT             =  $scriptsroot
+    set RUNDIR                  =  $rundir
+    set EXEROOT                 =  $exeroot
+    set LIBROOT                 =  $libroot
+    set DOUT_S_ROOT             =  $dout_s_root
+    set BASELINEROOT		=  ${baselineroot}
+    set BASEGEN_DIR             =  ${baselineroot}/${basegen_case}
+    set BASECMP_DIR             =  ${baselineroot}/${basecmp_case}
+    set TEST_ARGV		= '$test_argv'
+    set GENERATE_BASELINE	=  $generate_baseline
+    set COMPARE_BASELINE	=  $compare_baseline
+    set BASEGEN_NAME		=  $basegen_name
+    set BASEGEN_CASE            =  $basegen_case
+    set BASECMP_NAME		=  $basecmp_name
+    set BASECMP_CASE            =  $basecmp_case
+    set CCSM_BASELINE           =  $ccsm_baseline
+    set CLEANUP                 =  $cleanup
+
+END_INTERP
+
+print $testfh $testcase_interp;
+
+# do not interpolate variables in following EOF block
+my $testcase_begin = <<'END_BEGIN';
+
+    set TESTSTATUS_OUT          = $CASEROOT/TestStatus
+    set TESTSTATUS_LOG          = $CASEROOT/TestStatus.log
+    set TESTSTATUS_OUT_NLCOMP   = $CASEROOT/TestStatus.nlcomp
+
+    touch $TESTSTATUS_LOG
+
+    set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+    set teststart = `date +"%Y-%m-%d %H:%M:%S"`
+    @ teststart_sec = `date -u +%s`
+
+    echo "" >>&  $TESTSTATUS_LOG
+    echo "=====================================================">>&  $TESTSTATUS_LOG
+    echo "test started $sdate"					>>&  $TESTSTATUS_LOG
+    echo "=====================================================">>&  $TESTSTATUS_LOG
+
+    echo "test started $sdate" >>&  CaseStatus
+
+    #-------------------------------------------------------------
+    # Always run non_IOP version of case
+    #-------------------------------------------------------------
+
+    unset IOP_ON
+
+    # Reset all previous settings: obtain copy of original env_run.xml file
+    if ( -e env_run.orig )  then
+       cp env_run.orig env_run.xml
+    else
+       cp env_run.xml env_run.orig
+    endif
+
+    if ( $?IOP_ON ) then
+       set add_iop = "-add_iop $IOP_TYPE"
+       set msg = "iop_${IOP_TYPE}_test"
+    else
+       set add_iop = ''
+       set testname = `./xmlquery TESTCASE -value`
+       set msg = "${testname}_test"
+    endif
+
+END_BEGIN
+
+print $testfh $testcase_begin;
+
+$sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
+
+my $testcase_iop = <<'END_IOP';
+
+    # for now skip netcdf4p and netcdf4c tests
+    set pio_type = `./xmlquery PIO_TYPENAME -value`
+    set	IOP_TYPE = unset
+    if ("$pio_type" == "pnetcdf") set IOP_TYPE = netcdf
+    if ("$pio_type" == "netcdf" ) set IOP_TYPE = pnetcdf
+    if ( "$IOP_TYPE" == unset ) then
+        echo "ERROR in IOP setup : IOP_TYPE is unset"
+	exit -1
+    endif
+
+    #-------------------------------------------------------------
+    # Run IOP version of each case if apppropriate
+    #-------------------------------------------------------------
+
+    # Reset all previous settings: obtain copy of original env_run.xml file
+    if ( -e env_run.orig )  then
+	cp env_run.orig env_run.xml
+	else
+	cp env_run.xml env_run.orig
+    endif
+    # ********turn on IOP case***************
+    set IOP_ON
+    ./xmlchange -file env_run.xml -id PIO_TYPENAME -val $IOP_TYPE
+    # ***************************************
+
+    if ( $?IOP_ON ) then
+       set add_iop = "-add_iop $IOP_TYPE"
+       set msg = "iop_${IOP_TYPE}_test"
+    else
+       set add_iop = ''
+       set testname = `./xmlquery TESTCASE -value`
+       set msg = "${testname}_test"
+    endif
+
+END_IOP
+
+if ( "${case}" =~ /.+_IOP.+/ ) {
+    print $testfh $testcase_iop;
+
+    $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
+}
+
+my $testcase_end = <<'END_TEST';
+
+    #======================================================================
+    # Check for memory leaks
+    #======================================================================
+
+    if ( $?DETECT_MEMORY_LEAK ) then
+	if ( $?CplLogFile ) then
+	   echo "Comparing memory highwater marks for consecutive days in $CplLogFile" >>& $TESTSTATUS_LOG
+	   ${SCRIPTSROOT}/Tools/check_memory.pl -file1 $CplLogFile -m 1.5 >>& $TESTSTATUS_LOG
+	   set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+	   if ( $pass != 0 ) then
+	      echo "PASS ${CASEBASEID} memleak" >>& $TESTSTATUS_OUT
+	   else
+   	      echo "FAIL ${CASEBASEID} memleak" >>& $TESTSTATUS_OUT
+	   endif
+	endif
+    endif
+
+    #======================================================================
+    # Compare with baseline if this is a regression test
+    # NOTE:  "PASS" means both this test AND the regression test passed.
+    # NOTE:  "FAIL" can now be caused by memory leak/creep
+    #======================================================================
+
+    set bbb2 = ""
+
+    if ( "$COMPARE_BASELINE" == "TRUE" ) then
+       set continue_compare = 'yes'
+       if ! ( -d $BASELINEROOT ) then
+          echo "WARNING:  directory $BASELINEROOT does not exist" >>& $TESTSTATUS_LOG
+	  set continue_compare = 'no'
+       endif
+
+       if ("$continue_compare" == 'yes') then
+          if ! ( -d $BASECMP_DIR ) then
+	     echo "WARNING: directory $BASECMP_DIR does not exist" >>& $TESTSTATUS_LOG
+	     echo "BFAIL $CASEBASEID compare" >>& $TESTSTATUS_OUT
+	     set continue_compare = 'no'
+	  endif
+       endif
+
+       if ("$continue_compare" == 'yes') then
+          # compare component history fiels with baseline
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASECMP_DIR -test_dir $RUNDIR -compare_tag $BASECMP_NAME -testcase $CASE -testcase_base $CASEBASEID -msg "baseline: compare .base file with $BASECMP_NAME file">>& $TESTSTATUS_OUT
+
+	  if (-e $BASECMP_DIR/${TESTSTATUS_LOG:t}) then
+	     set bbb1 = `grep perf $BASECMP_DIR/${TESTSTATUS_LOG:t} | grep CHECK | grep -v baseline`
+	     set bbb2 = `echo $bbb1 baseline`
+	  endif
+
+	  if( $?COMPARE_MEMORY ) then
+	     echo ""								      >>& $TESTSTATUS_LOG
+	     echo "Comparing pes max memory value with baseline pes max memory value" >>& $TESTSTATUS_LOG
+	     echo "Comparing $CplLogFile and ${BASECMP_DIR}/cpl.log"		      >>& $TESTSTATUS_LOG
+	     ${SCRIPTSROOT}/Tools/check_memory.pl -file1 $CplLogFile -file2 ${BASECMP_DIR}/cpl.log -m 1 -mbase 20 >>& $TESTSTATUS_LOG
+	     set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+	     if ( $pass != 0 ) then
+	        echo "PASS ${CASEBASEID} memcomp" >>& $TESTSTATUS_OUT
+		echo "result of memcomp  test is pass" >>& $TESTSTATUS_LOG
+	     else
+	        echo "FAIL ${CASEBASEID} memcomp" >>& $TESTSTATUS_OUT
+                echo "result of memcomp  test is fail" >>& $TESTSTATUS_LOG
+	     endif
+   	     echo "" $TESTSTATUS_LOG
+	  endif
+       endif
+
+       if ( $?COMPARE_THROUGHPUT ) then
+          echo ""										>>& $TESTSTATUS_LOG
+	  echo "Comparing throughput value with baseline throughput value"		        >>& $TESTSTATUS_LOG
+	  echo "Comparing $CplLogFile and ${BASECMP_DIR}/cpl.log"			        >>& $TESTSTATUS_LOG
+	  ${SCRIPTSROOT}/Tools/compare_throughput.pl -file1 $CplLogFile -file2 ${BASECMP_DIR}/cpl.log >>& $TESTSTATUS_LOG
+	  set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+	  if ( $pass != 0 ) then
+	      echo "PASS ${CASEBASEID} tputcomp" >>& $TESTSTATUS_OUT
+              echo "result of throughput compare test is pass"    >>& $TESTSTATUS_LOG
+	  else
+	      echo "FAIL ${CASEBASEID} tputcomp" >>& $TESTSTATUS_OUT
+              echo "result of throughput compare test is fail"    >>& $TESTSTATUS_LOG
+          endif
+	  echo "" >>& $TESTSTATUS_LOG
+      endif
+    endif
+
+    #======================================================================
+    # Generate new baseline for regression testing
+    #======================================================================
+
+    if ( "$GENERATE_BASELINE" == "TRUE" ) then
+       set continue_generate = 'yes'
+       if ! ( -d $BASELINEROOT ) then
+          echo "ERROR:  $BASELINEROOT does not exist " >>& $TESTSTATUS_LOG
+	  echo "GFAIL $CASEBASEID baseline" >>& $TESTSTATUS_OUT
+	  set continue_generate = 'no'
+       endif
+
+       if ("$continue_generate" == 'yes') then
+          if  ! ( -d $BASEGEN_DIR ) then
+	     echo "ERROR:  $BASEGEN_DIR does not exist " >>& $TESTSTATUS_LOG
+	     echo "GFAIL $CASEBASEID baseline" >>& $TESTSTATUS_OUT
+	     set continue_generate = 'no'
+	  endif
+       endif
+
+       if ("$continue_generate" == 'yes') then
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASEGEN_DIR -test_dir $RUNDIR -generate_tag $BASEGEN_NAME -testcase $CASE -testcase_base $CASEBASEID >>& $TESTSTATUS_OUT
+
+	  # save last coupler log file to baseline directory
+	  cp -f $CplLogFile $BASEGEN_DIR/cpl.log || echo "WARNING: could not copy $CplLogFile to $BASEGEN_DIR " >>& $TESTSTATUS_LOG
+	  chmod ug+w,a+r $BASEGEN_DIR/cpl.log
+
+	  if ($?CPLPROF_GENCMP) then # this variable is set in the test script
+	     cp -f $CPLPROF_GENCMP $BASEGEN_DIR/timing_summary || echo "WARNING: could not copy $CPLPROF_GENCMP to $BASEGEN_CPLPROFFILE" >>& $TESTSTATUS_LOG
+	     chmod ug+w,a+r $BASEGEN_DIR/timing_summary
+	  endif
+
+	  echo "Generated coupler log and relevant component history files in $BASEGEN_DIR" >>& $TESTSTATUS_LOG
+	  echo "PASS ${CASEBASEID} generate" >>& $TESTSTATUS_OUT
+       endif
+   endif
+
+   #======================================================================
+   # Summary output
+   #======================================================================
+
+   if ( $?CplLogFile) then
+      if (-e $CplLogFile) then
+
+         echo "CplLogFile is $CplLogFile" >>& $TESTSTATUS_LOG
+	 if( "$CplLogFile" =~ *gz ) then
+	    gunzip -c $CplLogFile | tail -10	>>& $TESTSTATUS_LOG
+	 else
+  	    tail -10 $CplLogFile >>& $TESTSTATUS_LOG
+	 endif
+
+	 set npes = ""
+	 set tag  = "unknown"
+	 if ( $?TOTALPES)     set npes = `echo $TOTALPES`
+	 if ( $?CCSM_REPOTAG) set tag  = `echo $CCSM_REPOTAG`
+	 if ( $?BASEGEN_NAME) set tag  = `echo $BASEGEN_NAME`
+
+	 set tput = `zgrep "# simulated years "    $CplLogFile | cut -c 63-72`
+	 set memh = `zgrep "max memory highwater"  $CplLogFile | cut -c 63-72`
+	 set memr = `zgrep "max memory last usage" $CplLogFile | cut -c 63-72`
+
+	 echo "$bbb2" >>& $TESTSTATUS_LOG
+	 echo "CHECK ${CASEBASEID}.perf npes=$npes tput=$tput memh=$memh memr=$memr tag=$tag" >>& $TESTSTATUS_LOG
+	 if ( "${CASEBASEID}" =~ ERT* || "${CASEBASEID}" =~ PFS* ) then
+            if ( "$bbb2" !~ "") then
+               echo "$bbb2" >>& $TESTSTATUS_OUT
+	    endif
+	    echo "CHECK ${CASEBASEID}.perf npes=$npes tput=$tput memh=$memh memr=$memr tag=$tag" >>& $TESTSTATUS_OUT
+	 endif
+	 echo " " >>& $TESTSTATUS_LOG
+      endif
+   endif
+
+   set memleak		 = `grep "memleak ="		$TESTSTATUS_LOG | cut -c 1-15`
+   set pesmaxmem_incr	 = `grep "pesmaxmem_incr ="	$TESTSTATUS_LOG | cut -c 1-21`
+   set tput_decr	 = `grep "tput_decr ="		$TESTSTATUS_LOG | cut -c 1-21`
+   set tput_percent_decr = `grep "tput_percent_decr ="	$TESTSTATUS_LOG | cut -c 1-24`
+
+   if ( "$memleak" !~ "" || "$pesmaxmem_incr" != "" || "$tput_decr" !~ "" || "$tput_percent_decr" !~ "" ) then
+      echo "COMMENT $memleak $pesmaxmem_incr $tput_decr $tput_percent_decr"  >>& $TESTSTATUS_OUT
+   endif
+
+   #
+   # summarize failed differences if any
+   ${SCRIPTSROOT}/Tools/component_write_comparefail.pl $RUNDIR >>& $TESTSTATUS_LOG
+
+   #======================================================================
+   # Clean up
+   #======================================================================
+
+   if ($?cleanup ) then
+      set fail_number = `grep compare_hist $TESTSTATUS_OUT | grep -w FAIL | wc`
+      if ($fail_number != 0) then
+         rm -r -f $EXEROOT*/atm          >& /dev/null
+	 rm -r -f $EXEROOT*/lnd          >& /dev/null
+	 rm -r -f $EXEROOT*/ocn          >& /dev/null
+	 rm -r -f $EXEROOT*/ice          >& /dev/null
+	 rm -r -f $EXEROOT*/glc          >& /dev/null
+	 rm -r -f $EXEROOT*/wav          >& /dev/null
+	 rm -r -f $EXEROOT*/rof          >& /dev/null
+	 rm -r -f $EXEROOT*/cpl          >& /dev/null
+	 rm -r -f $EXEROOT*/cesm         >& /dev/null
+	 rm -r -f $EXEROOT*/csm_share    >& /dev/null
+	 rm -r -f $EXEROOT*/mct          >& /dev/null
+	 rm -r -f $EXEROOT*/pio          >& /dev/null
+	 rm -r -f $EXEROOT*/gptl         >& /dev/null
+	 rm -r -f $LIBROOT               >& /dev/null
+	 rm    -f $EXEROOT*/*/*.nc       >& /dev/null
+	 rm    -f $EXEROOT*/*/*/*.nc     >& /dev/null
+	 rm -r -f $DOUT_S_ROOT*          >& /dev/null
+	 rm       $RUNDIR/*nc            >& /dev/null
+	 echo "NOTE: Test passed, clean up done."  >>& $TESTSTATUS_LOG
+      else
+         echo "NOTE: Compare test failed, clean up NOT done."  >>& $TESTSTATUS_LOG
+      endif
+   else
+      echo "NOTE:  At user request, clean up not done.  Use the following" >>& $TESTSTATUS_LOG
+      echo "       commands to clean up by hand:" >>& $TESTSTATUS_LOG
+      echo "         rm -rf $EXEROOT" >>& $TESTSTATUS_LOG
+   endif
+
+   if ( "$GENERATE_BASELINE" == "TRUE" ) then
+      if (-e $BASEGEN_DIR) then
+         cp -f $TESTSTATUS_LOG ${BASEGEN_DIR}/${TESTSTATUS_LOG:t}
+         chmod ug+w,a+r ${BASEGEN_DIR}/${TESTSTATUS_LOG:t}
+       endif
+   endif
+
+   if ( -e $TESTSTATUS_OUT_NLCOMP ) then
+      cat $TESTSTATUS_OUT_NLCOMP >>& $TESTSTATUS_OUT
+      # Do NOT delete the nlcomp file, so that the test can be "rerun" ##
+      ###rm $TESTSTATUS_OUT_NLCOMP  #####################################
+   endif
+
+   set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+   echo "test completed $sdate" >>&  CaseStatus
+
+END_TEST
+
+print $testfh $testcase_end;
+
+$testfh->close();
+
+$sysmod= "chmod 755 $case* *pl";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $! $eol";};
+
+$sysmod = "chmod 755 $testfile";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
+
+chdir($caseroot);
+
+exit;

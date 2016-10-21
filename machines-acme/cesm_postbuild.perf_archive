@@ -1,0 +1,78 @@
+#!/bin/csh -f
+# cesm_postbuild with support for performance data archiving: 
+#  ./cesm_postbuild.perf_archive with the following required argument keyword/value pairs, in any order
+#   -cesmid <$LID in cesm-lingo>
+#   -cesmroot <top level of CESM/ACME checkout>
+#   -caseroot <directory from which job script was submitted>
+#   -exedir <bld directory>
+
+set lid = 'unknown'
+set cesmroot = '.'
+set caseroot = '.'
+set exe_dir = '.'
+
+set i = 1
+while ($i < $#argv)
+  if ("X$argv[$i]" == 'X-cesmid') then
+    @ i = $i + 1
+    set lid = $argv[$i]
+  else if ("X$argv[$i]" == 'X-cesmroot') then
+    @ i = $i + 1
+    set cesmroot = $argv[$i]
+  else if ("X$argv[$i]" == 'X-caseroot') then
+    @ i = $i + 1
+    set caseroot = $argv[$i]
+  else if ("X$argv[$i]" == 'X-exedir') then
+    @ i = $i + 1
+    set exe_dir = $argv[$i]
+  endif
+  @ i = $i + 1
+end
+
+#--- save model provenance with the executable
+cd $cesmroot
+
+if (-d $cesmroot/.git) then
+  git describe > $exe_dir/GIT_DESCRIBE.$lid
+  chmod 664 $exe_dir/GIT_DESCRIBE.$lid
+  /bin/cp -p $exe_dir/GIT_DESCRIBE.$lid $exe_dir/GIT_DESCRIBE
+
+  if (-f $cesmroot/.git/logs/HEAD) then
+    /bin/cp $cesmroot/.git/logs/HEAD $exe_dir/GIT_LOGS_HEAD.$lid
+    chmod 664 $exe_dir/GIT_LOGS_HEAD.$lid
+    /bin/cp -p $exe_dir/GIT_LOGS_HEAD.$lid $exe_dir/GIT_LOGS_HEAD
+  else
+    /bin/rm -f $exe_dir/GIT_LOGS_HEAD
+    touch $exe_dir/GIT_LOGS_HEAD
+  endif
+endif
+
+if (-d $cesmroot/.svn) then
+  svn info > $exe_dir/SVN_INFO.$lid
+  chmod 664 $exe_dir/SVN_INFO.$lid
+  /bin/cp -p $exe_dir/SVN_INFO.$lid $exe_dir/SVN_INFO
+
+  if (-f $cesmroot/.svn/wc.db) then
+    /bin/cp $cesmroot/.svn/wc.db $exe_dir/SVN_WC.DB.$lid
+    chmod 664 $exe_dir/SVN_WC.DB.$lid
+    /bin/cp -p $exe_dir/SVN_WC.DB.$lid $exe_dir/SVN_WC.DB
+  else
+    /bin/rm -f $exe_dir/SVN_WC.DB
+    touch $exe_dir/SVN_WC.DB
+  endif
+endif
+
+if (-d $caseroot/SourceMods) then
+  cd $caseroot
+  /bin/tar cf $exe_dir/SourceMods.$lid.tar SourceMods
+  cd $exe_dir
+  /bin/cp SourceMods.$lid.tar SourceMods.tar
+endif
+
+if (-f $caseroot/software_environment.txt) then
+  cd $caseroot
+  /bin/cp software_environment.txt $exe_dir/build_environment.$lid.txt
+  cd $exe_dir
+  /bin/cp build_environment.$lid.txt build_environment.txt
+endif
+

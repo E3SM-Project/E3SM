@@ -1,0 +1,38 @@
+#! /bin/csh -f
+
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER            = `./xmlquery  COMPILER          -value`
+  set MPILIB              = `./xmlquery  MPILIB            -value`
+  set DEBUG               = `./xmlquery  DEBUG             -value`
+  set OS                  = `./xmlquery  OS                -value`
+  set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
+  set PROJECT             = `./xmlquery  PROJECT           -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
+echo "DEBUG=$DEBUG"
+echo "OS=$OS"
+echo "PROJECT=$PROJECT"
+
+source /etc/profile.d/modules.csh
+module purge
+module load cmake
+module load perl xml-libxml switch
+
+if ( $COMPILER == "intel" ) then
+    module load intel/2015.6.233
+    module load openmpi/1.8.8-intel
+    module load netcdf/4.4.0-intel-p
+    module load mkl/2015.6.233
+    module load lapack/3.6.0-intel
+endif
+
+setenv NETCDF_PATH $NETCDF_DIR
+#-------------------------------------------------------------------------------
+
+limit coredumpsize 1000000
+limit stacksize unlimited
+

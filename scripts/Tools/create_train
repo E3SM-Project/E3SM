@@ -1,0 +1,244 @@
+#!/usr/bin/env perl 
+
+use Cwd;
+use Getopt::Long;
+
+if ($#ARGV == -1) {
+    print "Invoke create_newcase -help [or -h] for usage\n";
+    exit;
+}
+
+
+sub usage {
+die <<EOF;
+SYNOPSIS
+     create_train [options]
+    
+     Creates a manifest file and a train script.  After running you'll 
+     need to submit the train script by doing a qsub train.trainid.YYYYMMDD-HHmmss.run
+
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  casedir must be
+     quoted.
+
+     (casedir or manifestfile are required)
+    -casedir      "<casedir1,casedir2,casedir3,...>"     Specifies the case directories, the quotes are needed. 
+     or 
+    -manifestfile  <manifestfile> Specifies a manifest file you want to use.  A new manifest file will not be created. 
+
+    -trainid       <trainid>      Specifies the train ID (required)
+    -email         <email>        Specifies email address (required)
+
+EXAMPLES
+     The first three examples will create a manifest file for you.  The manifest file contains information about the location of the cases,
+     how many tasks are needed, run script names, and trainids.
+
+     create_train -casedir "/ccs/home/userid/cases/TESTCASE1,/ccs/home/userid/cases/TESTCASE2,/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu 
+     create_train -casedir "/ccs/home/userid/cases/TESTCASE[12],/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu
+     create_train -casedir "/ccs/home/userid/cases/TESTCASE*,/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu 
+ 
+     If you already have an old manifest file, or one that you've edited, that you want to use you can do the following.  
+
+     create_train -manifestfile old_manifest_file -trainid A -email youremail\@ucar.edu
+
+
+     To run the train you'll need to submit the train script to the queue.
+
+     qsub train.trainid.YYYYMMDD-HHmmss.jaguar.run
+EOF
+}
+
+GetOptions(
+    "casedir=s"                  => \$opts{'casedir'},
+    "email=s"                    => \$opts{'email'},
+    "manifestfile=s"             => \$opts{'manifestfile'},
+    "trainid=s"                  => \$opts{'trainid'},
+)  or usage();
+
+my $EMAIL = $opts{'email'};
+my $TRAIN_ID = $opts{'trainid'};
+my $CASEDIR = $opts{'casedir'};
+my $manifestfile = $opts{'manifestfile'};
+chomp $TRAIN_ID;
+
+$LID =`date +%Y%m%d-%H%M%S`;
+$date = `date`;
+chomp $date;
+chomp $LID;
+
+# Set a bunch of stuff
+$ENV{'TRAIN_ID'}=$TRAIN_ID;
+$train_rundir = getcwd();
+$train_manifest = $manifestfile;
+$train_resubmit = "resubmit.$TRAIN_ID";
+$pbs_account = "CLI017dev";
+$pbs_jobname = "${TRAIN_ID}_train";
+$pbs_queuename = "batch";
+$pbs_group_list = "cli017";
+$pbs_umask ="007";
+$pbs_walltime = "12:00:00";
+$pbs_email = $EMAIL;
+$train_script = "train.$TRAIN_ID.$LID.run";
+
+
+###################################################################################
+#           Get listing of cases                                                  #
+###################################################################################
+my @lsting;
+@CASEDIRs=split(/,/, $CASEDIR);
+
+foreach (@CASEDIRs){
+  print "getting listing for $_\n";
+  my @tmp_lsting;
+  if ($_ =~ /\*/ || $_ =~/\[/){
+    @tmp_lsting = `ls -d $_`;
+  }else{
+    @tmp_lsting = `echo $_`;
+  }
+  push(@lsting,@tmp_lsting);
+}
+
+###################################################################################
+#           Create new manifest file                                              #
+###################################################################################
+
+if (! $opts{'manifestfile'}){
+
+print "##########################################################\n";
+print "Creating a new manifest.$TRAIN_ID file for \n",@lsting,"\n";
+
+$manifestfile="manifest.$TRAIN_ID";
+open (MANIFEST_FILE, ">$manifestfile");
+print MANIFEST_FILE "###############################################################################\n";
+print MANIFEST_FILE "# TrainName  CaseName  NProcs  RunScript LogDir   Email\n";
+print MANIFEST_FILE "###############################################################################\n";
+foreach  (@lsting)
+{
+   chomp($_);
+   @a=split(/\//, $_);
+   $run_script=$a[$#a];
+   $ans=`grep "size"  $_/$run_script.run`;
+   $lans=length($ans);
+   $mppsize="size";
+   if ($lans == 0) {
+     $ans=`grep "mppwidth"   $_/$run_script.run`;
+   $mppsize="mppwidth";
+   }
+   @tasks= split(/=/,$ans);
+   chomp @tasks;
+   print MANIFEST_FILE "$TRAIN_ID $run_script $tasks[1] $_/$run_script.run $_ $EMAIL\n";
+}
+close(MANIFEST_FILE);
+} else {
+  print "##########################################################\n";
+  print "Using old $manifestfile file.\n\n";
+}
+
+###################################################################################
+#           Finished creating new manifest file                                              #
+###################################################################################
+
+
+
+###############################################################################
+# Dynamically construct the Climate Train by parsing the manifest
+###############################################################################
+
+$LID =`date +%Y%m%d-%H%M%S`;
+$date = `date`;
+chomp $date;
+chomp $TRAIN_ID;
+chomp $LID;
+$ENV{'TRAIN_ID'}=$TRAIN_ID;
+
+
+
+# Parse the manifest to figure out how many tasks are required
+my $qtasks=` awk '{tasks += \$3} END { if (substr(\$1, 1, 1) != "#") print tasks}' $manifestfile`;
+chomp $qtasks;
+
+###################################################################################
+#           Creating run script                                                   #
+###################################################################################
+open(TRAIN_SCRIPT, ">$train_script");
+print TRAIN_SCRIPT <<"SCRIPT";
+##============================================================================
+## Batch script for Climate Train ${TRAIN_ID} 
+## Created $date
+##============================================================================
+#PBS -A ${pbs_account}
+#PBS -N ${pbs_jobname}
+#PBS -q ${pbs_queuename}
+#PBS -l walltime=$pbs_walltime,$mppsize=$qtasks
+#PBS -W group_list=${pbs_group_list},umask=${pbs_umask}
+#PBS -j oe
+#PBS -m abe
+#PBS -M ${pbs_email}
+
+###############################################################################
+# Setup environment
+###############################################################################
+newgrp cli017
+umask 007
+
+###############################################################################
+# Change to directory containing the train run script and manifest
+###############################################################################
+cd $train_rundir
+
+###############################################################################
+# Retrieve jobid
+##############################################################################
+set full_jobid = \${PBS_JOBID}
+set jobid = \`echo \${full_jobid} | awk -F. '{print \$1}'\`
+
+###############################################################################
+# Start Climate Train jobs
+###############################################################################
+echo "\`date\` - Starting Climate Train ${TRAIN_ID} jobs"
+
+SCRIPT
+
+#
+## Sift through Climate Train manifest and build script to run active jobs
+my $test1=`awk -f load.awk ${manifestfile}`;
+print TRAIN_SCRIPT "$test1";
+#
+print TRAIN_SCRIPT <<"SCRIPT";
+###############################################################################
+# Wait for all jobs to finish
+###############################################################################
+echo "\`date\` - Waiting for all Climate Train ${TRAIN_ID} jobs to complete"
+wait
+echo "\`date\` - All Climate Train ${TRAIN_ID} jobs complete"
+
+###############################################################################
+# Resubmit myself
+###############################################################################
+if (-f ${train_resubmit}) then
+	set resubmit_cnt = \`awk '{printf "%ld", \$1;}' ${train_resubmit}\`
+	if (\${resubmit_cnt} > 0) then
+		@ resubmit_cnt = \${resubmit_cnt} - 1
+		echo \${resubmit_cnt} >! ${train_resubmit}
+		echo "\`date\` - Resubmit count decremented to \${resubmit_cnt} in ${train_resubmit}"
+		#
+		echo "\`date\` - Submitting new run script for Climate Train ${TRAIN_ID}"
+		set run_script = \`env build ${TRAIN_ID}\` && qsub \${run_script} || echo "Error building new run script: \${run_script}"
+	endif
+else
+	echo 0 > ${train_resubmit}
+endif
+
+echo "\`date\` - Done"
+exit
+SCRIPT
+close(TRAIN_SCRIPT);
+###################################################################################
+#           run script has been created                                           #
+###################################################################################
+print "You'll need to submit the run script to the queue by doing a qsub $train_script\n";
+#
+#chgrp cli017 ${train_script}
+#chmod 775 ${train_script}
+#echo ${train_script}
+#exit
