@@ -304,7 +304,10 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
                  sharedlibroot, complist, ninst_build, smp_value, model_only):
 ###############################################################################
-
+    """
+    check if a build needs to be done and warn if a clean is warrented first
+    returns the relative sharedpath directory for sharedlibraries
+    """
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
