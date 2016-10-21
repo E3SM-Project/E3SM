@@ -15,7 +15,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -29,6 +29,7 @@
       <value compset="%WW3"  >WW3</value>
       <value compset="%NPS"  >COPYALL_NPS_v1</value>
       <value compset="%NPSC2">COPYALL_NPS_CORE2_v1</value>
+      <value compset="%WISOQIA">CLM_QIAN_WISO</value>
       <value compset="%QIA"  >CLM_QIAN</value>
       <value compset="%CRU"  >CLMCRUNCEP</value>
       <value compset="%GSW"  >CLMGSWP3</value>
@@ -178,6 +179,7 @@
       <value compset="1850.*_DATM%QIA">1948</value>
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="1850.*_DATM%GSW">1901</value>
+      <value compset="2000.*_DATM%WISOQIA">2000</value>
       <value compset="2000.*_DATM%QIA">1972</value>
       <value compset="HIST.*_DATM%QIA">1948</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
@@ -208,6 +210,7 @@
       <value   compset="1850.*_DATM%QIA">1972</value> 
       <value   compset="1850.*_DATM%CRU">1920</value> 
       <value   compset="1850.*_DATM%GSW">1920</value> 
+      <value   compset="2000.*_DATM%WISOQIA">2004</value> 
       <value   compset="2000.*_DATM%QIA">2004</value> 
       <value   compset="HIST.*_DATM%QIA">1972</value>
       <value   compset="HIST.*_DATM%CRU">1920</value>
@@ -231,6 +234,7 @@
 
   <description>
     <desc compset="^1850_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>
+    <desc compset="^2000_DATM%WISOQIA"	>QIAN atm input data with water isotopes for 2000-2004:</desc>
     <desc compset="^2000_DATM%QIA"	>QIAN atm input data for 1972-2004:</desc>
     <desc compset="^2003_DATM%QIA"	>QIAN atm input data for 2002-2003:</desc>
     <desc compset="^HIST_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>

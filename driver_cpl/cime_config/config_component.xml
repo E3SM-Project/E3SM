@@ -3373,7 +3373,7 @@
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
       <!-- Mariana's fix to allow isotopes to get the proper CO2 value -->
-      <value compset="CAM[45]%WISOall"				>284.7</value>
+      <value compset="CAM..%WISOall"				>284.7</value>
       <value compset="^2000.+CAM[45]%WCSC"			>368.9</value>
       <value compset="^2000.+CAM[45]%MOZM"			>0.000001</value>
       <value compset="^2000.+CAM[45]%MMOS"			>0.000001</value>
