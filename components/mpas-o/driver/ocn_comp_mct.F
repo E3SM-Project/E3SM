@@ -140,6 +140,8 @@ contains
     type(mct_gGrid), pointer :: dom_o
 
     integer :: errorCode  ! error code
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr
 
     character(len=StrKIND) :: cpl_seq_option
 
@@ -295,7 +297,11 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, status='SCRATCH')
+       open(stdout_shr, status='SCRATCH', iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',stdout_shr,'iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ocn_init_mct open stdout_shr'//trim(ioerrstr))
+       endif
     else
        inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -316,6 +322,7 @@ contains
     domain_ptr => domain
     ocnStdErrUnit = stdout_shr
     ocnStdOutUnit = stdout_shr
+    write(ocnStdErrUnit,'(a,i6)') '=== Beginning ocn_init_mct: rank=',iam
     call mpas_framework_init_phase1(domain_ptr % dminfo, mpicom_o, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
     ! Setup function pointers for MPAS-O core and domain types
@@ -709,14 +716,8 @@ contains
         call memmon_reset_addr()
     endif
 #endif
+    write(ocnStdErrUnit,'(a,i6)') '=== Completed ocn_init_mct: rank=',iam
     call shr_sys_flush(stderrUnit)
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(stdout_shr)
-    end if
-#endif
-
 
 !-----------------------------------------------------------------------
 !EOC
@@ -765,13 +766,6 @@ contains
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       character (len=StrKIND), pointer :: config_restart_timestamp_name
-
-#ifndef MPAS_DEBUG
-    if ( domain % dminfo % my_proc_id /= 0 ) then
-       open(ocnStdErrUnit, status='SCRATCH')
-    end if
-#endif
-
 
       call mpas_io_units_set_stdout(ocnStdOutUnit)
       call mpas_io_units_set_stderr(ocnStdErrUnit)
@@ -966,13 +960,6 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
-#ifndef MPAS_DEBUG
-    if ( domain % dminfo % my_proc_id /= 0 ) then
-       close(ocnStdErrUnit)
-    end if
-#endif
-
-
 !-----------------------------------------------------------------------
 !EOC
 
@@ -1009,7 +996,8 @@ contains
 
 
     integer :: shrloglev, shrlogunit
-    integer :: errorCode
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr
 
     type (domain_type), pointer :: domain_ptr
 
@@ -1017,11 +1005,6 @@ contains
 
 !-----------------------------------------------------------------------
     my_proc_id = domain % dminfo % my_proc_id
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       open(ocnStdErrUnit, status='SCRATCH')
-    end if
-#endif
 
     call mpas_io_units_set_stdout(ocnStdOutUnit)
     call mpas_io_units_set_stderr(ocnStdErrUnit)
@@ -1049,7 +1032,11 @@ contains
 
 #ifndef MPAS_DEBUG
     if ( my_proc_id /= 0 ) then
-       close(ocnStdErrUnit)
+       close(ocnStdErrUnit, iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',my_proc_id,'unit=',ocnStdErrUnit,'iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ocn_final_mct close ocnStdErrUnit'//trim(ioerrstr))
+       endif
     end if
 #endif
 

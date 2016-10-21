@@ -134,6 +134,8 @@ contains
     type(mct_gGrid), pointer :: dom_i
 
     integer :: errorCode  ! error code
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr
 
     character(len=StrKIND) :: cpl_seq_option
 
@@ -289,7 +291,11 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, status='SCRATCH')
+       open(stdout_shr, status='SCRATCH', iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',stdout_shr,'iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ice_init_mct open stdout_shr '//trim(ioerrstr))
+       endif
     else
        inquire(file='ice_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -311,7 +317,7 @@ contains
 
     ! Write to glcStdErrUnit here, because stderrUnit is not correctly set until
     ! the mpas_framework_init_phase1 call
-    write(iceStdErrUnit,*) '=== Beginning ice_init_mct.'
+    write(iceStdErrUnit,'(a,i6)') '=== Beginning ice_init_mct: rank=',iam
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_i, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
@@ -675,13 +681,8 @@ contains
         call memmon_reset_addr()
     endif
 #endif
+    write(iceStdErrUnit,'(a,i6)') '=== Completed ice_init_mct: rank=',iam
     call shr_sys_flush(stderrUnit)
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(stdout_shr)
-    end if
-#endif
 
 !-----------------------------------------------------------------------
 !EOC
@@ -736,12 +737,6 @@ contains
             dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
       my_proc_id = domain % dminfo % my_proc_id
-
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       open(iceStdErrUnit, status='SCRATCH')
-    end if
-#endif
 
       call mpas_io_units_set_stdout(iceStdOutUnit)
       call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -909,14 +904,6 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       close(iceStdErrUnit)
-    end if
-#endif
-
-
-
 !-----------------------------------------------------------------------
 !EOC
 
@@ -953,18 +940,13 @@ contains
 
 
     integer :: shrloglev, shrlogunit, my_proc_id
-    integer :: errorCode
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr
 
     integer :: ierr
 
 !-----------------------------------------------------------------------
     my_proc_id = domain % dminfo % my_proc_id
-
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       open(iceStdErrUnit, status='SCRATCH')
-    end if
-#endif
 
     call mpas_io_units_set_stdout(iceStdOutUnit)
     call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -990,7 +972,11 @@ contains
 
 #ifndef MPAS_DEBUG
     if ( my_proc_id /= 0 ) then
-       close(iceStdErrUnit)
+       close(iceStdErrUnit, iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',my_proc_id,'unit=',iceStdErrUnit,'iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ice_final_mct close iceStdErrUnit'//trim(ioerrstr))
+       endif
     end if
 #endif
 
@@ -1941,6 +1927,7 @@ contains
 
 !----------------------------------------------------------------------- 
 
+   errorCode = 0
    n = 0
    i2x_i % rAttr(: ,:) = 0.0_RKIND
    block_ptr => domain % blocklist
