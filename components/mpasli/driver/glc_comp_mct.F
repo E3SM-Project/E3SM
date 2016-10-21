@@ -133,7 +133,7 @@ contains
     integer :: errorCode  ! error code
     integer :: err_tmp
     integer :: ioerr
-    character(len=StrKIND) :: ioerrstr
+    character(len=StrKIND) :: ioerrstr, scratchFName
 
     character(len=StrKIND) :: cpl_seq_option
 
@@ -288,7 +288,8 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, status='SCRATCH', iostat=ioerr)
+       write (scratchFName,'(a,i9.9)') 'scratch_glc_',iam
+       open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
        if (ioerr /= 0) then
           write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',stdout_shr,'iostat=',ioerr
           call mpas_dmpar_global_abort('ERROR in glc_init_mct open stdout_shr'//trim(ioerrstr))
@@ -1054,7 +1055,7 @@ contains
 
 #ifndef MPAS_DEBUG
     if ( my_proc_id /= 0 ) then
-       close(glcStdErrUnit, iostat=ioerr)
+       close(glcStdErrUnit, status='DELETE', iostat=ioerr)
        if (ioerr /= 0) then
           write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',my_proc_id,'unit=',glcStdErrUnit,'iostat=',ioerr
           call mpas_dmpar_global_abort('ERROR in glc_final_mct close glcStdErrUnit'//trim(ioerrstr))
