@@ -423,7 +423,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpil
     logs = []
     sharedlibroot = case.get_value("SHAREDLIBROOT")
     for lib in libs:
-        full_lib_path = os.path.join(sharedpath, lib)
+        full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory
         if (lib != "pio" and not os.path.exists(full_lib_path)):
             os.makedirs(full_lib_path)
