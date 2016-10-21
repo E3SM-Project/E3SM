@@ -91,7 +91,6 @@ class EnvMachSpecific(EnvBase):
     def _get_env_for_case(self, compiler, debug, mpilib):
         module_nodes = self.get_nodes("modules")
         env_nodes    = self.get_nodes("environment_variables")
-
         modules_to_load = None
         if module_nodes is not None:
             modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
@@ -152,7 +151,6 @@ class EnvMachSpecific(EnvBase):
 
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
         modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
-
         filename = ".env_mach_specific.%s" % shell
         lines = []
         if modules_to_load is not None:
@@ -192,7 +190,17 @@ class EnvMachSpecific(EnvBase):
                 for child in node:
                     expect(child.tag == child_tag, "Expected %s element" % child_tag)
                     if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
-                        result.append( (child.get("name"), child.text) )
+                        val = child.text
+                        if val is not None and val.startswith('$'):
+                            if val == "$COMPILER":
+                                val = compiler
+                            elif val == "$MPILIB":
+                                val = mpilib
+                            else:
+                                val = self.get_resolved_value(val)
+                                expect(not val.startswith('$'), "Could not resolve value for val=%s"%val)
+
+                        result.append( (child.get("name"), val) )
 
         return result
 

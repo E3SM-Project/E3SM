@@ -4,7 +4,7 @@ functions for building CIME models
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status
 from CIME.provenance            import save_build_provenance
-
+from CIME.preview_namelists     import create_namelists
 import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)
@@ -275,8 +275,9 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     # Load modules
     case.load_env()
 
-    build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
-                 sharedlibroot, complist, ninst_build, smp_value)
+    build_checks(case, build_threaded, comp_interface, use_esmf_lib,
+                                        debug, compiler, mpilib, sharedlibroot, complist,
+                                        ninst_build, smp_value, model_only)
 
     t2 = time.time()
     logs = []
@@ -301,7 +302,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
 ###############################################################################
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
-                 sharedlibroot, complist, ninst_build, smp_value):
+                 sharedlibroot, complist, ninst_build, smp_value, model_only):
 ###############################################################################
 
     ninst_value  = case.get_value("NINST_VALUE")
@@ -310,7 +311,7 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
 
     smpstr = ""
     inststr = ""
-    for model, _, nthrds, ninst, _ in complist:
+    for model, comp, nthrds, ninst, _ in complist:
         if nthrds > 1:
             build_threaded = True
         if build_threaded:
@@ -396,6 +397,10 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     case.set_value("BUILD_COMPLETE", False)
 
     case.flush()
+    if not model_only:
+        create_namelists(case)
+
+    return
 
 ###############################################################################
 def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
