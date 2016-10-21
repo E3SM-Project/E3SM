@@ -1,11 +1,7 @@
 #===============================================================================
+#
 # Common Makefile: a framework for building all CIME components and more
 #
-# Command-line variables
-#   MODEL=<model>  ~ a standard macro definition, often found in the included
-#                    MACFILE, used to trigger special compilation flags
-# Supported compilers
-# ibm, bgl, bgp, pgi, intel, pathscale, gnu, nag
 #===============================================================================
 
 # Set up special characters
@@ -278,7 +274,7 @@ ifeq ($(strip $(MPILIB)), mpi-serial)
   MPIFC   := $(SFC)
   MPICC   := $(SCC)
   MPICXX  := $(SCXX)
-  CONFIG_ARGS += --enable-mpiserial MCT_PATH=$(INSTALL_SHAREDPATH)/mct/mpi-serial
+  CONFIG_ARGS += --enable-mpiserial MCT_PATH=$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial
 else
   CC  := $(MPICC)
   FC  := $(MPIFC)
@@ -337,15 +333,15 @@ ifeq ($(COMP_OCN), pop)
 endif
 
 ifndef MCT_LIBDIR
-  MCT_LIBDIR=$(INSTALL_SHAREDPATH)/mct
+  MCT_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
 ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(INSTALL_SHAREDPATH)/pio$(PIO_VERSION)
+  PIO_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
 ifndef GPTL_LIBDIR
-  GPTL_LIBDIR=$(INSTALL_SHAREDPATH)/gptl
+  GPTL_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
 ifndef GLC_DIR
@@ -470,23 +466,13 @@ endif
 # Drive configure scripts for support libraries (mct)
 #------------------------------------------------------------------------------
 
-
-$(MCT_LIBDIR)/Makefile.conf:
+$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
 
-$(MCT_LIBDIR)/mpi-serial/Makefile.conf:
+$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
-
-$(MCT_LIBDIR)/mpeu/libmpeu.a: $(MCT_LIBDIR)/Makefile.conf
-	$(MAKE) -C $(MCT_LIBDIR)/mpeu
-
-$(MCT_LIBDIR)/mct/libmct.a: $(MCT_LIBDIR)/mpeu/libmpeu.a
-	$(MAKE) -C $(MCT_LIBDIR)/mct
-
-$(MCT_LIBDIR)/mpi-serial/libmpi-serial.a: $(MCT_LIBDIR)/mpi-serial/Makefile.conf
-	$(MAKE) -C $(MCT_LIBDIR)/mpi-serial
 
 ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
@@ -703,7 +689,7 @@ ULIBDEP += $(CSMSHARELIB)
 .SUFFIXES: .F90 .F .f90 .f .c .cpp .o .in
 
 ifeq ($(MPILIB),mpi-serial)
-  MPISERIAL = $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a
+  MPISERIAL = $(INSTALL_SHAREDPATH)/lib/libmpi-serial.a
   MLIBS += $(MPISERIAL)
   CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(INSTALL_SHAREDPATH)/include \
       -DMPI_Fortran_INCLUDE_PATH=$(INSTALL_SHAREDPATH)/include \
@@ -782,24 +768,23 @@ cleanlnd:
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)
-	$(RM) -fr $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
 cleanpio:
-	$(RM) -f $(INSTALL_SHAREDPATH)/lib/libpio*
-	$(RM) -fr $(PIO_LIBDIR)
+	$(RM) -f $(PIO_LIBDIR)/libpio*
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/pio
 
 cleanmct:
 	$(RM) -f $(MCTLIBS)
-	$(RM) -fr $(MCT_LIBDIR)
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/mct
 
 cleangptl:
 	$(RM) -f $(GPTLLIB)
-	$(RM) -fr $(GPTL_LIBDIR)
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/gptl
 
 clean: cleanatm cleanocn cleanwav cleanglc cleanesp cleanice cleanrof cleanlnd
 
 realclean: clean cleancsmshare cleanpio cleanmct cleangptl
-
 
 # the if-tests prevent DEPS files from being created when they're not needed
 ifneq ($(MAKECMDGOALS), db_files)

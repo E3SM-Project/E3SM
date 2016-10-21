@@ -416,7 +416,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpil
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
 
-    libs = ["gptl", "mct", "pio", "csm_share"]
+    libs = ["mct", "gptl", "pio", "csm_share"]
     logs = []
     sharedlibroot = case.get_value("SHAREDLIBROOT")
     for lib in libs:
@@ -426,7 +426,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpil
             os.makedirs(full_lib_path)
 
         file_build = os.path.join(exeroot, "%s.bldlog.%s" % (lib, lid))
-        my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
+        my_file = os.path.join(cimeroot, "cime_config", "buildlib.%s" % lib)
         if lib == "pio":
             my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts"),
                                                           os.path.join(cimeroot,"utils","python"), my_file)
