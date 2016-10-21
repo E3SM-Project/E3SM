@@ -16,6 +16,7 @@
 		<option name="config_do_restart">.true.</option>
 		<option name="config_start_time">'file'</option>
 		<option name="config_dt">'00:04:00'</option>
+		<option name="config_btr_dt">'00:00:06'</option>
 		<option name="config_write_output_on_startup">.false.</option>
 		<option name="config_Rayleigh_friction">.true.</option>
 		<option name="config_Rayleigh_damping_coeff">1.0e-4</option>

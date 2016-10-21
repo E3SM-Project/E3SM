@@ -11,6 +11,8 @@
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<option name="config_dt">'00:01:00'</option>
+		<option name="config_btr_dt">'00:00:03'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
