@@ -4,6 +4,9 @@
 
 #include "Registry_template.xml"
 
+<!-- isobaric diagnostics -->
+#include "Registry_isobaric.xml"
+
 <!-- convective diagnostics -->
 #include "Registry_convective.xml"
 

@@ -461,9 +461,6 @@ module atm_core
       end if
 
       call mpas_dmpar_get_time(diag_start_time)
-      call mpas_atm_diag_reset()
-      call mpas_atm_diag_update()
-      call mpas_atm_diag_compute()
 
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
          block_ptr => domain % blocklist
@@ -477,7 +474,12 @@ module atm_core
             block_ptr => block_ptr % next
          end do
       end if
+      call mpas_atm_diag_reset()
+      call mpas_atm_diag_update()
+      call mpas_atm_diag_compute()
+
       call mpas_dmpar_get_time(diag_stop_time)
+
       call mpas_dmpar_get_time(output_start_time)
       call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       call mpas_dmpar_get_time(output_stop_time)
@@ -565,8 +567,6 @@ module atm_core
 
 
          call mpas_dmpar_get_time(diag_start_time)
-         call mpas_atm_diag_update()
-         call mpas_atm_diag_compute()
 
          !
          ! Write any output streams that have alarms ringing, after computing diagnostics fields
@@ -586,6 +586,10 @@ module atm_core
               block_ptr => block_ptr % next
            end do
          end if
+
+         call mpas_atm_diag_update()
+         call mpas_atm_diag_compute()
+
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
@@ -670,7 +674,6 @@ module atm_core
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
       use mpas_constants
-      use mpas_atm_interp_diagnostics
    
       implicit none
    
@@ -709,8 +712,6 @@ module atm_core
          end do
       end do
 
-      call interp_diagnostics(mesh, state, time_lev, diag)
-   
    end subroutine atm_compute_output_diagnostics
    
    

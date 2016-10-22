@@ -5,8 +5,11 @@
 #
 DIAGNOSTIC_MODULES = \
 	mpas_atm_diagnostic_template.o \
+	isobaric_diagnostics.o \
 	convective_diagnostics.o \
 	pv_diagnostics.o
+
+isobaric_diagnostics.o: mpas_atm_diagnostics_utils.o
 
 convective_diagnostics.o: mpas_atm_diagnostics_utils.o
 
