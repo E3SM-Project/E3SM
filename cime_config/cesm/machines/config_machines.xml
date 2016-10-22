@@ -1405,6 +1405,9 @@
     <environment_variables debug="true">
       <env name="MP_EAGER_LIMIT">0</env>
     </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="MP_MPILIB">$MPILIB</env>
+    </environment_variables>
   </machine>
 <default_run_suffix>
   <default_run_exe>${EXEROOT}/cesm.exe </default_run_exe>

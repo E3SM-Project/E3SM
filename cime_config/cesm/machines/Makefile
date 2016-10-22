@@ -134,8 +134,8 @@ endif
 
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
-  INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
+INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 
 include $(CASEROOT)/Macros
 # Decide whether to use a C++ or Fortran linker, based on whether we
