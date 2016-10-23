@@ -729,7 +729,7 @@ contains
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: ierr, streamDirection, my_proc_id
+      integer :: ierr, streamDirection, iam
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
@@ -737,7 +737,7 @@ contains
       real(kind=RKIND), pointer :: &
             dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
-      my_proc_id = domain % dminfo % my_proc_id
+      iam = domain % dminfo % my_proc_id
 
       call mpas_io_units_set_stdout(iceStdOutUnit)
       call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -802,35 +802,33 @@ contains
         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
 
         ! pre-timestep analysis computation
-        write(stderrUnit,*) '   Starting analysis precompute'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Starting analysis precompute'
         call cice_analysis_precompute(domain, ierr)
-        write(stderrUnit,*) '   Finished analysis precompute'
+        if (iam==0) write(stderrUnit,*) '   Finished analysis precompute'
 
-        write(stderrUnit,*) '   Starting forward update'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Starting forward update'
         call mpas_timer_start("time integration", .false.)
         call cice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
-        write(stderrUnit,*) '   Finished forward update'
+        if (iam==0) write(stderrUnit,*) '   Finished forward update'
 
         ! update analysis members
-        write(stderrUnit,*) '   Starting AM compute'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Starting AM compute'
         call cice_analysis_compute(domain, ierr)
-        write(stderrUnit,*) '   Finished AM compute'
-        write(stderrUnit,*) '   Starting AM restart'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) then
+           write(stderrUnit,*) '   Finished AM compute'
+           write(stderrUnit,*) '   Starting AM restart'
+        endif
         call cice_analysis_restart(domain, ierr)
-        write(stderrUnit,*) '   Finished AM restart'
-        write(stderrUnit,*) '   Starting AM write'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) then
+           write(stderrUnit,*) '   Finished AM restart'
+           write(stderrUnit,*) '   Starting AM write'
+        endif
         call cice_analysis_write(domain, ierr)
-        write(stderrUnit,*) '   Finished AM write'
+        if (iam==0) write(stderrUnit,*) '   Finished AM write'
 
         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
-        write(stderrUnit,*) '   Resetting restart stream alarms'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Resetting restart stream alarms'
         call mpas_stream_mgr_begin_iteration(domain % streamManager)
         do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                    directionProperty=streamDirection, activeProperty=streamActive) )
@@ -838,53 +836,46 @@ contains
               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
            end if
         end do
-        write(stderrUnit,*) '   Resetting restart stream alarms complete'
-
-        write(stderrUnit,*) '   Writing output streams'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) then
+           write(stderrUnit,*) '   Resetting restart stream alarms complete'
+           write(stderrUnit,*) '   Writing output streams'
+        endif
         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-        write(stderrUnit,*) '   Finished writing output streams'
-
+        if (iam==0) write(stderrUnit,*) '   Finished writing output streams'
         write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
-        call shr_sys_flush(stderrUnit)
      end do
 
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
-         write(stderrUnit,*) 'Writing restart streams'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) 'Writing restart streams'
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
-               write(stderrUnit, *) '    Writing stream: ' // trim(streamName)
-               call shr_sys_flush(stderrUnit)
+               if (iam==0) write(stderrUnit, *) '    Writing stream: ' // trim(streamName)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, iErr=iErr)
-               write(stderrUnit, *) '    Finished Writing stream: ' // trim(streamName)
-               call shr_sys_flush(stderrUnit)
+               if (iam==0) write(stderrUnit, *) '    Finished Writing stream: ' // trim(streamName)
             end if
          end do
 
-         if ( domain % dminfo % my_proc_id == 0 ) then
+         if ( iam == 0 ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
          end if
-        write(stderrUnit,*) 'Finished writing restart streams'
+        if (iam==0) write(stderrUnit,*) 'Finished writing restart streams'
       end if
 
       ! Export state to coupler
-      write(stderrUnit,*) 'Exporting state'
-      call shr_sys_flush(stderrUnit)
+      if (iam==0) write(stderrUnit,*) 'Exporting state'
       call ice_export_mct(i2x_i, ierr)
-      write(stderrUnit,*) 'Finished exporting state'
-      call shr_sys_flush(stderrUnit)
+      if (iam==0) write(stderrUnit,*) 'Finished exporting state'
 
       ! Check if clocks are in sync
 !TODO?      call check_clocks_sync(domain % clock, Eclock, stderrUnit, ierr)
@@ -902,6 +893,7 @@ contains
       end if
  
       ! Reset I/O logs
+      call shr_sys_flush(stderrUnit)
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
@@ -940,14 +932,14 @@ contains
 !-----------------------------------------------------------------------
 
 
-    integer :: shrloglev, shrlogunit, my_proc_id
+    integer :: shrloglev, shrlogunit, iam
     integer :: ioerr
     character(len=StrKIND) :: ioerrstr
 
     integer :: ierr
 
 !-----------------------------------------------------------------------
-    my_proc_id = domain % dminfo % my_proc_id
+    iam = domain % dminfo % my_proc_id
 
     call mpas_io_units_set_stdout(iceStdOutUnit)
     call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -972,10 +964,10 @@ contains
     call shr_file_setLogLevel(shrloglev)
 
 #ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
+    if ( iam /= 0 ) then
        close(iceStdErrUnit, status='DELETE', iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',my_proc_id,'unit=',iceStdErrUnit,'iostat=',ioerr
+          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',iceStdErrUnit,'iostat=',ioerr
           call mpas_dmpar_global_abort('ERROR in ice_final_mct close iceStdErrUnit'//trim(ioerrstr))
        endif
     end if

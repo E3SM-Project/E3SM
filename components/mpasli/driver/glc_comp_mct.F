@@ -728,6 +728,7 @@ contains
     ierr = ior(ierr,err_tmp)
 
     write(glcStdErrUnit,'(a,i6)') '=== Completed glc_init_mct: rank=',iam
+    call shr_sys_flush(glcStdErrUnit)
 
 !-----------------------------------------------------------------------
 !EOC
@@ -778,10 +779,10 @@ contains
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
-      integer :: err, err_tmp, globalErr, streamDirection, my_proc_id
+      integer :: err, err_tmp, globalErr, streamDirection, iam
       logical :: solveVelo, streamActive
 
-      my_proc_id = domain % dminfo % my_proc_id
+      iam = domain % dminfo % my_proc_id
 
       call mpas_io_units_set_stdout(glcStdOutUnit)
       call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -831,7 +832,6 @@ contains
          itimestep = itimestep + 1
 
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
-         call shr_sys_flush(stderrUnit)
 
          ! ===
          ! === Perform Timestep
@@ -923,7 +923,6 @@ contains
          endif
 
          write(stderrUnit,*) 'Completed timestep number ', iTimeStep
-         call shr_sys_flush(stderrUnit)
       end do
       err = ior(err, err_tmp)
 
@@ -952,7 +951,7 @@ contains
             end if
          end do
 
-         if ( domain % dminfo % my_proc_id == 0 ) then
+         if ( iam == 0 ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
@@ -983,6 +982,8 @@ contains
       err = ior(err,err_tmp)
 
       write(stdoutUnit,*) '=== Completed glc_run_mct.'
+      call shr_sys_flush(stdoutUnit)
+      call shr_sys_flush(stderrUnit)
 
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)
@@ -1023,13 +1024,13 @@ contains
 !  local variables
 !
 !-----------------------------------------------------------------------
-    integer :: shrloglev, shrlogunit, my_proc_id
+    integer :: shrloglev, shrlogunit, iam
     integer :: err, err_tmp, iErr, ioerr
     character(len=StrKIND) :: ioerrstr
 
 !-----------------------------------------------------------------------
 
-    my_proc_id = domain % dminfo % my_proc_id
+    iam = domain % dminfo % my_proc_id
 
     call mpas_io_units_set_stdout(glcStdOutUnit)
     call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -1054,10 +1055,10 @@ contains
     call shr_file_setLogLevel(shrloglev)
 
 #ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
+    if ( iam /= 0 ) then
        close(glcStdErrUnit, status='DELETE', iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',my_proc_id,'unit=',glcStdErrUnit,'iostat=',ioerr
+          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',glcStdErrUnit,'iostat=',ioerr
           call mpas_dmpar_global_abort('ERROR in glc_final_mct close glcStdErrUnit'//trim(ioerrstr))
        endif
     end if
