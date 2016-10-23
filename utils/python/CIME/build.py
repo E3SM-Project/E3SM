@@ -463,7 +463,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpil
         file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
         config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
 
-        for ndir in [bldroot, libroot]:
+        for ndir in [bldroot, libroot, incroot]:
             if (not os.path.isdir(ndir)):
                 os.makedirs(ndir)
 
