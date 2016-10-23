@@ -411,7 +411,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpil
 
     if (mpilib == "mpi-serial"):
         for header_to_copy in glob.glob(os.path.join(cimeroot, "externals/mct/mpi-serial/*.h")):
-            shutil.copy(header_to_copy, os.path.join(libroot, "include"))
+            shutil.copy2(header_to_copy, os.path.join(libroot, "include"))
 
     shared_lib = os.path.join(exeroot, sharedpath, "lib")
     shared_inc = os.path.join(exeroot, sharedpath, "include")
