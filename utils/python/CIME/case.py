@@ -335,8 +335,6 @@ class Case(object):
         """
         Update or create a valid_values entry for item and populate it
         """
-        if item == "CASEROOT":
-            self._caseroot = value
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_valid_values(item, valid_values)

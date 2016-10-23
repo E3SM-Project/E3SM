@@ -1791,7 +1791,7 @@ def make_pylint_test(pyfile, cimeroot):
     def test(self):
         code_checker = os.path.join(TOOLS_DIR, "code_checker")
         run_cmd_assert_result(self, "PYTHONPATH=%s:%s:$PYTHONPATH %s --dir %s %s"\
-                                  %(TOOLS_DIR, LIB_DIR, code_checker, cimeroot, pyfile))
+                                  %(TOOLS_DIR, LIB_DIR, code_checker, cimeroot, pyfile), from_dir=cimeroot)
     return test
 
 
