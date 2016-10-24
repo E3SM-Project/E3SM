@@ -265,7 +265,7 @@ module CNNitrogenFluxType
      procedure , public  :: Summary
      procedure , private :: InitAllocate => initallocate_col_nf
      procedure , private :: InitHistory => inithistory_col_nf
-     procedure , private :: InitCold
+     procedure , private :: InitCold => initcold_col_nf
 
      procedure , private :: NSummary_interface
 
@@ -1273,5 +1273,59 @@ module CNNitrogenFluxType
     end if !! if (use_pflotran.and.pf_cmode)
     !!-----------------------------------------------------------
   end subroutine inithistory_col_nf
+
+
+  subroutine initcold_col_nf(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initializes time varying variables used only in coupled carbon-nitrogen mode (CN):
+    !
+    ! !USES:
+    use clm_varpar      , only : crop_prog
+    use landunit_varcon , only : istsoil, istcrop
+    !
+    ! !ARGUMENTS:
+    class(soilcol_nitrogen_flux) :: this 
+    type(bounds_type), intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p,c,l
+    integer :: fp, fc                                    ! filter indices
+    integer :: num_special_col                           ! number of good values in special_col filter
+    integer :: num_special_patch                         ! number of good values in special_patch filter
+    integer :: special_col(bounds%endc-bounds%begc+1)    ! special landunit filter - columns
+    integer :: special_patch(bounds%endp-bounds%begp+1)  ! special landunit filter - patches
+    !---------------------------------------------------------------------
+
+    ! Set column filters
+
+    num_special_col = 0
+    do c = bounds%begc, bounds%endc
+       l = col%landunit(c)
+       if (lun%ifspecial(l)) then
+          num_special_col = num_special_col + 1
+          special_col(num_special_col) = c
+       end if
+    end do
+
+    ! Set patch filters
+
+    !-----------------------------------------------
+    ! initialize nitrogen flux variables
+    !-----------------------------------------------
+
+
+    ! initialize fields for special filters
+
+    do fc = 1,num_special_col
+       c = special_col(fc)
+       this%dwt_nloss_col(c) = 0._r8
+    end do
+
+    call this%SetValues (&
+         num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8, &
+         num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+
+  end subroutine initcold_col_nf
 
 end module ColumnNitrogenFluxType
