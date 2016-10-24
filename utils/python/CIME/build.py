@@ -275,15 +275,15 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     # Load modules
     case.load_env()
 
-    build_checks(case, build_threaded, comp_interface, use_esmf_lib,
-                                        debug, compiler, mpilib, sharedlibroot, complist,
-                                        ninst_build, smp_value, model_only)
+    sharedpath = build_checks(case, build_threaded, comp_interface,
+                              use_esmf_lib, debug, compiler, mpilib,
+                              sharedlibroot, complist, ninst_build, smp_value, model_only)
 
     t2 = time.time()
     logs = []
 
     if not model_only:
-        logs = build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid,
+        logs = build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpilib, lid,
                                machines_file)
 
     if not sharedlib_only:
@@ -304,7 +304,10 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
                  sharedlibroot, complist, ninst_build, smp_value, model_only):
 ###############################################################################
-
+    """
+    check if a build needs to be done and warn if a clean is warrented first
+    returns the relative sharedpath directory for sharedlibraries
+    """
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
@@ -332,10 +335,10 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
 
     debugdir = "debug" if debug else "nodebug"
     threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded) else "nothreads"
-    sharedpath = os.path.join(sharedlibroot, compiler, mpilib, debugdir, threaddir)
+    sharedpath = os.path.join(compiler, mpilib, debugdir, threaddir)
+
     logger.debug("compiler=%s mpilib=%s debugdir=%s threaddir=%s"%
                  (compiler,mpilib,debugdir,threaddir))
-    os.environ["SHAREDPATH"] = sharedpath
 
     expect( ninst_build == ninst_value or ninst_build == "0",
             """
@@ -400,40 +403,39 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     if not model_only:
         create_namelists(case)
 
-    return
+    return sharedpath
 
 ###############################################################################
-def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
+def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
 ###############################################################################
 
-    if (mpilib == "mpi-serial"):
-        for header_to_copy in glob.glob(os.path.join(cimeroot, "externals/mct/mpi-serial/*.h")):
-            shutil.copy(header_to_copy, os.path.join(libroot, "include"))
-
-    sharedpath = os.environ["SHAREDPATH"]
-    shared_lib = os.path.join(sharedpath, "lib")
-    shared_inc = os.path.join(sharedpath, "include")
+    shared_lib = os.path.join(exeroot, sharedpath, "lib")
+    shared_inc = os.path.join(exeroot, sharedpath, "include")
     for shared_item in [shared_lib, shared_inc]:
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
 
     libs = ["mct", "gptl", "pio", "csm_share"]
     logs = []
-
+    sharedlibroot = case.get_value("SHAREDLIBROOT")
     for lib in libs:
-        full_lib_path = os.path.join(sharedpath, lib)
+        if lib == "csm_share":
+            # csm_share adds its own dir name
+            full_lib_path = os.path.join(sharedlibroot, sharedpath)
+        else:
+            full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory
         if (lib != "pio" and not os.path.exists(full_lib_path)):
             os.makedirs(full_lib_path)
 
-        file_build = os.path.join(sharedpath, "%s.bldlog.%s" % (lib, lid))
-        my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
+        file_build = os.path.join(exeroot, "%s.bldlog.%s" % (lib, lid))
+        my_file = os.path.join(cimeroot, "cime_config", "buildlib.%s" % lib)
         if lib == "pio":
             my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts"),
                                                           os.path.join(cimeroot,"utils","python"), my_file)
         with open(file_build, "w") as fd:
-            stat = run_cmd("%s %s %s" %
-                           (my_file, sharedpath, caseroot),
+            stat = run_cmd("%s %s %s %s" %
+                           (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
                            from_dir=exeroot,
                            verbose=True, arg_stdout=fd,
                            arg_stderr=subprocess.STDOUT)[0]
@@ -451,14 +453,13 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
     if comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
         logging.info("         - Building clm4_5/clm5_0 Library ")
         esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
-        sharedpath = os.environ["SHAREDPATH"]
-        bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "clm","obj" )
-        libroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lib")
-        incroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "include")
+        bldroot = os.path.join(sharedlibroot, sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "clm","obj" )
+        libroot = os.path.join(exeroot, sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lib")
+        incroot = os.path.join(exeroot, sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "include")
         file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
         config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
 
-        for ndir in [bldroot, libroot]:
+        for ndir in [bldroot, libroot, incroot]:
             if (not os.path.isdir(ndir)):
                 os.makedirs(ndir)
 

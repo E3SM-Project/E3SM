@@ -13,10 +13,8 @@ set GMAKE	= `./xmlquery  GMAKE	-value `
 # the $CASE.build script
 
 setenv GPTL_DIR $CIMEROOT/share/timing   # gptl directory
-setenv SHAREDPATH  $1
-setenv GPTL_LIBDIR $SHAREDPATH/gptl
-
-echo "Copying source to CESM EXEROOT..."
+setenv GPTL_LIBDIR $1
+setenv SHAREDPATH  $2
 
 cd $GPTL_LIBDIR
 

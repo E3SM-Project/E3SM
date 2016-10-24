@@ -630,16 +630,12 @@
       <modules compiler="nag">
 	<command name="load">compiler/nag/6.1</command>
       </modules>
-<!--      <modules compiler="nag" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.7.0/nag/mvapich2 </command>
-      </modules> -->
       <modules compiler="gnu">
 	<command name="load">compiler/gnu/4.8.5</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="PATH">$PATH:/usr/local/bin</env>
     </environment_variables>
   </machine>
 
@@ -1404,6 +1400,9 @@
     </environment_variables>
     <environment_variables debug="true">
       <env name="MP_EAGER_LIMIT">0</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="MP_MPILIB">$MPILIB</env>
     </environment_variables>
   </machine>
 <default_run_suffix>

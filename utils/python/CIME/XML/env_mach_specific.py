@@ -219,9 +219,12 @@ class EnvMachSpecific(EnvBase):
 
     def _match(self, my_value, xml_value):
         if (xml_value.startswith("!")):
-            return my_value != xml_value[1:]
+            result = my_value != xml_value[1:]
         else:
-            return my_value == xml_value
+            result = my_value == xml_value
+        logger.debug("(env_mach_specific) _match %s %s %s"%(my_value, xml_value, result))
+        return result
+
 
     def _get_module_commands(self, modules_to_load, shell):
         # Note this is independent of module system type
