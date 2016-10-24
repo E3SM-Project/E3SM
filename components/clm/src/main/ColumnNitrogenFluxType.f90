@@ -260,14 +260,10 @@ module CNNitrogenFluxType
 
      procedure , public  :: Init => init_col_nf 
      procedure , public  :: Restart => restart_col_nf
-     procedure , public  :: SetValues
-     procedure , public  :: ZeroDWT
-     procedure , public  :: Summary
      procedure , private :: InitAllocate => initallocate_col_nf
      procedure , private :: InitHistory => inithistory_col_nf
      procedure , private :: InitCold => initcold_col_nf
-
-     procedure , private :: NSummary_interface
+     procedure , public :: Clean => clean_col_nf
 
   end type soilcol_nitrogen_flux
 
@@ -281,8 +277,9 @@ module CNNitrogenFluxType
     call this%InitHistory (bounds)
     call this%InitCold (bounds)
 
+  end subroutine init_col_nf
 
-    !------------------------------------------------------------------------
+  !------------------------------------------------------------------------
   subroutine initallocate_col_nf(this, bounds)
     !
     ! !DESCRIPTION:
@@ -502,7 +499,6 @@ module CNNitrogenFluxType
     
   end subroutine initallocate_col_nf
 
-  end subroutine init_col_nf
 
   subroutine inithistory_col_nf(this, bounds)
     !
@@ -1451,5 +1447,180 @@ module CNNitrogenFluxType
     !------------------------------------------------------------------------
 
   end subroutine restart_col_nf
+
+  subroutine clean_col_nf(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize pft nitrogen flux
+    !
+    ! !ARGUMENTS:
+    class (soilcol_nitrogen_flux) :: this
+    type(bounds_type) , intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: begp,endp
+    integer           :: begc,endc
+    !------------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+    begc = bounds%begc; endc = bounds%endc
+
+
+    deallocate(this%ndep_to_sminn_col             )
+    deallocate(this%nfix_to_sminn_col             )
+    deallocate(this%fert_to_sminn_col             )
+    deallocate(this%soyfixn_to_sminn_col          )
+    deallocate(this%hrv_deadstemn_to_prod10n_col  )
+    deallocate(this%hrv_deadstemn_to_prod100n_col )
+    deallocate(this%hrv_cropn_to_prod1n_col       )
+    deallocate(this%sminn_to_plant_col            )
+    deallocate(this%potential_immob_col           )
+    deallocate(this%actual_immob_col              )
+    deallocate(this%gross_nmin_col                )
+    deallocate(this%net_nmin_col                  )
+    deallocate(this%denit_col                     )
+    deallocate(this%supplement_to_sminn_col       )
+    deallocate(this%prod1n_loss_col               )
+    deallocate(this%prod10n_loss_col              )
+    deallocate(this%prod100n_loss_col             )
+    deallocate(this%product_nloss_col             )
+    deallocate(this%ninputs_col                   )
+    deallocate(this%noutputs_col                  )
+    deallocate(this%fire_nloss_col                )
+    deallocate(this%fire_nloss_p2c_col            )
+    deallocate(this%som_n_leached_col             )
+
+    deallocate(this%m_n_to_litr_met_fire_col        )
+    deallocate(this%m_n_to_litr_cel_fire_col        )
+    deallocate(this%m_n_to_litr_lig_fire_col        )
+    deallocate(this%r_psi_col                       )
+    deallocate(this%anaerobic_frac_col              )
+    deallocate(this%potential_immob_vr_col          )
+    deallocate(this%actual_immob_vr_col             )
+    deallocate(this%sminn_to_plant_vr_col           )
+    deallocate(this%supplement_to_sminn_vr_col      )
+    deallocate(this%gross_nmin_vr_col               )
+    deallocate(this%net_nmin_vr_col                 )
+
+    deallocate(this%dwt_seedn_to_leaf_col               )
+    deallocate(this%dwt_seedn_to_deadstem_col           )
+    deallocate(this%dwt_conv_nflux_col                  )
+    deallocate(this%dwt_prod10n_gain_col                )
+    deallocate(this%dwt_prod100n_gain_col               )
+    deallocate(this%dwt_nloss_col                       )
+    deallocate(this%wood_harvestn_col                   )
+    deallocate(this%dwt_frootn_to_litr_met_n_col        )
+    deallocate(this%dwt_frootn_to_litr_cel_n_col        )
+    deallocate(this%dwt_frootn_to_litr_lig_n_col        )
+    deallocate(this%dwt_livecrootn_to_cwdn_col          )
+    deallocate(this%dwt_deadcrootn_to_cwdn_col          )
+    deallocate(this%f_nit_vr_col                        )
+    deallocate(this%f_denit_vr_col                      )
+    deallocate(this%smin_no3_leached_vr_col             )
+    deallocate(this%smin_no3_leached_col                )
+    deallocate(this%smin_no3_runoff_vr_col              )
+    deallocate(this%smin_no3_runoff_col                 )
+    deallocate(this%pot_f_nit_vr_col                    )
+    deallocate(this%pot_f_nit_col                       )
+    deallocate(this%pot_f_denit_vr_col                  )
+    deallocate(this%pot_f_denit_col                     )
+    deallocate(this%actual_immob_no3_vr_col             )
+    deallocate(this%actual_immob_nh4_vr_col             )
+    deallocate(this%smin_no3_to_plant_vr_col            )
+    deallocate(this%smin_nh4_to_plant_vr_col            )
+    deallocate(this%smin_no3_to_plant_col               )
+    deallocate(this%smin_nh4_to_plant_col               )
+    deallocate(this%f_nit_col                           )
+    deallocate(this%f_denit_col                         )
+    deallocate(this%n2_n2o_ratio_denit_vr_col           )
+    deallocate(this%f_n2o_denit_col                     )
+    deallocate(this%f_n2o_denit_vr_col                  )
+    deallocate(this%f_n2o_nit_col                       )
+    deallocate(this%f_n2o_nit_vr_col                    )
+    deallocate(this%sminn_no3_input_vr_col              )
+    deallocate(this%sminn_nh4_input_vr_col              )
+    deallocate(this%sminn_nh4_input_col                 )
+    deallocate(this%sminn_no3_input_col                 )
+    deallocate(this%sminn_input_col                     )
+    deallocate(this%bgc_npool_ext_inputs_vr_col         )
+    deallocate(this%bgc_npool_ext_loss_vr_col           )
+    deallocate(this%bgc_npool_inputs_col                )
+    deallocate(this%smin_no3_massdens_vr_col            )
+    deallocate(this%soil_bulkdensity_col                )
+    deallocate(this%k_nitr_t_vr_col                     )
+    deallocate(this%k_nitr_ph_vr_col                    )
+    deallocate(this%k_nitr_h2o_vr_col                   )
+    deallocate(this%k_nitr_vr_col                       )
+    deallocate(this%wfps_vr_col                         )
+    deallocate(this%f_denit_base_vr_col                 )
+    deallocate(this%diffus_col                          )
+    deallocate(this%ratio_k1_col                        )
+    deallocate(this%ratio_no3_co2_col                   )
+    deallocate(this%soil_co2_prod_col                   )
+    deallocate(this%fr_WFPS_col                         )
+    deallocate(this%fmax_denit_carbonsubstrate_vr_col   )
+    deallocate(this%fmax_denit_nitrate_vr_col           )
+    deallocate(this%decomp_cascade_ntransfer_vr_col     )
+    deallocate(this%decomp_cascade_sminn_flux_vr_col    )
+    deallocate(this%m_decomp_npools_to_fire_vr_col      )
+    deallocate(this%decomp_cascade_ntransfer_col        )
+    deallocate(this%decomp_cascade_sminn_flux_col       )
+    deallocate(this%m_decomp_npools_to_fire_col         )
+    deallocate(this%phenology_n_to_litr_met_n_col       )
+    deallocate(this%phenology_n_to_litr_cel_n_col       )
+    deallocate(this%phenology_n_to_litr_lig_n_col       )
+    deallocate(this%gap_mortality_n_to_litr_met_n_col   )
+    deallocate(this%gap_mortality_n_to_litr_cel_n_col   )
+    deallocate(this%gap_mortality_n_to_litr_lig_n_col   )
+    deallocate(this%gap_mortality_n_to_cwdn_col         )
+    deallocate(this%fire_mortality_n_to_cwdn_col        )
+    deallocate(this%harvest_n_to_litr_met_n_col         )
+    deallocate(this%harvest_n_to_litr_cel_n_col         )
+    deallocate(this%harvest_n_to_litr_lig_n_col         )
+    deallocate(this%harvest_n_to_cwdn_col               )
+    deallocate(this%sminn_to_denit_decomp_cascade_vr_col)
+    deallocate(this%sminn_to_denit_decomp_cascade_col   )
+    deallocate(this%sminn_to_denit_excess_vr_col        )
+    deallocate(this%sminn_to_denit_excess_col           )
+    deallocate(this%sminn_leached_vr_col                )
+    deallocate(this%sminn_leached_col                   )
+    deallocate(this%decomp_npools_leached_col           )
+    deallocate(this%decomp_npools_transport_tendency_col)
+    deallocate(this%decomp_npools_sourcesink_col        )
+    deallocate(this%plant_ndemand_col                   )
+    deallocate(this%plant_ndemand_vr_col                )
+    deallocate(this%f_ngas_decomp_vr_col                )
+    deallocate(this%f_ngas_nitri_vr_col                 )
+    deallocate(this%f_ngas_denit_vr_col                 )
+    deallocate(this%f_n2o_soil_vr_col                   )
+    deallocate(this%f_n2_soil_vr_col                    )
+    deallocate(this%f_ngas_decomp_col                   )
+    deallocate(this%f_ngas_nitri_col                    )
+    deallocate(this%f_ngas_denit_col                    )
+    deallocate(this%f_n2o_soil_col                      )
+    deallocate(this%f_n2_soil_col                       )
+    deallocate(this%externaln_to_decomp_npools_col      )
+    deallocate(this%externaln_to_decomp_delta_col       )
+    deallocate(this%no3_net_transport_vr_col            )
+    deallocate(this%no3_net_transport_delta_col         )
+    deallocate(this%pmnf_decomp_cascade									)  
+
+    ! ------ 	KB - Are these included in column ???? ---------------------!
+    ! allocate(this%plant_n_uptake_flux         (begc:endc)) ;	         this%plant_n_uptake_flux   (:)   = nan
+    ! allocate(this%soil_n_immob_flux           (begc:endc)) ;	         this%soil_n_immob_flux	    (:)   = nan
+    ! allocate(this%soil_n_immob_flux_vr        (begc:endc,1:nlevdecomp)); this%soil_n_immob_flux_vr  (:,:) = nan
+    ! allocate(this%soil_n_grossmin_flux        (begc:endc)) ;	         this%soil_n_grossmin_flux  (:)   = nan
+    ! allocate(this%actual_immob_no3_col        (begc:endc)) ;             this%actual_immob_no3_col  (:)   = nan
+    ! allocate(this%actual_immob_nh4_col        (begc:endc)) ;             this%actual_immob_nh4_col  (:)   = nan
+    ! allocate(this%smin_no3_to_plant_col       (begc:endc)) ;             this%smin_no3_to_plant_col (:)   = nan
+    ! allocate(this%smin_nh4_to_plant_col       (begc:endc)) ;             this%smin_nh4_to_plant_col (:)   = nan 
+    ! allocate(this%plant_to_litter_nflux       (begc:endc)) ;             this%plant_to_litter_nflux (:)   = nan
+    ! allocate(this%plant_to_cwd_nflux          (begc:endc)) ;             this%plant_to_cwd_nflux    (:)   = nan
+    
+  end subroutine clean_col_nf
+
+
+
+
 
 end module ColumnNitrogenFluxType
