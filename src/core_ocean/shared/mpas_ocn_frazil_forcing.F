@@ -357,8 +357,6 @@ contains
       logical, pointer :: config_frazil_use_surface_pressure
       logical, pointer :: config_frazil_in_open_ocean
       logical, pointer :: config_frazil_under_land_ice
-      logical, pointer :: config_frazil_use_constant_open_ocean_freezing_temperature
-      real (kind=RKIND), pointer :: config_frazil_open_ocean_freezing_temperature
 
       real (kind=RKIND) :: newFrazilIceThickness, newThicknessWeightedSaltContent
       real (kind=RKIND) :: sumNewFrazilIceThickness, sumNewThicknessWeightedSaltContent
@@ -439,10 +437,6 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_use_surface_pressure', config_frazil_use_surface_pressure)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_maximum_freezing_temperature', &
                                 config_frazil_maximum_freezing_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_frazil_use_constant_open_ocean_freezing_temperature', &
-                                config_frazil_use_constant_open_ocean_freezing_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_frazil_open_ocean_freezing_temperature', &
-                                config_frazil_open_ocean_freezing_temperature)
 
       ! get time step in units of seconds
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err)
@@ -506,12 +500,9 @@ contains
         do k = kBottomFrazil, 1, -1
 
           ! get freezing temperature
-          if (underLandIce .or. .not. config_frazil_use_constant_open_ocean_freezing_temperature) then
-            oceanFreezingTemperature = ocn_freezing_temperature(salinity=activeTracers(indexSalinity,k,iCell), &
-                                                                pressure=pressure(k,iCell))
-          else
-            oceanFreezingTemperature = config_frazil_open_ocean_freezing_temperature
-          end if
+          oceanFreezingTemperature = ocn_freezing_temperature(salinity=activeTracers(indexSalinity,k,iCell), &
+                                                              pressure=pressure(k,iCell), &
+                                                              inLandIceCavity=underLandIce)
 
           potential = layerThickness(k,iCell) * config_specific_heat_sea_water &
                     * rho_sw * (activeTracers(indexTemperature,k,iCell) - oceanFreezingTemperature)
