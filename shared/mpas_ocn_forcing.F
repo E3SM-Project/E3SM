@@ -25,6 +25,7 @@ module ocn_forcing
    use mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
    use ocn_forcing_bulk
    use ocn_forcing_restoring
    use ocn_constants
