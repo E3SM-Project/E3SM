@@ -13,11 +13,6 @@
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_land_ice_flux_mode">'standalone'</option>
 		<option name="config_check_ssh_consistency">.false.</option>
-		<option name="config_freezing_temperature_coeff_0">9.39e-2</option>
-		<option name="config_freezing_temperature_coeff_S">-5.73e-2</option>
-		<option name="config_freezing_temperature_coeff_p">-7.53e-8</option>
-		<option name="config_freezing_temperature_coeff_pS">0.0</option>
-		<option name="config_freezing_temperature_reference_pressure">0.0</option>
 	</namelist>
 
 	<streams>
