@@ -141,7 +141,7 @@ else:
 	if np.amax(diff) > linf_norm:
 		linf_norm = np.amax(diff)
 
-	diff_str = '%d: '%(t)
+	diff_str = ''
 	if args.l1_norm:
 		if float(args.l1_norm) < l1_norm:
 			pass_val = False
