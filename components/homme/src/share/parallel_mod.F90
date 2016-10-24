@@ -105,6 +105,9 @@ contains
 ! ================================================
      
   function initmp(npes_in) result(par)
+    use dimensions_mod, only :  nelem
+    use cam_abortutils, only: endrun
+
 #ifdef CAM
     use spmd_utils, only : mpicom
 #endif      
@@ -117,6 +120,7 @@ contains
 #ifdef _AIX
     integer(kind=int_kind)                              :: ii         
     character(len=2)                                    :: cfn
+    character(len=2)                                    :: cfn
 #endif
 
     integer(kind=int_kind)                              :: ierr,tmp
@@ -124,6 +128,7 @@ contains
     logical :: running   ! state of MPI at beginning of initmp call
     character(len=MPI_MAX_PROCESSOR_NAME)               :: my_name
     character(len=MPI_MAX_PROCESSOR_NAME), allocatable  :: the_names(:)
+    character(len=128)                                  :: errmsg
 
     integer(kind=int_kind),allocatable                  :: tarray(:)
     integer(kind=int_kind)                              :: namelen,i
@@ -146,12 +151,17 @@ contains
     par%intercomm = 0
     
 #ifdef CAM
+    call MPI_comm_size(mpicom,npes_cam,ierr)
     if(present(npes_in)) then
+       if(npes_in > nelem) then
+         write(errmsg, '(A70,I5,A3,I5)') 'parallel_mod.F90: Number of tasks is greater than number of elements.', &
+                                          npes_in, ' > ', nelem
+        call endrun(trim(errmsg))
+       endif
        npes_homme=npes_in
     else
-       npes_homme=npes_cam
+       npes_homme=max(npes_cam, nelem)
     end if
-    call MPI_comm_size(mpicom,npes_cam,ierr)
     call MPI_comm_rank(mpicom,iam_cam,ierr)
     color = iam_cam/npes_homme
     call mpi_comm_split(mpicom, color, iam_cam, par%comm, ierr)
