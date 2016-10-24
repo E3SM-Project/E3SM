@@ -381,8 +381,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
 </machine>
 
@@ -437,8 +437,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT">$SEMS_NETCDF_ROOT</env>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
 </machine>
 
@@ -559,8 +559,8 @@
     </modules>
   </module_system>
   <environment_variables>
-    <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-    <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+    <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+    <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
 </machine>
@@ -629,8 +629,8 @@
     </modules>
   </module_system>
   <environment_variables>
-    <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-    <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+    <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+    <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
 </machine>

@@ -51,7 +51,6 @@ class EnvMachSpecific(EnvBase):
                 for node in nodes:
                     self.add_child(node)
 
-
     def get_full_records(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
         <element_name attribute='attribute_value>value</element_name>"""
@@ -88,27 +87,34 @@ class EnvMachSpecific(EnvBase):
 
         return results
 
-    def _get_env_for_case(self, compiler, debug, mpilib):
+    def _get_modules_for_case(self, compiler, debug, mpilib):
         module_nodes = self.get_nodes("modules")
-        env_nodes    = self.get_nodes("environment_variables")
         modules_to_load = None
         if module_nodes is not None:
             modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
+
+        return modules_to_load
+
+    def _get_envs_for_case(self, compiler, debug, mpilib):
+        env_nodes = self.get_nodes("environment_variables")
 
         envs_to_set = None
         if env_nodes is not None:
             envs_to_set = self._compute_env_actions(env_nodes, compiler, debug, mpilib)
 
-        return modules_to_load, envs_to_set
+        return envs_to_set
 
     def load_env(self, compiler, debug, mpilib):
         """
         Should only be called by case.load_env
         """
-        modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
-
+        # Do the modules so we can refer to env vars set by the modules
+        # in the environment_variables block
+        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
         if (modules_to_load is not None):
             self.load_modules(modules_to_load)
+
+        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
         if (envs_to_set is not None):
             self.load_envs(envs_to_set)
 
@@ -150,7 +156,9 @@ class EnvMachSpecific(EnvBase):
             expect(False, "Unhandled module system '%s'" % module_system)
 
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
-        modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
+        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
+        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
+
         filename = ".env_mach_specific.%s" % shell
         lines = []
         if modules_to_load is not None:
@@ -158,7 +166,6 @@ class EnvMachSpecific(EnvBase):
 
         if envs_to_set is not None:
             for env_name, env_value in envs_to_set:
-                # Let bash do the work on evaluating and resolving env_value
                 if shell == "sh":
                     lines.append("export %s=%s" % (env_name, env_value))
                 elif shell == "csh":
@@ -171,8 +178,7 @@ class EnvMachSpecific(EnvBase):
 
     def load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
-            # Let bash do the work on evaluating and resolving env_value
-            os.environ[env_name] = run_cmd_no_fail("echo %s" % env_value)
+            os.environ[env_name] = env_value
 
     # Private API
 
@@ -191,16 +197,15 @@ class EnvMachSpecific(EnvBase):
                     expect(child.tag == child_tag, "Expected %s element" % child_tag)
                     if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
                         val = child.text
-                        if val is not None and val.startswith('$'):
-                            if val == "$COMPILER":
-                                val = compiler
-                            elif val == "$MPILIB":
-                                val = mpilib
-                            else:
-                                val = self.get_resolved_value(val)
-                                expect(not val.startswith('$'), "Could not resolve value for val=%s"%val)
+                        if val is not None:
+                            # We allow a couple special substitutions for these fields
+                            for repl_this, repl_with in [("$COMPILER", compiler), ("$MPILIB", mpilib)]:
+                                val = val.replace(repl_this, repl_with)
 
-                        result.append( (child.get("name"), val) )
+                            val = self.get_resolved_value(val)
+                            expect("$" not in val, "Not safe to leave unresolved items in env var value: '%s'" % val)
+
+                            result.append( (child.get("name"), val) )
 
         return result
 
