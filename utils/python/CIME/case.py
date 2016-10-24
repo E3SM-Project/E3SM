@@ -93,6 +93,8 @@ class Case(object):
         self._components = []
         self._component_classes = []
 
+        self._is_env_loaded = False
+
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
     def __enter__(self):
@@ -335,8 +337,6 @@ class Case(object):
         """
         Update or create a valid_values entry for item and populate it
         """
-        if item == "CASEROOT":
-            self._caseroot = value
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_valid_values(item, valid_values)
@@ -743,6 +743,7 @@ class Case(object):
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
+                    os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
@@ -995,7 +996,6 @@ class Case(object):
 
         return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
-
     def set_model_version(self, model):
         version = "unknown"
         srcroot = self.get_value("SRCROOT")
@@ -1010,15 +1010,17 @@ class Case(object):
         elif model == "acme":
             version = get_current_commit(True, srcroot)
         self.set_value("MODEL_VERSION", version)
+
         if version != "unknown":
             logger.info("%s model version found: %s"%(model, version))
         else:
             logger.warn("WARNING: No %s Model version found."%(model))
 
-
-
-
-
-
-
-
+    def load_env(self):
+        if not self._is_env_loaded:
+            compiler = self.get_value("COMPILER")
+            debug=self.get_value("DEBUG"),
+            mpilib=self.get_value("MPILIB")
+            env_module = self.get_env("mach_specific")
+            env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
+            self._is_env_loaded = True

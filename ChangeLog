@@ -1,6 +1,82 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 10-24-2016
+Tag: cime5.2.0-alpha.5
+Answer Changes: None
+Tests: scripts_regression_tests, aux_clm45, others
+Dependencies:
+
+Brief Summary:
+
+User interface changes: changes when preview_namelists is run, first in case.build and less frequently overall
+Changes where sharedlib builds are installed to avoid conflicts in builds
+	
+Modified files: git diff --name-status
+M       cime_config/acme/machines/Makefile
+D       cime_config/acme/machines/buildlib.csm_share
+D       cime_config/acme/machines/buildlib.gptl
+D       cime_config/acme/machines/buildlib.mct
+D       cime_config/acme/machines/buildlib.pio
+A       cime_config/buildlib.csm_share
+A       cime_config/buildlib.gptl
+A       cime_config/buildlib.mct
+A       cime_config/buildlib.pio
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/machines/Makefile
+D       cime_config/cesm/machines/buildlib.csm_share
+D       cime_config/cesm/machines/buildlib.gptl
+D       cime_config/cesm/machines/buildlib.mct
+D       cime_config/cesm/machines/buildlib.pio
+M       cime_config/cesm/machines/config_machines.xml
+M       components/data_comps/datm/cime_config/config_component.xml
+M       components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       components/data_comps/datm/datm_comp_mod.F90
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/driver/CMakeLists.txt
+A       driver_cpl/driver/map_lnd2rof_irrig_mod.F90
+M       driver_cpl/driver/prep_lnd_mod.F90
+M       driver_cpl/driver/prep_ocn_mod.F90
+M       driver_cpl/driver/prep_rof_mod.F90
+M       driver_cpl/driver/seq_diag_mct.F90
+M       driver_cpl/shr/seq_flds_mod.F90
+M       driver_cpl/unit_test/CMakeLists.txt
+A       driver_cpl/unit_test/map_lnd2rof_irrig_test/CMakeLists.txt
+A       driver_cpl/unit_test/map_lnd2rof_irrig_test/test_map_lnd2rof_irrig.pf
+A       scripts/Tools/case.cmpgen_namelists
+M       scripts/Tools/code_checker
+M       scripts/Tools/compare_namelists
+M       scripts/Tools/preview_namelists
+M       scripts/Tools/simple_compare
+M       share/csm_share/shr/shr_pio_mod.F90
+M       share/csm_share/test/unit/shr_string_test/test_shr_string.pf
+M       share/csm_share/unit_test_stubs/pio/CMakeLists.txt
+D       share/csm_share/unit_test_stubs/pio/do_genf90
+D       share/csm_share/unit_test_stubs/pio/pio.F90
+M       share/csm_share/unit_test_stubs/pio/pio.F90.in
+M       utils/python/CIME/XML/entry_id.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+A       utils/python/CIME/case_cmpgen_namelists.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/case_submit.py
+M       utils/python/CIME/compare_namelists.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/simple_compare.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/test_status.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/list_tests
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 10-14-2016
 Tag: cime5.2.0-alpha.4
 Answer Changes: None

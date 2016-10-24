@@ -89,7 +89,6 @@ class EnvMachSpecific(EnvBase):
 
     def _get_modules_for_case(self, compiler, debug, mpilib):
         module_nodes = self.get_nodes("modules")
-
         modules_to_load = None
         if module_nodes is not None:
             modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
@@ -105,7 +104,10 @@ class EnvMachSpecific(EnvBase):
 
         return envs_to_set
 
-    def load_env_for_case(self, compiler, debug, mpilib):
+    def load_env(self, compiler, debug, mpilib):
+        """
+        Should only be called by case.load_env
+        """
         # Do the modules so we can refer to env vars set by the modules
         # in the environment_variables block
         modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
@@ -222,9 +224,12 @@ class EnvMachSpecific(EnvBase):
 
     def _match(self, my_value, xml_value):
         if (xml_value.startswith("!")):
-            return my_value != xml_value[1:]
+            result = my_value != xml_value[1:]
         else:
-            return my_value == xml_value
+            result = my_value == xml_value
+        logger.debug("(env_mach_specific) _match %s %s %s"%(my_value, xml_value, result))
+        return result
+
 
     def _get_module_commands(self, modules_to_load, shell):
         # Note this is independent of module system type

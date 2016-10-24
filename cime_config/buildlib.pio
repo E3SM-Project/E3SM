@@ -32,6 +32,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("buildroot",
                         help="build path root")
 
+    parser.add_argument("installpath",
+                        help="install path ")
+
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
 
@@ -39,7 +42,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.buildroot, args.caseroot
+    return args.buildroot, args.installpath, args.caseroot
 
 def _main_func(description):
 ###############################################################################
@@ -47,30 +50,38 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    bldroot, caseroot = parse_command_line(sys.argv, description)
+    bldroot, installpath, caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
         pio_version = case.get_value("PIO_VERSION")
+        mpilib = case.get_value("MPILIB")
+        exeroot = case.get_value("EXEROOT")
         pio_model = "pio%s"% pio_version
         pio_dir = os.path.join(bldroot, pio_model)
+        compiler = case.get_value("COMPILER")
+        build_threaded = case.get_value("BUILD_THREADED")
         if not os.path.isdir(pio_dir):
             os.makedirs(pio_dir)
         os.chdir(pio_dir)
         casetools = case.get_value("CASETOOLS")
         cmake_opts = "\" -D GENF90_PATH=$CIMEROOT/externals/genf90\""
-        gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s -f %s/Makefile"\
-            %(pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools, pio_version, casetools)
-        # These are needed to satisfy the make command but are not used in the pio cmake build
-        gmake_opts += " EXEROOT=\"\" BUILD_THREADED=\"\" LIBROOT=\"\" SHAREDLIBROOT=\"\" COMPILER=\"\" NINST_VALUE=\"\" MPILIB=\"\" "
+        gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s "\
+            "PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s MPILIB=%s "\
+            "SHAREDLIBROOT=%s EXEROOT=%s COMPILER=%s BUILD_THREADED=%s "\
+            "-f %s/Makefile"\
+            %(pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
+              pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
+              casetools)
 
         gmake_cmd = case.get_value("GMAKE")
         # This runs the pio cmake command from the cime case Makefile
         cmd = "%s %s"%(gmake_cmd, gmake_opts)
         output = run_cmd_no_fail(cmd, from_dir=pio_dir)
         # This runs the pio make command from the cmake generated Makefile
-        output += run_cmd_no_fail("%s -j %s"%(gmake_cmd, case.get_value("GMAKE_J")), from_dir=pio_dir)
+        logger.info(output)
+        output = run_cmd_no_fail("%s -j %s"%(gmake_cmd, case.get_value("GMAKE_J")), from_dir=pio_dir)
         logger.info(output)
         if pio_version == 1:
-            installed_lib = os.path.join(bldroot,"lib","libpio.a")
+            installed_lib = os.path.join(installpath,"lib","libpio.a")
             installed_lib_time = 0
             if os.path.isfile(installed_lib):
                 installed_lib_time = os.path.getmtime(installed_lib)
@@ -78,10 +89,10 @@ def _main_func(description):
             newlib_time = os.path.getmtime(newlib)
             if newlib_time > installed_lib_time:
                 logger.info("Installing pio version 1")
-                shutil.copy(newlib, installed_lib)
+                shutil.copy2(newlib, installed_lib)
                 for glob_to_copy in ("*.h", "*.mod"):
                     for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
-                        shutil.copy(item, "%s/include"%bldroot)
+                        shutil.copy2(item, "%s/include"%installpath)
             expect_string = "D_NETCDF;"
             pnetcdf_string = "D_PNETCDF"
             netcdf4_string = "D_NETCDF4P"
@@ -97,12 +108,12 @@ def _main_func(description):
                         installdir = "lib"
                     else:
                         installdir = "include"
-                    installed_file = os.path.join(bldroot,installdir,os.path.basename(item))
+                    installed_file = os.path.join(installpath,installdir,os.path.basename(item))
                     item_time = os.path.getmtime(item)
                     if os.path.isfile(installed_file):
                         installed_file_time = os.path.getmtime(installed_file)
                     if item_time  > installed_file_time:
-                        shutil.copy(item, installed_file)
+                        shutil.copy2(item, installed_file)
             expect_string = "NetCDF_C_LIBRARY-ADVANCED"
             pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
             netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
@@ -134,8 +145,6 @@ def _main_func(description):
         valid_values += ",nothing"
         for comp in ("ATM","CPL","OCN","WAV","GLC","ICE","ROF","LND"):
             case.set_valid_values("%s_PIO_TYPENAME"%comp,valid_values)
-
-
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
