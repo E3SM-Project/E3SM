@@ -25,7 +25,7 @@ module CNNitrogenFluxType
   private
 
 
-    type, public :: nitrogenflux_type
+    type, public :: soilcol_nitrogen_flux
 
      ! gap mortality fluxes
      real(r8), pointer :: m_leafn_to_litter_patch                   (:)     ! patch leaf N mortality (gN/m2/s)
@@ -258,17 +258,250 @@ module CNNitrogenFluxType
 
    contains
 
-     procedure , public  :: Init   
+     procedure , public  :: Init => init_col_nf 
      procedure , public  :: Restart
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , private :: InitAllocate
+     procedure , private :: InitAllocate => initallocate_col_nf
      procedure , private :: InitHistory
      procedure , private :: InitCold
 
      procedure , private :: NSummary_interface
 
-  end type nitrogenflux_type
+  end type soilcol_nitrogen_flux
+
+
+  subroutine init_col_nf(this, bounds)
+
+    class(soilcol_nitrogen_flux) :: this
+    type(bounds_type), intent(in) :: bounds  
+
+    call this%InitAllocate (bounds)
+    call this%InitHistory (bounds)
+    call this%InitCold (bounds)
+
+
+    !------------------------------------------------------------------------
+  subroutine initallocate_col_nf(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize pft nitrogen flux
+    !
+    ! !ARGUMENTS:
+    class (soilcol_nitrogen_flux) :: this
+    type(bounds_type) , intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: begp,endp
+    integer           :: begc,endc
+    !------------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+    begc = bounds%begc; endc = bounds%endc
+
+
+    allocate(this%ndep_to_sminn_col             (begc:endc))    ; this%ndep_to_sminn_col	     (:) = nan
+    allocate(this%nfix_to_sminn_col             (begc:endc))    ; this%nfix_to_sminn_col	     (:) = nan
+    allocate(this%fert_to_sminn_col             (begc:endc))    ; this%fert_to_sminn_col	     (:) = nan
+    allocate(this%soyfixn_to_sminn_col          (begc:endc))    ; this%soyfixn_to_sminn_col          (:) = nan
+    allocate(this%hrv_deadstemn_to_prod10n_col  (begc:endc))    ; this%hrv_deadstemn_to_prod10n_col  (:) = nan
+    allocate(this%hrv_deadstemn_to_prod100n_col (begc:endc))    ; this%hrv_deadstemn_to_prod100n_col (:) = nan
+    allocate(this%hrv_cropn_to_prod1n_col       (begc:endc))    ; this%hrv_cropn_to_prod1n_col       (:) = nan
+    allocate(this%sminn_to_plant_col            (begc:endc))    ; this%sminn_to_plant_col	     (:) = nan
+    allocate(this%potential_immob_col           (begc:endc))    ; this%potential_immob_col           (:) = nan
+    allocate(this%actual_immob_col              (begc:endc))    ; this%actual_immob_col              (:) = nan
+    allocate(this%gross_nmin_col                (begc:endc))    ; this%gross_nmin_col                (:) = nan
+    allocate(this%net_nmin_col                  (begc:endc))    ; this%net_nmin_col                  (:) = nan
+    allocate(this%denit_col                     (begc:endc))    ; this%denit_col		     (:) = nan
+    allocate(this%supplement_to_sminn_col       (begc:endc))    ; this%supplement_to_sminn_col       (:) = nan
+    allocate(this%prod1n_loss_col               (begc:endc))    ; this%prod1n_loss_col               (:) = nan
+    allocate(this%prod10n_loss_col              (begc:endc))    ; this%prod10n_loss_col              (:) = nan
+    allocate(this%prod100n_loss_col             (begc:endc))    ; this%prod100n_loss_col	     (:) = nan
+    allocate(this%product_nloss_col             (begc:endc))    ; this%product_nloss_col	     (:) = nan
+    allocate(this%ninputs_col                   (begc:endc))    ; this%ninputs_col                   (:) = nan
+    allocate(this%noutputs_col                  (begc:endc))    ; this%noutputs_col                  (:) = nan
+    allocate(this%fire_nloss_col                (begc:endc))    ; this%fire_nloss_col                (:) = nan
+    allocate(this%fire_nloss_p2c_col            (begc:endc))    ; this%fire_nloss_p2c_col            (:) = nan
+    allocate(this%som_n_leached_col             (begc:endc))    ; this%som_n_leached_col	     (:) = nan
+
+    allocate(this%m_n_to_litr_met_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_met_fire_col   (:,:) = nan
+    allocate(this%m_n_to_litr_cel_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_cel_fire_col   (:,:) = nan
+    allocate(this%m_n_to_litr_lig_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_lig_fire_col   (:,:) = nan
+    allocate(this%r_psi_col                  (begc:endc,1:nlevdecomp_full)) ; this%r_psi_col                  (:,:) = spval
+    allocate(this%anaerobic_frac_col         (begc:endc,1:nlevdecomp_full)) ; this%anaerobic_frac_col         (:,:) = spval
+    allocate(this%potential_immob_vr_col     (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_vr_col     (:,:) = nan
+    allocate(this%actual_immob_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_vr_col        (:,:) = nan
+    allocate(this%sminn_to_plant_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_to_plant_vr_col      (:,:) = nan
+    allocate(this%supplement_to_sminn_vr_col (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminn_vr_col (:,:) = nan
+    allocate(this%gross_nmin_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%gross_nmin_vr_col          (:,:) = nan
+    allocate(this%net_nmin_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%net_nmin_vr_col            (:,:) = nan
+
+    allocate(this%dwt_seedn_to_leaf_col      (begc:endc))                   ; this%dwt_seedn_to_leaf_col      (:)   = nan
+    allocate(this%dwt_seedn_to_deadstem_col  (begc:endc))                   ; this%dwt_seedn_to_deadstem_col  (:)   = nan
+    allocate(this%dwt_conv_nflux_col         (begc:endc))                   ; this%dwt_conv_nflux_col         (:)   = nan
+    allocate(this%dwt_prod10n_gain_col       (begc:endc))                   ; this%dwt_prod10n_gain_col       (:)   = nan
+    allocate(this%dwt_prod100n_gain_col      (begc:endc))                   ; this%dwt_prod100n_gain_col      (:)   = nan
+    allocate(this%dwt_nloss_col              (begc:endc))                   ; this%dwt_nloss_col              (:)   = nan
+    allocate(this%wood_harvestn_col          (begc:endc))                   ; this%wood_harvestn_col          (:)   = nan
+
+    allocate(this%dwt_frootn_to_litr_met_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n_col     (:,:) = nan
+    allocate(this%dwt_frootn_to_litr_cel_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_cel_n_col     (:,:) = nan
+    allocate(this%dwt_frootn_to_litr_lig_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_lig_n_col     (:,:) = nan
+    allocate(this%dwt_livecrootn_to_cwdn_col  (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecrootn_to_cwdn_col       (:,:) = nan
+    allocate(this%dwt_deadcrootn_to_cwdn_col  (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcrootn_to_cwdn_col       (:,:) = nan
+    allocate(this%f_nit_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%f_nit_vr_col                     (:,:) = nan
+    allocate(this%f_denit_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr_col                   (:,:) = nan
+    allocate(this%smin_no3_leached_vr_col     (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr_col          (:,:) = nan
+    allocate(this%smin_no3_leached_col        (begc:endc))                   ; this%smin_no3_leached_col             (:)   = nan
+    allocate(this%smin_no3_runoff_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_runoff_vr_col           (:,:) = nan
+    allocate(this%smin_no3_runoff_col         (begc:endc))                   ; this%smin_no3_runoff_col              (:)   = nan
+    allocate(this%pot_f_nit_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%pot_f_nit_vr_col                 (:,:) = nan
+    allocate(this%pot_f_nit_col               (begc:endc))                   ; this%pot_f_nit_col                    (:)   = nan
+    allocate(this%pot_f_denit_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%pot_f_denit_vr_col               (:,:) = nan
+    allocate(this%pot_f_denit_col             (begc:endc))                   ; this%pot_f_denit_col                  (:)   = nan
+    allocate(this%actual_immob_no3_vr_col     (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_no3_vr_col          (:,:) = nan
+    allocate(this%actual_immob_nh4_vr_col     (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_nh4_vr_col          (:,:) = nan
+    allocate(this%smin_no3_to_plant_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_to_plant_vr_col         (:,:) = nan
+    allocate(this%smin_nh4_to_plant_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_nh4_to_plant_vr_col         (:,:) = nan
+    allocate(this%smin_no3_to_plant_col       (begc:endc))                   ; this%smin_no3_to_plant_col            (:) = nan
+    allocate(this%smin_nh4_to_plant_col       (begc:endc))                   ; this%smin_nh4_to_plant_col            (:) = nan
+    
+    allocate(this%f_nit_col                   (begc:endc))                   ; this%f_nit_col                        (:)   = nan
+    allocate(this%f_denit_col                 (begc:endc))                   ; this%f_denit_col                      (:)   = nan
+    allocate(this%n2_n2o_ratio_denit_vr_col   (begc:endc,1:nlevdecomp_full)) ; this%n2_n2o_ratio_denit_vr_col        (:,:) = nan
+    allocate(this%f_n2o_denit_col             (begc:endc))                   ; this%f_n2o_denit_col                  (:)   = nan
+    allocate(this%f_n2o_denit_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%f_n2o_denit_vr_col               (:,:) = nan
+    allocate(this%f_n2o_nit_col               (begc:endc))                   ; this%f_n2o_nit_col                    (:)   = nan
+    allocate(this%f_n2o_nit_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%f_n2o_nit_vr_col                 (:,:) = nan
+
+    allocate(this%sminn_no3_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_no3_input_vr_col           (:,:) = nan
+    allocate(this%sminn_nh4_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_nh4_input_vr_col           (:,:) = nan
+    allocate(this%sminn_nh4_input_col         (begc:endc))                   ; this%sminn_nh4_input_col              (:)   = nan
+    allocate(this%sminn_no3_input_col         (begc:endc))                   ; this%sminn_no3_input_col              (:)   = nan
+    allocate(this%sminn_input_col             (begc:endc))                   ; this%sminn_input_col                  (:)   = nan
+    allocate(this%bgc_npool_ext_inputs_vr_col (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_ext_inputs_vr_col    (:,:,:) = nan
+    allocate(this%bgc_npool_ext_loss_vr_col   (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_ext_loss_vr_col      (:,:,:) = nan
+
+    allocate(this%bgc_npool_inputs_col        (begc:endc,ndecomp_pools))     ;this%bgc_npool_inputs_col              (:,:) = nan
+     
+    allocate(this%smin_no3_massdens_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_massdens_vr_col         (:,:) = nan
+    allocate(this%soil_bulkdensity_col        (begc:endc,1:nlevdecomp_full)) ; this%soil_bulkdensity_col             (:,:) = nan
+    allocate(this%k_nitr_t_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_t_vr_col                  (:,:) = nan
+    allocate(this%k_nitr_ph_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_ph_vr_col                 (:,:) = nan
+    allocate(this%k_nitr_h2o_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_h2o_vr_col                (:,:) = nan
+    allocate(this%k_nitr_vr_col               (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_vr_col                    (:,:) = nan
+    allocate(this%wfps_vr_col                 (begc:endc,1:nlevdecomp_full)) ; this%wfps_vr_col                      (:,:) = nan
+    allocate(this%f_denit_base_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%f_denit_base_vr_col              (:,:) = nan
+    allocate(this%diffus_col                  (begc:endc,1:nlevdecomp_full)) ; this%diffus_col                       (:,:) = spval
+    allocate(this%ratio_k1_col                (begc:endc,1:nlevdecomp_full)) ; this%ratio_k1_col                     (:,:) = nan
+    allocate(this%ratio_no3_co2_col           (begc:endc,1:nlevdecomp_full)) ; this%ratio_no3_co2_col                (:,:) = spval
+    allocate(this%soil_co2_prod_col           (begc:endc,1:nlevdecomp_full)) ; this%soil_co2_prod_col                (:,:) = nan
+    allocate(this%fr_WFPS_col                 (begc:endc,1:nlevdecomp_full)) ; this%fr_WFPS_col                      (:,:) = spval
+
+    allocate(this%fmax_denit_carbonsubstrate_vr_col(begc:endc,1:nlevdecomp_full)); this%fmax_denit_carbonsubstrate_vr_col(:,:) = nan
+    allocate(this%fmax_denit_nitrate_vr_col        (begc:endc,1:nlevdecomp_full)); this%fmax_denit_nitrate_vr_col        (:,:) = nan
+
+    allocate(this%decomp_cascade_ntransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions ))
+    allocate(this%decomp_cascade_sminn_flux_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions ))
+    allocate(this%m_decomp_npools_to_fire_vr_col    (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               ))
+    allocate(this%decomp_cascade_ntransfer_col      (begc:endc,1:ndecomp_cascade_transitions                   ))
+    allocate(this%decomp_cascade_sminn_flux_col     (begc:endc,1:ndecomp_cascade_transitions                   ))
+    allocate(this%m_decomp_npools_to_fire_col       (begc:endc,1:ndecomp_pools                                 ))
+
+    this%decomp_cascade_ntransfer_vr_col  (:,:,:) = nan
+    this%decomp_cascade_sminn_flux_vr_col (:,:,:) = nan
+    this%m_decomp_npools_to_fire_vr_col   (:,:,:) = nan
+    this%m_decomp_npools_to_fire_col      (:,:)   = nan
+    this%decomp_cascade_ntransfer_col     (:,:)   = nan
+    this%decomp_cascade_sminn_flux_col    (:,:)   = nan
+
+    allocate(this%phenology_n_to_litr_met_n_col     (begc:endc, 1:nlevdecomp_full))
+    allocate(this%phenology_n_to_litr_cel_n_col     (begc:endc, 1:nlevdecomp_full))
+    allocate(this%phenology_n_to_litr_lig_n_col     (begc:endc, 1:nlevdecomp_full))
+    allocate(this%gap_mortality_n_to_litr_met_n_col (begc:endc, 1:nlevdecomp_full))
+    allocate(this%gap_mortality_n_to_litr_cel_n_col (begc:endc, 1:nlevdecomp_full))
+    allocate(this%gap_mortality_n_to_litr_lig_n_col (begc:endc, 1:nlevdecomp_full))
+    allocate(this%gap_mortality_n_to_cwdn_col       (begc:endc, 1:nlevdecomp_full))
+    allocate(this%fire_mortality_n_to_cwdn_col      (begc:endc, 1:nlevdecomp_full))
+    allocate(this%harvest_n_to_litr_met_n_col       (begc:endc, 1:nlevdecomp_full))
+    allocate(this%harvest_n_to_litr_cel_n_col       (begc:endc, 1:nlevdecomp_full))
+    allocate(this%harvest_n_to_litr_lig_n_col       (begc:endc, 1:nlevdecomp_full))
+    allocate(this%harvest_n_to_cwdn_col             (begc:endc, 1:nlevdecomp_full))
+
+    this%phenology_n_to_litr_met_n_col     (:,:) = nan
+    this%phenology_n_to_litr_cel_n_col     (:,:) = nan
+    this%phenology_n_to_litr_lig_n_col     (:,:) = nan
+    this%gap_mortality_n_to_litr_met_n_col (:,:) = nan
+    this%gap_mortality_n_to_litr_cel_n_col (:,:) = nan
+    this%gap_mortality_n_to_litr_lig_n_col (:,:) = nan
+    this%gap_mortality_n_to_cwdn_col       (:,:) = nan
+    this%fire_mortality_n_to_cwdn_col      (:,:) = nan
+    this%harvest_n_to_litr_met_n_col       (:,:) = nan
+    this%harvest_n_to_litr_cel_n_col       (:,:) = nan
+    this%harvest_n_to_litr_lig_n_col       (:,:) = nan
+    this%harvest_n_to_cwdn_col             (:,:) = nan
+
+    allocate(this%sminn_to_denit_decomp_cascade_vr_col (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions ))
+    allocate(this%sminn_to_denit_decomp_cascade_col    (begc:endc,1:ndecomp_cascade_transitions                   ))
+    allocate(this%sminn_to_denit_excess_vr_col         (begc:endc,1:nlevdecomp_full                               ))
+    allocate(this%sminn_to_denit_excess_col            (begc:endc                                                 ))
+    allocate(this%sminn_leached_vr_col                 (begc:endc,1:nlevdecomp_full                               ))
+    allocate(this%sminn_leached_col                    (begc:endc                                                 ))
+    allocate(this%decomp_npools_leached_col            (begc:endc,1:ndecomp_pools                                 ))
+    allocate(this%decomp_npools_transport_tendency_col (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               ))
+
+    this%sminn_to_denit_decomp_cascade_vr_col (:,:,:) = nan
+    this%sminn_to_denit_decomp_cascade_col    (:,:)   = nan
+    this%sminn_to_denit_excess_vr_col         (:,:)   = nan
+    this%sminn_to_denit_excess_col            (:)     = nan
+    this%sminn_leached_vr_col                 (:,:)   = nan
+    this%sminn_leached_col                    (:)     = nan
+    this%decomp_npools_leached_col            (:,:)   = nan
+    this%decomp_npools_transport_tendency_col (:,:,:) = nan  
+
+    allocate(this%decomp_npools_sourcesink_col (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
+    this%decomp_npools_sourcesink_col (:,:,:) = nan
+
+    ! bgc interface & pflotran
+    !------------------------------------------------------------------------
+    allocate(this%plant_ndemand_col           (begc:endc))                   ; this%plant_ndemand_col                (:)    = nan
+    allocate(this%plant_ndemand_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%plant_ndemand_vr_col             (:,:)  = nan
+
+    allocate(this%f_ngas_decomp_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_decomp_vr_col             (:,:)  = nan
+    allocate(this%f_ngas_nitri_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_nitri_vr_col              (:,:)  = nan
+    allocate(this%f_ngas_denit_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_denit_vr_col              (:,:)  = nan
+    allocate(this%f_n2o_soil_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%f_n2o_soil_vr_col                (:,:)  = nan
+    allocate(this%f_n2_soil_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%f_n2_soil_vr_col                 (:,:)  = nan
+
+    allocate(this%f_ngas_decomp_col           (begc:endc                  )) ; this%f_ngas_decomp_col                (:)    = nan
+    allocate(this%f_ngas_nitri_col            (begc:endc                  )) ; this%f_ngas_nitri_col                 (:)    = nan
+    allocate(this%f_ngas_denit_col            (begc:endc                  )) ; this%f_ngas_denit_col                 (:)    = nan
+    allocate(this%f_n2o_soil_col              (begc:endc                  )) ; this%f_n2o_soil_col                   (:)    = nan
+    allocate(this%f_n2_soil_col               (begc:endc                  )) ; this%f_n2_soil_col                    (:)    = nan
+
+    allocate(this%externaln_to_decomp_npools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externaln_to_decomp_npools_col    (:,:,:) = spval
+    allocate(this%externaln_to_decomp_delta_col     (begc:endc))                                    ; this%externaln_to_decomp_delta_col     (:)     = spval
+    allocate(this%no3_net_transport_vr_col          (begc:endc, 1:nlevdecomp_full))                 ; this%no3_net_transport_vr_col          (:,:)   = spval
+    allocate(this%no3_net_transport_delta_col       (begc:endc))                                    ; this%no3_net_transport_delta_col       (:)     = spval
+    !------------------------------------------------------------------------
+
+    allocate(this%pmnf_decomp_cascade(begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions)); this%pmnf_decomp_cascade(:,:,:) = nan
+
+    ! ------ 	KB - Are these included in column ???? ---------------------!
+    ! allocate(this%plant_n_uptake_flux         (begc:endc)) ;	         this%plant_n_uptake_flux   (:)   = nan
+    ! allocate(this%soil_n_immob_flux           (begc:endc)) ;	         this%soil_n_immob_flux	    (:)   = nan
+    ! allocate(this%soil_n_immob_flux_vr        (begc:endc,1:nlevdecomp)); this%soil_n_immob_flux_vr  (:,:) = nan
+    ! allocate(this%soil_n_grossmin_flux        (begc:endc)) ;	         this%soil_n_grossmin_flux  (:)   = nan
+    ! allocate(this%actual_immob_no3_col        (begc:endc)) ;             this%actual_immob_no3_col  (:)   = nan
+    ! allocate(this%actual_immob_nh4_col        (begc:endc)) ;             this%actual_immob_nh4_col  (:)   = nan
+    ! allocate(this%smin_no3_to_plant_col       (begc:endc)) ;             this%smin_no3_to_plant_col (:)   = nan
+    ! allocate(this%smin_nh4_to_plant_col       (begc:endc)) ;             this%smin_nh4_to_plant_col (:)   = nan 
+    ! allocate(this%plant_to_litter_nflux       (begc:endc)) ;             this%plant_to_litter_nflux (:)   = nan
+    ! allocate(this%plant_to_cwd_nflux          (begc:endc)) ;             this%plant_to_cwd_nflux    (:)   = nan
+    
+  end subroutine initallocate_col_nf
+
+  end subroutine init_col_nf
 
 end module ColumnNitrogenFluxType
