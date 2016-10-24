@@ -72,11 +72,11 @@ print "Beginning variable comparisons for all time levels of field '%s'. Note an
 if ( args.l2_norm or args.l1_norm or args.linf_norm ):
 	print "    Pass thresholds are:"
 	if ( args.l1_norm ):
-		print "       L1: %f"%(float(args.l1_norm))
+		print "       L1: %16.14e"%(float(args.l1_norm))
 	if ( args.l2_norm ):
-		print "       L2: %f"%(float(args.l2_norm))
+		print "       L2: %16.14e"%(float(args.l2_norm))
 	if ( args.linf_norm ):
-		print "       L_Infinity: %f"%(float(args.linf_norm))
+		print "       L_Infinity: %16.14e"%(float(args.linf_norm))
 
 field_dims = field1.dimensions
 
