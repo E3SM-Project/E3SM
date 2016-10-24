@@ -8,7 +8,7 @@ phases. All other phases need to handle their own status because
 they can be run outside the context of TestScheduler.
 """
 
-import shutil, traceback, stat, glob, threading, time
+import shutil, traceback, stat, threading, time
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
@@ -27,8 +27,7 @@ logger = logging.getLogger(__name__)
 # Phases managed by TestScheduler
 TEST_START = "INIT" # Special pseudo-phase just for test_scheduler bookkeeping
 PHASES = [TEST_START, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
-          NAMELIST_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
-CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
+          SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
 
 ###############################################################################
 class TestScheduler(object):
@@ -128,12 +127,10 @@ class TestScheduler(object):
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
         # is atomic, so this should be fine to use without mutex.
-        # Since the name-list phase can fail without aborting later phases, we
-        # need some extra state to remember tests that had namelist problems.
-        # name -> (phase, status, has_namelist_problem)
+        # name -> (phase, status)
         self._tests = {}
         for test_name in test_names:
-            self._tests[test_name] = (TEST_START, TEST_PASS_STATUS, False)
+            self._tests[test_name] = (TEST_START, TEST_PASS_STATUS)
 
         # Oversubscribe by 1/4
         if proc_pool is None:
@@ -153,8 +150,6 @@ class TestScheduler(object):
             self._phases.remove(MODEL_BUILD_PHASE)
         if self._no_run:
             self._phases.remove(RUN_PHASE)
-        if not self._baseline_cmp_name and not self._baseline_gen_name:
-            self._phases.remove(NAMELIST_PHASE)
 
         if use_existing:
             for test in self._tests:
@@ -216,22 +211,20 @@ class TestScheduler(object):
     def _is_broken(self, test):
     ###########################################################################
         status = self._get_test_status(test)
-        return status not in CONTINUE and status != TEST_PEND_STATUS
+        return status != TEST_PASS_STATUS and status != TEST_PEND_STATUS
 
     ###########################################################################
     def _work_remains(self, test):
     ###########################################################################
-        test_phase, test_status, _ = self._get_test_data(test)
-        return (test_status in CONTINUE or test_status == TEST_PEND_STATUS) and\
+        test_phase, test_status = self._get_test_data(test)
+        return (test_status == TEST_PASS_STATUS or test_status == TEST_PEND_STATUS) and\
             test_phase != self._phases[-1]
 
     ###########################################################################
     def _get_test_status(self, test, phase=None):
     ###########################################################################
-        curr_phase, curr_status, nl_fail = self._get_test_data(test)
-        if phase == NAMELIST_PHASE and nl_fail:
-            return NAMELIST_FAIL_STATUS
-        elif phase is None or phase == curr_phase:
+        curr_phase, curr_status = self._get_test_data(test)
+        if phase is None or phase == curr_phase:
             return curr_status
         else:
             expect(phase is None or self._phases.index(phase) < self._phases.index(curr_phase),
@@ -248,7 +241,7 @@ class TestScheduler(object):
     def _update_test_status(self, test, phase, status):
     ###########################################################################
         phase_idx = self._phases.index(phase)
-        old_phase, old_status, old_nl_fail = self._get_test_data(test)
+        old_phase, old_status = self._get_test_data(test)
 
         if old_phase == phase:
             expect(old_status == TEST_PEND_STATUS,
@@ -257,22 +250,15 @@ class TestScheduler(object):
             expect(status != TEST_PEND_STATUS,
                    "Cannot transition from PEND -> PEND")
         else:
-            expect(old_status in CONTINUE,
+            expect(old_status == TEST_PASS_STATUS,
                    "Why did we move on to next phase when prior phase did not pass?")
             expect(status == TEST_PEND_STATUS,
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase? %s %s"%(old_phase, phase_idx))
-        # Must be atomic
-        self._tests[test] = (phase, status, old_nl_fail)
 
-    ###########################################################################
-    def _test_has_nl_problem(self, test):
-    ###########################################################################
-        curr_phase, curr_status, _ = self._get_test_data(test)
-        expect(curr_phase == NAMELIST_PHASE, "Setting namelist status outside of namelist phase?")
         # Must be atomic
-        self._tests[test] = (curr_phase, curr_status, True)
+        self._tests[test] = (phase, status)
 
     ###########################################################################
     def _shell_cmd_for_phase(self, test, cmd, phase, from_dir=None):
@@ -473,75 +459,14 @@ class TestScheduler(object):
     def _setup_phase(self, test):
     ###########################################################################
         test_dir  = self._get_test_dir(test)
+        rv = self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
-        return self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
+        # A little subtle. If namelists_only, the RUN phase, when the namelists would normally
+        # be handled, is not going to happen, so we have to do it here.
+        if self._namelists_only:
+            run_cmd("case.cmpgen_namelists", from_dir=test_dir)
 
-    ###########################################################################
-    def _nlcomp_phase(self, test):
-    ###########################################################################
-        test_dir       = self._get_test_dir(test)
-        casedoc_dir    = os.path.join(test_dir, "CaseDocs")
-        compare_nl     = os.path.join(CIME.utils.get_scripts_root(), "Tools", "compare_namelists")
-        simple_compare = os.path.join(CIME.utils.get_scripts_root(), "Tools", "simple_compare")
-
-        if self._baseline_cmp_name:
-            has_fails         = False
-            baseline_dir      = os.path.join(self._baseline_root, self._baseline_cmp_name, test)
-            baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
-
-            # Start off by comparing everything in CaseDocs except a few arbitrary files (ugh!)
-            # TODO: Namelist files should have consistent suffix
-            all_items_to_compare = [item for item in glob.glob("%s/*" % casedoc_dir)\
-                                    if "README" not in os.path.basename(item)\
-                                    and not item.endswith("doc")\
-                                    and not item.endswith("prescribed")\
-                                    and not os.path.basename(item).startswith(".")] + \
-                                    glob.glob("%s/*user_nl*" % test_dir)
-            for item in all_items_to_compare:
-                baseline_counterpart = os.path.join(baseline_casedocs \
-                                                    if os.path.dirname(item).endswith("CaseDocs") \
-                                                    else baseline_dir,os.path.basename(item))
-                if not os.path.exists(baseline_counterpart):
-                    self._log_output(test, "Missing baseline namelist '%s'" % baseline_counterpart)
-                    has_fails = True
-                else:
-                    if CIME.compare_namelists.is_namelist_file(item):
-                        rc, output, _  = run_cmd("%s %s %s -c %s 2>&1" %
-                                                 (compare_nl, baseline_counterpart, item, test))
-                    else:
-                        rc, output, _  = run_cmd("%s %s %s -c %s 2>&1" %
-                                                 (simple_compare, baseline_counterpart, item, test))
-
-                    if rc != 0:
-                        has_fails = True
-                        self._log_output(test, output)
-
-            if has_fails:
-                self._test_has_nl_problem(test)
-
-        if self._baseline_gen_name:
-            baseline_dir      = os.path.join(self._baseline_root, self._baseline_gen_name, test)
-            baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
-            if not os.path.isdir(baseline_dir):
-                os.makedirs(baseline_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IXOTH | stat.S_IROTH)
-
-            if os.path.isdir(baseline_casedocs):
-                shutil.rmtree(baseline_casedocs)
-
-            shutil.copytree(casedoc_dir, baseline_casedocs)
-            os.chmod(baseline_casedocs, stat.S_IRWXU | stat.S_IRWXG | stat.S_IXOTH | stat.S_IROTH)
-            for item in glob.glob("%s/*" % baseline_casedocs):
-                os.chmod(item, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
-
-            for item in glob.glob(os.path.join(test_dir, "user_nl*")):
-                preexisting_baseline = os.path.join(baseline_dir, os.path.basename(item))
-                if (os.path.exists(preexisting_baseline)):
-                    os.remove(preexisting_baseline)
-                shutil.copy2(item, baseline_dir)
-                os.chmod(preexisting_baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
-
-        # Always mark as passed unless we hit exception
-        return True
+        return rv
 
     ###########################################################################
     def _sharedlib_build_phase(self, test):
@@ -647,11 +572,9 @@ class TestScheduler(object):
             status_str += "    Case dir: %s" % self._get_test_dir(test)
         logger.info(status_str)
 
-        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE, NAMELIST_PHASE]:
+        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE]:
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
-            nl_problem = self._get_test_data(test)[2]
-            status = TEST_FAIL_STATUS if nl_problem and test_phase == NAMELIST_PHASE else status
             self._update_test_status_file(test, test_phase, status)
 
         # On batch systems, we want to immediately submit to the queue, because
@@ -678,7 +601,7 @@ class TestScheduler(object):
                 if self._work_remains(test):
                     work_to_do = True
                     if test not in threads_in_flight:
-                        test_phase, test_status, _ = self._get_test_data(test)
+                        test_phase, test_status = self._get_test_data(test)
                         expect(test_status != TEST_PEND_STATUS, test)
                         next_phase = self._phases[self._phases.index(test_phase) + 1]
                         procs_needed = self._get_procs_needed(test, next_phase, threads_in_flight)
@@ -786,22 +709,10 @@ class TestScheduler(object):
         logger.info( "At test-scheduler close, state is:")
         rv = True
         for test in self._tests:
-            phase, status, nl_fail = self._get_test_data(test)
-
-            if status == TEST_PASS_STATUS and phase == RUN_PHASE:
-                # Be cautious about telling the user that the test passed. This
-                # status should match what they would see on the dashboard. Our
-                # self._test_states does not include comparison fail information,
-                # so we need to parse test status.
-                ts = TestStatus(self._get_test_dir(test))
-                status = ts.get_overall_test_status()
+            phase, status = self._get_test_data(test)
 
             if status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                 logger.info( "%s %s (phase %s)" % (status, test, phase))
-                rv = False
-
-            elif nl_fail:
-                logger.info( "%s %s (but otherwise OK)" % (NAMELIST_FAIL_STATUS, test))
                 rv = False
 
             else:

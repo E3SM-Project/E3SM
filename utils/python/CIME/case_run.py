@@ -1,10 +1,10 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import append_status, gzip_existing_file
+from CIME.utils                     import append_status, gzip_existing_file, new_lid
 from CIME.check_lockedfiles         import check_lockedfiles
-from CIME.preview_namelists         import preview_namelists
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
+from CIME.preview_namelists         import create_namelists
 
 import shutil, time, sys, os, glob
 
@@ -32,10 +32,7 @@ def pre_run_check(case):
     logger.debug("build complete is %s " %build_complete)
 
     # load the module environment...
-    env_module = case.get_env("mach_specific")
-    env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
-                                 debug=case.get_value("DEBUG"),
-                                 mpilib=case.get_value("MPILIB"))
+    case.load_env()
 
     # set environment variables
     # This is a requirement for yellowstone only
@@ -62,8 +59,8 @@ def pre_run_check(case):
 
     os.makedirs(os.path.join(rundir, "timing", "checkpoints"))
 
-    # run preview namelists
-    preview_namelists(case)
+    # This needs to be done everytime the LID changes in order for log files to be set up correctly
+    create_namelists(case)
 
     # document process
     append_status("Run started ", caseroot=caseroot,
@@ -184,13 +181,6 @@ def do_data_assimilation(da_script, cycle, data_assimilation_cycles, lid):
     logger.debug("running %s" %da_script)
     run_cmd_no_fail(cmd)
     # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
-
-###############################################################################
-def new_lid():
-###############################################################################
-    lid = time.strftime("%y%m%d-%H%M%S")
-    os.environ["LID"] = lid
-    return lid
 
 ###############################################################################
 def case_run(case):

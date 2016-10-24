@@ -3,7 +3,7 @@ import os, re
 from CIME.utils import expect
 
 ###############################################################################
-def normalize_string_value(value, case):
+def _normalize_string_value(value, case):
 ###############################################################################
     """
     Some of the strings are inherently prone to diffs, like file
@@ -22,7 +22,7 @@ def normalize_string_value(value, case):
         return value
 
 ###############################################################################
-def skip_comments_and_whitespace(lines, idx):
+def _skip_comments_and_whitespace(lines, idx):
 ###############################################################################
     """
     Starting at idx, return next valid idx of lines that contains real data
@@ -43,7 +43,7 @@ def skip_comments_and_whitespace(lines, idx):
     return idx
 
 ###############################################################################
-def compare_data(gold_lines, comp_lines, case):
+def _compare_data(gold_lines, comp_lines, case):
 ###############################################################################
     """
     >>> teststr = '''
@@ -54,8 +54,8 @@ def compare_data(gold_lines, comp_lines, case):
     ... # Comment
     ... data7 data8 data9 data10
     ... '''
-    >>> compare_data(teststr.splitlines(), teststr.splitlines(), None)
-    True
+    >>> _compare_data(teststr.splitlines(), teststr.splitlines(), None)
+    ''
 
     >>> teststr2 = '''
     ... data1
@@ -64,56 +64,61 @@ def compare_data(gold_lines, comp_lines, case):
     ... data7 data8 data9 data10
     ... data00
     ... '''
-    >>> compare_data(teststr.splitlines(), teststr2.splitlines(), None)
+    >>> results = _compare_data(teststr.splitlines(), teststr2.splitlines(), None)
+    >>> print results
     Inequivalent lines data2 data3 != data2 data30
       NORMALIZED: data2 data3 != data2 data30
     Found extra lines
     data00
-    False
+    <BLANKLINE>
     """
-    rv = True
+    comments = ""
     gidx, cidx = 0, 0
     gnum, cnum = len(gold_lines), len(comp_lines)
     while (gidx < gnum or cidx < cnum):
-        gidx = skip_comments_and_whitespace(gold_lines, gidx)
-        cidx = skip_comments_and_whitespace(comp_lines, cidx)
+        gidx = _skip_comments_and_whitespace(gold_lines, gidx)
+        cidx = _skip_comments_and_whitespace(comp_lines, cidx)
 
         if (gidx == gnum):
             if (cidx == cnum):
-                return rv
+                return comments
             else:
-                print "Found extra lines"
-                print "\n".join(comp_lines[cidx:])
-                return False
+                comments += "Found extra lines\n"
+                comments += "\n".join(comp_lines[cidx:]) + "\n"
+                return comments
         elif (cidx == cnum):
-            print "Missing lines"
-            print "\n".join(gold_lines[gidx:1])
-            return False
+            comments += "Missing lines\n"
+            comments += "\n".join(gold_lines[gidx:1]) + "\n"
+            return comments
 
         gold_value = gold_lines[gidx].strip()
         gold_value = gold_value.replace('"',"'")
         comp_value = comp_lines[cidx].strip()
         comp_value = comp_value.replace('"',"'")
 
-        norm_gold_value = normalize_string_value(gold_value, case)
-        norm_comp_value = normalize_string_value(comp_value, case)
+        norm_gold_value = _normalize_string_value(gold_value, case)
+        norm_comp_value = _normalize_string_value(comp_value, case)
 
         if (norm_gold_value != norm_comp_value):
-            rv = False
-            print "Inequivalent lines %s != %s" % (gold_value, comp_value)
-            print "  NORMALIZED: %s != %s" % (norm_gold_value, norm_comp_value)
+            comments += "Inequivalent lines %s != %s\n" % (gold_value, comp_value)
+            comments += "  NORMALIZED: %s != %s\n" % (norm_gold_value, norm_comp_value)
 
         gidx += 1
         cidx += 1
 
-    return rv
+    return comments
 
 ###############################################################################
 def compare_files(gold_file, compare_file, case=None):
 ###############################################################################
+    """
+    Returns true if files are the same, comments are returned too:
+    (success, comments)
+    """
     expect(os.path.exists(gold_file), "File not found: %s" % gold_file)
     expect(os.path.exists(compare_file), "File not found: %s" % compare_file)
 
-    return compare_data(open(gold_file, "r").readlines(),
-                        open(compare_file, "r").readlines(),
-                        case)
+    comments = _compare_data(open(gold_file, "r").readlines(),
+                             open(compare_file, "r").readlines(),
+                             case)
+    return comments == "", comments
