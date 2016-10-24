@@ -277,7 +277,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     sharedpath = build_checks(case, build_threaded, comp_interface,
                               use_esmf_lib, debug, compiler, mpilib,
-                              sharedlibroot, complist, ninst_build, smp_value)
+                              sharedlibroot, complist, ninst_build, smp_value, model_only)
 
     t2 = time.time()
     logs = []
