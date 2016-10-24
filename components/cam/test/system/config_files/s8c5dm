@@ -1,6 +1,0 @@
--spmd -nosmp
--dyn sld
--res 8x16
--debug
--phys cam5
--s

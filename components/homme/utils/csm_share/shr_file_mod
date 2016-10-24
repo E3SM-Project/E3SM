@@ -1,2 +1,0 @@
-../../utils/csm_share/shr_file_mod.o: shr_kind_mod.o
-../../utils/csm_share/shr_file_mod.o: shr_sys_mod.o
