@@ -52,7 +52,9 @@ contains
        boundary, &
        rotateCartesianGrid, &
        includeMetricTerms, &
-       variationalBasisType)!{{{
+       variationalBasisType, &
+       integrationType, &
+       integrationOrder)!{{{
 
     use cice_velocity_solver_wachspress, only: &
          cice_init_velocity_solver_wachspress
@@ -72,7 +74,11 @@ contains
          includeMetricTerms     !< Input:
 
     character(len=*), intent(in) :: &
-         variationalBasisType
+         variationalBasisType, & !< Input:
+         integrationType         !< Input:
+
+    integer, intent(in) :: &
+         integrationOrder !< Input:
 
     if (trim(variationalBasisType) == "wachspress") then
 
@@ -81,7 +87,9 @@ contains
             velocity_variational, &
             boundary, &
             rotateCartesianGrid, &
-            includeMetricTerms)
+            includeMetricTerms, &
+            integrationType, &
+            integrationOrder)
 
     else if (trim(variationalBasisType) == "pwl") then
 
