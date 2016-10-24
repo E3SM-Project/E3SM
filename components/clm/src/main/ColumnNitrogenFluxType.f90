@@ -259,7 +259,7 @@ module CNNitrogenFluxType
    contains
 
      procedure , public  :: Init => init_col_nf 
-     procedure , public  :: Restart
+     procedure , public  :: Restart => restart_col_nf
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
@@ -1327,5 +1327,129 @@ module CNNitrogenFluxType
          num_column=num_special_col, filter_column=special_col, value_column=0._r8)
 
   end subroutine initcold_col_nf
+
+    !-----------------------------------------------------------------------
+  subroutine restart_col_nf (this,  bounds, ncid, flag )
+    !
+    ! !DESCRIPTION: 
+    ! Read/write CN restart data for carbon state
+    !
+    ! !USES:
+    use clm_varpar, only : crop_prog
+    use restUtilMod
+    use ncdio_pio
+    ! pflotran
+		!    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
+    !
+    ! !ARGUMENTS:
+    class (soilcol_nitrogen_flux) :: this
+    type(bounds_type) , intent(in)    :: bounds 
+    type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
+    character(len=*)  , intent(in)    :: flag   !'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    integer :: j,c ! indices
+    logical :: readvar      ! determine if variable is on initial file
+    real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+
+    ! pflotran
+    integer :: k
+    character(len=128) :: varname   ! temporary
+    !------------------------------------------------------------------------
+
+    if (use_nitrif_denitrif) then
+       ! pot_f_nit_vr
+       if (use_vertsoilc) then
+          ptr2d => this%pot_f_nit_vr_col(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='pot_f_nit_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='potential soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       else
+          ptr1d => this%pot_f_nit_vr_col(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='pot_f_nit_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg= 'ERROR:: pot_f_nit_vr'//' is required on an initialization dataset' )
+       end if
+    end if
+
+    if (use_nitrif_denitrif) then
+       ! f_nit_vr
+       if (use_vertsoilc) then
+          ptr2d => this%f_nit_vr_col(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='f_nit_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d) 
+       else
+          ptr1d => this%f_nit_vr_col(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='f_nit_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg='ERROR:: f_nit_vr'//' is required on an initialization dataset'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end if
+
+    ! pflotran
+    !------------------------------------------------------------------------
+    if (use_pflotran .and. pf_cmode) then
+       ! externaln_to_decomp_npools_col
+       do k = 1, ndecomp_pools
+          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_n'
+          if (use_vertsoilc) then
+             ptr2d => this%externaln_to_decomp_npools_col(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
+                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='net organic N adding/removal/transport to soil', units='gN/m3/s', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%externaln_to_decomp_npools_col(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', &
+                  long_name='net organic N adding/removal/transport to soil', units='gN/m3/s', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+          !        errMsg(__FILE__, __LINE__))
+             this%externaln_to_decomp_npools_col(:,:,k) = 0._r8
+          end if
+       end do
+
+       !no3_net_transport_vr
+       if (.not.pf_hmode) then
+          if (use_vertsoilc) then
+             ptr2d => this%no3_net_transport_vr_col(:,:)
+             call restartvar(ncid=ncid, flag=flag, varname='no3_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='net soil NO3-N transport', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%no3_net_transport_vr_col(:,1)
+             call restartvar(ncid=ncid, flag=flag, varname='no3_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='net soil  NO3-N transport', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: no3_net_transport_vr'//' is required on an initialization dataset'//&
+          !     errMsg(__FILE__, __LINE__))
+             this%no3_net_transport_vr_col(:,:) = 0._r8
+          end if
+       end if
+
+    end if !! if (use_pflotran .and. pf_cmode)
+    !------------------------------------------------------------------------
+
+  end subroutine restart_col_nf
 
 end module ColumnNitrogenFluxType
