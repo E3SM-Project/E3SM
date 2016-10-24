@@ -1,6 +1,6 @@
 module ColumnPhosphorusFluxType
 
-	
+! ----------------------------------------------------------------------------
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
@@ -22,6 +22,7 @@ module ColumnPhosphorusFluxType
   save
   private
 	
+! -----------------------------------------------------------------------------
 	type, public :: soilcol_phosphorus_flux
 
      real(r8), pointer :: m_p_to_litr_met_fire_col                  (:,:)   ! col P from leaf, froot, xfer and storage P to litter labile P by fire (gP/m3/s) 
@@ -148,14 +149,481 @@ module ColumnPhosphorusFluxType
   contains
       procedure, public :: Init => init_col_pf
       procedure, public :: InitAllocate => initallocate_col_pf
+      procedure, public :: InitHistory => inithistory_col_pf
+      procedure, public :: InitCold => initcold_col_pf
       procedure, public :: Clean => clean_col_pf
   end type soilcol_phosphorus_flux
 
 
-  subroutine initallocate_col_pf(this, begc, endc)
+  !------------------------------------------------------------------------
+  subroutine init_col_pf(this, bounds)
+
+    class(phosphorusflux_type) :: this
+    type(bounds_type), intent(in) :: bounds  
+
+    call this%InitAllocate (bounds)
+    call this%InitHistory (bounds)
+    call this%InitCold (bounds)
+
+  end subroutine init_col_pf
+
+  !------------------------------------------------------------------------
+
+
+  !------------------------------------------------------------------------
+  subroutine inithistory_col_pf(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize module data structure
+    !
+    ! !USES:
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
+    use histFileMod    , only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
+    !
+    ! !ARGUMENTS:
+    class(phosphorusflux_type) :: this
+    type(bounds_type), intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer        :: k,l
+    integer        :: begp, endp
+    integer        :: begc, endc
+    character(10)  :: active
+    character(24)  :: fieldname
+    character(100) :: longname
+    character(8)   :: vr_suffix
+    character(1)   :: aa 
+    real(r8), pointer :: data2dptr(:,:), data1dptr(:) 
+    ! temp. pointers for slicing larger arrays
+    !------------------------------------------------------------------------   
+    begc = bounds%begc; endc= bounds%endc
+
+    ! add suffix if number of soil decomposition depths is greater than 1
+    if (nlevdecomp > 1) then
+       vr_suffix = "_vr"
+    else 
+       vr_suffix = ""
+    endif
+
+    !-------------------------------
+    ! P flux variables - native to column
+    !-------------------------------
+
+    this%pdep_to_sminp_col(begc:endc) = spval
+    call hist_addfld1d (fname='PDEP_TO_SMINP', units='gP/m^2/s', &
+         avgflag='A', long_name='atmospheric P deposition to soil mineral P', &
+         ptr_col=this%pdep_to_sminp_col)
+
+
+    do k = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+          this%m_decomp_ppools_to_fire_col(begc:endc,k) = spval
+          data1dptr => this%m_decomp_ppools_to_fire_col(:,k)
+          fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TO_FIRE'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P fire loss'
+          call hist_addfld1d (fname=fieldname, units='gP/m^2',  &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default='inactive')
+
+          if ( nlevdecomp_full > 1 ) then
+             this%m_decomp_ppools_to_fire_vr_col(begc:endc,:,k) = spval
+             data2dptr => this%m_decomp_ppools_to_fire_vr_col(:,:,k)
+             fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TO_FIRE'//trim(vr_suffix)
+             longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P fire loss'
+             call hist_addfld_decomp (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data2dptr, default='inactive')
+          endif
+       endif
+
+       !! biochemical P mineralization for each soil pool at each soil level for
+       !! each column
+       if ( k >= 5 )then
+
+          if ( nlevdecomp_full > 1 ) then
+             this%biochem_pmin_ppools_vr_col(begc:endc,:,k) = spval
+             data2dptr => this%biochem_pmin_ppools_vr_col(:,:,k)
+             write(aa,'(i1)') k 
+             fieldname = 'BIOCHEM_PMIN_PPOOL'//aa//trim(vr_suffix)
+             longname  = 'Biochemical mineralization of ppool'//aa
+             call hist_addfld_decomp (fname=fieldname, units='gP/m^2/s',type2d='levdcmp', &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data2dptr, default='inactive')
+          endif
+       endif
+    end do
+
+    do l = 1, ndecomp_cascade_transitions
+       ! vertically integrated fluxes
+       !-- mineralization/immobilization fluxes (none from CWD)
+       if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+          this%decomp_cascade_sminp_flux_col(begc:endc,l) = spval
+          data1dptr => this%decomp_cascade_sminp_flux_col(:,l)
+          if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+             fieldname = 'SMINP_TO_'//&
+                  trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'P_'//&
+                  trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_donor_pool(l)))
+             longname =  'mineral P flux for decomp. of '&
+                  //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//&
+                  'to '//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))
+          else
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                  //'P_TO_SMINP'
+             longname =  'mineral P flux for decomp. of '&
+                  //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))
+          endif
+          call hist_addfld1d (fname=fieldname, units='gP/m^2', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr)
+       end if
+
+       !-- transfer fluxes (none from terminal pool, if present)
+       if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+          this%decomp_cascade_ptransfer_col(begc:endc,l) = spval
+          data1dptr => this%decomp_cascade_ptransfer_col(:,l)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'P_TO_'//&
+               trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'P'
+          longname =  'decomp. of '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+               ' P to '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' N'
+          call hist_addfld1d (fname=fieldname, units='gP/m^2',  &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr)
+       end if
+
+       ! vertically resolved fluxes
+       if ( nlevdecomp_full > 1 ) then
+          !-- mineralization/immobilization fluxes (none from CWD)
+          if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+             this%decomp_cascade_sminp_flux_vr_col(begc:endc,:,l) = spval
+             data2dptr => this%decomp_cascade_sminp_flux_vr_col(:,:,l)
+             if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                fieldname = 'SMINP_TO_'&
+                     //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'P_'//&
+                     trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_donor_pool(l)))//trim(vr_suffix)
+                longname =  'mineral P flux for decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//&
+                     'to '//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))
+             else
+                fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                     //'P_TO_SMINP'//trim(vr_suffix)
+                longname =  'mineral P flux for decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))
+             endif
+             call hist_addfld_decomp (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data2dptr, default='inactive')
+          endif
+
+          !-- transfer fluxes (none from terminal pool, if present)
+          if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+             this%decomp_cascade_ptransfer_vr_col(begc:endc,:,l) = spval
+             data2dptr => this%decomp_cascade_ptransfer_vr_col(:,:,l)
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'P_TO_'//&
+                  trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
+                  //'P'//trim(vr_suffix)
+             longname =  'decomp. of '&
+                  //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                  ' P to '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' P'
+             call hist_addfld_decomp (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data2dptr, default='inactive')
+          endif
+
+       endif
+    end do
+
+    this%som_p_leached_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOM_P_LEACHED', units='gP/m^2/s', &
+         avgflag='A', long_name='total flux of P from SOM pools due to leaching', &
+         ptr_col=this%som_p_leached_col, default='inactive')
+
+    do k = 1, ndecomp_pools
+       if ( .not. decomp_cascade_con%is_cwd(k) ) then
+          this%decomp_ppools_leached_col(begc:endc,k) = spval
+          data1dptr => this%decomp_ppools_leached_col(:,k)
+          fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TO_LEACHING'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P leaching loss'
+          call hist_addfld1d (fname=fieldname, units='gP/m^2/s', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default='inactive')
+
+          this%decomp_ppools_transport_tendency_col(begc:endc,:,k) = spval
+          data2dptr => this%decomp_ppools_transport_tendency_col(:,:,k)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TNDNCY_VERT_TRANSPORT'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P tendency due to vertical transport'
+          call hist_addfld_decomp (fname=fieldname, units='gP/m^3/s',  type2d='levdcmp', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data2dptr)
+       end if
+    end do
+
+    this%primp_to_labilep_col(begc:endc) = spval
+    call hist_addfld1d (fname='PRIMP_TO_LABILEP', units='gP/m^2/s',   &
+         avgflag='A', long_name='PRIMARY MINERAL P TO LABILE P', &
+         ptr_col=this%primp_to_labilep_col)
+
+    if ( nlevdecomp_full > 1 ) then  
+       this%primp_to_labilep_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='PRIMP_TO_LABILEP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='PRIMARY MINERAL P TO LABILE P', &
+            ptr_col=this%primp_to_labilep_vr_col, default='inactive')
+    endif
+
+    this%labilep_to_secondp_col(begc:endc) = spval
+    call hist_addfld1d (fname='LABILEP_TO_SECONDP', units='gP/m^2/s',   &
+         avgflag='A', long_name='LABILE P TO SECONDARY MINERAL P', &
+         ptr_col=this%labilep_to_secondp_col)
+
+    if ( nlevdecomp_full > 1 ) then  
+       this%labilep_to_secondp_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='LABILEP_TO_SECONDP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='LABILE P TO SECONDARY MINERAL P', &
+            ptr_col=this%labilep_to_secondp_vr_col, default='inactive')
+    endif
+
+
+    this%secondp_to_labilep_col(begc:endc) = spval
+    call hist_addfld1d (fname='SECONDP_TO_LABILEP', units='gP/m^2/s',   &
+         avgflag='A', long_name='SECONDARY MINERAL P TO LABILE P', &
+         ptr_col=this%secondp_to_labilep_col)
+
+    if ( nlevdecomp_full > 1 ) then  
+       this%secondp_to_labilep_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SECONDP_TO_LABILEP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='SECONDARY MINERAL P TO LABILE P', &
+            ptr_col=this%secondp_to_labilep_vr_col, default='inactive')
+    endif
+
+    this%secondp_to_occlp_col(begc:endc) = spval
+    call hist_addfld1d (fname='SECONDP_TO_OCCLP', units='gP/m^2/s',   &
+         avgflag='A', long_name='SECONDARY MINERAL P TO OCCLUDED P', &
+         ptr_col=this%secondp_to_occlp_col)
+
+    if ( nlevdecomp_full > 1 ) then  
+       this%secondp_to_occlp_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SECONDP_TO_OCCLP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='SECONDARY MINERAL P TO OCCLUDED P', &
+            ptr_col=this%secondp_to_occlp_vr_col, default='inactive')
+    endif
+
+    this%sminp_leached_col(begc:endc) = spval
+    call hist_addfld1d (fname='SMINP_LEACHED', units='gP/m^2/s',   &
+         avgflag='A', long_name='soil mineral P pool loss to leaching', &
+         ptr_col=this%sminp_leached_col)
+
+    if ( nlevdecomp_full > 1 ) then  
+       this%sminp_leached_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMINP_LEACHED'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='soil mineral P pool loss to leaching', &
+            ptr_col=this%sminp_leached_vr_col, default='inactive')
+    endif
+
+
+    if ( nlevdecomp_full > 1 ) then
+       this%potential_immob_p_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='POTENTIAL_IMMOB_P'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='potential P immobilization', &
+            ptr_col=this%potential_immob_p_vr_col, default='inactive')
+    end if
+
+    if ( nlevdecomp_full > 1 ) then
+       this%actual_immob_p_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='ACTUAL_IMMOB_P'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='actual P immobilization', &
+            ptr_col=this%actual_immob_p_vr_col, default='inactive')
+    end if
+
+    if ( nlevdecomp_full > 1 ) then
+       this%sminp_to_plant_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMINP_TO_PLANT'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='plant uptake of soil mineral P', &
+            ptr_col=this%sminp_to_plant_vr_col, default='inactive')
+    end if
+
+    if ( nlevdecomp_full > 1 ) then
+       this%supplement_to_sminp_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SUPPLEMENT_TO_SMINP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='supplemental P supply', &
+            ptr_col=this%supplement_to_sminp_vr_col, default='inactive')
+    end if
+
+    if ( nlevdecomp_full > 1 ) then
+       this%gross_pmin_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='GROSS_PMIN'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='gross rate of P mineralization', &
+            ptr_col=this%gross_pmin_vr_col, default='inactive')
+    end if
+
+    if ( nlevdecomp_full > 1 ) then
+       this%net_pmin_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='NET_PMIN'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='net rate of P mineralization', &
+            ptr_col=this%net_pmin_vr_col, default='inactive')
+    end if
+
+    if ( nlevdecomp_full > 1 ) then
+       this%biochem_pmin_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='BIOCHEM_PMIN'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='biochemical rate of P mineralization', &
+            ptr_col=this%biochem_pmin_vr_col, default='inactive')
+    end if
+         
+    this%potential_immob_p_col(begc:endc) = spval
+    call hist_addfld1d (fname='POTENTIAL_IMMOB_P', units='gP/m^2/s', &
+         avgflag='A', long_name='potential P immobilization', &
+         ptr_col=this%potential_immob_p_col)
+
+    this%actual_immob_p_col(begc:endc) = spval
+    call hist_addfld1d (fname='ACTUAL_IMMOB_P', units='gP/m^2/s', &
+         avgflag='A', long_name='actual P immobilization', &
+         ptr_col=this%actual_immob_p_col)
+
+    this%sminp_to_plant_col(begc:endc) = spval
+    call hist_addfld1d (fname='SMINP_TO_PLANT', units='gP/m^2/s', &
+         avgflag='A', long_name='plant uptake of soil mineral P', &
+         ptr_col=this%sminp_to_plant_col)
+
+    this%supplement_to_sminp_col(begc:endc) = spval
+    call hist_addfld1d (fname='SUPPLEMENT_TO_SMINP', units='gP/m^2/s', &
+         avgflag='A', long_name='supplemental P supply', &
+         ptr_col=this%supplement_to_sminp_col)
+
+    this%gross_pmin_col(begc:endc) = spval
+    call hist_addfld1d (fname='GROSS_PMIN', units='gP/m^2/s', &
+         avgflag='A', long_name='gross rate of P mineralization', &
+         ptr_col=this%gross_pmin_col)
+
+    this%net_pmin_col(begc:endc) = spval
+    call hist_addfld1d (fname='NET_PMIN', units='gP/m^2/s', &
+         avgflag='A', long_name='net rate of P mineralization', &
+         ptr_col=this%net_pmin_col)
+
+    this%biochem_pmin_col(begc:endc) = spval
+    call hist_addfld1d (fname='BIOCHEM_PMIN', units='gP/m^2/s', &
+         avgflag='A', long_name='biochemical rate of P mineralization', &
+         ptr_col=this%biochem_pmin_col)
+
+    this%fire_ploss_col(begc:endc) = spval
+    call hist_addfld1d (fname='COL_FIRE_PLOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='total column-level fire P loss', &
+         ptr_col=this%fire_ploss_col, default='inactive')
+
+    this%dwt_seedp_to_leaf_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level leaf', &
+         ptr_col=this%dwt_seedp_to_leaf_col, default='inactive')
+
+    this%dwt_seedp_to_deadstem_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level deadstem', &
+         ptr_col=this%dwt_seedp_to_deadstem_col, default='inactive')
+
+    this%dwt_conv_pflux_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_CONV_PFLUX', units='gP/m^2/s', &
+         avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
+         ptr_col=this%dwt_conv_pflux_col, default='inactive')
+
+    this%dwt_prod10p_gain_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to 10-yr wood product pool', &
+         ptr_col=this%dwt_prod10p_gain_col, default='inactive')
+
+    this%prod10p_loss_col(begc:endc) = spval
+    call hist_addfld1d (fname='PROD10P_LOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='loss from 10-yr wood product pool', &
+         ptr_col=this%prod10p_loss_col, default='inactive')
+
+    this%dwt_prod100p_gain_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_PROD100P_GAIN', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to 100-yr wood product pool', &
+         ptr_col=this%dwt_prod100p_gain_col, default='inactive')
+
+    this%prod100p_loss_col(begc:endc) = spval
+    call hist_addfld1d (fname='PROD100P_LOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='loss from 100-yr wood product pool', &
+         ptr_col=this%prod100p_loss_col, default='inactive')
+
+    this%prod1p_loss_col(begc:endc) = spval
+    call hist_addfld1d (fname='PROD1P_LOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='loss from 1-yr crop product pool', &
+         ptr_col=this%prod1p_loss_col)
+
+    this%product_ploss_col(begc:endc) = spval
+    call hist_addfld1d (fname='PRODUCT_PLOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='total P loss from wood product pools', &
+         ptr_col=this%product_ploss_col, default='inactive')
+
+    this%dwt_frootp_to_litr_met_p_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_MET_P', units='gP/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='fine root to litter due to landcover change', &
+         ptr_col=this%dwt_frootp_to_litr_met_p_col, default='inactive')
+
+    this%dwt_frootp_to_litr_cel_p_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_CEL_P', units='gP/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='fine root to litter due to landcover change', &
+         ptr_col=this%dwt_frootp_to_litr_cel_p_col, default='inactive')
+
+    this%dwt_frootp_to_litr_lig_p_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_LIG_P', units='gP/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='fine root to litter due to landcover change', &
+         ptr_col=this%dwt_frootp_to_litr_lig_p_col, default='inactive')
+
+    this%dwt_livecrootp_to_cwdp_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_LIVECROOTP_TO_CWDP', units='gP/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='live coarse root to CWD due to landcover change', &
+         ptr_col=this%dwt_livecrootp_to_cwdp_col, default='inactive')
+
+    this%dwt_deadcrootp_to_cwdp_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_DEADCROOTP_TO_CWDP', units='gP/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='dead coarse root to CWD due to landcover change', &
+         ptr_col=this%dwt_deadcrootp_to_cwdp_col, default='inactive')
+
+    this%dwt_ploss_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_PLOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='total phosphorus loss from landcover conversion', &
+         ptr_col=this%dwt_ploss_col, default='inactive')
+
+    if (crop_prog) then
+       this%fert_p_to_sminp_col(begc:endc) = spval
+       call hist_addfld1d (fname='FERT_TO_LABILEP', units='gP/m^2/s', &
+            avgflag='A', long_name='fertilizer to soil mineral P', &
+            ptr_col=this%fert_p_to_sminp_col)
+    end if
+
+    !! bgc interface
+    this%plant_pdemand_col(begc:endc) = spval
+    call hist_addfld1d (fname='PLANT_PDEMAND_COL', units='gN/m^2/s', &
+        avgflag='A', long_name='P flux required to support initial GPP', &
+        ptr_col=this%plant_pdemand_col)
+
+    this%adsorb_to_labilep_col(begc:endc) = spval
+    call hist_addfld1d (fname='ADSORBTION_P', units='gP/m^2/s', &
+         avgflag='A', long_name='adsorb P flux', &
+         ptr_col=this%adsorb_to_labilep_col, default='active')
+         
+    this%desorb_to_solutionp_col(begc:endc) = spval
+    call hist_addfld1d (fname='DESORPTION_P', units='gP/m^2/s', &
+         avgflag='A', long_name='desorp P flux', &
+         ptr_col=this%desorb_to_solutionp_col, default='active')
+         
+  end subroutine inithistory_col_pf
+
+  !-----------------------------------------------------------------------
+
+
+
+  subroutine initallocate_col_pf(this, bounds)
     class(soilcol_phosphorus_flux) :: this
-    integer, intent(in) :: begc   ! beginning soil column index
-    integer, intent(in) :: endc   ! ending soil column index    
+ 		
+ 		type(bounds_type) , intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: begp,endp
+    integer           :: begc,endc
+    !------------------------------------------------------------------------
+   
+    begc = bounds%begc; endc = bounds%endc   
 
     allocate(this%pdep_to_sminp_col             (begc:endc))    ; this%pdep_to_sminp_col     (:) = nan
     allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col     (:) = nan
