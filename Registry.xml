@@ -725,14 +725,6 @@
 			description="Flag that controls if frazil formation will exert a surface pressure as it is formed."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_frazil_use_constant_open_ocean_freezing_temperature" type="logical" default_value=".false." units="unitless"
-			description="Flag that controls if frazil formation in the open ocean (not in land-ice cavities) uses a constant freezing temperature instead of a function of P and S."
-			possible_values=".true. or .false."
-		/>
-		<nml_option name="config_frazil_open_ocean_freezing_temperature" type="real" default_value="-1.8" units="C"
-			description="Freezing temperature for the creation of frazil in the open ocean if config_frazil_use_constant_open_ocean_freezing_temperature == .true."
-			possible_values="Any real number."
-		/>
 	</nml_record>
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off" units="unitless"
@@ -838,24 +830,44 @@
 					description="Character string to choose EOS formulation"
 					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_0" type="real" default_value="-1.8" units="C"
-					description="The freezing temperature at zero pressure."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_0" type="real" default_value="-1.8" units="C"
+					description="The freezing temperature at zero pressure in open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_S" type="real" default_value="0.0" units="C PSU^{-1}"
-					description="The coefficient for the term proportional to salinity in the freezing temperature."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_S" type="real" default_value="0.0" units="C PSU^{-1}"
+					description="The coefficient for the term proportional to salinity in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_p" type="real" default_value="6.64670038e-08" units="C Pa^{-1}"
-					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_p" type="real" default_value="0.0" units="C Pa^{-1}"
+					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_pS" type="real" default_value="-4.44655526e-09" units="C PSU^{-1} Pa^{-1}"
-					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_pS" type="real" default_value="0.0" units="C PSU^{-1} Pa^{-1}"
+					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_reference_pressure" type="real" default_value="1e5" units="Pa"
-					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0."
+		<nml_option name="config_open_ocean_freezing_temperature_reference_pressure" type="real" default_value="0.0" units="Pa"
+					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in the open ocean."
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_0" type="real" default_value="6.22e-2" units="C"
+					description="The freezing temperature at zero pressure in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_S" type="real" default_value="-5.63e-2" units="C PSU^{-1}"
+					description="The coefficient for the term proportional to salinity in the freezing temperature in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_p" type="real" default_value="-7.43e-8" units="C Pa^{-1}"
+					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_pS" type="real" default_value="-1.74e-10" units="C PSU^{-1} Pa^{-1}"
+					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_reference_pressure" type="real" default_value="0.0" units="Pa"
+					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in land-ice cavities."
 					possible_values="Any positive real number"
 		/>
 	</nml_record>

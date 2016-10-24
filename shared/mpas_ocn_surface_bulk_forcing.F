@@ -479,7 +479,8 @@ contains
            ! Accumulate fluxes that use the freezing point
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) , &
-                                                                         pressure=0.0_RKIND) / rho_sw
+                                                                         pressure=0.0_RKIND, &
+                                                                         inLandIceCavity=.false.) / rho_sw
 
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
