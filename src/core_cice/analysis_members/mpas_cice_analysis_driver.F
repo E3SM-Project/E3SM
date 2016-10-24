@@ -84,6 +84,11 @@ module cice_analysis_driver
    character (len=*), parameter :: restartTimerPrefix = 'restart_'
    character (len=*), parameter :: finalizeTimerPrefix = 'finalize_'
    character (len=*), parameter :: computeAlarmSuffix = 'CMPALRM'
+
+   character (len=StrKIND), parameter :: timeSeriesDaily = 'Daily'
+   character (len=StrKIND), parameter :: timeSeriesMonthly = 'Monthly'
+   character (len=StrKIND), parameter :: timeSeriesClimatology = 'Climatology'
+
    type (mpas_pool_type), pointer :: analysisMemberList
 
 !***********************************************************************
@@ -440,7 +445,6 @@ contains
                   call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Stream ' // trim(config_AM_output_stream) // ' does not exist. Exiting...')
                end if
             end if
-
 
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
                call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Analysis member as compute_interval of ''output_interval'' without an output stream.')
@@ -1035,11 +1039,11 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_bootstrap_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_bootstrap_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_bootstrap_time_series_stats(domain, timeSeriesDaily, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_bootstrap_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_bootstrap_time_series_stats(domain, timeSeriesMonthly, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_bootstrap_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_bootstrap_time_series_stats(domain, timeSeriesClimatology, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_bootstrap_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1103,11 +1107,11 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_init_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_init_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_init_time_series_stats(domain, timeSeriesDaily, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_init_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_init_time_series_stats(domain, timeSeriesMonthly, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_init_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_init_time_series_stats(domain, timeSeriesClimatology, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_init_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1172,11 +1176,11 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_precompute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_precompute_time_series_stats(domain, 'Daily', timeLevel, err_tmp)
+         call cice_precompute_time_series_stats(domain, timeSeriesDaily, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_precompute_time_series_stats(domain, 'Monthly', timeLevel, err_tmp)
+         call cice_precompute_time_series_stats(domain, timeSeriesMonthly, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_precompute_time_series_stats(domain, 'Climatology', timeLevel, err_tmp)
+         call cice_precompute_time_series_stats(domain, timeSeriesClimatology, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_precompute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1241,11 +1245,11 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_compute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_compute_time_series_stats(domain, 'Daily', timeLevel, err_tmp)
+         call cice_compute_time_series_stats(domain, timeSeriesDaily, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_compute_time_series_stats(domain, 'Monthly', timeLevel, err_tmp)
+         call cice_compute_time_series_stats(domain, timeSeriesMonthly, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_compute_time_series_stats(domain, 'Climatology', timeLevel, err_tmp)
+         call cice_compute_time_series_stats(domain, timeSeriesClimatology, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_compute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1309,11 +1313,11 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_restart_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_restart_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_restart_time_series_stats(domain, timeSeriesDaily, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_restart_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_restart_time_series_stats(domain, timeSeriesMonthly, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_restart_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_restart_time_series_stats(domain, timeSeriesClimatology, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_restart_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1377,11 +1381,11 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_finalize_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_finalize_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_finalize_time_series_stats(domain, timeSeriesDaily, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_finalize_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_finalize_time_series_stats(domain, timeSeriesMonthly, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_finalize_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_finalize_time_series_stats(domain, timeSeriesClimatology, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_finalize_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
