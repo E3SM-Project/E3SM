@@ -11,6 +11,7 @@ module atm_advection
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_abort, only : mpas_dmpar_global_abort
 
 
    contains

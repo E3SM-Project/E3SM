@@ -543,6 +543,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd2, "      use mpas_derived_types\n");
 	fortprintf(fd2, "      use mpas_pool_routines\n");
 	fortprintf(fd2, "      use mpas_io_units\n");
+	fortprintf(fd2, "      use mpas_abort, only : mpas_dmpar_global_abort\n");
 	fortprintf(fd2, "      implicit none\n");
 	fortprintf(fd2, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 	fortprintf(fd2, "      character (len=*), intent(in) :: namelistFilename\n");
@@ -894,6 +895,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      use mpas_decomp\n");
 	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "      use mpas_io_units\n");
+	fortprintf(fd, "      use mpas_abort, only : mpas_dmpar_global_abort\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "\n");
