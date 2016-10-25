@@ -20,15 +20,41 @@ module ColumnCarbonStateType
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
 !  use subgridAveMod          , only : p2c
-  use LandunitType           , only : lun                
+!!!!!  use LandunitType           , only : lun                
 ! use ColumnType             , only : col                
   use PatchType              , only : pft
   use clm_varctl             , only : nu_com
   
 
+!  moved from CNStateType.F90
+
+  use shr_kind_mod   , only : r8 => shr_kind_r8
+  use shr_log_mod    , only : errMsg => shr_log_errMsg
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use decompMod      , only : bounds_type
+  use abortutils     , only : endrun
+  use spmdMod        , only : masterproc
+  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevsoifl, nlevsoi, crop_prog
+  use clm_varpar     , only : ndecomp_cascade_transitions, nlevdecomp, nlevdecomp_full, more_vertlayers  
+  use clm_varcon     , only : spval, ispval, c14ratio, grlnd
+  use landunit_varcon, only : istsoil, istcrop
+  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
+  use clm_varctl     , only : use_vertsoilc, use_c14, use_cn 
+  use clm_varctl     , only : iulog, fsurdat
+!!!!!!  use LandunitType   , only : lun                
+!  use ColumnType     , only : col                
+!  use PatchType      , only : pft   
+
+
+
   implicit none
   save
   private
+
+!!!!!!!! *********DW********* checkDates should be inculded at patch or veg level?????
+  ! !PRIVATE MEMBER FUNCTIONS: 
+ !!!!!!!! private :: checkDates
+
 
   type, public :: column_carbon_state
 !   Moved from CNCarbonStateType.F90
@@ -82,6 +108,68 @@ module ColumnCarbonStateType
      real(r8), pointer :: totlitc_end_col(:)
      real(r8), pointer :: totsomc_end_col(:)
 
+!   From CNStateType.F90
+
+     real(r8) , pointer :: gdp_lf_col                  (:)     ! col global real gdp data (k US$/capita)
+     real(r8) , pointer :: peatf_lf_col                (:)     ! col global peatland fraction data (0-1)
+     integer  , pointer :: abm_lf_col                  (:)     ! col global peak month of crop fire emissions 
+
+     real(r8) , pointer :: lgdp_col                    (:)     ! col gdp limitation factor for fire occurrence (0-1)
+     real(r8) , pointer :: lgdp1_col                   (:)     ! col gdp limitation factor for fire spreading (0-1)
+     real(r8) , pointer :: lpop_col                    (:)     ! col pop limitation factor for fire spreading (0-1)
+
+     real(r8) , pointer :: fpi_vr_col                  (:,:)   ! col fraction of potential immobilization (no units) 
+     real(r8) , pointer :: fpi_col                     (:)     ! col fraction of potential immobilization (no units) 
+     real(r8),  pointer :: fpg_col                     (:)     ! col fraction of potential gpp (no units)
+
+     !!! add phosphorus  -X. YANG
+
+     integer  ,pointer  :: isoilorder                  (:)     ! col global soil order data
+     real(r8) , pointer :: fpi_p_vr_col                (:,:)   ! col fraction of potential immobilization (no units) 
+     real(r8) , pointer :: fpi_p_col                   (:)     ! col fraction of potential immobilization (no units) 
+     real(r8),  pointer :: fpg_p_col                   (:)     ! col fraction of potential gpp (no units)
+
+     real(r8) , pointer :: rf_decomp_cascade_col       (:,:,:) ! col respired fraction in decomposition step (frac)
+     real(r8) , pointer :: pathfrac_decomp_cascade_col (:,:,:) ! col what fraction of C leaving a given pool passes through a given transition (frac) 
+     real(r8) , pointer :: nfixation_prof_col          (:,:)   ! col (1/m) profile for N fixation additions 
+     real(r8) , pointer :: ndep_prof_col               (:,:)   ! col (1/m) profile for N fixation additions
+     real(r8) , pointer :: pdep_prof_col               (:,:)   ! col (1/m) profile for P deposition additions 
+     real(r8) , pointer :: som_adv_coef_col            (:,:)   ! col SOM advective flux (m/s) 
+     real(r8) , pointer :: som_diffus_coef_col         (:,:)   ! col SOM diffusivity due to bio/cryo-turbation (m2/s) 
+
+     real(r8) , pointer :: annavg_t2m_col              (:)     ! col annual average of 2m air temperature, averaged from pft-level (K)
+     real(r8) , pointer :: scalaravg_col               (:)     ! column average scalar for decompostion (for ad_spinup)
+     real(r8) , pointer :: annsum_counter_col          (:)     ! col seconds since last annual accumulator turnover
+
+     ! Fire
+     real(r8) , pointer :: nfire_col                   (:)     ! col fire counts (count/km2/sec), valid only in Reg. C
+     real(r8) , pointer :: fsr_col                     (:)     ! col fire spread rate at column level (m/s)
+     real(r8) , pointer :: fd_col                      (:)     ! col fire duration at column level (hr)
+     real(r8) , pointer :: lfc_col                     (:)     ! col conversion area fraction of BET and BDT that haven't burned before (/timestep)
+     real(r8) , pointer :: lfc2_col                    (:)     ! col conversion area fraction of BET and BDT that burned (/sec)
+     real(r8) , pointer :: dtrotr_col                  (:)     ! col annual decreased fraction coverage of BET on the gridcell (0-1)
+     real(r8) , pointer :: trotr1_col                  (:)     ! col patch weight of BET and BDT on the gridcell(0-1)
+     real(r8) , pointer :: trotr2_col                  (:)     ! col patch weight of BDT on the gridcell (0-1)
+     real(r8) , pointer :: cropf_col                   (:)     ! col crop fraction in veg column (0-1)
+     real(r8) , pointer :: baf_crop_col                (:)     ! col baf for cropland(/sec)
+     real(r8) , pointer :: baf_peatf_col               (:)     ! col baf for peatland (/sec)
+     real(r8) , pointer :: fbac_col                    (:)     ! col total burned area out of conversion (/sec)
+     real(r8) , pointer :: fbac1_col                   (:)     ! col burned area out of conversion region due to land use fire (/sec)
+     real(r8) , pointer :: wtlf_col                    (:)     ! col fractional coverage of non-crop Patches (0-1)
+     real(r8) , pointer :: lfwt_col                    (:)     ! col fractional coverage of non-crop and non-bare-soil Patches (0-1)
+     real(r8) , pointer :: farea_burned_col            (:)     ! col fractional area burned (/sec) 
+
+     real(r8), pointer :: frootc_nfix_scalar_col       (:)     ! col scalar for nitrogen fixation
+     real(r8), pointer :: decomp_litpool_rcn_col       (:,:,:) ! cn ratios of the decomposition pools
+!!!!!!********DW**************
+     integer           :: CropRestYear                         ! restart year from initial conditions file - increment as time elapses
+
+     real(r8), pointer :: fpg_nh4_vr_col               (:,:)   ! fraction of plant nh4 demand that is satisfied (no units) BGC mode
+     real(r8), pointer :: fpg_no3_vr_col               (:,:)   ! fraction of plant no3 demand that is satisfied (no units) BGC mode
+     real(r8), pointer :: fpg_vr_col                   (:,:)   ! fraction of plant N demand that is satisfied (no units) CN mode
+     real(r8), pointer :: fpg_p_vr_col                 (:,:)   ! fraction of plant p demand that is satisfied (no units) 
+
+
   contains
      procedure, public :: Init => init_col_cs
      procedure, public :: Clean => clean_col_cs
@@ -92,6 +180,10 @@ module ColumnCarbonStateType
      procedure , private :: InitAllocate => initallocate_col_cs
      procedure , private :: InitHistory => inithistory_col_cs
      procedure , private :: InitCold => initcold_col_cs
+
+!!!!!!!!!!!************DW**************  CropRestIncYear Crop_prog should be at Veg level????
+!        procedure, public  :: CropRestIncYear
+
   end type soilcol_carbon_state
 
   ! declare the public instances of soilcolumn types
@@ -180,6 +272,71 @@ module ColumnCarbonStateType
     allocate(this%cwdc_end_col   (begc:endc));  this%cwdc_end_col    (:) = nan
     allocate(this%totlitc_end_col(begc:endc));  this%totlitc_end_col (:) = nan
     allocate(this%totsomc_end_col(begc:endc));  this%totsomc_end_col (:) = nan
+
+
+! from CNStateType.F90
+
+    allocate(this%gdp_lf_col          (begc:endc))                   ;
+    allocate(this%peatf_lf_col        (begc:endc))                   ; 
+    allocate(this%abm_lf_col          (begc:endc))                   ; 
+
+    allocate(this%lgdp_col            (begc:endc))                   ; 
+    allocate(this%lgdp1_col           (begc:endc))                   ; 
+    allocate(this%lpop_col            (begc:endc))                   ;  
+
+    allocate(this%fpi_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_vr_col          (:,:) = nan
+    allocate(this%fpi_col             (begc:endc))                   ; this%fpi_col             (:)   = nan
+    allocate(this%fpg_col             (begc:endc))                   ; this%fpg_col             (:)   = nan
+    !!! add phosphours related variables
+    allocate(this%isoilorder            (begc:endc))                   ; 
+    allocate(this%fpi_p_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_p_vr_col          (:,:) = nan
+    allocate(this%fpi_p_col             (begc:endc))                   ; this%fpi_p_col             (:)   = nan
+    allocate(this%fpg_p_col             (begc:endc))                   ; this%fpg_p_col             (:)   = nan
+    allocate(this%pdep_prof_col         (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
+
+    allocate(this%rf_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); 
+    this%rf_decomp_cascade_col(:,:,:) = nan
+
+    allocate(this%pathfrac_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions));     
+    this%pathfrac_decomp_cascade_col(:,:,:) = nan
+
+    allocate(this%nfixation_prof_col  (begc:endc,1:nlevdecomp_full)) ; this%nfixation_prof_col  (:,:) = spval
+    allocate(this%ndep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%ndep_prof_col       (:,:) = spval
+    allocate(this%pdep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
+    allocate(this%som_adv_coef_col    (begc:endc,1:nlevdecomp_full)) ; this%som_adv_coef_col    (:,:) = spval
+    allocate(this%som_diffus_coef_col (begc:endc,1:nlevdecomp_full)) ; this%som_diffus_coef_col (:,:) = spval
+
+    allocate(this%annsum_counter_col  (begc:endc))                   ; this%annsum_counter_col  (:)   = nan
+    allocate(this%annavg_t2m_col      (begc:endc))                   ; this%annavg_t2m_col      (:)   = nan
+    allocate(this%scalaravg_col       (begc:endc))                   ; this%scalaravg_col       (:)   = nan
+
+    allocate(this%nfire_col           (begc:endc))                   ; this%nfire_col           (:)   = spval
+    allocate(this%fsr_col             (begc:endc))                   ; this%fsr_col             (:)   = nan
+    allocate(this%fd_col              (begc:endc))                   ; this%fd_col              (:)   = nan
+    allocate(this%lfc_col             (begc:endc))                   ; this%lfc_col             (:)   = spval
+    allocate(this%lfc2_col            (begc:endc))                   ; this%lfc2_col            (:)   = 0._r8
+    allocate(this%dtrotr_col          (begc:endc))                   ; this%dtrotr_col          (:)   = 0._r8
+    allocate(this%trotr1_col          (begc:endc))                   ; this%trotr1_col          (:)   = 0._r8
+    allocate(this%trotr2_col          (begc:endc))                   ; this%trotr2_col          (:)   = 0._r8
+    allocate(this%cropf_col           (begc:endc))                   ; this%cropf_col           (:)   = nan
+    allocate(this%baf_crop_col        (begc:endc))                   ; this%baf_crop_col        (:)   = nan
+    allocate(this%baf_peatf_col       (begc:endc))                   ; this%baf_peatf_col       (:)   = nan
+    allocate(this%fbac_col            (begc:endc))                   ; this%fbac_col            (:)   = nan
+    allocate(this%fbac1_col           (begc:endc))                   ; this%fbac1_col           (:)   = nan
+    allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = nan
+    allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = nan
+    allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = nan
+    allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = nan
+    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = nan
+ 
+!!!!!!!************DW****************
+    this%CropRestYear = 0
+
+    allocate(this%fpg_nh4_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_nh4_vr_col(:,:) = nan 
+    allocate(this%fpg_no3_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_no3_vr_col(:,:) = nan
+    allocate(this%fpg_vr_col                  (begc:endc,1:nlevdecomp_full)) ; this%fpg_vr_col    (:,:) = nan
+    allocate(this%fpg_p_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%fpg_p_vr_col  (:,:) = nan
+
 
   end subroutine initallocate_col_cs
 
@@ -491,6 +648,13 @@ module ColumnCarbonStateType
     character(100)    :: longname
     real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
     real(r8), pointer :: data2dptr(:,:) ! temp. pointer for slicing larger arrays
+
+!   from CNStateType.90
+    character(8)      :: vr_suffix
+    character(10)     :: active
+!    real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
+
+
     !---------------------------------------------------------------------
 
 !    begp = bounds%begp; endp = bounds%endp
@@ -795,6 +959,110 @@ module ColumnCarbonStateType
             ptr_col=this%totprodc_col)
     endif
 
+
+!  from CNStateType.F90
+
+
+    this%nfixation_prof_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='NFIXATION_PROF', units='1/m',  type2d='levdcmp', &
+         avgflag='A', long_name='profile for biological N fixation', &
+         ptr_col=this%nfixation_prof_col, default='inactive')
+
+    this%ndep_prof_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='NDEP_PROF', units='1/m',  type2d='levdcmp', &
+         avgflag='A', long_name='profile for atmospheric N  deposition', &
+         ptr_col=this%ndep_prof_col, default='inactive')
+
+    this%pdep_prof_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='PDEP_PROF', units='1/m',  type2d='levdcmp', &
+         avgflag='A', long_name='profile for atmospheric P  deposition', &
+         ptr_col=this%pdep_prof_col, default='inactive')
+
+    this%som_adv_coef_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='SOM_ADV_COEF', units='m/s',  type2d='levdcmp', &
+         avgflag='A', long_name='advection term for vertical SOM translocation', &
+         ptr_col=this%som_adv_coef_col, default='inactive')
+
+    this%som_diffus_coef_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='SOM_DIFFUS_COEF', units='m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='diffusion coefficient for vertical SOM translocation', &
+         ptr_col=this%som_diffus_coef_col, default='inactive')
+
+    this%lfc2_col(begc:endc) = spval
+    call hist_addfld1d (fname='LFC2', units='per sec', &
+         avgflag='A', long_name='conversion area fraction of BET and BDT that burned', &
+         ptr_col=this%lfc2_col)
+
+    if ( nlevdecomp_full > 1 ) then
+       this%fpi_col(begc:endc) = spval
+       call hist_addfld1d (fname='FPI', units='proportion', &
+            avgflag='A', long_name='fraction of potential immobilization of nitrogen', &
+            ptr_col=this%fpi_col)
+       this%fpi_p_col(begc:endc) = spval
+       call hist_addfld1d (fname='FPI_P', units='proportion', &
+            avgflag='A', long_name='fraction of potential immobilization of phosphorus', &
+            ptr_col=this%fpi_p_col)
+    endif
+
+    if (nlevdecomp > 1) then
+       vr_suffix = "_vr"
+    else 
+       vr_suffix = ""
+    endif
+    this%fpi_vr_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='FPI'//trim(vr_suffix), units='proportion', type2d='levdcmp', & 
+         avgflag='A', long_name='fraction of potential immobilization of nitrogen', &
+         ptr_col=this%fpi_vr_col)
+    this%fpi_p_vr_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='FPI_P'//trim(vr_suffix), units='proportion', type2d='levdcmp', & 
+         avgflag='A', long_name='fraction of potential immobilization of phosphorus', &
+         ptr_col=this%fpi_p_vr_col)
+
+    this%fpg_col(begc:endc) = spval
+    call hist_addfld1d (fname='FPG', units='proportion', &
+         avgflag='A', long_name='fraction of potential gpp due to N limitation', &
+         ptr_col=this%fpg_col)
+
+    this%fpg_p_col(begc:endc) = spval
+    call hist_addfld1d (fname='FPG_P', units='proportion', &
+         avgflag='A', long_name='fraction of potential gpp due to P limitation', &
+         ptr_col=this%fpg_p_col)
+
+    this%annsum_counter_col(begc:endc) = spval
+    call hist_addfld1d (fname='ANNSUM_COUNTER', units='s', &
+         avgflag='A', long_name='seconds since last annual accumulator turnover', &
+         ptr_col=this%annsum_counter_col, default='inactive')
+
+    this%annavg_t2m_col(begc:endc) = spval
+    call hist_addfld1d (fname='CANNAVG_T2M', units='K', &
+         avgflag='A', long_name='annual average of 2m air temperature', &
+         ptr_col=this%annavg_t2m_col, default='inactive')
+
+    this%scalaravg_col(begc:endc) = spval
+    call hist_addfld1d(fname='SCALARAVG', units='fraction', &
+         avgflag='A', long_name='average of decomposition scalar', &
+         ptr_col=this%scalaravg_col)
+
+    this%nfire_col(begc:endc) = spval
+    call hist_addfld1d (fname='NFIRE',  units='counts/km2/sec', &
+         avgflag='A', long_name='fire counts valid only in Reg.C', &
+         ptr_col=this%nfire_col)
+
+    this%farea_burned_col(begc:endc) = spval
+    call hist_addfld1d (fname='FAREA_BURNED',  units='proportion', &
+         avgflag='A', long_name='timestep fractional area burned', &
+         ptr_col=this%farea_burned_col)
+
+    this%baf_crop_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_CROP',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned for crop', &
+         ptr_col=this%baf_crop_col)
+
+    this%baf_peatf_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_PEATF',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in peatland', &
+         ptr_col=this%baf_peatf_col)
+ 
   end subroutine inithistory_col_cs
 
  !-----------------------------------------------------------------------
@@ -820,6 +1088,43 @@ module ColumnCarbonStateType
 !    integer :: num_special_patch                         ! number of good values in special_patch filter
     integer :: special_col(bounds%endc-bounds%begc+1)    ! special landunit filter - columns
 !    integer :: special_patch(bounds%endp-bounds%begp+1)  ! special landunit filter - patches
+
+
+!    Moved from CNStateType.F90
+
+    ! !USES:
+    use spmdMod    , only : masterproc
+    use fileutils  , only : getfil
+    use clm_varctl , only : nsrest, nsrStartup
+    use ncdio_pio
+    !
+    ! !ARGUMENTS:
+    class(cnstate_type) :: this
+    type(bounds_type), intent(in) :: bounds   
+    !
+    ! !LOCAL VARIABLES:
+    integer               :: g,l,c,p,n,j,m            ! indices
+    real(r8) ,pointer     :: gdp (:)                  ! global gdp data (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer     :: peatf (:)                ! global peatf data (needs to be a pointer for use in ncdio)
+    integer  ,pointer     :: soilorder_rdin (:)       ! global soil order data (needs to be a pointer for use in ncdio)
+    integer  ,pointer     :: abm (:)                  ! global abm data (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer     :: gti (:)                  ! read in - fmax (needs to be a pointer for use in ncdio)
+    integer               :: dimid                    ! dimension id
+    integer               :: ier                      ! error status
+    type(file_desc_t)     :: ncid                     ! netcdf id
+    logical               :: readvar 
+    character(len=256)    :: locfn                    ! local filename
+    integer               :: begc, endc
+    integer               :: begg, endg
+
+    !-----------------------------------------------------------------------
+
+    begc = bounds%begc; endc= bounds%endc
+    begg = bounds%begg; endg= bounds%endg
+
+
+    !   End of section from CNStateType.F90
+
     !-----------------------------------------------------------------------
 
     ! Set column filters
@@ -924,6 +1229,170 @@ module ColumnCarbonStateType
     call this%SetValues (&
          num_column=num_special_col, filter_column=special_col, value_column=0._r8)
 
+!!!!!   Moved from CNStateType.F90
+
+        ! --------------------------------------------------------------------
+    ! Open surface dataset
+    ! --------------------------------------------------------------------
+
+    if (masterproc) then
+       write(iulog,*) 'Attempting to read soil color, sand and clay boundary data .....'
+    end if
+
+    call getfil (fsurdat, locfn, 0)
+    call ncd_pio_openfile (ncid, locfn, 0)
+
+    call ncd_inqdlen(ncid,dimid,nlevsoifl,name='nlevsoi')
+    if ( .not. more_vertlayers )then
+       if ( nlevsoifl /= nlevsoi )then
+          call endrun(msg=' ERROR: Number of soil layers on file does NOT match the number being used'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    else
+       ! read in layers, interpolate to high resolution grid later
+    end if
+
+
+    ! --------------------------------------------------------------------
+    ! Read in GDP data 
+    ! --------------------------------------------------------------------
+
+    allocate(gdp(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='gdp', flag='read', data=gdp, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: gdp NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+    end if
+    do c = bounds%begc, bounds%endc
+       g = col%gridcell(c)
+       this%gdp_lf_col(c) = gdp(g)
+    end do
+    deallocate(gdp)
+
+    ! --------------------------------------------------------------------
+    ! Read in peatf data 
+    ! --------------------------------------------------------------------
+
+    allocate(peatf(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='peatf', flag='read', data=peatf, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: peatf NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+    end if
+    do c = bounds%begc, bounds%endc
+       g = col%gridcell(c)
+       this%peatf_lf_col(c) = peatf(g)
+    end do
+    deallocate(peatf)
+
+    ! --------------------------------------------------------------------
+    ! Read in soilorder data 
+    ! --------------------------------------------------------------------
+
+    allocate(soilorder_rdin(bounds%begg:bounds%endg))
+    !call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+    !if (.not. readvar) then
+    !   call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    !end if
+    do c = bounds%begc, bounds%endc
+       g = col%gridcell(c)
+!       this%isoilorder(c) = soilorder_rdin(g)
+       this%isoilorder(c) = 12
+    end do
+    deallocate(soilorder_rdin)
+
+
+    ! --------------------------------------------------------------------
+    ! Read in ABM data 
+    ! --------------------------------------------------------------------
+
+    allocate(abm(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='abm', flag='read', data=abm, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: abm NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+    end if
+    do c = bounds%begc, bounds%endc
+       g = col%gridcell(c)
+       this%abm_lf_col(c) = abm(g)
+    end do
+    deallocate(abm)
+
+    ! Close file
+
+    call ncd_pio_closefile(ncid)
+
+    if (masterproc) then
+       write(iulog,*) 'Successfully read fmax, soil color, sand and clay boundary data'
+       write(iulog,*)
+    endif
+    
+    ! --------------------------------------------------------------------
+    ! Initialize terms needed for dust model
+    ! TODO - move these terms to DUSTMod module variables 
+    ! --------------------------------------------------------------------
+       
+    do c = bounds%begc, bounds%endc
+
+!!!  ******DW*****
+!!!!  need to deal with col and lun here
+
+       l = col%landunit(c)
+       if (lun%ifspecial(l)) then
+          this%annsum_counter_col (c) = spval
+          this%annavg_t2m_col     (c) = spval
+          this%scalaravg_col      (c) = spval
+          this%nfire_col          (c) = spval
+          this%baf_crop_col       (c) = spval
+          this%baf_peatf_col      (c) = spval
+          this%fbac_col           (c) = spval
+          this%fbac1_col          (c) = spval
+          this%farea_burned_col   (c) = spval
+          this%fpi_col            (c) = spval
+          this%fpg_col            (c) = spval
+          this%fpi_p_col          (c) = spval
+          this%fpg_p_col          (c) = spval
+          do j = 1,nlevdecomp_full
+             this%fpi_vr_col(c,j) = spval
+             this%fpi_p_vr_col(c,j) = spval
+          end do
+       end if
+
+       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          this%annsum_counter_col(c) = 0._r8   
+          this%annavg_t2m_col(c)     = 280._r8 
+
+          ! fire related variables 
+          this%baf_crop_col(c)       = 0._r8 
+          this%baf_peatf_col(c)      = 0._r8 
+          this%fbac_col(c)           = 0._r8 
+          this%fbac1_col(c)          = 0._r8 
+          this%farea_burned_col(c)   = 0._r8 
+
+          if (nsrest == nsrStartup) this%nfire_col(c) = 0._r8
+
+          ! initialize fpi_vr so that levels below nlevsoi are not nans
+          this%fpi_vr_col(c,1:nlevdecomp_full)          = 0._r8 
+          this%fpi_p_vr_col(c,1:nlevdecomp_full)          = 0._r8 
+          this%som_adv_coef_col(c,1:nlevdecomp_full)    = 0._r8 
+          this%som_diffus_coef_col(c,1:nlevdecomp_full) = 0._r8 
+
+          ! initialize the profiles for converting to vertically resolved carbon pools
+          this%nfixation_prof_col(c,1:nlevdecomp_full)  = 0._r8 
+          this%ndep_prof_col(c,1:nlevdecomp_full)       = 0._r8 
+          this%pdep_prof_col(c,1:nlevdecomp_full)       = 0._r8 
+       end if
+    end do
+
+    ! ecophysiological variables
+    ! phenology variables
+       
+    ! ecophysiological variables
+
+
+    ! fire variables
+
+    do c = bounds%begc,bounds%endc
+       this%lfc2_col(c) = 0._r8
+    end do
+
   end subroutine initcold_col_cs
 
 subroutine restart_col_cs ( this,  bounds, ncid, flag, carbon_type, c12_carbonstate_vars, cnstate_vars)
@@ -940,6 +1409,14 @@ subroutine restart_col_cs ( this,  bounds, ncid, flag, carbon_type, c12_carbonst
 
     use restUtilMod
     use ncdio_pio
+
+!   moved from CNStateType.F90
+
+    use shr_log_mod, only : errMsg => shr_log_errMsg
+    use spmdMod    , only : masterproc
+    use abortutils , only : endrun
+
+
     !
     ! !ARGUMENTS:
     class (column_carbon_state) :: this
@@ -972,6 +1449,14 @@ subroutine restart_col_cs ( this,  bounds, ncid, flag, carbon_type, c12_carbonst
     integer  :: restart_file_spinup_state 
     ! flags for comparing the model and restart decomposition cascades
     integer  :: decomp_cascade_state, restart_file_decomp_cascade_state 
+
+
+!  moved from CNStateType.F90
+
+    integer, pointer :: temp1d(:) ! temporary
+    integer          :: p,j,c,i   ! indices
+
+
     !------------------------------------------------------------------------
 
     if (carbon_type == 'c13' .or. carbon_type == 'c14') then
@@ -1369,35 +1854,105 @@ subroutine restart_col_cs ( this,  bounds, ncid, flag, carbon_type, c12_carbonst
               call endrun(msg=' CNRest: error in entering/exiting spinup - should occur only when nstep = 1'//&
                    errMsg(__FILE__, __LINE__))
            endif
+
+!!!!!!!!****************DW****************the if statement inside IF/THEN/ELSE statement
            do k = 1, ndecomp_pools
-              do c = bounds%begc, bounds%endc
-                 do j = 1, nlevdecomp
-		    if ( exit_spinup ) then
-		      m = decomp_cascade_con%spinup_factor(k)
-                      if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
-                    else if ( enter_spinup ) then 
-		      m = 1. / decomp_cascade_con%spinup_factor(k)
-		      if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
-		    end if
-                    this%decomp_cpools_vr_col(c,j,k) = this%decomp_cpools_vr_col(c,j,k) * m
-                 end do
+            do c = bounds%begc, bounds%endc
+              do j = 1, nlevdecomp
+
+	    	       if ( exit_spinup ) then
+    		        m = decomp_cascade_con%spinup_factor(k)
+                if (decomp_cascade_con%spinup_factor(k) > 1)   m = m / cnstate_vars%scalaravg_col(c)
+               else if ( enter_spinup ) then 
+		            m = 1. / decomp_cascade_con%spinup_factor(k)
+		            if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
+		           end if
+               this%decomp_cpools_vr_col(c,j,k) = this%decomp_cpools_vr_col(c,j,k) * m
+ 
               end do
+            end do
            end do
 
-!!!!!!  **** DW***  Not sure how to handle this part
+          end if
+    end if
 
+!!!!  moved from CNStateType.F90  crop_prog is at PFT level???
 
-!           do i = bounds%begp, bounds%endp
-!              if (exit_spinup) then 
-!                 m_veg = spinup_mortality_factor
-!              else if (enter_spinup) then 
-!                 m_veg = 1._r8 / spinup_mortality_factor
-!              end if
-!              this%deadstemc_patch(i)  = this%deadstemc_patch(i) * m_veg
-!              this%deadcrootc_patch(i) = this%deadcrootc_patch(i) * m_veg
-!           end do
-        end if
-     end if
+    if (use_vertsoilc) then
+       ptr2d => this%fpi_vr_col
+       call restartvar(ncid=ncid, flag=flag, varname='fpi_vr', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       ptr2d => this%fpi_p_vr_col
+       call restartvar(ncid=ncid, flag=flag, varname='fpi_p_vr', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    else
+       ptr1d => this%fpi_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
+       call restartvar(ncid=ncid, flag=flag, varname='fpi', xtype=ncd_double,  &
+            dim1name='column', &
+            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       ptr1d => this%fpi_p_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
+       call restartvar(ncid=ncid, flag=flag, varname='fpi_p', xtype=ncd_double,  &
+            dim1name='column', &
+            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+    end if
+
+    if (use_vertsoilc) then
+       ptr2d => this%som_adv_coef_col
+       call restartvar(ncid=ncid, flag=flag, varname='som_adv_coef_vr', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='SOM advective flux', units='m/s', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    end if
+    
+    if (use_vertsoilc) then
+       ptr2d => this%som_diffus_coef_col
+       call restartvar(ncid=ncid, flag=flag, varname='som_diffus_coef_vr', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='SOM diffusivity due to bio/cryo-turbation',  units='m^2/s', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='fpg', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fpg_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='fpg_p', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fpg_p_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='annsum_counter', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%annsum_counter_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='burndate', xtype=ncd_int,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%burndate_patch) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='lfc', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%lfc_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='cannavg_t2m', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%annavg_t2m_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double, &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag = 'interp', readvar=readvar, data=this%scalaravg_col)
+
 
   end subroutine restart_col_cs
 
