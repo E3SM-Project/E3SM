@@ -5,7 +5,7 @@ Library for case.setup.
 from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
-from CIME.preview_namelists import create_dirs
+from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.compilers     import Compilers
 from CIME.utils             import append_status, parse_test_name, get_cime_root

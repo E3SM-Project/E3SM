@@ -72,11 +72,11 @@ class ERP(SystemTestsCommon):
                         self._case.set_value("NTASKS_%s"%comp, ntasks/2)
                         self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
 
-            # Note, some components, like CESM-CICE, have
-            # decomposition information in env_build.xml
-            # case_setup(self._case, test_mode=True, reset=True)that
-            # needs to be regenerated for the above new tasks and thread counts
-            case_setup(self._case, test_mode=True, reset=True)
+                # Note, some components, like CESM-CICE, have
+                # decomposition information in env_build.xml
+                # case_setup(self._case, test_mode=True, reset=True)that
+                # needs to be regenerated for the above new tasks and thread counts
+                case_setup(self._case, test_mode=True, reset=True)
 
             # Now rebuild the system, given updated information in env_build.xml
 
