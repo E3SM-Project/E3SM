@@ -1,0 +1,90 @@
+#! /usr/bin/env perl
+use strict;
+use Cwd;
+
+if ($#ARGV == -1) {
+    die " ERROR datm.buildnml: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my @dirs = ("$CASEROOT/Tools");
+unshift @INC, @dirs;
+require SetupTools;
+my $sysmod; 
+
+my $CASEBUILD	= `./xmlquery  CASEBUILD   -value`;
+my $CIMEROOT	= `./xmlquery  CIMEROOT	   -value`;
+my $NINST_ATM	= `./xmlquery  NINST_ATM   -value`;
+my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
+my $SCRIPTSROOT	= `./xmlquery  SCRIPTSROOT -value`;
+
+if (! -d "$CASEBUILD/datmconf" ) {
+    $sysmod = "mkdir $CASEBUILD/datmconf";
+    system($sysmod) == 0 or die "ERROR datm.buildnml: $sysmod failed: $?\n";
+}
+chdir "$CASEBUILD/datmconf";
+
+my $inst_string;
+my $inst_counter = 1;
+while ($inst_counter <= $NINST_ATM) {
+
+    # -----------------------------------------------------
+    # determine instance string 
+    # -----------------------------------------------------
+
+    $inst_string = "";       
+    if ($NINST_ATM > 1) {
+	$inst_string = `printf _%04d $inst_counter`;
+
+	# If multi-instance case does not have restart file, use single-case restart
+	# for each instance
+	if ( (! -e "$RUNDIR/rpointer.atm${inst_string}") && (-e "$RUNDIR/rpointer.atm") ) {
+	    $sysmod = "cp -v $RUNDIR/rpointer.atm $RUNDIR/rpointer.atm${inst_string}";
+	    system($sysmod) == 0 or die "ERROR datm.buildnml: $sysmod failed: $?\n";
+	}
+    }
+
+    # -----------------------------------------------------
+    # create datmconf/cesm_namelist
+    # -----------------------------------------------------
+
+    SetupTools::create_namelist_infile("$CASEROOT", 
+				       "$CASEROOT/user_nl_datm${inst_string}", 
+				       "$CASEBUILD/datmconf/cesm_namelist"); 
+
+    # -----------------------------------------------------
+    # call build-namelist
+    # -----------------------------------------------------
+
+    $sysmod = "$CIMEROOT/components/data_comps/datm/bld/build-namelist";
+    $sysmod = "$sysmod -infile $CASEBUILD/datmconf/cesm_namelist";
+    $sysmod = "$sysmod -caseroot $CASEROOT";
+    $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";
+    $sysmod = "$sysmod -user_xml_dir $CASEROOT/SourceMods/src.datm";
+    $sysmod = "$sysmod -inst_string \"$inst_string\"";
+    system($sysmod) == 0 or die "ERROR datm.buildnml: $sysmod failed: $?\n";
+
+    if (-d ${RUNDIR}) {
+	$sysmod = "cp $CASEBUILD/datmconf/datm_in     ${RUNDIR}/datm_in${inst_string}";
+	system($sysmod) == 0 or die "ERROR datm.buildnml: $sysmod failed: $?\n";
+
+	$sysmod = "cp $CASEBUILD/datmconf/datm_atm_in ${RUNDIR}/datm_atm_in${inst_string}";
+	system($sysmod) == 0 or die "ERROR datm.buildnml: $sysmod failed: $?\n";
+
+	$sysmod = "cp $CASEBUILD/datmconf/*txt* ${RUNDIR}/ >& /dev/null";
+	system($sysmod) == 0;
+    }
+
+    # -----------------------------------------------------
+    # increment instance counter
+    # -----------------------------------------------------
+
+    $inst_counter = $inst_counter + 1;
+
+}
+
+exit (0);
+
+
+
