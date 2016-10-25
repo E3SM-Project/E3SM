@@ -14,8 +14,6 @@ from CIME.utils import expect
 from CIME.XML.machines import Machines
 from jenkins_generic_job import jenkins_generic_job
 
-import argparse, sys, os, shutil, glob, doctest, signal, time
-
 # Don't know if this belongs here longterm
 MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
 

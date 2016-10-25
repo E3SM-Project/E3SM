@@ -4,7 +4,7 @@
 Script to build a case.
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 
 import CIME.build as build
 from CIME.case           import Case

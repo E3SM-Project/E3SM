@@ -15,5 +15,5 @@ os.environ["CIMEROOT"] = _CIMEROOT
 import CIME.utils
 CIME.utils.check_minimum_python_version(2, 7)
 CIME.utils.stop_buffering_output()
-
+# pylint: disable=unused-import
 import logging, doctest, argparse

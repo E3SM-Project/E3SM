@@ -1865,7 +1865,7 @@ def _main_func():
         files_to_test.extend(run_cmd_no_fail("git grep -l '#!/usr/bin/env python'",
                                         from_dir=cimeroot).splitlines())
         #TODO - get rid of this
-        list_of_directories_to_ignore = ("point_clm", "tools", "machines", "apidocs", "unit_test")
+        list_of_directories_to_ignore = ("pointclm", "point_clm", "tools", "machines", "apidocs", "unit_test")
         for file_ in files_to_test:
             # Dont test template files
             test_this = True

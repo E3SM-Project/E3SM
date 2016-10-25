@@ -9,7 +9,7 @@ blessing of diffs.
 You may need to load modules for cprnc to work.
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 
 from CIME.utils import expect
 from CIME.XML.machines import Machines

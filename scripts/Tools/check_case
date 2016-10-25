@@ -4,7 +4,7 @@
 check_case verifies that the case is set up correctly
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 
 from CIME.utils import expect
 from CIME.case  import Case

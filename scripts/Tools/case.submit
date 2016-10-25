@@ -4,7 +4,7 @@
 case.submit - Submit a cesm workflow to the queueing system or run it if there is no queueing system.   A cesm workflow may include multiple jobs.
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 from CIME.case_submit import submit
 from CIME.case        import Case
 

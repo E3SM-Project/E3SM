@@ -5,7 +5,7 @@ Check (and optionally download) input data files.
 
 Should be run from case.
 """
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 
 from CIME.utils import get_model
 from CIME.XML.machines import Machines

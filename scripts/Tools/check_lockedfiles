@@ -3,7 +3,7 @@
 This script compares xml files
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 from CIME.check_lockedfiles import check_lockedfiles
 
 def parse_command_line(args, description):

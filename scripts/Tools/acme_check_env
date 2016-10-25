@@ -6,7 +6,7 @@ A script to verify that the environment is compliant with ACME's software requir
 Be sure to source your env_mach_specific file before running this check.
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 from CIME.utils import run_cmd
 
 import sys, os, argparse

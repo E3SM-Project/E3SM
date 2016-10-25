@@ -8,7 +8,7 @@ in compare mode, which is very slow, allow for very fast analsis of diffs.
 You may need to load modules for cprnc to work.
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 
 from CIME.XML.machines import Machines
 from CIME.compare_test_results import compare_test_results

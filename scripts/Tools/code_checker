@@ -5,7 +5,7 @@ Ensure that all CIME python files are free of errors
 and follow the PEP8 standard.
 """
 
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 
 from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_python_libs_root
 
@@ -57,7 +57,12 @@ def run_pylint(on_file):
 ###############################################################################
     pylint = find_executable("pylint")
 
-    cmd = "%s --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % (pylint, on_file)
+    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement"
+
+    if "scripts/Tools" in on_file:
+        cmd_options +=",relative-import"
+    cmd = "%s %s %s"%(pylint, cmd_options, on_file)
+    print "HERE %s"%cmd
     stat, out, err = run_cmd(cmd, verbose=False)
     if stat != 0:
         logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
@@ -86,12 +91,6 @@ def check_code(dir_to_check, num_procs, files):
 
     Returns True if all files had no problems
     """
-    # Pylint won't work right if the imports within the checked files fails
-#    if "PYTHONPATH" in os.environ:
-#        os.environ["PYTHONPATH"] += ':' + dir_to_check
-#    else:
-#        os.environ["PYTHONPATH"] = dir_to_check
-
     # Get list of files to check
     files_to_check = run_cmd_no_fail('git ls-files --full-name %s' % dir_to_check, verbose=False).splitlines()
     if files:
