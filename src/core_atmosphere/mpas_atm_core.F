@@ -774,7 +774,9 @@ module atm_core
       updraft_helicity_max(:) = 0.
       w_velocity_max(:) = 0.
       wind_speed_level1_max(:) = 0.
-      refl10cm_1km_max(:) = 0.
+      if(associated(refl10cm_1km_max)) then
+         refl10cm_1km_max(:) = 0.
+      endif
    
    end subroutine atm_reset_diagnostics
 
@@ -2494,7 +2496,7 @@ module atm_core
       call mpas_pool_get_field(tend_physics, 'rthblten', rthblten_f)
       call mpas_pool_get_field(diag, 'dtheta_dt_mp', dtheta_dt_mp_f)
       call mpas_pool_get_field(diag, 'dtheta_dt_mix', dtheta_dt_mix_f)
-      
+
       call mpas_dmpar_exch_halo_field(rthratenlw_f)
       call mpas_dmpar_exch_halo_field(rthratensw_f)
       call mpas_dmpar_exch_halo_field(rthcuten_f)
