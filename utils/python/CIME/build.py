@@ -432,7 +432,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid)
         file_build = os.path.join(exeroot, "%s.bldlog.%s" % (lib, lid))
         my_file = os.path.join(cimeroot, "cime_config", "buildlib.%s" % lib)
         if lib == "pio":
-            my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts"),
+            my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts","Tools"),
                                                           os.path.join(cimeroot,"utils","python"), my_file)
         with open(file_build, "w") as fd:
             stat = run_cmd("%s %s %s %s" %

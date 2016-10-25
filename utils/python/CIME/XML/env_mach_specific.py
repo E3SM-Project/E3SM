@@ -243,7 +243,7 @@ class EnvMachSpecific(EnvBase):
 
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_commands(modules_to_load, "python"):
-            logger.warn("module command is %s"%cmd)
+            logger.debug("module command is %s"%cmd)
             py_module_code = run_cmd_no_fail(cmd)
             exec(py_module_code)
 
