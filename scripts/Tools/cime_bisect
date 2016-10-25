@@ -5,11 +5,11 @@ A script to help track down the commit that caused a test to fail. This
 script is intended to be run by git bisect.
 """
 
-from standard_script_setup import *
+from Tools.standard_script_setup import *
 from CIME.utils import expect, run_cmd_no_fail, run_cmd
 from CIME.XML.machines import Machines
 
-import argparse, sys, os, doctest, traceback, re
+import argparse, sys, os, doctest, re
 
 _MACHINE = Machines()
 

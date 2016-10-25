@@ -5,7 +5,7 @@ Compare namelists. Should be called by an ACME test. Designed
 to not be sensitive to order or whitespace.
 """
 
-from standard_script_setup import *
+from Tools.standard_script_setup import *
 import CIME.compare_namelists
 from CIME.utils import expect
 

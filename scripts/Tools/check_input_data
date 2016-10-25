@@ -5,14 +5,14 @@ Check (and optionally download) input data files.
 
 Should be run from case.
 """
-from standard_script_setup import *
+from Tools.standard_script_setup import *
 
-from CIME.utils import expect, get_model
+from CIME.utils import get_model
 from CIME.XML.machines import Machines
 from CIME.check_input_data import check_input_data, SVN_LOCS
 from CIME.case import Case
 
-import argparse, doctest, fnmatch
+import argparse, doctest
 
 MACHINE = Machines()
 

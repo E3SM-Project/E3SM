@@ -4,7 +4,7 @@
 case.setup - create the $caseroot/case.run script and user_nl_xxx component namelist mod files
 """
 
-from standard_script_setup import *
+from Tools.standard_script_setup import *
 
 from CIME.case_setup import case_setup
 from CIME.case       import Case
