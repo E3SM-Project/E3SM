@@ -228,7 +228,7 @@ class GenericXML(object):
                 item_data = item_data.replace(m.group(), srcroot)
             elif var in os.environ:
                 # this is a list of suppressed warnings (things normally expected to be resolved in env)
-                if var not in ("USER"):
+                if var not in ("USER",):
                     logging.warn("Resolved from env: " + var)
                 item_data = item_data.replace(m.group(), os.environ[var])
         if math_re.search(item_data):

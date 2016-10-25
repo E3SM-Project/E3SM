@@ -62,13 +62,10 @@ def run_pylint(on_file):
     if "scripts/Tools" in on_file:
         cmd_options +=",relative-import"
     cmd = "%s %s %s"%(pylint, cmd_options, on_file)
-    print "HERE %s"%cmd
     stat, out, err = run_cmd(cmd, verbose=False)
     if stat != 0:
         logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
         logger.info(out + "\n" + err)
-        if (logger.isEnabledFor(logging.DEBUG)):
-            logger.info(out + "\n" + err)
         return False
     else:
         logger.info("File %s has no pylint problems" % on_file)
