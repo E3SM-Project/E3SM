@@ -45,7 +45,7 @@ module ColumnEnergyFluxType
     procedure, public :: Clean => clean_col_ef
 
   end type soilcol_energy_flux
-! ------------------------------------------------------------------------
+  ! ------------------------------------------------------------------------
 
   ! Declare public api
   type(soilcol_energy_flux), public, target :: col_ef

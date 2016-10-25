@@ -148,12 +148,15 @@ module ColumnPhosphorusFluxType
 
   contains
       procedure, public :: Init => init_col_pf
-      procedure, public :: InitAllocate => initallocate_col_pf
-      procedure, public :: InitHistory => inithistory_col_pf
-      procedure, public :: InitCold => initcold_col_pf
+      procedure, public :: Restart => restart_col_pf
       procedure, public :: Clean => clean_col_pf
+      procedure, private :: InitAllocate => initallocate_col_pf
+      procedure, private :: InitHistory => inithistory_col_pf
+      procedure, private :: InitCold => initcold_col_pf
   end type soilcol_phosphorus_flux
 
+  ! Declare public api
+  type(soilcol_phosphorus_flux), public, target :: col_pf
 
   !------------------------------------------------------------------------
   subroutine init_col_pf(this, bounds)
@@ -659,8 +662,87 @@ module ColumnPhosphorusFluxType
 
   end subroutine initcold_col_pf
 
+   !-----------------------------------------------------------------------
+  subroutine restart_col_pf (this,  bounds, ncid, flag )
+    !
+    ! !DESCRIPTION: 
+    ! Read/write CN restart data for carbon state
+    !
+    ! !USES:
+    use clm_varpar, only : crop_prog
+    use restUtilMod
+    use ncdio_pio
+    !
+    ! !ARGUMENTS:
+    class (phosphorusflux_type) :: this
+    type(bounds_type) , intent(in)    :: bounds 
+    type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
+    character(len=*)  , intent(in)    :: flag   !'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    integer :: j,c ! indices
+    logical :: readvar      ! determine if variable is on initial file
+    real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    ! pflotran
+    integer :: k
+    character(len=128) :: varname   ! temporary
+    !------------------------------------------------------------------------
+
+
+    ! clm_bgc_interface & pflotran
+    !------------------------------------------------------------------------
+    if (use_pflotran .and. pf_cmode) then
+       ! externalp_to_decomp_ppools_col
+       do k = 1, ndecomp_pools
+          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_p'
+          if (use_vertsoilc) then
+             ptr2d => this%externalp_to_decomp_ppools_col(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
+                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='net organic P adding/removal/transport to soil', units='gP/m3/s', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%externalp_to_decomp_ppools_col(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', &
+                  long_name='net organic P adding/removal/transport to soil', units='gP/m3/s', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+          !        errMsg(__FILE__, __LINE__))
+             this%externalp_to_decomp_ppools_col(:,:,k) = 0._r8
+          end if
+       end do
+
+       !sminp_net_transport_vr
+       if (.not.pf_hmode) then
+          if (use_vertsoilc) then
+             ptr2d => this%sminp_net_transport_vr_col(:,:)
+             call restartvar(ncid=ncid, flag=flag, varname='sminp_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='net soil mineral-P transport', units='gP/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%sminp_net_transport_vr_col(:,1)
+             call restartvar(ncid=ncid, flag=flag, varname='sminp_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='net soil  mineral-P transport', units='gP/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: no3_net_transport_vr'//' is required on an initialization dataset'//&
+          !     errMsg(__FILE__, __LINE__))
+             this%sminp_net_transport_vr_col(:,:) = 0._r8
+          end if
+       end if
+
+    end if !! if (use_pflotran .and. pf_cmode)
+    !------------------------------------------------------------------------
+  end subroutine restart_col_pf
+
   !-----------------------------------------------------------------------
-  subroutine Restart (this,  bounds, ncid, flag )
 
 
 
