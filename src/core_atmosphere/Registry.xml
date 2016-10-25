@@ -1898,7 +1898,7 @@
 
                         <var name="tend_qc" name_in_code="qc" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of cloud water mixing ratio"
-                             packages="bl_mynn_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qr" name_in_code="qr" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of rain water mixing ratio"
@@ -1906,7 +1906,7 @@
 
                         <var name="tend_qi" name_in_code="qi" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of ice mixing ratio"
-                             packages="bl_mynn_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qs" name_in_code="qs" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of snow ratio"
@@ -2208,10 +2208,6 @@
                      description="incidence of accumulated grid-scale precipitation greater than config_bucket_rainnc"
                      packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
-                <var name="sr" type="real" dimensions="nCells Time" units="unitless"
-                     description="time-step ratio of frozen versus total grid-scale precipitation"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-
                 <var name="rainncv" type="real" dimensions="nCells Time" units="mm"
                      description="time-step total grid-scale precipitation"
                      packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
@@ -2267,6 +2263,9 @@
                 <var name="mu_c" type="real" dimensions="nCells" units="unitless"
                      description="gamma shape parameter"
                      packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+
+                <var name="sr" type="real" dimensions="nCells Time" units="unitless"
+                     description="time-step ratio of frozen versus total grid-scale precipitation"/>
 
                 <var name="precipw" type="real" dimensions="nCells Time" units="kg m^{-2}"
                      description="precipitable water"/>
