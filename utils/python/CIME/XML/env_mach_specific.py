@@ -204,8 +204,8 @@ class EnvMachSpecific(EnvBase):
 
                             val = self.get_resolved_value(val)
                             expect("$" not in val, "Not safe to leave unresolved items in env var value: '%s'" % val)
-
-                            result.append( (child.get("name"), val) )
+                        # result is appended even if val is None
+                        result.append( (child.get("name"), val) )
 
         return result
 
@@ -243,6 +243,7 @@ class EnvMachSpecific(EnvBase):
 
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_commands(modules_to_load, "python"):
+            logger.warn("module command is %s"%cmd)
             py_module_code = run_cmd_no_fail(cmd)
             exec(py_module_code)
 
