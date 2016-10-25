@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import shutil, glob, re
-from Tools.standard_script_setup import *
+from standard_script_setup import *
 from CIME.utils import run_cmd_no_fail, expect
 from CIME.case import Case
 

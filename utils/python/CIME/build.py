@@ -191,7 +191,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
         thrds =  case.get_value("NTHRDS_%s"%comp_class)
         complist.append((comp_class.lower(), comp, thrds, ninst, config_dir ))
         os.environ["COMP_%s"%comp_class] = comp
-    machines_file       = case.get_value("MACHINES_SPEC_FILE")
+
     ocn_submodel        = case.get_value("OCN_SUBMODEL")
     profile_papi_enable = case.get_value("PROFILE_PAPI_ENABLE")
     compiler            = case.get_value("COMPILER")
@@ -277,14 +277,14 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     sharedpath = build_checks(case, build_threaded, comp_interface,
                               use_esmf_lib, debug, compiler, mpilib,
-                              sharedlibroot, complist, ninst_build, smp_value, model_only)
+                              complist, ninst_build, smp_value, model_only)
 
     t2 = time.time()
     logs = []
 
     if not model_only:
-        logs = build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpilib, lid,
-                               machines_file)
+        logs = build_libraries(case, exeroot, sharedpath, caseroot,
+                               cimeroot, libroot, lid)
 
     if not sharedlib_only:
         logs.extend(build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
@@ -301,8 +301,9 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     return True
 
 ###############################################################################
-def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
-                 sharedlibroot, complist, ninst_build, smp_value, model_only):
+def build_checks(case, build_threaded, comp_interface, use_esmf_lib,
+                 debug, compiler, mpilib, complist, ninst_build, smp_value,
+                 model_only):
 ###############################################################################
     """
     check if a build needs to be done and warn if a clean is warrented first
@@ -314,7 +315,7 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
 
     smpstr = ""
     inststr = ""
-    for model, comp, nthrds, ninst, _ in complist:
+    for model, _, nthrds, ninst, _ in complist:
         if nthrds > 1:
             build_threaded = True
         if build_threaded:
@@ -406,7 +407,7 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     return sharedpath
 
 ###############################################################################
-def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
+def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid):
 ###############################################################################
 
     shared_lib = os.path.join(exeroot, sharedpath, "lib")

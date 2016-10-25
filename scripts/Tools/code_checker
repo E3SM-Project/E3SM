@@ -61,6 +61,7 @@ def run_pylint(on_file):
     stat, out, err = run_cmd(cmd, verbose=False)
     if stat != 0:
         logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
+        logger.info(out + "\n" + err)
         if (logger.isEnabledFor(logging.DEBUG)):
             logger.info(out + "\n" + err)
         return False
@@ -86,10 +87,10 @@ def check_code(dir_to_check, num_procs, files):
     Returns True if all files had no problems
     """
     # Pylint won't work right if the imports within the checked files fails
-    if "PYTHONPATH" in os.environ:
-        os.environ["PYTHONPATH"] += ':' + dir_to_check
-    else:
-        os.environ["PYTHONPATH"] = dir_to_check
+#    if "PYTHONPATH" in os.environ:
+#        os.environ["PYTHONPATH"] += ':' + dir_to_check
+#    else:
+#        os.environ["PYTHONPATH"] = dir_to_check
 
     # Get list of files to check
     files_to_check = run_cmd_no_fail('git ls-files --full-name %s' % dir_to_check, verbose=False).splitlines()
