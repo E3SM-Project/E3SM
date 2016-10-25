@@ -612,6 +612,57 @@ module ColumnPhosphorusFluxType
   !-----------------------------------------------------------------------
 
 
+   !-----------------------------------------------------------------------
+  subroutine initcold_col_pf(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initializes time varying variables used only in coupled carbon-phosphorus mode (CN):
+    !
+    ! !USES:
+    use clm_varpar      , only : crop_prog
+    use landunit_varcon , only : istsoil, istcrop
+    !
+    ! !ARGUMENTS:
+    class(soilcol_phosphorus_flux) :: this 
+    type(bounds_type), intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p,c,l
+    integer :: fp, fc                                    ! filter indices
+    integer :: num_special_col                           ! number of good values in special_col filter
+    integer :: num_special_patch                         ! number of good values in special_patch filter
+    integer :: special_col(bounds%endc-bounds%begc+1)    ! special landunit filter - columns
+    integer :: special_patch(bounds%endp-bounds%begp+1)  ! special landunit filter - patches
+    !---------------------------------------------------------------------
+
+    ! Set column filters
+
+    num_special_col = 0
+    do c = bounds%begc, bounds%endc
+       l = col%landunit(c)
+       if (lun%ifspecial(l)) then
+          num_special_col = num_special_col + 1
+          special_col(num_special_col) = c
+       end if
+    end do
+   
+    ! initialize fields for special filters
+
+    do fc = 1,num_special_col
+       c = special_col(fc)
+       this%dwt_ploss_col(c) = 0._r8
+    end do
+
+    call this%SetValues (&
+         num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8, &
+         num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+
+  end subroutine initcold_col_pf
+
+  !-----------------------------------------------------------------------
+  subroutine Restart (this,  bounds, ncid, flag )
+
+
 
   subroutine initallocate_col_pf(this, bounds)
     class(soilcol_phosphorus_flux) :: this
@@ -767,5 +818,105 @@ module ColumnPhosphorusFluxType
     allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    ; this%sminp_net_transport_delta_col     (:)     = spval
 
   end subroutine initallocate_col_pf  
+
+
+  subroutine clean_col_pf(this, bounds)
+		class(soilcol_phosphorus_flux) :: this
+		
+		type(bounds_type) , intent(in) :: bounds  
+	  !
+	  ! !LOCAL VARIABLES:
+	  integer           :: begp,endp
+	  integer           :: begc,endc
+	  !------------------------------------------------------------------------
+	 
+	  begc = bounds%begc; endc = bounds%endc   
+
+	  deallocate(this%pdep_to_sminp_col             			)
+	  deallocate(this%fert_p_to_sminp_col           			)
+	  deallocate(this%hrv_deadstemp_to_prod10p_col  			)
+	  deallocate(this%hrv_deadstemp_to_prod100p_col 			)
+	  deallocate(this%hrv_cropp_to_prod1p_col       			)
+	  deallocate(this%sminp_to_plant_col            			)
+	  deallocate(this%potential_immob_p_col         			)
+	  deallocate(this%actual_immob_p_col            			)
+	  deallocate(this%gross_pmin_col                			)
+	  deallocate(this%net_pmin_col                  			)
+	  deallocate(this%supplement_to_sminp_col       			)
+	  deallocate(this%prod1p_loss_col               			)
+	  deallocate(this%prod10p_loss_col              			)
+	  deallocate(this%prod100p_loss_col             			)
+	  deallocate(this%product_ploss_col             			)
+	  deallocate(this%pinputs_col                   			)
+	  deallocate(this%poutputs_col                  			)
+	  deallocate(this%fire_ploss_col                			)
+	  deallocate(this%fire_ploss_p2c_col            			)
+	  deallocate(this%som_p_leached_col             			)
+	  deallocate(this%m_p_to_litr_met_fire_col      			)
+	  deallocate(this%m_p_to_litr_cel_fire_col      			)
+	  deallocate(this%m_p_to_litr_lig_fire_col      			)
+	  deallocate(this%potential_immob_p_vr_col      			)
+	  deallocate(this%actual_immob_p_vr_col         			)
+	  deallocate(this%sminp_to_plant_vr_col         			)
+	  deallocate(this%supplement_to_sminp_vr_col    			)
+	  deallocate(this%gross_pmin_vr_col             			)
+	  deallocate(this%net_pmin_vr_col               			)
+	  deallocate(this%biochem_pmin_ppools_vr_col	  			)
+	  deallocate(this%biochem_pmin_vr_col           			)
+	  deallocate(this%biochem_pmin_col              			)
+	  deallocate(this%dwt_seedp_to_leaf_col         			)
+	  deallocate(this%dwt_seedp_to_deadstem_col  	  			)
+	  deallocate(this%dwt_conv_pflux_col         	  			)
+	  deallocate(this%dwt_prod10p_gain_col       	  			)
+	  deallocate(this%dwt_prod100p_gain_col      	  			)
+	  deallocate(this%dwt_ploss_col              	  			)
+	  deallocate(this%wood_harvestp_col          	  			)
+	  deallocate(this%dwt_frootp_to_litr_met_p_col				)
+	  deallocate(this%dwt_frootp_to_litr_cel_p_col				)
+	  deallocate(this%dwt_frootp_to_litr_lig_p_col				)
+	  deallocate(this%dwt_livecrootp_to_cwdp_col  				)
+	  deallocate(this%dwt_deadcrootp_to_cwdp_col  				)
+	  deallocate(this%decomp_cascade_ptransfer_vr_col   	)
+	  deallocate(this%decomp_cascade_sminp_flux_vr_col  	)
+	  deallocate(this%m_decomp_ppools_to_fire_vr_col    	)
+	  deallocate(this%decomp_cascade_ptransfer_col      	)
+	  deallocate(this%decomp_cascade_sminp_flux_col     	)
+	  deallocate(this%m_decomp_ppools_to_fire_col       	)
+	  deallocate(this%phenology_p_to_litr_met_p_col     	)
+	  deallocate(this%phenology_p_to_litr_cel_p_col     	)
+	  deallocate(this%phenology_p_to_litr_lig_p_col     	)
+	  deallocate(this%gap_mortality_p_to_litr_met_p_col 	)
+	  deallocate(this%gap_mortality_p_to_litr_cel_p_col 	)
+	  deallocate(this%gap_mortality_p_to_litr_lig_p_col 	)
+	  deallocate(this%gap_mortality_p_to_cwdp_col       	)
+	  deallocate(this%fire_mortality_p_to_cwdp_col      	)
+	  deallocate(this%harvest_p_to_litr_met_p_col       	)
+	  deallocate(this%harvest_p_to_litr_cel_p_col       	)
+	  deallocate(this%harvest_p_to_litr_lig_p_col       	)
+	  deallocate(this%harvest_p_to_cwdp_col             	)
+	  deallocate(this%primp_to_labilep_vr_col             )
+	  deallocate(this%primp_to_labilep_col                )
+	  deallocate(this%labilep_to_secondp_vr_col           )
+	  deallocate(this%labilep_to_secondp_col              )
+	  deallocate(this%secondp_to_labilep_vr_col           )
+	  deallocate(this%secondp_to_labilep_col              )
+	  deallocate(this%secondp_to_occlp_vr_col             )
+	  deallocate(this%secondp_to_occlp_col                )
+	  deallocate(this%sminp_leached_vr_col                )
+	  deallocate(this%sminp_leached_col                   )
+	  deallocate(this%decomp_ppools_leached_col           )
+	  deallocate(this%decomp_ppools_transport_tendency_co )
+	  deallocate(this%decomp_ppools_sourcesink_col 				)
+	  deallocate(this%adsorb_to_labilep_col       				)
+	  deallocate(this%desorb_to_solutionp_col     				)
+	  deallocate(this%smin_p_to_plant_col         				)
+	  deallocate(this%plant_pdemand_col                 	)
+	  deallocate(this%plant_pdemand_vr_col              	)
+	  deallocate(this%externalp_to_decomp_ppools_col    	)
+	  deallocate(this%externalp_to_decomp_delta_col     	)
+	  deallocate(this%sminp_net_transport_vr_col        	)
+	  deallocate(this%sminp_net_transport_delta_col     	)
+
+  end subroutine clean_col_pf  
 
 end ColumnPhosphorusFluxType
