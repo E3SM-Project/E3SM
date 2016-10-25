@@ -1,0 +1,30 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# USERDEFINED
+# Edit this file to add module load or other paths needed for the build
+# and run on the system.  Can also include general env settings for machine.
+# Some samples are below
+# -------------------------------------------------------------------------
+
+#source /opt/modules/default/init/csh
+#if ( $COMPILER == "pgi" ) then
+#  module load pgi
+#endif
+#module load netcdf
+#limit coredumpsize unlimited
+source /soft/Modules/3.2.6/init/csh
+module load gcc/4.8.2
+module load intel/2013/sp1_update3
+module load impi/5.0.0.028/intel
+module load pnetcdf/1.5.0
+module load netcdf/4.3.2-intel-sp1-update3-parallel
+module load netcdf/fortran-4.4-intel-sp1-update3-parallel
+module load xerces/3.1.1_intel
+module load esmf/6.3.0rp1
+module load cmake/3.0.0  
+limit coredumpsize unlimited
+limit stacksize unlimited
+setenv NETCDF_PATH "/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel"
+setenv compile_threaded true
+

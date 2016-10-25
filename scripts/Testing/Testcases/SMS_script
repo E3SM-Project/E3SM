@@ -1,0 +1,74 @@
+
+#======================================================================
+# Setup
+#======================================================================
+
+cd $CASEROOT
+
+# turn on memory leak check - if comparing with baseline also 
+# compare memory highwater mark from baseline 
+set DETECT_MEMORY_LEAK
+if ($?COMPARE_BASELINE ) then
+  set COMPARE_MEMORY
+  set COMPARE_THROUGHPUT
+endif
+
+set STOP_N      = `./xmlquery STOP_N      -value`
+set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id REST_OPTION  -val none
+./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
+
+#======================================================================
+# do an initial run 
+#======================================================================
+
+cd $CASEROOT
+
+echo "doing an ${STOP_N} ${STOP_OPTION} initial test, no restarts written" >>& $TESTSTATUS_LOG 
+
+./$CASE.run
+if ($status != 0) then
+    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+if ( $?CplLogFile ) then
+    if (-e $CplLogFile) then
+       set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+       if ($pass != 1) then
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 	   exit -1
+       else 
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       endif
+    endif
+else
+    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+echo "" >>& $TESTSTATUS_LOG
+echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" rest $add_iop" >>& $TESTSTATUS_LOG
+echo ""	>>& $TESTSTATUS_LOG
+
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" $add_iop
+
+#======================================================================
+# Check test status for all relevant component history files
+#======================================================================
+
+echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
+echo "" >>& $TESTSTATUS_LOG
+
+if ( $?IOP_ON ) then
+    # note that suffix2 is none - since there is no functionality that this test performs other than running
+    # by setting the suffix to none - will not be generating any comparisions other than the iop comparison for the base case
+    $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 none $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+endif
+
+

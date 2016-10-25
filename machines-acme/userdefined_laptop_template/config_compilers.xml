@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<config_compilers>
+   <!-- customize these fields as appropriate for your
+        system. Examples are prodived for Mac OS X systems with
+        homebrew and macports. -->
+   <compiler COMPILER="gnu" MACH="example-osx-homebrew">
+      <!-- homebrew -->
+      <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+      <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
+      <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
+      <ADD_LDFLAGS compile_threaded="true"> -L /usr/local/Cellar/gcc/4.9.2/lib/gcc/x86_64-apple-darwin14.0.0/4.9.2 -fopenmp </ADD_LDFLAGS>
+      <ADD_CMAKE_OPTS MODEL="cism"> -D CISM_GNU=ON </ADD_CMAKE_OPTS>
+      <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
+      <FREEFLAGS> -ffree-form </FREEFLAGS>
+      <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
+      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
+           so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
+      <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
+      <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+      <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
+      <!-- brew install gcc without-multilib cmake mpich hdf5 enable-fortran netcdf enable-fortran -->
+      <SFC> /usr/local/bin/gfortran </SFC>
+      <SCC> /usr/bin/cc </SCC>
+      <SCXX> /usr/bin/c++ </SCXX>
+      <MPIFC> /usr/local/bin/mpif90 </MPIFC>
+      <MPICC> /usr/local/bin/mpicc  </MPICC>
+      <MPICXX> /usr/local/bin/mpicxx </MPICXX>
+      <CXX_LINKER>FORTRAN</CXX_LINKER>
+      <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+      <NETCDF_PATH>/usr/local</NETCDF_PATH>
+      <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</ADD_SLIBS>
+      <PFUNIT_PATH>$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
+   </compiler>
+   
+   <compiler COMPILER="gnu" MACH="example-osx-macports">
+      <!-- macports -->
+      <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+      <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
+      <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
+      <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
+      <ADD_CMAKE_OPTS MODEL="cism"> -D CISM_GNU=ON </ADD_CMAKE_OPTS>
+      <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
+      <FREEFLAGS> -ffree-form </FREEFLAGS>
+      <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
+      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
+           so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
+      <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
+      <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+      <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
+      <SFC> /opt/local/bin/gfortran-mp-4.8 </SFC>
+      <SCC> /usr/bin/cc </SCC>
+      <SCXX> /usr/bin/c++ </SCXX>
+      <MPIFC> /opt/local/bin/mpif90-mpich-gcc48 </MPIFC>
+      <MPICC> /opt/local/bin/mpicc-mpich-gcc48  </MPICC>
+      <MPICXX> /opt/local/bin/mpicxx-mpich-gcc48 </MPICXX>
+      <CXX_LINKER>FORTRAN</CXX_LINKER>
+      <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+      <NETCDF_PATH>/opt/local</NETCDF_PATH>
+      <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</ADD_SLIBS>
+      <PFUNIT_PATH>$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
+   </compiler>
+</config_compilers>

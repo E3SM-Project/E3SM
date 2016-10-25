@@ -1,0 +1,74 @@
+#!/usr/bin/env perl 
+
+use strict;
+use warnings;
+use Data::Dumper;
+use Getopt::Long;
+
+my $toolsdir = "./Tools";
+push(@INC, $toolsdir);
+require ConfigCase;
+
+my %config = ConfigCase->getAllResolved();
+my $machine = $config{'MACH'};
+my $machroot = $config{'CCSM_MACHDIR'};
+my $compiler = $config{'COMPILER'};
+my $mpilib = $config{'MPILIB'};
+my $caseroot = $config{'CASEROOT'};
+my $case = $config{'CASE'};
+my $cimeroot = $config{'CIMEROOT'};
+my $scriptsroot = $config{'SCRIPTSROOT'};
+my $perl5lib = "$config{'CIMEROOT'}/utils/perl5lib";
+push(@INC, $perl5lib);
+require Batch::BatchUtils;
+require Module::ModuleLoader;
+my $lastjobid = undef;
+
+sub usage {
+    die <<'EOF';
+OPTIONS
+  -jobid [or -j]  Job id to hold on in queue
+EOF
+}
+my %opts = ( );
+GetOptions(
+    "h|help"  => \$opts{'help'},
+    "j|jobid=i" => \$opts{'jobid'},
+    )  or usage();
+usage() if $opts{'help'};
+
+if (defined $opts{'jobid'}) {
+    $lastjobid=$opts{'jobid'};
+}
+
+sub main
+{
+	# Check the case only once..
+	print "checking the case..\n";
+	open(my $CHECKCASE, "-|", "./check_case");
+	while(<$CHECKCASE>)
+	{
+		print "$_";
+	}
+    close $CHECKCASE;
+    if($?)
+    {
+        print "check_case failed\n";
+        exit(-1);
+    }
+	
+	my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
+                                            mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'},
+                                            scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
+    $moduleloader->loadModules();
+
+	#my $batchutils = new Batch::BatchUtils(machine => $machine, machroot => $machroot, caseconfig => \%config);
+	my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, caseconfig => \%config, caseroot => $caseroot, 
+                                            ccsmroot => $cimeroot, compiler => $compiler, machine => $machine, 
+                                            machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
+	
+	$batchutils->dependencyCheck("sta_ok");
+    $batchutils->submitJobs("sta_ok",$lastjobid);
+}
+
+main(@ARGV) unless caller();

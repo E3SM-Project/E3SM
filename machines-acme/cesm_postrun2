@@ -1,0 +1,59 @@
+#!/bin/csh -f
+# cesm_postrun2 without performance data archiving: 
+#  ./cesm_postrun2 with the following argument keyword/value pairs, in any order
+#   -machine <system name>
+#   -case <case name>
+#   -cesmid <$LID in cesm-lingo>
+#   -user <should be same as $LOGNAME>
+#   -caseroot <directory from which job script was submitted>
+#   -rundir <run directory>
+#   -exedir <bld directory>
+#   -save <TRUE|true|anything else>
+#   -archive <performance archive root directory>
+
+set machine = 'unknown'
+set case = 'unknown'
+set lid = 'unknown'
+set user = 'unknown'
+set caseroot = '.'
+set run_dir = '.'
+set exe_dir = '.'
+set save_timing = 'FALSE'
+set save_timing_dir = '/UNSET'
+
+set i = 1
+while ($i < $#argv)
+  if      ("X$argv[$i]" == 'X-machine') then
+    @ i = $i + 1
+    set machine = $argv[$i]
+  else if ("X$argv[$i]" == 'X-case') then
+    @ i = $i + 1
+    set case = $argv[$i]
+  else if ("X$argv[$i]" == 'X-cesmid') then
+    @ i = $i + 1
+    set lid = $argv[$i]
+  else if ("X$argv[$i]" == 'X-user') then
+    @ i = $i + 1
+    set user = $argv[$i]
+  else if ("X$argv[$i]" == 'X-caseroot') then
+    @ i = $i + 1
+    set caseroot = $argv[$i]
+  else if ("X$argv[$i]" == 'X-rundir') then
+    @ i = $i + 1
+    set run_dir = $argv[$i]
+  else if ("X$argv[$i]" == 'X-exedir') then
+    @ i = $i + 1
+    set exe_dir = $argv[$i]
+  else if ("X$argv[$i]" == 'X-save') then
+    @ i = $i + 1
+    set save_timing = $argv[$i]
+  else if ("X$argv[$i]" == 'X-archive') then
+    @ i = $i + 1
+    set save_timing_dir = $argv[$i]
+  endif
+  @ i = $i + 1
+end
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "CESM postrun ended $sdate" >>& $caseroot/CaseStatus
+

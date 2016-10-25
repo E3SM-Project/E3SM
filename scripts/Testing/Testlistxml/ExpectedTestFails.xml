@@ -1,0 +1,101 @@
+<?xml version= "1.0"?>
+
+<expectedFails>
+
+<entry>TFAIL ERI_Ld5.f19_g16.ITEST.edison_intel.clm-default</entry>
+<entry>TFAIL ERI_Ld5.f19_g16.ITEST.goldbach_intel.clm-default</entry>
+<entry>TFAIL ERI_Ld5.f45_g37.ITEST.goldbach_intel.clm-default</entry>
+<entry>SFAIL ERP_Ln9.ne120_ne120.FC51850.bluewaters_pgi.cam-outfrq9s</entry>
+<entry>SFAIL ERS_Ld9.ne120_g16.BHISTC5L45BGC.bluewaters_pgi.allactive-default</entry>
+<entry>SFAIL ERP_Ln9.ne120_ne120.FC51850.eos_intel.cam-outfrq9s</entry>
+
+<entry>CFAIL ERI_D.T31_g37_rx1.A.yellowstone_pgi</entry>
+<entry>CFAIL ERS_IOP.T62_s11.G.yellowstone_pgi.pop-cice</entry>
+<entry>CFAIL ERS_N2_D_Ld3.T31_g37_rx1.A.yellowstone_pgi</entry>
+<entry>CFAIL ERS_PT_Lm3.T62_g16.GIAF.yellowstone_intel.pop-cice</entry>
+<entry>CFAIL PET_PT.T62_g16.G.yellowstone_intel.pop-cice</entry>
+<entry>CFAIL ERS_Ld7.f19_g16.BRCP26W5CN.yellowstone_intel.allactive-default</entry>
+<entry>CFAIL ERS_Ld7.f19_g16.BRCP45W5CN.yellowstone_pgi.allactive-default</entry>
+<entry>CFAIL ERS_Ld7.f19_g16.BRCP85W5CN.yellowstone_gnu.allactive-default</entry>
+<entry>CFAIL ERP_Ln9.f09_f09.FC5L45BGC.janus_intel.cam-outfrq9s</entry>
+<entry>CFAIL ERP_Ln9.f19_f19.FC5L45BGC.janus_intel.cam-outfrq9s</entry>
+<entry>CFAIL ERP_Ln9.f19_g16.FC5L45BGC.janus_intel.cam-outfrq9s</entry>
+<entry>CFAIL ERP_Ln9.ne30_ne30.FC5L45BGC.janus_intel.cam-outfrq9s</entry>
+<entry>CFAIL ERP_Ln9.f09_f09.FAMIPC5.bluewaters_pgi.cam-outfrq9s</entry>
+<entry>CFAIL PET_PT.T62_g16.G.bluewaters_pgi.pop-cice</entry>
+<entry>CFAIL CME_Ld5.T31_g37.B1850C5L45BGC.edison_intel.allactive-default</entry>
+<entry>CFAIL ERP_D_Ld5.1x1_smallvilleIA.ICNCROP.edison_intel.clm-default</entry>
+<entry>CFAIL PET_PT.T62_g16.G.edison_intel.pop-cice</entry>
+<entry>CFAIL ERP_D_Ld5.1x1_smallvilleIA.ICNCROP.eos_intel.clm-default</entry>
+<entry>CFAIL PET_PT.T62_g16.G.eos_intel.pop-cice</entry>
+<entry>CFAIL PET_PT_Ld5.f19_g16.B1850C5L45BGC.goldbach_nag.allactive-default</entry>
+<entry>CFAIL SMS_D_Ld5.T31_g37.BGC5L45BGC.goldbach_nag.allactive-cism-test_coupling</entry>
+<entry>CFAIL PET_PT.T62_g16.G.goldbach_intel.pop-cice</entry>
+<entry>CFAIL PEM_D.f19_g16.IG1850CLM45.yellowstone_pgi.clm-glcMEC_increase</entry>
+<entry>CFAIL PET_PT.T62_g16.G.yellowstone_pgi.pop-cice</entry>
+<entry>CFAIL SMS_D.T62_s11.G.yellowstone_pgi.pop-cice</entry>
+<entry>CFAIL SMS_D_Ld1.5x5_amazon.ITEST.yellowstone_pgi.clm-default</entry>
+<entry>CFAIL SSP_Ld10.f19_g16.I1850CLM45BGC.yellowstone_pgi</entry>
+
+<entry>RUN ERS_N2_Ld7.f19_g16.BHISTC5CN.yellowstone_gnu.allactive-default</entry>
+
+<entry>RUN ERS_D_Ld7.f19_g16.BTSC4L40CCMIS2R45.yellowstone_intel.allactive-default</entry>
+<entry>RUN ERS.f09_g16.B1850C5CN.bluewaters_pgi</entry>
+<entry>RUN ERS_Ld7.ne16_g37.BC5.babbageKnc_intel</entry>
+<entry>RUN ERI.f09_g16.B1850C5L45BGC.bluewaters_pgi.allactive-default</entry>
+<entry>RUN ERS.T62_t12.G.bluewaters_pgi.pop-cice</entry>
+<entry>RUN ERS_Ld7.f19_g16.B1850RMCN.bluewaters_pgi.allactive-default</entry>
+<entry>RUN PET_PT.f19_g16.B1850C5.bluewaters_pgi.allactive-default</entry>
+<entry>RUN ERS.T62_t12.G.edison_intel.pop-cice</entry>
+<entry>RUN ERS_D.f19_g16_rx1.GECO.edison_intel.pop-cice_ecosys</entry>
+<entry>RUN ERS_N2_Ld7.f19_g16.BHISTC5CN.edison_intel.allactive-default</entry>
+<entry>RUN SMS_D.f09_g16.BPIPDC5L45BGC.edison_intel.allactive-default</entry>
+<entry>RUN ERI.f09_g16.B1850C5L45BGC.bluewaters_pgi</entry>
+<entry>RUN ERS.T62_t12.G.bluewaters_pgi.pop-cice</entry>
+<entry>RUN ERS_D_Ld7.f19_g16.B1850C5L45BGC.bluewaters_pgi.allactive-default</entry>
+<entry>RUN ERS_Ld11.f19_g16.B1850BPRPL45BGC.bluewaters_pgi.allactive-default</entry>
+<entry>RUN ERS_Ld7.f09_g16.BPIPDC5L45BGC.bluewaters_pgi.allactive-default</entry>
+<entry>RUN ERS_Lm3.T62_g16.CECO.bluewaters_pgi.pop-ecosys</entry>
+<entry>RUN PFS.f09_f09.FC5L45BGC.bluewaters_pgi</entry>
+<entry>RUN ERI.f09_g16.B1850C5L45BGC.edison_intel.allactive-default</entry>
+<entry>RUN ERP_Ln96.ne120_g16.I1850CN.edison_intel</entry>
+<entry>RUN SMS_Ld5.f09_g16.BRCP85BPRP.edison_intel.allactive-default</entry>
+<entry>RUN ERS.T62_t12.G.eos_intel.pop-cice</entry>
+<entry>RUN ERS_Lm3.T62_g16.CECO.eos_intel.pop-ecosys</entry>
+<entry>RUN PET_PT.ne30_g16.B1850C5L45BGC.eos_intel.allactive-default</entry>
+<entry>RUN ERS.T62_g16.CECO.goldbach_intel.pop-ecosys</entry>
+<entry>RUN ERS_D.f19_g16_rx1.GECO.goldbach_intel.pop-cice_ecosys</entry>
+<entry>RUN ERS_D_Ld7.f19_g16.BHISTC5.goldbach_intel.allactive-default</entry>
+<entry>RUN ERS_Lm3.T62_g16.CIAF.goldbach_intel.pop-default</entry>
+<entry>RUN ERS_N2_Ld7.f19_g16.BPIPDC5L45BGC.goldbach_intel.allactive-default</entry>
+<entry>RUN SEQ_IOP_PFC_Ld3.f19_g16.X.goldbach_intel</entry>
+<entry>RUN ERP_Ln9.f09_f09.FAMIPC5.mira_ibm.cam-outfrq9s</entry>
+<entry>RUN ERS.f09_g16.BRCP85C5L45BGC.mira_ibm.allactive-default</entry>
+<entry>RUN ERS_D_Ld7.ne30_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
+<entry>RUN ERS_IOP_Ld7.ne30_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
+<entry>RUN SMS_Ld1.ne30_ne30.PC5.yellowstone_intel.cam-cam5_port</entry>
+<entry>RUN ERI.f09_g16.B1850C5L45BGC.eos_intel.allactive-default</entry>
+<entry>RUN ERS.T62_t12.G.eos_intel.pop-cice</entry>
+<entry>RUN ERS_Ld7.f09_g16.BHISTCNCHM.eos_intel.allactive-default</entry>
+<entry>RUN ERS.T62_g16.G.goldbach_intel.pop-cice</entry>
+<entry>RUN ERS_Ld11.f09_g16.B1850BDRD.mira_ibm.allactive-default</entry>
+<entry>RUN ERS_Ld5.f09_g16.ETEST.mira_ibm.cice-default</entry>
+<entry>RUN ERS_Ld7.f09_g16.B1850RMCN.mira_ibm.allactive-default</entry>
+<entry>RUN ERS_Ld9.ne120_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
+
+<entry> FAIL ERP_Ld9.f19_f19.FSTRATSOA.yellowstone_gnu.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
+<entry> FAIL ERP_Ln9.ne30_ne30.FAMIPC5L60.yellowstone_intel.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
+<entry> FAIL ERP_Ln9.ne30_ne30.FAMIPC5.yellowstone_intel.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BHISTBPRP.yellowstone_intel.allactive-default.pop.h.nc : test compare pop.h (.rest and .rest_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.cam.h0.nc : test compare cam.h0 (.base and .base_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.cam.h0.nc : test compare cam.h0 (.rest and .rest_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.clm2.h0.nc : test compare clm2.h0 (.base and .base_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.clm2.h0.nc : test compare clm2.h0 (.rest and .rest_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.pop.h.nc : test compare pop.h (.base and .base_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.pop.h.nc : test compare pop.h (.rest and .rest_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.cpl.hi.nc : test compare cpl.hi (.base and .base_pnetcdf files) </entry>
+<entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.cpl.hi.nc : test compare cpl.hi (.rest and .rest_pnetcdf files) </entry>
+<entry> FAIL ERS_Ld7.f19_g16.BGRCP85CN.yellowstone_pgi.allactive-cism-test_coupling.clm2.h0.nc : test compare clm2.h0 (.base and .rest files) </entry>
+<entry> FAIL ERS_Lm3.f09_g16.B1850C5L45BGC.yellowstone_intel.pop.h.nc : test compare pop.h (.base and .rest files) </entry>
+
+</expectedFails>

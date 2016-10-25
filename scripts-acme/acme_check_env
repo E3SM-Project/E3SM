@@ -1,0 +1,157 @@
+#!/usr/bin/env python
+
+"""
+A script to verify that the environment is compliant with ACME's software requirements.
+
+Be sure to source your env_mach_specific file before running this check.
+"""
+
+import sys, os
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+from acme_util import run_cmd
+
+# Here's where we keep the various reports and instructions.
+LOG = []
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+""" % ((os.path.basename(args[0]), ) * 2),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                        help="Print extra information")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+###############################################################################
+def check_sh():
+###############################################################################
+    stat = run_cmd('sh --version', ok_to_fail=True)[0]
+    if stat != 0:
+        LOG.append('* sh appears not to be available in your environment.')
+        LOG.append('  Please make sure it exists in your PATH.')
+
+###############################################################################
+def check_csh():  # Can't believe I'm actually checking for csh. -JNJ
+###############################################################################
+    stat = run_cmd('csh --version', ok_to_fail=True)[0]
+    if stat != 0:  # Also tolerates tcsh
+        LOG.append('* csh appears not to be available in your environment.')
+        LOG.append('  Please make sure it exists in your PATH.')
+
+###############################################################################
+def check_perl_module(module_name):
+###############################################################################
+    stat = run_cmd('perl -e "require %s;"' % module_name, ok_to_fail=True)[0]
+    if stat != 0:
+        LOG.append('* ACME requires the Perl module %s, but it is not available.'%module_name)
+        LOG.append('  Please make sure that it exists in your @INC.')
+
+###############################################################################
+def check_perl():
+###############################################################################
+    # First, make sure we have the right version of Perl.
+    acme_perl_major_version = 5
+    acme_perl_minor_version = 16
+
+    stat, output, _ = run_cmd("perl -e 'print $^V;'", ok_to_fail=True)
+    if stat != 0:
+        LOG.append('* Perl appears not to be available in your environment.')
+        LOG.append('  Please make sure it exists in your PATH.')
+        return
+
+    output = output[1:] # get rid of leading 'v' character
+    major_version, minor_version, _ = [int(item) for item in output.split('.')]
+    if major_version != acme_perl_major_version or minor_version < acme_perl_minor_version:
+        LOG.append('* ACME requires Perl version %d.%d+. You appear to be using %d.%d.'%(acme_perl_major_version, acme_perl_minor_version, major_version, minor_version))
+        LOG.append('  Please check to see whether an appropriate version exists on this machine,')
+        LOG.append('  possibly via a loadable module.')
+
+    # Okay, our version is good. What about all those pesky modules?
+    check_perl_module('XML::LibXML')
+    check_perl_module('XML::SAX')
+    check_perl_module('XML::SAX::Exception')
+    check_perl_module('Switch')
+
+###############################################################################
+def check_git():
+###############################################################################
+    acme_git_major_version = 2
+    acme_git_minor_version = 0
+
+    stat, output, _ = run_cmd('git --version', ok_to_fail=True)
+    if stat != 0:
+        LOG.append('* Git appears not to be available in your environment.')
+        LOG.append('  Please make sure it exists in your PATH.')
+        return
+
+    version = output.split()[-1]
+    num_dots = version.count('.')
+    if num_dots == 1:
+        major_version, minor_version = [int(s) for s in version.split('.')]
+    elif num_dots == 2:
+        major_version, minor_version, _ = [int(s) for s in version.split('.')]
+    else:
+        LOG.append('* Unparseable git version string: "%s"' % output)
+        return
+
+    if major_version != acme_git_major_version or minor_version < acme_git_minor_version:
+        LOG.append('* ACME requires Git version %d.%d+. You appear to be using version %d.%d.'%(acme_git_major_version, acme_git_minor_version, major_version, minor_version))
+
+###############################################################################
+def check_svn():
+###############################################################################
+    acme_svn_major_version = 1
+    acme_svn_minor_version = 4
+    acme_svn_patch_version = 2
+
+    stat, output, _ = run_cmd('svn --version --quiet', ok_to_fail=True)
+    if stat != 0:
+        LOG.append('* Subversion appears not to be available in your environment.')
+        LOG.append('  Please make sure it exists in your PATH.')
+        return
+
+    major_version, minor_version, patch_version = [int(s) for s in output.split('.')]
+    if major_version < acme_svn_major_version or minor_version < acme_svn_minor_version or patch_version < acme_svn_patch_version:
+        LOG.append('* ACME requires Subversion version %d.%d.%d+. You appear to be using version %d.%d.%d.'%(acme_svn_major_version, acme_svn_minor_version, acme_svn_patch_version, major_version, minor_version, patch_version))
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    parse_command_line(sys.argv, description)
+
+    check_sh()
+    check_csh()
+    check_perl()
+    check_git()
+    check_svn()
+
+    if len(LOG) > 0:
+        print('acme_check_env found problems with your ACME development environment:\n')
+        for line in LOG:
+            print(line)
+
+        sys.exit(1)
+    else:
+        print('acme_check_env found no problems with your ACME development environment.')
+        sys.exit(0)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
