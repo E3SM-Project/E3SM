@@ -204,7 +204,7 @@ class EnvMachSpecific(EnvBase):
 
                             val = self.get_resolved_value(val)
                             expect("$" not in val, "Not safe to leave unresolved items in env var value: '%s'" % val)
-                        # result is appended even if val is None
+                        # intentional unindent, result is appended even if val is None
                         result.append( (child.get("name"), val) )
 
         return result
