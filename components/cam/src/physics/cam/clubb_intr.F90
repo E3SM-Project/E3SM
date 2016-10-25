@@ -168,7 +168,7 @@ module clubb_intr
     naai_idx, &         ! ice number concentration
     prer_evap_idx, &    ! rain evaporation rate
     qrl_idx, &          ! longwave cooling rate
-    radf_idx,           !
+    radf_idx, &         !
     ice_supersat_idx, & ! ice cloud fraction for SILHS
     num_subcols_idx, &  ! number of subcolumns or samples for SILHS
     pdf_params_idx, &   ! pdf parameters for SILHS
@@ -570,7 +570,7 @@ end subroutine clubb_init_cnst
 
 #ifndef SILHS
     integer, parameter ::  hydromet_dim = 0         ! The hydromet array in SAM-CLUBB is currently 0 elements
-#endi
+#endif
 
     real(r8)  :: zt_g(pverp)                        ! Height dummy array
     real(r8)  :: zi_g(pverp)                        ! Height dummy array
@@ -680,7 +680,7 @@ end subroutine clubb_init_cnst
     
     !  Read in parameters for CLUBB.  Just read in default values 
 !$OMP PARALLEL
-    call read_parameters( -99, "", clubb_params )
+    call read_parameters_api( -99, "", clubb_params )
 !$OMP END PARALLEL
       
     ! Eric Raut (UWM) would like SCAM-CLUBB to use the same parameter values as
@@ -782,13 +782,17 @@ end subroutine clubb_init_cnst
     call addfld ('UP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Zonal Velocity Variance')
     call addfld ('VP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Meridional Velocity Variance')
     call addfld ('WP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Vertical Velocity Variance')
+    call addfld ('WP2_ZT_CLUBB',     (/ 'ilev' /), 'A', 'm2/s2',    'Vert Vel Variance on zt grid')
     call addfld ('UPWP_CLUBB',    (/ 'ilev' /), 'A',       'm2/s2', 'Zonal Momentum Flux')
     call addfld ('VPWP_CLUBB',    (/ 'ilev' /), 'A',       'm2/s2', 'Meridional Momentum Flux')
     call addfld ('WP3_CLUBB',    (/ 'ilev' /), 'A',        'm3/s3', 'Third Moment Vertical Velocity')
     call addfld ('WPTHLP_CLUBB',     (/ 'ilev' /), 'A',     'W/m2', 'Heat Flux')
     call addfld ('WPRTP_CLUBB',     (/ 'ilev' /), 'A',      'W/m2', 'Moisture Flux')
     call addfld ('RTP2_CLUBB', (/ 'ilev' /), 'A',       'g^2/kg^2', 'Moisture Variance')
+    call addfld ('RTP2_ZT_CLUBB',    (/ 'ilev' /), 'A', 'kg^2/kg^2','Moisture Variance on zt grid')
+    call addfld ('PDFP_RTP2_CLUBB',  (/ 'ilev' /), 'A', 'kg^2/kg^2','PDF Rtot Variance')
     call addfld ('THLP2_CLUBB',      (/ 'ilev' /), 'A',      'K^2', 'Temperature Variance')
+    call addfld ('THLP2_ZT_CLUBB',   (/ 'ilev' /), 'A', 'K^2',      'Temperature Variance on zt grid')
     call addfld ('RTPTHLP_CLUBB',   (/ 'ilev' /), 'A',    'K g/kg', 'Temp. Moist. Covariance')
     call addfld ('RCM_CLUBB',     (/ 'ilev' /), 'A',        'g/kg', 'Cloud Water Mixing Ratio')
     call addfld ('WPRCP_CLUBB',     (/ 'ilev' /), 'A',      'W/m2', 'Liquid Water Flux')
@@ -1018,7 +1022,6 @@ end subroutine clubb_init_cnst
                                         stats_begin_timestep_api, &
                                         hydromet_dim, calculate_thlp2_rad_api, mu, update_xp2_mc_api, &
                                         sat_mixrat_liq_api
-    
 #endif
 
    implicit none
@@ -2101,8 +2104,6 @@ end subroutine clubb_init_cnst
          endif
       endif
    
-      call cleanup_grid()
-
       ! Convert RTP2 and THLP2 to thermo grid for output
       rtp2_zt = zm2zt_api(rtp2_in)
       thl2_zt = zm2zt_api(thlp2_in)

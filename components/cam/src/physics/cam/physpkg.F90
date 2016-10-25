@@ -1952,6 +1952,7 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mac
     logical :: l_st_mic
     logical :: l_rad
+    character(len=16) :: deep_scheme    ! default set in phys_control.F90, use namelist to change
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
 
@@ -1965,6 +1966,7 @@ subroutine tphysbc (ztodt,               &
                       ,l_st_mac_out           = l_st_mac           &
                       ,l_st_mic_out           = l_st_mic           &
                       ,l_rad_out              = l_rad              &
+                      ,deep_scheme_out        = deep_scheme        &
                       )
     
     !-----------------------------------------------------------------------
@@ -1995,10 +1997,12 @@ subroutine tphysbc (ztodt,               &
 !   if(trigmem)then
 #ifdef USE_UNICON
 #else
-      ifld = pbuf_get_index('TM1')
-      call pbuf_get_field(pbuf, ifld, tm1, (/1,1/),(/pcols,pver/))
-      ifld = pbuf_get_index('QM1')
-      call pbuf_get_field(pbuf, ifld, qm1, (/1,1/),(/pcols,pver/))
+      if ( deep_scheme == 'ZM' ) then
+         ifld = pbuf_get_index('TM1')
+         call pbuf_get_field(pbuf, ifld, tm1, (/1,1/),(/pcols,pver/))
+         ifld = pbuf_get_index('QM1')
+         call pbuf_get_field(pbuf, ifld, qm1, (/1,1/),(/pcols,pver/))
+      end if
 #endif
 !   endif
 !>songxl 2011-09-20---------------------------

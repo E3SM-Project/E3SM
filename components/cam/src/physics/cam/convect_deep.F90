@@ -280,10 +280,10 @@ subroutine convect_deep_tend( &
    ! but not available when ZM is not used. lengath=0 most essential (wlin)
     
     lengath = 0
-    dsubcld(:ncol) = 0.0_r8
-    maxg(:ncol) = 1
-    ideep(:ncol) = 0
-    jt(:ncol) = pver
+    dsubcld = 0.0_r8
+    maxg = 1
+    ideep = 0
+    jt = pver
     mu = 0.0_r8
     eu = 0.0_r8
     du = 0.0_r8
