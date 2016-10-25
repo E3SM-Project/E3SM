@@ -1,0 +1,58 @@
+Installing MPAS
+====
+
+For general information on how to install MPAS, see https://mpas-dev.github.io.
+Additional notes on building MPAS on specific architectures are summarized here.
+
+Compiling MPAS on MacOSX (10.11 El Capitan - 10.12 Sierra)
+----------
+MPAS should compile out of the box on MacOSX with the standard (OS) clang compiler
+and the gfortran compiler. The gfortran compiler can be installed using homebrew
+(http://brew.sh), or using pre-compiled binaries from the MacOSX HPC website
+(http://hpc.soureforge.net), or it can be compiled by the user from the GNU sources.
+
+The standard clang compiler does not support OpenMP. Users wanting to compile MPAS
+with OpenMP support on MacOSX will have to install the LLVM clang compiler, which is
+accomplished easiest with homebrew. Since this alternative clang compiler is not in
+the standard search/library path, the user will have to modify the call to the clang
+and clang++ executable and add the library path to the compiler flags. Example:
+
+...
+	"FC_PARALLEL = mpif90" \
+	"CC_PARALLEL = mpicc -cc=clang" \
+	"CXX_PARALLEL = mpicxx -cxx=clang++" \
+	"FC_SERIAL = gfortran" \
+	"CC_SERIAL = clang" \
+	"CXX_SERIAL = clang++" \
+	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"CFLAGS_OPT = -O3 -m64" \
+	"CXXFLAGS_OPT = -O3 -m64" \
+	"LDFLAGS_OPT = -O3 -m64" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"CFLAGS_DEBUG = -g -m64" \
+	"CXXFLAGS_DEBUG = -O3 -m64" \
+	"LDFLAGS_DEBUG = -g -m64" \
+...
+
+would become
+
+...
+	"FC_PARALLEL = mpif90" \
+	"CC_PARALLEL = mpicc -cc=/usr/local/opt/llvm/bin/clang" \
+	"CXX_PARALLEL = mpicxx -cxx=/usr/local/opt/llvm/bin/clang++" \
+	"FC_SERIAL = gfortran" \
+	"CC_SERIAL = /usr/local/opt/llvm/bin/clang" \
+	"CXX_SERIAL = /usr/local/opt/llvm/bin/clang++" \
+	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -L/usr/local/opt/llvm/lib" \
+	"CFLAGS_OPT = -O3 -m64 -L/usr/local/opt/llvm/lib" \
+	"CXXFLAGS_OPT = -O3 -m64 -L/usr/local/opt/llvm/lib" \
+	"LDFLAGS_OPT = -O3 -m64 -L/usr/local/opt/llvm/lib" \
+	"FFLAGS_DEBUG = -g -m64 -L/usr/local/opt/llvm/lib -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"CFLAGS_DEBUG = -g -m64 -L/usr/local/opt/llvm/lib" \
+	"CXXFLAGS_DEBUG = -O3 -m64 -L/usr/local/opt/llvm/lib" \
+	"LDFLAGS_DEBUG = -g -m64 -L/usr/local/opt/llvm/lib" \
+...
+
+assuming that the LLVM clang compiler is installed in /usr/local/opt/llvm.

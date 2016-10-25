@@ -690,7 +690,24 @@ endif
 endif
 
 
-mpas_main:
+compiler_test:
+ifeq "$(OPENMP)" "true"
+	@echo "Testing compiler for OpenMP support"
+	@echo "int main() { return 0; }" > conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "int main() { return 0; }" > conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "int main() { return 0; }" > conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@rm -fr conftest.*
+endif
+
+
+mpas_main: compiler_test
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
