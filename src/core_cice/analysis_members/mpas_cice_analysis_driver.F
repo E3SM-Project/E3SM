@@ -875,15 +875,21 @@ contains
 
       integer :: err_tmp
 
-      character (len=StrKIND) :: configName, timerName
+      character (len=StrKIND) :: configName, timerName, outputTimeString
       character (len=StrKIND), pointer :: config_AM_output_stream
+      character (len=StrKIND), pointer :: config_AM_backwardOffset, config_AM_forwardOffset
       logical, pointer :: config_AM_enable
       type (mpas_pool_iterator_type) :: poolItr
+      type (mpas_time_type) :: outputTime, nowTime
+      type (mpas_timeinterval_type) :: offsetInt
       integer :: nameLength
+
+      integer :: poolErrorLevel
 
       err = 0
 
       call mpas_timer_start('analysis_write', .false.)
+      nowTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr=err_tmp)
 
       call mpas_pool_begin_iteration(analysisMemberList)
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
@@ -892,12 +898,43 @@ contains
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
+
+            poolErrorLevel = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+            nullify(config_AM_backwardOffset)
+            nullify(config_AM_forwardOffset)
+
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
             call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_backward_output_offset'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_backwardOffset)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_forward_output_offset'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_forwardOffset)
+
+            call mpas_pool_set_error_level(poolErrorLevel)
             if ( config_AM_output_stream /= 'none' ) then
                timerName = trim(writeTimerPrefix) // poolItr % memberName(1:nameLength)
                call mpas_timer_start(timerName, .false.)
-               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
+
+               if ( associated(config_AM_backwardOffset) ) then
+                  if ( associated(config_AM_forwardOffset) ) then
+                     write(stderrUnit, *) 'WARNING: Both backward and forward offsets are set for AM ' // poolItr % memberName(1:nameLength)
+                     write(stderrUnit, *) '         will only use backward offset. Forward offset will be ignored.'
+                  end if
+                  call mpas_set_timeinterval(offsetInt, timeString=config_AM_backwardOffset, ierr=err_tmp)
+                  outputTime = nowTime - offsetInt
+                  call mpas_get_time(outputTime, dateTimeString=outputTimeString, ierr=err_tmp)
+               else if ( associated(config_AM_forwardOffset) ) then
+                  call mpas_set_timeinterval(offsetInt, timeString=config_AM_backwardOffset, ierr=err_tmp)
+                  outputTime = nowTime + offsetInt
+                  call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
+               else
+                  outputTime = nowTime
+               end if
+
+               call mpas_get_time(outputTime, dateTimeString=outputTimeString, ierr=err_tmp)
+               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, writeTime=outputTimeString, ierr=err_tmp)
                call mpas_timer_stop(timerName)
                timerName = trim(alarmTimerPrefix) // poolItr % memberName(1:nameLength)
                call mpas_timer_start(timerName, .false.)
