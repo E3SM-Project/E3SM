@@ -140,12 +140,12 @@ module ColumnCarbonFluxType
 
 
   contains
-      procedure, public :: Init => init_col_cf
-      procedure, public :: InitAllocate => initallocate_col_cf
-      procedure, public :: Clean => clean_col_cf
-      procedure, public :: InitHistory => inithistory_col_cf
-      procedure, public :: InitCold => initcold_col_cf
-      procedure, public :: Restart => restart_col_cf
+      procedure, public  :: Init => init_col_cf
+      procedure, public  :: Clean => clean_col_cf
+      procedure, public  :: Restart => restart_col_cf
+      procedure, private :: InitAllocate => initallocate_col_cf
+      procedure, private :: InitHistory => inithistory_col_cf
+      procedure, private :: InitCold => initcold_col_cf
 
   end type soilcol_carbon_flux
 

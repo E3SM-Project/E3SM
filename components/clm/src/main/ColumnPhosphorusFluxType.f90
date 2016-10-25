@@ -147,9 +147,9 @@ module ColumnPhosphorusFluxType
      real(r8), pointer :: desorb_to_solutionp_col                   (:)
 
   contains
-      procedure, public :: Init => init_col_pf
-      procedure, public :: Restart => restart_col_pf
-      procedure, public :: Clean => clean_col_pf
+      procedure, public  :: Init => init_col_pf
+      procedure, public  :: Restart => restart_col_pf
+      procedure, public  :: Clean => clean_col_pf
       procedure, private :: InitAllocate => initallocate_col_pf
       procedure, private :: InitHistory => inithistory_col_pf
       procedure, private :: InitCold => initcold_col_pf

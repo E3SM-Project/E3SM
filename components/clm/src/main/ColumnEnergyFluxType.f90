@@ -38,11 +38,11 @@ module ColumnEnergyFluxType
 
   contains
     procedure, public :: Init => init_col_ef
-    procedure, public :: InitAcclocate => initallocate_col_ef
-    procedure, public :: InitHistory => inithistory_col_ef
-    procedure, public :: InitCold => initcold_col_ef
     procedure, public :: Restart => restart_col_ef
     procedure, public :: Clean => clean_col_ef
+    procedure, private :: InitAcclocate => initallocate_col_ef
+    procedure, private :: InitHistory => inithistory_col_ef
+    procedure, private :: InitCold => initcold_col_ef
 
   end type soilcol_energy_flux
   ! ------------------------------------------------------------------------

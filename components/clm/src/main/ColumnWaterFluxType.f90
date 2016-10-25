@@ -86,13 +86,13 @@ module ColumnWaterFluxType
       real(r8), pointer :: mflx_neg_snow_col_1d     (:)   ! mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
 
   contains
-      procedure, public :: Init => init_col_wf
-      procedure, public :: InitAllocate => initallocate_col_wf
-      procedure, public :: InitCold => initcold_col_wf
-      procedure, public :: InitHistory => inithistory_col_wf
-      procedure, public :: Restart => restart_col_wf
-      procedure, public :: Reset => reset_col_wf
-      procedure, public :: Clean => clean_col_wf
+      procedure, public  :: Init => init_col_wf
+      procedure, public  :: InitAllocate => initallocate_col_wf
+      procedure, public  :: Restart => restart_col_wf
+      procedure, public  :: Reset => reset_col_wf
+      procedure, private :: InitCold => initcold_col_wf
+      procedure, private :: InitHistory => inithistory_col_wf
+      procedure, private :: Clean => clean_col_wf
 
   end type soilcol_water_flux
 
@@ -442,25 +442,25 @@ module ColumnWaterFluxType
 
 
   subroutine reset_col_wf(this, bounds, numf, filter)
-  !
-  ! !DESCRIPTION:
-  ! Intitialize SNICAR variables for fresh snow column
-  !
-  ! !ARGUMENTS:
-  class(waterflux_type)              :: this
-  type(bounds_type)    , intent(in)  :: bounds
-  integer              , intent(in)  :: numf
-  integer              , intent(in)  :: filter(:)
-  !-----------------------------------------------------------------------
-  
-  integer :: fc, column
-  
-  do fc = 1, numf
-    column = filter(fc)
-    this%qflx_snow2topsoi_col     (column)   = 0._r8
-    this%qflx_h2osfc2topsoi_col   (column)   = 0._r8      
-  enddo  
-end subroutine reset_col_wf
+    !
+    ! !DESCRIPTION:
+    ! Intitialize SNICAR variables for fresh snow column
+    !
+    ! !ARGUMENTS:
+    class(waterflux_type)              :: this
+    type(bounds_type)    , intent(in)  :: bounds
+    integer              , intent(in)  :: numf
+    integer              , intent(in)  :: filter(:)
+    !-----------------------------------------------------------------------
+    
+    integer :: fc, column
+    
+    do fc = 1, numf
+      column = filter(fc)
+      this%qflx_snow2topsoi_col     (column)   = 0._r8
+      this%qflx_h2osfc2topsoi_col   (column)   = 0._r8      
+    enddo  
+  end subroutine reset_col_wf
 
 
   subroutine clean_col_wf(this)

@@ -260,10 +260,10 @@ module CNNitrogenFluxType
 
      procedure , public  :: Init => init_col_nf 
      procedure , public  :: Restart => restart_col_nf
+     procedure , public  :: Clean => clean_col_nf
      procedure , private :: InitAllocate => initallocate_col_nf
      procedure , private :: InitHistory => inithistory_col_nf
      procedure , private :: InitCold => initcold_col_nf
-     procedure , public :: Clean => clean_col_nf
 
   end type soilcol_nitrogen_flux
 
