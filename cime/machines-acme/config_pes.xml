@@ -1435,5 +1435,10 @@
     <NTASKS_WAV>1</NTASKS_WAV> <NTHRDS_WAV>1</NTHRDS_WAV> <ROOTPE_WAV>0</ROOTPE_WAV>
 </pes>
 
+<!-- Currently constance doesn't perform well with pnetcdf, resetting it to use netcdf  -->
+<pes MACH="constance">
+    <PIO_NUMTASKS>-1</PIO_NUMTASKS><PIO_STRIDE>-1</PIO_STRIDE> <PIO_TYPENAME>netcdf</PIO_TYPENAME> <PIO_ROOT>1</PIO_ROOT>
+</pes>
+
 
 </pesinfo>
