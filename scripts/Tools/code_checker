@@ -7,7 +7,8 @@ and follow the PEP8 standard.
 
 from standard_script_setup import *
 
-from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_python_libs_root
+from CIME.utils import run_cmd, run_cmd_no_fail, expect
+from CIME.utils import get_python_libs_root, get_cime_root
 
 import argparse, sys, os, doctest
 from multiprocessing.dummy import Pool as ThreadPool
@@ -58,10 +59,18 @@ def run_pylint(on_file):
     pylint = find_executable("pylint")
 
     cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement"
+    cimeroot = get_cime_root()
 
     if "scripts/Tools" in on_file:
         cmd_options +=",relative-import"
+
+    # add init-hook option
+    cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\"))'"%\
+        (os.path.join(cimeroot,"utils","python"),
+         os.path.join(cimeroot,"scripts","Tools"))
+
     cmd = "%s %s %s"%(pylint, cmd_options, on_file)
+
     stat, out, err = run_cmd(cmd, verbose=False)
     if stat != 0:
         logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
