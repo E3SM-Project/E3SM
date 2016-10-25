@@ -7,7 +7,8 @@ and follow the PEP8 standard.
 
 from standard_script_setup import *
 
-from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_python_libs_root
+from CIME.utils import run_cmd, run_cmd_no_fail, expect
+from CIME.utils import get_python_libs_root, get_cime_root
 
 import argparse, sys, os, doctest
 from multiprocessing.dummy import Pool as ThreadPool
@@ -57,12 +58,23 @@ def run_pylint(on_file):
 ###############################################################################
     pylint = find_executable("pylint")
 
-    cmd = "%s --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % (pylint, on_file)
+    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement"
+    cimeroot = get_cime_root()
+
+    if "scripts/Tools" in on_file:
+        cmd_options +=",relative-import"
+
+    # add init-hook option
+    cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\"))'"%\
+        (os.path.join(cimeroot,"utils","python"),
+         os.path.join(cimeroot,"scripts","Tools"))
+
+    cmd = "%s %s %s"%(pylint, cmd_options, on_file)
+
     stat, out, err = run_cmd(cmd, verbose=False)
     if stat != 0:
         logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
-        if (logger.isEnabledFor(logging.DEBUG)):
-            logger.info(out + "\n" + err)
+        logger.info(out + "\n" + err)
         return False
     else:
         logger.info("File %s has no pylint problems" % on_file)
@@ -85,12 +97,6 @@ def check_code(dir_to_check, num_procs, files):
 
     Returns True if all files had no problems
     """
-    # Pylint won't work right if the imports within the checked files fails
-    if "PYTHONPATH" in os.environ:
-        os.environ["PYTHONPATH"] += ':' + dir_to_check
-    else:
-        os.environ["PYTHONPATH"] = dir_to_check
-
     # Get list of files to check
     files_to_check = run_cmd_no_fail('git ls-files --full-name %s' % dir_to_check, verbose=False).splitlines()
     if files:

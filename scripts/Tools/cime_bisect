@@ -9,7 +9,7 @@ from standard_script_setup import *
 from CIME.utils import expect, run_cmd_no_fail, run_cmd
 from CIME.XML.machines import Machines
 
-import argparse, sys, os, doctest, traceback, re
+import argparse, sys, os, doctest, re
 
 _MACHINE = Machines()
 

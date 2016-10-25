@@ -15,7 +15,6 @@ from standard_script_setup import *
 from CIME.utils import run_cmd
 from distutils.spawn import find_executable
 import xml.etree.ElementTree as ET
-import operator
 import grid_xml_converter
 LOGGER = logging.getLogger(__name__)
 
@@ -30,9 +29,9 @@ def parse_command_line(args):
     # Set command line options
     parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 repository")
     parser.add_argument("-cime4file", "--cime4file", help="location of config_grids.xml file in CIME4 repository")
-    
+
     args = parser.parse_args(args[1:])
-    
+
     CIME.utils.handle_standard_logging_options(args)
 
     if args.cime2file is None or args.cime4file is None:
@@ -44,7 +43,7 @@ def parse_command_line(args):
 class PesNode(grid_xml_converter.DataNode):
     def __str__(self):
         return ET.tostring(self.xmlnode)
-    
+
     def setattrib(self, node, tag, key=None):
         if key is None:
             key = tag
@@ -56,7 +55,7 @@ class PesNode(grid_xml_converter.DataNode):
     def keyvalue(self):
         return "%s:%s:%s:%s" % (self.data['gridname'], self.data['machname'],
                                 self.data['pesize'], self.data['compset'])
-            
+
 
     def to_cime4(self):
         gridnode = ET.Element('grid')
@@ -115,10 +114,13 @@ class Cime4PesNode(PesNode):
             node = pesnode.find(tag)
             for child in node.getchildren():
                 self.data[tag][child.tag] = child.text.strip()
-        
+
 class Cime2PesNode(PesNode):
     ISDEFAULT = "-999999"
     DEFAULTS = {'ntasks':'16', 'nthrds':'1', 'rootpe':'0'}
+    def __init__(self):
+        self.ignore = False
+
     def set_data(self, xmlnode):
         # Set Defaults
         for d in ['ntasks', 'nthrds', 'rootpe']:
@@ -156,7 +158,7 @@ class Cime2PesNode(PesNode):
                                 val = self.data[resolvetag.lower()[0:6]][resolvetag.lower()]
                             else:
                                 val = xmlnode.find(resolvetag).text.strip()
-                                
+
                     self.data[d][tag] = val
         # Set to defaults. CIME2 had unresolved defaults that referred
         # back to the ATM value, so setting just the ATM value would in effect
@@ -169,15 +171,18 @@ class Cime2PesNode(PesNode):
                 tag = d + '_' + comp
                 if self.data[d][tag] == self.ISDEFAULT:
                     self.data[d][tag] = self.data[d][atmtag]
-            
-    
-    
+
+
+
 
 class PesTree(grid_xml_converter.DataTree):
+    def __init__(self):
+        self.ignore = False
+
     def populate(self):
         xmlnodes = self.root.findall('grid')
         nodeclass = Cime4PesNode
-        
+
         if len(xmlnodes) == 0:
             xmlnodes = self.root.findall('pes')
             nodeclass = Cime2PesNode
@@ -188,7 +193,7 @@ class PesTree(grid_xml_converter.DataTree):
                 self.nodes.append(datanode)
 
 
-        
+
     def writexml(self, addlist, newfilename):
         root = ET.Element('config_pes')
         for a, b in addlist:
@@ -216,8 +221,8 @@ def diff_tree(atree, btree):
             duplist.append(bnode.keyvalue())
         else:
             bkeys.append(bnode.keyvalue())
-            
-        
+
+
     for anode in atree.nodes:
         for bnode in btree.nodes:
             if bnode in bfound:
@@ -231,14 +236,14 @@ def diff_tree(atree, btree):
                 else:
                     fixlist.append([anode, bnode])
                 break
-            
+
         if anode in afound:
             continue
 
         addlist.append([anode, None])
-    
-            
-        
+
+
+
     LOGGER.info("Number of ok nodes: %d" % len(oklist))
     LOGGER.info("Number of wrong nodes: %d" % len(fixlist))
     LOGGER.info("Number of missing nodes: %d" % len(addlist))
@@ -248,20 +253,18 @@ def diff_tree(atree, btree):
     for dup in duplist:
         LOGGER.info(dup)
     return [oklist, fixlist, addlist]
-            
-    
 
 
 def pes_compare():
     cime2file, cime4file = parse_command_line(sys.argv)
-    
+
     cime2pestree = PesTree(cime2file)
     cime4pestree = PesTree(cime4file)
 
     LOGGER.info("Comparing config_pes files...")
     oklist, fixlist, addlist = diff_tree(cime2pestree, cime4pestree)
     cime4pestree.postprocess(fixlist, addlist, "tempgrid.xml","badgrid.xml")
-    
+
 if __name__ == "__main__":
     pes_compare()
 

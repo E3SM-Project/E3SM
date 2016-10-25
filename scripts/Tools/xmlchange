@@ -15,7 +15,7 @@ from standard_script_setup import *
 from CIME.utils import expect, convert_to_type, append_status
 from CIME.case import Case
 
-import argparse, doctest, shutil, glob, time, re
+import re
 
 # Set logger
 logger = logging.getLogger("xmlchange")
@@ -24,7 +24,7 @@ logger = logging.getLogger("xmlchange")
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [<changeargs>] [--verbose][--file file][--id id][--val value][--noecho][--append][--warn][--force]
+        usage="""\n%s [<changeargs>] [--verbose][--id id][--val value][--noecho][--append][--force]
 OR
 %s --help
 OR
@@ -51,9 +51,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-loglevel",
                         help="ignored, backward compatibility only")
 
-    parser.add_argument("-file", "--file",
-                        help="xml file to edit")
-
     parser.add_argument("-id", "--id",
                         help="the xml entry id")
 
@@ -72,9 +69,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-append","--append", action="store_true",
                         help="append to the existing value")
 
-    parser.add_argument("-warn","--warn", action="store_true",
-                        help="not implemented")
-
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
 
@@ -90,22 +84,22 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
         delimiter = re.escape(args.delimiter)
         listofsettings = re.split(r'(?<!\\)'+ delimiter , args.listofsettings)
 
-    return args.caseroot, listofsettings, args.file, args.id, args.val, args.subgroup, args.append, args.noecho, args.warn, args.force , args.dryrun
+    return args.caseroot, listofsettings, args.id, args.val, args.subgroup, args.append, args.noecho, args.force , args.dryrun
 
-def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=None, subgroup=None,
-              append=None, noecho=False, warn=None, force=False , dryrun=False):
+def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=None,
+              append=None, noecho=False, force=False , dryrun=False):
     with Case(caseroot, read_only=False) as case:
 
         if len(listofsettings):
             logger.debug("List of attributes to change: %s" , listofsettings)
 
-            # Change values         
+            # Change values
             for setting in listofsettings:
-                
+
                 pair = setting.split("=",1)
-                expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value. Got %s" % (pair) ) 
+                expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value. Got %s" % (pair) )
                 (xmlid, xmlval) = pair
-                
+
                 type_str = case.get_type_info(xmlid)
                 if(append is True):
                     value = case.get_value(xmlid, resolved=False,
@@ -114,7 +108,7 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
                 if not force:
                     xmlval = convert_to_type(xmlval, type_str, xmlid)
 
-                if not dryrun :    
+                if not dryrun :
                     case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
                 else :
                     logger.warning("'%s' = '%s'" , xmlid , xmlval )
@@ -139,9 +133,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn, force , dry = parse_command_line(sys.argv, description)
+    caseroot, listofsettings, xmlid, xmlval, subgroup, append, noecho, force , dry = parse_command_line(sys.argv, description)
 
-    xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn, force , dry)
+    xmlchange(caseroot, listofsettings, xmlid, xmlval, subgroup, append, noecho, force , dry)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

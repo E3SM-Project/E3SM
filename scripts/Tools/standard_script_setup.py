@@ -2,6 +2,7 @@
 Encapsulate the importing of python utils and logging setup, things
 that every script should do.
 """
+# pylint: disable=unused-import
 
 import sys, os
 import __main__ as main
@@ -15,5 +16,4 @@ os.environ["CIMEROOT"] = _CIMEROOT
 import CIME.utils
 CIME.utils.check_minimum_python_version(2, 7)
 CIME.utils.stop_buffering_output()
-
 import logging, doctest, argparse

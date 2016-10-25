@@ -7,7 +7,6 @@ generate, or both) for this case.
 
 from standard_script_setup import *
 
-from CIME.case_setup            import case_setup
 from CIME.case                  import Case
 from CIME.case_cmpgen_namelists import case_cmpgen_namelists
 

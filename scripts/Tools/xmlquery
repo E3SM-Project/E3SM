@@ -19,17 +19,15 @@ If this tool is missing any feature that you need, please go to github and creat
 
 from standard_script_setup import *
 
-from CIME.utils import expect
 from CIME.case import Case
 
-import argparse, doctest, shutil, glob
 import textwrap
 import sys
 
 logger = logging.getLogger("xmlquery")
 
 ###############################################################################
-def parse_command_line(args, description):
+def parse_command_line(args):
 ###############################################################################
     parser = argparse.ArgumentParser(   description="Querry the xml files for attributes and return their values." ,
                                         formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(__doc__) )
@@ -92,7 +90,7 @@ def parse_command_line(args, description):
 
     return args
 
-def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False, warn=None ):
+def xmlquery(caseroot, args, listofattributes,  subgroup=None):
     """
     Return list of attributes and their values , print formatted
 
@@ -159,13 +157,13 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False,
 
     return values
 
-def _main_func(description):
+def _main_func():
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    args = parse_command_line(sys.argv, description)
+    args = parse_command_line(sys.argv)
 
     # Debug statement - obvious
     logger.debug("CLI arguments: %s" , args)
@@ -185,4 +183,4 @@ def _main_func(description):
 
 
 if (__name__ == "__main__"):
-    _main_func(__doc__)
+    _main_func()

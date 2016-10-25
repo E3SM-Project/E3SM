@@ -1807,8 +1807,8 @@ class S_TestManageAndQuery(unittest.TestCase):
 def make_pylint_test(pyfile, cimeroot):
     def test(self):
         code_checker = os.path.join(TOOLS_DIR, "code_checker")
-        run_cmd_assert_result(self, "PYTHONPATH=%s:%s:$PYTHONPATH %s --dir %s %s"\
-                                  %(TOOLS_DIR, LIB_DIR, code_checker, cimeroot, pyfile), from_dir=cimeroot)
+        run_cmd_assert_result(self, "%s --dir %s %s"\
+                                  %(code_checker, cimeroot, pyfile), from_dir=cimeroot)
     return test
 
 
@@ -1865,7 +1865,7 @@ def _main_func():
         files_to_test.extend(run_cmd_no_fail("git grep -l '#!/usr/bin/env python'",
                                         from_dir=cimeroot).splitlines())
         #TODO - get rid of this
-        list_of_directories_to_ignore = ("scripts/Tools", "point_clm", "tools", "machines", "apidocs", "unit_test")
+        list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "unit_test")
         for file_ in files_to_test:
             # Dont test template files
             test_this = True
