@@ -1,9 +1,0 @@
-&camexp
- restart_option='none'
- mfilt=1,1,1,1,1,1
- ndens=1,1,1,1,1,1
- nhtfrq=3,3,3,3,3,3
- phys_loadbalance=1
- start_tod=82800 
- start_ymd=1231 
- /

@@ -1,7 +1,0 @@
-&camexp
- mfilt=1,1,1,1,1,1
- ndens=1,1,1,1,1,1
- nhtfrq=3,3,3,3,3,3
- npr_yz=32,1,1,32
- phys_loadbalance=2
- /

@@ -1,7 +1,0 @@
--spmd -nosmp
--chem waccm_ghg
--dyn homme
--hgrid ne30np4
--debug
--phys cam4
--s

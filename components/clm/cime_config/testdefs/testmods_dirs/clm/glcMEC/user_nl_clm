@@ -1,7 +1,0 @@
-! add some special history fields: multi-layer snow fields, and a per-column forcing field
- hist_fincl1   += 'SNO_EXISTENCE', 'SNO_ABS', 'SNO_T:M', 'SNO_GS:X', 'QICE_FORC'
-! similarly, add a glc-specific field to the second history tape
- hist_fincl2   += 'QICE'
-
-! Set max snow persistence to a small number so that smb from bare land can potentially be triggered
- glc_snow_persistence_max_days = 2
