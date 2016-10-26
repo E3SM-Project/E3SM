@@ -378,7 +378,8 @@
 
   <batch_system MACH="yellowstone" type="lsf" version="9.1">
     <queues>
-      <queue walltimemax="24:00" jobmin="1" jobmax="1" jobname="case.lt_archive">hpss</queue>
+      <!-- the hpss queue that should be used for lt_archive jobs on yellowstone does not have modules installed and so rejects our python job -->
+      <queue walltimemax="24:00" jobmin="1" jobmax="1" jobname="case.lt_archive">caldera</queue>
       <queue walltimemax="24:00" jobmin="1" jobmax="8" >caldera</queue>
       <queue walltimemax="12:00" jobmin="9" jobmax="16384" default="true">regular</queue>
       <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>

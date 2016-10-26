@@ -463,6 +463,7 @@ class TestCreateTestCommon(unittest.TestCase):
         else:
             for file_to_clean in files_to_clean:
                 if (os.path.isdir(file_to_clean)):
+                    time.sleep(5) # Kinda hacky
                     shutil.rmtree(file_to_clean)
                 else:
                     os.remove(file_to_clean)
