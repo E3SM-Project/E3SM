@@ -11,6 +11,9 @@
 		<stream name="land_ice_fluxes">
 			<attribute name="output_interval">0000-00-00_00:10:00</attribute>
 		</stream>
+                <stream name="frazil">
+			<attribute name="output_interval">0000-00-00_00:10:00</attribute>
+		</stream>
 		<stream name="restart">
 			<attribute name="filename_template">../restarts/rst.$Y-$M-$D_$h.$m.$s.nc</attribute>
 			<attribute name="filename_interval">output_interval</attribute>

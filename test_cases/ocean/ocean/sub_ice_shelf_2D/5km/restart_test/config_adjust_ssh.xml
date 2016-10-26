@@ -21,7 +21,7 @@
 			<argument flag="graph.info">4</argument>
 		</step>
 		<step executable="./iterate_init.py">
-			<argument flag="">--iteration_count=15</argument>
+			<argument flag="">--iteration_count=2</argument>
 			<argument flag="">--variable_to_modify=landIcePressure</argument>
 		</step>
 	</run_script>
