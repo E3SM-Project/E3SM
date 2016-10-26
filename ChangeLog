@@ -1,6 +1,54 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 10-26-2016
+Tag: cime5.2.0-alpha.6
+Answer Changes: None
+Tests: scripts_regression_tests, problem specific tests
+Dependencies:
+
+Brief Summary: Fix for ERP tests, Fix for shr_scam_mod, indentation in cs.status
+                           Fix for testmods recurrsion, pylint testing extended
+User interface changes: none
+
+Modified files: git diff --name-status
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/buildlib.pio
+M       scripts/Tools/bless_test_results
+M       scripts/Tools/case.build
+M       scripts/Tools/case.cmpgen_namelists
+M       scripts/Tools/check_case
+M       scripts/Tools/check_input_data
+M       scripts/Tools/cime_bisect
+M       scripts/Tools/cimeteststatus
+M       scripts/Tools/code_checker
+M       scripts/Tools/compare_test_results
+D       scripts/Tools/config_pes_converter.py
+M       scripts/Tools/cs_status
+D       scripts/Tools/grid_xml_converter.py
+M       scripts/Tools/jenkins_generic_job
+M       scripts/Tools/standard_script_setup.py
+M       scripts/Tools/update_acme_tests
+M       scripts/Tools/xmlchange
+A       scripts/Tools/xmlconvertors/config_pes_converter.py
+A       scripts/Tools/xmlconvertors/grid_xml_converter.py
+M       scripts/Tools/xmlquery
+M       share/csm_share/shr/shr_scam_mod.F90
+M       tools/cprnc/summarize_cprnc_diffs
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/test_status.py
+M       utils/python/CIME/user_mod_support.py
+M       utils/python/tests/scripts_regression_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 10-24-2016
 Tag: cime5.2.0-alpha.5
 Answer Changes: None
@@ -11,7 +59,7 @@ Brief Summary:
 
 User interface changes: changes when preview_namelists is run, first in case.build and less frequently overall
 Changes where sharedlib builds are installed to avoid conflicts in builds
-	
+
 Modified files: git diff --name-status
 M       cime_config/acme/machines/Makefile
 D       cime_config/acme/machines/buildlib.csm_share
