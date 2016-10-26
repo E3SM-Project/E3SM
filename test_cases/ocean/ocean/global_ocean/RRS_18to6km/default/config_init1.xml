@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<config case="init_step1">
+
+	<get_file hash="7z1uysqc5i" dest_path="mesh_database" file_name="mesh.RRS.18-6km.160828.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
+	</get_file>
+
+	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+	<add_executable source="mask_creator" dest="MpasMaskCreator.x"/>
+
+	<add_link source_path="mesh_database" source="mesh.RRS.18-6km.160822.nc" dest="base_mesh.nc"/>
+	<add_link source_path="geometric_features" source="." dest="geometric_features"/>
+	<add_link source_path="script_configuration_dir" source="init_step1.py" dest="init_step1.py"/>
+
+	<run_script name="run.py">
+		<step executable="./init_step1.py">
+			<argument flag="-p">geometric_features</argument>
+		</step>
+	</run_script>
+</config>

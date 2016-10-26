@@ -1,0 +1,28 @@
+<driver_script name="run_test.py">
+	<case name="init_step1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step1" post_message=" - Complete"/>
+	</case>
+	<case name="init_step2">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message=" - Complete"/>
+	</case>
+	<case name="spin_up1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running spin_up1" post_message=" - Complete"/>
+	</case>
+	<case name="spin_up2">
+		<step executable="./run.py" quiet="true" pre_message=" * Running spin_up2" post_message=" - Complete"/>
+	</case>
+	<case name="spin_up3">
+		<step executable="./run.py" quiet="true" pre_message=" * Running spin_up3" post_message=" - Complete"/>
+	</case>
+	<case name="spin_up4">
+		<step executable="./run.py" quiet="true" pre_message=" * Running spin_up4" post_message=" - Complete"/>
+	</case>
+	<case name="forward">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message=" - Complete"/>
+	</case>
+	<validation>
+		<compare_fields file1="forward/output.nc">
+			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+	</validation>
+</driver_script>
