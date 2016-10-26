@@ -35,24 +35,9 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                 for comp_inst in xrange(1, ninst[comp]+1):
                     contents = newcontents
                     case_user_nl_inst = case_user_nl + "_%4.4d"%comp_inst
-                    logger.info("Pre-pending file %s"%(case_user_nl_inst))
-                    if os.path.isfile(case_user_nl_inst):
-                        with open(case_user_nl_inst, "r") as fd:
-                            old_contents = fd.read()
-                        if old_contents.find(contents) == -1:
-                            contents = contents + old_contents
-                            with open(case_user_nl_inst, "w") as fd:
-                                fd.write(contents)
+                    update_user_nl_file(case_user_nl_inst, contents)
             else:
-                contents = newcontents
-                logger.info("Pre-pending file %s from %s"%(case_user_nl, include_dir))
-                if os.path.isfile(case_user_nl):
-                    with open(case_user_nl, "r") as fd:
-                        old_contents = fd.read()
-                    if old_contents.find(contents) == -1:
-                        contents = contents + old_contents
-                        with open(case_user_nl, "w") as fd:
-                            fd.write(contents)
+                update_user_nl_file(case_user_nl, newcontents)
 
         # update SourceMods in caseroot
         for root, _, files in os.walk(include_dir,followlinks=True,topdown=False):
@@ -84,6 +69,23 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
         if os.path.isfile(shell_command_file):
             os.chmod(shell_command_file, 0777)
             run_cmd_no_fail(shell_command_file)
+
+def update_user_nl_file(case_user_nl, contents):
+    update_file = True
+    if os.path.isfile(case_user_nl):
+        with open(case_user_nl, "r") as fd:
+            old_contents = fd.read()
+        if old_contents.find(contents) == -1:
+            contents = contents + old_contents
+            update_file = True
+        else:
+            update_file = False
+    if update_file:
+        logger.info("Pre-pending file %s"%(case_user_nl))
+        with open(case_user_nl, "w") as fd:
+            fd.write(contents)
+
+
 
 def build_include_dirs_list(user_mods_path, include_dirs=None):
     '''
