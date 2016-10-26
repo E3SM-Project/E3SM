@@ -2112,16 +2112,16 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
+			 description="vertical velocity defined at center (horizontally) and top (vertically) of cell"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
+			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
 			 packages="forwardMode;analysisMode"
 
 		/>
 		<var name="vertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
+			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
 			 packages="forwardMode;analysisMode"
 
 		/>
