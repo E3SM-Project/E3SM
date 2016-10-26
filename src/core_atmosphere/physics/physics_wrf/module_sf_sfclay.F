@@ -141,13 +141,6 @@ CONTAINS
                                                              PBLH, &
                                                             XLAND, &
                                                               TSK
-      REAL,     DIMENSION( ims:ime, jms:jme )                    , &
-                INTENT(OUT  )               ::                U10, &
-                                                              V10, &
-                                                              TH2, &
-                                                               T2, &
-                                                               Q2, &
-                                                             QSFC
 
 !
       REAL,     DIMENSION( ims:ime, jms:jme )                    , &
@@ -188,17 +181,29 @@ CONTAINS
 
                                     
       REAL,     INTENT(IN   )               ::   CP,G,ROVCP,R,XLV,DX
- 
-      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
-                INTENT(OUT)     ::              ck,cka,cd,cda,ustm
 
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
 
 #if defined(mpas)
 !MPAS specific (Laura D. Fowler - 2013-03-06):
-      real,intent(in),dimension(ims:ime,jms:jme),optional:: dxCell
+      real,intent(inout),dimension(ims:ime,jms:jme):: qsfc,ustm
+      real,intent(out),dimension(ims:ime,jms:jme)  :: u10,v10,th2,t2,q2
+
+      real,intent(in),dimension(ims:ime,jms:jme),optional :: dxCell
+      real,intent(out),dimension(ims:ime,jms:jme),optional:: ck,cka,cd,cda
 !MPAS specific end.
+#else
+      REAL,     DIMENSION( ims:ime, jms:jme )                    , &
+                INTENT(OUT  )               ::                U10, &
+                                                              V10, &
+                                                              TH2, &
+                                                               T2, &
+                                                               Q2, &
+                                                             QSFC
+
+      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
+                INTENT(OUT)     ::              ck,cka,cd,cda,ustm
 #endif
 
 ! LOCAL VARS
