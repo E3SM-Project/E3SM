@@ -105,6 +105,7 @@ contains
      use column_varcon   , only : icol_road_imperv, icol_road_perv
      use ColumnType      , only : col
      use LandunitType    , only : lun
+     use clm_varctl      , only : use_vsfm
      !
      implicit none
      type(bounds_type)     , intent(in)    :: bounds    ! bounds   
@@ -123,6 +124,9 @@ contains
      associate(                                              &
           watsat      =>    soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)] volumetric soil water at saturation (porosity)
           watfc       =>    soilstate_vars%watfc_col       , & ! Input:  [real(r8) (:,:)] volumetric soil water at field capacity
+          watmin      =>    soilstate_vars%watmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
+          sucmin      =>    soilstate_vars%sucmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
+          soilp_col   =>    waterstate_vars%soilp_col      , & ! Input:  [real(r8) (:,:)] soil water pressure (Pa)
           
           h2osoi_ice  =>    waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
           h2osoi_liq  =>    waterstate_vars%h2osoi_liq_col , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
@@ -150,8 +154,32 @@ contains
                 else   !when water content of ths top layer is more than that at F.C.
                    soilbeta(c) = 1._r8
                 end if
+                if ( use_vsfm .and. &
+                     ((wx < watmin(c,1)) .or. (soilp_col(c,1) < sucmin(c,1)))) then
+                   soilbeta(c) = 0._r8
+                end if
              else if (col%itype(c) == icol_road_perv) then
-                soilbeta(c) = 0._r8
+                if (.not. use_vsfm) then
+                   soilbeta(c) = 0._r8
+                else
+                   wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/col%dz(c,1)
+                   fac  = min(1._r8, wx/watsat(c,1))
+                   fac  = max( fac, 0.01_r8 )
+                   if (wx < watfc(c,1) ) then  !when water content of ths top layer is less than that at F.C.
+                      if (wx >= watmin(c,1) .and. soilp_col(c,1) >= sucmin(c,1) ) then
+                         fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
+                         fac_fc  = max( fac_fc, 0.01_r8 )
+                         ! modify soil beta by snow cover. soilbeta for snow surface is one
+                         soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
+                              *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
+                              + frac_sno(c)+ frac_h2osfc(c)
+                      else
+                         soilbeta(c) = 0._r8
+                      endif
+                   else   !when water content of ths top layer is more than that at F.C.
+                      soilbeta(c) = 1._r8
+                   end if
+                endif
              else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
                 soilbeta(c) = 0._r8          
              else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
