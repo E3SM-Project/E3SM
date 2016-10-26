@@ -672,7 +672,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
       ocn_point = (ocn_frac(1,1) > 0._r8)
       lnd_point = (ocn_frac(1,1) < 1._r8)
    else if (docn_exists) then
-      !--- read in the ocn_in namelist to get name for focndomain file
+      !--- read in the docn_in namelist to get name for focndomain file
 
       unitn = shr_file_getUnit() ! get an unused unit number
       open( unitn, file='docn_in', status='old' )
