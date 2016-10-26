@@ -1951,7 +1951,7 @@ subroutine cesm_init()
    call t_adj_detailf(+2)
 
    call seq_diag_zero_mct(mode='all')
-   if (read_restart) then
+   if (read_restart .and. iamin_CPLID) then
       call seq_rest_read(rest_file, infodata, &
            atm, lnd, ice, ocn, rof, glc, wav, esp, &
            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
