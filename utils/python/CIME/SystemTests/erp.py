@@ -61,7 +61,9 @@ class ERP(SystemTestsCommon):
 
             if (bld == 2):
                 # halve the number of tasks and threads
-                for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
+                for comp in self._case.get_values("COMP_CLASSES"):
+                    if comp == "DRV":
+                        comp = "CPL"
                     ntasks    = self._case.get_value("NTASKS_%s"%comp)
                     nthreads  = self._case.get_value("NTHRDS_%s"%comp)
                     rootpe    = self._case.get_value("ROOTPE_%s"%comp)
