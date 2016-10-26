@@ -531,7 +531,8 @@
 !
 ! !INTERFACE:
 
- subroutine rearrange_(SourceAVin,TargetAV,InRearranger,Tag,Sum,Vector,AlltoAll)
+ subroutine rearrange_(SourceAVin,TargetAV,InRearranger,Tag,Sum,&
+                       Vector,AlltoAll,HandShake,ISend,MaxReq)
 
 !
 ! !USES:
@@ -548,6 +549,7 @@
    use m_AttrVect,  only : nIAttr,nRAttr
    use m_AttrVect,  only : Permute,Unpermute
    use m_Router,    only : Router     
+   use m_SPMDutils, only : m_swapm_int, m_swapm_FP
    use m_realkinds, only : FP
    use m_mpif90
    use m_die
@@ -567,6 +569,9 @@
    logical,          optional, intent(in)      :: Sum
    logical,          optional, intent(in)      :: Vector
    logical,          optional, intent(in)      :: AlltoAll
+   logical,          optional, intent(in)      :: HandShake
+   logical,          optional, intent(in)      :: ISend
+   integer,          optional, intent(in)      :: MaxReq
 
 ! !REVISION HISTORY:
 ! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
@@ -581,6 +586,8 @@
 ! 14Oct06 - R. Jacob <jacob@mcs.anl.gov> - check value of Sum argument.
 ! 25Jan08 - R. Jacob <jacob@mcs.anl.gov> - Permute/unpermute if the internal
 !           routers permarr is defined.
+! 29Sep16 - P. Worley <worleyph@gmail.com> - added swapm variant of
+!           alltoall option
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Rearrange_'
@@ -591,11 +598,11 @@
   integer ::    mp_Type_rp
   integer ::    mytag
   integer ::    ISendSize, RSendSize, IRecvSize, RRecvSize
-  logical ::    usevector, usealltoall
+  logical ::    usevector, usealltoall, useswapm
   logical ::    DoSum
   logical ::    Sendunordered
   logical ::    Recvunordered
-  real(FP) ::  realtyp
+  real(FP)::    realtyp
 !-----------------------------------------------------------------------
 
    ! DECLARE STRUCTURES FOR MPI ARGUMENTS.
@@ -633,6 +640,10 @@
    integer,dimension(:),allocatable  :: IRecvBuf
    real(FP),dimension(:),allocatable :: RRecvBuf
 
+   ! declare arrays to hold MPI data types for m_swapm_XXX calls
+   integer :: ITypes(0:max_nprocs-1)
+   integer :: RTypes(0:max_nprocs-1)
+
    ! Structure to hold MPI request information for sends
    integer :: send_ireqs(max_nprocs)
    integer :: send_rreqs(max_nprocs)
@@ -653,6 +664,16 @@
    type(Router), pointer :: SendRout, RecvRout
    type(AttrVect),pointer :: SourceAv
    type(AttrVect),target  :: SourceAvtmp
+
+   ! local swapm protocol variables and defaults
+   logical,parameter :: DEF_SWAPM_HS     = .true.
+   logical swapm_hs
+
+   logical,parameter :: DEF_SWAPM_ISEND  = .false.
+   logical swapm_isend
+
+   integer,parameter :: DEF_SWAPM_MAXREQ = 512
+   integer swapm_maxreq
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -708,8 +729,44 @@
    endif
 
    usealltoall=.false.
-   if(present(Alltoall)) then
-    if(Alltoall) usealltoall=.true.
+   if(present(AlltoAll)) then
+    if(AlltoAll) usealltoall=.true.
+   endif
+!pw++
+   ! forcing use of alltoall protocol until additional tuning 
+   ! capabilities are added to calling routines
+!pw   usealltoall=.true.
+!pw--
+
+   useswapm=.false.
+   if (usealltoall) then
+    ! if any swapm-related optional parameters are present,
+    ! enable swapm variant of alltoall
+
+    swapm_hs = DEF_SWAPM_HS
+    if(present(HandShake)) then
+     if(HandShake) swapm_hs=.true.
+     useswapm=.true.
+    endif
+
+    swapm_isend = DEF_SWAPM_ISEND
+    if(present(ISend)) then
+     if(ISend) swapm_isend=.true.
+     useswapm=.true.
+    endif
+
+    swapm_maxreq = DEF_SWAPM_MAXREQ
+    if(present(MaxReq)) then
+     swapm_maxreq=MaxReq
+     useswapm=.true.
+    endif
+
+!pw++
+    ! forcing use of swapm variant of alltoall protocol 
+    ! until additional tuning capabilities are added to 
+    ! calling routines
+!pw    useswapm=.true.
+!pw--
    endif
 
    DoSum=.false.
@@ -855,6 +912,10 @@
            RRdispls(pe)  = RRecvLoc(proc) - 1
         endif
      enddo
+
+     ! SET MPI DATA TYPES
+     ITypes(:) = MP_INTEGER
+     RTypes(:) = mp_Type_rp
   endif
   
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1090,6 +1151,26 @@ endif  ! end of else for if(usealltoall)
 
 if (usealltoall) then
 
+ if (useswapm) then
+
+  if (numi .ge. 1) then
+     call m_swapm_int(max_pe, myPid,                                    &
+                      ISendBuf, ISendSize, ISendCnts, ISdispls, ITypes, &
+                      IRecvBuf, IRecvSize, IRecvCnts, IRdispls, ITypes, &
+                      ThisMCTWorld%MCT_comm,                            &
+                      swapm_hs, swapm_isend, swapm_maxreq               )
+  endif
+
+  if (numr .ge. 1) then
+     call m_swapm_FP (max_pe, myPid,                                    &
+                      RSendBuf, RSendSize, RSendCnts, RSdispls, RTypes, &
+                      RRecvBuf, RRecvSize, RRecvCnts, RRdispls, RTypes, &
+                      ThisMCTWorld%MCT_comm,                            &
+                      swapm_hs, swapm_isend, swapm_maxreq               )
+  endif
+
+ else
+
   if (numi .ge. 1) then
      call MPI_Alltoallv(ISendBuf, ISendCnts, ISdispls, MP_INTEGER, &
                         IRecvBuf, IRecvCnts, IRdispls, MP_INTEGER, &
@@ -1101,6 +1182,8 @@ if (usealltoall) then
                         RRecvBuf, RRecvCnts, RRdispls, mp_Type_rp, &
                         ThisMCTWorld%MCT_comm,ier)
   endif
+
+ endif
 
 else
 

@@ -31,6 +31,7 @@ SRCS_F90	= m_MCTWorld.F90		\
 		  m_SparseMatrixPlus.F90	\
 		  m_Router.F90			\
 		  m_Rearranger.F90        	\
+		  m_SPMDutils.F90               \
 		  m_Transfer.F90          
 
 OBJS_ALL	= $(SRCS_F90:.F90=.o)
@@ -82,6 +83,7 @@ m_GlobalMap.o:
 m_GlobalSegMap.o:
 m_GlobalSegMapComms.o: m_GlobalSegMap.o
 m_Navigator.o:
+m_SPMDutils.o:
 m_AttrVectComms.o: m_AttrVect.o m_GlobalMap.o
 m_AttrVectReduce.o: m_AttrVect.o
 m_AccumulatorComms.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
@@ -91,7 +93,7 @@ m_GeneralGridComms.o: m_AttrVect.o m_GeneralGrid.o m_AttrVectComms.o m_GlobalMap
 m_MatAttrVectMul.o: m_AttrVect.o m_SparseMatrix.o m_GlobalMap.o m_GlobalSegMap.o m_SparseMatrixPlus.o m_Rearranger.o
 m_Merge.o: m_AttrVect.o m_GeneralGrid.o
 m_Router.o: m_GlobalToLocal.o m_MCTWorld.o m_GlobalSegMap.o m_ExchangeMaps.o
-m_Rearranger.o: m_Router.o m_MCTWorld.o m_GlobalSegMap.o m_AttrVect.o
+m_Rearranger.o: m_Router.o m_MCTWorld.o m_GlobalSegMap.o m_AttrVect.o m_SPMDutils.o
 m_GlobalToLocal.o: m_GlobalSegMap.o
 m_ExchangeMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o m_ConvertMaps.o
 m_ConvertMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o

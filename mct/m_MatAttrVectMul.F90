@@ -188,6 +188,7 @@
   logical :: usevector,TrListIsPresent,rListIsPresent
   logical :: contiguous,ycontiguous
 
+
   usevector = .false.
   if(present(Vector)) then
     if(Vector) usevector = .true.
@@ -367,7 +368,6 @@
 	       wgt * xAV%rAttr(inxmin+m,col)
         end do ! m=1,num_indices
      end do ! n=1,num_elements
-
    else
      do n=1,num_elements
 
@@ -508,7 +508,8 @@
      call AttrVect_zero(xPrimeAV)
        ! Rearrange data from x to get x'
      call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, &
-                    sMatPlus%Tag ,vector=usevector)
+                    tag=sMatPlus%Tag, vector=usevector,&
+                    alltoall=.true., handshake=.true.  )
 
        ! Perform perfectly data-local multiply y = Mx'
      if (present(TrList).and.present(rList)) then
@@ -554,13 +555,15 @@
      
        ! Rearrange/reduce partial sums in y' to get y
      if (present(TrList).or.present(rList)) then
-       call Rearrange(yPrimeAV, yAVre, sMatPlus%YPrimeToY, sMatPlus%Tag, &
-                    .TRUE., Vector=usevector)
+       call Rearrange(yPrimeAV, yAVre, sMatPlus%YPrimeToY,            &
+                      tag=sMatPlus%Tag, sum=.TRUE., Vector=usevector, &
+                      alltoall=.true., handshake=.true.               )
        call AttrVect_Rcopy(yAVre,yAV,vector=usevector)
        call AttrVect_clean(yAVre, ierr)
      else
-       call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
-                    .TRUE., Vector=usevector)
+       call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY,              &
+                      tag=sMatPlus%Tag, sum=.TRUE., Vector=usevector, &
+                      alltoall=.true., handshake=.true.               )
      endif
        ! Clean up space occupied by y'
      call AttrVect_clean(yPrimeAV, ierr)
@@ -586,8 +589,9 @@
      endif
 
        ! Rearrange data from x to get x'
-     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag, &
-                       Vector=usevector)
+     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime,  &
+                    tag=sMatPlus%Tag, Vector=usevector, &
+                    alltoall=.true., handshake=.true.   )
 
        ! Perform perfectly data-local multiply y' = Mx'
      if (present(TrList).and.present(rList)) then
@@ -603,13 +607,15 @@
 
        ! Rearrange/reduce partial sums in y' to get y
      if (present(TrList).or.present(rList)) then
-       call Rearrange(yPrimeAV, yAVre, sMatPlus%YPrimeToY, sMatPlus%Tag, &
-                    .TRUE., Vector=usevector)
+       call Rearrange(yPrimeAV, yAVre, sMatPlus%YPrimeToY,            &
+                      tag=sMatPlus%Tag, sum=.TRUE., Vector=usevector, &
+                      alltoall=.true., handshake=.true.               )
        call AttrVect_Rcopy(yAVre,yAV,vector=usevector)
        call AttrVect_clean(yAVre, ierr)
      else
-       call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
-                    .TRUE., Vector=usevector)
+       call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY,              &
+                      tag=sMatPlus%Tag, sum=.TRUE., Vector=usevector, &
+                      alltoall=.true., handshake=.true.               )
      endif
 
        ! Clean up space occupied by x'
