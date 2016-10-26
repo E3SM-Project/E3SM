@@ -35,24 +35,24 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                 for comp_inst in xrange(1, ninst[comp]+1):
                     contents = newcontents
                     case_user_nl_inst = case_user_nl + "_%4.4d"%comp_inst
-                    logger.info("Pre-pending file %s"%case_user_nl_inst)
+                    logger.info("Pre-pending file %s"%(case_user_nl_inst))
                     if os.path.isfile(case_user_nl_inst):
                         with open(case_user_nl_inst, "r") as fd:
                             old_contents = fd.read()
                             if old_contents.find(contents) == -1:
                                 contents = contents + old_contents
-                    with open(case_user_nl_inst, "w") as fd:
-                        fd.write(contents)
+                                with open(case_user_nl_inst, "w") as fd:
+                                    fd.write(contents)
             else:
                 contents = newcontents
-                logger.info("Pre-pending file %s"%case_user_nl)
+                logger.info("Pre-pending file %s from %s"%(case_user_nl, include_dir))
                 if os.path.isfile(case_user_nl):
                     with open(case_user_nl, "r") as fd:
                         old_contents = fd.read()
-                        if old_contents.find(contents) == -1:
-                            contents = contents + old_contents
-                with open(case_user_nl, "w") as fd:
-                    fd.write(contents)
+                    if old_contents.find(contents) == -1:
+                        contents = contents + old_contents
+                        with open(case_user_nl, "w") as fd:
+                            fd.write(contents)
 
         # update SourceMods in caseroot
         for root, _, files in os.walk(include_dir,followlinks=True,topdown=False):
