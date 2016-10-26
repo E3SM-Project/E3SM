@@ -5,7 +5,7 @@ Library for case.setup.
 from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
-from CIME.preview_namelists import create_dirs
+from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.compilers     import Compilers
 from CIME.utils             import append_status, parse_test_name, get_cime_root
@@ -260,6 +260,10 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
                 logger.info("Starting testcase.setup")
                 run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
+
+        # some tests need namelists created here (ERP)
+        if test_mode:
+            create_namelists(case)
 
         msg = "case.setup complete"
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
