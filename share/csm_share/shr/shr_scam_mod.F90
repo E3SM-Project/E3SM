@@ -620,11 +620,10 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
    character(len=CL)      :: decomp = '1d' ! restart pointer file
    character(len=CL)      :: restfilm = 'unset'
    character(len=CL)      :: restfils = 'unset'
-   character(len=CL)      :: ocn_in = 'unset'
    integer(IN)   :: nfrac
    logical :: force_prognostic_true = .false.
    namelist /dom_inparm/ sstcyc, nrevsn, rest_pfile, bndtvs, focndomain
-   namelist / docn_nml / ocn_in, decomp, force_prognostic_true, &
+   namelist / docn_nml / decomp, force_prognostic_true, &
         restfilm, restfils
 
 !-------------------------------------------------------------------------------
@@ -686,7 +685,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
       end do
       close( unitn )
       call shr_file_freeUnit(unitn)
-      call shr_strdata_readnml(SCAMSDAT,ocn_in)
+      call shr_strdata_readnml(SCAMSDAT,'docn_in')
       call shr_dmodel_readgrid(SCAMSDAT%grid,SCAMSDAT%gsmap,SCAMSDAT%nxg,SCAMSDAT%nyg,SCAMSDAT%nzg, &
            SCAMSDAT%domainfile, ocn_compid, ocn_mpicom, '2d1d', readfrac=.true., &
            scmmode=.true.,scmlon=scmlon,scmlat=scmlat)
