@@ -201,18 +201,19 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self, fd):
+    def phase_statuses_dump(self, fd, prefix=''):
         """
         Args:
             fd: file open for writing
+            prefix: string printed at the start of each line
         """
         if self._phase_statuses:
             for phase, data in self._phase_statuses.iteritems():
                 status, comments = data
                 if not comments:
-                    fd.write("%s %s %s\n" % (status, self._test_name, phase))
+                    fd.write("%s%s %s %s\n" % (prefix, status, self._test_name, phase))
                 else:
-                    fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
+                    fd.write("%s%s %s %s %s\n" % (prefix, status, self._test_name, phase, comments))
 
     def flush(self):
         if self._phase_statuses and not self._no_io:

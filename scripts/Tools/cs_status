@@ -46,7 +46,7 @@ def cs_status(test_paths):
         test_name = ts.get_name()
         summary = ts.get_overall_test_status()
         print "%s (Overall: %s), details:" % (test_name, summary)
-        ts.phase_statuses_dump(sys.stdout)
+        ts.phase_statuses_dump(sys.stdout, prefix='  ')
 
 ###############################################################################
 def _main_func(description):
