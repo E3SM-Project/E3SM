@@ -686,7 +686,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
       end do
       close( unitn )
       call shr_file_freeUnit(unitn)
-      call shr_strdata_readnml(SCAMSDAT,ocn_in)
+      call shr_strdata_readnml(SCAMSDAT,docn_in)
       call shr_dmodel_readgrid(SCAMSDAT%grid,SCAMSDAT%gsmap,SCAMSDAT%nxg,SCAMSDAT%nyg,SCAMSDAT%nzg, &
            SCAMSDAT%domainfile, ocn_compid, ocn_mpicom, '2d1d', readfrac=.true., &
            scmmode=.true.,scmlon=scmlon,scmlat=scmlat)
