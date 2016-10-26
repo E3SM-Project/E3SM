@@ -177,7 +177,6 @@ LII    CLM initial condition interpolation test
     <HIST_OPTION>ndays</HIST_OPTION>
     <HIST_N>1</HIST_N>
     <DOUT_S>FALSE</DOUT_S>
-    <BUILD_THREADED>TRUE</BUILD_THREADED>
   </test>
 
   <test NAME="ERI">
@@ -186,7 +185,6 @@ LII    CLM initial condition interpolation test
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>22</STOP_N>
     <DOUT_S>FALSE</DOUT_S>
-    <BUILD_THREADED>TRUE</BUILD_THREADED>
   </test>
 
   <test NAME="ERP">
