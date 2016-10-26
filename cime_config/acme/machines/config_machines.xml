@@ -491,7 +491,7 @@
     </module_system>
     <environment_variables>
       <env name="NETCDFROOT">$ENV{NETCDFROOT}</env>
-      <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{PNETCDFROOT}</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">/soft/apps/packages/climate/pnetcdf/1.6.1/gcc-6.2.0</env>
     </environment_variables>
 </machine>
 
