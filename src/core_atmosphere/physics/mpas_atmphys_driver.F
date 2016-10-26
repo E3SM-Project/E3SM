@@ -124,6 +124,8 @@
                                  atm_input,    &
                                  sfc_input
 
+ logical,pointer:: config_frac_seaice
+
  character(len=StrKIND),pointer:: config_bucket_update,     &
                                   config_convection_scheme, &
                                   config_gwdo_scheme,       &
@@ -157,7 +159,8 @@
  call mpas_pool_get_config(domain%configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
  call mpas_pool_get_config(domain%configs,'config_bucket_radt'      ,config_bucket_radt      )
  call mpas_pool_get_config(domain%configs,'config_bucket_update'    ,config_bucket_update    )
- call mpas_pool_get_config(domain%configs,'config_oml1d'   ,config_oml1d   )
+ call mpas_pool_get_config(domain%configs,'config_frac_seaice'      ,config_frac_seaice      ) 
+ call mpas_pool_get_config(domain%configs,'config_oml1d'            ,config_oml1d            )
 
  if(config_convection_scheme .ne. 'off' .or. &
     config_lsm_scheme        .ne. 'off' .or. &
@@ -245,14 +248,14 @@
 
     !call to surface-layer scheme:
     if(config_sfclayer_scheme .ne. 'off') then
-       call allocate_sfclayer
+       call allocate_sfclayer(config_frac_seaice)
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
           call driver_sfclayer(itimestep,block%configs,mesh,diag_physics,sfc_input, &
                                block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_sfclayer
+       call deallocate_sfclayer(config_frac_seaice)
     endif
 
     !call to 1d ocean mixed-layer model
@@ -260,14 +263,14 @@
 
     !call to land-surface scheme:
     if(config_lsm_scheme .ne. 'off') then
-       call allocate_lsm
+       call allocate_lsm(config_frac_seaice)
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
           call driver_lsm(itimestep,block%configs,mesh,diag_physics,sfc_input, &
                           block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_lsm
+       call deallocate_lsm(config_frac_seaice)
     endif
 
     !call to pbl schemes:

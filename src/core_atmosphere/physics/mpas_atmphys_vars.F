@@ -57,6 +57,14 @@
 ! * added the variables rqvften and rthften which are the forcing tendencies needed to run the "new" Tiedtke
 !   parameterization of convection.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-20.
+! * added local "_sea" arrays that are needed in the surface layer scheme and land surface scheme for handling
+!   grid cells with fractional seaice when config_frac_seaice is set to true. also added local tsk_ice variable
+!   needed in the land surface scheme for handling grid cells with fractional seaice when config_frac_seaice is
+!   set to true.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-03.
+! * added local variable regime_hold to save the original value of variable regime over seaice grid cells when
+!   config_frac_seaice is set to true.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-21.
 
 
 !=================================================================================================================
@@ -637,11 +645,28 @@
     snoalb_p,         &!annual max snow albedo                                                                 [-]
     snow_p,           &!snow water equivalent                                                             [kg m-2]
     tsk_p,            &!surface-skin temperature                                                               [K]
+    sst_p,            &!sea-surface temperature                                                                [K]
     xice_p,           &!ice mask                                                                               [-]
     xland_p            !land mask    (1 for land; 2 for water)                                                 [-]
 
+!=================================================================================================================
+!.. variables needed for the surface layer scheme and land surface scheme when config_frac_seaice
+!   is set to true. the arrays below have the same definition as the corresponding "_p" arrays:
+!=================================================================================================================
+
+ real(kind=RKIND),dimension(:,:),allocatable:: br_sea,ch_sea,chs_sea,chs2_sea,cpm_sea,cqs2_sea,      &
+                                flhc_sea,flqc_sea,gz1oz0_sea,hfx_sea,lh_sea,mavail_sea,mol_sea,      &
+                                psih_sea,psim_sea,fh_sea,fm_sea,qfx_sea,qgh_sea,qsfc_sea,regime_sea, &
+                                rmol_sea,ust_sea,wspd_sea,znt_sea,zol_sea,tsk_sea,xland_sea
+ real(kind=RKIND),dimension(:,:),allocatable:: t2m_sea,th2m_sea,q2_sea,u10_sea,v10_sea
+ real(kind=RKIND),dimension(:,:),allocatable:: cd_sea,cda_sea,ck_sea,cka_sea,ustm_sea
+
+ real(kind=RKIND),dimension(:,:),allocatable:: regime_hold
+ real(kind=RKIND),dimension(:,:),allocatable:: tsk_ice
+
 
  contains
+
 
 !=================================================================================================================
  subroutine atmphys_vars_init()
