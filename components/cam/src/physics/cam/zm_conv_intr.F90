@@ -164,6 +164,8 @@ subroutine zm_conv_init(pref_edge)
     call addfld ('FREQZM',horiz_only  ,'A','fraction', 'Fractional occurance of ZM convection') 
     ! To keep track of when ZM is suppressed due to Drizzle issue
     call addfld ('FREQZMSUP',horiz_only  ,'A','fraction', 'Fractional occurrence of suppressed ZM convection')
+    ! To keep track of how high deep convection shoots up to
+    call addfld ('MAXZM_IDX',horiz_only  ,'A','index', 'Index of highest grid box ZM convection reaches')
 
     call addfld ('ZMMTT',     (/ 'lev' /), 'A', 'K/s', 'T tendency - ZM convective momentum transport')
     call addfld ('ZMMTU',    (/ 'lev' /), 'A',  'm/s2', 'U tendency - ZM convective momentum transport')
@@ -319,6 +321,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8) :: tend_s_snwprd  (pcols,pver) ! Heating rate of snow production
    real(r8) :: tend_s_snwevmlt(pcols,pver) ! Heating rate of evap/melting of snow
    real(r8) :: fake_dpdry(pcols,pver) ! used in convtran call
+   real(r8) :: cnv_nm1_b4_zm_convr(pcols,pver)  !used to store convection parameter before zm_convr
+   real(r8) :: hu_nm1_b4_zm_convr(pcols,pver)  !used to store moist static energy before zm_convr
 
    ! physics types
    type(physics_state) :: state1        ! locally modify for evaporation to use, not returned
@@ -418,6 +422,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !
 ! Begin with Zhang-McFarlane (1996) convection parameterization
 !
+   cnv_nm1_b4_zm_convr(:,:)=cnv_nm1(:,:)
+   hu_nm1_b4_zm_convr(:,:)=hu_nm1(:,:)
    call t_startf ('zm_convr')
    call zm_convr(   lchnk   ,ncol    , &
                     state%t       ,state%q(:,:,1)     ,prec    ,jctop   ,jcbot   , &
@@ -500,9 +506,23 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
           flxsnow(ii,:)=0._r8
           ptend_all%s(ii,:pver)=0._r8
           ptend_all%q(ii,:pver,1)=0._r8
+          rprd(ii,:)=0._r8
           mu(ii,:)=0._r8
           md(ii,:)=0._r8
+          eu(ii,:)=0._r8
+          du(ii,:)=0._r8
+          zdu(ii,:)=0._r8
+          ed(ii,:)=0._r8
           evapcdp(ii,:pver)=0._r8
+          pflx(ii,:)=0._r8
+          dlf(ii,:)=0._r8
+          rliq(ii)=0._r8
+          cme(ii,:)=0._r8
+          maxg(ii)=1
+          dsubcld(ii)=0._r8
+          ql(ii)=0._r8
+          hu_nm1(ii,:)=hu_nm1_b4_zm_convr(ii,:)
+          cnv_nm1(ii,:)=cnv_nm1_b4_zm_convr(ii,:)
        endif
     end do
     ! End of loop
@@ -511,8 +531,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    
    
    !---- Moved chunk from before zm_conv_evap  --------
-! Convert mass flux from reported mb/s to kg/m^2/s
-!
+   ! Convert mass flux from reported mb/s to kg/m^2/s
+   !
    mcon(:ncol,:pver) = mcon(:ncol,:pver) * 100._r8/gravit
 
    ! Store upward and downward mass fluxes in un-gathered arrays
@@ -571,7 +591,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('CMFMCDZM   ',mcon ,  pcols   ,lchnk   )
    call outfld('PRECCDZM   ',prec,  pcols   ,lchnk   )
    call outfld('FREQZMSUP  ',freqzmsup,  pcols, lchnk)
-
+   call outfld('MAXZM_IDX  ',maxg,  pcols, lchnk)
 
 
    call outfld('PRECZ   ', prec   , pcols, lchnk)
