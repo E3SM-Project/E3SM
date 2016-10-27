@@ -233,24 +233,17 @@
          else
            secdiff(ibnd) = a0(ibnd) + a1(ibnd)*exp(a2(ibnd)*pwvcm)
          endif
-!!== KZ_BUGFIX_20161011
 !!
 !!  - fix the case where the diffusivity angle was going negative under very 
 !!    moist conditions
-!!
-!!  - the code has been changed so the interpolation for the lw ice optics has
-!!    been factored out and is now used for for the ice and snow cloud optics.
-!!    So the mod to limit the ice optical depths is now applied to both ice and
-!!    snow clouds.
-!!
-!!    if (pwvcm.lt.1.0) secdiff(6) = 1.80_r8
-!!    if (pwvcm.gt.7.1) secdiff(7) = 1.50_r8
 !!
       if (secdiff(ibnd) .gt. 1.80_r8) secdiff(ibnd) = 1.80_r8
       if (secdiff(ibnd) .lt. 1.50_r8) secdiff(ibnd) = 1.50_r8
 
       enddo
-!!== KZ_BUGFIX_20161011
+
+!!    if (pwvcm.lt.1.0) secdiff(6) = 1.80_r8
+!!    if (pwvcm.gt.7.1) secdiff(7) = 1.50_r8
 
       urad(0) = 0.0_r8
       drad(0) = 0.0_r8
