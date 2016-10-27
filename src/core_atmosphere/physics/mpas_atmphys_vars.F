@@ -218,7 +218,7 @@
     graupelncv_p,     &!
     sr_p
 
-!... added for the thompson cloud microphysics with or without aerosols:
+!... added for the thompson and wsm6 cloud microphysics:
  integer:: & 
     has_reqc,         &!
     has_reqi,         &!

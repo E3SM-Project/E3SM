@@ -50,7 +50,7 @@
  integer,pointer:: nCellsSolve
  integer,dimension(:),pointer:: landmask
 
- real(kind=RKIND),dimension(:),pointer:: nt_c,mu_c,nwfa2d
+ real(kind=RKIND),dimension(:),pointer:: nt_c,mu_c
 
  integer:: iCell
 
