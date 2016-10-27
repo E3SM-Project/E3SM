@@ -1,6 +1,30 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 10-27-2016
+Tag: cime5.2.0-alpha.7
+Answer Changes: None
+Tests: scripts_regression_tests problem specific tests
+Dependencies:
+
+Brief Summary: backout change to xmlchange command , fix ERP and ERI and DAE tests
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/cesm/machines/config_batch.xml
+M       cime_config/config_tests.xml
+M       scripts/Tools/code_checker
+M       scripts/Tools/xmlchange
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/tests/scripts_regression_tests.py
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 10-26-2016
 Tag: cime5.2.0-alpha.6
 Answer Changes: None
