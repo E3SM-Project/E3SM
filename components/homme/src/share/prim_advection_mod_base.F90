@@ -1967,33 +1967,36 @@ OMP_SIMD
   ! hence:
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) )
   !
-
-  do ie=nets,nete
-!     ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
-!     elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
-     if (rsplit==0) then
-        ! compute dp_star from eta_dot_dpdn():
-        do k=1,nlev
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+   do ie=nets,nete
+     ! update final ps_v
+     elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
+          sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+        if (rsplit==0) then
            dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                 elem(ie)%derived%eta_dot_dpdn(:,:,k))
-        enddo
-        if (minval(dp_star)<0) call abortmp('negative layer thickness.  timestep or remap time too large')
-     else
-        !  REMAP u,v,T from levels in dp3d() to REF levels
-        !
-        ! update final ps_v
-        elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
-             sum(elem(ie)%state%dp3d(:,:,:,np1),3)
-        do k=1,nlev
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+        else
            dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
+        endif
+     enddo
+     if (minval(dp_star)<0) then
+        do k=1,nlev
+        do i=1,np
+        do j=1,np
+           if (dp_star(i,j,k ) < 0) then
+              print *,'level = ',k
+              print *,"column location lat,lon (radians):",elem(ie)%spherep(i,j)%lat,elem(ie)%spherep(i,j)%lon
+           endif
         enddo
-        if (minval(dp_star)<0) call abortmp('negative layer thickness.  timestep or remap time too large')
+        enddo
+        enddo
+        call abortmp('negative layer thickness.  timestep or remap time too large')
+     endif
 
-        ! remap the dynamics:
+     if (rsplit>0) then
+        !  REMAP u,v,T from levels in dp3d() to REF levels
 #undef REMAP_TE
 #ifdef REMAP_TE
         ! remap u,v and cp*T + .5 u^2

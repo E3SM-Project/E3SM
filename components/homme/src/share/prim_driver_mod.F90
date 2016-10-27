@@ -1279,20 +1279,14 @@ contains
     endif
 
     ! initialize dp3d from ps
-    if (rsplit>0) then
-      call t_startf("init_dp3d_from_ps")
-      do ie=nets,nete
-         do k=1,nlev
-            elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-                 ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-         enddo
-         ! DEBUGDP step: ps_v should not be used for rsplit>0 code during prim_step
-         ! vertical_remap.  so to this for debugging:
-         ! elem(ie)%state%ps_v(:,:,tl%n0)=-9e9 !outcommented so the pre_scribed winds work with rsplit>0
-      enddo
-      call t_stopf("init_dp3d_from_ps")
-    endif
+    do ie=nets,nete
+       do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+       enddo
+    enddo
+
 
 #if (USE_OPENACC)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1510,20 +1504,7 @@ contains
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
 
-      if (rsplit==0) then
-        ! save dp at time t for use in tracers
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k)
-#endif
-         do k=1,nlev
-            elem(ie)%derived%dp(:,:,k)=&
-                 ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-         enddo
-      else
-         ! dp at time t:  use floating lagrangian levels:
-         elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
-      endif
+      elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
     enddo
     call t_stopf("prim_step_init")
 
@@ -1571,12 +1552,12 @@ contains
     !    derived%dp              =  dp at start of timestep
     !    derived%vstar           =  velocity at start of tracer timestep
     !    derived%vn0             =  mean horiz. flux:   U*dp
+    !    state%dp3d(:,:,:,np1)   = dp3d
     ! rsplit=0
     !        state%v(:,:,:,np1)      = velocity on reference levels
-    !        state%ps_v(:,:,:,np1)   = ps
     ! rsplit>0
     !        state%v(:,:,:,np1)      = velocity on lagrangian levels 
-    !        state%dp3d(:,:,:,np1)   = dp3d
+    !        
     !
 
 

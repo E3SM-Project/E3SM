@@ -42,7 +42,6 @@ contains
 
   subroutine prim_advance_init(par, elem,integration)
     use edge_mod, only : initEdgeBuffer
-    use control_mod, only : qsplit,rsplit
     implicit none
     
     type (parallel_t) :: par
@@ -50,18 +49,8 @@ contains
     character(len=*)    , intent(in) :: integration
     integer :: i
     integer :: ie
-!    integer, allocatable :: globalid(:)
 
-!    print *,'prim_advance_init: nelemd:= ',nelemd
-!    allocate(globalid(nelemd))
-!    print *,'prim_advance_init: after allocate '
-!    print *,'prim_advance_init: before call to initNewEdgeBuffer rsplit: ',rsplit
-    if (rsplit==0) then
-       call initEdgeBuffer(par,edge3p1,elem,3*nlev+1)
-    else
-       ! need extra buffer space for dp3d
-       call initEdgeBuffer(par,edge3p1,elem,4*nlev+1)
-    endif
+    call initEdgeBuffer(par,edge3p1,elem,4*nlev)
 
     if(integration == 'semi_imp') then
        call initEdgeBuffer(par,edge1,elem,nlev)
@@ -328,13 +317,8 @@ contains
                + 2*elem(ie)%state%v(:,:,:,:,np1)/3
           elem(ie)%state%T(:,:,:,np1)= elem(ie)%state%T(:,:,:,n0)/3 &
                + 2*elem(ie)%state%T(:,:,:,np1)/3
-          if (rsplit==0) then
-             elem(ie)%state%ps_v(:,:,np1)= elem(ie)%state%ps_v(:,:,n0)/3 &
-                  + 2*elem(ie)%state%ps_v(:,:,np1)/3
-          else
-             elem(ie)%state%dp3d(:,:,:,np1)= elem(ie)%state%dp3d(:,:,:,n0)/3 &
-                  + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
-          endif
+          elem(ie)%state%dp3d(:,:,:,np1)= elem(ie)%state%dp3d(:,:,:,n0)/3 &
+               + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
        enddo
        call t_stopf("RK2-SSP3_timestep")
     else if (method==3) then
@@ -392,32 +376,15 @@ contains
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
        call t_startf("U3-5stage_timestep")
-
-       !
-       ! phl: rhs: t=t
-       !
        call compute_and_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4)
        ! u2 = u0 + dt/5 RHS(u1)
-
-       !
-       ! phl: rhs: t=t+dt/5
-       !
        call compute_and_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u3 = u0 + dt/3 RHS(u2)
-       !
-       ! phl: rhs: t=t+2*dt/5
-       !
-
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u4 = u0 + 2dt/3 RHS(u3)
-
-       !
-       ! phl: rhs: t=t+2*dt/5+dt/3
-       !
-
        call compute_and_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
 
@@ -427,19 +394,10 @@ contains
                - elem(ie)%state%v(:,:,:,:,n0) ) /4
           elem(ie)%state%T(:,:,:,nm1)= (5*elem(ie)%state%T(:,:,:,nm1) &
                - elem(ie)%state%T(:,:,:,n0) )/4
-          if (rsplit==0) then
-             elem(ie)%state%ps_v(:,:,nm1)= ( 5*elem(ie)%state%ps_v(:,:,nm1) &
-                  - elem(ie)%state%ps_v(:,:,n0) )/4
-          else
-             elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
+          elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
                   - elem(ie)%state%dp3d(:,:,:,n0) )/4
-          endif
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
-       !
-       ! phl: rhs: t=t+2*dt/5+dt/3+3*dt/4         -wrong RK times ...
-       !
-
        call compute_and_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4)
        ! final method is the same as:
@@ -608,13 +566,8 @@ contains
        ! leapfrog special case
        call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
     else if (method<=10) then ! not implicit
-       if (rsplit==0) then
-          ! forward-in-time, maybe hypervis applied to PS
-          call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
-       else
-          ! forward-in-time, hypervis applied to dp3d
-          call advance_hypervis_dp(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
-       endif
+       ! forward-in-time, hypervis applied to dp3d
+       call advance_hypervis_dp(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
     endif
 
 #ifdef ENERGY_DIAGNOSTICS
@@ -2660,8 +2613,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
 
   ! local
-  real (kind=real_kind), pointer, dimension(:,:)      :: ps         ! surface pressure for current tiime level
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: dp
 
   real (kind=real_kind), dimension(np,np,nlev)   :: omega_p
   real (kind=real_kind), dimension(np,np,nlev)   :: T_v
@@ -2673,12 +2626,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2     ):: v         !                            
   real (kind=real_kind), dimension(np,np)      :: vgrad_T    ! v.grad(T)
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
-  real (kind=real_kind), dimension(np,np,2)      :: grad_ps    ! lat-lon coord version
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p_m_pmet  ! gradient(p - p_met)
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
-  real (kind=real_kind), dimension(np,np,nlev)   :: dp         ! delta pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: rdp        ! inverse of delta pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: T_vadv     ! temperature vertical advection
   real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
@@ -2708,60 +2659,19 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   do ie=nets,nete
      !ps => elem(ie)%state%ps_v(:,:,n0)
      phi => elem(ie)%derived%phi(:,:,:)
+     dp  => elem(ie)%state%dp3d(:,:,:,n0)
 
-     ! ==================================================
-     ! compute pressure (p) on half levels from ps
-     ! using the hybrid coordinates relationship, i.e.
-     ! e.g. equation (3.a.92) of the CCM-2 description,
-     ! (NCAR/TN-382+STR), June 1993, p. 24.
-     ! ==================================================
-     ! vertically eulerian only needs grad(ps)
-     if (rsplit==0) &
-          grad_ps = gradient_sphere(elem(ie)%state%ps_v(:,:,n0),deriv,elem(ie)%Dinv)
+! dont thread this because of k-1 dependence:
+     p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp(:,:,1)/2
+     do k=2,nlev
+        p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+     enddo
 
-
-     ! ============================
-     ! compute p and delta p
-     ! ============================
-!#if (defined COLUMN_OPENMP)
-!!$omp parallel do private(k,i,j)
-!#endif
-!     do k=1,nlev+1
-!       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0)
-!     end do
-
-#if (defined COLUMN_OPENMP_BROKEN)
-!  Note that the following does not work with OpenMP threading turned on.
-!  The line 
-!              p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
-!  is sequential in that it depends upon the previous p(:,:,k-1) and therefore
-!  gives a race condition.
-!  !$omp parallel do private(k,i,j,v1,v2,vtemp)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
-        if (rsplit==0) then
-           dp(:,:,k) = (hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,n0)) &
-                - (hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0))
-           p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,n0)
-           grad_p(:,:,:,k) = hvcoord%hybm(k)*grad_ps(:,:,:)
-        else
-           ! vertically lagrangian code: we advect dp3d instead of ps_v
-           ! we also need grad(p) at all levels (not just grad(ps))
-           !p(k)= hyam(k)*ps0 + hybm(k)*ps
-           !    = .5*(hyai(k+1)+hyai(k))*ps0 + .5*(hybi(k+1)+hybi(k))*ps
-           !    = .5*(ph(k+1) + ph(k) )  = ph(k) + dp(k)/2
-           !
-           ! p(k+1)-p(k) = ph(k+1)-ph(k) + (dp(k+1)-dp(k))/2
-           !             = dp(k) + (dp(k+1)-dp(k))/2 = (dp(k+1)+dp(k))/2
-           dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,n0)
-           if (k==1) then
-              p(:,:,k)=hvcoord%hyai(k)*hvcoord%ps0 + dp(:,:,k)/2
-           else
-              p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
-           endif
-           grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
-        endif
-
+        grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
         rdp(:,:,k) = 1.0D0/dp(:,:,k)
 
         ! ============================
@@ -2771,8 +2681,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            do i=1,np
               v1 = elem(ie)%state%v(i,j,1,k,n0)
               v2 = elem(ie)%state%v(i,j,2,k,n0)
-!              vgrad_p(i,j,k) = &
-!                   hvcoord%hybm(k)*(v1*grad_ps(i,j,1) + v2*grad_ps(i,j,2))
               vgrad_p(i,j,k) = (v1*grad_p(i,j,1,k) + v2*grad_p(i,j,2,k))
               vdp(i,j,1,k) = v1*dp(i,j,k)
               vdp(i,j,2,k) = v2*dp(i,j,k)
@@ -3152,50 +3060,24 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! note that we allow np1=n0 or nm1
      ! apply mass matrix
      ! =========================================================
-     if (dt2<0) then
-        ! calling program just wanted DSS'd RHS, skip time advance
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,tempflux)
 #endif
-        do k=1,nlev
-           elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*vtens1(:,:,k)
-           elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*vtens2(:,:,k)
-           elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*ttens(:,:,k)
-           if (rsplit>0) &
-              elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
-              (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
-           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
-              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
-           end if
-        enddo
-        elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
-     else
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,tempflux)
-#endif
-        do k=1,nlev
-           elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
-           elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,2,k,nm1) + dt2*vtens2(:,:,k) )
-           elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%T(:,:,k,nm1) + dt2*ttens(:,:,k))
-           if (rsplit>0) &
-                elem(ie)%state%dp3d(:,:,k,np1) = &
-                  elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
-                  dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
-
-
-           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
-              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
-           end if
-        enddo
-        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%ps_v(:,:,nm1) - dt2*sdot_sum )
-
-     endif
+     do k=1,nlev
+        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
+        elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,2,k,nm1) + dt2*vtens2(:,:,k) )
+        elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%T(:,:,k,nm1) + dt2*ttens(:,:,k))
+        elem(ie)%state%dp3d(:,:,k,np1) = &
+             elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
+             dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+        
+        if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
+           v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
+           v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
+           tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
+           elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
+        end if
+     enddo
 
 
      ! =========================================================
@@ -3204,18 +3086,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      !
      ! =========================================================
      kptr=0
-     call edgeVpack(edge3p1, elem(ie)%state%ps_v(:,:,np1),1,kptr,ie)
-
-     kptr=1
      call edgeVpack(edge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,ie)
 
-     kptr=nlev+1
+     kptr=kptr+nlev
      call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
 
-     if (rsplit>0) then
-        kptr=kptr+2*nlev
-        call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
-     endif
+     kptr=kptr+2*nlev
+     call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
   end do
 
   ! =============================================================
@@ -3232,48 +3109,44 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Unpack the edges for vgrad_T and v tendencies...
      ! ===========================================================
      kptr=0
-     call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, kptr, ie)
-
-     kptr=1
      call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,:,np1), nlev, kptr, ie)
 
-     kptr=nlev+1
+     kptr=kptr+nlev
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
 
-     if (rsplit>0) then
-        if (0<ntrac.and.eta_ave_w.ne.0.) then
-          do k=1,nlev
-             stashdp3d(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)/elem(ie)%spheremp(:,:)
-          end do
-        endif
-
+     if (0<ntrac.and.eta_ave_w.ne.0.) then
+        do k=1,nlev
+           stashdp3d(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)/elem(ie)%spheremp(:,:)
+        end do
         corners = 0.0d0
         corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,np1)
-        kptr=kptr+2*nlev
-        call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
-
-        if  (0<ntrac.and.eta_ave_w.ne.0.) then
-          desc = elem(ie)%desc
-          call edgeDGVunpack(edge3p1, corners, nlev, kptr, ie)
-          corners = corners/dt2
-
-          do k=1,nlev
-            tempdp3d = elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-            tempdp3d = tempdp3d - stashdp3d(:,:,k)
-            tempdp3d = tempdp3d/dt2
-
-            call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
- 
-            cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
-            cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
-            cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
-            cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
-
-            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet, cflux)
-            elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
-          end do
-        end if   
      endif
+     
+     kptr=kptr+2*nlev
+     call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
+     
+     if  (0<ntrac.and.eta_ave_w.ne.0.) then
+        desc = elem(ie)%desc
+        call edgeDGVunpack(edge3p1, corners, nlev, kptr, ie)
+        corners = corners/dt2
+        
+        do k=1,nlev
+           tempdp3d = elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+           tempdp3d = tempdp3d - stashdp3d(:,:,k)
+           tempdp3d = tempdp3d/dt2
+           
+           call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
+           
+           cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
+           cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
+           cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
+           cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
+           
+           tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet, cflux)
+           elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
+        end do
+     end if
+
 
      ! ====================================================
      ! Scale tendencies by inverse mass matrix
@@ -3288,18 +3161,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
 
-     if (rsplit>0) then
-        ! vertically lagrangian: complete dp3d timestep:
-        do k=1,nlev
-           elem(ie)%state%dp3d(:,:,k,np1)= elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-        enddo
-        ! when debugging: also update ps_v
-        !elem(ie)%state%ps_v(:,:,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%ps_v(:,:,np1)
-     else
-        ! vertically eulerian: complete ps_v timestep:
-        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%ps_v(:,:,np1)
-     endif
-
+     ! vertically lagrangian: complete dp3d timestep:
+     do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,np1)= elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+     enddo
   end do
 
 #ifdef DEBUGOMP
