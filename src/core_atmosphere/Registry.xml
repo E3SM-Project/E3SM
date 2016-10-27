@@ -336,7 +336,6 @@
 
         <packages>
                 <package name="mp_kessler_in" description="parameterization of kessler microphysics."/>
-                <package name="mp_thompson_aerosols_in" description="parameterization of Thompson cloud microphysics with aerosols."/>
                 <package name="mp_thompson_in" description="parameterization of Thompson cloud microphysics."/>
                 <package name="mp_wsm6_in" description="parameterization of WSM6 cloud microphysics."/>
                 <package name="cu_grell_freitas_in" description="parameterization of Grell-Freitas convection."/>
@@ -548,14 +547,13 @@
 			<var name="east"/>
 			<var name="north"/>
 			<var_array name="scalars"/>
-			<var name="rainprod" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="evapprod" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="re_cloud" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-			<var name="re_ice" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-			<var name="re_snow" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-			<var name="nt_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="mu_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="nwfa2d" packages="mp_thompson_aerosols_in"/>
+			<var name="rainprod" packages="mp_thompson_in"/>
+			<var name="evapprod" packages="mp_thompson_in"/>
+			<var name="re_cloud" packages="mp_thompson_in;mp_wsm6_in"/>
+			<var name="re_ice" packages="mp_thompson_in;mp_wsm6_in"/>
+			<var name="re_snow" packages="mp_thompson_in;mp_wsm6_in"/>
+			<var name="nt_c" packages="mp_thompson_in"/>
+			<var name="mu_c" packages="mp_thompson_in"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -1308,43 +1306,31 @@
 
                         <var name="qc" array_group="moist" units="kg kg^{-1}"
                              description="Cloud water mixing ratio"
-                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="qr" array_group="moist" units="kg kg^{-1}"
                              description="Rain water mixing ratio"
-                             packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="qi" array_group="moist" units="kg kg^{-1}"
                              description="Ice mixing ratio"
-                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="qs" array_group="moist" units="kg kg^{-1}"
                              description="Snow mixing ratio"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="qg" array_group="moist" units="kg kg^{-1}"
                              description="Graupel mixing ratio"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="ni" array_group="number" units="nb kg^{-1}"
                              description="Cloud ice number concentration"
-                             packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
+                             packages="bl_mynn_in;mp_thompson_in"/>
 
                         <var name="nr" array_group="number" units="nb kg^{-1}"
                              decription="Rain number concentration"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-
-                        <var name="nc" array_group="number" units="nb kg^{-1}"
-                             description="Cloud water number concentration"
-                             packages="bl_mynn_in;mp_thompson_aerosols_in"/>
-
-                        <var name="nwfa" array_group="aerosols" units="nb kg^{-1}"
-                             description="Number concentration of hygroscopic (water friendly) aerosols"
-                             packages="mp_thompson_aerosols_in"/>
-
-                        <var name="nifa" array_group="aerosols" units="nb kg^{-1}"
-                             description="Number concentration of nonhygroscopic (ice friendly) aerosols"
-                             packages="mp_thompson_aerosols_in"/>
+                             packages="mp_thompson_in"/>
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -1898,43 +1884,31 @@
 
                         <var name="tend_qc" name_in_code="qc" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of cloud water mixing ratio"
-                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qr" name_in_code="qr" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of rain water mixing ratio"
-                             packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qi" name_in_code="qi" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of ice mixing ratio"
-                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qs" name_in_code="qs" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of snow ratio"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qg" name_in_code="qg" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of graupel mixing ratio"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_ni" name_in_code="ni" array_group="number" units="nb kg^{-1} s^{-1}"
                              description="Tendency of cloud ice number concentration"
-                             packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
+                             packages="bl_mynn_in;mp_thompson_in"/>
 
                         <var name="tend_nr" name_in_code="nr" array_group="number" units="nb kg^{-1} s^{-1}" 
                              description="Tendency of rain number concentration"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-
-                        <var name="tend_nc" name_in_code="nc" array_group="number" units="nb kg^{-1} s^{-1}"
-                             description="Tendency of cloud water number concentration"
-                             packages="bl_mynn_in;mp_thompson_aerosols_in"/>
-
-                        <var name="tend_nwfa" name_in_code="nwfa" array_group="aerosols" units="nb kg^{-1} s^{-1}"
-                             description="Tendency of number concentration of hygroscopic (water friendly) aerosols"
-                             packages="mp_thompson_aerosols_in"/>
-
-                        <var name="tend_nifa" name_in_code="nifa" array_group="aerosols" units="nb kg^{-1} s^{-1}"
-                             description="Tendency of number concentration of nonhygroscopic (ice friendly) aerosols"
-                             packages="mp_thompson_aerosols_in"/>
+                             packages="mp_thompson_in"/>
                 </var_array>
         </var_struct>
 
@@ -2194,75 +2168,71 @@
 
                 <var name="refl10cm_max" type="real" dimensions="nCells Time" units="dBZ"
                      description="10 cm maximum radar reflectivity"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="refl10cm_1km" type="real" dimensions="nCells Time" units="dBZ"
                      description="diagnosed 10 cm radar reflectivity at 1 km AGL"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="refl10cm_1km_max" type="real" dimensions="nCells Time" units="dBZ"
                      description="maximum diagnosed 10 cm radar reflectivity at 1 km AGL since last output time"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="i_rainnc" type="integer" dimensions="nCells Time" units="unitless"
                      description="incidence of accumulated grid-scale precipitation greater than config_bucket_rainnc"
-                     packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="rainncv" type="real" dimensions="nCells Time" units="mm"
                      description="time-step total grid-scale precipitation"
-                     packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="snowncv" type="real" dimensions="nCells Time" units="mm"
                      description="time-step grid-scale precipitation of snow"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="graupelncv" type="real" dimensions="nCells Time" units="mm"
                      description="time-step grid-scale precipitation of graupel"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="rainnc" type="real" dimensions="nCells Time" units="mm"
                      description="accumulated total grid-scale precipitation"
-                     packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="snownc" type="real" dimensions="nCells Time" units="mm"
                      description="accumulated grid-scale precipitation of snow"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="graupelnc" type="real" dimensions="nCells Time" units="mm"
                      description="accumulated grid-scale precipitation of graupel"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-
-                <var name="nwfa2d"  type="real" dimensions="nCells Time"  units="kg^{-1} s^{-1}"
-                     description="surface aerosol numbe concentration emission"
-                     packages="mp_thompson_aerosols_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="rainprod" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
                      description="rain production rate"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                     packages="mp_thompson_in"/>
 
                 <var name="evapprod" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
                      description="rain evaporation rate"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                     packages="mp_thompson_in"/>
 
                 <var name="re_cloud" type="real" dimensions="nVertLevels nCells Time" units="m"
                      description="effective radius of cloud water droplets"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="re_ice"  type="real" dimensions="nVertLevels nCells Time"  units="m"
                      description="effective radius of cloud ice crystals"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="re_snow" type="real" dimensions="nVertLevels nCells Time"  units="m"
                      description="effective radius of snow crystals"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     packages="mp_thompson_in;mp_wsm6_in"/>
 
                 <var name="nt_c" type="real" dimensions="nCells" units="nb kg^{-1}"
                      description="one-moment constant cloud water droplet concentration"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                     packages="mp_thompson_in"/>
 
                 <var name="mu_c" type="real" dimensions="nCells" units="unitless"
                      description="gamma shape parameter"
-                     packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                     packages="mp_thompson_in"/>
 
                 <var name="sr" type="real" dimensions="nCells Time" units="unitless"
                      description="time-step ratio of frozen versus total grid-scale precipitation"/>
