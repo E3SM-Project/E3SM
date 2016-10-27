@@ -51,6 +51,21 @@
      </submit_args>
    </batch_system>
 
+  <batch_system type="cobalt_theta" version="x.y">
+    <batch_query>qstat</batch_query>
+    <batch_submit>qsub</batch_submit>
+    <batch_directive>#COBALT</batch_directive>
+    <jobid_pattern>(\d+)</jobid_pattern>
+    <depend_string> --dependencies</depend_string>
+    <submit_args>
+      <arg flag="-A" name="PROJECT"/>
+      <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="--mode script"/>
+    </submit_args>
+  </batch_system>
+
   <batch_system type="lsf" version="9.1">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
@@ -193,6 +208,12 @@
     <batch_system MACH="cetus" type="cobalt">
       <queues>
         <queue walltimemax="00:59:00" jobmin="1" jobmax="4096" default="true">default</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="theta" type="cobalt_theta">
+      <queues>
+        <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
       </queues>
     </batch_system>
 

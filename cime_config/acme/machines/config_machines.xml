@@ -272,6 +272,100 @@
 </machine>
 
 
+<machine MACH="theta">
+    <DESC>ALCF Cray XC* KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
+    <NODENAME_REGEX>theta.*</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <CESMSCRATCHROOT>/projects/EarlyPerf_theta/acme/scratch/$USER</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/projects/EarlyPerf_theta/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/EarlyPerf_theta/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>/projects/EarlyPerf_theta/acme/csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/projects/EarlyPerf_theta/acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/projects/EarlyPerf_theta/acme/tools/cprnc</CCSM_CPRNC>
+    <SAVE_TIMING_DIR>/projects/EarlyPerf_theta/acme</SAVE_TIMING_DIR>
+    <OS>CNL</OS>
+    <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
+    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <PROJECT>Theta_ESP</PROJECT>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+    <mpirun mpilib="default">
+      <executable>aprun</executable>
+      <arguments>
+	<arg name="num_tasks" >-n $TOTALPES</arg>
+        <arg name="tasks_per_node" >-N $PES_PER_NODE</arg>
+        <arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
+        <arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
+        <arg name="env_thread_count">-e OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="rm">PrgEnv-intel</command>
+	<command name="rm">PrgEnv-cray</command>
+	<command name="rm">PrgEnv-gnu</command>
+	<command name="rm">intel</command>
+	<command name="rm">cce</command>
+	<command name="rm">cray-parallel-netcdf</command>
+	<command name="rm">cray-hdf5-parallel</command>
+	<command name="rm">pmi</command>
+	<command name="rm">cray-libsci</command>
+	<command name="rm">cray-mpich</command>
+	<command name="rm">cray-netcdf</command>
+	<command name="rm">cray-hdf5</command>
+	<command name="rm">cray-netcdf-hdf5parallel</command>
+	<command name="rm">craype-mic-knl</command>
+	<command name="rm">craype</command>
+      </modules>
+
+      <modules compiler="intel">
+	<command name="load">PrgEnv-intel/6.0.3</command>
+	<command name="switch">intel intel/17.0.0.098</command>
+	<command name="rm">cray-libsci</command>
+      </modules>
+
+      <modules compiler="cray">
+	<command name="load">PrgEnv-cray/6.0.3</command>
+	<command name="switch">cce cce/8.5.4</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">PrgEnv-gnu/6.0.3</command>
+	<command name="switch">gcc gcc/6.2.0</command>
+      </modules>
+      <modules>
+	<command name="load">papi/5.4.3.3</command>
+	<command name="swap">craype craype/2.5.7</command>
+      </modules>
+      <modules compiler="!intel">
+	<command name="switch">cray-libsci/16.09.1</command>
+      </modules>
+      <modules>
+	<command name="load">cray-mpich/7.4.4</command>
+      </modules>
+      <modules mpilib="mpt">
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1</command>
+	<command name="load">cray-hdf5-parallel/1.10.0</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
+      </modules>
+    </module_system>
+</machine>
+
 <machine MACH="mac">
     <DESC>Mac OS/X workstation or laptop</DESC>
     <NODENAME_REGEX></NODENAME_REGEX>
