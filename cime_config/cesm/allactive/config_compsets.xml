@@ -42,12 +42,12 @@
 
   <compset>
     <alias>B1850Ws</alias>
-    <lname>1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD</lname>
+    <lname>1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_SWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
     <alias>B1850</alias>
-    <lname>1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_WW3_BGC%BDRD</lname>
+    <lname>1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD</lname>
   </compset>
 
   <compset>
@@ -244,7 +244,7 @@
 
   <compset>
     <alias>BC5L45BGCRG</alias>
-    <lname>2000_CAM50_CLM45%BGC_CICE_POP2_RTM_CISM1_SWAV</lname>
+    <lname>2000_CAM50_CLM45%BGC_CICE_POP2_RTM_CISM2_SWAV</lname>
   </compset>
 
   <compset>
@@ -253,10 +253,17 @@
   </compset>
 
   <compset>
-    <alias>B1850C5L45BGCRG2</alias>
+    <alias>B1850C5L45BGCRG</alias>
     <lname>1850_CAM50_CLM45%BGC_CICE_POP2_RTM_CISM2_SWAV</lname>
   </compset>
 
+  <!-- Include one CISM1 compset, mainly for testing purposes, to make sure that
+       CISM1 can operate in a fully-coupled configuration. Main point is to
+       check the PE layout. -->
+  <compset>
+    <alias>B1850C5L45BGCRG1</alias>
+    <lname>1850_CAM50_CLM45%BGC_CICE_POP2_RTM_CISM1_SWAV</lname>
+  </compset>
 
   <!-- Prognostic wave -->
 
@@ -283,7 +290,7 @@
        Used for spinup and testing of CISM couplings -->
 
   <compset>
-     <alias>J1850G2</alias>
+     <alias>J1850G</alias>
      <lname>1850_DATM%CRU_CLM50%BGC_CICE_POP2_MOSART_CISM2_SWAV</lname>
   </compset>
 
