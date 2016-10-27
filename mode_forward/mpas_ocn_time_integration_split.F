@@ -280,6 +280,8 @@ module ocn_time_integration_split
          call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+! mrp
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
          nCells = nCellsPtr
          nEdges = nEdgesPtr
@@ -1611,6 +1613,8 @@ module ocn_time_integration_split
                            do k = 1, maxLevelCell(iCell)
                               tracersGroupNew(:,k,iCell) = (tracersGroupCur(:,k,iCell) * layerThicknessCur(k,iCell) + dt &
                                                          * tracersGroupTend(:,k,iCell) ) / layerThicknessNew(k,iCell)
+!mrp limit Salinity
+                              tracersGroupNew(indexSalinity,k,iCell) = max(0.001_RKIND, tracersGroupNew(indexSalinity,k,iCell))
                            end do
                         end do
                         !$omp end do
