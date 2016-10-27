@@ -60,6 +60,9 @@
 ! * for the mynn parameterization, change the definition of dx_p to match that used in other physics
 !   parameterizations.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
+! * updated the call to subroutine ysu in comjunction with updating module_bl_ysu.F from WRF version 3.6.1 to
+!   WRF version 3.8.1
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-27.
 
 
  contains
@@ -77,6 +80,11 @@
  if(.not.allocated(hpbl_p) ) allocate(hpbl_p(ims:ime,jms:jme) )
  if(.not.allocated(kpbl_p) ) allocate(kpbl_p(ims:ime,jms:jme) )
  if(.not.allocated(znt_p)  ) allocate(znt_p(ims:ime,jms:jme)  )
+ if(.not.allocated(delta_p)) allocate(delta_p(ims:ime,jms:jme))
+ if(.not.allocated(wstar_p)) allocate(wstar_p(ims:ime,jms:jme))
+ if(.not.allocated(uoce_p) ) allocate(uoce_p(ims:ime,jms:jme) )
+ if(.not.allocated(voce_p) ) allocate(voce_p(ims:ime,jms:jme) )
+
 
  !tendencies:
  if(.not.allocated(rublten_p) ) allocate(rublten_p(ims:ime,kms:kme,jms:jme) )
@@ -104,19 +112,17 @@
        if(.not.allocated(u10_p)   ) allocate(u10_p(ims:ime,jms:jme)         )
        if(.not.allocated(v10_p)   ) allocate(v10_p(ims:ime,jms:jme)         )
        if(.not.allocated(exch_p)  ) allocate(exch_p(ims:ime,kms:kme,jms:jme))
+       !from radiation schemes:
+       if(.not.allocated(rthraten_p)) allocate(rthraten_p(ims:ime,kms:kme,jms:jme))
 
     case("bl_mynn")
        if(.not.allocated(dx_p)   ) allocate(dx_p(ims:ime,jms:jme)   )
        if(.not.allocated(ch_p)   ) allocate(ch_p(ims:ime,jms:jme)   )
-       if(.not.allocated(delta_p)) allocate(delta_p(ims:ime,jms:jme))
        if(.not.allocated(qcg_p)  ) allocate(qcg_p(ims:ime,jms:jme)  )
        if(.not.allocated(qsfc_p) ) allocate(qsfc_p(ims:ime,jms:jme) )
        if(.not.allocated(rmol_p) ) allocate(rmol_p(ims:ime,jms:jme) )
        if(.not.allocated(tsk_p)  ) allocate(tsk_p(ims:ime,jms:jme)  )
-       if(.not.allocated(uoce_p) ) allocate(uoce_p(ims:ime,jms:jme) )
-       if(.not.allocated(voce_p) ) allocate(voce_p(ims:ime,jms:jme) )
        if(.not.allocated(vdfg_p) ) allocate(vdfg_p(ims:ime,jms:jme) )
-       if(.not.allocated(wstar_p)) allocate(wstar_p(ims:ime,jms:jme))
 
        if(.not.allocated(cov_p)   ) allocate(cov_p(ims:ime,kms:kme,jms:jme)   )
        if(.not.allocated(qke_p)   ) allocate(qke_p(ims:ime,kms:kme,jms:jme)   )
@@ -153,6 +159,10 @@
  if(allocated(hpbl_p) ) deallocate(hpbl_p )
  if(allocated(kpbl_p) ) deallocate(kpbl_p )
  if(allocated(znt_p)  ) deallocate(znt_p  )
+ if(allocated(delta_p)) deallocate(delta_p)
+ if(allocated(wstar_p)) deallocate(wstar_p)
+ if(allocated(uoce_p) ) deallocate(uoce_p )
+ if(allocated(voce_p) ) deallocate(voce_p )
 
  !tendencies:
  if(allocated(rublten_p) ) deallocate(rublten_p )
@@ -180,19 +190,17 @@
        if(allocated(u10_p)   ) deallocate(u10_p   )
        if(allocated(v10_p)   ) deallocate(v10_p   )
        if(allocated(exch_p)  ) deallocate(exch_p  )
+       !from radiation schemes:
+       if(allocated(rthraten_p)) deallocate(rthraten_p)
 
     case("bl_mynn")
        if(allocated(dx_p)   ) deallocate(dx_p   )
        if(allocated(ch_p)   ) deallocate(ch_p   )
-       if(allocated(delta_p)) deallocate(delta_p)
        if(allocated(qcg_p)  ) deallocate(qcg_p  )
        if(allocated(qsfc_p) ) deallocate(qsfc_p )
        if(allocated(rmol_p) ) deallocate(rmol_p )
        if(allocated(tsk_p)  ) deallocate(tsk_p  )
-       if(allocated(uoce_p) ) deallocate(uoce_p )
-       if(allocated(voce_p) ) deallocate(voce_p )
        if(allocated(vdfg_p) ) deallocate(vdfg_p )
-       if(allocated(wstar_p)) deallocate(wstar_p)
 
        if(allocated(cov_p)   ) deallocate(cov_p   )
        if(allocated(qke_p)   ) deallocate(qke_p   )
@@ -217,7 +225,7 @@
  end subroutine deallocate_pbl
 
 !=================================================================================================================
- subroutine pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,its,ite)
+ subroutine pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
@@ -225,6 +233,7 @@
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: sfc_input
+ type(mpas_pool_type),intent(in):: tend_physics
 
  integer,intent(in):: its,ite
 
@@ -233,14 +242,17 @@
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: hfx,hpbl,qfx,ust,wspd,xland,znt
+ real(kind=RKIND),dimension(:),pointer:: delta,wstar
 
 !local pointers for YSU scheme:
+ logical,pointer:: config_ysu_pblmix
  real(kind=RKIND),dimension(:),pointer:: br,fh,fm,regime,u10,v10
+ real(kind=RKIND),dimension(:,:),pointer:: rthratenlw,rthratensw
 
 !local pointers for MYNN scheme:
  real(kind=RKIND),pointer:: len_disp
  real(kind=RKIND),dimension(:),pointer  :: meshDensity
- real(kind=RKIND),dimension(:),pointer  :: ch,delta,qsfc,qcg,rmol,skintemp,wstar
+ real(kind=RKIND),dimension(:),pointer  :: ch,qsfc,qcg,rmol,skintemp
  real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,tke_pbl,qke_adv,el_pbl
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -251,6 +263,9 @@
  call mpas_pool_get_array(diag_physics,'ust'   ,ust   )
  call mpas_pool_get_array(diag_physics,'wspd'  ,wspd  )
  call mpas_pool_get_array(diag_physics,'znt'   ,znt   )
+ call mpas_pool_get_array(diag_physics,'delta' ,delta )
+ call mpas_pool_get_array(diag_physics,'wstar' ,wstar )
+
  call mpas_pool_get_array(sfc_input   ,'xland' ,xland )
 
  do j = jts,jte
@@ -264,18 +279,31 @@
     xland_p(i,j)  = xland(i)
     kpbl_p(i,j)   = 1
     znt_p(i,j)    = znt(i)
+    delta_p(i,j)  = delta(i)
+    wstar_p(i,j)  = wstar(i)
+    !... ocean currents are set to zero:
+    uoce_p(i,j)  = 0._RKIND
+    voce_p(i,j)  = 0._RKIND
  enddo
  enddo
 
  pbl_select: select case (trim(pbl_scheme))
 
     case("bl_ysu")
+       call mpas_pool_get_config(configs,'config_ysu_pblmix',config_ysu_pblmix)
+
        call mpas_pool_get_array(diag_physics,'br'    ,br    )
        call mpas_pool_get_array(diag_physics,'fm'    ,fm    )
        call mpas_pool_get_array(diag_physics,'fh'    ,fh    )
        call mpas_pool_get_array(diag_physics,'regime',regime)
        call mpas_pool_get_array(diag_physics,'u10'   ,u10   )
        call mpas_pool_get_array(diag_physics,'v10'   ,v10   )
+
+       call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
+       call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
+
+       ysu_pblmix = 0
+       if(config_ysu_pblmix) ysu_pblmix = 1
 
        do j = jts,jte
        do i = its,ite
@@ -295,7 +323,8 @@
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
-          exch_p(i,k,j) = 0._RKIND
+          exch_p(i,k,j)     = 0._RKIND
+          rthraten_p(i,k,j) = rthratenlw(k,i) + rthratensw(k,i) 
        enddo
        enddo
        enddo
@@ -310,8 +339,6 @@
        call mpas_pool_get_array(diag_physics,'qsfc'    ,qsfc    )
        call mpas_pool_get_array(diag_physics,'rmol'    ,rmol    )
 
-       call mpas_pool_get_array(diag_physics,'delta'  ,delta    )
-       call mpas_pool_get_array(diag_physics,'wstar'  ,wstar    )
        call mpas_pool_get_array(diag_physics,'el_pbl' ,el_pbl   )
        call mpas_pool_get_array(diag_physics,'cov'    ,cov      )
        call mpas_pool_get_array(diag_physics,'qke'    ,qke      )
@@ -325,15 +352,10 @@
        do i = its,ite
           dx_p(i,j)    = len_disp / meshDensity(i)**0.25
           ch_p(i,j)    = ch(i)
-          delta_p(i,j) = delta(i)
           qcg_p(i,j)   = qcg(i)
           qsfc_p(i,j)  = qsfc(i)
           rmol_p(i,j)  = rmol(i)
           tsk_p(i,j)   = skintemp(i)
-          wstar_p(i,j) = wstar(i)
-          !... ocean currents are set to zero:
-          uoce_p(i,j)  = 0._RKIND
-          voce_p(i,j)  = 0._RKIND
           !... no gravitational settling of fog/cloud droplets (grav_settling = 0):
           vdfg_p(i,j)  = 0._RKIND
        enddo
@@ -415,11 +437,13 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_array(diag_physics,'kpbl'  ,kpbl  )
- call mpas_pool_get_array(diag_physics,'hpbl'  ,hpbl  )
- call mpas_pool_get_array(diag_physics,'kzh'   ,kzh   )
- call mpas_pool_get_array(diag_physics,'kzm'   ,kzm   )
- call mpas_pool_get_array(diag_physics,'kzq'   ,kzq   )
+ call mpas_pool_get_array(diag_physics,'kpbl' ,kpbl )
+ call mpas_pool_get_array(diag_physics,'hpbl' ,hpbl )
+ call mpas_pool_get_array(diag_physics,'kzh'  ,kzh  )
+ call mpas_pool_get_array(diag_physics,'kzm'  ,kzm  )
+ call mpas_pool_get_array(diag_physics,'kzq'  ,kzq  )
+ call mpas_pool_get_array(diag_physics,'delta',delta)
+ call mpas_pool_get_array(diag_physics,'wstar',wstar)
 
  call mpas_pool_get_array(tend_physics,'rublten' ,rublten )
  call mpas_pool_get_array(tend_physics,'rvblten' ,rvblten )
@@ -430,8 +454,10 @@
 
  do j = jts,jte
  do i = its,ite
-    hpbl(i) = hpbl_p(i,j)
-    kpbl(i) = kpbl_p(i,j)
+    hpbl(i)  = hpbl_p(i,j)
+    kpbl(i)  = kpbl_p(i,j)
+    delta(i) = delta_p(i,j)
+    wstar(i) = wstar_p(i,j)
  enddo
  enddo
 
@@ -466,8 +492,6 @@
        enddo
 
     case("bl_mynn")
-       call mpas_pool_get_array(diag_physics,'delta'   ,delta   )
-       call mpas_pool_get_array(diag_physics,'wstar'   ,wstar   )
        call mpas_pool_get_array(diag_physics,'el_pbl'  ,el_pbl  )
        call mpas_pool_get_array(diag_physics,'cov'     ,cov     )
        call mpas_pool_get_array(diag_physics,'qke'     ,qke     )
@@ -484,11 +508,6 @@
        call mpas_pool_get_array(tend_physics,'rniblten',rniblten)
 
        do j = jts,jte
-       do i = its,ite
-          delta(i) = delta_p(i,j)
-          wstar(i) = wstar_p(i,j)
-       enddo
-
        do k = kts,kte
        do i = its,ite
           el_pbl(k,i)   = elpbl_p(i,k,j)
@@ -538,6 +557,7 @@
 
 !local variables:
  integer:: initflag
+ integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
 !write(0,*)
@@ -546,7 +566,7 @@
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
 
 !copy MPAS arrays to local arrays:
- call pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,its,ite)
+ call pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 
  initflag = 1
  if(config_do_restart .or. itimestep > 1) initflag = 0
@@ -569,9 +589,12 @@
                  psih     = psih_p     , xland    = xland_p     , hfx      = hfx_p      , &
                  qfx      = qfx_p      , wspd     = wspd_p      , br       = br_p       , &
                  dt       = dt_pbl     , kpbl2d   = kpbl_p      , exch_h   = exch_p     , &
-                 u10      = u10_p      , v10      = v10_p       , ctopo    = ctopo_p    , & 
-                 ctopo2   = ctopo2_p   , regime   = regime_p    , rho      = rho_p      , &
-                 kzhout   = kzh_p      , kzmout   = kzm_p       , kzqout   = kzq_p      , &
+                 wstar    = wstar_p    , delta    = delta_p     , uoce     = uoce_p     , &
+                 voce     = voce_p     , rthraten = rthraten_p  , u10      = u10_p      , &
+                 v10      = v10_p      , ctopo    = ctopo_p     , ctopo2   = ctopo2_p   , &
+                 regime   = regime_p   , rho      = rho_p       , kzhout   = kzh_p      , &
+                 kzmout   = kzm_p      , kzqout   = kzq_p       ,                         & 
+                 ysu_topdown_pblmix = ysu_pblmix ,                                        &
                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde  , &
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
@@ -616,7 +639,6 @@
  call pbl_to_MPAS(diag_physics,tend_physics,its,ite)
 
 !write(0,*) '--- end subroutine driver_pbl.'
-!write(0,*)
 
  end subroutine driver_pbl
 

@@ -65,6 +65,9 @@
 ! * added local variable regime_hold to save the original value of variable regime over seaice grid cells when
 !   config_frac_seaice is set to true.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-21.
+! * moved the declarations of arrays delta_p,wstar_p,uoce_p,and voce_p since they are now used in both modules
+!   module_bl_ysu.F and module_bl_mynn.F.
+!   Laura D. Fowler (laura@ucar.edu) / 20016-10-27.
 
 
 !=================================================================================================================
@@ -311,6 +314,8 @@
 !... variables and arrays related to parameterization of pbl:
 !=================================================================================================================
 
+ integer:: ysu_pblmix
+
  integer,dimension(:,:),allocatable:: &
     kpbl_p             !index of PBL top                                                                       [-]
 
@@ -319,7 +324,11 @@
  real(kind=RKIND),dimension(:,:),allocatable:: &
     ctopo_p,          &!correction to topography                                                               [-]
     ctopo2_p,         &!correction to topography 2                                                             [-]
-    hpbl_p             !PBL height                                                                             [m]
+    hpbl_p,           &!PBL height                                                                             [m]
+    delta_p,          &!
+    wstar_p,          &!
+    uoce_p,           &!
+    voce_p             !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     exch_p             !exchange coefficient                                                                   [-]
@@ -345,11 +354,7 @@
  integer,parameter:: bl_mynn_cloudpdf  = 0      !
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    delta_p,          &
-    uoce_p,           &!
-    voce_p,           &!
-    vdfg_p,           &!
-    wstar_p            !
+    vdfg_p             !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     dqke_p,           &!

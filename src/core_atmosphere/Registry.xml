@@ -2000,6 +2000,11 @@
                      description="logical for calculation of the effective radii for cloud water, cloud ice, and snow"
                      possible_values=".true. for calculating effective radii; .false. for using defaults in RRTMG radiation"/>
 
+                <nml_option name="config_ysu_pblmix" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="logical for turning on/off top-down, radiation_driven mixing"
+                     possible_values=".true. to turn on top-down radiation_driven mixing; .false. otherwise"/>
+
                 <nml_option name="config_n_microp" type="integer" default_value="1" in_defaults="false"
                      units="-"
                      description="number of microphysics time-steps per physics time-steps"
@@ -2328,6 +2333,14 @@
                      description="Planetary Boundary Layer (PBL) height"
                      packages="bl_mynn_in;bl_ysu_in"/>
 
+                <var name="delta" type="real" dimensions="nCells Time" units="m"
+                     description="entrainment layer depth from PBL scheme"
+                     packages="bl_mynn_in;bl_ysu_in"/>
+
+                <var name="wstar" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="mixed velocity scale from PBL scheme"
+                     packages="bl_mynn_in;bl_ysu_in"/>
+
 		<var name="kzh" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
                      description="vertical diffusion coefficient of potential temperature"
                      packages="bl_mynn_in;bl_ysu_in"/>
@@ -2348,14 +2361,6 @@
 
 
                 <!-- MYNN PBL SCHEME: -->
-                <var name="delta" type="real" dimensions="nCells Time" units="m"
-                     description="entrainment layer depth from PBL scheme"
-                     packages="bl_mynn_in"/>
-
-                <var name="wstar" type="real" dimensions="nCells Time" units="m s^{-1}"
-                     description="mixed velocity scale from PBL scheme"
-                     packages="bl_mynn_in"/>
-
                 <var name="cov" type="real" dimensions="nVertLevels nCells Time" units="K kg kg^{-1}"
                      description="liquid water - liquid water potential temperature covariance"
                      packages="bl_mynn_in"/>
