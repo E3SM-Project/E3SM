@@ -89,6 +89,13 @@
 					description="A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times."
 					possible_values="A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member)."
 		/>
+		<nml_option name="config_AM_timeSeriesStatsDaily_backward_output_offset"
+					type="character"
+					default_value="00-00-01_00:00:00"
+					units="unitless"
+					description="Backward offset for filename timestamps when writing the output stream"
+					possible_values="A time interval in YYYY-MM-DD_hh:mm:ss."
+		/>
 
 	</nml_record>
 
@@ -181,6 +188,13 @@
 					units="unitless"
 					description="A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times."
 					possible_values="A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member)."
+		/>
+		<nml_option name="config_AM_timeSeriesStatsMonthly_backward_output_offset"
+					type="character"
+					default_value="00-01-00_00:00:00"
+					units="unitless"
+					description="Backward offset for filename timestamps when writing the output stream"
+					possible_values="A time interval in YYYY-MM-DD_hh:mm:ss."
 		/>
 
 	</nml_record>
@@ -275,6 +289,13 @@
 					description="A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times."
 					possible_values="A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member)."
 		/>
+		<nml_option name="config_AM_timeSeriesStatsClimatology_backward_output_offset"
+					type="character"
+					default_value="00-03-00_00:00:00"
+					units="unitless"
+					description="Backward offset for filename timestamps when writing the output stream"
+					possible_values="A time interval in YYYY-MM-DD_hh:mm:ss."
+		/>
 
 	</nml_record>
 
@@ -312,8 +333,8 @@
 	<streams>
 		<stream name="timeSeriesStatsDailyOutput"
 				type="output"
-				filename_template="analysis_members/timeSeriesStatsDaily.$Y.nc"
-				filename_interval="01-00-00_00:00:00"
+				filename_template="analysis_members/timeSeriesStatsDaily.$M-$Y.nc"
+				filename_interval="00-01-00_00:00:00"
 				reference_time="00-01-01_00:00:01"
 				output_interval="00-00-01_00:00:00"
 				packages="timeSeriesStatsDailyAMPKG"
