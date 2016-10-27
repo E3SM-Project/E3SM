@@ -350,11 +350,6 @@
                         <var name="q2" packages="met_stage_out"/>
 			<var name="rh2" packages="met_stage_out"/>
                         <var name="t2m" packages="met_stage_out"/>
-                        <var name="nifa_clim" packages="met_stage_out"/>
-                        <var name="nwfa_clim" packages="met_stage_out"/>
-                        <var name="pwif_clim" packages="met_stage_out"/>
-                        <var name="nifa" packages="met_stage_out"/>
-                        <var name="nwfa" packages="met_stage_out"/>
 		</stream>
 
 		<stream name="surface" 
@@ -452,11 +447,6 @@
                 <var name="ol3"                                  type="real"     dimensions="nCells"/>
                 <var name="ol4"                                  type="real"     dimensions="nCells"/>
 
-                <!-- GOCART aerosol fields -->
-                <var name="nifa_clim"                            type="real"     dimensions="nMonths nGocartLevels nCells"/> 
-                <var name="nwfa_clim"                            type="real"     dimensions="nMonths nGocartLevels nCells"/>
-                <var name="pwif_clim"                            type="real"     dimensions="nMonths nGocartLevels nCells"/>
-
                 <!-- description of the vertical grid structure -->
                 <var name="hx"                         type="real"     dimensions="nVertLevelsP1 nCells"/>
                 <var name="zgrid"                      type="real"     dimensions="nVertLevelsP1 nCells"/>
@@ -500,8 +490,6 @@
                         <var name="qv"      array_group="moist"/>
                         <var name="qc"      array_group="moist"/>
                         <var name="qr"      array_group="moist"/>
-                        <var name="nifa"    array_group="aerosols"/>
-                        <var name="nwfa"    array_group="aerosols"/>
                 </var_array>
 
                 <!-- Climatology for ocean mixed-layer depth -->

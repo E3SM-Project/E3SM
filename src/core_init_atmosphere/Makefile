@@ -13,7 +13,6 @@ OBJS =  \
 	mpas_init_atm_static.o \
 	mpas_init_atm_surface.o \
 	mpas_init_atm_vinterp.o \
-	mpas_init_atm_gocart.o \
 	read_geogrid.o \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_date_time.o \
@@ -53,7 +52,6 @@ mpas_init_atm_cases.o: \
 	mpas_init_atm_static.o \
 	mpas_init_atm_surface.o \
 	mpas_init_atm_vinterp.o \
-	mpas_init_atm_gocart.o \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_functions.o \
 	mpas_atmphys_initialize_real.o
@@ -71,14 +69,6 @@ mpas_init_atm_llxy.o:
 mpas_init_atm_core_interface.o: mpas_init_atm_core.o
 
 mpas_init_atm_core.o: mpas_advection.o mpas_init_atm_cases.o
-
-mpas_init_atm_gocart.o: \
-	mpas_init_atm_read_met.o \
-	mpas_init_atm_hinterp.o \
-	mpas_init_atm_llxy.o \
-	mpas_init_atm_vinterp.o \
-	mpas_atmphys_date_time.o \
-	mpas_atmphys_utilities.o
 
 mpas_init_atm_static.o: \
 	mpas_atm_advection.o \
