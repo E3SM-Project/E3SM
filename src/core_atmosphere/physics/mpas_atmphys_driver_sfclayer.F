@@ -849,7 +849,7 @@
                    ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme , &
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                   )
-        
+
        if(config_frac_seaice) then
           call sfclay( &
                       p3d      = pres_hyd_p , psfc     = psfc_p     , t3d      = t_p        , &
@@ -865,7 +865,7 @@
                       lh       = lh_sea     , tsk      = tsk_sea    , flhc     = flhc_sea   , &
                       flqc     = flqc_sea   , qgh      = qgh_sea    , qsfc     = qsfc_sea   , &
                       rmol     = rmol_sea   , u10      = u10_sea    , v10      = v10_sea    , &
-                      th2      = th2m_sea    , t2      = t2m_sea    , q2       = q2_sea     , &
+                      th2      = th2m_sea   ,  t2      = t2m_sea    , q2       = q2_sea     , &
                       gz1oz0   = gz1oz0_sea , wspd     = wspd_sea   , br       = br_sea     , &
                       isfflx   = isfflx     , dx       = dx         , svp1     = svp1       , &
                       svp2     = svp2       , svp3     = svp3       , svpt0    = svpt0      , &

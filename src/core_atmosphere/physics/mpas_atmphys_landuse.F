@@ -48,7 +48,7 @@
 ! Given the value of the input index lu_index, and the julian day julday, landuse_init_forMPAS
 ! initializes the variables:
 ! .. background roughness length     (z0).
-! .. background surface albedo       (sfc_albbck).        
+! .. background surface albedo       (sfc_albbck).
 ! .. background surface emissivity   (sfc_emibck).
 ! .. roughness length                (znt).
 ! .. surface albedo                  (sfc_albedo).
@@ -62,14 +62,17 @@
 ! * deleted initialization of xicem and xland.
 !   - xicem is now initialized in physics_init.
 !   - xland is now initialized in physics_initialize_real and updated in physics_update_sst if needed.
-!   Laura D. Fowler (laura@ucar.edu) / 2013-08-24. 
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-24.
 ! * added initialization of the background surface albedo over snow.
 !   Laura D. Fowler (laura@ucar.edu) / 2013-10-19.
-! * Modified sourcecode to use pools.
+! * modified sourcecode to use pools.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-! * In subroutine landuse_init_forMPAS, added the definition of isurban as a function of the
+! * in subroutine landuse_init_forMPAS, added the definition of isurban as a function of the
 !   input landuse data file.
 !   Dominikus Heinzeller (IMK) / 2014-07-24.
+! * in subroutine landuse_int_forMPAS, added the initialization of variable ust to a very small value. this was
+!   needed when the surface layer scheme was updated to that used in WRF version 3.8.1
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-27.
 
 
  contains
@@ -102,7 +105,7 @@
  real(kind=RKIND),dimension(:),pointer:: latCell
  real(kind=RKIND),dimension(:),pointer:: snoalb,snowc,xice
  real(kind=RKIND),dimension(:),pointer:: albbck,embck,xicem,xland,z0
- real(kind=RKIND),dimension(:),pointer:: mavail,sfc_albedo,sfc_emiss,thc,znt
+ real(kind=RKIND),dimension(:),pointer:: mavail,sfc_albedo,sfc_emiss,thc,ust,znt
 
 !local variables:
  character(len=StrKIND) :: lutype
@@ -147,6 +150,7 @@
  call mpas_pool_get_array(diag_physics,'sfc_albedo', sfc_albedo)
  call mpas_pool_get_array(diag_physics,'sfc_emiss' , sfc_emiss )
  call mpas_pool_get_array(diag_physics,'thc'       , thc       )
+ call mpas_pool_get_array(diag_physics,'ust'       , ust       )
  call mpas_pool_get_array(diag_physics,'xicem'     , xicem     )
  call mpas_pool_get_array(diag_physics,'z0'        , z0        )
  call mpas_pool_get_array(diag_physics,'znt'       , znt       )
@@ -271,6 +275,7 @@
           sfc_albedo(iCell) = albbck(iCell) / (1+scfx(is,isn))
        endif
     endif
+    ust(iCell)    = 0.0001
     thc(iCell)    = therin(is,isn) / 100.
     z0(iCell)     = sfz0(is,isn) / 100.
     znt(iCell)    = z0(iCell)

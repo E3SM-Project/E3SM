@@ -1,10 +1,12 @@
-!==================================================================================================
-! modifications made to sourcecode:
-! * changed ustm to an "inout" variable instead of an "out" variable.
-!   Laura D. Fowler (laura@ucar.edu / 2015-02-19).
+!=================================================================================================================
+!module_sf_sfclay.F was originally copied from ./phys/module_sf_sfclay.F from WRF version 3.8.1.
+!Laura D. Fowler (laura@ucar.edu) / 2016-10-26.
 
-!==================================================================================================
+!modifications to sourcecode for MPAS:
+!   * added the actual size of each cell in the calculation of the Mahrt and Sun low-resolution correction.
+!     Laura D. Fowler (laura@ucar.edu) / 2016-10-26. 
 
+!=================================================================================================================
 !WRF:MODEL_LAYER:PHYSICS
 !
 MODULE module_sf_sfclay
@@ -35,9 +37,15 @@ CONTAINS
 #if defined(mpas)
                     ,dxCell                                        &
 #endif
-                    )
+                         )
 !-------------------------------------------------------------------
       IMPLICIT NONE
+!-------------------------------------------------------------------
+!   Changes in V3.7 over water surfaces: 
+!          1. for ZNT/Cd, replacing constant OZO with 0.11*1.5E-5/UST(I)
+!             the COARE 3.5 (Edson et al. 2013) formulation is also available
+!          2. for VCONV, reducing magnitude by half
+!          3. for Ck, replacing Carlson-Boland with COARE 3
 !-------------------------------------------------------------------
 !-- U3D         3D u-velocity interpolated to theta points (m/s)
 !-- V3D         3D v-velocity interpolated to theta points (m/s)
@@ -178,21 +186,21 @@ CONTAINS
                 INTENT(INOUT)   ::                                 &
                                                               QGH
 
-
-                                    
       REAL,     INTENT(IN   )               ::   CP,G,ROVCP,R,XLV,DX
+ 
+      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
+                INTENT(OUT)     ::                  ck,cka,cd,cda
+
+      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
+                INTENT(INOUT)   ::                           USTM
 
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
 
 #if defined(mpas)
-!MPAS specific (Laura D. Fowler - 2013-03-06):
-      real,intent(inout),dimension(ims:ime,jms:jme):: qsfc,ustm
+      real,intent(in),dimension(ims:ime,jms:jme),optional:: dxCell
+      real,intent(inout),dimension(ims:ime,jms:jme):: qsfc
       real,intent(out),dimension(ims:ime,jms:jme)  :: u10,v10,th2,t2,q2
-
-      real,intent(in),dimension(ims:ime,jms:jme),optional :: dxCell
-      real,intent(out),dimension(ims:ime,jms:jme),optional:: ck,cka,cd,cda
-!MPAS specific end.
 #else
       REAL,     DIMENSION( ims:ime, jms:jme )                    , &
                 INTENT(OUT  )               ::                U10, &
@@ -201,9 +209,6 @@ CONTAINS
                                                                T2, &
                                                                Q2, &
                                                              QSFC
-
-      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
-                INTENT(OUT)     ::              ck,cka,cd,cda,ustm
 #endif
 
 ! LOCAL VARS
@@ -251,7 +256,6 @@ CONTAINS
                 ims,ime, jms,jme, kms,kme,                         &
                 its,ite, jts,jte, kts,kte                          &
 #if defined(mpas)
-!MPAS specific (Laura D. Fowler - 2013-03-06):
                ,isftcflx,iz0tlnd,scm_force_flux,                   &
                USTM(ims,j),CK(ims,j),CKA(ims,j),                   &
                CD(ims,j),CDA(ims,j),dxCell(ims,j)                  &
@@ -282,12 +286,10 @@ CONTAINS
                      its,ite, jts,jte, kts,kte,                    &
                      isftcflx, iz0tlnd, scm_force_flux,            &
 #if defined(mpas)
-!MPAS specific (Laura D. Fowler - 2013-03-06):
                      ustm,ck,cka,cd,cda,dxCell                     )
 #else
                      ustm,ck,cka,cd,cda                            )
 #endif
-
 !-------------------------------------------------------------------
       IMPLICIT NONE
 !-------------------------------------------------------------------
@@ -358,19 +360,16 @@ CONTAINS
                                                               T1D
  
 #if defined(mpas)
-!MPAS specific (Laura D. Fowler - 2013-03-06):
-      real,intent(in),dimension(ims:ime),optional   :: dxCell
-      real,intent(inout),dimension(ims:ime),optional:: ustm
-      real,intent(out),dimension(ims:ime),optional  :: ck,cka,cd,cda
-!MPAS specific end.
-#else
-      REAL, OPTIONAL, DIMENSION( ims:ime )                       , &
-                INTENT(OUT)     ::              ck,cka,cd,cda,ustm
+      real,intent(in),dimension(ims:ime),optional:: dxCell
 #endif
+
+      REAL, OPTIONAL, DIMENSION( ims:ime )                       , &
+                INTENT(OUT)     ::                  ck,cka,cd,cda
+      REAL, OPTIONAL, DIMENSION( ims:ime )                       , &
+                INTENT(INOUT)   ::                           USTM
 
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
-
 
 ! LOCAL VARS
 
@@ -403,8 +402,9 @@ CONTAINS
       REAL    ::  PL,THCON,TVCON,E1
       REAL    ::  ZL,TSKV,DTHVDZ,DTHVM,VCONV,RZOL,RZOL2,RZOL10,ZOL2,ZOL10
       REAL    ::  DTG,PSIX,DTTHX,PSIX10,PSIT,PSIT2,PSIQ,PSIQ2,PSIQ10
-      REAL    ::  FLUXC,VSGD,Z0Q,VISC,RESTAR,CZIL,RESTAR2
+      REAL    ::  FLUXC,VSGD,Z0Q,VISC,RESTAR,CZIL,GZ0OZQ,GZ0OZT
       REAL    ::  ZW, ZN1, ZN2
+      REAL    ::  Z0T, CZC
 !-------------------------------------------------------------------
       KL=kte
 
@@ -519,7 +519,7 @@ CONTAINS
         TSKV=THGB(I)*(1.+EP1*QSFC(I))                     
         DTHVDZ=(THVX(I)-TSKV)                                                 
 !  Convective velocity scale Vc and subgrid-scale velocity Vsg
-!  following Beljaars (1995, QJRMS) and Mahrt and Sun (1995, MWR)
+!  following Beljaars (1994, QJRMS) and Mahrt and Sun (1995, MWR)
 !                                ... HONG Aug. 2001
 !
 !       VCONV = 0.25*sqrt(g/tskv*pblh(i)*dthvm)
@@ -534,7 +534,9 @@ CONTAINS
         ELSE
           DTHVM=0.
         ENDIF
-        VCONV = 2.*SQRT(DTHVM)
+!       VCONV = 2.*SQRT(DTHVM)
+! V3.7: reducing contribution in calm conditions
+        VCONV = SQRT(DTHVM)
         endif
 ! Mahrt and Sun low-res correction
 !MPAS specific (Laura D. Fowler): We take into accound the actual size of individual
@@ -735,6 +737,26 @@ CONTAINS
         PSIQ2=ALOG(KARMAN*UST(I)*2./XKA+2./ZL)-PSIH2(I)                                   
 ! AHW: mods to compute ck, cd
         PSIQ10=ALOG(KARMAN*UST(I)*10./XKA+10./ZL)-PSIH10(I)
+
+! V3.7: using Fairall 2003 to compute z0q and z0t over water:
+!       adapted from module_sf_mynn.F
+        IF ( (XLAND(I)-1.5).GE.0. ) THEN
+              VISC=(1.32+0.009*(SCR3(I)-273.15))*1.E-5
+!             VISC=1.326e-5*(1. + 6.542e-3*SCR3(I) + 8.301e-6*SCR3(I)*SCR3(I) &
+!                 - 4.84e-9*SCR3(I)*SCR3(I)*SCR3(I))
+              RESTAR=UST(I)*ZNT(I)/VISC
+              Z0T = (5.5e-5)*(RESTAR**(-0.60))
+              Z0T = MIN(Z0T,1.0e-4)
+              Z0T = MAX(Z0T,2.0e-9)
+              Z0Q = Z0T
+
+              PSIQ=max(ALOG((ZA(I)+Z0Q)/Z0Q)-PSIH(I), 2.)
+              PSIT=max(ALOG((ZA(I)+Z0T)/Z0T)-PSIH(I), 2.)
+              PSIQ2=max(ALOG((2.+Z0Q)/Z0Q)-PSIH2(I), 2.)
+              PSIT2=max(ALOG((2.+Z0T)/Z0T)-PSIH2(I), 2.)
+              PSIQ10=max(ALOG((10.+Z0Q)/Z0Q)-PSIH10(I), 2.)
+        ENDIF
+
         IF ( PRESENT(ISFTCFLX) ) THEN
            IF ( ISFTCFLX.EQ.1 .AND. (XLAND(I)-1.5).GE.0. ) THEN
 ! v3.1
@@ -752,16 +774,19 @@ CONTAINS
            IF ( ISFTCFLX.EQ.2 .AND. (XLAND(I)-1.5).GE.0. ) THEN
 ! AHW: Garratt formula: Calculate roughness Reynolds number
 !        Kinematic viscosity of air (linear approc to
-!                 temp dependence at sea levle)
+!                 temp dependence at sea level)
+! GZ0OZT and GZ0OZQ are based off formulas from Brutsaert (1975), which
+! Garratt (1992) used with values of k = 0.40, Pr = 0.71, and Sc = 0.60
               VISC=(1.32+0.009*(SCR3(I)-273.15))*1.E-5
 !!            VISC=1.5E-5
               RESTAR=UST(I)*ZNT(I)/VISC
-              RESTAR2=2.48*SQRT(SQRT(RESTAR))-2.
-              PSIT=GZ1OZ0(I)-PSIH(I)+RESTAR2
-              PSIQ=GZ1OZ0(I)-PSIH(I)+2.28*SQRT(SQRT(RESTAR))-2.
-              PSIT2=GZ2OZ0(I)-PSIH2(I)+RESTAR2
-              PSIQ2=GZ2OZ0(I)-PSIH2(I)+2.28*SQRT(SQRT(RESTAR))-2.
-              PSIQ10=GZ10OZ0(I)-PSIH(I)+2.28*SQRT(SQRT(RESTAR))-2.
+              GZ0OZT=0.40*(7.3*SQRT(SQRT(RESTAR))*SQRT(0.71)-5.)
+              GZ0OZQ=0.40*(7.3*SQRT(SQRT(RESTAR))*SQRT(0.60)-5.)
+              PSIT=GZ1OZ0(I)-PSIH(I)+GZ0OZT
+              PSIQ=GZ1OZ0(I)-PSIH(I)+GZ0OZQ
+              PSIT2=GZ2OZ0(I)-PSIH2(I)+GZ0OZT
+              PSIQ2=GZ2OZ0(I)-PSIH2(I)+GZ0OZQ
+              PSIQ10=GZ10OZ0(I)-PSIH(I)+GZ0OZQ
            ENDIF
         ENDIF
         IF(PRESENT(ck) .and. PRESENT(cd) .and. PRESENT(cka) .and. PRESENT(cda)) THEN
@@ -835,7 +860,13 @@ CONTAINS
                                                                                  
       DO 360 I=its,ite
         IF((XLAND(I)-1.5).GE.0)THEN                                            
-          ZNT(I)=CZO*UST(I)*UST(I)/G+OZO                                   
+!         ZNT(I)=CZO*UST(I)*UST(I)/G+OZO                                   
+! Since V3.7 (ref: EC Physics document for Cy36r1)
+          ZNT(I)=CZO*UST(I)*UST(I)/G+0.11*1.5E-5/UST(I)
+! COARE 3.5 (Edson et al. 2013)
+!         CZC = 0.0017*WSPD(I)-0.005
+!         CZC = min(CZC,0.028)
+!         ZNT(I)=CZC*UST(I)*UST(I)/G+0.11*1.5E-5/UST(I)
 ! AHW: change roughness length, and hence the drag coefficients Ck and Cd
           IF ( PRESENT(ISFTCFLX) ) THEN
              IF ( ISFTCFLX.NE.0 ) THEN
@@ -891,12 +922,12 @@ CONTAINS
       DO 400 I=its,ite
         IF(XLAND(I)-1.5.GT.0.)THEN                                           
           HFX(I)=FLHC(I)*(THGB(I)-THX(I))                                
-          IF ( PRESENT(ISFTCFLX) ) THEN
-             IF ( ISFTCFLX.NE.0 ) THEN
-! AHW: add dissipative heating term
-                HFX(I)=HFX(I)+RHOX(I)*USTM(I)*USTM(I)*WSPDI(I)
-             ENDIF
-          ENDIF
+!         IF ( PRESENT(ISFTCFLX) ) THEN
+!            IF ( ISFTCFLX.NE.0 ) THEN
+! AHW: add dissipative heating term (commented out in 3.6.1)
+!               HFX(I)=HFX(I)+RHOX(I)*USTM(I)*USTM(I)*WSPDI(I)
+!            ENDIF
+!         ENDIF
         ELSEIF(XLAND(I)-1.5.LT.0.)THEN                                       
           HFX(I)=FLHC(I)*(THGB(I)-THX(I))                                
           HFX(I)=AMAX1(HFX(I),-250.)                                       
