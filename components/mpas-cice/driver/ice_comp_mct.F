@@ -435,11 +435,11 @@ contains
     end if
 
     if ( trim(filename_interval_temp) == 'none' ) then
-        call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+        call mpas_expand_string(ref_time_temp, -1, mesh_filename_temp, mesh_filename)
     else
         call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
         call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
-        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, -1, mesh_filename, ierr)
     end if
 
     ! Bootstrap framework (1). Here data structures are setup, but dimensions and arrays are not finalized.
