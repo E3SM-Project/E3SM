@@ -351,8 +351,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
    real(r8) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
    ! Added freqzmsup as a local variable
-   real(r8) :: pcont(pcols), pconb(pcols), freqzm(pcols), freqzmsup(pcols) 
-
+   real(r8) :: pcont(pcols), pconb(pcols), freqzm(pcols), freqzmsup(pcols), maxzm_idx(pcols)
    ! history output fields
    real(r8) :: cape(pcols)        ! w  convective available potential energy.
    real(r8) :: mu_out(pcols,pver)
@@ -594,7 +593,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('CMFMCDZM   ',mcon ,  pcols   ,lchnk   )
    call outfld('PRECCDZM   ',prec,  pcols   ,lchnk   )
    call outfld('FREQZMSUP  ',freqzmsup,  pcols, lchnk)
-   call outfld('MAXZM_IDX  ', jt,  pcols, lchnk)
+   maxzm_idx=jt*1.
+   call outfld('MAXZM_IDX  ', maxzm_idx,  pcols, lchnk)
 
 
    call outfld('PRECZ   ', prec   , pcols, lchnk)
