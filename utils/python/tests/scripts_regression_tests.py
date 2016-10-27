@@ -461,9 +461,13 @@ class TestCreateTestCommon(unittest.TestCase):
             for file_to_clean in files_to_clean:
                 print " ", file_to_clean
         else:
+            # For batch machines need to avoid race condition as batch system
+            # finishes I/O for the case.
+            if self._hasbatch:
+                time.sleep(5)
+
             for file_to_clean in files_to_clean:
                 if (os.path.isdir(file_to_clean)):
-                    time.sleep(5) # Kinda hacky
                     shutil.rmtree(file_to_clean)
                 else:
                     os.remove(file_to_clean)
