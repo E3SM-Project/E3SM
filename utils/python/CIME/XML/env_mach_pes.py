@@ -95,6 +95,8 @@ class EnvMachPes(EnvBase):
             pstrid = self.get_value("PSTRID_%s"%comp)
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
+        if total_tasks < self.get_value("PES_PER_NODE"): # all PEs fit in 1 node
+            self.set_value("PES_PER_NODE", total_tasks)
         return total_tasks
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):
