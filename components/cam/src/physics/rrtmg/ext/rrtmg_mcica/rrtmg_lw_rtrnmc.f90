@@ -237,8 +237,8 @@
 !!  - fix the case where the diffusivity angle was going negative under very 
 !!    moist conditions
 !!
-      if (secdiff(ibnd) .gt. 1.80_r8) secdiff(ibnd) = 1.80_r8
-      if (secdiff(ibnd) .lt. 1.50_r8) secdiff(ibnd) = 1.50_r8
+         if (secdiff(ibnd) .gt. 1.80_r8) secdiff(ibnd) = 1.80_r8
+         if (secdiff(ibnd) .lt. 1.50_r8) secdiff(ibnd) = 1.50_r8
 
       enddo
 
