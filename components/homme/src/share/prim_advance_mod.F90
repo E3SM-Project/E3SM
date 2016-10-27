@@ -2138,6 +2138,19 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                        ttens_tmp=-nu_s*ttens(i,j,k,ie)
                        dptens_tmp=-nu_p*dptens(i,j,k,ie)
                     endif
+
+                    if (nu_p==0) then
+                       ! normalize so as to conserve IE
+                       ! scale by 1/rho (normalized to be O(1))
+                       ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
+                       dpdn = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,nt)
+                       dpdn0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+                       ttens_tmp = ttens_tmp * dpdn0/dpdn
+                    endif
+
+
                     ttens(i,j,k,ie) = ttens_tmp
                     dptens(i,j,k,ie) =dptens_tmp
                     vtens(i,j,1,k,ie)=utens_tmp
