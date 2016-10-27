@@ -323,6 +323,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8) :: fake_dpdry(pcols,pver) ! used in convtran call
    real(r8) :: cnv_nm1_b4_zm_convr(pcols,pver)  !used to store convection parameter before zm_convr
    real(r8) :: hu_nm1_b4_zm_convr(pcols,pver)  !used to store moist static energy before zm_convr
+   real(r8) :: ql_b4_zm_convr(pcols,pver)  !used to store moist static energy before zm_convr
 
    ! physics types
    type(physics_state) :: state1        ! locally modify for evaporation to use, not returned
@@ -424,6 +425,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !
    cnv_nm1_b4_zm_convr(:,:)=cnv_nm1(:,:)
    hu_nm1_b4_zm_convr(:,:)=hu_nm1(:,:)
+   ql_b4_zm_convr(:,:)=ql(:,:)
    call t_startf ('zm_convr')
    call zm_convr(   lchnk   ,ncol    , &
                     state%t       ,state%q(:,:,1)     ,prec    ,jctop   ,jcbot   , &
@@ -519,10 +521,11 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
           rliq(ii)=0._r8
           cme(ii,:)=0._r8
           maxg(ii)=1
+          jt(ii)=pver
           dsubcld(ii)=0._r8
-          ql(ii)=0._r8
           hu_nm1(ii,:)=hu_nm1_b4_zm_convr(ii,:)
           cnv_nm1(ii,:)=cnv_nm1_b4_zm_convr(ii,:)
+          ql(ii,:)=ql_b4_zm_convr(ii,:)
        endif
     end do
     ! End of loop
@@ -591,7 +594,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('CMFMCDZM   ',mcon ,  pcols   ,lchnk   )
    call outfld('PRECCDZM   ',prec,  pcols   ,lchnk   )
    call outfld('FREQZMSUP  ',freqzmsup,  pcols, lchnk)
-   call outfld('MAXZM_IDX  ',maxg,  pcols, lchnk)
+   call outfld('MAXZM_IDX  ', jt,  pcols, lchnk)
 
 
    call outfld('PRECZ   ', prec   , pcols, lchnk)
