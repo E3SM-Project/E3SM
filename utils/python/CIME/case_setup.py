@@ -66,14 +66,21 @@ def _build_usernl_files(case, model, comp):
         ninst = case.get_value("NINST_%s" % model)
         nlfile = "user_nl_%s" % comp
         model_nl = os.path.join(model_dir, nlfile)
-        if os.path.exists(model_nl):
-            if ninst > 1:
-                for inst_counter in xrange(1, ninst+1):
-                    case_nlfile = "%s_%04d" % (nlfile, inst_counter)
-                    if not os.path.exists(case_nlfile):
-                        shutil.copy(model_nl, case_nlfile)
-            else:
-                if not os.path.exists(nlfile):
+        if ninst > 1:
+            for inst_counter in xrange(1, ninst+1):
+                inst_nlfile = "%s_%04d" % (nlfile, inst_counter)
+                if not os.path.exists(inst_nlfile):
+                    # If there is a user_nl_foo in the case directory, copy it
+                    # to user_nl_foo_INST; otherwise, copy the original
+                    # user_nl_foo from model_dir
+                    if os.path.exists(nlfile):
+                        shutil.copy(nlfile, inst_nlfile)
+                    elif os.path.exists(model_nl):
+                        shutil.copy(model_nl, inst_nlfile)
+        else:
+            # ninst = 1
+            if not os.path.exists(nlfile):
+                if os.path.exists(model_nl):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
