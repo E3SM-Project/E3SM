@@ -23,6 +23,10 @@ module pv_diagnostics
 
     private
 
+    logical :: need_ertel_pv, need_u_pv, need_v_pv, need_theta_pv, need_vort_pv, need_iLev_DT, &
+               need_tend_lw, need_tend_sw, need_tend_bl, need_tend_cu, need_tend_mix, need_tend_mp, &
+               need_tend_diab, need_tend_fric, need_tend_diab_pv, need_tend_fric_pv, need_dtheta_mp
+
 
     contains
 
@@ -73,10 +77,69 @@ module pv_diagnostics
     !-----------------------------------------------------------------------
     subroutine pv_diagnostics_compute()
 
+        use mpas_atm_diagnostics_utils, only : MPAS_field_will_be_written
+
         implicit none
 
-        call atm_compute_pv_diagnostics(state, 1, diag, mesh)
-        call atm_compute_pvBudget_diagnostics(state, 1, diag, mesh, tend, tend_physics)
+        logical :: need_any_diags, need_any_budget
+
+        need_any_diags = .false.
+        need_any_budget = .false.
+
+
+        need_ertel_pv = MPAS_field_will_be_written('ertel_pv')
+        need_any_diags = need_any_diags .or. need_ertel_pv
+        need_u_pv = MPAS_field_will_be_written('u_pv')
+        need_any_diags = need_any_diags .or. need_u_pv
+        need_v_pv = MPAS_field_will_be_written('v_pv')
+        need_any_diags = need_any_diags .or. need_v_pv
+        need_theta_pv = MPAS_field_will_be_written('theta_pv')
+        need_any_diags = need_any_diags .or. need_theta_pv
+        need_vort_pv = MPAS_field_will_be_written('vort_pv')
+        need_any_diags = need_any_diags .or. need_vort_pv
+        need_iLev_DT = MPAS_field_will_be_written('iLev_DT')
+        need_any_diags = need_any_diags .or. need_iLev_DT
+
+        need_tend_lw = MPAS_field_will_be_written('depv_dt_lw')
+        need_any_diags = need_any_diags .or. need_tend_lw
+        need_any_budget = need_any_budget .or. need_tend_lw
+        need_tend_sw = MPAS_field_will_be_written('depv_dt_sw')
+        need_any_diags = need_any_diags .or. need_tend_sw
+        need_any_budget = need_any_budget .or. need_tend_sw
+        need_tend_bl = MPAS_field_will_be_written('depv_dt_bl')
+        need_any_diags = need_any_diags .or. need_tend_bl
+        need_any_budget = need_any_budget .or. need_tend_bl
+        need_tend_cu = MPAS_field_will_be_written('depv_dt_cu')
+        need_any_diags = need_any_diags .or. need_tend_cu
+        need_any_budget = need_any_budget .or. need_tend_cu
+        need_tend_mix = MPAS_field_will_be_written('depv_dt_mix')
+        need_any_diags = need_any_diags .or. need_tend_mix
+        need_any_budget = need_any_budget .or. need_tend_mix
+        need_dtheta_mp = MPAS_field_will_be_written('dtheta_dt_mp')
+        need_any_diags = need_any_diags .or. need_dtheta_mp
+        need_any_budget = need_any_budget .or. need_dtheta_mp
+        need_tend_mp = MPAS_field_will_be_written('depv_dt_mp')
+        need_any_diags = need_any_diags .or. need_tend_mp
+        need_any_budget = need_any_budget .or. need_tend_mp
+        need_tend_diab = MPAS_field_will_be_written('depv_dt_diab')
+        need_any_diags = need_any_diags .or. need_tend_diab
+        need_any_budget = need_any_budget .or. need_tend_diab
+        need_tend_fric = MPAS_field_will_be_written('depv_dt_fric')
+        need_any_diags = need_any_diags .or. need_tend_fric
+        need_any_budget = need_any_budget .or. need_tend_fric
+        need_tend_diab_pv = MPAS_field_will_be_written('depv_dt_diab_pv')
+        need_any_diags = need_any_diags .or. need_tend_diab_pv
+        need_any_budget = need_any_budget .or. need_tend_diab_pv
+        need_tend_fric_pv = MPAS_field_will_be_written('depv_dt_fric_pv')
+        need_any_diags = need_any_diags .or. need_tend_fric_pv
+        need_any_budget = need_any_budget .or. need_tend_fric_pv
+
+        if (need_any_diags) then
+            call atm_compute_pv_diagnostics(state, 1, diag, mesh)
+        end if
+        if (need_any_budget) then
+            call atm_compute_pvBudget_diagnostics(state, 1, diag, mesh, tend, tend_physics)
+        end if
    
     end subroutine pv_diagnostics_compute
 
