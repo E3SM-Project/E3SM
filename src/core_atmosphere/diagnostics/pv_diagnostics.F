@@ -1174,7 +1174,7 @@ module pv_diagnostics
                                                    localVerticalUnitVectors, edgeNormalVectors, kiteAreasOnVertex, &
                                                    theta, uReconstructX, uReconstructY, uReconstructZ
       real(kind=RKIND), dimension(:,:), pointer :: depv_dt_lw, depv_dt_sw, depv_dt_bl, depv_dt_cu, depv_dt_mp, depv_dt_mix
-      real(kind=RKIND), dimension(:,:), pointer :: depv_dt_diab, depv_dt_fric, depv_dt_phys
+      real(kind=RKIND), dimension(:,:), pointer :: depv_dt_diab, depv_dt_fric
       real(kind=RKIND), dimension(:,:), pointer :: tend_u_phys, tend_u_euler, rho_edge, tend_w_euler
       real(kind=RKIND), dimension(:,:), pointer :: rthblten, rthcuten, rthratenlw, rthratensw, &
                                                    dtheta_dt_mp, dtheta_dt_mix
@@ -1227,7 +1227,6 @@ module pv_diagnostics
       call mpas_pool_get_array(diag, 'depv_dt_mp', depv_dt_mp)
       call mpas_pool_get_array(diag, 'depv_dt_mix', depv_dt_mix)
       
-      call mpas_pool_get_array(diag, 'depv_dt_phys', depv_dt_phys)
       call mpas_pool_get_array(diag, 'depv_dt_diab', depv_dt_diab)
       call mpas_pool_get_array(diag, 'depv_dt_fric', depv_dt_fric)
       
