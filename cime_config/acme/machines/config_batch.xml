@@ -146,6 +146,17 @@
       </queues>
     </batch_system>
 
+    <!-- anvil is PBS -->
+    <batch_system MACH="anvil" type="pbs" version="x.y">
+      <directives>
+        <directive>-A {{ PROJECT }}</directive>
+        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      </directives>
+      <queues>
+	<queue walltimemax="01:00:00" jobmin="1" jobmax="4320" default="true">acme</queue>
+      </queues>
+    </batch_system>
+
     <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" type="slurm" version="x.y">
       <queues>
