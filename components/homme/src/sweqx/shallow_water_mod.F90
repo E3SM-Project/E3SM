@@ -10,7 +10,7 @@ module shallow_water_mod
   ! ------------------------
   use dimensions_mod, only : nlev, np
   ! ------------------------
-  use derivative_mod, only : derivative_t, vorticity_sphere, derivative_stag_t, gradient_wk, &
+  use derivative_mod, only : derivative_t, vorticity_sphere,  &
                              divergence, vorticity, laplace_sphere_wk, &
                              vlaplace_sphere_wk, divergence_sphere
   ! ------------------------
@@ -42,7 +42,7 @@ module shallow_water_mod
   use viscosity_mod, only: biharmonic_wk, neighbor_minmax
   ! ------------------------
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, &
-                           kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation, toy_chemistry
+                           kmass, g_sw_output,toy_chemistry
   ! ------------------------
 
   implicit none
@@ -1487,12 +1487,6 @@ contains
        elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
        elem(ie)%state%ps(:,:)=tc5_mountain(elem(ie)%spherep(:,:))
 
-#ifdef _WK_GRAD
-       elem(ie)%state%gradps(:,:,:)=gradient_wk(elem(ie)%state%ps,deriv)*rrearth
-#else
-       elem(ie)%state%gradps(:,:,:)=gradient(elem(ie)%state%ps,deriv)*rrearth
-#endif
-       
        do k=1,nlev
           elem(ie)%state%p(:,:,k,n0)=tc5_geopotential(elem(ie)%spherep(:,:)) + pmean_adjust
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
@@ -3273,12 +3267,9 @@ contains
 
     g_sw_output=1.0D0
 
-    if(tracer_advection_formulation==TRACERADV_UGRADQ)then
+    if((kmass_swirl<0).or.(kmass_swirl>nlev))then
     else
-      if((kmass_swirl<0).or.(kmass_swirl>nlev))then
-      else
- 	  kmass=kmass_swirl
-      endif
+       kmass=kmass_swirl
     endif
 
   end subroutine swirl_init_state

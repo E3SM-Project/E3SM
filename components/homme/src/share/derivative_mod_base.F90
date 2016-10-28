@@ -26,15 +26,6 @@ private
      real (kind=real_kind) :: legdg(np,np)
   end type derivative_t
 
-  type, public :: derivative_stag_t
-     real (kind=real_kind) :: D(np,np)
-     real (kind=real_kind) :: M(np,np)
-     real (kind=real_kind) :: Dpv(np,np)
-     real (kind=real_kind) :: D_twt(np,np)
-     real (kind=real_kind) :: M_twt(np,np)
-     real (kind=real_kind) :: M_t(np,np)
-  end type derivative_stag_t
-
   real (kind=real_kind), allocatable :: integration_matrix(:,:)
   real (kind=real_kind), allocatable :: boundary_interp_matrix(:,:,:)
 
@@ -49,7 +40,6 @@ private
   public :: allocate_subcell_integration_matrix
 
   public :: derivinit
-  public :: deriv_print
 
   public :: gradient
   public :: gradient_wk
@@ -63,24 +53,19 @@ private
 
   interface divergence
       module procedure divergence_nonstag
-      module procedure divergence_stag
   end interface
 
   interface gradient
       module procedure gradient_str_nonstag
-      module procedure gradient_str_stag
   end interface
 
   interface gradient_wk
       module procedure gradient_wk_nonstag
-      module procedure gradient_wk_stag
   end interface
 
   public :: v2pinit
 
-  private :: dmatinit
   private :: dvvinit
-  private :: dpvinit
 
 ! these routines compute spherical differential operators as opposed to
 ! the gnomonic coordinate operators above.  Vectors (input or output)
@@ -182,160 +167,6 @@ contains
 
   end subroutine derivinit
 
-  subroutine deriv_print(deriv)
-    type (derivative_t), intent(in) :: deriv
-    
-    ! Local variables
-
-    integer j
-    print *,"Derivative Matrix Dvv"
-    do j=1,np
-       write(6,*)deriv%Dvv(:,j)
-    end do
-
-    print *,"Weak Derivative Matrix Dvv_twt"
-    do j=1,np
-       write(6,*)deriv%Dvv_twt(:,j)
-    end do
-
-
-  end subroutine deriv_print
-
-! =======================================
-! dmatinit:
-!
-! Compute rectangular v->p 
-! derivative matrix (dmat)
-! =======================================
-
-  subroutine dmatinit(dmat)
-
-    real (kind=longdouble_kind) :: dmat(np,np)
-
-    ! Local variables
-
-    type (quadrature_t) :: gll
-    type (quadrature_t) :: gs
-
-    integer i,j
-    real(kind=longdouble_kind)  fact,f1,f2
-    real(kind=longdouble_kind)  func0,func1
-    real(kind=longdouble_kind)  dis,c0,c1
-
-    real(kind=longdouble_kind)  :: leg(np,np)
-    real(kind=longdouble_kind)  ::  jac(0:np-1)
-    real(kind=longdouble_kind)  :: djac(0:np-1)
-
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-
-    gll= gausslobatto(np)
-    gs = gauss(np)
-
-    ! =============================================================
-    ! Compute Legendre polynomials on Gauss-Lobatto grid (velocity)
-    ! =============================================================
-
-    do i=1,np
-       leg(:,i) = legendre(gll%points(i),np-1)
-    end do
-
-    ! ================================================================
-    !  Derivatives of velocity cardinal functions on pressure grid
-    !  d(i,j) = D(j,i) = D' (D-transpose) since D(i,j) = dh_j(x_i)/dx
-    ! ================================================================
-
-    fact = np*(np-1)
-
-    do j=1,np
-       call jacobi(np-1,gs%points(j),c0,c0,jac(0:np-1),djac(0:np-1))
-       func0 =  jac(np-1)
-       func1 = djac(np-1)
-       f1 = fact*func0
-       f2 = (c1 - gs%points(j))*(c1 + gs%points(j)) * func1
-       do i = 1, np
-          if ( gs%points(j) /= gll%points(i) ) then
-             dis = gs%points(j) - gll%points(i)
-             dmat(i,j) = func0 / ( leg(np,i)*dis ) + f2 / (fact*leg(np,i)*dis*dis)
-!!! OTHER             dmat(i,j) = (1.0D0/(fact*leg(np,i)*dis*dis))* (func0*fact*dis + f2)
-          else
-             dmat(i,j) = c0
-          endif
-       end do
-    end do
-
-    deallocate(gll%points)
-    deallocate(gll%weights)
-
-    deallocate(gs%points)
-    deallocate(gs%weights)
-
-end subroutine dmatinit
-
-! =======================================
-! dpvinit:
-!
-! Compute rectangular p->v
-! derivative matrix (dmat) 
-! for strong gradients
-! =======================================
-
-subroutine dpvinit(dmat)
-
-real (kind=longdouble_kind) :: dmat(np,np)
-
-! Local variables
-
-type (quadrature_t) :: gll
-type (quadrature_t) :: gs
-
-integer i,j
-real(kind=longdouble_kind)  dis,c0,c1
-
-real(kind=longdouble_kind)  :: legv(0:np,np)
-real(kind=longdouble_kind)  :: dlegv(0:np,np)
-
-real(kind=longdouble_kind)  :: leg(0:np)
-real(kind=longdouble_kind)  :: dleg(0:np)
-
-c0 = 0.0_longdouble_kind
-c1 = 1.0_longdouble_kind
-
-gll= gausslobatto(np)
-gs = gauss(np)
-
-! =============================================================
-! Compute Legendre polynomials on Gauss-Lobatto grid (velocity)
-! =============================================================
-
-do i=1,np
-call jacobi(np,gll%points(i),c0,c0,legv(0:np,i),dlegv(0:np,i))
-end do
-
-! ================================================================
-!  Derivatives of velocity cardinal functions on pressure grid
-    !  d(i,j) = D(j,i) = D' (D-transpose) since D(i,j) = dh_j(x_i)/dx
-    ! ================================================================
-
-    do j=1,np
-       call jacobi(np,gs%points(j),c0,c0,leg(0:np),dleg(0:np))
-       do i = 1, np
-          if ( gs%points(j) /= gll%points(i) ) then
-             dis = gll%points(i) - gs%points(j)
-             dmat(j,i) = dlegv(np,i)/( dleg(np)*dis ) -  legv(np,i)/ (dleg(np)*dis*dis)
-          else
-             dmat(j,i) = c0
-          endif
-       end do
-    end do
-
-    deallocate(gll%points)
-    deallocate(gll%weights)
-
-    deallocate(gs%points)
-    deallocate(gs%weights)
-
-  end subroutine dpvinit
 
 ! =======================================
 ! v2pinit:
@@ -486,64 +317,6 @@ end do
   end subroutine dvvinit
 
 !  ================================================
-!  divergence_stag: 
-!
-!  Compute divergence (maps v grid -> p grid)
-!  ================================================
-
-  function divergence_stag(v,deriv) result(div)
-
-    real(kind=real_kind), intent(in) :: v(np,np,2)
-    type (derivative_stag_t), intent(in) :: deriv
-
-    real(kind=real_kind) :: div(np,np)
-
-    ! Local
-
-    integer i
-    integer j
-    integer l
-
-    real(kind=real_kind)  sumx00
-    real(kind=real_kind)  sumy00
-
-    real(kind=real_kind) :: vtemp(np,np,2)
-    
-
-#ifdef DEBUG
-    print *, "divergence_stag"
-#endif
-     do j=1,np
-        do l=1,np
- 
-           sumx00=0.0d0
-           sumy00=0.0d0
-!DIR$ UNROLL(NP)
-           do i=1,np
-              sumx00 = sumx00 + deriv%D(i,l  )*v(i,j  ,1)
-              sumy00 = sumy00 + deriv%M(i,l  )*v(i,j  ,2)
-           enddo
-          vtemp(j  ,l  ,1) = sumx00
-          vtemp(j  ,l  ,2) = sumy00
-       enddo
-    enddo
-    do j=1,np
-       do i=1,np
-          sumx00=0.0d0
-          sumy00=0.0d0
-!DIR$ UNROLL(NP)
-          do l=1,np
-             sumx00 = sumx00 +  deriv%M(l,j  )*vtemp(l,i  ,1)
-             sumy00 = sumy00 +  deriv%D(l,j  )*vtemp(l,i  ,2)
-          enddo
-          div(i  ,j  ) = sumx00 + sumy00
-
-       enddo
-    enddo
-
-  end function divergence_stag
-
-!  ================================================
 !  divergence_nonstag: 
 !
 !  Compute divergence (maps v->v)
@@ -591,68 +364,6 @@ end do
 
   end function divergence_nonstag
 
-!  ================================================
-!  gradient_wk_stag:
-! 
-!  Compute the weak form gradient:
-!  maps scalar field on the pressure grid to the
-!  velocity grid
-!  ================================================
-
-  function gradient_wk_stag(p,deriv) result(dp)
-
-    type (derivative_stag_t), intent(in) :: deriv
-    real(kind=real_kind), intent(in) :: p(np,np)
-
-    real(kind=real_kind)             :: dp(np,np,2)
-
-    ! Local
-      
-    integer i
-    integer j
-    integer l
-
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumy00,sumy01
-
-    real(kind=real_kind)  :: vtempt(np,np,2)
-
-#ifdef DEBUG
-    print *, "gradient_wk_stag"
-#endif
-    !JMD ================================
-    !JMD 2*np*np*np Flops 
-    !JMD ================================
-
-    do j=1,np
-       do l=1,np
-          sumx00=0.0d0
-          sumy00=0.0d0
-!DIR$ UNROLL(NP)
-           do i=1,np
-              sumx00 = sumx00 + deriv%D_twt(i,l  )*p(i,j  )
-              sumy00 = sumy00 + deriv%M_twt(i,l  )*p(i,j  )
-           enddo
-           vtempt(j  ,l  ,1) = sumx00
-           vtempt(j  ,l  ,2) = sumy00
-        enddo
-    enddo
-    do j=1,np
-       do i=1,np
-          sumx00=0.0d0
-          sumy00=0.0d0
-!DIR$ UNROLL(NP)
-          do l=1,np
-             sumx00 = sumx00 +  deriv%M_twt(l,j  )*vtempt(l,i  ,1)
-             sumy00 = sumy00 +  deriv%D_twt(l,j  )*vtempt(l,i  ,2)
-          enddo
-          dp(i  ,j  ,1) = sumx00
-          dp(i  ,j  ,2) = sumy00
-      enddo
-    enddo
-
-
-  end function gradient_wk_stag
 
 !  ================================================
 !  gradient_wk_nonstag:
@@ -717,63 +428,6 @@ end do
           end do
        end do
   end function gradient_wk_nonstag
-
-!  ================================================
-!  gradient_str_stag:
-! 
-!  Compute the *strong* form gradient:
-!  maps scalar field on the pressure grid to the
-!  velocity grid
-!  ================================================
-
-  function gradient_str_stag(p,deriv) result(dp)
-
-    type (derivative_stag_t), intent(in) :: deriv
-    real(kind=real_kind), intent(in) :: p(np,np)
-
-    real(kind=real_kind)             :: dp(np,np,2)
-
-    ! Local
-      
-    integer i
-    integer j
-    integer l
-
-    real(kind=real_kind)  sumx00
-    real(kind=real_kind)  sumy00
-
-    real(kind=real_kind)  :: vtempt(np,np,2)
-#ifdef DEBUG
-    print *, "gradient_str_stag"
-#endif
-    do j=1,np
-       do l=1,np
-          sumx00=0.0d0
-          sumy00=0.0d0
-!DIR$ UNROLL(NP)
-          do i=1,np
-             sumx00 = sumx00 + deriv%Dpv(i,l  )*p(i,j  )
-             sumy00 = sumy00 + deriv%M_t(i,l  )*p(i,j  )
-          enddo
-          vtempt(j  ,l  ,1) = sumx00
-          vtempt(j  ,l  ,2) = sumy00
-       enddo
-    enddo
-    do j=1,np
-       do i=1,np
-          sumx00=0.0d0
-          sumy00=0.0d0
-!DIR$ UNROLL(NP)
-          do l=1,np
-             sumx00 = sumx00 +  deriv%M_t(l,j  )*vtempt(l,i  ,1)
-             sumy00 = sumy00 +  deriv%Dpv(l,j  )*vtempt(l,i  ,2)
-          enddo
-          dp(i  ,j  ,1) = sumx00
-          dp(i  ,j  ,2) = sumy00
-       enddo
-    enddo
-
-  end function gradient_str_stag
 
 !  ================================================
 !  gradient_str_nonstag:

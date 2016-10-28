@@ -28,7 +28,6 @@ module namelist_mod
     restartdir,    &       ! name of the restart directory for OUTPUT
     runtype,       &
     integration,   &       ! integration method
-    tracer_advection_formulation, &   ! conservation or non-conservation formulaton
     use_semi_lagrange_transport , &   ! conservation or non-conservation formulaton
     use_semi_lagrange_transport_local_conservation , &   ! local conservation vs. global 
     tstep_type,    &
@@ -38,8 +37,6 @@ module namelist_mod
     physics,       &
     rk_stage_user, &
     LFTfreq,       &
-    TRACERADV_TOTAL_DIVERGENCE, &
-    TRACERADV_UGRADQ, &
     prescribed_wind, &
     ftype,         &
     energy_fixer,  &
@@ -249,7 +246,6 @@ module namelist_mod
       remap_type,    &             ! selected remapping option
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
-      tracer_advection_formulation, &
       use_semi_lagrange_transport , &
       use_semi_lagrange_transport_local_conservation , &
       tstep_type,    &
@@ -968,21 +964,6 @@ module namelist_mod
 
 #ifdef _PRIM
     rk_stage_user=3  ! 3d PRIM code only supports 3 stage RK tracer advection
-    ! CHECK timestepping options
-     if (tstep_type == 0) then
-        ! pure leapfrog mode, mostly used for debugging
-        if (ftype>0) then
-           call abortmp('adjustment type forcing (se_ftype>0) not allowed with tstep_type=0')
-        endif
-        if (qsplit>1) then
-          call abortmp('tracer/dynamics subcycling requires tstep_type=1(RK timestepping)')
-        endif
-        if (rsplit>0) then
-          call abortmp('vertically lagrangian code requires tstep_type=1(RK timestepping)')
-        endif
-    endif
-
-
     ! CHECK phys timescale, requires se_ftype=0 (pure tendencies for forcing)
     if (phys_tscale/=0) then
        if (ftype>0) call abortmp('user specified se_phys_tscale requires se_ftype<=0')
@@ -1097,7 +1078,7 @@ module namelist_mod
        if (integration == "explicit" ) then
           write(iulog,*)"readnl: LF-trapazoidal freq= ",LFTfreq
        endif
-       if (integration == "runge_kutta" .or. tstep_type>0 ) then
+       if (integration == "runge_kutta"  ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
        write(iulog,*)"readnl: use_semi_lagrange_transport   = ",use_semi_lagrange_transport

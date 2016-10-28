@@ -17,10 +17,7 @@ module column_model_mod
   use time_mod,        only : TimeLevel_t
   use physics_mod,     only : elem_physics_t, Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
   use dimensions_mod,  only : nlev, nlevp, np, qsize, nelemd
-  use control_mod,     only : integration, columnpackage, test_case,  physics, &
-                              statefreq, &
-                              TRACERADV_TOTAL_DIVERGENCE, &
-                              tracer_advection_formulation
+  use control_mod,     only : integration, columnpackage, test_case,  physics, statefreq
   use held_suarez_mod, only : hs_forcing
   use forcing_mod,     only : Apply_Forcing,EXP_EULER,INTERP_BDF2
   use reduction_mod,   only : parallelmax,parallelmin

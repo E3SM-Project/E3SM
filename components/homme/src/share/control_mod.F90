@@ -14,9 +14,6 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
 
 ! none of this is used anymore:
-  integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
-  integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
-  integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
 
@@ -40,7 +37,7 @@ module control_mod
 
   real (kind=real_kind), public ::nu_mc = 0.0
 
-  integer, public  :: tstep_type= 0                           ! 0 = leapfrog
+  integer, public  :: tstep_type= 5                           ! 0 = leapfrog
                                                               ! 1 = RK (foward-in-time)
   integer, public  :: rk_stage_user  = 0                      ! number of RK stages to use  
   integer, public  :: ftype = 0                                ! Forcing Type

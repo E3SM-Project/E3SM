@@ -6,14 +6,12 @@ module derivative_mod
 
   use derivative_mod_base, only:  &
       derivative_t,               &
-      derivative_stag_t,          &
       subcell_integration,        &
       subcell_dss_fluxes,         &
       subcell_div_fluxes,         &
       subcell_Laplace_fluxes,     &
       allocate_subcell_integration_matrix, &
       derivinit,                  &
-      deriv_print,                &
       gradient,                   &
       gradient_wk,                &
       vorticity,                  &

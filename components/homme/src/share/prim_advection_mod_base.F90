@@ -2,8 +2,6 @@
 #include "config.h"
 #endif
 #include "omp_config.h"
-#define NEWEULER_B4B 1
-#define OVERLAP 1
 
 !SUBROUTINES:
 !   prim_advec_tracers_remap_rk2()
@@ -58,25 +56,21 @@ module prim_advection_mod_base
   use kinds, only              : real_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
-  use derivative_mod, only     : gradient, vorticity, gradient_wk, derivative_t, divergence, &
-                                 gradient_sphere, divergence_sphere
+  use derivative_mod, only     : derivative_t, gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
-  use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
   use prim_si_mod, only        : preq_pressure
-  use diffusion_mod, only      : scalar_diffusion, diffusion_init
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
-        statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
-        nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
+        statefreq, moisture,  nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
   use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, &
         edgevunpackmin, initghostbuffer3D
  
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
-  use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax, &
+  use viscosity_mod, only      : biharmonic_wk_scalar, neighbor_minmax, &
                                  neighbor_minmax_start, neighbor_minmax_finish
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only   : abortmp
@@ -331,13 +325,12 @@ contains
 
 !=================================================================================================!
 
-  subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+  subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord ,  hybrid , dt , tl , nets , nete )
     use control_mod   , only : use_semi_lagrange_transport
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
     type (hvcoord_t)     , intent(in   ) :: hvcoord
-    type (filter_t)      , intent(in   ) :: flt
     type (hybrid_t)      , intent(in   ) :: hybrid
     real(kind=real_kind) , intent(in   ) :: dt
     type (TimeLevel_t)   , intent(inout) :: tl
@@ -347,9 +340,8 @@ contains
 
   if (use_semi_lagrange_transport) then
     call Prim_Advec_Tracers_remap_ALE( elem , deriv ,                 hybrid , dt , tl , nets , nete )
-
   else
-    call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+    call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
   end if
   end subroutine Prim_Advec_Tracers_remap
 
@@ -1255,7 +1247,7 @@ end subroutine ALE_parametric_coords
 !
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
-  subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+  subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
     use control_mod   , only : vert_remap_q_alg, qsplit
@@ -1263,7 +1255,6 @@ end subroutine ALE_parametric_coords
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
     type (hvcoord_t)     , intent(in   ) :: hvcoord
-    type (filter_t)      , intent(in   ) :: flt
     type (hybrid_t)      , intent(in   ) :: hybrid
     real(kind=real_kind) , intent(in   ) :: dt
     type (TimeLevel_t)   , intent(inout) :: tl
@@ -1364,24 +1355,13 @@ end subroutine ALE_parametric_coords
     real(kind=real_kind), intent(in   ) :: nu_p
     integer :: ie,q,k
     real(kind=real_kind) :: rrkstage
-#ifdef NEWEULER_B4B
+
     do ie=nets,nete
       elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) =               &
                    ( elem(ie)%state%Qdp(:,:,:,1:qsize,n0_qdp) + &
                      (rkstage-1)*elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) ) / rkstage
     enddo
-#else
-    rrkstage=1.0d0/real(rkstage,kind=real_kind)
-    do ie=nets,nete
-      do q=1,qsize
-        do k=1,nlev
-           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) =               &
-               rrkstage *( elem(ie)%state%Qdp(:,:,k,q,n0_qdp) + &
-               (rkstage-1)*elem(ie)%state%Qdp(:,:,k,q,np1_qdp) )
-        enddo
-      enddo
-    enddo
-#endif
+
   end subroutine qdp_time_avg
 
 !-----------------------------------------------------------------------------
@@ -1518,7 +1498,6 @@ OMP_SIMD
       ! nu_p>0):   qtens_biharmonc *= elem()%psdiss_ave      (for consistency, if nu_p=nu_q)
       if ( nu_p > 0 ) then
         do ie = nets , nete
-#ifdef NEWEULER_B4B
 #if (defined COLUMN_OPENMP)
        !$omp parallel do private(k, q) collapse(2)
 #endif
@@ -1529,23 +1508,6 @@ OMP_SIMD
                 *elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
             enddo
           enddo
-#else
-#if (defined COLUMN_OPENMP)
-        !$omp parallel do private(k)
-#endif
-          do k = 1 , nlev
-            ! NOTE: divide by dp0 since we multiply by dp0 below
-            dpdissk(:,:,k) = elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
-          enddo
-#if (defined COLUMN_OPENMP)
-        !$omp parallel do private(q,k) collapse(2)
-#endif
-          do q = 1 , qsize
-            do k = 1 , nlev
-              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdissk(:,:,k)
-            enddo
-          enddo
-#endif
         enddo ! ie loop
       endif ! nu_p > 0
 
@@ -1557,7 +1519,6 @@ OMP_SIMD
 ! 
 !      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
 !           nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
-#ifdef OVERLAP 
       call neighbor_minmax_start(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
       do ie = nets , nete
@@ -1573,26 +1534,6 @@ OMP_SIMD
         enddo
       enddo
       call neighbor_minmax_finish(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-#else
-      call t_startf('eus_neighbor_minmax2')
-      call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-      call t_stopf('eus_neighbor_minmax2')
-      call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
-
-      do ie = nets , nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q) collapse(2)
-#endif
-        do q = 1 , qsize
-          do k = 1 , nlev    !  Loop inversion (AAM)
-            ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
-            qtens_biharmonic(:,:,k,q,ie) = &
-                     -rhs_viss*dt*nu_q*dp0(k)*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
-          enddo
-        enddo
-      enddo
-#endif
-
     endif
     call t_stopf('bihmix_qminmax')
   endif  ! compute biharmonic mixing term and qmin/qmax

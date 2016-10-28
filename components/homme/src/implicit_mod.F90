@@ -5,7 +5,7 @@ module implicit_mod
 contains
   
   subroutine advance_imp_nonstag(elem, edge1, edge2, edge3, red, deriv, cg,   &
-       hybrid, blkjac, lambdasq, dt, pmean, tl, nets, nete, xstate)
+       hybrid, dt, pmean, tl, nets, nete, xstate)
     
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar
@@ -23,7 +23,6 @@ contains
     use bndry_mod, only : bndry_exchangev
     use cg_mod, only : cg_t
     use precon_mod, only : pcg_presolver_nonstag
-    use solver_mod, only : blkjac_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use derived_type_mod ,only : derived_type, initialize
     use precon_type_mod ,only : precon_type, init_precon
@@ -41,8 +40,6 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     type (cg_t)                       :: cg
     type (hybrid_t)      , intent(in) :: hybrid
-    type (blkjac_t)      , intent(inout) :: blkjac(:)
-    real (kind=real_kind), intent(inout) :: lambdasq(:)
     real (kind=real_kind), intent(in) :: dt
     real (kind=real_kind), intent(in) :: pmean
     type (timeLevel_t)   , intent(in) :: tl
@@ -150,9 +147,6 @@ contains
          hybrid, deriv, dt, tl, nets, nete)
 
     
-   ! call init_precon(pre_object, lenx, elem, blkjac, edge1, edge2, edge3, &
-   !     red, deriv, cg, lambdasq, dt, pmean, tl, nets, nete)
-
     fptr => state_object
     c_ptr_to_object =  c_loc(fptr)
 
@@ -648,7 +642,6 @@ contains
     use control_mod, only : topology, test_case
     use shallow_water_mod, only : tc1_velocity
     use cg_mod, only : cg_t
-    use solver_mod, only : blkjac_t
     use precon_mod, only : pcg_presolver_nonstag
     use bndry_mod, only : bndry_exchangev
     use derived_type_mod ,only : derived_type

@@ -446,7 +446,7 @@ contains
     use physics_io_mod, only : physics_movie_output
 #endif
     use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
-    use derivative_mod, only : derivinit, derivative_t, vorticity, laplace_sphere_wk
+    use derivative_mod, only : derivinit, derivative_t, laplace_sphere_wk
     use hybrid_mod, only : hybrid_t
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL
 
