@@ -9,3 +9,7 @@
 	path = components/mpas-cice/model
 	url = git@github.com:ACME-Climate/MPAS.git
 	branch = cice/develop
+[submodule "sbetr-alm"]
+	path = components/clm/src/external-models/sbetr
+	url = git@github.com:ACME-Climate/sbetr.git
+	branch = alm/develop
