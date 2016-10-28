@@ -78,7 +78,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             logger.debug("Now build aquap ocn component")
             _build_model_thread(config_dir, comp, caseroot, bldroot, libroot, incroot, file_build,
                                 thread_bad_results, smp, compiler)
-
+            logs.append(file_build)
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
     #
@@ -466,9 +466,11 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
                 os.makedirs(ndir)
 
         smp = "SMP" in os.environ and os.environ["SMP"] == "TRUE"
+        thread_bad_results = []
         _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot,
-                            file_build, logs, smp, compiler)
-        expect(not logs, "\n".join(logs))
+                            file_build, thread_bad_results, smp, compiler)
+        logs.append(file_build)
+        expect(not thread_bad_results, "\n".join(thread_bad_results))
 
     return logs
 

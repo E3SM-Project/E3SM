@@ -961,7 +961,7 @@ def analyse_build_log(comp, log, compiler):
         warn_re = re.compile(r" warning #")
         error_re = re.compile(r" error #")
         undefined_re = re.compile(r" undefined reference to ")
-    elif "gnu" in compiler:
+    elif "gnu" in compiler or "nag" in compiler:
         warn_re = re.compile(r"^Warning: ")
         error_re = re.compile(r"^Error: ")
         undefined_re = re.compile(r" undefined reference to ")
