@@ -50,6 +50,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added the option bl_mynn for the calculation of the tendency for the cloud ice number concentration.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
+! * in subroutine physics_get_tend_work, added the option cu_ntiedtke in the calculation of rucuten_Edge.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-28.
 
 
  contains
@@ -744,7 +746,7 @@
               enddo
               enddo
     
-           case('cu_tiedtke')
+           case('cu_tiedtke','cu_ntiedtke')
               if (rk_step == 1 .and. dynamics_substep == 1) then
                  call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
               end if
