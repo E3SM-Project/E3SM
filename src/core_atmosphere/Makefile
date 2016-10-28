@@ -9,7 +9,7 @@ OBJS = mpas_atm_core.o \
        mpas_atm_interp_diagnostics.o \
        mpas_atm_dimensions.o
 
-all: physcore dycore diagcore atmcore
+all: physcore dycore diagcore atmcore utilities
 
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -41,6 +41,9 @@ dycore: mpas_atm_dimensions.o
 diagcore: physcore dycore
 	( cd diagnostics; $(MAKE) all )
 
+utilities: physcore
+	( cd utils; $(MAKE) all )
+
 atmcore: physcore dycore diagcore $(OBJS)
 	ar -ru libdycore.a $(OBJS) dynamics/*.o libphys/*.o diagnostics/*.o
 
@@ -54,6 +57,7 @@ clean:
 	( cd physics; $(MAKE) clean )
 	( cd dynamics; $(MAKE) clean )
 	( cd diagnostics; $(MAKE) clean )
+	( cd utils; $(MAKE) clean )
 	( cd ../..; rm -f *TBL )
 	( cd ../..; rm -f *DATA* )
 	$(RM) -r libphys
