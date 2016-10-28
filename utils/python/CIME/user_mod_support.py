@@ -102,11 +102,41 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
            "Expected full directory path, got '%s'"%user_mods_path)
     expect(os.path.isdir(user_mods_path),
            "Directory not found %s"%user_mods_path)
+    logger.info("Adding user mods directory %s"%user_mods_path)
+    include_dirs.append(os.path.normpath(user_mods_path))
+    include_file = os.path.join(include_dirs[-1],"include_user_mods")
+    if os.path.isfile(include_file):
+        with open(include_file, "r") as fd:
+            for newpath in fd:
+                newpath = newpath.rstrip()
+                if len(newpath) > 0 and not newpath.startswith("#"):
+                    if not os.path.isabs(newpath):
+                        newpath = os.path.join(user_mods_path, newpath)
+                    if os.path.isabs(newpath):
+                        build_include_dirs_list(newpath, include_dirs)
+                    else:
+                        logger.warn("Could not resolve path '%s' in file '%s'"%newpath,include_file)
+
+    return list(set(include_dirs))
+
+    include_dirs = [] if include_dirs is None else include_dirs
+    if user_mods_path is None or user_mods_path == 'UNSET':
+        return include_dirs
+    expect(os.path.isabs(user_mods_path),
+           "Expected full directory path, got '%s'"%user_mods_path)
+    expect(os.path.isdir(user_mods_path),
+           "Directory not found %s"%user_mods_path)
     norm_path = os.path.normpath(user_mods_path)
-    if norm_path not in include_dirs:
+    already_included = False
+    for dir_ in include_dirs:
+        if norm_path == dir_:
+            already_included = True
+            break
+
+    if not already_included:
         logger.info("Adding user mods directory %s"%norm_path)
-        include_dirs.append(norm_path)
-        include_file = os.path.join(include_dirs[-1],"include_user_mods")
+        include_dirs = [norm_path] + include_dirs
+        include_file = os.path.join(norm_path,"include_user_mods")
         if os.path.isfile(include_file):
             with open(include_file, "r") as fd:
                 for newpath in fd:
