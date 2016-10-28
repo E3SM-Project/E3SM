@@ -39,7 +39,7 @@ contains
     use edge_mod, only : edgevpack, edgerotate, edgevunpack
     use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
-    use control_mod, only : maxits, while_iter, tol, precon_method
+    use control_mod, only : maxits, tol, precon_method
     use physical_constants, only : rrearth
     use bndry_mod, only : bndry_exchangeV
     use linear_algebra_mod, only : matvec
@@ -213,7 +213,6 @@ contains
 
        end do
 
-       while_iter = while_iter + 1 
        !$OMP BARRIER
 
        call bndry_exchangeV(cg%hybrid,edge2)

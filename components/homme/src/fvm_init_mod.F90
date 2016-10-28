@@ -10,7 +10,7 @@ contains
     use thread_mod, only : nthreads
     ! --------------------------------
     use control_mod, only : filter_counter, restartfreq, topology, &
-          partmethod, while_iter
+          partmethod
     ! --------------------------------
     use dimensions_mod, only : np, nelem, nlev, nelemd, nelemdmax,  &
 	GlobalUniqueCols

@@ -62,7 +62,7 @@ module prim_advection_mod_base
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
   use prim_si_mod, only        : preq_pressure
-  use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
+  use control_mod, only        : integration, test_case, hypervis_order, &
         statefreq, moisture,  nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
   use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, &
         edgevunpackmin, initghostbuffer3D

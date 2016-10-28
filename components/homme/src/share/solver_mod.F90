@@ -311,7 +311,7 @@ contains
     use edge_mod, only : edgevpack, edgevunpack!, edgerotate
     use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
-    use control_mod, only : maxits, while_iter, tol, precon_method
+    use control_mod, only : maxits, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega
     use bndry_mod, only : bndry_exchangeV
     use linear_algebra_mod, only : matvec
@@ -806,7 +806,7 @@ tol=1.e-12
     use edge_mod, only : edgevpack, edgevunpack!, edgerotate
     use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
-    use control_mod, only : maxits, while_iter, tol, precon_method
+    use control_mod, only : maxits, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega
     use bndry_mod, only : bndry_exchangeV
     use linear_algebra_mod, only : matvec

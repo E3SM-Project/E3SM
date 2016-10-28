@@ -11,8 +11,7 @@ contains
     ! --------------------------------
     use thread_mod, only : nthreads, omp_set_num_threads
     ! --------------------------------
-    use control_mod, only : filter_counter, restartfreq, topology, &
-          partmethod, while_iter
+    use control_mod, only : restartfreq, topology, partmethod
     ! --------------------------------
     use namelist_mod, only : readnl
     ! --------------------------------
@@ -358,9 +357,6 @@ contains
     ! Initialize output fields for plotting...
 
     allocate(mass(np,np,nelemd))
-
-    while_iter = 0
-    filter_counter = 0
 
     ! ==========================================================
     !  This routines initalizes a Restart file.  This involves:

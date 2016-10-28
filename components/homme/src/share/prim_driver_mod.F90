@@ -54,7 +54,7 @@ contains
     use thread_mod, only : nthreads, omp_get_thread_num, vert_num_threads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
-         partmethod, while_iter, use_semi_lagrange_transport
+         partmethod, use_semi_lagrange_transport
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -443,8 +443,6 @@ contains
 
     call prim_printstate_init(par)
     ! Initialize output fields for plotting...
-
-    while_iter = 0
 
     ! initialize flux terms to 0
 

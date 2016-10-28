@@ -63,7 +63,7 @@ contains
     use solver_mod, only : solver_test, solver_test_ml
 #endif
     !-----------------
-    use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
+    use control_mod, only : integration,  &
          restartfreq, statefreq, runtype, topology,   &
          test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output, &
          tstep_type, toy_chemistry
@@ -885,7 +885,7 @@ contains
     !-----------------
     use advance_mod, only : advance_nonstag_rk
     !-----------------
-    use control_mod, only : integration, debug_level,  &
+    use control_mod, only : integration, &
          restartfreq, statefreq, runtype, topology, &
          rk_stage_user, test_case, sub_case, kmass, qsplit, nu, nu_s, limiter_option, &
          hypervis_subcycle, g_sw_output, toy_chemistry

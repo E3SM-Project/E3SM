@@ -63,16 +63,6 @@ module namelist_mod
     u_perturb,     &        ! J&W baroclinic test perturbation size
     columnpackage, &
     moisture,      &
-    filter_type,   &
-    transfer_type, &
-    filter_freq,   &
-    filter_mu,     &
-    filter_freq_advection,   &
-    filter_mu_advection,     &
-    p_bv,          &
-    s_bv,          &
-    wght_fm,       &
-    kcut_fm,       &
     vform,         &
     vfile_mid,     &
     vfile_int,     &
@@ -326,16 +316,6 @@ module namelist_mod
       tol,           &
       debug_level
 
-    namelist /filter_nl/filter_type,   &
-      transfer_type, &
-      filter_freq,   &
-      filter_mu,     &
-      filter_freq_advection,   &
-      filter_mu_advection,     &
-      p_bv,          &
-      s_bv,          &
-      wght_fm,       &
-      kcut_fm       
 
 #ifndef CAM
     namelist /vert_nl/        &
@@ -539,21 +519,6 @@ module namelist_mod
           endif
        endif
 
-       write(iulog,*)"reading filter namelist..."
-       ! Set default mu/freq for advection filtering
-       filter_mu_advection   = 0.05_real_kind
-       filter_freq_advection = 0
-       filter_freq=0
-
-#if defined(CAM)
-#elif defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=filter_nl)
-#else
-       read(*,nml=filter_nl)
-#endif
-
-       ! A modulo(a,p) where p == 0 is undefined
-       if(filter_freq == 0) filter_freq = -1
 #ifndef CAM
 
 #ifdef _PRIM
@@ -794,21 +759,6 @@ module namelist_mod
        call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
        call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
        call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    end if
-
-    call MPI_bcast(filter_type   ,8,MPIChar_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(transfer_type ,8,MPIChar_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_mu     ,1,MPIreal_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_freq   ,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_mu_advection     ,1,MPIreal_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_freq_advection   ,1,MPIinteger_t ,par%root,par%comm,ierr)
-
-    if (transfer_type == "bv") then
-       call MPI_bcast(p_bv      ,1,MPIreal_t    ,par%root,par%comm,ierr)
-       call MPI_bcast(s_bv      ,1,MPIreal_t    ,par%root,par%comm,ierr)
-    else if (transfer_type == "fm") then
-       call MPI_bcast(kcut_fm   ,1,MPIinteger_t,par%root,par%comm,ierr)
-       call MPI_bcast(wght_fm   ,1,MPIreal_t   ,par%root,par%comm,ierr)
     end if
 
     call MPI_bcast(vform    , MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
@@ -1093,7 +1043,6 @@ module namelist_mod
        write(iulog,*)"readnl: tstep          = ",tstep
        write(iulog,*)"readnl: ftype          = ",ftype
        write(iulog,*)"readnl: limiter_option = ",limiter_option
-       write(iulog,*)"filter: smooth         = ",smooth
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
@@ -1143,26 +1092,6 @@ module namelist_mod
           write(iulog,*) "initial_total_mass = ",initial_total_mass
        end if
 
-       if (filter_freq>0 .or. filter_freq_advection>0) then
-       write(iulog,*)"Filter Method is ",filter_type
-       write(iulog,*)"filter: viscosity (mu)  = ",filter_mu
-       write(iulog,*)"filter: frequency       = ",filter_freq
-       write(iulog,*)"filter_advection: viscosity (mu)  = ",filter_mu_advection
-       write(iulog,*)"filter_advection: frequency       = ",filter_freq_advection
-
-       write(iulog,*)"filter: transfer_type   = ",transfer_type
-       if (transfer_type == "bv") then
-          print *
-          write(iulog,*)"with Boyd-Vandeven Transfer Fn Parameters:"
-          write(iulog,*)"     filter: order     (p)   = ",p_bv
-          write(iulog,*)"     filter: lag coeff (s)   = ",s_bv
-       else if (transfer_type == "fm") then
-          print *
-          write(iulog,*)"with Fischer-Mullen Transfer Fn Parameters:"
-          write(iulog,*)"     filter: clipped wave nos kc = ",kcut_fm
-          write(iulog,*)"     filter: amount of clipping  = ",wght_fm
-       end if
-       endif
 #ifndef CAM
        write(iulog,*)"  analysis: output_prefix = ",TRIM(output_prefix)
        write(iulog,*)"  analysis: io_stride = ",io_stride

@@ -78,13 +78,6 @@ module control_mod
   real (kind=real_kind), public, parameter :: tol_limiter=1e-13
 
   integer              , public :: limiter_option = 0
-  character(len=8)     , public :: filter_type
-  character(len=8)     , public :: transfer_type
-  integer              , public :: filter_freq
-  integer              , public :: filter_freq_advection
-  integer              , public :: filter_counter
-  real (kind=real_kind), public :: filter_mu
-  real (kind=real_kind), public :: filter_mu_advection
   character(len=MAX_STRING_LEN)    , public :: precon_method  ! if semi_implicit, type of preconditioner:
                                                   ! choices block_jacobi or identity
 
@@ -129,7 +122,6 @@ module control_mod
   integer,                          public  :: vanalytic = 0  ! if 1, test initializes vertical coords
   real (kind=real_kind),            public  :: vtop = 0.1     ! top coordinate level for analytic vcoords
 
-  integer              , public :: while_iter
   integer              , public :: fine_ne = -1               ! set for refined exodus meshes (variable viscosity)
   real (kind=real_kind), public :: max_hypervis_courant = 1d99! upper bound for Courant number
                                                               ! (only used for variable viscosity, recommend 1.9 in namelist)
