@@ -58,6 +58,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 ! * added the option cu_ntiedtke for the "new" Tiedtke parameterization of convection from WRF version 3.8.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
+! * added the physics suite "convection_scale_aware" (see below for the physics options used in the suite).
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-28.
 
 
  contains
@@ -110,6 +112,18 @@
     if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'rrtmg_sw'
     if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'cld_fraction'
     if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'sf_monin_obukhov'
+    if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'noah'
+
+ else if (trim(config_physics_suite) == 'convection_scale_aware') then
+
+    if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'mp_thompson'
+    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_grell_freitas'
+    if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'bl_mynn'
+    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'off'
+    if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'rrtmg_lw'
+    if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'rrtmg_sw'
+    if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'cld_fraction'
+    if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'sf_mynn'
     if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'noah'
 
  else if (trim(config_physics_suite) == 'none') then
