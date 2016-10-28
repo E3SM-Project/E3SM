@@ -72,24 +72,13 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
             run_cmd_no_fail(shell_command_file)
 
 def update_user_nl_file(case_user_nl, contents):
-    update_file = True
     if os.path.isfile(case_user_nl):
         with open(case_user_nl, "r") as fd:
             old_contents = fd.read()
-
-        oc = set(old_contents.splitlines())
-        nc = set(contents.splitlines())
-        if not nc.issubset(oc):
-            contents = contents + old_contents
-            update_file = True
-        else:
-            update_file = False
-    if update_file:
+        contents = contents + old_contents
         logger.info("Pre-pending file %s"%(case_user_nl))
         with open(case_user_nl, "w") as fd:
             fd.write(contents)
-
-
 
 def build_include_dirs_list(user_mods_path, include_dirs=None):
     '''
