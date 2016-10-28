@@ -259,8 +259,8 @@ Original Leapfrog w/o Robert filter code
 
 2016-2/21: switch to RK5 for initial and restart run:
 RK5 code dissipates more than leapfrog w/o Robert filter, as expected:
-  KE diss = -.24e-1
-  IE diss = +.24e-1
+  KE diss = -.24241e-1
+  IE diss = +.24243e-1
   PE diss = O(e-7)
   dE/dt   = .55e-5
   Q diss  = O(e-13)

@@ -82,8 +82,8 @@ set qsize = 4     # number of passive tracers
 #set nlev=72
 #set qsize=35
 
-# set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
-set namelist = jw_baroclinic-eul.nl
+set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
+#set namelist = jw_baroclinic-eul.nl
 
 #
 #  BUILD PREQX
