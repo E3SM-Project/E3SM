@@ -21,10 +21,10 @@
  private
  public:: init_thompson_clouddroplets_forMPAS
 
-! MPAS main initialization of the Thompson parameterization of cloud microphysics with nucleation of cloud
-! droplets based on distributions of CCNs and INs (aerosol-aware parameterization).
-! Laura D. Fowler (send comments to laura@ucar.edu).
-! 2016-03-28.
+!MPAS main initialization of the Thompson parameterization of cloud microphysics with nucleation of cloud
+!droplets based on distributions of CCNs and INs (aerosol-aware parameterization).
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2016-03-28.
 !
 ! add-ons and modifications to sourcecode:
 ! ----------------------------------------

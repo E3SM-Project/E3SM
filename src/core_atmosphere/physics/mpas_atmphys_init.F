@@ -26,9 +26,9 @@
  private
  public:: physics_init
 
-! MPAS main initialization subroutine for all physics parameterizations.
-! Laura D. Fowler (send comments to laura@ucar.edu).
-! 2013-05-01.
+!MPAS main initialization subroutine for all physics parameterizations.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
 !
 ! subroutines in mpas_atmphys_init:
 ! ---------------------------------

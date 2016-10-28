@@ -11,7 +11,7 @@
 #define DM_BCAST_REAL(A)     call mpas_dmpar_bcast_real(dminfo,A)
 #define DM_BCAST_REALS(A)    call mpas_dmpar_bcast_reals(dminfo,size(A),A)
 
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_lsm_noahinit
  use mpas_dmpar
  use mpas_kind_types
@@ -28,31 +28,29 @@
  public:: noah_init_forMPAS
 
 
-!>\brief initialization of the NOAH 4-layer land surface scheme.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_lsm_noahinit:
-!> -----------------------------------------
-!> noah_init_forMPAS: call lsminit from subroutine init_lsm (module mpas_atmphyse_driver_lsm.F).
-!> lsminit          : main initialization subroutine for the NOAH 4-layer land surface scheme.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * replaced the variable grav with gravity, for simplicity.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
-!>    * added "use mpas_kind_types" at the top of the module.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!Initialization of the NOAH 4-layer land surface scheme.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_lsm_noahinit:
+! -----------------------------------------
+! noah_init_forMPAS: call lsminit from subroutine init_lsm (module mpas_atmphyse_driver_lsm.F).
+! lsminit          : main initialization subroutine for the NOAH 4-layer land surface scheme.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * replaced the variable grav with gravity, for simplicity.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+! * added "use mpas_kind_types" at the top of the module.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine noah_init_forMPAS(dminfo,mesh,configs,diag_physics,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info):: dminfo
@@ -63,16 +61,16 @@
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
 !read formatted files needed for land-surface model:
  call lsminit(dminfo,mesh,configs,diag_physics,sfc_input)
 
  end subroutine noah_init_forMPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine lsminit(dminfo,mesh,configs,diag_physics,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -105,7 +103,7 @@
  real(kind=RKIND),parameter:: hlice = 3.335e5
  real(kind=RKIND),parameter:: t0 = 273.15
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(sfc_input,'mminlu'              ,mminlu          )
  call mpas_pool_get_config(configs,'input_soil_data'      ,mminsl          )
@@ -204,9 +202,9 @@
 
  end subroutine lsminit
 
-!==================================================================================================
+!=================================================================================================================
  subroutine soil_veg_gen_parm(dminfo,mminlu,mminsl)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -241,8 +239,8 @@
 !
 !-----READ IN VEGETATION PROPERTIES FROM VEGPARM.TBL
 
-!--------------------------------------------------------------------------------------------------
-
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
 !write(0,*) '       enter subroutine soil_veg_gen_parm:'
 
 !read in the vegetation properties from vegparm.tbl:
@@ -523,6 +521,6 @@
 
  end subroutine soil_veg_gen_parm
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_lsm_noahinit
-!==================================================================================================
+!=================================================================================================================

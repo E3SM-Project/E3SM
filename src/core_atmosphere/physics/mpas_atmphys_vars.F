@@ -14,9 +14,9 @@
  save
 
 
-! mpas_atmphys_vars contains all local variables and arrays used in the physics parameterizations.
-! Laura D. Fowler (send comments to laura@ucar.edu).
-! 2013-05-01.
+!mpas_atmphys_vars contains all local variables and arrays used in the physics parameterizations.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
 !
 ! add-ons and modifications:
 ! --------------------------

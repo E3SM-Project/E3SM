@@ -9,7 +9,7 @@
 #define DM_BCAST_MACRO(A) call mpas_dmpar_bcast_reals(dminfo,size(A),A)
 #define DM_BCAST_INTEGER(A) call mpas_dmpar_bcast_int(dminfo,A)
 
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_landuse
  use mpas_dmpar
  use mpas_kind_types
@@ -29,58 +29,55 @@
  integer,parameter:: frac_seaice      = 0       ! = 1: treats seaice as fractional field.
                                                 ! = 0: ice/no-ice flag. 
 
-!>\brief
-!> This module reads the file LANDUSE.TBL which defines the land type of each cell, depending on
-!> the origin of the input data, as defined by the value of the variable "sfc_input_data".
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_landuse:
-!> ------------------------------------
-!> landuse_init_forMPAS: main initialization for land use types.
+!This module reads the file LANDUSE.TBL which defines the land type of each cell, depending on
+!the origin of the input data, as defined by the value of the variable "sfc_input_data".
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_landuse:
+! ------------------------------------
+! landuse_init_forMPAS: main initialization for land use types.
 
-!> The allowed values for sfc_input_data are:
-!> input_sfc_data = OLD.                      (13 land types / summer and winter).
-!> input_sfc_data = USGS.                     (33 land types / summer and winter).
-!> input_sfc_data = MODIFIED_IGBP_MODIS_NOAH  (33 land types / summer and winter).
-!> input_sfc_data = SiB                       (16 land types / summer and winter).
-!> input_sfc_data = LW12                      ( 3 land types / all seasons).
-!>
-!> Given the value of the input index lu_index, and the julian day julday, landuse_init_forMPAS
-!> initializes the variables:
-!> .. background roughness length     (z0).
-!> .. background surface albedo       (sfc_albbck).        
-!> .. background surface emissivity   (sfc_emibck).
-!> .. roughness length                (znt).
-!> .. surface albedo                  (sfc_albedo).
-!> .. surface emissivity              (sfc_emiss).
-!> .. land mask                       (xland).
-!> .. thermal inertia                 (thc).
-!> .. surface moisture availability   (mavail).
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * deleted initialization of xicem and xland.
-!>      - xicem is now initialized in physics_init.
-!>      - xland is now initialized in physics_initialize_real and updated in physics_update_sst if
-!>        needed.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-24. 
-!>    * added initialization of the background surface albedo over snow.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-10-19.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * In subroutine landuse_init_forMPAS, added the definition of isurban as a function of the
-!>      input landuse data file.
-!>      Dominikus Heinzeller (IMK) / 2014-07-24.
+! The allowed values for sfc_input_data are:
+! input_sfc_data = OLD.                      (13 land types / summer and winter).
+! input_sfc_data = USGS.                     (33 land types / summer and winter).
+! input_sfc_data = MODIFIED_IGBP_MODIS_NOAH  (33 land types / summer and winter).
+! input_sfc_data = SiB                       (16 land types / summer and winter).
+! input_sfc_data = LW12                      ( 3 land types / all seasons).
+!
+! Given the value of the input index lu_index, and the julian day julday, landuse_init_forMPAS
+! initializes the variables:
+! .. background roughness length     (z0).
+! .. background surface albedo       (sfc_albbck).        
+! .. background surface emissivity   (sfc_emibck).
+! .. roughness length                (znt).
+! .. surface albedo                  (sfc_albedo).
+! .. surface emissivity              (sfc_emiss).
+! .. land mask                       (xland).
+! .. thermal inertia                 (thc).
+! .. surface moisture availability   (mavail).
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * deleted initialization of xicem and xland.
+!   - xicem is now initialized in physics_init.
+!   - xland is now initialized in physics_initialize_real and updated in physics_update_sst if needed.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-24. 
+! * added initialization of the background surface albedo over snow.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-10-19.
+! * Modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * In subroutine landuse_init_forMPAS, added the definition of isurban as a function of the
+!   input landuse data file.
+!   Dominikus Heinzeller (IMK) / 2014-07-24.
+
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine landuse_init_forMPAS(dminfo,julday,mesh,configs,diag_physics,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -124,7 +121,9 @@
  real(kind=RKIND):: li
  real(kind=RKIND),dimension(max_cats,max_seas):: albd,slmo,sfem,sfz0,therin,scfx,sfhc
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine landuse_init_forMPAS:'
 
  call mpas_pool_get_config(configs,'config_do_restart' ,config_do_restart )
  call mpas_pool_get_config(configs,'config_frac_seaice',config_frac_seaice)
@@ -152,10 +151,10 @@
  call mpas_pool_get_array(diag_physics,'z0'        , z0        )
  call mpas_pool_get_array(diag_physics,'znt'       , znt       )
  
- write(0,*)
-! write(0,*) '--- enter subroutine landuse_init_forMPAS: julian day=', julday
- write(0,*) '--- config_frac_seaice = ',config_frac_seaice
- write(0,*) '--- xice_threshold     = ',xice_threshold
+!write(0,*)
+!write(0,*) '--- enter subroutine landuse_init_forMPAS: julian day=', julday
+!write(0,*) '--- config_frac_seaice = ',config_frac_seaice
+!write(0,*) '--- xice_threshold     = ',xice_threshold
 
 !reads in the landuse properties from landuse.tbl:
  if(dminfo % my_proc_id == IO_NODE) then
@@ -238,9 +237,9 @@
  DM_BCAST_MACRO(therin)
  DM_BCAST_MACRO(sfhc)
  DM_BCAST_MACRO(scfx)
- write(0,*) '--- isice   =',isice
- write(0,*) '--- iswater =',iswater
- write(0,*) '--- isurban =',isurban
+!write(0,*) '--- isice   =',isice
+!write(0,*) '--- iswater =',iswater
+!write(0,*) '--- isurban =',isurban
  if(config_do_restart) then
     write(0,*) '--- config_do_restart =', config_do_restart
     write(0,*) '--- skip the end of landuse_init_forMPAS'
@@ -300,7 +299,7 @@
 
  enddo
 
-! write(0,*) '--- end subroutine landuse_init_forMPAS'
+!write(0,*) '--- end subroutine landuse_init_forMPAS'
 
 !formats:
  101 format(i6,8(1x,e15.8))
@@ -308,6 +307,6 @@
 
  end subroutine landuse_init_forMPAS
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_landuse
-!==================================================================================================
+!=================================================================================================================

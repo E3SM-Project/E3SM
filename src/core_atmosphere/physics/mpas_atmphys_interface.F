@@ -22,8 +22,8 @@
           microphysics_from_MPAS,    &
           microphysics_to_MPAS
 
-! interface for conversion between variables used in the MPAS dynamical core and variables needed in the
-! physics parameterizations.
+!Interface for conversion between variables used in the MPAS dynamical core and variables needed in the
+!physics parameterizations.
 !Laura D. Fowler (send comments to laura@ucar.edu).
 !2013-05-01.
 !
