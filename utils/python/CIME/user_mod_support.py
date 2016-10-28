@@ -22,7 +22,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
             os.remove(shell_command_file)
 
     include_dirs = build_include_dirs_list(user_mods_path)
-    logger.warn("include_dirs are %s"%include_dirs)
+    logger.debug("include_dirs are %s"%include_dirs)
     for include_dir in include_dirs:
         # write user_nl_xxx file in caseroot
         for user_nl in glob.iglob(os.path.join(include_dir,"user_nl_*")):
@@ -76,7 +76,10 @@ def update_user_nl_file(case_user_nl, contents):
     if os.path.isfile(case_user_nl):
         with open(case_user_nl, "r") as fd:
             old_contents = fd.read()
-        if old_contents.find(contents) == -1:
+
+        oc = set(old_contents.splitlines())
+        nc = set(contents.splitlines())
+        if not nc.issubset(oc):
             contents = contents + old_contents
             update_file = True
         else:
@@ -127,25 +130,25 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
     expect(os.path.isdir(user_mods_path),
            "Directory not found %s"%user_mods_path)
     norm_path = os.path.normpath(user_mods_path)
-    already_included = False
+
     for dir_ in include_dirs:
         if norm_path == dir_:
-            already_included = True
+            include_dirs.remove(norm_path)
             break
 
-    if not already_included:
-        logger.info("Adding user mods directory %s"%norm_path)
-        include_dirs = [norm_path] + include_dirs
-        include_file = os.path.join(norm_path,"include_user_mods")
-        if os.path.isfile(include_file):
-            with open(include_file, "r") as fd:
-                for newpath in fd:
-                    newpath = newpath.rstrip()
-                    if len(newpath) > 0 and not newpath.startswith("#"):
-                        if not os.path.isabs(newpath):
-                            newpath = os.path.join(user_mods_path, newpath)
-                        if os.path.isabs(newpath):
-                            build_include_dirs_list(newpath, include_dirs)
-                        else:
-                            logger.warn("Could not resolve path '%s' in file '%s'"%newpath,include_file)
+    logger.info("Adding user mods directory %s"%norm_path)
+    include_dirs.append(norm_path)
+    include_file = os.path.join(norm_path,"include_user_mods")
+    if os.path.isfile(include_file):
+        with open(include_file, "r") as fd:
+            for newpath in fd:
+                newpath = newpath.rstrip()
+                if len(newpath) > 0 and not newpath.startswith("#"):
+                    if not os.path.isabs(newpath):
+                        newpath = os.path.join(user_mods_path, newpath)
+                    if os.path.isabs(newpath):
+                        build_include_dirs_list(newpath, include_dirs)
+                    else:
+                        logger.warn("Could not resolve path '%s' in file '%s'"%newpath,include_file)
+
     return include_dirs
