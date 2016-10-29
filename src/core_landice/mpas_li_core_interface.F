@@ -13,6 +13,7 @@ module li_core_interface
    use mpas_constants
    use mpas_io_units
    use mpas_attlist
+   use mpas_abort, only : mpas_dmpar_global_abort
    use li_core
 
    public

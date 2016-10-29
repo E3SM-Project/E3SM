@@ -12,6 +12,7 @@ module mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
    use mpas_threading
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use ESMF
    use ESMF_BaseMod
@@ -2121,7 +2122,7 @@ end module mpas_timekeeping
 
 subroutine wrf_error_fatal(msg)
 
-   use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    implicit none
 

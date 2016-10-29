@@ -24,6 +24,7 @@ module mpas_forcing
   use mpas_timekeeping
   use mpas_io_streams
   use mpas_stream_manager
+  use mpas_abort, only : mpas_dmpar_global_abort
 
   implicit none
 
