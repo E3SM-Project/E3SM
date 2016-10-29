@@ -112,7 +112,22 @@ module atm_core_interface
       type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
+      logical, pointer :: iauActive
+      integer, pointer :: config_iau_option
+
       ierr = 0
+
+      nullify(config_iau_option)
+      call mpas_pool_get_config(configs, 'config_IAU_option', config_iau_option)
+
+      nullify(iauActive)
+      call mpas_pool_get_package(packages, 'iauActive', iauActive)
+
+      if (config_iau_option > 0) then
+         iauActive = .true.
+      else
+         iauActive = .false.
+      end if
 
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at

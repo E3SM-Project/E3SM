@@ -348,6 +348,8 @@
                 <package name="cu_tiedtke_in" description="parameterization of Tiedtke convection."/>
                 <package name="bl_ysu_in" description="parameterization of YSU Planetary Boundary Layer."/>
                 <package name="bl_mynn_in" description="parameterization of MYNN Planetary Boundary Layer."/>
+
+                <package name="iau" description="Incremental Analysis Update"/>
         </packages>
 
 
@@ -1030,7 +1032,8 @@
                         filename_template="x1.40962.AmB.$Y-$M-$D_$h.$m.$s.nc" 
                         input_interval="initial_only"
                         filename_interval="none"
-                        runtime_format="separate_file">
+                        runtime_format="separate_file"
+                        packages="iau">
 
 			<var name="xtime"/>
 			<var name="u_amb"/>
@@ -3310,7 +3313,7 @@
                      description="directional asymmetry function of orography"/>
         </var_struct>
 
-        <var_struct name="tend_iau" time_levs="1">
+        <var_struct name="tend_iau" time_levs="1" packages="iau">
 			
                 <!-- analysis increments; read from iau input -->
                 <var name="u_amb"        name_in_code="u"          type="real"     dimensions="nVertLevels nEdges Time"/>
