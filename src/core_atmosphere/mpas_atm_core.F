@@ -45,7 +45,6 @@ module atm_core
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: mesh
       type (mpas_pool_type), pointer :: diag
-      type (mpas_pool_type), pointer :: tend_iau
       type (field2DReal), pointer :: u_field, pv_edge_field, ru_field, rw_field
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
@@ -117,11 +116,12 @@ module atm_core
          end do
       end if
 
-!     Read a new data stream for Incremental Analysis Update (IAU), if config_IAU_option > 0    : HA (June-15-2016)
-!     FIXME: should I check xtime for the IAU fields? Maybe not.
-      
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_option', iopt)    ! HA
-      if(iopt >= 1) then
+      !
+      ! Read a new data stream for Incremental Analysis Update (IAU), if config_IAU_option > 0    : HA (June-15-2016)
+      ! FIXME: should I check xtime for the IAU fields? Maybe not.
+      !
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_option', iopt)
+      if (iopt > 0) then
          call MPAS_stream_mgr_read(domain % streamManager, streamID='iau', whence=MPAS_STREAM_NEAREST, ierr=ierr)
          if (ierr /= MPAS_STREAM_MGR_NOERR) then
             write(0,*) ' '
@@ -130,6 +130,7 @@ module atm_core
             call mpas_dmpar_global_abort('********************************************************************************')
          end if
       end if     
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='iau', ierr=ierr)
 
       !
       ! Set startTimeStamp based on the start time of the simulation clock
