@@ -1032,19 +1032,11 @@
                         filename_template="x1.40962.AmB.$Y-$M-$D_$h.$m.$s.nc" 
                         input_interval="initial_only"
                         filename_interval="none"
-                        runtime_format="separate_file"
+                        immutable="true"
                         packages="iau">
 
 			<var name="xtime"/>
-			<var name="u_amb"/>
-			<var name="rho_amb"/>
-			<var name="theta_amb"/>
-			<var name="qv_amb"/>
-			<var name="qc_amb"/>
-			<var name="qr_amb"/>
-			<var name="qi_amb"/>
-			<var name="qs_amb"/>
-			<var name="qg_amb"/>
+			<var_struct name="tend_iau"/>
 		</stream>
 	</streams>
 
