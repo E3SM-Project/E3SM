@@ -29,7 +29,7 @@ module mpas_atm_iau
       real (kind=RKIND), intent(out) :: wgt_iau
       
       integer :: nsteps_iau       ! Total number of time steps where the IAU forcing is applied.
-      logical, parameter :: debug = .true.
+      logical, parameter :: debug = .false.
       
 !      type (mpas_pool_type), intent(in) :: configs
 !      type (MPAS_Time_type) :: startTime, stopTime      ! for the entire model integration period
@@ -92,8 +92,8 @@ module mpas_atm_iau
       real (kind=RKIND), dimension(:,:), pointer :: rho_edge, rho_zz, theta_m, theta, u, zz, &
                                                     qv, qc, qr, qi, qs, qg, &
                                                     tend_u, tend_rho, tend_theta, tend_th, tend_w, &
-						    tend_qv, tend_qc, tend_qr, tend_qi, tend_qs, tend_qg
-      real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars									   
+                                                    tend_qv, tend_qc, tend_qr, tend_qi, tend_qs, tend_qg
+      real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars
       real(kind=RKIND),dimension(:,:), pointer:: u_amb, theta_amb, rho_amb, &
                                                  qv_amb, qc_amb, qr_amb, qi_amb, qs_amb, qg_amb
 
@@ -154,7 +154,7 @@ module mpas_atm_iau
 !     initialize the tendency for potential temperature
       tend_th = 0._RKIND
       
-      write(0,*) 'atm_add_tend_anal_incr: wgt_iau =',wgt_iau
+!      write(0,*) 'atm_add_tend_anal_incr: wgt_iau =',wgt_iau
 
 !     add coupled tendencies for u on edges
       do i = 1, nEdgesSolve
