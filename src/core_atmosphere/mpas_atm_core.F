@@ -10,7 +10,6 @@ module atm_core
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_add_anal_incr
 
    type (MPAS_Clock_type), pointer :: clock
 

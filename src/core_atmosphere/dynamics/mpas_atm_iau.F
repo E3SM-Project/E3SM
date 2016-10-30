@@ -1,4 +1,11 @@
- module mpas_add_anal_incr
+! Copyright (c) 2016,  Los Alamos National Security, LLC (LANS)
+! and the University Corporation for Atmospheric Research (UCAR).
+!
+! Unless noted otherwise source code is licensed under the BSD license.
+! Additional copyright and license information can be found in the LICENSE file
+! distributed with this code, or at http://mpas-dev.github.com/license.html
+!
+module mpas_atm_iau
 
  use mpas_derived_types
  use mpas_pool_routines
@@ -62,7 +69,7 @@
       
       end if  
 
-      end subroutine atm_compute_iau_coef
+ end subroutine atm_compute_iau_coef
       
 !==================================================================================================
  subroutine atm_add_tend_anal_incr (tend, tend_iau, state, diag, mesh, wgt_iau, dt)
@@ -206,4 +213,4 @@
  end subroutine atm_add_tend_anal_incr
  !==================================================================================================
 
-end module mpas_add_anal_incr
+end module mpas_atm_iau

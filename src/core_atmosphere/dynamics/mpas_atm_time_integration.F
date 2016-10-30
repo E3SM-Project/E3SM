@@ -36,7 +36,7 @@ module atm_time_integration
    use mpas_atmphys_utilities
 #endif
 
-   use mpas_add_anal_incr  
+   use mpas_atm_iau  
 
    integer :: timerid, secs, u_secs
 
