@@ -91,11 +91,11 @@ contains
 
       do f = 1, num_hydrologyc
          c = filter_hydrologyc(f)
-         if(zwt(c) <= zi(c,nlevsoi)) then
-           if(do_varsoil) then
-	      wa(c) = 0._r8               ! Made 0 for variable soil thickness
-	   else
-              wa(c) = 5000._r8
+         if(do_varsoil) then
+	   wa(c) = 0._r8               ! Made 0 for variable soil thickness
+	 else
+           if(zwt(c) <= zi(c,nlevsoi)) then
+             wa(c) = 5000._r8
 	   end if
          end if
       end do
