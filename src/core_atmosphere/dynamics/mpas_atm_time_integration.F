@@ -236,10 +236,8 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_split_dynamics_transport', config_split_dynamics_transport)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dynamics_split_steps', config_dynamics_split)
 
-      ! Retrieve configuration options for IAU (Incremental Analysis Update) - HA (June-16-2016)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_option', config_IAU_option)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_window_length_s', time_window_sec)
-      call atm_compute_iau_coef (config_IAU_option, itimestep, dt, time_window_sec, weight_iau)
+      ! Retrieve weight/coefficient for IAU (Incremental Analysis Update) - HA (June-16-2016)
+      weight_iau = atm_iau_coef (domain % blocklist % configs, itimestep, dt)
 
       !
       ! Retrieve field structures
@@ -543,13 +541,8 @@ MPAS_GPTL_STOP('dyn_tend')
                block => domain % blocklist
  
                do while (associated(block))
-                  call mpas_pool_get_subpool(block % structs, 'state', state)
-                  call mpas_pool_get_subpool(block % structs, 'diag', diag)
-                  call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-                  call mpas_pool_get_subpool(block % structs, 'tend', tend)
-                  call mpas_pool_get_subpool(block % structs, 'tend_iau', tend_iau)
 
-                  call atm_add_tend_anal_incr ( tend, tend_iau, state, diag, mesh, weight_iau, dt )
+                  call atm_add_tend_anal_incr ( block % structs, weight_iau, dt )
 
                   block => block % next
               end do

@@ -18,18 +18,21 @@ module mpas_atm_iau
  contains
 
 !==================================================================================================
- subroutine atm_compute_iau_coef (iopt, itimestep, dt, time_window_sec, wgt_iau)
+ real (kind=RKIND) function atm_iau_coef(configs, itimestep, dt) result(wgt_iau)
 !==================================================================================================
 ! Compute the coefficient (or weight) for the IAU forcing at itimestep.
  
       implicit none
 
-      integer,           intent(in)  :: iopt, itimestep
-      real (kind=RKIND), intent(in)  :: dt, time_window_sec
-      real (kind=RKIND), intent(out) :: wgt_iau
-      
+      type (mpas_pool_type), intent(in) :: configs
+      integer,           intent(in)  :: itimestep
+      real (kind=RKIND), intent(in)  :: dt
+
       integer :: nsteps_iau       ! Total number of time steps where the IAU forcing is applied.
       logical, parameter :: debug = .false.
+
+      integer, pointer :: iopt
+      real (kind=RKIND), pointer :: time_window_sec
       
 !      type (mpas_pool_type), intent(in) :: configs
 !      type (MPAS_Time_type) :: startTime, stopTime      ! for the entire model integration period
@@ -39,6 +42,8 @@ module mpas_atm_iau
 !      character(len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time
 !      real (kind=RKIND),      pointer :: time_window_sec, runtime_window
 
+      call mpas_pool_get_config(configs, 'config_IAU_option', iopt)
+      call mpas_pool_get_config(configs, 'config_IAU_window_length_s', time_window_sec)
 
 ! Initialization
       wgt_iau = 0.
@@ -69,21 +74,23 @@ module mpas_atm_iau
       
       end if  
 
- end subroutine atm_compute_iau_coef
+ end function atm_iau_coef
       
 !==================================================================================================
- subroutine atm_add_tend_anal_incr (tend, tend_iau, state, diag, mesh, wgt_iau, dt)
+ subroutine atm_add_tend_anal_incr (structs, wgt_iau, dt)
 !==================================================================================================
       
       implicit none
 
-      type (mpas_pool_type), intent(inout) :: tend
-      type (mpas_pool_type), intent(inout) :: tend_iau
-      type (mpas_pool_type), intent(in) :: state
-      type (mpas_pool_type), intent(in) :: diag
-      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(inout) :: structs
       real (kind=RKIND),     intent(in) :: wgt_iau
       real (kind=RKIND),     intent(in) :: dt
+
+      type (mpas_pool_type), pointer :: tend
+      type (mpas_pool_type), pointer :: tend_iau
+      type (mpas_pool_type), pointer :: state
+      type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: mesh
       
       integer :: iEdge, iCell, i, j, k, n
       integer, pointer :: nCells, nEdges, nCellsSolve, nEdgesSolve, nVertLevels
@@ -96,6 +103,12 @@ module mpas_atm_iau
       real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars
       real(kind=RKIND),dimension(:,:), pointer:: u_amb, theta_amb, rho_amb, &
                                                  qv_amb, qc_amb, qr_amb, qi_amb, qs_amb, qg_amb
+
+      call mpas_pool_get_subpool(structs, 'tend', tend)
+      call mpas_pool_get_subpool(structs, 'tend_iau', tend_iau)
+      call mpas_pool_get_subpool(structs, 'state', state)
+      call mpas_pool_get_subpool(structs, 'diag', diag)
+      call mpas_pool_get_subpool(structs, 'mesh', mesh)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
