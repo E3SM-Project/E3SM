@@ -98,17 +98,21 @@ module li_core_interface
 
       ! Local variables
       character (len=StrKIND), pointer :: config_velocity_solver
+      logical, pointer :: config_SGH
       logical, pointer :: config_adaptive_timestep_include_DCFL
 
       logical, pointer :: higherOrderVelocityActive
       logical, pointer :: SIAvelocityActive
+      logical, pointer :: hydroActive
 
       ierr = 0
 
       call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(configPool, 'config_SGH', config_SGH)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
       call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
+      call mpas_pool_get_package(packagePool, 'hydroActive', hydroActive)
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
@@ -117,6 +121,11 @@ module li_core_interface
          higherOrderVelocityActive = .true.
          write (stdoutUnit,*) "The 'higherOrderVelocity' package and associated variables have been enabled because a higher-order velocity solver is selected."
       end if
+
+      if (config_SGH) then
+         hydroActive = .true.
+         write(stdOutUnit,*) "The 'hydro' package and assocated variables have been enabled because 'config_SGH' is set to .true."
+      endif
 
       ! call setup packages in analysis driver
       call li_analysis_setup_packages(configPool, packagePool, ierr) 

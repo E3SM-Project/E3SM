@@ -102,6 +102,15 @@ SMB[:] = SMB[:] *910.0/(3600.0*24.0*365.0)
 #BMB[:] = -20.0  # units: m/yr
 
 
+
+hydro=False
+if hydro:
+   gridfile.variables['uReconstructX'][:] = 5.0/(3600.0*24.0*365.0)
+   gridfile.variables['basalMeltInput'][:] = 0.06 / 335000.0 * 50.0
+   gridfile.variables['externalWaterInput'][:] = 0.0
+   gridfile.variables['waterThickness'][:] = 0.08
+
+
 gridfile.close()
 
 print 'Successfully added dome initial conditions to: ', options.filename

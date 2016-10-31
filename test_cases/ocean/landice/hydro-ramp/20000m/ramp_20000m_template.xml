@@ -1,0 +1,59 @@
+<template>
+        <namelist>
+                <option name="config_dt">'0000-01-0_00:00:00'</option>
+                <option name="config_stop_time">'0220-01-01_00:00:00'</option>
+                <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+                <option name="config_velocity_solver">'none'</option>
+                <option name="config_thickness_advection">'none'</option>
+                <option name="config_ice_density">900.0</option>
+                <option name="config_ocean_density">1000.0</option>
+
+                <option name="config_SGH">.true.</option>
+                <option name="config_SGH_adaptive_timestep">.true.</option>
+                <option name="config_SGH_adaptive_timestep_fraction">0.5</option>
+                <option name="config_SGH_max_adaptive_timestep">864000.0</option>
+                <option name="config_SGH_alpha">3</option>
+                <option name="config_SGH_beta">2</option>
+                <option name="config_SGH_conduc_coeff">0.01</option>
+                <option name="config_SGH_till_drainage">0.0</option>
+                <option name="config_SGH_till_max">0.0</option>
+                <option name="config_SGH_bed_roughness_max">10.0</option>
+                <option name="config_SGH_bed_roughness">0.0000</option>
+                <option name="config_SGH_englacial_porosity">0.01</option>
+                <option name="config_SGH_creep_coefficient">0.04</option>
+        </namelist>
+
+        <streams>
+
+                <stream name="input">
+                        <attribute name="filename_template">landice_grid.nc</attribute>
+                </stream>
+
+                <stream name="output">
+                        <attribute name="type">output</attribute>
+                        <attribute name="filename_template">output.nc</attribute>
+                        <attribute name="output_interval">0000-01-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <add_contents>
+                                <member name="basicmesh" type="stream"/>
+                                <member name="xtime" type="var"/>
+                                <member name="basalSpeed" type="var"/>
+                                <member name="hydro" type="var_struct"/>
+                                <member name="daysSinceStart" type="var"/>
+                        </add_contents>
+                </stream>
+
+                <stream name="restart">
+                        <attribute name="type">input;output</attribute>
+                        <attribute name="filename_template">restart.$Y.nc</attribute>
+                        <attribute name="filename_interval">output_interval</attribute>
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <attribute name="precision">double</attribute>
+                        <attribute name="input_interal">initial_only</attribute>
+                </stream>
+
+        </streams>
+
+</template>
+

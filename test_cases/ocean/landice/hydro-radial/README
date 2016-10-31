@@ -1,0 +1,78 @@
+This test case is based off of:
+Bueler, E. & Pelt, W. Van, 2015. Mass-conserving subglacial hydrology in the Parallel Ice Sheet Model version 0.6. Geoscientific Model Development, 8, pp.1613–1635.
+
+See sections 5.3-5.4, 7.1 and Figures 2, 3, and 5.
+
+The test uses a nearly-exact solution for the steady state configuration of a radially symmetric ice sheet.
+It includes nontrivial profiles of ice overburden pressure and sliding.
+The solution is determined through numerical solution of a 1-d ODE initial value problem.
+Ed Bueler shared his Matlab code that generates the solution, and I have added those .m files to this directory.
+He has the code available publicly here: https://github.com/bueler/hydrolakes/tree/master/codes
+
+
+-------------
+steady_state_drift_test
+-------------
+
+As described in the GMD paper, the test is applied by generating a near-exact solution for water thickness and
+water pressure, given a profile of glacier geometry, a profile of sliding, a spatially-uniform melt input,
+various parameter values, and a specified initial value of water thickness at the margin.  The solution provides
+a steady-state profile of water thickness and water pressure for these inputs.
+
+Then, the numerical model (MPAS in this case, PISM originally) is initialized with these radial profiles of waterThickness
+and waterPressure, interpolated onto the 2-d numerical grid.  In the paper, they then describe how the model
+is integrated forward in time for one month, and error in the final state of waterThickness and waterPressure is
+assessed.  Because the model was initialized to the near-exact steady-state solution, any drift away from that
+initial condition should be due to numerical error.
+
+This test case is set up to follow that approach.  However, right now many of the steps have to be done manually.
+The procedure is:
+1. Run ./setup_hydro-radial_initial_conditions.py from the run_model directory.  This sets up the geometry and
+   melt and sliding forcing.
+2. Manually run setup_mpas_radial_IC.m using Matlab.  This sets up the near-exact SS solution for waterThickness
+   and waterPressure into the MPAS input file.  The path to the MPAS input file needs to be manually specified
+   in the script code.  Note that steps 1 and 2 could be combined.
+3. Run ./landice_model.  This will run for 1 month using the IC created in steps 1 and 2.
+4. Run ./plot_hydro-radial_profile.py to check the output.  This generates a lot of figures that were useful
+   for understanding and debugging the test case.  Figure 6 is the important results that can be compared to
+   Figure 5 in the GMD paper for the resolution at which the test case is run.
+
+Ideally, this would be repeated for multiple resolutions to generate a convergence plot like GMD Fig. 5.
+
+As of this commit, MPAS demonstrates similar error to PISM (GMD Fig. 5) for the 1km resolution I have run with.
+However, inpsection of the MPAS results shows that there is an issue at the margin of water being unable to
+flow out of the last cell with ice effectively because the hydropotential gradient there is artificially low
+there due to discretization error (and perhaps incorrect treatment at boundaries?).  The net effect is that
+waterThickness just increases indefinitely at the margin cells.  Though the waterThickness there quickly
+surpasses Wr and keeps going, it seems to have minimal effect on the solution in the interior for the one month
+run.  However, it's not clear what will happen over longer time periods.  Interestingly, the error in the MPAS
+solution after one month is very similar to the error in the PISM solution reported in the GMD paper.  So it's
+possible that PISM has the same problem, or else that this error isn't important enough after 1 month to matter
+much.  (Given that these margin cells have by far the largest errors, I suspect that is mostly what we are seeing
+in the error metric, though.)  The other possibility is that this error metric is not strict enough to
+identify problems...
+
+
+
+-------------
+spinup_test
+-------------
+
+Note that alternatively it is possible to run this test case to steady state from an initial condition of
+no water (or very little water).  That is what this test does.
+
+It runs long enough to reach steady state.  Then the modeled profiles of waterThickness and waterPressure
+can be compared to figures 2 and 3 in the GMD paper.
+
+Results appear to match based on the eyeball norm.  A quantitative error metric could be added.
+
+./plot_hydro-radial_profile.py can be used for this test as well to visualize the output.
+
+Notes on this:
+Ed Bueler said he's not sure that they ever did that.
+One thing that is not clear to me is how the initial value on water thickness required by the
+near-exact solution applies in this configuration.  It may be necessary to impose a Dirichlet b.c.
+on waterThickness to force the value at the margin to match the value at the margin in the near-exact solution.
+Otherwise the MPAS modeled value at the margin may not match the initial value used by the near-exact solution,
+and the comparison is less meaningful.
+

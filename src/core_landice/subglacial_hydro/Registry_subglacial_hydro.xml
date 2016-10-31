@@ -1,0 +1,173 @@
+<!-- Registry entries used for subglacial hydrology -->
+
+<!-- ======================================================================= -->
+<!-- NAMELIST RECORDS -->
+
+	<nml_record name="subglacial_hydro" in_defaults="true">
+		<nml_option name="config_SGH" type="logical" default_value=".false." units="unitless"
+		            description="activate subglacial hydrology model"
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_SGH_adaptive_timestep" type="logical" default_value=".false." units="unitless"
+		            description="Use adaptive timestepping for subglacial hydrology model"
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_SGH_adaptive_timestep_fraction" type="real" default_value="1.0" units="unitless"
+		            description="fraction of limiting timestep to use"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_max_adaptive_timestep" type="real" default_value="3.15e9" units="s"
+			description="The maximum allowable time step in seconds for the subglacial hydrology model.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds)."
+			possible_values="Any non-negative real value."
+		/>
+		<nml_option name="config_SGH_tangent_slope_calculation" type="character" default_value="from_normal_slope" units="unitless"
+		            description="Selection of the method for calculating the tangent component of slope at edges.
+'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
+'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles.
+'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
+		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
+		/>
+		<nml_option name="config_SGH_pressure_calc" type="character" default_value="cavity" units="unitless"
+		            description="Selection of the method for calculating water pressure.
+'cavity' closes the hydrology equations by assuming cavities are always completely full.
+'overburden' assumes water pressure is always equal to ice overburden pressure."
+		            possible_values="'cavity', 'overburden'"
+                />
+		<nml_option name="config_SGH_alpha" type="real" default_value="1.25" units="unitless"
+		            description="power in flux formula"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_beta" type="real" default_value="1.5" units="unitless"
+		            description="power in flux formula"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_conduc_coeff" type="real" default_value="0.001" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
+		            description="conductivity coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_till_drainage" type="real" default_value="3.1709792e-11" units="m s^-1"
+		            description="background till drainage rate"
+                            possible_values="positive real number.  Default value is 0.001 m/yr"
+		/>
+		<nml_option name="config_SGH_advection" type="character" default_value="fo" units="none"
+		            description="Advection method for SGH.  'fo'=First order upwind; 'fct'=Flux corrected transport.  FCT currently not enabled."
+		            possible_values="'fo','fct'"
+		/>
+		<nml_option name="config_SGH_bed_roughness" type="real" default_value="0.5" units="m^-1"
+		            description="cavitation coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_bed_roughness_max" type="real" default_value="0.1" units="m"
+		            description="bed roughness scale"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_creep_coefficient" type="real" default_value="0.04" units="none"
+		            description="creep closure coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_englacial_porosity" type="real" default_value="0.01" units="none"
+		            description="notional englacial porosity"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_till_max" type="real" default_value="2.0" units="m"
+		            description="maximum water thickness in till"
+		            possible_values="positive real number"
+		/>
+	</nml_record>
+
+<!-- ======================================================================= -->
+<!-- PACKAGE DEFINITIONS -->
+
+	<packages>
+		<package name="hydro" description="Variables only needed by subglacial hydrology model"/>
+
+	</packages>
+
+
+<!-- ======================================================================= -->
+<!-- I/O STREAM DEFINITIONS -->
+
+
+<!-- ======================================================================= -->
+<!-- INTERNAL MODEL VARIABLES -->
+
+	<!-- Variables related to subglacial hydrology -->
+        <var_struct name="hydro" time_levs="1" packages="hydro">
+                <!-- state vars -->
+		<var name="waterThickness" type="real" dimensions="nCells Time" units="m"
+		     description="water layer thickness in subglacial system" />
+		<var name="waterThicknessOld" type="real" dimensions="nCells Time" units="m"
+		     description="water layer thickness in subglacial system from previous time step" />
+                <var name="waterThicknessTendency" type="real" dimensions="nCells Time" units="m/s"
+		     description="rate of change in water layer thickness in subglacial system" />
+		<var name="tillWaterThickness" type="real" dimensions="nCells Time" units="m"
+		     description="water layer thickness in subglacial till" />
+		<var name="tillWaterThicknessOld" type="real" dimensions="nCells Time" units="m"
+		     description="water layer thickness in subglacial till from previous time step" />
+		<var name="waterPressure" type="real" dimensions="nCells Time" units="Pa"
+		     description="pressure in subglacial system" />
+		<var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
+		     description="pressure in subglacial system from previous time step" />
+                <var name="waterPressureTendency" type="real" dimensions="nCells Time" units="Pa/s"
+		     description="tendency in pressure in subglacial system" />
+                <!-- inputs -->
+		<var name="basalMeltInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+		     description="basal meltwater input" />
+		<var name="externalWaterInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+		     description="external water input" />
+		<var name="frictionAngle" type="real" dimensions="nCells Time" units="None"
+		     description="till friction angle" />
+                <!-- convenience variables -->
+		<var name="effectivePressure" type="real" dimensions="nCells Time" units="Pa"
+		     description="effective ice pressure in subglacial system" />
+                <var name="hydropotential" type="real" dimensions="nCells Time" units="Pa"
+		     description="subglacial hydropotential" />
+                <var name="waterFlux" type="real" dimensions="nEdges Time" units="m^2/s"
+		     description="total subglacial water flux" />
+                <var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m^2/s"
+		     description="advective subglacial water flux" />
+                <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m^2/s"
+		     description="diffusive subglacial water flux" />
+                <var name="waterVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
+		     description="subglacial water velocity" />
+                <var name="waterVelocityCellX" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="subglacial water velocity reconstructed on cell centers, x-component" />
+                <var name="waterVelocityCellY" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="subglacial water velocity reconstructed on cell centers, y-component" />
+                <var name="effectiveConducEdge" type="real" dimensions="nEdges Time" units="?"
+		     description="effective Darcy hydraulic conductivity on edges" />
+                <var name="waterThicknessEdge" type="real" dimensions="nEdges Time" units="m"
+		     description="water layer thickness on edges" />
+                <var name="waterThicknessEdgeUpwind" type="real" dimensions="nEdges Time" units="m"
+		     description="water layer thickness of cell upwind of edge" />
+                <var name="diffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="effective Darcy hydraulic conductivity" />
+                <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"
+		     description="hydropotential without water thickness contribution" />
+                <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa"
+		     description="normal component of gradient of hydropotentialBase" />
+                <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa"
+		     description="tangent component of gradient of hydropotentialBase" />
+                <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="?"
+		     description="magnitude of the gradient of hydropotentialBase, on Edges" />
+                <var name="divergence" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="flux divergence of water" />
+                <var name="openingRate" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="rate of cavity opening" />
+                <var name="closingRate" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="rate of creep closure" />
+                <var name="zeroOrderSum" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="sum of zero order terms" />
+                <var name="deltatSGHadvec" type="real" dimensions="Time" units="s"
+		     description="advective CFL limited time step length" />
+                <var name="deltatSGHdiffu" type="real" dimensions="Time" units="s"
+		     description="diffusive CFL limited time step length" />
+                <var name="deltatSGHpressure" type="real" dimensions="Time" units="s"
+		     description="time step length limited by pressure equation scheme" />
+                <var name="deltatSGH" type="real" dimensions="Time" units="s"
+                     description="time step used for subglacial hydro" />
+	</var_struct>
+
+<!-- ======================================================================= -->
+
+

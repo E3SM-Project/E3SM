@@ -1,5 +1,6 @@
-<regression_suite name="sia_integration_test_suite">
+<regression_suite name="standard_integration_test_suite">
 
+        <!-- SIA tests -->
         <test name="Dome restart test" core="landice" configuration="dome" resolution="2000m" test="restart_test">
                 <script name="setup_and_run_dome_testcase.py"/>
         </test>
@@ -25,6 +26,15 @@
         </test>
 
         <test name="GIS decomposition test" core="landice" configuration="greenland" resolution="20km" test="decomposition_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+        <!-- Subglacial hydrology tests -->
+        <test name="hydro-radial decomposition test" core="landice" configuration="hydro-radial" resolution="1000m" test="decomposition_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+        <test name="hydro-radial restart test" core="landice" configuration="hydro-radial" resolution="1000m" test="restart_test">
                 <script name="setup_and_run_testcase.py"/>
         </test>
 

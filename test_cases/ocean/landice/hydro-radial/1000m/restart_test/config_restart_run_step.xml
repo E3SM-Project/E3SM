@@ -3,38 +3,35 @@
         <!-- add needed files/executables -->
         <add_link source="../setup_mesh/landice_grid.nc" dest="landice_grid.nc"/>
         <add_link source="../setup_mesh/graph.info" dest="graph.info"/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
         <add_executable source="model" dest="landice_model"/>
         <add_executable source="metis" dest="metis"/>
         <!-- link in scripts that a user might want -->
-        <add_link source_path="script_configuration_dir" source="setup_dome_initial_conditions.py" dest="setup_dome_initial_conditions.py"/>
-        <add_link source_path="script_configuration_dir" source="visualize_dome.py" dest="."/>
-        <add_link source_path="script_configuration_dir" source="check_halfar_solution.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="setup_hydro-radial_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="plot_hydro-radial_profile.py" dest="."/>
 
         <namelist name="namelist.landice" mode="forward">
-                <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
-                <option name="config_start_time">0000-01-01_00:00:00</option>
-                <option name="config_run_duration">'0001-00-00_00:00:00'</option>
-                <option name="config_dt">'0001-00-00_00:00:00'</option>
+                <template file="radial_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_stop_time">'0001-01-01_00:00:00'</option>
+                <option name="config_run_duration">'none'</option>
                 <option name="config_write_output_on_startup">.true.</option>
                 <option name="config_do_restart">.false.</option>
         </namelist>
 
         <namelist name="namelist.landice.rst" mode="forward">
-                <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
-                <option name="config_start_time">0001-01-01_00:00:00</option>
-                <option name="config_run_duration">'0001-00-00_00:00:00'</option>
+                <template file="radial_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_start_time">'file'</option>
+                <option name="config_stop_time">'0001-02-01_00:00:00'</option>
                 <option name="config_dt">'0001-00-00_00:00:00'</option>
                 <option name="config_write_output_on_startup">.true.</option>
                 <option name="config_do_restart">.true.</option>
         </namelist>
 
+        <!-- set clobber mode for the first part to 'truncate' to clobber any existing files -->
         <streams name="streams.landice" keep="immutable" mode="forward">
-                <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
+                <template file="radial_template.xml" path_base="script_configuration_dir"/>
                 <stream name="output">
-                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0000-00-00_00:00:01</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
-                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                 </stream>
                 <stream name="restart">
                         <attribute name="filename_template">rst.$Y.nc</attribute>
@@ -43,12 +40,12 @@
                 </stream>
         </streams>
 
+        <!-- clobber mode on restart should be overwrite -->
         <streams name="streams.landice.rst" keep="immutable" mode="forward">
-                <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
+                <template file="radial_template.xml" path_base="script_configuration_dir"/>
                 <stream name="output">
-                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0000-00-00_00:00:01</attribute>
                         <attribute name="clobber_mode">overwrite</attribute>
-                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                 </stream>
                 <stream name="restart">
                         <attribute name="filename_template">rst.$Y.nc</attribute>
@@ -66,10 +63,11 @@
                 </step>
 
                 <!-- Run the first part of the run -->
-                <model_run procs="4" threads="1" namelist="namelist.landice" streams="streams.landice"/>
+                <model_run procs="1" threads="1" namelist="namelist.landice" streams="streams.landice"/>
 
                 <!-- Run the restart part of the run -->
-                <model_run procs="4" threads="1" namelist="namelist.landice.rst" streams="streams.landice.rst"/>
+                <model_run procs="1" threads="1" namelist="namelist.landice.rst" streams="streams.landice.rst"/>
+
         </run_script>
 </config>
 

@@ -1,9 +1,9 @@
 
 .SUFFIXES: .F .o .cpp
-.PHONY: mode_forward shared analysis_members
+.PHONY: mode_forward shared analysis_members subglacial_hydro
 
 SHARED_INCLUDES  = -I$(PWD)/../framework -I$(PWD)/../external/esmf_time_f90 -I$(PWD)/../operators
-SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/mode_forward
+SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/mode_forward -I$(PWD)/subglacial_hydro
 
 all: core_landice
 
@@ -13,10 +13,13 @@ shared:
 analysis_members: shared
 	(cd analysis_members; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
 
-mode_forward: shared analysis_members
+subglacial_hydro: shared
+	(cd subglacial_hydro; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
+
+mode_forward: shared analysis_members subglacial_hydro
 	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
 
-core_landice: mode_forward shared analysis_members
+core_landice: mode_forward shared analysis_members subglacial_hydro
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 core_input_gen:
@@ -47,3 +50,4 @@ clean:
 	(cd shared; $(MAKE) clean)
 	(cd mode_forward; $(MAKE) clean)
 	(cd analysis_members; $(MAKE) clean)
+	(cd subglacial_hydro; $(MAKE) clean)

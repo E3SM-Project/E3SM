@@ -63,6 +63,7 @@ module li_core
       use li_thermal
       use li_setup
       use li_constants
+      use li_subglacial_hydro
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
    
@@ -97,8 +98,8 @@ module li_core
       type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
       logical, pointer :: config_do_restart
-      real (kind=RKIND), pointer :: deltat_output
-      real (kind=RKIND) :: dtSeconds
+      real (kind=RKIND), pointer :: deltat  ! variable in each block
+      real (kind=RKIND) :: dtSeconds ! local variable
       type (MPAS_Pool_type), pointer :: meshPool
       type (MPAS_TimeInterval_type) :: timeStepInterval
       character (len=StrKIND), pointer :: xtime, simulationStartTime
@@ -185,8 +186,8 @@ module li_core
          daysSinceStart = daysSinceStart / seconds_per_day
 
          ! Initialize dt in seconds
-         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
-         deltat_output = dtSeconds
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         deltat = dtSeconds
 
          block => block % next
       end do
@@ -219,6 +220,10 @@ module li_core
       ! initialize thermal solver
       ! Note: This subroutine includes a loop over blocks
       call li_thermal_init(domain, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! Initialize subglacial hydrology solver
+      call li_SGH_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! initialize analysis driver
@@ -454,6 +459,7 @@ module li_core
       use mpas_derived_types
       use mpas_decomp
       use li_velocity, only: li_velocity_finalize
+      use li_subglacial_hydro, only: li_SGH_finalize
    
       implicit none
 
@@ -489,7 +495,12 @@ module li_core
       err_tmp = 0
       globalErr = 0
 
+      ! velocity finalize
       call li_velocity_finalize(domain, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! subglacial hydro finalize
+      call li_SGH_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! call finalize subroutine in analysis driver 
@@ -789,6 +800,7 @@ module li_core
       !        (since x_period and y_period are not set properly).
       if ( (trim(config_velocity_solver) == 'sia') .or.    &
            (trim(config_velocity_solver) == 'simple') .or.    &
+           (trim(config_velocity_solver) == 'none') .or.    &
            config_do_velocity_reconstruction_for_external_dycore .or.   &
            config_adaptive_timestep_include_DCFL) then
          call mpas_rbf_interp_initialize(meshPool)
