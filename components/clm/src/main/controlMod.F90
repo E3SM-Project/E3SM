@@ -10,7 +10,7 @@ module controlMod
   !       Display the file in a browser to see it neatly formatted in html.
   !
   ! !USES:
-  use clm_varctl   
+  use clm_varctl
   use shr_kind_mod            , only: r8 => shr_kind_r8, SHR_KIND_CL
   use shr_nl_mod              , only: shr_nl_find_group_name
   use shr_const_mod           , only: SHR_CONST_CDAY
@@ -39,9 +39,7 @@ module controlMod
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
-  use clm_varctl              , only: use_dynroot
   use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
-  use clm_varctl              , only: nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -108,7 +106,7 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use clm_pflotran_interfaceMod , only : clm_pf_readnl
-    use betr_initializeMod        , only : betr_readNL
+!    use betr_initializeMod        , only : betr_readNL
     !
     implicit none
     !
@@ -403,7 +401,7 @@ contains
     end if
 
     if (use_betr) then
-       call betr_readNL( NLFilename )
+!       call betr_readNL( NLFilename )
     endif    
 
     ! ----------------------------------------------------------------------

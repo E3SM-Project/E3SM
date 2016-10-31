@@ -489,7 +489,7 @@ contains
        photosyns_vars, crop_vars, canopystate_vars,                           &
        cnstate_vars, carbonstate_vars, carbonflux_vars,                       &
        c13_carbonflux_vars, c14_carbonflux_vars,                              &
-       nitrogenstate_vars,  nitrogenflux_vars, plantsoilnutrientflux_vars )
+       nitrogenstate_vars,  nitrogenflux_vars)!, plantsoilnutrientflux_vars )
 
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -499,7 +499,7 @@ contains
   use CanopyStateType     , only : canopystate_type
   use CanopyStateType     , only : canopystate_type
   use PhotosynthesisType  , only : photosyns_type
-  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
+!  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
 
   implicit none
   ! !ARGUMENTS:
@@ -518,13 +518,13 @@ contains
   type(carbonflux_type)    , intent(inout)        :: c14_carbonflux_vars        !
   type(nitrogenstate_type) , intent(inout)        :: nitrogenstate_vars         !
   type(nitrogenflux_type)  , intent(inout)        :: nitrogenflux_vars          !
-  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars !
+!  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars !
   
   call calc_plant_nitrogen_demand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
     photosyns_vars, canopystate_vars, crop_vars, carbonstate_vars, &
     cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
-    c13_carbonflux_vars, c14_carbonflux_vars,                             &
-    plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc))
+    c13_carbonflux_vars, c14_carbonflux_vars) !,                             &
+!    plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc))
   
   !this can used to plug in phosphorus?   
  end subroutine calc_plant_nutrient_demand
@@ -533,7 +533,7 @@ contains
  subroutine calc_plant_nitrogen_demand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
    photosyns_vars, canopystate_vars, crop_vars, carbonstate_vars, &
     cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
-    c13_carbonflux_vars, c14_carbonflux_vars, plant_totn_demand_flx_col)
+    c13_carbonflux_vars, c14_carbonflux_vars) !, plant_totn_demand_flx_col)
   !
   ! DESCRIPTION
   ! compute plant nitrogen demand
@@ -564,7 +564,8 @@ contains
   type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars                                !
   type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars                                 !
   type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars                                  !
-  real(r8)                 , intent(inout) :: plant_totn_demand_flx_col(bounds%begc:bounds%endc) !
+!  real(r8)                 , intent(inout) :: plant_totn_demand_flx_col(bounds%begc:bounds%endc) !
+  real(r8)                  :: plant_totn_demand_flx_col(bounds%begc:bounds%endc) !
   integer                                  :: c,p,l,pi,j                                         ! indices
   integer                                  :: fp                                                 ! lake filter pft index
   integer                                  :: fc                                                 ! lake filter column index

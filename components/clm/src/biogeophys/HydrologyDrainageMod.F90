@@ -49,7 +49,7 @@ contains
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
-    use TracerParamsMod  , only : pre_diagnose_soilcol_water_flux, diagnose_drainage_water_flux    
+!x    use TracerParamsMod  , only : pre_diagnose_soilcol_water_flux, diagnose_drainage_water_flux    
     use clm_varctl       , only : use_vsfm
     !
     ! !ARGUMENTS:
@@ -124,10 +124,10 @@ contains
               soilhydrology_vars, waterstate_vars)
       endif
 
-      if (use_betr) then
-         call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
-      endif
+!      if (use_betr) then
+!         call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+!              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
+!      endif
 
       if (.not. use_vsfm) then
          call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -136,10 +136,10 @@ contains
               waterstate_vars, waterflux_vars)
       endif
 
-      if (use_betr) then
-         call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi), waterflux_vars)
-      endif
+!      if (use_betr) then
+!         call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+!              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi), waterflux_vars)
+!      endif
 
       do j = 1, nlevgrnd
          do fc = 1, num_nolakec

@@ -331,9 +331,9 @@ contains
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use clm_varctl                          , only : use_bgc_interface, use_pflotran
     use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
-    use betr_initializeMod    , only : betr_initialize
-    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
-    use betr_initializeMod    , only : bgc_reaction
+!    use betr_initializeMod    , only : betr_initialize
+!    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
+!    use betr_initializeMod    , only : bgc_reaction
     use tracer_varcon         , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS    
@@ -465,7 +465,7 @@ contains
 
     if(use_betr)then
       !state variables will be initialized inside betr_initialize
-      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
+!      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
     endif
     
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -593,8 +593,8 @@ contains
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-               phosphorusstate_vars,phosphorusflux_vars,                                      &
-               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
+               phosphorusstate_vars,phosphorusflux_vars)!                                      &
+!               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -608,14 +608,14 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            phosphorusstate_vars,phosphorusflux_vars) !                                      &
+!            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
     end if
        
     if (use_betr)then
-       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
-            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+!       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
+!            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
     endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
@@ -653,8 +653,8 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            phosphorusstate_vars,phosphorusflux_vars)!                                      &
+!           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -668,8 +668,8 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            phosphorusstate_vars,phosphorusflux_vars) !,                                      &
+!            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)
