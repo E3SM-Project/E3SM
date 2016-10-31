@@ -260,3 +260,8 @@ class GenericXML(object):
         else:
             logger.warn("xmllint not found, could not validate file %s"%filename)
 
+    def get_element_text(self, element_name, attributes=None, root=None, xpath=None):
+        element_node = self.get_optional_node(element_name, attributes, root, xpath)
+        if element_node is not None:
+            return element_node.text
+        return None

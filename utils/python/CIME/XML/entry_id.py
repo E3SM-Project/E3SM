@@ -111,10 +111,7 @@ class EntryID(GenericXML):
             return self._get_node_element_info(node, element_name)
 
     def _get_node_element_info(self, node, element_name):
-        element_node = self.get_optional_node(element_name, root=node)
-        if element_node is not None:
-            return element_node.text
-        return None
+        return self.get_element_text(element_name, root=node)
 
     def _get_type_info(self, node):
         val = self._get_node_element_info(node, "type")

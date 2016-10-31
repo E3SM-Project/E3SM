@@ -20,6 +20,17 @@ class Grids(GenericXML):
 
         GenericXML.__init__(self, infile)
 
+
+    def _get_grid_names(self):
+
+        nodes = self.get_nodes("grid")
+        gridnames = []
+        for node in nodes:
+            gn = node.get("name")
+            if gn not in gridnames:
+                gridnames.append(gn)
+        return gridnames
+
     def get_grid_info(self, name, compset):
         """
         Find the matching grid node

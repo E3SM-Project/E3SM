@@ -26,7 +26,6 @@
   </help>
 
   <grids>
-
     <model_grid_defaults>
       <grid name="atm"    compset="SATM"  >null</grid>
       <grid name="lnd"    compset="SLND"  >null</grid>
