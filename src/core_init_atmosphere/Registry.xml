@@ -64,7 +64,6 @@
                 <nml_option name="config_dzmin"                 type="real"          default_value="0.3"/>
                 <nml_option name="config_nsm"                   type="integer"       default_value="30"/>
                 <nml_option name="config_tc_vertical_grid"      type="logical"       default_value="true"/>
-                <nml_option name="config_qv_vertical_grid"      type="logical"       default_value="false"/>
         </nml_record>
 
         <nml_record name="preproc_stages" in_defaults="true">
