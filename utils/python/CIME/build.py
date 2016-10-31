@@ -2,7 +2,7 @@
 functions for building CIME models
 """
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, append_status, analyse_build_log
+from CIME.utils                 import get_model, append_status, analyze_build_log
 from CIME.provenance            import save_build_provenance
 from CIME.preview_namelists     import create_namelists
 import glob, shutil, time, threading, gzip, subprocess
@@ -56,6 +56,8 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                 os.makedirs(build_dir)
 
         # build the component library
+        # thread_bad_results captures error output from thread (expected to be empty)
+        # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, caseroot, bldroot, libroot, incroot, file_build,
                   thread_bad_results, smp, compiler))
@@ -76,6 +78,8 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         smp = nthrds > 1 or build_threaded
         if comp == "aquap":
             logger.debug("Now build aquap ocn component")
+            # thread_bad_results captures error output from thread (expected to be empty)
+            # logs is a list of log files to be compressed and added to the case logs/bld directory
             _build_model_thread(config_dir, comp, caseroot, bldroot, libroot, incroot, file_build,
                                 thread_bad_results, smp, compiler)
             logs.append(file_build)
@@ -95,7 +99,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                    from_dir=bldroot, verbose=True, arg_stdout=f,
                    arg_stderr=subprocess.STDOUT)[0]
     f.close()
-    analyse_build_log("%s exe"%cime_model, file_build, compiler)
+    analyze_build_log("%s exe"%cime_model, file_build, compiler)
     expect(stat == 0, "ERROR: buildexe failed, cat %s" % file_build)
 
     # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
@@ -440,7 +444,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
                            from_dir=exeroot,
                            verbose=True, arg_stdout=fd,
                            arg_stderr=subprocess.STDOUT)[0]
-        analyse_build_log(lib, file_build, compiler)
+        analyze_build_log(lib, file_build, compiler)
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
         if lib == "pio":
@@ -466,6 +470,8 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
                 os.makedirs(ndir)
 
         smp = "SMP" in os.environ and os.environ["SMP"] == "TRUE"
+        # thread_bad_results captures error output from thread (expected to be empty)
+        # logs is a list of log files to be compressed and added to the case logs/bld directory
         thread_bad_results = []
         _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot,
                             file_build, thread_bad_results, smp, compiler)
@@ -483,7 +489,7 @@ def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incro
                        (compclass, stringify_bool(smp), config_dir, caseroot, bldroot, libroot),
                        from_dir=bldroot, verbose=True, arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
-    analyse_build_log(compclass, file_build, compiler)
+    analyze_build_log(compclass, file_build, compiler)
     if (stat != 0):
         thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (compclass, file_build))
 

@@ -955,7 +955,11 @@ def new_lid():
     os.environ["LID"] = lid
     return lid
 
-def analyse_build_log(comp, log, compiler):
+def analyze_build_log(comp, log, compiler):
+    """
+    Capture and report warning count,
+    capture and report errors and undefined references.
+    """
     warncnt = 0
     if "intel" in compiler:
         warn_re = re.compile(r" warning #")
