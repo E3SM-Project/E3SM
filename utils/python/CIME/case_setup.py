@@ -136,6 +136,8 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
+        case.load_env()
+
         models = case.get_values("COMP_CLASSES")
 
         mach, compiler, debug, mpilib = \
@@ -249,7 +251,6 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
         # Create needed directories for case
         create_dirs(case)
-        case.load_env()
 
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
