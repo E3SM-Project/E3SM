@@ -8,8 +8,7 @@ from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.compilers     import Compilers
-from CIME.utils             import append_status, parse_test_name, get_cime_root
-from CIME.user_mod_support  import apply_user_mods
+from CIME.utils             import append_status, get_cime_root
 from CIME.test_status       import *
 
 import shutil, time, glob
@@ -84,7 +83,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, reset=False):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
     msg = "case.setup starting"
@@ -165,19 +164,17 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
-        # Save ninst in a dict to use later in apply_user_mods
-        ninst = dict()
         for comp in models:
             if comp == "DRV":
                 continue
             comp_model = case.get_value("COMP_%s" % comp)
-            ninst[comp_model]  = case.get_value("NINST_%s" % comp)
+            ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
-            if ninst[comp_model] > ntasks:
+            if ninst > ntasks:
                 if ntasks == 1:
-                    case.set_value("NTASKS_%s" % comp, ninst[comp_model])
+                    case.set_value("NTASKS_%s" % comp, ninst)
                 else:
-                    expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst[comp_model], comp, ntasks))
+                    expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
@@ -244,16 +241,6 @@ def _case_setup_impl(case, caseroot, casebaseid, clean=False, test_mode=False, r
 
         _build_usernl_files(case, "drv", "cpl")
 
-        user_mods_path = case.get_value("USER_MODS_FULLPATH")
-        if user_mods_path is not None:
-            apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
-        elif case.get_value("TEST"):
-            test_mods = parse_test_name(casebaseid)[6]
-            if test_mods is not None:
-                user_mods_path = os.path.join(case.get_value("TESTS_MODS_DIR"), test_mods)
-                apply_user_mods(caseroot, user_mods_path=user_mods_path, ninst=ninst)
-
-
         # Create needed directories for case
         create_dirs(case)
         case.load_env()
@@ -292,11 +279,11 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
-                _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
+                _case_setup_impl(case, caseroot, clean=clean, test_mode=test_mode, reset=reset)
             except:
                 ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
                 raise
             else:
                 ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
     else:
-        _case_setup_impl(case, caseroot, casebaseid, clean=clean, test_mode=test_mode, reset=reset)
+        _case_setup_impl(case, caseroot, clean=clean, test_mode=test_mode, reset=reset)
