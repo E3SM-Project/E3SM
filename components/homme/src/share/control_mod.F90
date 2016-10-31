@@ -7,6 +7,7 @@
 !
 module control_mod
   use kinds, only : real_kind
+  use physical_constants, only: dd_pi
 
   integer, public, parameter :: MAX_STRING_LEN=240
   integer, public, parameter :: MAX_FILE_LEN=240
@@ -202,10 +203,9 @@ module control_mod
   logical, public :: disable_diagnostics  = .FALSE.
 
   ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
-  real, parameter :: pi               = 4.d0*atan(1.d0)
   real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)
-  real(real_kind), public :: dcmip2_0_Rm      = 3.d0*pi/4.d0   ! radius of mountain range        (radians)
-  real(real_kind), public :: dcmip2_0_zetam   = pi/16.d0       ! mountain oscillation half-width (radians)
+  real(real_kind), public :: dcmip2_0_Rm      = 3.d0*dd_pi/4.d0   ! radius of mountain range        (radians)
+  real(real_kind), public :: dcmip2_0_zetam   = dd_pi/16.d0       ! mountain oscillation half-width (radians)
 
   ! parameters for dcmip12 test 2-x: mountain waves
   real(real_kind), public :: dcmip2_x_ueq     = 20.d0          ! wind speed at equator (m/s)
