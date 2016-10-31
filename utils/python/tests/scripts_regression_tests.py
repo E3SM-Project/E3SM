@@ -170,7 +170,7 @@ def setup_proxy():
 class J_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     def setUp(self):
-        self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
+        self._testroot = MACHINE.get_value("CIME_OUTPUT_ROOT")
         self._testdirs = []
         self._do_teardown = []
 
@@ -223,7 +223,7 @@ class M_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def setUp(self):
     ###########################################################################
-        self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
+        self._testroot = MACHINE.get_value("CIME_OUTPUT_ROOT")
         self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass.%s'% CIME.utils.get_timestamp())
         self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail.%s'% CIME.utils.get_timestamp())
         self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished.%s'% CIME.utils.get_timestamp())
@@ -431,7 +431,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._machine           = MACHINE.get_machine_name()
         self._baseline_area     = MACHINE.get_value("CCSM_BASELINE")
-        self._testroot          = MACHINE.get_value("CESMSCRATCHROOT")
+        self._testroot          = MACHINE.get_value("CIME_OUTPUT_ROOT")
         self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
@@ -1126,7 +1126,7 @@ class C_TestXMLQuery(unittest.TestCase):
 
     def setUp(self):
         # Create case directory
-        self._testroot = MACHINE.get_value("CESMSCRATCHROOT")  # "/tmp/"
+        self._testroot = MACHINE.get_value("CIME_OUTPUT_ROOT")  # "/tmp/"
         self._testdirs = []
         self._do_teardown = []
 

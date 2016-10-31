@@ -79,7 +79,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     CIME.utils.handle_standard_logging_options(args)
 
     if (args.test_root is None):
-        args.test_root = os.path.join(_MACHINE.get_value("CESMSCRATCHROOT"), "cime_bisect")
+        args.test_root = os.path.join(_MACHINE.get_value("CIME_OUTPUT_ROOT"), "cime_bisect")
 
     expect(os.path.isdir(".git"), "Please run the root of a CIME repo")
 
