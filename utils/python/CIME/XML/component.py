@@ -17,13 +17,12 @@ class Component(EntryID):
         """
         files = Files()
         schema = files.get_schema("CONFIG_DRV_FILE")
-        if schema is not None:
-            # not checking schema on external components yet
-            cimeroot = get_cime_root()
-            if  cimeroot in os.path.abspath(infile):
-                self.validate_xml_file(infile, schema)
+        # not checking schema on external components yet
+        cimeroot = get_cime_root()
+        if  cimeroot in os.path.abspath(infile):
+            schema = files.get_schema("CONFIG_DRV_FILE")
 
-        EntryID.__init__(self,infile)
+        EntryID.__init__(self, infile, schema=schema)
 
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")

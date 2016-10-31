@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class GenericXML(object):
 
-    def __init__(self, infile=None):
+    def __init__(self, infile=None, schema=None):
         """
         Initialize an object
         """
@@ -28,6 +28,8 @@ class GenericXML(object):
             # If file is defined and exists, read it
             self.filename = infile
             self.read(infile)
+            if schema is not None:
+                self.validate_xml_file(infile, schema)
         else:
             # if file does not exist create a root xml element
             # and set it's id to file

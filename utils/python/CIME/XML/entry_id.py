@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class EntryID(GenericXML):
 
-    def __init__(self, infile=None):
-        GenericXML.__init__(self, infile)
+    def __init__(self, infile=None, schema=None):
+        GenericXML.__init__(self, infile, schema)
         self.groups={}
 
     def get_default_value(self, node, attributes=None):

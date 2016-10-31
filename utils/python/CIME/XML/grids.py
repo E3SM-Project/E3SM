@@ -12,14 +12,16 @@ logger = logging.getLogger(__name__)
 class Grids(GenericXML):
 
     def __init__(self, infile=None, files=None):
+        if files is None:
+            files = Files()
         if infile is None:
-            if files is None:
-                files = Files()
             infile = files.get_value("GRIDS_SPEC_FILE")
         logger.debug(" Grid specification file is %s" % infile)
+        schema = files.get_schema("GRIDS_SPEC_FILE")
 
-        GenericXML.__init__(self, infile)
+        GenericXML.__init__(self, infile, schema)
         self._version = self.get_version()
+
         self._comp_gridnames = self._get_grid_names()
 
 
@@ -215,7 +217,6 @@ class Grids(GenericXML):
         # TODO: this should be in XML, not here
         grids = [("atm", "a%"), ("lnd", "l%"), ("ocn", "o%"), \
                  ("ice", "i%"), ("rof", "r%"), ("glc", "g%"), ("wav", "w%")]
-        logger.warn(component_grids)
         domains = {}
         if 'm%' in component_grids:
             mask_name = component_grids['m%']
@@ -250,7 +251,6 @@ class Grids(GenericXML):
                 if domain_name:
                     domains[file_name] = os.path.basename(domain_name)
                     domains[path_name] = os.path.dirname(domain_name)
-        logger.warn("domains %s"%domains)
         return domains
 
     def _get_component_grids_from_longname(self, name):
