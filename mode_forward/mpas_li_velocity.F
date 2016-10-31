@@ -258,10 +258,12 @@ contains
       logical, pointer :: config_print_velocity_cleanup_details
       real (kind=RKIND), pointer :: config_dynamic_thickness
       integer, pointer :: nEdgesSolve
+      integer, pointer :: nEdges
       integer, pointer :: nVertInterfaces
       integer, dimension(:), pointer :: edgeMask, cellMask
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityInitial
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -277,7 +279,9 @@ contains
       integer :: iCell
       integer :: uphillMarginEdgesFixed
       integer :: err_tmp
+      integer :: k
       real (kind=RKIND) :: maxThicknessOnProc, maxThicknessAllProcs
+      real (kind=RKIND) :: xVelEdge, yVelEdge
 
       call mpas_timer_start("velocity solve")
 
@@ -463,11 +467,26 @@ contains
          ! but these can optionally be overwritten by reconstructed velocities for testing.
          if ( (trim(config_velocity_solver) == 'sia') .or.       &
               (trim(config_velocity_solver) == 'simple') .or.    &
-              (trim(config_velocity_solver) == 'none') .or.      &
                config_do_velocity_reconstruction_for_external_dycore ) then
             call mpas_reconstruct(meshPool, normalVelocity,               &
                              uReconstructX, uReconstructY, uReconstructZ, &
                              uReconstructZonal, uReconstructMeridional )
+         elseif (trim(config_velocity_solver) == 'none') then
+            ! The none velocity solver may have data velocity in uReconstructX/Y.  Fill out normalVelocity in case we want to advect with this field
+            call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+            call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
+            call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+            do iEdge=1,nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               do k=1,nVertInterfaces
+                 ! average neighboring cell-centered vectors to the edge
+                 xVelEdge = 0.5_RKIND*(uReconstructX(k,cell1) + uReconstructX(k,cell2))
+                 yVelEdge = 0.5_RKIND*(uReconstructY(k,cell1) + uReconstructY(k,cell2))
+                 ! normal component at edge: take dot products with unit vectors at edge
+                 normalVelocity(k,iEdge) = xVelEdge * edgeNormalVectors(1,iEdge) + yVelEdge * edgeNormalVectors(2,iEdge)
+               enddo
+            enddo
          else
             ! For 2-d meshes, these are set by mpas_reconstruct, so set them for HO dycores
             uReconstructZonal = uReconstructX

@@ -73,7 +73,9 @@ module li_time_integration_fe
 !>  This routine performs Forward Euler time integration.
 !
 !-----------------------------------------------------------------------
-   subroutine li_time_integrator_forwardeuler(domain, deltat, err)
+   subroutine li_time_integrator_forwardeuler(domain, err)
+
+      use li_subglacial_hydro
 
       !-----------------------------------------------------------------
       ! input variables
@@ -82,8 +84,6 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-
-      real (kind=RKIND), intent(inout) :: deltat  !< Input/output: time step
 
       type (domain_type), intent(inout) :: &
          domain          !< Input/Output: domain object 
@@ -111,26 +111,33 @@ module li_time_integration_fe
 
 !!!      procVertexMaskChanged = 0
 
+! === Update subglacial hydrology  ===========
+! It's not clear where the best place to call this should be, so putting it first for now
+      call mpas_timer_start("subglacial hydro")
+      call li_SGH_solve(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("subglacial hydro")
+
 ! === Prepare for advection (including CFL checks) ===========
 
       call mpas_timer_start("advection prep")
-      call prepare_advection(domain, deltat, err_tmp)
+      call prepare_advection(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("advection prep")
 
 ! === Implicit column physics (vertical temperature diffusion) ===========
       call mpas_timer_start("calculate vertical therm")
-      call li_thermal_solver(domain, deltat, err_tmp)
+      call li_thermal_solver(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("calculate vertical therm")
 
 ! === Compute new state for prognostic variables ==================================
       call mpas_timer_start("advect thickness and tracers")
-      call advection_solver(domain, deltat, err_tmp)
+      call advection_solver(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("advect thickness and tracers")
 
-! === Calve ice ========================                                                                                                                                             
+! === Calve ice ========================
       call mpas_timer_start("calve_ice")
 
       if (config_restore_calving_front) then
@@ -142,7 +149,7 @@ module li_time_integration_fe
       else
 
          ! ice calving
-         call li_calve_ice(domain, deltat, err_tmp)
+         call li_calve_ice(domain, err_tmp)
          err = ior(err, err_tmp)
 
       endif
@@ -189,12 +196,12 @@ module li_time_integration_fe
 !>  and tracers:
 !>  (1) Compute layer normal velocities.
 !>  (2) Compute the advective CFL limit (and optionally, the diffusive CFL limit).
-!>  (3) If config_adaptive_timestep = .true., then set dtSeconds based on CFL info.
+!>  (3) If config_adaptive_timestep = .true., then set deltat based on CFL info.
 !>   These calculations were previously done at the same time as advection, but
 !>   now are done at the start of the timestep to support an adaptive time step.
 !-----------------------------------------------------------------------
 
-   subroutine prepare_advection(domain, dtSeconds, err)
+   subroutine prepare_advection(domain, err)
 
       use mpas_timekeeping
 
@@ -205,8 +212,6 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-
-      real (kind=RKIND), intent(inout) :: dtSeconds  !< Input/output: time step
 
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
 
@@ -270,6 +275,10 @@ module li_time_integration_fe
       real (kind=RKIND), pointer :: &
            allowableDtACFL, &
            allowableDtDCFL
+
+      real (kind=RKIND), pointer :: deltat ! variable in blocks
+
+      real (kind=RKIND) :: dtSeconds ! local variable
 
       integer :: err_tmp
 
@@ -422,9 +431,21 @@ module li_time_integration_fe
       endif
 
 
-      ! Set adaptive timestep
-      call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, domain % clock, dtSeconds, err_tmp)
-      err = ior(err,err_tmp)
+      ! Set adaptive timestep if needed
+      if (config_adaptive_timestep) then
+         call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, domain % clock, dtSeconds, err_tmp)
+         err = ior(err,err_tmp)
+         ! Set new value on all blocks
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_array(meshPool, 'deltat', deltat)
+
+            deltat = dtSeconds
+
+            block => block % next
+         end do
+      end if
 
 
       ! Check for CFL error before finishing
@@ -484,14 +505,13 @@ module li_time_integration_fe
 !>        in calculate tendencies are now in prepare_advection.
 !-----------------------------------------------------------------------
 
-   subroutine advection_solver(domain, dtSeconds, err)
+   subroutine advection_solver(domain, err)
 
       use mpas_timekeeping
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: dtSeconds
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -515,6 +535,7 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: scratchPool
 
+      real (kind=RKIND), pointer :: deltat ! variable in blocks
       real (kind=RKIND), dimension(:), pointer :: thicknessOld
       real (kind=RKIND), dimension(:), pointer :: thicknessNew
       real (kind=RKIND), dimension(:), pointer :: thickness
@@ -566,17 +587,18 @@ module li_time_integration_fe
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
 
             ! Note: This subroutine requires that thickness and tracers are correct in halos
 
             if (config_print_thickness_advection_info) then
-               write(stdoutUnit,*) 'Advect thickness and tracers, dt =', dtSeconds
+               write(stdoutUnit,*) 'Advect thickness and tracers, dt =', deltat
             endif
 
             call li_advection_thickness_tracers(&
-                 dtSeconds,              &
+                 deltat,                 &
                  meshPool,               &
                  velocityPool,           &
                  geometryPool,           &
@@ -590,11 +612,11 @@ module li_time_integration_fe
          elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none') then
 
             if (config_print_thickness_advection_info) then
-               write(stdoutUnit,*) 'Advect thickness (but not tracers), dt =', dtSeconds
+               write(stdoutUnit,*) 'Advect thickness (but not tracers), dt =', deltat
             endif
 
             call li_advection_thickness_tracers(&
-                 dtSeconds,              &
+                 deltat,                 &
                  meshPool,               &
                  velocityPool,           &
                  geometryPool,           &
@@ -698,7 +720,6 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      logical, pointer :: config_adaptive_timestep
       logical, pointer :: config_adaptive_timestep_include_DCFL
       real (kind=RKIND), pointer :: config_adaptive_timestep_CFL_fraction
       real (kind=RKIND), pointer :: config_max_adaptive_timestep
@@ -713,48 +734,45 @@ module li_time_integration_fe
       err = 0
       err_tmp = 0
 
-      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
 
-      if (config_adaptive_timestep) then
-         call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_CFL_fraction', config_adaptive_timestep_CFL_fraction)
-         call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
-         call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
-         call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_CFL_fraction', config_adaptive_timestep_CFL_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
-         if (config_adaptive_timestep_include_DCFL) then
-            allowableDt = min(allowableAdvecDt, allowableDiffDt)
-         else
-            allowableDt = allowableAdvecDt
-         endif
-         proposedDt = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
+      if (config_adaptive_timestep_include_DCFL) then
+         allowableDt = min(allowableAdvecDt, allowableDiffDt)
+      else
+         allowableDt = allowableAdvecDt
+      endif
+      proposedDt = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
 
-         ! Check if we need to force a timestep length to hit the target interval
-         currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-         !print *, 'curr', currTime % t % YR, currTime % t % basetime % S, currTime % t % basetime % Sn, currTime % t % basetime % Sd
-         err = ior(err,err_tmp)
-         nextForceTime = mpas_alarm_get_next_ring_time(clock, 'adaptiveTimestepForceInterval')
-         !print *, 'ring', nextForceTime % t % YR, nextForceTime % t % basetime % S, nextForceTime % t % basetime % Sn, nextForceTime % t % basetime % Sd
-         intervalToNextForceTime = nextForceTime - currTime
-         !print *, 'int', intervalToNextForceTime % ti % YR, intervalToNextForceTime % ti % MM, intervalToNextForceTime % ti % basetime % S, intervalToNextForceTime % ti % basetime % Sn, intervalToNextForceTime % ti % basetime % Sd
-         ! Due to roundoff errors, we might be just shy of the desired time.
-         ! To avoid this, add one to the numerator of the fractional seconds to
-         ! make sure we get pushed over the edge.  The way ESMF does fractional
-         ! seconds, this means we get the desired interval to better than 1 part per 100 million seconds
-         ! Note that even though this is a *very* tiny fudge factor, it does not
-         ! affect conservation within MPAS-LI, but it could have a very, very tiny
-         ! effect on a climate model that thinks we ran for, say, 10 years, but we
-         ! actually ran for 10 years +/- 1e-8 seconds.
-         intervalToNextForceTime % ti % basetime % Sn = intervalToNextForceTime % ti % basetime % Sn + 1
-         call mpas_get_timeInterval(intervalToNextForceTime, dt=secondsToNextForceTime, ierr=err_tmp)
-         err = ior(err,err_tmp)
-         !print *, proposedDt, secondsToNextForceTime
-         dtSeconds = min(proposedDt, secondsToNextForceTime)
+      ! Check if we need to force a timestep length to hit the target interval
+      currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
+      !print *, 'curr', currTime % t % YR, currTime % t % basetime % S, currTime % t % basetime % Sn, currTime % t % basetime % Sd
+      err = ior(err,err_tmp)
+      nextForceTime = mpas_alarm_get_next_ring_time(clock, 'adaptiveTimestepForceInterval')
+      !print *, 'ring', nextForceTime % t % YR, nextForceTime % t % basetime % S, nextForceTime % t % basetime % Sn, nextForceTime % t % basetime % Sd
+      intervalToNextForceTime = nextForceTime - currTime
+      !print *, 'int', intervalToNextForceTime % ti % YR, intervalToNextForceTime % ti % MM, intervalToNextForceTime % ti % basetime % S, intervalToNextForceTime % ti % basetime % Sn, intervalToNextForceTime % ti % basetime % Sd
+      ! Due to roundoff errors, we might be just shy of the desired time.
+      ! To avoid this, add one to the numerator of the fractional seconds to
+      ! make sure we get pushed over the edge.  The way ESMF does fractional
+      ! seconds, this means we get the desired interval to better than 1 part per 100 million seconds
+      ! Note that even though this is a *very* tiny fudge factor, it does not
+      ! affect conservation within MPAS-LI, but it could have a very, very tiny
+      ! effect on a climate model that thinks we ran for, say, 10 years, but we
+      ! actually ran for 10 years +/- 1e-8 seconds.
+      intervalToNextForceTime % ti % basetime % Sn = intervalToNextForceTime % ti % basetime % Sn + 1
+      call mpas_get_timeInterval(intervalToNextForceTime, dt=secondsToNextForceTime, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      !print *, proposedDt, secondsToNextForceTime
+      dtSeconds = min(proposedDt, secondsToNextForceTime)
 
-         write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0)
-         if (dtSeconds < config_min_adaptive_timestep) then
-            write(stdErrUnit,*) 'ERROR: New deltat is less than config_min_adaptive_timestep.'
-            err = 1
-         endif
+      write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0)
+      if (dtSeconds < config_min_adaptive_timestep) then
+         write(stdErrUnit,*) 'ERROR: New deltat is less than config_min_adaptive_timestep.'
+         err = 1
       endif
 
    !--------------------------------------------------------------------

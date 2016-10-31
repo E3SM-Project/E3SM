@@ -24,6 +24,7 @@ module li_mask
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_timer
    use li_setup
 
    implicit none
@@ -127,7 +128,7 @@ module li_mask
 !! SFP: the 1d versions below have not been tested yet - activate and use at your own risk! 
 !! Also check the corresponding function below.
    interface li_mask_is_grounded_ice_int
-!      module procedure li_mask_is_grounded_ice_intout_1d
+      module procedure li_mask_is_grounded_ice_intout_1d
       module procedure li_mask_is_grounded_ice_intout_0d
    end interface
 
@@ -279,6 +280,8 @@ contains
       integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
       logical :: validVertex
 
+      call mpas_timer_start('calculate mask')
+
       err = 0
 
       ! Assign pointers and variables
@@ -313,6 +316,7 @@ contains
       ! Calculate cellMask values===========================
       ! ====
 
+      !call mpas_timer_start('calculate mask cell')
       ! Set mask to 0 everywhere, but need to preserve bits the initial ice extent bit
       do i=1, nCells
         cellMask(i) = iand(cellMask(i), li_mask_ValueInitialIceExtent)
@@ -329,7 +333,9 @@ contains
       end where
 
       ! Identify cells that Albany would consider as active
-      if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
          ! HO external FEM dycore
          ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
          where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
@@ -374,7 +380,9 @@ contains
       enddo
 
       ! Identify first cell outside of active albany extent
-      if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
          do i=1,nCells
             if ( (.not. li_mask_is_albany_active(cellMask(i)))) then  ! check non albany cells only
               isAlbanyMarginNeighbor = .false.
@@ -400,6 +408,7 @@ contains
           endif
       enddo
 
+      !call mpas_timer_stop('calculate mask cell')
 
       ! ====
       ! Calculate vertexMask values based on cellMask values===========================
@@ -414,6 +423,9 @@ contains
       !       vertexMask to get information about triangles in the Delaunay triangulation.
       !       (This is done in a way which does not assume vertexMask==3.)
       ! Bit: GL is a vertex with at least one neighboring cell grounded ice and at least one neighboring cell floating ice
+
+      !call mpas_timer_start('calculate mask vertex')
+
       vertexMask = 0
       do i = 1,nVertices
           aCellOnVertexHasIce = .false.
@@ -422,54 +434,20 @@ contains
           aCellOnVertexHasNoDynamicIce = .false.
           aCellOnVertexIsFloating = .false.
           aCellOnVertexIsGrounded = .false.
-          aCellOnVertexIsAlbanyActive = .false.
-          numCellsOnVertex = 0
-          validVertex = .false.
-          numDiriDynamicCells = 0
-          numDiriNondynamicCells = 0
-          numExtendedCells = 0
           do j = 1, vertexDegree  ! vertexDegree is usually 3 (e.g. CVT mesh) but could be something else (e.g. 4 for quad mesh)
               iCell = cellsOnVertex(j,i)
-              if (iCell < nCells+1) then
-                 numCellsOnVertex = numCellsOnVertex + 1
-              endif
               aCellOnVertexHasIce = (aCellOnVertexHasIce .or. li_mask_is_ice(cellMask(iCell)))
               aCellOnVertexHasNoIce = (aCellOnVertexHasNoIce .or. (.not. li_mask_is_ice(cellMask(iCell))))
               aCellOnVertexHasDynamicIce = (aCellOnVertexHasDynamicIce .or. li_mask_is_dynamic_ice(cellMask(iCell)))
               aCellOnVertexHasNoDynamicIce = (aCellOnVertexHasNoDynamicIce .or. (.not. (li_mask_is_dynamic_ice(cellMask(iCell)))))
               aCellOnVertexIsFloating = (aCellOnVertexIsFloating .or. li_mask_is_floating_ice(cellMask(iCell)))
               aCellOnVertexIsGrounded = (aCellOnVertexIsGrounded .or. li_mask_is_grounded_ice(cellMask(iCell)))
-              aCellOnVertexIsAlbanyActive = (aCellOnVertexIsAlbanyActive .or. li_mask_is_albany_active(cellMask(iCell)))
-              if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
-                 !if (li_mask_is_dynamic_ice(cellMask(iCell)) .and. .not. li_mask_is_albany_active(cellMask(iCell))) then ! this finds diri cells
-                 if ( (maxval(dirichletVelocityMask(1:nVertInterfaces-1, iCell)) > 0) .and. &
-                         (li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
-                         numDiriDynamicCells = numDiriDynamicCells + 1
-                 elseif ( (maxval(dirichletVelocityMask(1:nVertInterfaces-1, iCell)) > 0) .and. &
-                         (.not. li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
-                         numDiriNondynamicCells = numDiriNondynamicCells + 1
-                 elseif (li_mask_is_albany_margin_neighbor(cellMask(iCell))) then
-                         numExtendedCells = numExtendedCells + 1
-                 endif
-              endif
           end do
-          if (numCellsOnVertex == vertexDegree) then
-             validVertex = .true.
-          endif
           if (aCellOnVertexHasIce) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueIce)
           endif
           if (aCellOnVertexHasDynamicIce) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicIce)
-          endif
-          if (aCellOnVertexIsAlbanyActive .and. validVertex) then
-             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)
-          endif
-          if ( (numDiriDynamicCells == 1) .and. (numDiriNondynamicCells == 1) .and. &
-               (numExtendedCells == 1) .and. validVertex) then
-             ! This is a special case needed for MISMIP
-             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)
-             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyMarginNeighbor)
           endif
           if (aCellOnVertexIsFloating) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueFloating)
@@ -483,8 +461,51 @@ contains
           if (aCellOnVertexHasDynamicIce .and. aCellOnVertexHasNoDynamicIce) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicMargin)     ! vertex with both 1+ dynamic ice cell(s) and 1+ non-dynamic cell(s) as neighbors
           endif
-      end do       
+      end do
 
+
+      ! Re-loop over vertices for information only needed by Albany
+      ! This is 10x more expensive to conditionally include in the above loop.
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
+         do i = 1,nVertices
+            aCellOnVertexIsAlbanyActive = .false.
+            numCellsOnVertex = 0
+            validVertex = .false.
+            numDiriDynamicCells = 0
+            numDiriNondynamicCells = 0
+            numExtendedCells = 0
+            do j = 1, vertexDegree  ! vertexDegree is usually 3 (e.g. CVT mesh) but could be something else (e.g. 4 for quad mesh)
+               iCell = cellsOnVertex(j,i)
+               if (iCell < nCells+1) then
+                  numCellsOnVertex = numCellsOnVertex + 1
+               endif
+               aCellOnVertexIsAlbanyActive = (aCellOnVertexIsAlbanyActive .or. li_mask_is_albany_active(cellMask(iCell)))
+
+               !if (li_mask_is_dynamic_ice(cellMask(iCell)) .and. .not. li_mask_is_albany_active(cellMask(iCell))) then ! this finds diri cells
+               if ( (maxval(dirichletVelocityMask(1:nVertInterfaces-1, iCell)) > 0) .and. &
+                       (li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
+                       numDiriDynamicCells = numDiriDynamicCells + 1
+               elseif ( (maxval(dirichletVelocityMask(1:nVertInterfaces-1, iCell)) > 0) .and. &
+                       (.not. li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
+                       numDiriNondynamicCells = numDiriNondynamicCells + 1
+               elseif (li_mask_is_albany_margin_neighbor(cellMask(iCell))) then
+                       numExtendedCells = numExtendedCells + 1
+               endif
+            end do
+            if (numCellsOnVertex == vertexDegree) validVertex = .true.
+            if (aCellOnVertexIsAlbanyActive .and. validVertex)  vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)
+            if ( (numDiriDynamicCells == 1) .and. (numDiriNondynamicCells == 1) .and. &
+                 (numExtendedCells == 1) .and. validVertex) then
+               ! This is a special case needed for MISMIP
+               vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)
+               vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyMarginNeighbor)
+            endif
+         end do  ! vertices loop
+      endif  ! HO velocity solver
+
+      !call mpas_timer_stop('calculate mask vertex')
 
       ! ====
       ! Calculate edgeMask values based on cellMask values===========================
@@ -495,6 +516,9 @@ contains
       ! Bit: Edges on margin are edges with one neighboring cell with ice and one neighboring cell without ice
       ! Bit: Edges on dynamic margin are edges with one neighboring cell with dynamic ice and one neighboring cell without dynamic ice
       ! Bit: GL is an edge with one cell grounded ice and one cell floating ice
+
+      !call mpas_timer_start('calculate mask edge')
+
       edgeMask = 0
       do i = 1,nEdges
           aCellOnEdgeHasIce = .false.
@@ -533,6 +557,7 @@ contains
           endif
 
       end do
+      !call mpas_timer_stop('calculate mask edge')
 
       ! vertexMask and edgeMask needs halo updates before they can be used.  Halo updates need to occur outside of block loops.  
 
@@ -540,6 +565,8 @@ contains
       if (err > 0) then
           write (stderrUnit,*) "An error has occurred in li_calculate_mask."
       endif
+
+      call mpas_timer_stop('calculate mask')
 
    !--------------------------------------------------------------------
    end subroutine li_calculate_mask
@@ -784,17 +811,16 @@ contains
                                 .and. (li_mask_is_ice(mask)) )
    end function li_mask_is_grounded_ice_logout_0d
 
-!! SFP: has not been tested yet - activate and use at your own risk! Also check the corresponding interface at top.
-!   function li_mask_is_grounded_ice_intout_1d(mask)
-!      integer, dimension(:), intent(in) :: mask
-!      integer, dimension(size(mask)) :: li_mask_is_grounded_ice_intout_1d
-!
-!      where( li_mask_is_ice(mask) )
-!        li_mask_is_grounded_ice_intout_1d = int(mask*0 + 1) - ( iand(mask, li_mask_ValueFloating) / li_mask_ValueFloating ) 
-!      elsewhere
-!        li_mask_is_grounded_ice_intout_1d = 0
-!      endwhere
-!   end function li_mask_is_grounded_ice_intout_1d
+   function li_mask_is_grounded_ice_intout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      integer, dimension(size(mask)) :: li_mask_is_grounded_ice_intout_1d
+
+      where( li_mask_is_ice(mask) )
+        li_mask_is_grounded_ice_intout_1d = int(mask*0 + 1) - ( iand(mask, li_mask_ValueFloating) / li_mask_ValueFloating )
+      elsewhere
+        li_mask_is_grounded_ice_intout_1d = 0
+      endwhere
+   end function li_mask_is_grounded_ice_intout_1d
 
    function li_mask_is_grounded_ice_intout_0d(mask)
       integer, intent(in) :: mask

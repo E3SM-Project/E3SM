@@ -74,12 +74,11 @@ module li_calving
 !> (3) Calve ice based on an ice thickness threshold
 !-----------------------------------------------------------------------
 
-   subroutine li_calve_ice(domain, deltat, err)
+   subroutine li_calve_ice(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: deltat  !< Input: time step
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -137,6 +136,8 @@ module li_calving
 
       integer, pointer :: nCells
 
+      real (kind=RKIND), pointer :: deltat  !< time step (s)
+
       integer, dimension(:), pointer :: &
            nEdgesOnCell,     & ! number of cells that border each cell
            cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
@@ -183,6 +184,11 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+
+      ! Get deltat from first block (same on all blocks)
+      block => domain % blocklist
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
       ! based on the calving timescale, set the fraction of ice that calves
       if (config_calving_timescale > 0.0_RKIND) then
