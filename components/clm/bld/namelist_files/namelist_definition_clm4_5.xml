@@ -1122,7 +1122,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30wLI,oRRS18to6,oRRS15to5,mp120v1,oQU240,oQU120,oRRS30to10,360x720cru,NLDASww3a">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30wLI,oRRS18to6,oRRS15to5,mp120v1,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10wLI,360x720cru,NLDASww3a">
 Land mask description
 </entry> 
 
