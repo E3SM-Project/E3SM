@@ -700,14 +700,14 @@
 
     <domain name="gx1v6">
       <nx>320</nx>  <ny>384</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v6.090206.nc </file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v6.090206.nc </file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v6.090206.nc</file>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v6.090206.nc</file>
       <desc>gx1v6 is displaced Greenland pole v6 1-deg grid:</desc>
     </domain>
 
     <domain name="gx3v7">
       <nx>100</nx> <ny>116</ny>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx3v7.120323.nc </file>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx3v7.120323.nc</file>
       <desc>gx3v7 is displaced Greenland pole v7 3-deg grid:</desc>
     </domain>
 
@@ -720,7 +720,7 @@
 
     <domain name="tx1v1">
       <nx>360</nx> <ny>240</ny>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx1v1.090122.nc </file>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx1v1.090122.nc</file>
       <desc>tripole v1 1-deg grid: testing proxy for high-res tripole ocean grids- do not use for scientific experiments</desc>
       <support>Experimental tripole ocean grid</support>
     </domain>

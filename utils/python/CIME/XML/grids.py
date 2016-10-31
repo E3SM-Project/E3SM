@@ -227,29 +227,29 @@ class Grids(GenericXML):
                 domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
                 domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
                 domains[comp_name + "_GRID"] = grid_name
-                file_name = grid_name + "_DOMAIN_FILE"
-                path_name = grid_name + "_DOMAIN_PATH"
+                file_name = comp_name + "_DOMAIN_FILE"
+                path_name = comp_name + "_DOMAIN_PATH"
                 file_nodes = self.get_nodes(nodename="file", root=domain_node)
                 for file_node in file_nodes:
                     grid_attrib = file_node.get("grid")
                     mask_attrib = file_node.get("mask")
                     domain_name = ""
                     if grid_attrib is not None and mask_attrib is not None:
-                        grid_match = re.search(grid_name.lower(), grid_attrib)
+                        grid_match = re.search(comp_name.lower(), grid_attrib)
                         mask_match = re.search(mask_name, mask_attrib)
                         if grid_match is not None and mask_match is not None:
                             domain_name = file_node.text
                     elif grid_attrib is not None:
-                        grid_match = re.search(grid_name.lower(), grid_attrib)
+                        grid_match = re.search(comp_name.lower(), grid_attrib)
                         if grid_match is not None:
                             domain_name = file_node.text
                     elif mask_attrib is not None:
                         mask_match = re.search(mask_name.lower(), mask_attrib)
                         if mask_match is not None:
                             domain_name = file_node.text
-                    if domain_name:
-                        domains[file_name] = os.path.basename(domain_name)
-                        domains[path_name] = os.path.dirname(domain_name)
+                if domain_name:
+                    domains[file_name] = os.path.basename(domain_name)
+                    domains[path_name] = os.path.dirname(domain_name)
         logger.warn("domains %s"%domains)
         return domains
 
