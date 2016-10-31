@@ -193,12 +193,16 @@ ifdef NETCDF_PATH
     LIB_NETCDF:=$(NETCDF_PATH)/lib
   endif
 endif
-ifdef PNETCDF_PATH
-  ifndef $(INC_PNETCDF)
-    INC_PNETCDF:=$(PNETCDF_PATH)/include
-  endif
-  ifndef LIB_PNETCDF
-    LIB_PNETCDF:=$(PNETCDF_PATH)/lib
+ifeq ($(MPILIB),mpi-serial)
+  undefine PNETCDF_PATH
+else
+  ifdef PNETCDF_PATH
+    ifndef $(INC_PNETCDF)
+      INC_PNETCDF:=$(PNETCDF_PATH)/include
+    endif
+    ifndef LIB_PNETCDF
+      LIB_PNETCDF:=$(PNETCDF_PATH)/lib
+    endif
   endif
 endif
 # Set PETSc info if it is being used
