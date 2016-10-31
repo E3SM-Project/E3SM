@@ -2503,25 +2503,54 @@ contains
 
     character(len=strKIND) :: forcingClockTimeStr
 
+    integer :: restartTimestampUnit
+
     ! open restart time file
-    open(22,file=trim(forcingTimeRestartFilename), form='formatted', status='replace')
+    forcingGroup => forcingGroupHead
+    do while (associated(forcingGroup))
+
+       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
+
+          call mpas_new_unit(restartTimestampUnit)
+          open(restartTimestampUnit,file=trim(forcingTimeRestartFilename), form='formatted', status='replace')
+          exit
+
+       endif
+
+       forcingGroup => forcingGroup % next
+    enddo
 
     ! loop over forcing groups
     forcingGroup => forcingGroupHead
     do while (associated(forcingGroup))
 
-       ! get the forcing clock time
-       forcingClockTime = MPAS_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
+       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
 
-       call MPAS_get_time(forcingClockTime, dateTimeString=forcingClockTimeStr)
+          ! get the forcing clock time
+          forcingClockTime = MPAS_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
 
-       ! write the forcing time to the restart file
-       write(22,*) trim(forcingGroup % forcingGroupName), " ", trim(forcingClockTimeStr)
+          call MPAS_get_time(forcingClockTime, dateTimeString=forcingClockTimeStr)
+
+          ! write the forcing time to the restart file
+          write(restartTimestampUnit,*) trim(forcingGroup % forcingGroupName), " ", trim(forcingClockTimeStr)
+
+       endif
 
        forcingGroup => forcingGroup % next
     end do
 
-    close(22)
+    ! close the file
+    forcingGroup => forcingGroupHead
+    do while (associated(forcingGroup))
+
+       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
+          close(restartTimestampUnit)
+          call mpas_release_unit(restartTimestampUnit)
+          exit
+       endif
+
+       forcingGroup => forcingGroup % next
+    end do
 
   end subroutine mpas_forcing_write_restart_times!}}}
 
@@ -2533,7 +2562,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date 9th December 2014
 !> \details
-!>  read in the forcing group restart times from an external file and 
+!>  read in the forcing group restart times from an external file and
 !>  set the correct forcing group clock to this time
 !
 !-----------------------------------------------------------------------
