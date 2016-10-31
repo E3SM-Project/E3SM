@@ -714,7 +714,6 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
-
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
