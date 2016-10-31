@@ -36,6 +36,8 @@ module atm_time_integration
    use mpas_atmphys_utilities
 #endif
 
+   use mpas_atm_iau  
+
    integer :: timerid, secs, u_secs
 
    ! Used to store physics tendencies for dynamics variables
@@ -67,6 +69,7 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_edge
 
+      
    contains
 
 
@@ -179,12 +182,17 @@ module atm_time_integration
 
       integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertices, nVerticesSolve, nVertLevels
 
+      integer, pointer :: config_IAU_option
+      real(kind=RKIND) :: weight_iau
+      real(kind=RKIND),      pointer :: time_window_sec
+
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
       type (mpas_pool_type), pointer :: diag_physics
       type (mpas_pool_type), pointer :: mesh
       type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: tend_physics
+      type (mpas_pool_type), pointer :: tend_iau
 
       type (field2DReal), pointer :: theta_m_field
       type (field3DReal), pointer :: scalars_field
@@ -207,6 +215,8 @@ module atm_time_integration
 
       real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
 
+      logical, parameter :: debug = .false.
+
 
       !
       ! Retrieve configuration options
@@ -225,6 +235,9 @@ module atm_time_integration
       !  config variables for dynamics-transport splitting, WCS 18 November 2014
       call mpas_pool_get_config(domain % blocklist % configs, 'config_split_dynamics_transport', config_split_dynamics_transport)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dynamics_split_steps', config_dynamics_split)
+
+      ! Retrieve weight/coefficient for IAU (Incremental Analysis Update) - HA (June-16-2016)
+      weight_iau = atm_iau_coef (domain % blocklist % configs, itimestep, dt)
 
       !
       ! Retrieve field structures
@@ -522,6 +535,18 @@ MPAS_GPTL_STOP('dyn_tend')
 !            end do
 !            call mpas_timer_stop('physics_addtend')
 #endif
+
+            if (weight_iau >= 1.e-12) then      ! HA (June-16-2016)
+               if (debug) write(0,*) ' add incremental analysis forcing to tendencies '
+               block => domain % blocklist
+ 
+               do while (associated(block))
+
+                  call atm_add_tend_anal_incr ( block % structs, weight_iau, dt )
+
+                  block => block % next
+              end do
+            end if
 
             !***********************************
             !  need tendencies at all edges of owned cells -

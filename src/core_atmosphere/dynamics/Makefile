@@ -4,8 +4,7 @@ OBJS = mpas_atm_time_integration.o
 
 all: $(OBJS)
 
-mpas_atm_time_integration.o:
-
+mpas_atm_time_integration.o: mpas_atm_iau.o
 
 clean:
 	$(RM) *.o *.mod *.f90

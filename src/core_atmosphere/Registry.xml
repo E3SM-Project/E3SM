@@ -325,6 +325,17 @@
                      possible_values=".true. or .false."/>
         </nml_record>
 
+        <nml_record name="IAU" in_defaults="true">
+                <nml_option name="config_IAU_option" type="integer" default_value="0"
+                     units="-"
+                     description="Incremental Analysis Update scheme"
+                     possible_values="0 or 1; 0 turns off IAU, 1 uses equal weighting of increments across the IAU window"/>
+                <nml_option name="config_IAU_window_length_s" type="real" default_value="21600."
+                     units="s"
+                     description="Length of window over which analysis increments are applied"
+                     possible_values="Non-negative real values"/>
+	</nml_record>
+
 
 <!-- **************************************************************************************** -->
 <!-- **************************************  Packages  ************************************** -->
@@ -339,6 +350,8 @@
                 <package name="cu_tiedtke_in" description="parameterization of Tiedtke convection."/>
                 <package name="bl_ysu_in" description="parameterization of YSU Planetary Boundary Layer."/>
                 <package name="bl_mynn_in" description="parameterization of MYNN Planetary Boundary Layer."/>
+
+                <package name="iau" description="Incremental Analysis Update"/>
         </packages>
 
 
@@ -1021,6 +1034,18 @@
 
 			<var name="sst"/>
 			<var name="xice"/>
+		</stream>
+
+	        <stream name="iau" 
+                        type="input" 
+                        filename_template="x1.40962.AmB.$Y-$M-$D_$h.$m.$s.nc" 
+                        input_interval="initial_only"
+                        filename_interval="none"
+                        immutable="true"
+                        packages="iau">
+
+			<var name="xtime"/>
+			<var_struct name="tend_iau"/>
 		</stream>
 	</streams>
 
@@ -2849,7 +2874,7 @@
                 <var name="rthratenlw" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
                      description="tendency of potential temperature due to short wave radiation"/>
         </var_struct>
-
+        
         <var_struct name="atm_input" time_levs="1">
                 <!-- Monthly mean ozone climatology used in the CAM and RRTMG radiation codes -->
                 <var name="pin" type="real"  dimensions="nOznLevels" units="Pa"
@@ -3016,6 +3041,40 @@
                 <var name="ol4" type="real" dimensions="nCells" units="unitless"
                      description="directional asymmetry function of orography"/>
         </var_struct>
+
+        <var_struct name="tend_iau" time_levs="1" packages="iau">
+			
+                <!-- analysis increments; read from iau input -->
+                <var name="u_amb"     name_in_code="u" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+                     description="Horizontal normal velocity increment"/>
+
+                <var name="rho_amb"   name_in_code="rho" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="Dry air density increment"/>
+
+                <var name="theta_amb" name_in_code="theta" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="Potential temperature increment"/>
+
+                <var_array name="scalars_amb" name_in_code="scalars" type="real" dimensions="nVertLevels nCells Time">
+                     <var name="qv_amb"  name_in_code="qv" array_group="moist" units="kg kg^{-1}"
+                          description="Water vapor mixing ratio increment"/>
+
+                     <var name="qc_amb"  name_in_code="qc" array_group="moist" packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1}"
+                          description="Cloud water mixing ratio increment"/>
+
+                     <var name="qr_amb"  name_in_code="qr" array_group="moist" packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1}"
+                          description="Rain water mixing ratio increment"/>
+
+                     <var name="qi_amb"  name_in_code="qi" array_group="moist" packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1}"
+                          description="Ice mixing ratio increment"/>
+
+                     <var name="qs_amb"  name_in_code="qs" array_group="moist" packages="mp_thompson_in;mp_wsm6_in" units="kg kg^{-1}"
+                          description="Snow mixing ratio increment"/>
+
+                     <var name="qg_amb"  name_in_code="qg" array_group="moist" packages="mp_thompson_in;mp_wsm6_in" units="kg kg^{-1}"
+                          description="Graupel mixing ratio increment"/>
+                </var_array>
+         </var_struct>
+
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Diagnostics ************************************* -->
