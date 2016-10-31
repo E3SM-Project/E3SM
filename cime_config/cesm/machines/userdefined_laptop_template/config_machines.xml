@@ -9,8 +9,6 @@
       <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
       <COMPILERS>gnu</COMPILERS>
       <MPILIBS>mpich</MPILIBS>
-      <RUNDIR>$ENV{HOME}/projects/scratch/$CASE/run</RUNDIR>
-      <EXEROOT>$ENV{HOME}/projects/scratch/$CASE/bld</EXEROOT>
       <DIN_LOC_ROOT>$ENV{HOME}/projects/cesm-inputdata</DIN_LOC_ROOT>
       <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
