@@ -601,24 +601,25 @@
   <!-- definitions build -->
   <!-- ===================================================================== -->
 
-  <entry id="CESMSCRATCHROOT">
+  <entry id="CIME_OUTPUT_ROOT">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>Scratch root directory for each machine. For now, primarily used for shared library builds
-      The scratchroot root directory.  Base diretory for build and run directories.</desc>
+    <desc>Output root directory for each machine.
+                Base directory for build and run directories.
+    </desc>
   </entry>
 
   <entry id="EXEROOT">
     <type>char</type>
     <valid_values></valid_values>
-    <default_value>UNSET</default_value>
+    <default_value>$CIME_OUTPUT_ROOT/$CASE/bld</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>Case executable root directory.
-    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/bld)
+    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/lib)
     This is where the model builds its executable and by default runs the executable.
     Note that EXEROOT needs to have enough disk space for the experimental configuration
     requirements. As an example, a model run can produce more than a terabyte of
@@ -934,7 +935,7 @@
     <group>run_cesm</group>
     <file>env_run.xml</file>
     <desc>Determines number of times profiler is called over the model run period.
-    This sets values for tprof_option and tprof_n that determine the timing output file frequency 
+    This sets values for tprof_option and tprof_n that determine the timing output file frequency
     </desc>
   </entry>
 
@@ -1787,7 +1788,7 @@
 
   <entry id="RUNDIR">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <default_value>$CIME_OUTPUT_ROOT/$CASE/run</default_value>
     <group>run_desc</group>
     <file>env_run.xml</file>
     <desc>

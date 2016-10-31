@@ -505,7 +505,7 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None):
+                  walltime=None, queue=None, output_root=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -683,6 +683,12 @@ class Case(object):
         elif machobj.get_value("PROJECT_REQUIRED"):
             expect(project is not None, "PROJECT_REQUIRED is true but no project found")
 
+        # Resolve the CIME_OUTPUT_ROOT variable, other than this
+        # we don't want to resolve variables until we need them
+        if output_root is None:
+            output_root = self.get_value("CIME_OUTPUT_ROOT")
+        self.set_value("CIME_OUTPUT_ROOT", output_root)
+
         # Overwriting an existing exeroot or rundir can cause problems
         exeroot = self.get_value("EXEROOT")
         rundir = self.get_value("RUNDIR")
@@ -707,7 +713,6 @@ class Case(object):
             self.set_value("DOUT_S",True)
         if test:
             self.set_value("TEST",True)
-
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))

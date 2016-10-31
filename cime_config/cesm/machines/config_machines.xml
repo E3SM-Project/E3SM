@@ -53,9 +53,7 @@
     <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>/scratch/sciteam/$USER</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/scratch/sciteam/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/sciteam/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -136,9 +134,7 @@
     <COMPILERS>pgi,intel</COMPILERS>
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/cluster/work/uwis/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/cluster/work/uwis/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/cluster/work/uwis/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/cluster/work/uwis/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -203,9 +199,7 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi</COMPILERS>
     <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
-    <RUNDIR>/pic/scratch/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/pic/scratch/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/cases/archive/$CASE</DOUT_S_ROOT>
@@ -303,12 +297,10 @@
     <NODENAME_REGEX>cori</NODENAME_REGEX>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.corip1/cprnc</CCSM_CPRNC>
@@ -410,9 +402,7 @@
     <OS>LINUX</OS>
     <COMPILERS>pgi,intel</COMPILERS>
     <MPILIBS>mvapich2,mvapich</MPILIBS>
-    <RUNDIR>/lustre/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/lustre/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/lustre/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/lustre/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -469,12 +459,10 @@
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <NODENAME_REGEX>edison</NODENAME_REGEX>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{CSCRATCH}</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
@@ -579,9 +567,7 @@
     <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
     <MPILIBS>mvapich2</MPILIBS>
-    <RUNDIR>/scratch/cluster/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/scratch/cluster/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/scratch/cluster/$USER</CIME_OUTPUT_ROOT>
     <OBJROOT>$EXEROOT</OBJROOT>
     <INCROOT>$EXEROOT/lib/include</INCROOT>
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
@@ -643,9 +629,7 @@
     <DESC>NOAA XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <RUNDIR>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/run</RUNDIR>
-    <EXEROOT>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/lustre/fs/scratch/Julio.T.Bacmeister</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/archive/$CASE</DOUT_S_ROOT>
@@ -715,12 +699,10 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
-    <CESMSCRATCHROOT>/picnic/scratch/$USER</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/picnic/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>$ENV{CESMDATAROOT}/cesm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -781,14 +763,12 @@
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <OBJROOT>$EXEROOT</OBJROOT>
     <INCROOT>$EXEROOT/lib/include</INCROOT>
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/sems-data-store/ACME/baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
@@ -832,9 +812,7 @@
     <NODENAME_REGEX>.*.fst.alcf.anl.gov</NODENAME_REGEX>
     <COMPILERS>ibm</COMPILERS>
     <MPILIBS>ibm</MPILIBS>
-    <CESMSCRATCHROOT>/projects/$PROJECT/usr/$ENV{USER}</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/projects/$PROJECT/usr/$ENV{USER}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -887,9 +865,7 @@
     <OS>LINUX</OS>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <RUNDIR>/pic/scratch/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/pic/scratch/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -937,9 +913,7 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -991,9 +965,7 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -1044,9 +1016,7 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -1098,9 +1068,7 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -1151,9 +1119,7 @@
     <DESC>CSCS Cray XE6, os is CNL, 32 pes/node, batch system is SLURM</DESC>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <RUNDIR>/scratch/rosa/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/scratch/rosa/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/scratch/rosa/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/scratch/rosa/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/s433/cesm_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/s433/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/project/s433/$USER/archive/$CASE</DOUT_S_ROOT>
@@ -1195,12 +1161,10 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/skybridge</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
     <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
     <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
@@ -1225,9 +1189,7 @@
     <NODENAME_REGEX>.*stampede</NODENAME_REGEX>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
-    <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
-    <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>$SCRATCH</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
@@ -1305,12 +1267,10 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,gnu,intel15</COMPILERS>
     <MPILIBS>mpich2,pempi</MPILIBS>
-    <CESMSCRATCHROOT>/glade/scratch/$USER</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>

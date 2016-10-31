@@ -84,6 +84,9 @@ def parse_command_line(args, cimeroot):
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
 
+    parser.add_argument("--output-root",
+                        help="Alternative path for the directory where case output is written")
+
     # hidden argument indicating called from create_test
     parser.add_argument("--test", "-test", action="store_true",
                         help="Used to indicate that create_newcase was called from create_test"
@@ -125,7 +128,7 @@ def parse_command_line(args, cimeroot):
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime, args.queue
+        args.walltime, args.queue, args.output_root
 
 ###############################################################################
 def _main_func():
@@ -135,8 +138,8 @@ def _main_func():
     caseroot, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         user_mods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test, ninst, walltime, queue \
-        = parse_command_line(sys.argv, cimeroot)
+        user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
+        output_root = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(caseroot)
 
@@ -156,7 +159,7 @@ def _main_func():
                           pecount=pecount, compiler=compiler, mpilib=mpilib,
                           user_compset=user_compset, pesfile=pesfile,
                           user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                          walltime=walltime, queue=queue)
+                          walltime=walltime, queue=queue, output_root=output_root)
 
         case.create_caseroot()
 

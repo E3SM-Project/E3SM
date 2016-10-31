@@ -46,7 +46,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     machine = _MACHINE.get_machine_name()
     default_test_suite = _MACHINE.get_value("TESTS")
     default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
-    default_scratch_root = _MACHINE.get_value("CESMSCRATCHROOT")
+    default_scratch_root = _MACHINE.get_value("CIME_OUTPUT_ROOT")
 
     CIME.utils.setup_standard_logging_options(parser)
 

@@ -34,6 +34,8 @@ def create_dirs(case):
                 os.makedirs(dir_to_make)
             except OSError as e:
                 expect(False, "Could not make directory '%s', error: %s" % (dir_to_make, e))
+            with open(os.path.join(dir_to_make,"CASEROOT"),"w+") as fd:
+                fd.write(caseroot+"\n")
 
 def create_namelists(case):
 

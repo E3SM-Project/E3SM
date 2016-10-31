@@ -42,7 +42,8 @@ class TestScheduler(object):
                  clean=False, namelists_only=False,
                  project=None, parallel_jobs=None,
                  walltime=None, proc_pool=None,
-                 use_existing=False, save_timing=False, queue=None, allow_baseline_overwrite=False):
+                 use_existing=False, save_timing=False, queue=None,
+                 allow_baseline_overwrite=False, output_root=None):
     ###########################################################################
         self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
@@ -56,7 +57,7 @@ class TestScheduler(object):
         self._no_setup = no_setup
         self._no_build = no_build or no_setup or namelists_only
         self._no_run   = no_run or self._no_build
-
+        self._output_root = output_root
         # Figure out what project to use
         if project is None:
             self._project = CIME.utils.get_project()
@@ -72,7 +73,13 @@ class TestScheduler(object):
                "Does not make sense to request a queue without batch system")
 
         # Determine and resolve test_root
-        self._test_root = self._machobj.get_value("CESMSCRATCHROOT") if test_root is None else test_root
+        if test_root is not None:
+            self._test_root = test_root
+        elif self._output_root is not None:
+            self._test_root = self._output_root
+        else:
+            self._test_root = self._machobj.get_value("CIME_OUTPUT_ROOT")
+
         if self._project is not None:
             self._test_root = self._test_root.replace("$PROJECT", self._project)
 
@@ -301,6 +308,9 @@ class TestScheduler(object):
                                test_dir, grid, machine, compiler, compset)
         if self._project is not None:
             create_newcase_cmd += " --project %s " % self._project
+        if self._output_root is not None:
+            create_newcase_cmd += " --output-root %s " % self._output_root
+
 
         if test_mods is not None:
             files = Files()
