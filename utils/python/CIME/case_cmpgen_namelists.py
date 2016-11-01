@@ -80,29 +80,20 @@ def _do_full_nl_gen(case, test, generate_name):
         os.chmod(preexisting_baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
 def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None, generate_name=None):
-    caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     expect(case.get_value("TEST"), "Only makes sense to run this for a test case")
+
+    caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
 
     if not compare:
         compare = case.get_value("COMPARE_BASELINE")
     if not generate:
         generate = case.get_value("GENERATE_BASELINE")
-    if compare and not compare_name:
-        compare_name = case.get_value("BASELINE_NAME_CMP")
-        compare_name = get_current_branch() if compare_name is None else compare_name
-        expect(compare_name, "Was asked to do baseline compare but unable to determine baseline name")
-        logging.info("Comparing namelists with baselines '%s'" % compare_name)
-    if generate and not generate_name:
-        generate_name = case.get_value("BASELINE_NAME_GEN")
-        generate_name = get_current_branch() if generate_name is None else generate_name
-        expect(generate_name, "Was asked to do baseline generation but unable to determine baseline name")
-        logging.info("Generating namelists to baselines '%s'" % generate_name)
 
     if not compare and not generate:
         logging.info("Nothing to do")
         return True
 
-    # generate namelists if they haven't been already
+    # create namelists for case if they haven't been already
     casedocs = os.path.join(caseroot, "CaseDocs")
     if not os.path.exists(os.path.join(casedocs, "drv_in")):
         create_namelists(case)
@@ -110,6 +101,19 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
     test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
     with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
         try:
+            # Inside this try are where we catch non-fatal errors, IE errors involving
+            # baseline operations which may not directly impact the functioning of the viability of this case
+            if compare and not compare_name:
+                compare_name = case.get_value("BASELINE_NAME_CMP")
+                compare_name = get_current_branch() if compare_name is None else compare_name
+                expect(compare_name, "Was asked to do baseline compare but unable to determine baseline name")
+                logging.info("Comparing namelists with baselines '%s'" % compare_name)
+            if generate and not generate_name:
+                generate_name = case.get_value("BASELINE_NAME_GEN")
+                generate_name = get_current_branch() if generate_name is None else generate_name
+                expect(generate_name, "Was asked to do baseline generation but unable to determine baseline name")
+                logging.info("Generating namelists to baselines '%s'" % generate_name)
+
             success = True
             output = ""
             if compare:
@@ -127,3 +131,4 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             append_status(output, caseroot=caseroot, sfile="TestStatus.log")
 
         return success
+
