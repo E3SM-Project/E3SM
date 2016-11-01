@@ -62,9 +62,5 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                         broken_compares.append((test_name, reason))
 
     # Make sure user knows that some tests were not compareed
-    success = True
     for broken_compare, reason in broken_compares:
         logging.warning("COMPARE FAILED FOR TEST: %s, reason %s" % (broken_compare, reason))
-        success = False
-
-    return success
