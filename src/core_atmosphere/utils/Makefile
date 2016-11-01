@@ -3,9 +3,15 @@
 all: build_tables
 	mv build_tables ../../..
 
-build_tables: build_tables.o
-	$(LINKER) $(LDFLAGS) -o build_tables build_tables.o
+build_tables: build_tables.o atmphys_build_tables_thompson.o
+	$(LINKER) $(LDFLAGS) -o build_tables build_tables.o atmphys_build_tables_thompson.o -L../../framework -lframework -L../physics/ -lphys
 
+
+build_tables.o: \
+	atmphys_build_tables_thompson.o
+
+atmphys_build_tables_thompson.o: \
+	../physics/physics_wrf/module_mp_thompson.o
 
 clean:
 	$(RM) ../../../build_tables
