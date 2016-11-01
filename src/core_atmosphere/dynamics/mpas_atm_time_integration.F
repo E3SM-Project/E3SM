@@ -1310,9 +1310,8 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
             block => block % next
          end do
-      end if
 
-      if (config_print_global_minmax_vel) then
+      else if (config_print_global_minmax_vel) then
          write(0,*) ' '
 
          block => domain % blocklist
