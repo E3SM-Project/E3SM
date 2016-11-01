@@ -205,6 +205,15 @@ LII    CLM initial condition interpolation test
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
+  <test NAME="ERIO">
+    <DESC>exact restart from startup with different PIO methods, default 6 days + 5 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
   <test NAME="ERR">
     <DESC>exact restart from startup with resubmit, default 4 days + 3 days</DESC>
     <INFO_DBUG>1</INFO_DBUG>
