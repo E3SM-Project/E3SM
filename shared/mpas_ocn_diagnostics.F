@@ -26,6 +26,7 @@ module ocn_diagnostics
    use mpas_constants
    use mpas_threading
    use mpas_vector_reconstruction
+   use mpas_stream_manager
 
    use ocn_constants
    use ocn_gm
@@ -2051,6 +2052,10 @@ contains
 
             write(debugUnit, *) 'ERROR: NaN Detected in state see below for which field contained a NaN.'
             write(debugUnit, *) '  -- Statistics information for block fields'
+
+            if ( mpas_stream_mgr_stream_exists(domain % streamManager, 'block_.*') ) then
+               call mpas_stream_mgr_block_Write(domain % streamManager, writeBlock=block, streamID='block_.*', forceWriteNow=.true.)
+            end if
 
             ! Also, write general block information, like lat/lon bounds
 
