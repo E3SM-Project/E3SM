@@ -1917,6 +1917,8 @@ contains
                                                avgOceanSurfaceDOCr, &
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
+
+   real (kind=RKIND), dimension(:), pointer :: landIceFreshwaterFlux
  
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient, &
                                                  avgOceanSurfacePhytoC, &
@@ -1967,6 +1969,8 @@ contains
      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+     call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
+     
      call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
@@ -2067,7 +2071,8 @@ contains
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
-
+       o2x_o % rAttr(index_o2x_Floo_qice, n) = landIceFreshwaterFlux(i)
+       
      end do
 
      block_ptr => block_ptr % next
