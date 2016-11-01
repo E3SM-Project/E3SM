@@ -475,7 +475,8 @@ class NamelistGenerator(object):
         if os.path.isabs(file_path):
             return file_path
         else:
-            return os.path.join(self._din_loc_root, file_path)
+            fullpath = os.path.join(self._din_loc_root, file_path)
+            return fullpath
 
     def add_default(self, name, value=None):
         """Add a value for the specified variable to the namelist.
