@@ -208,6 +208,9 @@ OR
                         "will raise an error. Specifying this option allows "
                         "existing baseline directories to be silently overwritten.")
 
+    parser.add_argument("--wait", action="store_true",
+                        help="On batch systems, wait for submitted jobs to complete")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -332,7 +335,7 @@ OR
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
         args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.walltime, \
         args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, \
-        args.allow_baseline_overwrite, args.output_root
+        args.allow_baseline_overwrite, args.output_root, args.wait
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
@@ -437,7 +440,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
 # pragma pylint: disable=protected-access
 def create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                 baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, project, test_id, parallel_jobs,
-                walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite, output_root):
+                walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite, output_root, wait):
 ###############################################################################
     impl = TestScheduler(test_names, test_data=test_data,
                          no_run=no_run, no_build=no_build, no_setup=no_setup, no_batch=no_batch,
@@ -451,7 +454,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
                          queue=queue, allow_baseline_overwrite=allow_baseline_overwrite,
                          output_root=output_root)
 
-    success = impl.run_tests()
+    success = impl.run_tests(wait=wait)
 
     if success and single_submit:
         # Get real test root
@@ -490,13 +493,13 @@ def _main_func(description):
     test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, \
     test_root, baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, \
     project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, \
-    save_timing, queue, allow_baseline_overwrite, output_root \
+    save_timing, queue, allow_baseline_overwrite, output_root, wait \
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                          baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only,
                          project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, save_timing,
-                         queue, allow_baseline_overwrite, output_root))
+                         queue, allow_baseline_overwrite, output_root, wait))
 
 ###############################################################################
 
