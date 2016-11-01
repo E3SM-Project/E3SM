@@ -19,17 +19,15 @@
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_transectTransport_transect_group" type="character" default_value="all" units="unitless"
+			description="The name of the transect group that holds the transects for which the transport should be caclulated."
+			possible_values="Either of '', 'all' or any valid transect group name."
+		/>
 	</nml_record>
 	<packages>
 		<package name="transectTransportAMPKG" description="This package includes variables required for the transectTransport analysis member."/>
 	</packages>
 	<var_struct name="transectTransportAM" time_levs="1" packages="transectTransportAMPKG">
-		<var name="transectEdgeMasks" type="integer" dimensions="nTransects nEdges" units="NA"
-			 description="Mask of edges for measuring transport across transects"
-		/>
-		<var name="transectEdgeMaskSigns" type="integer" dimensions="nTransects nEdges" units="NA"
-			 description="Sign of normalVelocity on edge for this transect"
-		/>
 		<var name="transectEdgeMasksMax" type="integer" dimensions="nTransects" units="NA"
 			 description="max of transectEdgeMasks for this processor."
 		/>

@@ -22,6 +22,9 @@
 			<attribute name="type">output</attribute>
 			<add_contents>
 				<member name="xtime" type="var"/>
+				<member name="SSHSquared" type="var"/>
+				<member name="velocityZonalSquared" type="var"/>
+				<member name="velocityZonalTimesTemperature" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>
