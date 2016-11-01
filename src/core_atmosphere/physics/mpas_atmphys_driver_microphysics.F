@@ -234,7 +234,7 @@
   microp_select: select case(microp_scheme)
 
      case("mp_thompson")
-        call thompson_init
+        call thompson_init(l_mp_tables)
         call init_thompson_clouddroplets_forMPAS(mesh,sfc_input,diag_physics)
 
      case("mp_wsm6")

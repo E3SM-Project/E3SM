@@ -68,7 +68,8 @@ mpas_atmphys_camrad_init.o: \
 	./physics_wrf/module_ra_cam_support.o
 
 mpas_atmphys_control.o: \
-	mpas_atmphys_utilities.o
+	mpas_atmphys_utilities.o \
+	mpas_atmphys_vars.o
 
 mpas_atmphys_driver.o: \
 	mpas_atmphys_driver_cloudiness.o \

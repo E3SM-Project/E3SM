@@ -96,6 +96,7 @@
  logical:: l_diags                    !controls when to calculate physics diagnostics.
  logical:: l_acrain                   !when .true., limit to accumulated rain is applied.
  logical:: l_acradt                   !when .true., limit to lw and sw radiation is applied.
+ logical:: l_mp_tables                !when .true., read look-up tables for Thompson cloud microphysics scheme.
 
  integer,public:: ids,ide,jds,jde,kds,kde
  integer,public:: ims,ime,jms,jme,kms,kme

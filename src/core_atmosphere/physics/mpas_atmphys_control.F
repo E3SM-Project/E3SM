@@ -7,16 +7,19 @@
 !
 !=================================================================================================================
  module mpas_atmphys_control
+ use mpas_dmpar
  use mpas_kind_types
  use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_utilities
+ use mpas_atmphys_vars, only: l_mp_tables
 
  implicit none
  private
  public:: physics_namelist_check, &
-          physics_registry_init
+          physics_registry_init,  &
+          physics_tables_init
 
  logical,public:: moist_physics
 
@@ -60,6 +63,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
 ! * added the physics suite "convection_scale_aware" (see below for the physics options used in the suite).
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-28.
+! * added the subroutine physics_tables_init which checks if the files containing the lokk-up tables for the
+!   Thompson cloud microphysics are available or not.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-11-01.
 
 
  contains
@@ -361,6 +367,56 @@
 !write(0,*)
 
  end subroutine physics_registry_init
+
+!=================================================================================================================
+ subroutine physics_tables_init(dminfo,configs)
+!=================================================================================================================
+
+!input arguments:
+ type(dm_info),intent(in):: dminfo
+ type(mpas_pool_type),intent(in):: configs
+
+!local variables:
+ character(len=StrKIND),pointer:: config_microp_scheme
+ logical:: l_qr_acr_qg,l_qr_acr_qs,l_qi_aut_qs,l_freezeH2O
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ if(dminfo % my_proc_id == IO_NODE) then
+
+    call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
+    if(config_microp_scheme /= "mp_thompson") return
+
+    l_qr_acr_qg = .false.
+    l_qr_acr_qs = .false.
+    l_qi_aut_qs = .false.
+    l_freezeH2O = .false.
+    l_mp_tables = .false.
+
+    inquire(file='MP_THOMPSON_QRacrQG_DATA.DBL'  ,exist=l_qr_acr_qg)
+    inquire(file='MP_THOMPSON_QRacrQS_DATA.DBL'  ,exist=l_qr_acr_qs)
+    inquire(file='MP_THOMPSON_QIautQS_DATA.DBL'  ,exist=l_qi_aut_qs)
+    inquire(file='MP_THOMPSON_freezeH2O_DATA.DBL',exist=l_freezeH2O)
+
+!   write(0,*)
+!   write(0,*) '--- enter subroutine physics_tables_init:'
+!   write(0,*) 'l_qr_acr_qg = ',l_qr_acr_qg
+!   write(0,*) 'l_qr_acr_qs = ',l_qr_acr_qs
+!   write(0,*) 'l_qi_aut_qs = ',l_qi_aut_qs
+!   write(0,*) 'l_freezeH2O = ',l_freezeH2O
+
+    if(.not. (l_qr_acr_qg .and. l_qr_acr_qs .and. l_qi_aut_qs .and. l_freezeH2O)) then
+       write(mpas_err_message,'(A)') &
+          '--- tables to run the Thompson cloud microphysics scheme do not exist: run build_tables first.'
+       call physics_error_fatal(mpas_err_message)
+    else
+       l_mp_tables = .true.
+    endif
+!   write(0,*) 'l_mp_tables = ',l_mp_tables
+
+ endif
+
+ end subroutine physics_tables_init
 
 !=================================================================================================================
  end module mpas_atmphys_control
