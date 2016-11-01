@@ -9,11 +9,13 @@ from CIME.case import Case
 import os, glob
 
 ###############################################################################
-def compare_history(testcase_dir_for_test, baseline_name, baseline_root):
+def compare_history(testcase_dir_for_test, baseline_name, baseline_root, log_id):
 ###############################################################################
     with Case(testcase_dir_for_test) as case:
         baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
-        result, comments = compare_baseline(case, baseline_dir=baseline_full_dir)
+        outfile_suffix = "%s.%s"%(baseline_name, log_id)
+        result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
+                                            outfile_suffix=outfile_suffix)
         if result:
             return True, None
         else:
@@ -28,7 +30,8 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
     codes are: PASS, FAIL, SKIP
 
     In addition, creates files named compare.log.BASELINE_NAME.TIMESTAMP in each
-    test directory, which contain more detailed output
+    test directory, which contain more detailed output. Also creates
+    *.cprnc.out.BASELINE_NAME.TIMESTAMP files in each run directory.
     """
 ###############################################################################
     test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
@@ -68,7 +71,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
 
             if do_compare:
                 # Compare hist files
-                success, detailed_comments = compare_history(test_dir, baseline_name, baseline_root)
+                success, detailed_comments = compare_history(test_dir, baseline_name, baseline_root, log_id)
                 if success:
                     compare_result = TEST_PASS_STATUS
                 else:
