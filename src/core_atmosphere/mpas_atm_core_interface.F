@@ -8,6 +8,7 @@
 module atm_core_interface
 
    use mpas_attlist
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    contains
 

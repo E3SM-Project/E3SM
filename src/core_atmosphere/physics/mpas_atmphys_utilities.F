@@ -9,6 +9,8 @@
  module mpas_atmphys_utilities
 
  use mpas_kind_types
+ use mpas_abort, only : mpas_dmpar_global_abort
+
  implicit none
  private
  public:: physics_error_fatal, &

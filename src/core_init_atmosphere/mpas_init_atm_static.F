@@ -13,6 +13,7 @@
  use mpas_pool_routines
  use init_atm_hinterp
  use init_atm_llxy
+ use mpas_abort, only : mpas_dmpar_global_abort
 
  use mpas_atmphys_utilities
 

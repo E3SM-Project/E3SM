@@ -24,6 +24,7 @@ module ocn_analysis_driver
    use mpas_timekeeping
    use mpas_timer
    use mpas_stream_manager
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use ocn_constants
    use ocn_global_stats

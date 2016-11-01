@@ -10,6 +10,7 @@ module atm_core
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    type (MPAS_Clock_type), pointer :: clock
 

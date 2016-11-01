@@ -9,6 +9,7 @@ module mpas_subdriver
 
    use mpas_framework
    use mpas_kind_types
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use mpas_derived_types, only: dm_info, domain_type
 
@@ -61,6 +62,7 @@ module mpas_subdriver
       character(len=StrKIND) :: argument, namelistFile, streamsFile
       character(len=StrKIND) :: timeStamp
       integer :: ierr
+      integer :: blockID
 
       character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
       integer(kind=c_int) :: c_comm
@@ -278,12 +280,13 @@ module mpas_subdriver
           call mpas_get_time(start_time, dateTimeString=ref_time_temp, ierr=ierr)
       end if
 
+      blockID = -1
       if ( trim(filename_interval_temp) == 'none' ) then
-          call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+          call mpas_expand_string(ref_time_temp, blockID, mesh_filename_temp, mesh_filename)
       else
           call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
           call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
-          call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+          call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, blockID, mesh_filename, ierr)
       end if
       write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
       call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename, mesh_iotype)

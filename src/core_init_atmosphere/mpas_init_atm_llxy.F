@@ -2223,6 +2223,8 @@ MODULE init_atm_llxy
 
    SUBROUTINE llxy_error_fatal(mesg)
 
+      USE mpas_abort, ONLY : mpas_dmpar_global_abort
+
       IMPLICIT NONE
 
       CHARACTER (LEN=*), INTENT(IN) :: mesg
