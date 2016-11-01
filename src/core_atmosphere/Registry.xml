@@ -319,6 +319,11 @@
                      description="Whether to print the global min/max of horizontal normal velocity and vertical velocity each timestep"
                      possible_values=".true. or .false."/>
 
+                <nml_option name="config_print_detailed_minmax_vel" type="logical" default_value="false"
+                     units="-"
+                     description="Whether to print the global min/max of horizontal normal velocity and vertical velocity each timestep, along with the location in the domain where those extrema occurred"
+                     possible_values=".true. or .false."/>
+
                 <nml_option name="config_print_global_minmax_sca" type="logical" default_value="false" in_defaults="false"
                      units="-"
                      description="Whether to print the global min/max of scalar fields each timestep"
