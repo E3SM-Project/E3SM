@@ -17,6 +17,7 @@ module clm_initializeMod
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
+  use BeTRSimulationALM, only : create_betr_simulation_alm
   ! 
   !-----------------------------------------
   ! Definition of component types
@@ -46,7 +47,7 @@ contains
     ! CLM initialization first phase 
     !
     ! !USES:
-    use clm_varpar       , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
+    use clm_varpar       , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec,max_patch_per_col
     use clm_varcon       , only: clm_varcon_init
     use landunit_varcon  , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon    , only: col_itype_to_icemec_class
@@ -285,7 +286,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi    
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col    
     use clm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -335,6 +336,7 @@ contains
 !    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
 !    use betr_initializeMod    , only : bgc_reaction
     use tracer_varcon         , only : is_active_betr_bgc    
+    use ALMbetrNLMod             , only : betr_namelist_buffer
     !
     ! !ARGUMENTS    
     implicit none
@@ -464,8 +466,12 @@ contains
     call clm_inst_biogeophys(bounds_proc)
 
     if(use_betr)then
-      !state variables will be initialized inside betr_initialize
-!      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
+      !allocate memory for betr simulator
+      allocate(ep_betr, source=create_betr_simulation_alm())
+      !set internal filters for betr     
+      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
+
+      call ep_betr%Init(bounds_proc, lun, col, pft, waterstate_vars, betr_namelist_buffer)
     endif
     
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -593,8 +599,8 @@ contains
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-               phosphorusstate_vars,phosphorusflux_vars)!                                      &
-!               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
+               phosphorusstate_vars,phosphorusflux_vars,                                      &
+               ep_betr)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -608,14 +614,14 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-            phosphorusstate_vars,phosphorusflux_vars) !                                      &
-!            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            phosphorusstate_vars,phosphorusflux_vars,                                      &
+            ep_betr)
 
     end if
        
     if (use_betr)then
-!       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
-!            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+       !initialize betr
+       !read in restart variables
     endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
@@ -653,9 +659,8 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-            phosphorusstate_vars,phosphorusflux_vars)!                                      &
-!           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
-
+            phosphorusstate_vars,phosphorusflux_vars,                                      &
+            ep_betr)
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
        call initInterp(filei=fnamer, fileo=finidat_interp_dest, bounds=bounds_proc)
@@ -668,8 +673,8 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-            phosphorusstate_vars,phosphorusflux_vars) !,                                      &
-!            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            phosphorusstate_vars,phosphorusflux_vars,                                      &
+            ep_betr)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)

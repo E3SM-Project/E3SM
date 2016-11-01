@@ -81,7 +81,7 @@ module clm_driver
   use DaylengthMod           , only : UpdateDaylength
   use perf_mod
   !
-  use clm_instMod            , only : ch4_vars
+  use clm_instMod            , only : ch4_vars, ep_betr
   use clm_instMod            , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
   use clm_instMod            , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
   use clm_instMod            , only : nitrogenstate_vars
@@ -1346,9 +1346,8 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars, EDbio_vars,                                   &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
+               ep_betr,                                                                       &
                rdate=rdate)
-!               betrtracer_vars, tracerstate_vars, tracerflux_vars,                            &
-!               tracercoeff_vars, rdate=rdate )
 
           call t_stopf('clm_drv_io_wrest')
        end if

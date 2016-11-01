@@ -56,6 +56,7 @@ module restFileMod
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
+  use BeTRSimulation        , only : betr_simulation_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -99,7 +100,7 @@ contains
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars, EDbio_vars,                                   &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
-!       betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
+       ep_betr,                                                                       &
        rdate, noptr)
     !
     ! !DESCRIPTION:
@@ -134,10 +135,7 @@ contains
     type(EDbio_type)         , intent(inout) :: EDbio_vars       ! due to EDrest call
     type(phosphorusstate_type),intent(inout)    :: phosphorusstate_vars
     type(phosphorusflux_type) ,intent(in)     :: phosphorusflux_vars
-!    type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
-!    type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
-!    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
-!    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
+    class(betr_simulation_type), intent(inout):: ep_betr
     character(len=*)         , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                  , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -249,9 +247,7 @@ contains
     end if
 
     if (use_betr) then
-!       call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-!       call tracerflux_vars%Restart( bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-!       call tracercoeff_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+      call ep_betr%BeTRRestart(bounds, ncid, flag='define')
     endif
 
     if (present(rdate)) then 
@@ -347,9 +343,7 @@ contains
     end if
 
     if (use_betr) then
-!       call tracerstate_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
-!       call tracerflux_vars%Restart( bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
-!       call tracercoeff_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+      call ep_betr%BeTRRestart(bounds, ncid, flag='write')
     endif
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
@@ -382,8 +376,8 @@ contains
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars, EDbio_vars,                                   &
-       phosphorusstate_vars,phosphorusflux_vars) !,                                      &
- !      betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+       phosphorusstate_vars,phosphorusflux_vars,                                      &
+       ep_betr)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -422,10 +416,7 @@ contains
     type(EDbio_type)         , intent(inout) :: EDbio_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-!    type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
-!    type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
-!    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
-!    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
+    class(betr_simulation_type) , intent(inout) :: ep_betr
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -528,9 +519,7 @@ contains
     end if
 
     if (use_betr) then
-!      call tracerstate_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
-!      call tracerflux_vars%Restart( bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
-!      call tracercoeff_vars%Restart(bounds, ncid, flag='read', betrtracer_vars=betrtracer_vars)
+      call ep_betr%BeTRRestart(bounds, ncid, flag='read')
     endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')

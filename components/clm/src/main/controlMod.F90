@@ -106,7 +106,7 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use clm_pflotran_interfaceMod , only : clm_pf_readnl
-!    use betr_initializeMod        , only : betr_readNL
+    use ALMBeTRNLMod              , only : betr_readNL
     !
     implicit none
     !
@@ -401,7 +401,7 @@ contains
     end if
 
     if (use_betr) then
-!       call betr_readNL( NLFilename )
+       call betr_readNL( NLFilename )
     endif    
 
     ! ----------------------------------------------------------------------

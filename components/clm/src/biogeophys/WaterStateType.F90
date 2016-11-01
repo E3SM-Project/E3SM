@@ -111,7 +111,7 @@ module WaterstateType
      procedure, private :: InitAllocate 
      procedure, private :: InitHistory  
      procedure, private :: InitCold     
-
+     procedure, public  :: save_h2osoi_old
   end type waterstate_type
 
   ! minimum allowed snow effective radius (also "fresh snow" value) [microns]
@@ -757,6 +757,7 @@ contains
          end do
       end do
 
+    call this%save_h2osoi_old(bounds)
     end associate
 
   end subroutine InitCold
@@ -1000,4 +1001,23 @@ contains
 
   end subroutine Reset
 
+  !-----------------------------------------------------------------------
+  subroutine save_h2osoi_old(this,bounds)
+    !
+    ! !DESCRIPTION:
+    ! save current water status to old
+    !
+    ! !ARGUMENTS:
+    class(waterstate_type) :: this
+    type(bounds_type) , intent(in)    :: bounds  
+
+
+    integer :: begc, endc
+
+    begc = bounds%begc; endc=bounds%endc
+
+    this%h2osoi_liq_old_col(begc:endc,:) = this%h2osoi_liq_col(begc:endc,:)
+    this%h2osoi_ice_old_col(begc:endc,:) = this%h2osoi_ice_col(begc:endc,:)
+      
+  end subroutine save_h2osoi_old
 end module WaterstateType
