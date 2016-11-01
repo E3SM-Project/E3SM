@@ -31,7 +31,6 @@ def apply_user_mods(caseroot, user_mods_path):
             if len(newcontents) == 0:
                 continue
             case_user_nl = user_nl.replace(include_dir, caseroot)
-            comp = case_user_nl.split('_')[-1]
             update_user_nl_file(case_user_nl, newcontents)
 
         # update SourceMods in caseroot

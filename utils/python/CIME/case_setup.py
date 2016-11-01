@@ -167,7 +167,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         for comp in models:
             if comp == "DRV":
                 continue
-            comp_model = case.get_value("COMP_%s" % comp)
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
             if ninst > ntasks:
