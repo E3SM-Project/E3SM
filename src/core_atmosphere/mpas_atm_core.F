@@ -381,6 +381,7 @@ module atm_core
          call mpas_pool_get_subpool(block % structs, 'tend', tend)
          call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
          call mpas_pool_get_subpool(block % structs, 'atm_input', atm_input)
+         call physics_tables_init(dminfo, block % configs)
          call physics_registry_init(mesh, block % configs, sfc_input)
          call physics_run_init(block % configs, mesh, state, clock, stream_manager)
 
