@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.utils import expect
 from CIME.test_status import *
@@ -20,47 +22,71 @@ def compare_history(testcase_dir_for_test, baseline_name, baseline_root):
 
 ###############################################################################
 def compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, compare_tests=None):
+    """Compares with baselines for all matching tests
+
+    Outputs results for each test to stdout (one line per test); possible status
+    codes are: PASS, FAIL, SKIP
+
+    In addition, creates files named compare.log.BASELINE_NAME.TIMESTAMP in each
+    test directory, which contain more detailed output
+    """
 ###############################################################################
     test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
     test_status_files = glob.glob("%s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
     expect(test_status_files, "No matching test cases found in for %s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
 
-    broken_compares = []
+    # ID to use in the log file names, to avoid file name collisions with
+    # earlier files that may exist.
+    log_id = CIME.utils.get_timestamp()
+    logfile_name = "compare.log.%s.%s"%(baseline_name, log_id)
+
     for test_status_file in test_status_files:
         test_dir = os.path.dirname(test_status_file)
         ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
         if (compare_tests in [[], None] or CIME.utils.match_any(test_name, compare_tests)):
-            overall_result = ts.get_overall_test_status()
+            CIME.utils.append_status(
+                msg = "Comparing against baseline with compare_test_results: %s"%(baseline_name),
+                caseroot = test_dir,
+                sfile = logfile_name)
 
-            # Compute hist status, False implies it diffed
             run_result = ts.get_status(RUN_PHASE)
+            compare_comment = ""
+            detailed_comments = ""
             if (run_result is None):
-                broken_compares.append((test_name, "no run phase"))
-                logging.warning("Test '%s' did not make it to run phase" % test_name)
-                hist_no_compare = True
+                compare_result = "SKIP"
+                compare_comment = "Test did not make it to run phase"
+                do_compare = False
             elif (run_result != TEST_PASS_STATUS):
-                broken_compares.append((test_name, "test did not pass"))
-                logging.warning("Test '%s' did not pass, not safe to compare" % test_name)
-                hist_no_compare = True
+                compare_result = "SKIP"
+                compare_comment = "Test did not pass"
+                do_compare = False
             else:
-                hist_no_compare = False
+                do_compare = True
 
-            # Now, do the compare
-            if hist_no_compare:
-                logging.info("Cannot compare test: %s, overall status: %s" % (test_name, overall_result))
-            else:
-
-                logging.info("###############################################################################")
-                logging.info("Comparing results for test: %s, most recent result: %s" % (test_name, overall_result))
-                logging.info("###############################################################################")
-
+            if do_compare:
                 # Compare hist files
-                if (not hist_no_compare):
-                    success, reason = compare_history(test_dir, baseline_name, baseline_root)
-                    if (not success):
-                        broken_compares.append((test_name, reason))
+                success, detailed_comments = compare_history(test_dir, baseline_name, baseline_root)
+                if success:
+                    compare_result = TEST_PASS_STATUS
+                else:
+                    compare_result = TEST_FAIL_STATUS
 
-    # Make sure user knows that some tests were not compareed
-    for broken_compare, reason in broken_compares:
-        logging.warning("COMPARE FAILED FOR TEST: %s, reason %s" % (broken_compare, reason))
+            brief_result = "%s %s %s"%(compare_result, test_name, BASELINE_PHASE)
+            if compare_comment:
+                brief_result += " %s"%(compare_comment)
+            print(brief_result)
+
+            CIME.utils.append_status(
+                msg = brief_result,
+                caseroot = test_dir,
+                sfile = logfile_name)
+
+            if detailed_comments:
+                CIME.utils.append_status(
+                    msg = "Detailed comments:\n" + detailed_comments,
+                    caseroot = test_dir,
+                    sfile = logfile_name)
+
+
+
