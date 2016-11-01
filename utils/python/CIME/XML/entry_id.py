@@ -140,6 +140,17 @@ class EntryID(GenericXML):
     def _get_group (self, node):
         return self._get_node_element_info(node, "group")
 
+    def get_valid_values(self, vid):
+        node = self.get_optional_node("entry", {"id":vid})
+        if node is None:
+            return None
+
+        vv_node = self.get_optional_node("valid_values", root=node)
+        if vv_node is None:
+            return None
+        else:
+            return vv_node.text.split(",")
+
     def set_valid_values(self, vid, new_valid_values):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
