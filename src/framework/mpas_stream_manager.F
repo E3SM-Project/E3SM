@@ -15,6 +15,7 @@ module mpas_stream_manager
     use mpas_stream_list
     use mpas_sort
     use mpas_threading
+    use mpas_abort, only : mpas_dmpar_global_abort
 
 
     public :: MPAS_stream_mgr_init, &
@@ -36,6 +37,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_ringing_alarms, &
               MPAS_stream_mgr_add_att, &
               MPAS_stream_mgr_write, &
+              MPAS_stream_mgr_block_write, &
               MPAS_stream_mgr_read, &
               MPAS_stream_mgr_begin_iteration, &
               MPAS_stream_mgr_get_next_stream, &
@@ -285,6 +287,7 @@ module mpas_stream_manager
     !>  include: MPAS_IO_NETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF, and
     !>  MPAS_IO_PNETCDF5. If not specified, the io_type will default to
     !>  MPAS_IO_PNETCDF.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, &
@@ -323,6 +326,7 @@ module mpas_stream_manager
            !
            ! Check that the stream does not already exist
            !
+           nullify(new_stream)
            if (MPAS_stream_list_query(manager % streams, streamID, new_stream, ierr=err_local)) then
                STREAM_DEBUG_WRITE('-- Stream '//trim(streamID)//' already exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -417,6 +421,7 @@ module mpas_stream_manager
     !> \details
     !>  Destroy the stream, including freeing all memory explicitly associated with the stream.
     !>  This will not deallocate the memory associated with the fields in the stream.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_destroy_stream(manager, streamID, ierr)!{{{
@@ -553,6 +558,7 @@ module mpas_stream_manager
     !>   structs as well. If the optional 'packages' argument is supplied, the
     !>   specified packages will be attached to all var and var_array members
     !>   added to the stream.
+    !>   NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     recursive subroutine MPAS_stream_mgr_add_pool(manager, streamID, poolName, packages, ierr)!{{{
@@ -598,6 +604,7 @@ module mpas_stream_manager
            !
            ! Check that stream exists
            !
+           nullify(stream)
            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
                STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -692,6 +699,7 @@ module mpas_stream_manager
     !>  Adds a field from the allFields pool to a stream. If the optional
     !>  argument 'packages' is present, those packages will be attached to
     !>  the field as well.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_add_field(manager, streamID, fieldName, packages, ierr)!{{{
@@ -724,6 +732,7 @@ module mpas_stream_manager
            !
            ! Check that stream exists
            !
+           nullify(stream)
            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
                STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -804,6 +813,7 @@ module mpas_stream_manager
     !>  Both streams need to exist within the same stream manager. If the
     !>  optional 'packages' argument is supplied, the specified packages will be
     !>  attached to all fields added from refStreamID.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, packages, ierr)!{{{
@@ -836,6 +846,7 @@ module mpas_stream_manager
         !
         ! Check that reference stream exists
         !
+        nullify(refStream)
         if (.not. MPAS_stream_list_query(manager % streams, refStreamID, refStream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested reference stream '//trim(refStreamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -845,6 +856,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -931,6 +943,7 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Removes a field from a stream.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_remove_field(manager, streamID, fieldName, ierr)!{{{
@@ -957,6 +970,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1009,6 +1023,7 @@ module mpas_stream_manager
     !>  will be added to the alarm pool, along with an integer that has the same
     !>  name as the stream whose value will represent the direction the stream
     !>  will be handled when this alarm rings.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_add_alarm(manager, streamID, alarmID, direction, ierr)!{{{
@@ -1035,6 +1050,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1068,6 +1084,7 @@ module mpas_stream_manager
         ! Check that the alarm does not already exist for the stream in the specified direction
         !
         if (direction == MPAS_STREAM_INPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
+            nullify(new_alarm)
             if (MPAS_stream_list_query(stream % alarmList_in, alarmID, new_alarm, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Requested input alarm '//trim(alarmID)//' already on stream '//trim(streamID))
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1075,6 +1092,7 @@ module mpas_stream_manager
             end if
         end if
         if (direction == MPAS_STREAM_OUTPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
+            nullify(new_alarm)
             if (MPAS_stream_list_query(stream % alarmList_out, alarmID, new_alarm, ierr=err_local)) then
                 STREAM_ERROR_WRITE('Requested output alarm '//trim(alarmID)//' already on stream '//trim(streamID))
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1091,6 +1109,7 @@ module mpas_stream_manager
            if (direction == MPAS_STREAM_INPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
    
                ! If alarm is not already defined, we need to create a new alarm node
+               nullify(new_alarm)
                if (.not. MPAS_stream_list_query(manager % alarms_in, alarmID, new_alarm, ierr=err_local)) then
                    allocate(new_alarm)
                    new_alarm % name = alarmID
@@ -1136,6 +1155,7 @@ module mpas_stream_manager
            if (direction == MPAS_STREAM_OUTPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
    
                ! If alarm is not already defined, we need to create a new alarm node
+               nullify(new_alarm)
                if (.not. MPAS_stream_list_query(manager % alarms_out, alarmID, new_alarm, ierr=err_local)) then
                    allocate(new_alarm)
                    new_alarm % name = alarmID
@@ -1191,6 +1211,7 @@ module mpas_stream_manager
     !> \details
     !>  This routine will remove the association of a stream to an alarm from
     !>  the stream manager.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_remove_alarm(manager, streamID, alarmID, direction, ierr)!{{{
@@ -1219,6 +1240,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1284,7 +1306,8 @@ module mpas_stream_manager
     !> \date   2 September 2014
     !> \details
     !>  Resets all alarms used by the stream manager. If the optional argument
-    !>  'streamID' is provided, only alarms associated with that stream will be
+    !>  'streamID' is provided, only alarms associated with streams that match
+    !>  the 'streamID' regular expression will be
     !>  reset. If the optional 'direction' argument is provided, only alarms 
     !>  associated with that direction will be reset.
     !
@@ -1302,6 +1325,7 @@ module mpas_stream_manager
         type (MPAS_stream_list_type), pointer :: alarm_cursor
         integer :: local_direction
         integer :: local_ierr, threadNum
+        logical :: resetAlarms
 
         threadNum = mpas_threading_get_thread_num()
         
@@ -1320,48 +1344,64 @@ module mpas_stream_manager
         end if
 
 
-        !
-        ! Check for optional streamID argument; default is to handle all alarms in the manager.
-        !
-        nullify(stream)
-        if (present(streamID)) then
-            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=local_ierr)) then
-                STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in stream manager.')
-                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                return
-            end if
-        end if
-
-        
         if ( threadNum == 0 ) then
-           if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
-               if (associated(stream)) then
-                   alarm_cursor => stream % alarmList_in % head
-               else
-                   alarm_cursor => manager % alarms_in % head
-               end if
-               do while (associated(alarm_cursor))
-                   if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
-                       call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
-                   end if
-                   alarm_cursor => alarm_cursor % next
-               end do
-           end if
+            !
+            ! Check for optional streamID argument; default is to handle all alarms in the manager.
+            !
+            nullify(stream)
+            if (present(streamID)) then
+                resetAlarms = .false.
+                do while (MPAS_stream_list_query(manager % streams, streamID, stream, ierr=local_ierr))
+                    resetAlarms = .true.
+                    if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+                        alarm_cursor => stream % alarmList_in % head
+                        do while (associated(alarm_cursor))
+                            if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                                call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
+                            end if
+                            alarm_cursor => alarm_cursor % next
+                        end do
+                    end if
+
+                    if (local_direction == MPAS_STREAM_OUTPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+                        alarm_cursor => stream % alarmList_out % head
+                        do while (associated(alarm_cursor))
+                            if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                                call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
+                            end if
+                            alarm_cursor => alarm_cursor % next
+                        end do
+                    end if
+                end do
+
+                if ( .not. resetAlarms ) then
+                    STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in stream manager.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return
+                end if
+            else
+
+                if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+                    alarm_cursor => manager % alarms_in % head
+                    do while (associated(alarm_cursor))
+                        if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                            call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
+                        end if
+                        alarm_cursor => alarm_cursor % next
+                    end do
+                end if
 
 
-           if (local_direction == MPAS_STREAM_OUTPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
-               if (associated(stream)) then
-                   alarm_cursor => stream % alarmList_out % head
-               else
-                   alarm_cursor => manager % alarms_out % head
-               end if
-               do while (associated(alarm_cursor))
-                   if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
-                       call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
-                   end if
-                   alarm_cursor => alarm_cursor % next
-               end do
-           end if
+                if (local_direction == MPAS_STREAM_OUTPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+                    alarm_cursor => manager % alarms_out % head
+                    do while (associated(alarm_cursor))
+                        if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                            call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
+                        end if
+                        alarm_cursor => alarm_cursor % next
+                    end do
+                end if
+            end if
         end if
 
     end subroutine MPAS_stream_mgr_reset_alarms!}}}
@@ -1379,6 +1419,7 @@ module mpas_stream_manager
     !>  the optional argument 'direction' is given, only alarms for the specified 
     !>  direction are tested. If any of the tested alarms is ringing, the function 
     !>  returns .true.; otherwise, it returns .false..
+    !>  Note: This function doesn't support streamID regular expressions
     !
     !-----------------------------------------------------------------------
     logical function MPAS_stream_mgr_ringing_alarms(manager, streamID, direction, ierr) !{{{
@@ -1488,6 +1529,7 @@ module mpas_stream_manager
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
         integer :: err_local, threadNum
+        logical :: setProperties
 
         threadNum = mpas_threading_get_thread_num()
 
@@ -1498,33 +1540,41 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
-        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_set_property().')
+        setProperties = .false.
+        nullify(stream_cursor)
+        do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+           setProperties = .true.
+           !
+           ! Set property
+           !
+           if ( threadNum == 0 ) then
+              select case (propertyName)
+
+                  case (MPAS_STREAM_PROPERTY_PRECISION)
+                      stream_cursor % precision = propertyValue
+
+                  case (MPAS_STREAM_PROPERTY_CLOBBER)
+                      stream_cursor % clobber_mode = propertyValue
+
+                  case (MPAS_STREAM_PROPERTY_IOTYPE)
+                      stream_cursor % io_type = propertyValue
+
+                  case default
+                      STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                      STREAM_ERROR_WRITE('    or specified property is not of type integer.')
+                      if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+              end select
+           end if
+        end do
+
+        call mpas_threading_barrier()
+
+        if ( .not. setProperties ) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
 
-        !
-        ! Set property
-        !
-        if ( threadNum == 0 ) then
-           select case (propertyName)
-
-               case (MPAS_STREAM_PROPERTY_PRECISION)
-                   stream_cursor % precision = propertyValue
-
-               case (MPAS_STREAM_PROPERTY_CLOBBER)
-                   stream_cursor % clobber_mode = propertyValue
-
-               case (MPAS_STREAM_PROPERTY_IOTYPE)
-                   stream_cursor % io_type = propertyValue
-
-               case default
-                   STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
-                   STREAM_ERROR_WRITE('    or specified property is not of type integer.')
-                   if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-           end select
-        end if
 
     end subroutine MPAS_stream_mgr_set_property_int !}}}
 
@@ -1554,6 +1604,7 @@ module mpas_stream_manager
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
         integer :: err_local, threadNum
+        logical :: setProperties
 
         threadNum = mpas_threading_get_thread_num()
 
@@ -1564,43 +1615,51 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
-        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_set_property().')
+        setProperties = .false.
+        nullify(stream_cursor)
+        do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+            setProperties = .true.
+            if ( threadNum == 0 ) then
+               !
+               ! Set property
+               !
+               select case (propertyName)
+
+                   case (MPAS_STREAM_PROPERTY_FILENAME)
+!TODO: ensure that filename does not contain ':' characters, which PNETCDF does not like...
+                       stream_cursor % filename_template = propertyValue
+
+                   case (MPAS_STREAM_PROPERTY_FILENAME_INTV)
+                       stream_cursor % filename_interval = propertyValue
+
+                   case (MPAS_STREAM_PROPERTY_REF_TIME)
+                       call mpas_set_time(stream_cursor % referenceTime, dateTimeString=propertyValue)
+
+                   case (MPAS_STREAM_PROPERTY_RECORD_INTV)
+    
+                       ! The interval between records may not have been allocated if the optional recordInterval
+                       !    argument was not provided when the stream was created
+                       if (.not. associated(stream_cursor % recordInterval)) then
+                           allocate(stream_cursor % recordInterval)
+                       end if
+                       call mpas_set_timeInterval(stream_cursor % recordInterval, timeString=propertyValue)
+
+                   case default
+                       STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                       STREAM_ERROR_WRITE('    or specified property is not of type character.')
+                       if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+               end select
+            end if
+        end do
+
+        call mpas_threading_barrier()
+
+        if ( .not. setProperties ) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
 
-        if ( threadNum == 0 ) then
-           !
-           ! Set property
-           !
-           select case (propertyName)
-
-               case (MPAS_STREAM_PROPERTY_FILENAME)
-!TODO: ensure that filename does not contain ':' characters, which PNETCDF does not like...
-                   stream_cursor % filename_template = propertyValue
-
-               case (MPAS_STREAM_PROPERTY_FILENAME_INTV)
-                   stream_cursor % filename_interval = propertyValue
-
-               case (MPAS_STREAM_PROPERTY_REF_TIME)
-                   call mpas_set_time(stream_cursor % referenceTime, dateTimeString=propertyValue)
-
-               case (MPAS_STREAM_PROPERTY_RECORD_INTV)
-    
-                   ! The interval between records may not have been allocated if the optional recordInterval
-                   !    argument was not provided when the stream was created
-                   if (.not. associated(stream_cursor % recordInterval)) then
-                       allocate(stream_cursor % recordInterval)
-                   end if
-                   call mpas_set_timeInterval(stream_cursor % recordInterval, timeString=propertyValue)
-
-               case default
-                   STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
-                   STREAM_ERROR_WRITE('    or specified property is not of type character.')
-                   if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-           end select
-        end if
 
     end subroutine MPAS_stream_mgr_set_property_char !}}}
 
@@ -1630,6 +1689,7 @@ module mpas_stream_manager
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
         integer :: err_local, threadNum
+        logical :: setProperties
 
         threadNum = mpas_threading_get_thread_num()
 
@@ -1640,30 +1700,39 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
-        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_set_property().')
+        setProperties = .false.
+        nullify(stream_cursor)
+        do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+            setProperties = .true.
+
+            if ( threadNum == 0 ) then
+               !
+               ! Set property
+               !
+               select case (propertyName)
+
+                   case (MPAS_STREAM_PROPERTY_ACTIVE)
+                       stream_cursor % active_stream = propertyValue
+
+                   case (MPAS_STREAM_PROPERTY_IMMUTABLE)
+                       stream_cursor % immutable = propertyValue
+
+                   case default
+                       STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                       STREAM_ERROR_WRITE('      or specified property is not of type logical.')
+                       if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+               end select
+            end if
+        end do
+
+        call mpas_threading_barrier()
+
+        if ( .not. setProperties ) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
 
-        if ( threadNum == 0 ) then
-           !
-           ! Set property
-           !
-           select case (propertyName)
-
-               case (MPAS_STREAM_PROPERTY_ACTIVE)
-                   stream_cursor % active_stream = propertyValue
-
-               case (MPAS_STREAM_PROPERTY_IMMUTABLE)
-                   stream_cursor % immutable = propertyValue
-
-               case default
-                   STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
-                   STREAM_ERROR_WRITE('      or specified property is not of type logical.')
-                   if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-           end select
-        end if
 
     end subroutine MPAS_stream_mgr_set_property_logical !}}}
 
@@ -1676,6 +1745,7 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Retrieves the value of a stream property within an MPAS stream manager.
+    !>  NOTE: This routine does not support streamID regular expressions
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_get_property_int(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
@@ -1701,6 +1771,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1738,6 +1809,7 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Retrieves the value of a stream property within an MPAS stream manager.
+    !>  NOTE: This routine does not support streamID regular expressions
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_get_property_char(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
@@ -1766,6 +1838,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1846,6 +1919,7 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Retrieves the value of a stream property within an MPAS stream manager.
+    !>  NOTE: This routine does not support streamID regular expressions
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_get_property_logical(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
@@ -1871,6 +1945,7 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
+        nullify(stream_cursor)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
             STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1922,6 +1997,7 @@ module mpas_stream_manager
         logical, pointer :: package
         type (MPAS_stream_list_type), pointer :: stream_cursor
         integer :: err_local
+        logical :: addedPackages
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_pkg()')
@@ -1942,16 +2018,25 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
-        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_pkg().')
+        addedPackages = .false.
+        nullify(stream_cursor)
+        do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+
+           addedPackages = .true.
+
+           !
+           ! Add package to the packages pool for the stream
+           !
+           call mpas_pool_add_package(stream_cursor % pkg_pool, packageName, package)    
+
+        end do
+
+        if ( .not. addedPackages ) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_add_pkg().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
 
-        !
-        ! Add package to the packages pool for the stream
-        !
-        call mpas_pool_add_package(stream_cursor % pkg_pool, packageName, package)    
 
     end subroutine MPAS_stream_mgr_add_pkg!}}}
 
@@ -1981,6 +2066,7 @@ module mpas_stream_manager
         logical, pointer :: package
         type (MPAS_stream_list_type), pointer :: stream_cursor
         integer :: err_local
+        logical :: removedPackage
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_pkg()')
@@ -1990,16 +2076,25 @@ module mpas_stream_manager
         !
         ! Find requested stream
         !
-        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_remove_pkg().')
+        removedPackage = .false.
+        nullify(stream_cursor)
+        do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+
+            removedPackage = .true.
+
+            !
+            ! Remove package from the packages pool for the stream
+            !
+            call mpas_pool_remove_package(stream_cursor % pkg_pool, packageName)
+
+        end do
+
+        if ( .not. removedPackage ) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_remove_pkg().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
 
-        !
-        ! Remove package from the packages pool for the stream
-        !
-        call mpas_pool_remove_package(stream_cursor % pkg_pool, packageName)
 
     end subroutine MPAS_stream_mgr_remove_pkg!}}}
 
@@ -2034,6 +2129,7 @@ module mpas_stream_manager
         integer :: att_type
         integer :: err_level
         integer :: err_local
+        logical :: addedAttribute
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
@@ -2042,35 +2138,59 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
-            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
+            addedAttribute = .false.
+            nullify(stream_cursor)
+            do while (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+                addedAttribute = .true.
+                att_pool => stream_cursor % att_pool
+                err_level = mpas_pool_get_error_level()
+                call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+                call mpas_pool_get_config(att_pool, attName, queryVal)
+                call mpas_pool_set_error_level(err_level)
+                if (.not. associated(queryVal)) then
+                    !
+                    ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                    !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                    !    in the call above to mpas_pool_get_config()
+                    !
+                    if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                        STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(stream_cursor % name)//' is not of type integer.')
+                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                        return 
+                    end if
+                    call mpas_pool_add_config(att_pool, attName, attVal)
+                else
+                    queryVal = attVal
+                end if
+            end do
+
+            if ( .not. addedAttribute ) then
+                STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
 
-            att_pool => stream_cursor % att_pool
         else
             att_pool => manager % defaultAtts
-        end if
-
-        err_level = mpas_pool_get_error_level()
-        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
-        call mpas_pool_get_config(att_pool, attName, queryVal)
-        call mpas_pool_set_error_level(err_level)
-        if (.not. associated(queryVal)) then
-            !
-            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
-            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
-            !    in the call above to mpas_pool_get_config()
-            !
-            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
-                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type integer.')
-                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                return 
+            err_level = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+            call mpas_pool_get_config(att_pool, attName, queryVal)
+            call mpas_pool_set_error_level(err_level)
+            if (.not. associated(queryVal)) then
+                !
+                ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                !    in the call above to mpas_pool_get_config()
+                !
+                if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                    STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in streamManager is not of type integer.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+                call mpas_pool_add_config(att_pool, attName, attVal)
+            else
+                queryVal = attVal
             end if
-            call mpas_pool_add_config(att_pool, attName, attVal)
-        else
-            queryVal = attVal
         end if
 
     end subroutine MPAS_stream_mgr_add_att_int!}}}
@@ -2106,6 +2226,7 @@ module mpas_stream_manager
         integer :: att_type
         integer :: err_level
         integer :: err_local
+        logical :: addedAttribute
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
@@ -2114,35 +2235,63 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
-            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
+            addedAttribute = .false.
+            nullify(stream_cursor)
+            do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+
+                addedAttribute = .true.
+                att_pool => stream_cursor % att_pool
+
+                err_level = mpas_pool_get_error_level()
+                call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+                call mpas_pool_get_config(att_pool, attName, queryVal)
+                call mpas_pool_set_error_level(err_level)
+                if (.not. associated(queryVal)) then
+                    !
+                    ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                    !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                    !    in the call above to mpas_pool_get_config()
+                    !
+                    if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                        STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(stream_cursor % name)//' is not of type real.')
+                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                        return 
+                    end if
+                    call mpas_pool_add_config(att_pool, attName, attVal)
+                else
+                    queryVal = attVal
+                end if
+            end do
+
+            if ( .not. addedAttribute ) then
+                STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
 
-            att_pool => stream_cursor % att_pool
         else
             att_pool => manager % defaultAtts
-        end if
 
-        err_level = mpas_pool_get_error_level()
-        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
-        call mpas_pool_get_config(att_pool, attName, queryVal)
-        call mpas_pool_set_error_level(err_level)
-        if (.not. associated(queryVal)) then
-            !
-            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
-            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
-            !    in the call above to mpas_pool_get_config()
-            !
-            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
-                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type real.')
-                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                return 
+            err_level = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+            call mpas_pool_get_config(att_pool, attName, queryVal)
+            call mpas_pool_set_error_level(err_level)
+            if (.not. associated(queryVal)) then
+                !
+                ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                !    in the call above to mpas_pool_get_config()
+                !
+                if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                    STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in streamManager is not of type real.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+                call mpas_pool_add_config(att_pool, attName, attVal)
+            else
+                queryVal = attVal
             end if
-            call mpas_pool_add_config(att_pool, attName, attVal)
-        else
-            queryVal = attVal
+
         end if
 
     end subroutine MPAS_stream_mgr_add_att_real!}}}
@@ -2178,6 +2327,7 @@ module mpas_stream_manager
         integer :: att_type
         integer :: err_level
         integer :: err_local
+        logical :: addedAttribute
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
@@ -2186,35 +2336,62 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
-            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
+            addedAttribute = .false.
+            nullify(stream_cursor)
+            do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+                addedAttribute = .true.
+                att_pool => stream_cursor % att_pool
+
+                err_level = mpas_pool_get_error_level()
+                call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+                call mpas_pool_get_config(att_pool, attName, queryVal)
+                call mpas_pool_set_error_level(err_level)
+                if (.not. associated(queryVal)) then
+                    !
+                    ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                    !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                    !    in the call above to mpas_pool_get_config()
+                    !
+                    if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                        STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(stream_cursor % name)//' is not of type character.')
+                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                        return 
+                    end if
+                    call mpas_pool_add_config(att_pool, attName, attVal)
+                else
+                    queryVal = attVal
+                end if
+            end do
+
+            if ( .not. addedAttribute ) then
+                STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
 
-            att_pool => stream_cursor % att_pool
         else
             att_pool => manager % defaultAtts
-        end if
 
-        err_level = mpas_pool_get_error_level()
-        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
-        call mpas_pool_get_config(att_pool, attName, queryVal)
-        call mpas_pool_set_error_level(err_level)
-        if (.not. associated(queryVal)) then
-            !
-            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
-            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
-            !    in the call above to mpas_pool_get_config()
-            !
-            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
-                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type character.')
-                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                return 
+            err_level = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+            call mpas_pool_get_config(att_pool, attName, queryVal)
+            call mpas_pool_set_error_level(err_level)
+            if (.not. associated(queryVal)) then
+                !
+                ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                !    in the call above to mpas_pool_get_config()
+                !
+                if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                    STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in streamManager is not of type character.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+                call mpas_pool_add_config(att_pool, attName, attVal)
+            else
+                queryVal = attVal
             end if
-            call mpas_pool_add_config(att_pool, attName, attVal)
-        else
-            queryVal = attVal
+
         end if
 
     end subroutine MPAS_stream_mgr_add_att_char!}}}
@@ -2250,6 +2427,7 @@ module mpas_stream_manager
         integer :: att_type
         integer :: err_level
         integer :: err_local
+        logical :: addedAttribute
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
@@ -2258,35 +2436,61 @@ module mpas_stream_manager
         nullify(queryVal)
 
         if (present(streamID)) then
-            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_add_att().')
+            addedAttribute = .false.
+            nullify(stream_cursor)
+            do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+                addedAttribute = .true.
+                att_pool => stream_cursor % att_pool
+
+                err_level = mpas_pool_get_error_level()
+                call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+                call mpas_pool_get_config(att_pool, attName, queryVal)
+                call mpas_pool_set_error_level(err_level)
+                if (.not. associated(queryVal)) then
+                    !
+                    ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                    !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                    !    in the call above to mpas_pool_get_config()
+                    !
+                    if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                        STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(stream_cursor % name)//' is not of type logical.')
+                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                        return 
+                    end if
+                    call mpas_pool_add_config(att_pool, attName, attVal)
+                else
+                    queryVal = attVal
+                end if
+            end do
+
+            if ( .not. addedAttribute ) then
+                STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
 
-            att_pool => stream_cursor % att_pool
         else
             att_pool => manager % defaultAtts
-        end if
 
-        err_level = mpas_pool_get_error_level()
-        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
-        call mpas_pool_get_config(att_pool, attName, queryVal)
-        call mpas_pool_set_error_level(err_level)
-        if (.not. associated(queryVal)) then
-            !
-            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
-            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
-            !    in the call above to mpas_pool_get_config()
-            !
-            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
-                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type logical.')
-                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                return 
+            err_level = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+            call mpas_pool_get_config(att_pool, attName, queryVal)
+            call mpas_pool_set_error_level(err_level)
+            if (.not. associated(queryVal)) then
+                !
+                ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+                !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+                !    in the call above to mpas_pool_get_config()
+                !
+                if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                    STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in streamManger is not of type logical.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+                call mpas_pool_add_config(att_pool, attName, attVal)
+            else
+                queryVal = attVal
             end if
-            call mpas_pool_add_config(att_pool, attName, attVal)
-        else
-            queryVal = attVal
         end if
 
     end subroutine MPAS_stream_mgr_add_att_logical!}}}
@@ -2300,7 +2504,7 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  With no optional arguments, writes all streams whose alarms are ringing.
-    !>  The "streamID" argument optionally specifies the ID of a particular stream
+    !>  The "streamID" argument optionally specifies a regular expression of streams
     !>  to be written; if no other optional arguments are given, the specified
     !>  stream is only written if any of its alarms are ringing.
     !>  The "timeLevel" argument optionally specifies, for fields with multiple
@@ -2329,6 +2533,7 @@ module mpas_stream_manager
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: blockID
         integer :: local_timeLevel
         integer :: local_mgLevel
         logical :: local_forceWrite
@@ -2336,6 +2541,7 @@ module mpas_stream_manager
         type (MPAS_Time_type) :: local_writeTime
         integer :: temp_ierr
         integer :: threadNum
+        logical :: wroteStreams
 
         threadNum = mpas_threading_get_thread_num()
 
@@ -2372,6 +2578,8 @@ module mpas_stream_manager
             local_writeTime = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
         end if
 
+        ! This routine assumes global writes, so set blockID = -1
+        blockID = -1
 
         if ( threadNum == 0 ) then
            !
@@ -2379,21 +2587,23 @@ module mpas_stream_manager
            !    process all streams
            !
            if (present(streamID)) then
+               wroteStreams = .false.
                nullify(stream_cursor)
-               if (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr)) then
+               do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr))
                    STREAM_DEBUG_WRITE('-- Handling write of stream '//trim(stream_cursor % name))
 
                    ! Verify that the stream is an output stream
-                   if (stream_cursor % direction /= MPAS_STREAM_OUTPUT .and. &
-                       stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
-                       STREAM_ERROR_WRITE('Stream '//trim(streamID)//' is not an output stream.')
-                       if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                       return 
-                   end if
+                   if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
-                   call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
-               else
-                   STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_write().')
+                      wroteStreams = .true.
+                      stream_cursor % blockWrite = .false.
+                      call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
+                   end if
+               end do
+
+               if ( .not. wroteStreams ) then
+                   STREAM_ERROR_WRITE('No output stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_write().')
                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                    return 
                end if
@@ -2407,7 +2617,8 @@ module mpas_stream_manager
                    if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
                        stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
-                       call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
+                       stream_cursor % blockWrite = .false.
+                       call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
                        end if
@@ -2424,6 +2635,206 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_block_write
+    !
+    !> \brief Write streams that are managed by an MPAS stream manager, using blockWrite = .true.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   08/25/2016
+    !> \details
+    !>  This routine performs block writes of any streams requested within an
+    !>  MPAS stream manger. Block writes imply each processor should write
+    !>  their own file(s). Additionally, block writes disable global reindexing
+    !>  before and after writing the stream.
+    !>
+    !>  With no optional arguments, writes all streams whose alarms are ringing.
+    !>  The "streamID" argument optionally specifies a regular expression of streams
+    !>  to be written; if no other optional arguments are given, the specified
+    !>  stream is only written if any of its alarms are ringing.
+    !>  The "timeLevel" argument optionally specifies, for fields with multiple
+    !>  time levels, the time level from which fields should be written.
+    !>  The "mgLevel" argument optionally specifies, for fields that exist for 
+    !>  multiple grid levels, the grid level from which fields should be written.
+    !>  The "forceWriteNow" argument optionally specifies that all streams -- or 
+    !>  the stream specified by the "streamID" argument -- should be written by 
+    !>  the call regardless of whether any alarms associated with the stream(s) 
+    !>  are ringing. The "writeTime" argument optionally specifies a time stamp
+    !>  to be used for expanding a filename template, when it is not passed in,
+    !>  the current time of the streamManager's clock is used to expand filename
+    !>  templates.
+    !>
+    !>  Swapping write types on a stream can cause unexpected behavior. For example:
+    !>    - Writing a stream using the normal write routine, followed by the
+    !>          block write routine, and again by the normal write routine will cause any
+    !>          data in the files prior to the last normal write to be lost.
+    !>
+    !>  Additionally, this routine is only valid for writing out a single file
+    !>  at a time.  If the block write stream is required at multiple time
+    !>  levels, the filename template and filename intervals need to be setup to
+    !>  give unique files for each record.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_block_write(manager, writeBlock, streamID, timeLevel, mgLevel, forceWriteNow, writeTime, ierr) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        type (block_type), intent(in) :: writeBlock
+        character (len=*), intent(in), optional :: streamID
+        integer, intent(in), optional :: timeLevel
+        integer, intent(in), optional :: mgLevel
+        logical, intent(in), optional :: forceWriteNow
+        character (len=*), intent(in), optional :: writeTime
+        integer, intent(out), optional :: ierr
+
+        type (mpas_pool_type), pointer :: backupAllFields, backupAllStructs
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: local_timeLevel
+        integer :: local_mgLevel
+        logical :: local_forceWrite
+        integer :: local_ierr
+        type (MPAS_Time_type) :: local_writeTime
+        integer :: temp_ierr
+        integer :: threadNum
+        logical :: wroteStreams
+
+        type (mpas_io_context_type), pointer :: debugContext, backupContext
+
+        threadNum = mpas_threading_get_thread_num()
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_block_write()')
+        local_ierr = MPAS_STREAM_MGR_NOERR
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Use optional arguments or set defaults
+        !
+        if (present(timeLevel)) then
+            local_timeLevel = timeLevel
+        else
+            local_timeLevel = 1
+        end if
+
+        if (present(mgLevel)) then
+            local_mgLevel = mgLevel
+        else
+            local_mgLevel = 1
+        end if
+
+        if (present(forceWriteNow)) then
+            local_forceWrite = forceWriteNow
+        else
+            local_forceWrite = .false.
+        end if
+
+
+        if ( present(writeTime) ) then
+            call mpas_set_time(local_writeTime, dateTimeString=writeTime, ierr=ierr)
+        else
+            local_writeTime = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+        end if
+
+
+        if ( threadNum == 0 ) then
+           ! Setup the debugging ioContext
+           allocate(debugContext)
+           allocate(debugContext % dminfo)
+           call mpas_dmpar_init(debugContext % dminfo, MPI_COMM_SELF)
+
+           backupContext => manager % ioContext
+           manager % ioContext => debugContext
+
+           call mpas_io_init(debugContext, 1, 1)
+
+           ! Setup the backup pools, and swap the manager's allFields / allStructs pools
+           backupAllFields => manager % allFields
+           backupAllStructs => manager % allStructs
+           manager % allFields => writeBlock % allFields
+           manager % allStructs => writeBlock % allStructs
+
+           !
+           ! If a stream is specified, we process just that stream; otherwise,
+           !    process all streams
+           !
+           if (present(streamID)) then
+               wroteStreams = .false.
+               nullify(stream_cursor)
+               do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr))
+                   STREAM_DEBUG_WRITE('-- Handling local write of stream '//trim(stream_cursor % name))
+
+                   ! Verify that the stream is an output stream
+                   if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+
+                      wroteStreams = .true.
+                      stream_cursor % blockWrite = .true.
+                      call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
+                                        local_forceWrite, local_writeTime, local_ierr)
+                      stream_cursor % blockWrite = .false.
+                      if ( associated(stream_cursor % stream) ) then
+                         stream_cursor % valid = .false.
+                         call MPAS_closeStream(stream_cursor % stream, ierr=local_ierr)
+                         deallocate(stream_cursor % stream)
+                      end if
+                   end if
+               end do
+
+               if ( .not. wroteStreams ) then
+                   STREAM_ERROR_WRITE('No output stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_block_write().')
+                   if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                   return 
+               end if
+           else
+               nullify(stream_cursor)
+               stream_cursor => manager % streams % head
+               do while (associated(stream_cursor))
+                   STREAM_DEBUG_WRITE('-- Handling local write of stream '//trim(stream_cursor % name))
+
+                   ! Verify that the stream is an output stream
+                   if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+
+                       stream_cursor % blockWrite = .true.
+                       call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
+                                         local_forceWrite, local_writeTime, temp_ierr)
+                       stream_cursor % blockWrite = .false.
+                       if ( associated(stream_cursor % stream) ) then
+                          stream_cursor % valid = .false.
+                          call MPAS_closeStream(stream_cursor % stream, ierr=local_ierr)
+                          deallocate(stream_cursor % stream)
+                       end if
+                       if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
+                           local_ierr = temp_ierr
+                       end if
+
+                   end if
+                   stream_cursor => stream_cursor % next
+               end do
+           end if
+           ! Swap the allFields / allStructs back to the backups.
+           manager % allFields => backupAllFields
+           manager % allStructs => backupAllStructs
+
+           ! Destroy the IO context, and dminfo that was created
+           call MPAS_io_finalize(debugContext, .true.)
+
+           manager % ioContext => backupContext
+
+           call mpas_dmpar_finalize(debugContext % dminfo)
+
+           deallocate(debugContext % dminfo)
+           deallocate(debugContext) 
+        end if
+
+        call mpas_threading_barrier()
+
+        if (present(ierr)) ierr = local_ierr
+
+    end subroutine MPAS_stream_mgr_block_write !}}}
+
+
+    !-----------------------------------------------------------------------
     !  routine write_stream
     !
     !> \brief Handle the writing of a stream pointed to by the stream list node
@@ -2433,12 +2844,13 @@ module mpas_stream_manager
     !>  Private subroutine to handle the details of actually writing a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine write_stream(manager, stream, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
+    subroutine write_stream(manager, stream, blockID, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
 
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
         type (MPAS_stream_list_type), intent(inout) :: stream
+        integer, intent(in) :: blockID
         integer, intent(in) :: timeLevel
         integer, intent(in) :: mgLevel
         logical, intent(in) :: forceWriteNow
@@ -2527,10 +2939,10 @@ module mpas_stream_manager
            if (.not. stream % valid) then
                if ( stream % filename_interval /= 'none' ) then
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
-                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
+                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, blockID, stream % filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
-                   call mpas_expand_string(time_string, stream % filename_template, stream % filename)
+                   call mpas_expand_string(time_string, blockID, stream % filename_template, stream % filename)
                end if
 
                stream % nRecords = 1
@@ -2551,6 +2963,7 @@ module mpas_stream_manager
                call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE,  &
                                       precision=stream % precision, clobberRecords=clobberRecords, &
                                       clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
+               stream % stream % blockWrite = stream % blockWrite
                if (local_ierr /= MPAS_STREAM_NOERR) then
                    if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
                        !
@@ -2599,10 +3012,10 @@ module mpas_stream_manager
                if ( stream % filename_interval /= 'none' ) then
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
     
-                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, blockID, temp_filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
-                   call mpas_expand_string(time_string, stream % filename_template, temp_filename)
+                   call mpas_expand_string(time_string, blockID, stream % filename_template, temp_filename)
                end if
 
                if (temp_filename /= stream % filename) then
@@ -2635,6 +3048,7 @@ module mpas_stream_manager
                    call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE, &
                                           precision=stream % precision, clobberRecords=clobberRecords, &
                                           clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
+                   stream % stream % blockWrite = stream % blockWrite
                    if (local_ierr /= MPAS_STREAM_NOERR) then
                        if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
                            !
@@ -2720,8 +3134,12 @@ module mpas_stream_manager
 
            !
            ! For any connectivity arrays in the stream, temporarily convert local indices to global indices
+           ! unless this stream is using blockWrite
            !
-           call prewrite_reindex(manager % allFields, stream % field_pool)
+           if ( .not. stream % blockWrite ) then
+              STREAM_DEBUG_WRITE(' -- Prewrite reindex for stream ' COMMA trim(stream % name))
+              call prewrite_reindex(manager % allFields, stream % field_pool)
+           end if
 
            ! 
            ! Write the stream
@@ -2731,8 +3149,12 @@ module mpas_stream_manager
 
            !
            ! Regardless of the error code from MPAS_writeStream, we need to reset global indices in the stream back to local indices
+           ! unless this stream is using blockWrite
            !
-           call postwrite_reindex(manager % allFields, stream % field_pool)
+           if ( .not. stream % blockWrite ) then
+              STREAM_DEBUG_WRITE(' -- Postwrite reindex for stream ' COMMA trim(stream % name))
+              call postwrite_reindex(manager % allFields, stream % field_pool)
+           end if
 
            if (local_ierr /= MPAS_STREAM_NOERR) then
                if (local_ierr == MPAS_STREAM_CLOBBER_RECORD) then
@@ -2771,7 +3193,7 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  With no optional arguments, reads all streams whose alarms are ringing.
-    !>  The "streamID" argument optionally specifies the ID of a particular stream
+    !>  The "streamID" argument optionally specifies a regular expression of streams
     !>  to be read; if no other optional arguments are given, the specified stream
     !>  is only read if any of its alarms are ringing.
     !>  The "timeLevel" argument optionally specifies, for fields with multiple
@@ -2816,6 +3238,7 @@ module mpas_stream_manager
         integer :: temp_ierr
         type (MPAS_Time_type) :: now_time 
         integer :: threadNum
+        logical :: readStreams
 
         threadNum = mpas_threading_get_thread_num()
 
@@ -2865,21 +3288,21 @@ module mpas_stream_manager
            !    process all streams
            !
            if (present(streamID)) then
+               readStreams = .false.
                nullify(stream_cursor)
-               if (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr)) then
+               do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr))
                    STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
    
                    ! Verify that the stream is an input stream
-                   if (stream_cursor % direction /= MPAS_STREAM_INPUT .and. stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
-                       STREAM_ERROR_WRITE('Stream '//trim(streamID)//' is not an input stream.')
-                       if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                       return 
+                   if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                      readStreams = .true.
+                      call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
+                                       local_whence, actualWhen, local_ierr)
                    end if
-   
-                   call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, local_whence, &
-                                    actualWhen, local_ierr)
-               else
-                   STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_read().')
+               end do
+
+               if ( .not. readStreams ) then
+                   STREAM_ERROR_WRITE('No input stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_read().')
                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                    return 
                end if
@@ -2937,6 +3360,7 @@ module mpas_stream_manager
         character (len=*), intent(out), optional :: actualWhen
         integer, intent(out) :: ierr
 
+        integer :: blockID_local
         character (len=StrKIND) :: err_string
 
         type (MPAS_stream_list_type), pointer :: alarm_cursor
@@ -2963,6 +3387,12 @@ module mpas_stream_manager
         integer :: threadNum
 
         threadNum = mpas_threading_get_thread_num()
+
+        ! For now, reading only supports global reads.
+        ! In the future, if reading is supposed to support local reads as well,
+        ! blockID can become an input argument and then blockID_local can be
+        ! set to blockID
+        blockID_local = -1
 
         ierr = MPAS_STREAM_MGR_NOERR
 
@@ -3010,9 +3440,9 @@ module mpas_stream_manager
                call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
                call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
                
-               call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+               call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, blockID_local, temp_filename, ierr=local_ierr)
            else
-               call mpas_expand_string(when, stream % filename_template, temp_filename)
+               call mpas_expand_string(when, blockID_local, stream % filename_template, temp_filename)
            end if
 
            STREAM_DEBUG_WRITE(' -- Stream filename is: ' COMMA trim(temp_filename) )
@@ -3179,7 +3609,7 @@ module mpas_stream_manager
 
               call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
               
-              call mpas_build_stream_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, test_filename, ierr=local_ierr)
+              call mpas_build_stream_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, blockID_local, test_filename, ierr=local_ierr)
 
               STREAM_DEBUG_WRITE(' --- Retesting filename is ' COMMA trim(test_filename))
 
@@ -3363,20 +3793,23 @@ module mpas_stream_manager
     !>
     !>  Return error codes:
     !>  0 no error
+    !>
+    !>  NOTE: This routine does not support streamID regular expressions
     !-----------------------------------------------------------------------
-    subroutine mpas_get_stream_filename(manager, streamID, when, filename, ierr) !{{{
+    subroutine mpas_get_stream_filename(manager, streamID, when, blockID, filename, ierr) !{{{
 
         implicit none
 
         type (MPAS_streamManager_type), intent(in) :: manager !< Input: Stream manager to get stream from
         character (len=*), intent(in) :: streamID !< Input: Stream name to use for building the filename
         character (len=*), intent(in), optional :: when !< Optional Input: Time file should contain
+        integer, intent(in), optional :: blockID !< Input: ID of the block that will be written
         character (len=StrKIND), intent(out) :: filename !< Output: Name of file containing time
         integer, intent(out), optional :: ierr !< Optional Output: Error code
 
         type (mpas_stream_list_type), pointer :: streamCursor
 
-        integer :: err_local
+        integer :: err_local, blockID_local
 
         character(len=StrKIND) :: when_string
         type (MPAS_TimeInterval_type) :: filename_interval
@@ -3384,6 +3817,13 @@ module mpas_stream_manager
 
         ierr = 0
 
+        if ( present(blockID) ) then
+           blockID_local = blockID
+        else
+           blockID_local = -1
+        end if
+
+        nullify(streamCursor)
         if ( mpas_stream_list_query(manager % streams, streamID, streamCursor, err_local) ) then
            if ( present(when) ) then
               call mpas_set_time(now_time, dateTimeString=when, ierr=err_local)
@@ -3396,10 +3836,10 @@ module mpas_stream_manager
            !
            if ( streamCursor % filename_interval /= 'none' ) then
                call mpas_set_timeInterval(filename_interval, timeString=streamCursor % filename_interval)
-               call mpas_build_stream_filename(streamCursor % referenceTime, now_time, filename_interval, streamCursor % filename_template, filename, ierr=err_local)
+               call mpas_build_stream_filename(streamCursor % referenceTime, now_time, filename_interval, streamCursor % filename_template, blockID_local, filename, ierr=err_local)
            else
                call mpas_get_time(now_time, dateTimeString=when_string, ierr=err_local)
-               call mpas_expand_string(when_string, streamCursor % filename_template, filename)
+               call mpas_expand_string(when_string, blockID_local, streamCursor % filename_template, filename)
            end if
 
         else
@@ -3433,7 +3873,7 @@ module mpas_stream_manager
     !>  Return error codes:
     !>  0 no error
     !-----------------------------------------------------------------------
-    subroutine mpas_build_stream_filename(ref_time, when, filename_interval, filename_template, filename, ierr) !{{{
+    subroutine mpas_build_stream_filename(ref_time, when, filename_interval, filename_template, blockID, filename, ierr) !{{{
 
         implicit none
 
@@ -3441,6 +3881,7 @@ module mpas_stream_manager
         type (MPAS_Time_type), intent(in) :: when
         type (MPAS_TimeInterval_type), intent(in) :: filename_interval
         character(len=*), intent(in) :: filename_template
+        integer, intent(in) :: blockID
         character(len=*), intent(out) :: filename
         integer, intent(out) :: ierr
 
@@ -3494,7 +3935,7 @@ module mpas_stream_manager
         call mpas_get_time(filetime, dateTimeString=when_string)
         STREAM_DEBUG_WRITE(' ** filetime start is: ' COMMA trim(when_string))
 
-        call mpas_expand_string(when_string, filename_template, filename)
+        call mpas_expand_string(when_string, blockID, filename_template, filename)
 
     end subroutine mpas_build_stream_filename !}}}
 
@@ -4842,6 +5283,8 @@ module mpas_stream_manager
     !>  routine will reset the iterator for fields within the specified stream, 
     !>  which may subsequently iterated over using the 
     !>  MPAS_stream_mgr_get_next_field() routine.
+    !>
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_begin_iteration(manager, streamID, ierr) !{{{
@@ -4869,6 +5312,7 @@ module mpas_stream_manager
            !
            ! Check that stream exists
            !
+           nullify(stream)
            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
                STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -5001,6 +5445,7 @@ module mpas_stream_manager
     !>  provides the name of this field, and .FALSE. otherwise. If a field name
     !>  is returned, the optional logical argument isActive may be used to
     !>  determine whether the field is currently active in the stream.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     logical function MPAS_stream_mgr_get_next_field(manager, streamID, fieldName, isActive) result(validField) !{{{
@@ -5024,6 +5469,7 @@ module mpas_stream_manager
         !
         ! Check that stream exists
         !
+        nullify(stream)
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             return
@@ -5069,6 +5515,7 @@ module mpas_stream_manager
     !>  returns a logical describing if the stream exists within the manager or
     !>  not. It gives no information about if the stream will be "handled" at
     !>  any point in time, only if it exists within the manager queried.
+    !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
     logical function MPAS_stream_mgr_stream_exists(manager, streamID) result(validStream)!{{{
@@ -5080,6 +5527,7 @@ module mpas_stream_manager
 
        type (mpas_stream_list_type), pointer :: streamPtr
 
+       nullify(streamPtr)
        validStream = mpas_stream_list_query(manager % streams, streamID, streamPtr)
 
        return

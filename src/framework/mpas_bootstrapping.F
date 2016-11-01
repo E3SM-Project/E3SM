@@ -17,6 +17,7 @@ module mpas_bootstrapping
    use mpas_timekeeping
    use mpas_io_streams
    use mpas_io_units
+   use mpas_abort, only : mpas_dmpar_global_abort
 
 
    integer :: readCellStart, readCellEnd, nReadCells

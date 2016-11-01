@@ -11,6 +11,7 @@ module mpas_io
    use mpas_attlist
    use mpas_dmpar
    use mpas_io_units
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use pio
    use piolib_mod
@@ -4899,6 +4900,17 @@ module mpas_io
       end if
 
    end subroutine MPAS_io_finalize
+
+
+   type (dm_info) function MPAS_io_handle_dminfo(handle)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(in) :: handle
+
+      MPAS_io_handle_dminfo = handle % ioContext % dminfo
+
+   end function MPAS_io_handle_dminfo
 
 
    subroutine MPAS_io_err_mesg(ierr, fatal)

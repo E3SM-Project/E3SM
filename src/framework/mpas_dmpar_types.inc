@@ -8,7 +8,7 @@
 
    type dm_info
      integer :: nprocs, my_proc_id, comm, info
-     logical :: using_external_comm
+     logical :: initialized_mpi
 
      ! Add variables specific to block decomposition. {{{
      ! These are used in mpas_block_decomp.F
@@ -49,6 +49,7 @@
      integer, dimension(:), pointer :: ibuffer => null()
      integer :: reqID
      type (mpas_communication_list), pointer :: next => null()
+     logical :: received
    end type mpas_communication_list
 
    type mpas_exchange_field_list
