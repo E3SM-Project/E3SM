@@ -998,6 +998,8 @@ contains
           call ep_betr%MassBalanceCheck(bounds_clump)
           call t_stopf('betr balchk')  
 
+          call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
+
 !          call bgc_reaction%betr_alm_flux_statevar_feedback(bounds_clump, &
 !               filter(nc)%num_soilc, filter(nc)%soilc,                    &
 !               carbonstate_vars, nitrogenstate_vars, nitrogenflux_vars,   &
