@@ -16,11 +16,8 @@ def compare_history(testcase_dir_for_test, baseline_name, baseline_root, log_id)
         outfile_suffix = "%s.%s"%(baseline_name, log_id)
         result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
                                             outfile_suffix=outfile_suffix)
-        if result:
-            return True, None
-        else:
-            logging.info(comments)
-            return False, "Diff'd"
+
+        return result, comments
 
 ###############################################################################
 def compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, compare_tests=None):
