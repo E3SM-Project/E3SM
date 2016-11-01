@@ -77,12 +77,27 @@ module ColumnPhysicalPropertiesType
 !  use ColumnType      , only : col                
 !****  use PatchType       , only : pft 
 
-
-
+!   From SoilHydrologyType.F90
+  use spmdMod               , only : masterproc, mpicom
+  use abortutils            , only : endrun
+  use clm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
+  use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
+  use clm_varcon            , only : zsoi, dzsoi, zisoi, spval
+  use clm_varctl            , only : iulog 
+  use CNSharedParamsMod     , only : CNParamsShareInst
+ !!!!!!!    Need to use New LandUnitType here
+ ! use LandunitType          , only : lun                
+ ! use ColumnType            , only : col   
 
   implicit none
   save
   private
+
+  ! !PRIVATE MEMBER FUNCTIONS:   From SoilHydrologyType.F90
+  private :: initSoilParVIC    ! Convert default CLM soil properties to VIC parameters
+  private :: initCLMVICMap     ! Initialize map from VIC to CLM layers
+  private :: linear_interp     ! function for linear interperation 
+
 
   ! sub-grid geospatial and physical properties defined at the soil_column level
   ! migrate variables list from ColumnType.F90
@@ -217,6 +232,44 @@ module ColumnPhysicalPropertiesType
      real(r8), allocatable :: k_s4_biochem(:)
 
 
+!    moved from SoilHydrologyType.F90
+
+     integer :: h2osfcflag              ! true => surface water is active (namelist)       
+     integer :: origflag                ! used to control soil hydrology properties (namelist)
+
+     ! NON-VIC
+     real(r8), pointer :: frost_table_col   (:)     ! col frost table depth                    
+     real(r8), pointer :: zwt_col           (:)     ! col water table depth
+     real(r8), pointer :: zwts_col          (:)     ! col water table depth, the shallower of the two water depths     
+     real(r8), pointer :: zwt_perched_col   (:)     ! col perched water table depth
+     real(r8), pointer :: wa_col            (:)     ! col water in the unconfined aquifer (mm)
+     real(r8), pointer :: qcharge_col       (:)     ! col aquifer recharge rate (mm/s) 
+     real(r8), pointer :: fracice_col       (:,:)   ! col fractional impermeability (-)
+     real(r8), pointer :: icefrac_col       (:,:)   ! col fraction of ice       
+     real(r8), pointer :: fcov_col          (:)     ! col fractional impermeable area
+     real(r8), pointer :: fsat_col          (:)     ! col fractional area with water table at surface
+     real(r8), pointer :: h2osfc_thresh_col (:)     ! col level at which h2osfc "percolates"   (time constant)
+
+     ! VIC 
+     real(r8), pointer :: hkdepth_col       (:)     ! col VIC decay factor (m) (time constant)                    
+     real(r8), pointer :: b_infil_col       (:)     ! col VIC b infiltration parameter (time constant)                    
+     real(r8), pointer :: ds_col            (:)     ! col VIC fracton of Dsmax where non-linear baseflow begins (time constant)                    
+     real(r8), pointer :: dsmax_col         (:)     ! col VIC max. velocity of baseflow (mm/day) (time constant)
+     real(r8), pointer :: Wsvic_col         (:)     ! col VIC fraction of maximum soil moisutre where non-liear base flow occurs (time constant)
+     real(r8), pointer :: porosity_col      (:,:)   ! col VIC porosity (1-bulk_density/soil_density)
+     real(r8), pointer :: vic_clm_fract_col (:,:,:) ! col VIC fraction of VIC layers in CLM layers 
+     real(r8), pointer :: depth_col         (:,:)   ! col VIC layer depth of upper layer  
+     real(r8), pointer :: c_param_col       (:)     ! col VIC baseflow exponent (Qb) 
+     real(r8), pointer :: expt_col          (:,:)   ! col VIC pore-size distribution related paramter(Q12) 
+     real(r8), pointer :: ksat_col          (:,:)   ! col VIC Saturated hydrologic conductivity 
+     real(r8), pointer :: phi_s_col         (:,:)   ! col VIC soil moisture dissusion parameter 
+     real(r8), pointer :: moist_col         (:,:)   ! col VIC soil moisture (kg/m2) for VIC soil layers 
+     real(r8), pointer :: moist_vol_col     (:,:)   ! col VIC volumetric soil moisture for VIC soil layers 
+     real(r8), pointer :: max_moist_col     (:,:)   ! col VIC max layer moist + ice (mm) 
+     real(r8), pointer :: max_infil_col     (:)     ! col VIC maximum infiltration rate calculated in VIC
+     real(r8), pointer :: i_0_col           (:)     ! col VIC average saturation in top soil layers 
+     real(r8), pointer :: ice_col           (:,:)   ! col VIC soil ice (kg/m2) for VIC soil layers
+
    contains
 
      procedure, public :: Init => init_col_pp
@@ -229,6 +282,8 @@ module ColumnPhysicalPropertiesType
      procedure, private :: InitHistory  => inithistory_col_pp
      procedure, private :: InitCold  => initcold_col_pp
 
+!!!!!****   moved from SoilHydrologyType.F90
+     procedure, private :: ReadSoilHydrologyNL
 
   end type column_physical_properties
 
