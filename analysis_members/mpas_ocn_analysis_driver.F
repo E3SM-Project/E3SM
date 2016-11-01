@@ -46,6 +46,7 @@ module ocn_analysis_driver
    use ocn_rpn_calculator
    use ocn_transect_transport
    use ocn_eddy_product_variables
+   use ocn_moc_streamfunction
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -188,6 +189,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'debugDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'transectTransport', 1)
       call mpas_pool_add_config(analysisMemberList, 'eddyProductVariables', 1)
+      call mpas_pool_add_config(analysisMemberList, 'mocStreamfunction', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -1075,10 +1077,12 @@ contains
          call ocn_init_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_init_debug_diagnostics(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+      else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
         call ocn_init_transect_transport(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
+      else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
         call ocn_init_eddy_product_variables(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
+         call ocn_init_moc_streamfunction(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1161,10 +1165,12 @@ contains
          call ocn_compute_pointwise_stats(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_compute_debug_diagnostics(domain, timeLevel, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+      else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
         call ocn_compute_transect_transport(domain, timeLevel, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
+      else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
         call ocn_compute_eddy_product_variables(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
+         call ocn_compute_moc_streamfunction(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       ! rpn is third to last
@@ -1250,10 +1256,12 @@ contains
          call ocn_restart_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_restart_debug_diagnostics(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+      else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
         call ocn_restart_transect_transport(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
+      else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
         call ocn_restart_eddy_product_variables(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
+         call ocn_restart_moc_streamfunction(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1335,10 +1343,12 @@ contains
          call ocn_finalize_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_finalize_debug_diagnostics(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+      else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
         call ocn_finalize_transect_transport(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
+      else if ( analysisMemberName(1:nameLength) == 'eddyProductVariables' ) then
         call ocn_finalize_eddy_product_variables(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
+         call ocn_finalize_moc_streamfunction(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last

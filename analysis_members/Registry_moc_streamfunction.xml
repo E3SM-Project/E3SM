@@ -1,0 +1,101 @@
+	<nml_record name="AM_mocStreamfunction" mode="forward;analysis">
+		<nml_option name="config_AM_mocStreamfunction_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, ocean analysis member MOC streamfunction is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_mocStreamfunction_output_stream" type="character" default_value="mocStreamfunctionOutput" units="unitless"
+			description="Name of the stream that the mocStreamfunction analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_mocStreamfunction_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_write_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_min_bin" type="real" default_value="-1.0e34" units="varies"
+			description="minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_max_bin" type="real" default_value="-1.0e34" units="varies"
+			description="maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_num_bins" type="integer" default_value="180" units="unitless"
+			description="Number of bins in South-to-North direction used for moc streamfunction calculation."
+			possible_values="Any positive integer value less than or equal to nMocStreamfunctionBins."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_vertical_velocity_value" type="character" default_value="vertVelocityTop" units="unitless"
+			description="The vertical velocity variable used for the computation of the MOC Streamfunction."
+			possible_values="Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool)."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_normal_velocity_value" type="character" default_value="normalVelocity" units="unitless"
+			description="The normal velocity variable used for the computation of the MOC Streamfunction."
+			possible_values="Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool)."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_region_group" type="character" default_value="all" units="unitless"
+			description="The name of the region group, for which the moc should be computed in addition to the global MOC."
+			possible_values="Either of '', 'all' or any valid region group name."
+		/>
+		<nml_option name="config_AM_mocStreamfunction_transect_group" type="character" default_value="all" units="unitless"
+			description="The name of the transect group that holds the boundaries for the regions in the region group, configured in 'config_AM_mocStreamfunction_region_group'. Please note, that these two should have the same amount of entries."
+			possible_values="Any valid transect group name."
+		/>
+	</nml_record>
+	<dims>
+		<dim name="nMocStreamfunctionBins" definition="namelist:config_AM_mocStreamfunction_num_bins" units="unitless"
+			 description="Maximum number of bins in South-to-North direction for moc streamfunction."
+		/>
+		<dim name="nMocStreamfunctionBinsP1" definition="nMocStreamfunctionBins+1" units="unitless"
+			 description="Maximum number of Lat bins for moc streamfunction, plus one."
+		/>
+	</dims>
+	<packages>
+		<package name="mocStreamfunctionAMPKG" description="This package includes variables required for the mocStreamfunction analysis member."/>
+	</packages>
+	<var_struct name="mocStreamfunctionAM" time_levs="1" packages="mocStreamfunctionAMPKG">
+		<var name="mocStreamvalLatAndDepth" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels Time" units="sverdrups"
+			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
+		/>
+		<var name="mocStreamvalLatAndDepthRegion" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels R3 Time" units="sverdrups"
+			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
+		/>
+		<var name="binBoundaryMocStreamfunction" type="real" dimensions="nMocStreamfunctionBinsP1" units="varies"
+			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
+		/>
+		<var name="minMaxLatRegion" type="real" dimensions="TWO R3" units="varies"
+			 description="Coordinates of the southern and northern boundaries of each region (for drawing)."
+		/>
+	</var_struct>
+	<streams>
+		<stream name="mocStreamfunctionOutput"
+			type="output"
+			mode="forward;analysis"
+			filename_template="analysis_members/mocStreamfunction.$Y-$M-$D.nc"
+			filename_interval="01-00-00_00:00:00"
+			output_interval="00-00-01_00:00:00"
+			reference_time="0000-01-01_00:00:00"
+			packages="mocStreamfunctionAMPKG"
+			clobber_mode="truncate"
+			runtime_format="single_file">
+			
+			<var name="xtime"/>
+			<var name="mocStreamvalLatAndDepth"/>
+			<var name="mocStreamvalLatAndDepthRegion"/>
+			<var name="binBoundaryMocStreamfunction"/>
+			<var name="refBottomDepth"/>
+
+			<!-- variables needed to correctly plot the regional mocs -->
+			<var name="regionGroupNames"/>
+			<var name="minMaxLatRegion"/>
+			<var name="regionNames"/>
+			<var name="nRegionsInGroup"/>
+			<var name="regionsInGroup"/>
+		</stream>
+	</streams>

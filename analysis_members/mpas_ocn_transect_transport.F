@@ -105,18 +105,23 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: transectTransportAMPool
       type (mpas_pool_type), pointer :: meshPool
+
+      type (mpas_pool_type), pointer :: transectPool
+
       type (mpas_pool_type), pointer :: transectTransportAM
 
       integer, pointer :: nTransects
       integer :: iTransect
 
       integer, dimension(:), pointer :: transectEdgeMasksMax
-      integer, dimension(:,:), pointer :: transectEdgeMasks, transectEdgeMaskSigns
+      integer, dimension(:,:), pointer :: transectEdgeMasks
 
       err = 0
 
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransects',nTransects)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransects', nTransects)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'transectTransportAM', transectTransportAMPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)
+
       call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasksMax',transectEdgeMasksMax)
 
       transectEdgeMasksMax(:) = 0
@@ -126,10 +131,9 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'transectTransportAM', transectTransportAMPool)
 
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasks',transectEdgeMasks)
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
-
+         call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
          do iTransect = 1,nTransects
+            !currentTransect = transectsInGroup(iTransect, transectGroupNumber)
             transectEdgeMasksMax(iTransect) = max(transectEdgeMasksMax(iTransect),maxval(transectEdgeMasks(iTransect,:)))
          end do
 
@@ -194,6 +198,15 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: transectTransportAM
 
+      type (mpas_pool_type), pointer :: transectPool
+
+      integer :: currentTransect, transectGroupNumber, transectsInAddGroup, i
+      integer, dimension(:,:), pointer :: transectsInGroup
+      character (len=STRKIND), dimension(:), pointer :: transectNames, transectGroupNames
+      integer, dimension(:), pointer ::  nTransectsInGroup
+      integer, pointer :: nTransectGroups, maxTransectsInGroup
+      character (len=STRKIND), pointer :: additionalTransect
+
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nEdgesSolve, num_tracers, nTransects
       integer :: k, iEdge, iTransect, nTransportVariables, c1,c2
@@ -217,6 +230,24 @@ contains
       m3ps_to_Sv = 1e-6; ! m^3/sec flux to Sverdrups
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransects',nTransects)
+
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransectGroups', nTransectGroups)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'maxTransectsInGroup', maxTransectsInGroup)
+      call mpas_pool_get_config(domain % configs, 'config_AM_transectTransport_transect_group', &
+                                additionalTransect)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)
+      call mpas_pool_get_array(transectPool, 'transectsInGroup', transectsInGroup)
+      call mpas_pool_get_array(transectPool, 'nTransectsInGroup', nTransectsInGroup)
+      call mpas_pool_get_array(transectPool, 'transectNames', transectNames)
+      call mpas_pool_get_array(transectPool, 'transectGroupNames', transectGroupNames)
+      do i = 1, nTransectGroups
+         if (transectGroupNames(i) .eq. additionalTransect) then
+            transectGroupNumber = i
+         end if
+      end do
+
+      transectsInAddGroup = nTransectsInGroup(transectGroupNumber)
+
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
 
       allocate(sumTransport(nVertLevels,nTransects,nTransportVariables))
@@ -231,6 +262,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'transectTransportAM', transectTransportAMPool)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
@@ -248,21 +280,23 @@ contains
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
          !call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasks',transectEdgeMasks)
-         call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
+         call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
+         call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
+
          call mpas_pool_get_array(transectTransportAMPool,'transectEdgeMasksMax',transectEdgeMasksMax)
 
          sumTransport = 0.0_RKIND
-         do iTransect = 1,nTransects
-            if (transectEdgeMasksMax(iTransect)==0) cycle
 
+         do iTransect = 1,transectsInAddGroup
+            currentTransect = transectsInGroup(iTransect, transectGroupNumber)
+            if (transectEdgeMasksMax(currentTransect)==0) cycle
             do iEdge = 1,nEdgesSolve
-               if (transectEdgeMasks(iTransect,iEdge)==0) cycle
+               if (transectEdgeMasks(currentTransect,iEdge)==0) cycle
                c1 = cellsOnEdge(1,iEdge)
                c2 = cellsOnEdge(2,iEdge)
                do k = 1, maxLevelEdgeTop(iEdge)
                   sumTransport(k,iTransect,1) = sumTransport(k,iTransect,1) + &
-                       transectEdgeMaskSigns(iTransect,iEdge) &
+                       transectEdgeMaskSigns(currentTransect,iEdge) &
                        * normalVelocity(k,iEdge)*dvEdge(iEdge) &
                        * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))*m3ps_to_Sv
                end do
