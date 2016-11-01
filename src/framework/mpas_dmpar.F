@@ -79,6 +79,8 @@ include 'mpif.h'
    public :: mpas_dmpar_minloc_real
    public :: mpas_dmpar_maxloc_int
    public :: mpas_dmpar_maxloc_real
+   public :: mpas_dmpar_minattributes_real
+   public :: mpas_dmpar_maxattributes_real
    public :: mpas_dmpar_sum_int_array
    public :: mpas_dmpar_min_int_array
    public :: mpas_dmpar_max_int_array
@@ -1036,6 +1038,103 @@ include 'mpif.h'
       end if
 
    end subroutine mpas_dmpar_maxloc_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_minattributes_real
+!
+!> \brief Returns the array associated with the global minimum value
+!> \author Michael Duda
+!> \date   12 February 2016
+!> \details
+!>  This routine takes as input a real value, plus a real-valued array  
+!>  associated with that value, and returns the array from the task with 
+!>  the minimum value of the variable being reduced.
+!>  
+!>  One possible application of this routine might be to return the latitude,
+!>  longitude, and model level associated with the global minimum of a field
+!>  using a call like:
+!>  call mpas_dmpar_minattributes_real(dminfo, localMinValue, &
+!>                                     (/latOfLocalMin, lonOfLocalMin, levOfLocalMin/) &
+!>                                     globalAttributes)
+!>  latOfGlobalMin = globalAttributes(1)
+!>  lonOfGlobalMin = globalAttributes(2)
+!>  levOfGlobalMin = globalAttributes(3)
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_minattributes_real(dminfo, localValue, localAttributes, globalAttributes)
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      real(kind=RKIND), intent(in) :: localValue
+      real(kind=RKIND), dimension(:), intent(in) :: localAttributes
+      real(kind=RKIND), dimension(:), intent(out) :: globalAttributes
+
+      integer :: mpi_ierr
+      real(kind=RKIND), dimension(2,size(localAttributes)) :: recvbuf, sendbuf
+
+#ifdef _MPI
+      sendbuf(1,:) = localValue
+      sendbuf(2,:) = localAttributes(:)
+
+      call MPI_Allreduce(sendbuf, recvbuf, size(recvbuf,dim=2), MPI_2REALKIND, MPI_MINLOC, dminfo % comm, mpi_ierr)
+
+      globalAttributes(:) = recvbuf(2,:)
+#else
+      globalAttributes(:) = localAttributes(:)
+#endif
+
+   end subroutine mpas_dmpar_minattributes_real
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_maxattributes_real
+!
+!> \brief Returns the array associated with the global maximum value
+!> \author Michael Duda
+!> \date   12 February 2016
+!> \details
+!>  This routine takes as input a real value, plus a real-valued array  
+!>  associated with that value, and returns the array from the task with 
+!>  the maximum value of the variable being reduced.
+!>  
+!>  One possible application of this routine might be to return the latitude,
+!>  longitude, and model level associated with the global maximum of a field
+!>  using a call like:
+!>  call mpas_dmpar_maxattributes_real(dminfo, localMaxValue, &
+!>                                     (/latOfLocalMax, lonOfLocalMax, levOfLocalMax/) &
+!>                                     globalAttributes)
+!>  latOfGlobalMax = globalAttributes(1)
+!>  lonOfGlobalMax = globalAttributes(2)
+!>  levOfGlobalMax = globalAttributes(3)
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_maxattributes_real(dminfo, localValue, localAttributes, globalAttributes)
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      real(kind=RKIND), intent(in) :: localValue
+      real(kind=RKIND), dimension(:), intent(in) :: localAttributes
+      real(kind=RKIND), dimension(:), intent(out) :: globalAttributes
+
+      integer :: mpi_ierr
+      real(kind=RKIND), dimension(2,size(localAttributes)) :: recvbuf, sendbuf
+
+#ifdef _MPI
+      sendbuf(1,:) = localValue
+      sendbuf(2,:) = localAttributes(:)
+
+      call MPI_Allreduce(sendbuf, recvbuf, size(recvbuf,dim=2), MPI_2REALKIND, MPI_MAXLOC, dminfo % comm, mpi_ierr)
+
+      globalAttributes(:) = recvbuf(2,:)
+#else
+      globalAttributes(:) = localAttributes(:)
+#endif
+
+   end subroutine mpas_dmpar_maxattributes_real
+
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_sum_int_array
