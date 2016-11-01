@@ -46,7 +46,9 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
         test_name = ts.get_name()
         if (compare_tests in [[], None] or CIME.utils.match_any(test_name, compare_tests)):
             CIME.utils.append_status(
-                msg = "Comparing against baseline with compare_test_results: %s"%(baseline_name),
+                msg = ("Comparing against baseline with compare_test_results:\n" +
+                       "Baseline: %s\n"%(baseline_name) +
+                       "In baseline_root: %s"%(baseline_root)),
                 caseroot = test_dir,
                 sfile = logfile_name)
 
