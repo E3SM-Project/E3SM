@@ -8,7 +8,7 @@ import shutil, glob
 
 logger = logging.getLogger(__name__)
 
-def apply_user_mods(caseroot, user_mods_path, ninst=None):
+def apply_user_mods(caseroot, user_mods_path):
     '''
     Recursivlely apply user_mods to caseroot - this includes updating user_nl_xxx,
     updating SourceMods and creating case shell_commands and xmlchange_cmds files
@@ -31,14 +31,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
             if len(newcontents) == 0:
                 continue
             case_user_nl = user_nl.replace(include_dir, caseroot)
-            comp = case_user_nl.split('_')[-1]
-            if ninst is not None and comp in ninst.keys() and ninst[comp] > 1:
-                for comp_inst in xrange(1, ninst[comp]+1):
-                    contents = newcontents
-                    case_user_nl_inst = case_user_nl + "_%4.4d"%comp_inst
-                    update_user_nl_file(case_user_nl_inst, contents)
-            else:
-                update_user_nl_file(case_user_nl, newcontents)
+            update_user_nl_file(case_user_nl, newcontents)
 
         # update SourceMods in caseroot
         for root, _, files in os.walk(include_dir,followlinks=True,topdown=False):
@@ -72,22 +65,13 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
             run_cmd_no_fail(shell_command_file)
 
 def update_user_nl_file(case_user_nl, contents):
-    update_file = True
     if os.path.isfile(case_user_nl):
         with open(case_user_nl, "r") as fd:
             old_contents = fd.read()
-
-        oc = set(old_contents.splitlines())
-        nc = set(contents.splitlines())
-        if not nc.issubset(oc):
-            contents = contents + old_contents
-            update_file = True
-        else:
-            update_file = False
-    if update_file:
-        logger.info("Pre-pending file %s"%(case_user_nl))
-        with open(case_user_nl, "w") as fd:
-            fd.write(contents)
+        contents = contents + old_contents
+    logger.info("Pre-pending file %s"%(case_user_nl))
+    with open(case_user_nl, "w") as fd:
+        fd.write(contents)
 
 
 

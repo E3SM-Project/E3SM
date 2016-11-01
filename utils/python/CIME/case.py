@@ -889,16 +889,7 @@ class Case(object):
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods_dir)
             self.set_value("USER_MODS_FULLPATH",user_mods_path)
-            ninst_vals = {}
-            for i in xrange(1,len(self._component_classes)):
-                comp_class = self._component_classes[i]
-                comp_name  = self._components[i-1]
-                if comp_class == "DRV":
-                    continue
-                ninst_comp = self.get_value("NINST_%s"%comp_class)
-                if ninst_comp > 1:
-                    ninst_vals[comp_name] = ninst_comp
-            apply_user_mods(self._caseroot, user_mods_path, ninst_vals)
+            apply_user_mods(self._caseroot, user_mods_path)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
 
