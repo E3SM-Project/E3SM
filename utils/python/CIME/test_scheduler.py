@@ -12,7 +12,7 @@ import shutil, traceback, stat, threading, time
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
-from CIME.utils import append_status
+from CIME.utils import append_status, TESTS_FAILED_ERR_CODE
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
@@ -474,7 +474,9 @@ class TestScheduler(object):
         # A little subtle. If namelists_only, the RUN phase, when the namelists would normally
         # be handled, is not going to happen, so we have to do it here.
         if self._namelists_only:
-            run_cmd_no_fail("./case.cmpgen_namelists", from_dir=test_dir)
+            # It's OK for this command to fail with baseline diffs but not catastrophically
+            cmdstat, output, errput = run_cmd("./case.cmpgen_namelists", from_dir=test_dir)
+            expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % (output + "\n" + errput))
 
         return rv
 
@@ -706,8 +708,6 @@ class TestScheduler(object):
         for test in self._tests:
             logger.info( "  %s"% test)
 
-        # TODO - documentation
-
         self._producer()
 
         expect(threading.active_count() == 1, "Leftover threads?")
@@ -721,12 +721,28 @@ class TestScheduler(object):
         for test in self._tests:
             phase, status = self._get_test_data(test)
 
+            # Give highest priority to fails in test schduler
             if status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                 logger.info( "%s %s (phase %s)" % (status, test, phase))
                 rv = False
 
             else:
-                logger.info("%s %s %s" % (status, test, phase))
+                # Be cautious about telling the user that the test passed. This
+                # status should match what they would see on the dashboard. Our
+                # self._test_states does not include comparison fail information,
+                # so we need to parse test status.
+                ts = TestStatus(self._get_test_dir(test))
+                nlfail = ts.get_status(NAMELIST_PHASE) == TEST_FAIL_STATUS
+                ts_status = ts.get_overall_test_status(ignore_namelists=True)
+
+                if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
+                    logger.info( "%s %s (phase %s)" % (status, test, phase))
+                    rv = False
+                elif nlfail:
+                    logger.info( "%s %s (but otherwise OK) %s" % (NAMELIST_FAIL_STATUS, test, phase))
+                    rv = False
+                else:
+                    logger.info("%s %s %s" % (status, test, phase))
 
             logger.info( "    Case dir: %s" % self._get_test_dir(test))
 
