@@ -90,9 +90,10 @@ module atm_core
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
       end if
       if (ierr /= MPAS_STREAM_MGR_NOERR) then
-         write(0,*) ' '
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error reading initial conditions'
+         call mpas_dmpar_global_abort('********************************************************************************', &
+                                      deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error reading initial conditions', &
+                                      deferredAbort=.true.)
          call mpas_dmpar_global_abort('********************************************************************************')
       end if
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
@@ -123,9 +124,10 @@ module atm_core
       !
       call MPAS_stream_mgr_read(domain % streamManager, streamID='iau', whence=MPAS_STREAM_NEAREST, ierr=ierr)
       if (ierr /= MPAS_STREAM_MGR_NOERR) then
-         write(0,*) ' '
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error reading IAU files'
+         call mpas_dmpar_global_abort('********************************************************************************', &
+                                      deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error reading IAU files', &
+                                      deferredAbort=.true.)
          call mpas_dmpar_global_abort('********************************************************************************')
       end if
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='iau', ierr=ierr)
@@ -501,9 +503,10 @@ module atm_core
       if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
-         write(0,*) ' '
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error writing one or more output streams'
+         call mpas_dmpar_global_abort('********************************************************************************', &
+                                      deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error writing one or more output streams', &
+                                      deferredAbort=.true.)
          call mpas_dmpar_global_abort('********************************************************************************')
       end if
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
@@ -548,9 +551,10 @@ module atm_core
                                             actualWhen=read_time, ierr=ierr)
                   call mpas_dmpar_get_time(input_stop_time)
                   if (ierr /= MPAS_STREAM_MGR_NOERR) then
-                     write(0,*) ' '
-                     write(0,*) '********************************************************************************'
-                     write(0,*) 'Error reading input stream '//trim(input_stream)
+                     call mpas_dmpar_global_abort('********************************************************************************', &
+                                                  deferredAbort=.true.)
+                     call mpas_dmpar_global_abort('Error reading input stream '//trim(input_stream), &
+                                                  deferredAbort=.true.)
                      call mpas_dmpar_global_abort('********************************************************************************')
                   end if
 
@@ -626,9 +630,10 @@ module atm_core
          if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
-            write(0,*) ' '
-            write(0,*) '********************************************************************************'
-            write(0,*) 'Error writing one or more output streams'
+            call mpas_dmpar_global_abort('********************************************************************************', &
+                                         deferredAbort=.true.)
+            call mpas_dmpar_global_abort('Error writing one or more output streams', &
+                                         deferredAbort=.true.)
             call mpas_dmpar_global_abort('********************************************************************************')
          end if
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then

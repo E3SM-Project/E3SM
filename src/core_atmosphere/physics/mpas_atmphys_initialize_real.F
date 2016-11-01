@@ -332,6 +332,8 @@
  subroutine init_soil_layers_properties(mesh, fg, dminfo, dims, configs)
 !==================================================================================================
 
+ use mpas_abort, only : mpas_dmpar_global_abort
+
 !input arguments:
  type (mpas_pool_type), intent(in) :: mesh
  type (dm_info), intent(in) :: dminfo
@@ -354,6 +356,8 @@
  real(kind=RKIND),dimension(:,:),pointer:: sm_fg,st_fg,zs_fg
 
  integer, pointer :: config_nsoillevels
+
+ character(len=StrKIND) :: errstring
 
 !--------------------------------------------------------------------------------------------------
 
@@ -394,11 +398,11 @@
     enddo
  enddo
  if(num_st .gt. 0) then
-    write(0,*) 'Error in interpolation of st_fg to MPAS grid: num_st =', num_st
-    call mpas_dmpar_abort(dminfo)
+    write(errstring,*) 'Error in interpolation of st_fg to MPAS grid: num_st =', num_st
+    call mpas_dmpar_global_abort(trim(errstring))
  elseif(num_sm .gt. 0) then
-    write(0,*) 'Error in interpolation of sm_fg to MPAS grid: num_sm =', num_sm
-    call mpas_dmpar_abort(dminfo)
+    write(errstring,*) 'Error in interpolation of sm_fg to MPAS grid: num_sm =', num_sm
+    call mpas_dmpar_global_abort(trim(errstring))
  endif 
 
  if(config_nsoillevels .ne. 4) &

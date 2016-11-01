@@ -55,9 +55,9 @@ write(0,*) trim(str)
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) ( '------------------------------ FATAL CALLED ------------------------------')
- write(0,*) trim(str)
+ call mpas_dmpar_global_abort(' ',                                                                          deferredAbort=.true.)
+ call mpas_dmpar_global_abort('------------------------------ FATAL CALLED ------------------------------', deferredAbort=.true.)
+ call mpas_dmpar_global_abort(trim(str),                                                                    deferredAbort=.true.)
  call mpas_dmpar_global_abort('ERROR: MPAS core_physics abort')
  
  end subroutine physics_error_fatal

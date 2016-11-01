@@ -107,9 +107,8 @@ module atm_time_integration
          call atm_srk3(domain, dt, itimestep)
          MPAS_GPTL_STOP('atm_srk3')
       else
-         write(0,*) 'Unknown time integration option '//trim(config_time_integration)
-         write(0,*) 'Currently, only ''SRK3'' is supported.'
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_dmpar_global_abort('Unknown time integration option '//trim(config_time_integration), deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Currently, only ''SRK3'' is supported.')
       end if
 
       call mpas_set_time(currTime, dateTimeString=timeStamp)

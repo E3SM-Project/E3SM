@@ -137,7 +137,8 @@ module atm_core_interface
 
       ierr = atmphys_setup_packages(configs,packages,iocontext)
       if(ierr /= 0) then
-         call mpas_dmpar_global_abort('ERROR: Package setup failed for atmphys in core_atmosphere')
+         call mpas_dmpar_global_abort('ERROR: Package setup failed for atmphys in core_atmosphere', &
+                                      deferredAbort=.true.)
       endif
 #endif
 
@@ -212,7 +213,8 @@ module atm_core_interface
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 
       if (.not. associated(config_do_restart)) then
-         call mpas_dmpar_global_abort('ERROR: config_do_restart was not found when defining mesh stream.')
+         call mpas_dmpar_global_abort('ERROR: config_do_restart was not found when defining mesh stream.', deferredAbort=.true.)
+         ierr = 1
       else if (config_do_restart) then
          write(stream,'(a)') 'restart'
       else
