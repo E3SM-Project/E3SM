@@ -10,7 +10,7 @@ module clm_driver
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed
-  use clm_varpar             , only : nlevtrc_soil
+  use clm_varpar             , only : nlevtrc_soil,nlevsoi
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
@@ -296,12 +296,10 @@ contains
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
-       if (use_betr .and. (.not. do_betr_leaching)) then
-
-!          call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
-!               filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
-!               tracerstate_vars, tracerflux_vars)
-
+       if (use_betr) then
+         dtime=get_step_size(); nstep=get_nstep()
+         call ep_betr%SetClock(dtime= dtime, nelapstep=nstep)
+         call ep_betr%BeginMassBalanceCheck(bounds_clump)
        endif
        
        if (use_cn) then
@@ -637,7 +635,7 @@ contains
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
             atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
             waterflux_vars, waterstate_vars, soilhydrology_vars, aerosol_vars, &
-            soil_water_retention_curve) !betrtracer_vars, tracerflux_vars, tracerstate_vars)
+            soil_water_retention_curve,ep_betr) 
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -937,28 +935,19 @@ contains
          call t_stopf('depvel')
 
          if (use_betr)then
-            if (do_betr_leaching)then
-!               call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
-!                    carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
 
-              !the following is dirty hack, I'll reconsider this in later modifcations, Jinyun Tang May 14, 2015
-!               call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
-!                   filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
-!                   tracerstate_vars, tracerflux_vars)
+           call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
+              temperature_vars%t_soisno_col, soilstate_vars, waterstate_vars, soil_water_retention_curve)
 
-            endif
+           call ep_betr%SetBiophysForcing(bounds_clump, col, pft,                               &
+             carbonflux_vars=carbonflux_vars,                                                &
+             waterstate_vars=waterstate_vars,         waterflux_vars=waterflux_vars,         &
+             temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
+             atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
+             chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
+             cnstate_vars = cnstate_vars)
 
-            !this is used for non-online bgc with betr
-!            call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,    &
-!               filter(nc)%num_soilc, filter(nc)%soilc,                                &
-!               filter(nc)%num_soilp, filter(nc)%soilp,                                &
-!               col, atm2lnd_vars,                                                     &
-!               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
-!               waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
-!               carbonstate_vars, carbonflux_vars,  nitrogenstate_vars,                &
-!               nitrogenflux_vars, betrtracer_vars, bgc_reaction,                      &
-!               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
-!               tracerflux_vars, plantsoilnutrientflux_vars)
+           call ep_betr%StepWithoutDrainage(bounds_clump, col, pft)
          endif
          
          if (use_lch4) then
@@ -1000,17 +989,13 @@ contains
        if (use_betr) then
 
           call t_startf('betr drainage')       
-!          call run_betr_one_step_with_drainage(bounds_clump, 1, nlevtrc_soil,                         &
-!               filter(nc)%num_soilc, filter(nc)%soilc,                                                &
-!               tracerboundarycond_vars%jtops_col(bounds_clump%begc:bounds_clump%endc),                &
-!               waterflux_vars%qflx_drain_vr_col(bounds_clump%begc:bounds_clump%endc, 1:nlevtrc_soil), &
-!               col, betrtracer_vars , tracercoeff_vars, tracerstate_vars,  tracerflux_vars)
+          call ep_betr%BeTRSetBiophysForcing(bounds_clump, col, pft, 1, nlevsoi,&
+                waterflux_vars=waterflux_vars )
+          call ep_betr%StepWithDrainage(bounds_clump, col)
           call t_stopf('betr drainage')
 
           call t_startf('betr balchk')
-!          call betr_tracer_massbalance_check(bounds_clump, 1, nlevtrc_soil, &
-!            filter(nc)%num_soilc, filter(nc)%soilc,  betrtracer_vars,       &
-!            tracerstate_vars,  tracerflux_vars)
+          call ep_betr%MassBalanceCheck(bounds_clump)
           call t_stopf('betr balchk')  
 
 !          call bgc_reaction%betr_alm_flux_statevar_feedback(bounds_clump, &

@@ -56,7 +56,7 @@ module restFileMod
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
-  use BeTRSimulation        , only : betr_simulation_type
+  use BeTRSimulationALM        , only : betr_simulation_alm_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -135,7 +135,7 @@ contains
     type(EDbio_type)         , intent(inout) :: EDbio_vars       ! due to EDrest call
     type(phosphorusstate_type),intent(inout)    :: phosphorusstate_vars
     type(phosphorusflux_type) ,intent(in)     :: phosphorusflux_vars
-    class(betr_simulation_type), intent(inout):: ep_betr
+    class(betr_simulation_alm_type), intent(inout):: ep_betr
     character(len=*)         , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                  , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -416,7 +416,7 @@ contains
     type(EDbio_type)         , intent(inout) :: EDbio_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    class(betr_simulation_type) , intent(inout) :: ep_betr
+    class(betr_simulation_alm_type) , intent(inout) :: ep_betr
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id

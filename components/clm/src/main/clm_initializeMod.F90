@@ -471,7 +471,7 @@ contains
       !set internal filters for betr     
       call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
 
-      call ep_betr%Init(bounds_proc, lun, col, pft, waterstate_vars, betr_namelist_buffer)
+      call ep_betr%InitOnline(bounds_proc, lun, col, pft, waterstate_vars, betr_namelist_buffer)
     endif
     
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -619,10 +619,6 @@ contains
 
     end if
        
-    if (use_betr)then
-       !initialize betr
-       !read in restart variables
-    endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------

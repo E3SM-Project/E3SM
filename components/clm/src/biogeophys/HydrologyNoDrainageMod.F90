@@ -19,6 +19,7 @@ Module HydrologyNoDrainageMod
   use WaterstateType    , only : waterstate_type
   use LandunitType      , only : lun                
   use ColumnType        , only : col                
+  use PatchType         , only : pft
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -40,7 +41,7 @@ contains
        atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
        waterflux_vars, waterstate_vars, &
        soilhydrology_vars, aerosol_vars, &
-       soil_water_retention_curve) !betrtracer_vars, tracerflux_vars, tracerstate_vars)
+       soil_water_retention_curve, ep_betr) 
     !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of soil/snow
@@ -69,13 +70,13 @@ contains
     use SoilHydrologyMod     , only : CLMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater 
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-!    use TracerParamsMod      , only : pre_diagnose_soilcol_water_flux, diagnose_advect_water_flux, calc_smp_l
-!    use BetrBGCMod           , only : calc_dew_sub_flux
     use tracerfluxType       , only : tracerflux_type
     use tracerstatetype      , only : tracerstate_type
     use BeTRTracerType       , only : betrtracer_type        
     use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
+    use BeTRSimulationALM       , only : betr_simulation_alm_type
+    
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -98,9 +99,7 @@ contains
     type(aerosol_type)       , intent(inout) :: aerosol_vars
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-!    type(betrtracer_type)     , intent(in)    :: betrtracer_vars                    ! betr configuration information
-!    type(tracerflux_type)     , intent(inout) :: tracerflux_vars                    ! tracer flux
-!    type(tracerstate_type)    , intent(inout) :: tracerstate_vars                   ! tracer state variables data structure    
+    class(betr_simulation_alm_type), intent(inout) :: ep_betr
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                    ! indices
@@ -198,8 +197,8 @@ contains
            waterflux_vars, waterstate_vars)
 
       if (use_betr) then
-!        call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-!          waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi))
+        call ep_betr%BeTRSetBiophysForcing(bounds, col, pft, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
       
       if (use_vsfm) then
@@ -214,13 +213,13 @@ contains
             soil_water_retention_curve)
             
       if (use_betr) then
-!        call diagnose_advect_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-!             waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi),                              &
-!             soilhydrology_vars%qcharge_col(bounds%begc:bounds%endc), waterflux_vars)                
-        
-!        call calc_smp_l(bounds, 1, nlevgrnd, num_hydrologyc, filter_hydrologyc, &
-!             temperature_vars%t_soisno_col(bounds%begc:bounds%endc, 1:nlevgrnd), &
-!             soilstate_vars, waterstate_vars, soil_water_retention_curve)
+
+        call ep_betr%BeTRSetBiophysForcing(bounds, col, pft, 1, nlevsoi, waterstate_vars=waterstate_vars, &
+          waterflux_vars=waterflux_vars, soilhydrology_vars = soilhydrology_vars)
+
+        call ep_betr%DiagAdvWaterFlux(num_hydrologyc, filter_hydrologyc)
+
+        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
       endif
              
       if (use_vichydro) then
@@ -235,8 +234,7 @@ contains
       if (use_betr) then
          !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
          !Jinyun Tang, Feb 4, 2015
-!         call calc_dew_sub_flux(bounds, num_hydrologyc, filter_hydrologyc, &
-!              waterstate_vars, waterflux_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars)      
+         call ep_betr%CalcDewSubFlux(bounds, col, num_hydrologyc, filter_hydrologyc)
       endif           
       ! Natural compaction and metamorphosis.
       call SnowCompaction(bounds, num_snowc, filter_snowc, &

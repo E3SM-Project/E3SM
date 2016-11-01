@@ -61,7 +61,7 @@ module clm_instMod
   use EDVecCohortType            , only : coh                ! unique to ED, used for domain decomp
   use clm_bgc_interface_data     , only : clm_bgc_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
-  use BeTRSimulation             , only : betr_simulation_type
+  use BeTRSimulationALM             , only : betr_simulation_alm_type
   !
   implicit none
   save
@@ -113,7 +113,7 @@ module clm_instMod
   type(phosphorusflux_type)                           :: phosphorusflux_vars
   type(clm_bgc_interface_data_type)                   :: clm_bgc_data
   type(chemstate_type)                                :: chemstate_vars
-  class(betr_simulation_type), pointer                :: ep_betr
+  class(betr_simulation_alm_type), pointer            :: ep_betr
   public :: clm_inst_biogeochem
   public :: clm_inst_biogeophys
 
