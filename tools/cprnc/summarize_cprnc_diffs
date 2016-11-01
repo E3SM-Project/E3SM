@@ -16,9 +16,13 @@ use List::Util qw(max sum);
 #----------------------------------------------------------------------
 
 my %opts;
+# set defaults
+$opts{'output_suffix'} = '';
+# set up options
 GetOptions(
            "basedir=s"       => \$opts{'basedir'},
            "testid=s"        => \$opts{'testid'},
+           "output_suffix=s" => \$opts{'output_suffix'},
            "narrow"          => \$opts{'narrow'},
            "h|help"          => \$opts{'help'},
 )  or usage();
@@ -53,9 +57,12 @@ if (!$opts{'testid'}) {
 #    FILLDIFF  => ' '                  [may or may not be present]
 #    DIMSIZEDIFF => ' '                [may or may not be present]
 my ($summary_hash) =
-   process_cprnc_output($opts{'basedir'}, $opts{'testid'});
+   process_cprnc_output($opts{'basedir'}, $opts{'testid'}, $opts{'output_suffix'});
 
 my $outbase="cprnc.summary.$opts{'testid'}";
+if ($opts{'output_suffix'}) {
+   $outbase = "$outbase.$opts{'output_suffix'}";
+}
 
 # set widths of output strings
 my $widths_hash;
@@ -93,9 +100,11 @@ SYNOPSIS
     The script finds all directories in basedir whose name ends with the given
     testid; these are the test directories of interest. It then examines the
     'run' subdirectory of each test directory of interest, looking for files of
-    the form *.base.cprnc.out. (Thus, note that it only looks at output for
-    baseline comparisons - NOT output from the test itself, such as cprnc output
-    files from the exact restart test.)
+    the form *.nc.cprnc.out. Or, if the -output_suffix argument is given, then
+    it looks for files of the form *.nc.cprnc.out.SUFFIX. (With this naming
+    convention [i.e., looking for files of the form *.nc.cprnc.out], note that
+    it only looks at output for baseline comparisons - NOT output from the test
+    itself, such as cprnc output files from the exact restart test.)
 
     Summaries of cprnc differences (normalized RMS differences, FILLDIFFs and DIMSIZEDIFFs)
     are placed in three output files beginning with the name 'cprnc.summary', in
@@ -105,10 +114,13 @@ SYNOPSIS
 
 
 OPTIONS
-    -narrow              Use generally-narrower output field widths to aid readability,
-                         at the expense of truncated strings
+    -output_suffix <suffix>  If provided, look for files of the form *.nc.cprnc.out.SUFFIX
+                             rather than just *.nc.cprnc.out
 
-    -help [or -h]        Display this help
+    -narrow                  Use generally-narrower output field widths to aid readability,
+                             at the expense of truncated strings
+
+    -help [or -h]            Display this help
 
 EOF
 }
@@ -119,10 +131,11 @@ EOF
 # Inputs:
 #  - basedir
 #  - testid
+#  - output_suffix
 # Output: hash reference
 # Dies with an error if no cprnc output files are found
 sub process_cprnc_output {
-   my ($basedir, $testid) = @_;
+   my ($basedir, $testid, $output_suffix) = @_;
 
    my %diffs;
    my $num_files = 0;
@@ -132,7 +145,13 @@ sub process_cprnc_output {
    foreach my $test_dir (@test_dirs) {
       my $test_dir_base = basename($test_dir);
 
-      my @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out";
+      my @cprnc_files;
+      if ($output_suffix) {
+         @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out.${output_suffix}";
+      }
+      else {
+         @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out";
+      }
 
       foreach my $cprnc_file (@cprnc_files) {
          my $cprnc_file_base = basename($cprnc_file);
