@@ -46,8 +46,6 @@ module mpas_atm_diagnostics_manager
         type (MPAS_clock_type), pointer :: clock
 
 
-        write(stderrUnit,*) 'mpas_atm_diag_setup()'
-
         !
         ! Prepare the diagnostics utilities module for later use by diagnostics
         !
@@ -78,7 +76,6 @@ module mpas_atm_diagnostics_manager
 
         implicit none
 
-        write(stderrUnit,*) 'mpas_atm_diag_update()'
 
         call diagnostic_template_update()
         call convective_diagnostics_update()
@@ -105,7 +102,6 @@ module mpas_atm_diagnostics_manager
 
         implicit none
 
-        write(stderrUnit,*) 'mpas_atm_diag_compute()'
 
         call diagnostic_template_compute()
         call isobaric_diagnostics_compute()
@@ -132,7 +128,6 @@ module mpas_atm_diagnostics_manager
 
         implicit none
 
-        write(stderrUnit,*) 'mpas_atm_diag_reset()'
 
         call diagnostic_template_reset()
         call convective_diagnostics_reset()
@@ -157,7 +152,6 @@ module mpas_atm_diagnostics_manager
 
         implicit none
 
-        write(stderrUnit,*) 'mpas_atm_diag_cleanup()'
 
         call diagnostic_template_cleanup()
 

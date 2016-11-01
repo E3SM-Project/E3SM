@@ -1122,7 +1122,7 @@ module pv_diagnostics
       end do
       
       !nick szapiro
-      write(0,*) "Calculating epv"
+!      write(0,*) "Calculating epv"
       
       !need halo cells for everything w/ horizontal derivative
       call mpas_pool_get_field(state, 'w', w_f, time_lev)
@@ -1428,7 +1428,7 @@ module pv_diagnostics
       call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
       
       !nick szapiro
-      write(0,*) "Calculating pvBudget"
+!      write(0,*) "Calculating pvBudget"
       
       !need halo cells for everything w/ horizontal derivative
       !Dtheta/Dt
