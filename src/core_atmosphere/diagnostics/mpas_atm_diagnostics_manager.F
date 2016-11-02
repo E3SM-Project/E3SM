@@ -30,7 +30,7 @@ module mpas_atm_diagnostics_manager
     !>  Initialize the diagnostics manager and all diagnostics.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_atm_diag_setup(stream_mgr, structs, clock)
+    subroutine mpas_atm_diag_setup(stream_mgr, configs, structs, clock)
 
         use mpas_atm_diagnostics_utils, only : mpas_atm_diag_utils_init
         use mpas_derived_types, only : MPAS_streamManager_type, MPAS_pool_type, MPAS_clock_type
@@ -42,6 +42,7 @@ module mpas_atm_diagnostics_manager
         implicit none
 
         type (MPAS_streamManager_type), target, intent(inout) :: stream_mgr
+        type (MPAS_pool_type), pointer :: configs
         type (MPAS_pool_type), pointer :: structs
         type (MPAS_clock_type), pointer :: clock
 
@@ -51,7 +52,7 @@ module mpas_atm_diagnostics_manager
         !
         call mpas_atm_diag_utils_init(stream_mgr)
 
-        call diagnostic_template_setup(structs, clock)
+        call diagnostic_template_setup(configs, structs, clock)
         call isobaric_diagnostics_setup(structs, clock)
         call convective_diagnostics_setup(structs, clock)
         call pv_diagnostics_setup(structs, clock)

@@ -34,13 +34,14 @@ module diagnostic_template
     !>  Initialize the diagnostic
     !
     !-----------------------------------------------------------------------
-    subroutine diagnostic_template_setup(all_pools, simulation_clock)
+    subroutine diagnostic_template_setup(configs, all_pools, simulation_clock)
 
         use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type
         use mpas_pool_routines, only : mpas_pool_get_subpool
 
         implicit none
 
+        type (MPAS_pool_type), pointer :: configs
         type (MPAS_pool_type), pointer :: all_pools
         type (MPAS_clock_type), pointer :: simulation_clock
 

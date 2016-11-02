@@ -171,7 +171,8 @@ module atm_core
       !
       call mpas_atm_soundings_init(clock, mesh, '3:00:00')
 
-      call mpas_atm_diag_setup(domain % streamManager, domain % blocklist % structs, domain % clock)
+      call mpas_atm_diag_setup(domain % streamManager, domain % blocklist % configs, &
+                               domain % blocklist % structs, domain % clock)
 
    end function atm_core_init
 
