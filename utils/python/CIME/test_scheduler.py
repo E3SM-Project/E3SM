@@ -8,7 +8,7 @@ phases. All other phases need to handle their own status because
 they can be run outside the context of TestScheduler.
 """
 
-import shutil, traceback, stat, threading, time
+import shutil, traceback, stat, threading, time, glob
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
@@ -20,6 +20,7 @@ from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.tests import Tests
 from CIME.case import Case
+from CIME.wait_for_tests import wait_for_tests
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -694,7 +695,7 @@ class TestScheduler(object):
             logger.warning("FAILED to set up cs files: %s" % str(e))
 
     ###########################################################################
-    def run_tests(self):
+    def run_tests(self, wait=False):
     ###########################################################################
         """
         Main API for this class.
@@ -715,37 +716,48 @@ class TestScheduler(object):
         # Setup cs files
         self._setup_cs_files()
 
-        # Return True if all tests passed from our point of view
-        logger.info( "At test-scheduler close, state is:")
-        rv = True
-        for test in self._tests:
-            phase, status = self._get_test_data(test)
-
-            # Give highest priority to fails in test schduler
-            if status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
-                logger.info( "%s %s (phase %s)" % (status, test, phase))
-                rv = False
-
+        wait_handles_report = False
+        if not self._no_run and not self._no_batch:
+            if wait:
+                logger.info("Waiting for tests to finish")
+                rv = wait_for_tests(glob.glob(os.path.join(self._test_root, "*%s/TestStatus" % self._test_id)))
+                wait_handles_report = True
             else:
-                # Be cautious about telling the user that the test passed. This
-                # status should match what they would see on the dashboard. Our
-                # self._test_states does not include comparison fail information,
-                # so we need to parse test status.
-                ts = TestStatus(self._get_test_dir(test))
-                nlfail = ts.get_status(NAMELIST_PHASE) == TEST_FAIL_STATUS
-                ts_status = ts.get_overall_test_status(ignore_namelists=True)
+                logger.info("Due to presence of batch system, create_test will exit before tests are complete.\n" \
+                            "To force create_test to wait for full completion, use --wait")
 
-                if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
+        # Return True if all tests passed from our point of view
+        if not wait_handles_report:
+            logger.info( "At test-scheduler close, state is:")
+            rv = True
+            for test in self._tests:
+                phase, status = self._get_test_data(test)
+
+                # Give highest priority to fails in test schduler
+                if status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                     logger.info( "%s %s (phase %s)" % (status, test, phase))
                     rv = False
-                elif nlfail:
-                    logger.info( "%s %s (but otherwise OK) %s" % (NAMELIST_FAIL_STATUS, test, phase))
-                    rv = False
+
                 else:
-                    logger.info("%s %s %s" % (status, test, phase))
+                    # Be cautious about telling the user that the test passed. This
+                    # status should match what they would see on the dashboard. Our
+                    # self._test_states does not include comparison fail information,
+                    # so we need to parse test status.
+                    ts = TestStatus(self._get_test_dir(test))
+                    nlfail = ts.get_status(NAMELIST_PHASE) == TEST_FAIL_STATUS
+                    ts_status = ts.get_overall_test_status(ignore_namelists=True)
 
-            logger.info( "    Case dir: %s" % self._get_test_dir(test))
+                    if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
+                        logger.info( "%s %s (phase %s)" % (status, test, phase))
+                        rv = False
+                    elif nlfail:
+                        logger.info( "%s %s (but otherwise OK) %s" % (NAMELIST_FAIL_STATUS, test, phase))
+                        rv = False
+                    else:
+                        logger.info("%s %s %s" % (status, test, phase))
 
-        logger.info( "test-scheduler took %s seconds"% (time.time() - start_time))
+                logger.info( "    Case dir: %s" % self._get_test_dir(test))
+
+            logger.info( "test-scheduler took %s seconds"% (time.time() - start_time))
 
         return rv
