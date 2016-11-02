@@ -591,6 +591,7 @@ contains
 	   else
 	     nlevbed = j
            end if
+	   j = j + 1
          enddo
          col%nlev2bed(c) = max(nlevbed, 5)
         end do
