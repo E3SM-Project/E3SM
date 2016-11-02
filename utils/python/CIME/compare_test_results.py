@@ -24,11 +24,17 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
     """Compares with baselines for all matching tests
 
     Outputs results for each test to stdout (one line per test); possible status
-    codes are: PASS, FAIL, SKIP
+    codes are: PASS, FAIL, SKIP. (A SKIP denotes a test that did not make it to
+    the run phase or a test for which the run phase did not pass: we skip
+    baseline comparisons in this case.)
 
     In addition, creates files named compare.log.BASELINE_NAME.TIMESTAMP in each
     test directory, which contain more detailed output. Also creates
     *.cprnc.out.BASELINE_NAME.TIMESTAMP files in each run directory.
+
+    Returns True if all tests generated either PASS or SKIP results, False if
+    there was at least one FAIL result.
+
     """
 ###############################################################################
     test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
@@ -39,6 +45,8 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
     # earlier files that may exist.
     log_id = CIME.utils.get_timestamp()
     logfile_name = "compare.log.%s.%s"%(baseline_name, log_id)
+
+    all_pass_or_skip = True
 
     for test_status_file in test_status_files:
         test_dir = os.path.dirname(test_status_file)
@@ -61,7 +69,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                 do_compare = False
             elif (run_result != TEST_PASS_STATUS):
                 compare_result = "SKIP"
-                compare_comment = "Test did not pass"
+                compare_comment = "Run phase did not pass"
                 do_compare = False
             else:
                 do_compare = True
@@ -73,6 +81,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                     compare_result = TEST_PASS_STATUS
                 else:
                     compare_result = TEST_FAIL_STATUS
+                    all_pass_or_skip = False
 
             brief_result = "%s %s %s"%(compare_result, test_name, BASELINE_PHASE)
             if compare_comment:
@@ -90,5 +99,5 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                     caseroot = test_dir,
                     sfile = logfile_name)
 
-
+    return all_pass_or_skip
 

@@ -884,9 +884,9 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         self.simple_test(False, "%s -t %s" % (comparg, test_id))
 
-        # compare_test_results should run to completion
+        # compare_test_results should detect the fail
         cpr_cmd = "%s/compare_test_results -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
-        output = run_cmd_no_fail(cpr_cmd)
+        output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
         expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % self._test_name)
