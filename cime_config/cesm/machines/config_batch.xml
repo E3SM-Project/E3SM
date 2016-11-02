@@ -241,7 +241,7 @@
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
+      <queue default="true" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
     </queues>
     <submit_args>
       <arg flag="-l " name="select=$TOTALPES"/>
