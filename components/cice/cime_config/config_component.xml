@@ -15,11 +15,11 @@
 
   <entry id="CICE_MODE">
     <type>char</type>
-    <valid_values>prognostic,prescribed,thermo_only</valid_values>
+    <valid_values>prognostic,prescribed</valid_values>
     <default_value>prognostic</default_value>
     <values>
-      <value compset="CICE4?_">prognostic</value>
-      <value compset="CICE4?%PRES_">prescribed</value>
+      <value compset="CICE_">prognostic</value>
+      <value compset="CICE%PRES_">prescribed</value>
     </values>
     <group>build_component_cice</group>
     <file>env_build.xml</file>
@@ -30,8 +30,6 @@
     <type>char</type>
     <default_value></default_value>
     <values>
-      <value compset="_CICE4"> -phys cice4 </value>
-      <value compset="_CICE[_%]"> -phys cice5 </value>
       <value compset="_CLM45%[^_]*BC">-bc_dep_to_snow_updates</value>
     </values>
     <group>build_component_cice</group>
@@ -51,7 +49,6 @@
     <type>char</type>
     <default_value></default_value>
     <values>
-      <value compset="_CAM4">cam4=.true.</value>
       <value compset="_CAM5">cam5=.true.</value>
     </values>
     <group>run_component_cice</group>
