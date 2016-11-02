@@ -6,7 +6,14 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, find_system_test, append_status
 from CIME.SystemTests.system_tests_common import *
 
-import sys
+import sys, signal
+
+def _signal_handler(*_):
+    expect(False, "Problem timed out!")
+
+def _set_up_signal_handlers():
+    signal.signal(signal.SIGTERM, _signal_handler)
+    signal.signal(signal.SIGINT, _signal_handler)
 
 def case_test(case, testname=None):
     if testname is None:
@@ -14,6 +21,8 @@ def case_test(case, testname=None):
 
     expect(testname is not None, "testname argument not resolved")
     logging.warn("Running test for %s" % testname)
+
+    _set_up_signal_handlers()
 
     try:
         # The following line can throw exceptions if the testname is
