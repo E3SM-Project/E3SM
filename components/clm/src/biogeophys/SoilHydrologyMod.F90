@@ -51,7 +51,7 @@ contains
     use clm_varcon      , only : denice, denh2o, wimp, pondmx_urban
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_imperv, icol_road_perv
-    use clm_varpar      , only : nlevsoi, maxpatch_pft
+    use clm_varpar      , only : nlevsoi, nlevgrnd, maxpatch_pft
     use clm_time_manager, only : get_step_size
     use clm_varpar      , only : nlayer, nlayert
      use clm_varctl     , only : do_varsoil
@@ -264,7 +264,7 @@ contains
      ! !USES:
      use shr_const_mod    , only : shr_const_pi
      use clm_varpar       , only : nlayer, nlayert
-     use clm_varpar       , only : nlevsoi
+     use clm_varpar       , only : nlevsoi, nlevgrnd
      use clm_varctl       , only : do_varsoil
      use clm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
@@ -550,7 +550,7 @@ contains
      ! !USES:
      use clm_time_manager , only : get_step_size
      use clm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
-     use clm_varpar       , only : nlevsoi
+     use clm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
      use clm_varctl       , only : use_vsfm, do_varsoil
 !     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
