@@ -1068,8 +1068,11 @@ module isobaric_diagnostics
       
           if ( klo .eq. khi ) then
              write(0,*) 'Trapping levels are weird.'
+             write(0,*) 'icol = ',icol
              write(0,*) 'klo = ',klo,', khi = ',khi, ': and they should not be equal.'
-             call mpas_dmpar_global_abort('ERROR: Error_trapping_levels')
+             write(0,*) '*** MSLP field will not be computed'
+             slp(:) = 0.0
+             return
           end if
       
           plo = p(klo,icol)
