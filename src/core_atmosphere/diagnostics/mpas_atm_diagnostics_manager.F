@@ -38,6 +38,7 @@ module mpas_atm_diagnostics_manager
         use isobaric_diagnostics, only : isobaric_diagnostics_setup
         use convective_diagnostics, only : convective_diagnostics_setup
         use pv_diagnostics, only : pv_diagnostics_setup
+        use soundings, only : soundings_setup
 
         implicit none
 
@@ -56,6 +57,7 @@ module mpas_atm_diagnostics_manager
         call isobaric_diagnostics_setup(structs, clock)
         call convective_diagnostics_setup(structs, clock)
         call pv_diagnostics_setup(structs, clock)
+        call soundings_setup(configs, structs, clock)
 
     end subroutine mpas_atm_diag_setup
 
@@ -100,6 +102,7 @@ module mpas_atm_diagnostics_manager
         use isobaric_diagnostics, only : isobaric_diagnostics_compute
         use convective_diagnostics, only : convective_diagnostics_compute
         use pv_diagnostics, only : pv_diagnostics_compute
+        use soundings, only : soundings_compute
 
         implicit none
 
@@ -108,6 +111,7 @@ module mpas_atm_diagnostics_manager
         call isobaric_diagnostics_compute()
         call convective_diagnostics_compute()
         call pv_diagnostics_compute()
+        call soundings_compute()
 
     end subroutine mpas_atm_diag_compute
 
@@ -150,11 +154,13 @@ module mpas_atm_diagnostics_manager
 
         use mpas_atm_diagnostics_utils, only : mpas_atm_diag_utils_finalize
         use diagnostic_template, only : diagnostic_template_cleanup
+        use soundings, only : soundings_cleanup
 
         implicit none
 
 
         call diagnostic_template_cleanup()
+        call soundings_cleanup()
 
         !
         ! Take care of any needed cleanup in the diagnostics utility module

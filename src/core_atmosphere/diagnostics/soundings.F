@@ -1,7 +1,24 @@
-module mpas_atm_soundings
+! Copyright (c) 2016,  Los Alamos National Security, LLC (LANS)
+! and the University Corporation for Atmospheric Research (UCAR).
+!
+! Unless noted otherwise source code is licensed under the BSD license.
+! Additional copyright and license information can be found in the LICENSE file
+! distributed with this code, or at http://mpas-dev.github.com/license.html
+!
+module soundings
 
     use mpas_kind_types, only : RKIND, StrKIND
-    use mpas_timekeeping, only : MPAS_clock_type
+    use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type
+
+    public :: soundings_setup, &
+              soundings_compute, &
+              soundings_cleanup
+
+    private
+
+    type (MPAS_pool_type), pointer :: mesh
+    type (MPAS_pool_type), pointer :: state
+    type (MPAS_pool_type), pointer :: diag
 
     integer :: nSoundings = 0
     logical, allocatable, dimension(:) :: stationOwned
@@ -12,31 +29,42 @@ module mpas_atm_soundings
 
     type (MPAS_clock_type), pointer :: simulationClock
 
-    public :: mpas_atm_soundings_init, &
-              mpas_atm_soundings_write, &
-              mpas_atm_soundings_finalize
+    real (kind=RKIND) :: pi_const = 2.0_RKIND * asin(1.0_RKIND)
 
-    private
-    
 
     contains
 
 
-    subroutine mpas_atm_soundings_init(clock, mesh, soundingInterval)
+    !-----------------------------------------------------------------------
+    !  routine soundings_setup
+    !
+    !> \brief Reads sounding locations and sets sounding alarm
+    !> \author Michael Duda
+    !> \date   20 April 2016
+    !> \details
+    !>  This routine checks on the existence of a 'sounding_locations.txt' file,
+    !>  and, if present, reads sounding locations from this file and determines
+    !>  which grid cell contains each of the locations.
+    !
+    !-----------------------------------------------------------------------
+    subroutine soundings_setup(configs, all_pools, simulation_clock)
 
-        use mpas_io_units, only : stderrUnit
-        use mpas_derived_types, only : MPAS_pool_type
-        use mpas_pool_routines, only : mpas_pool_get_dimension, mpas_pool_get_array
+        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type
+        use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config
+        use mpas_io_units, only : stderrUnit, mpas_new_unit, mpas_release_unit
         use mpas_timekeeping, only : MPAS_timeInterval_type, MPAS_time_type, MPAS_set_timeInterval, &
                                      MPAS_get_clock_time, MPAS_add_clock_alarm, MPAS_NOW
 
         implicit none
 
-        type (MPAS_clock_type), intent(in), target :: clock
-        type (MPAS_pool_type), intent(inout) :: mesh
-        character(len=*), intent(in) :: soundingInterval
+        type (MPAS_pool_type), pointer :: configs
+        type (MPAS_pool_type), pointer :: all_pools
+        type (MPAS_clock_type), pointer :: simulation_clock
+
+        character(len=StrKIND), pointer :: soundingInterval
 
         integer :: i, ierr
+        integer :: sndUnit
         real (kind=RKIND) :: station_lat, station_lon
         character (len=StrKIND) :: station_name
         logical :: exists
@@ -45,15 +73,19 @@ module mpas_atm_soundings
         integer, dimension(:), pointer :: nEdgesOnCell
         integer, dimension(:,:), pointer :: cellsOnCell
         real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-        real (kind=RKIND) :: pi
         type (MPAS_timeInterval_type) :: intv
         type (MPAS_time_type) :: now
 
-      
-        simulationClock => clock
-        call MPAS_set_timeInterval(intv, timeString=trim(soundingInterval))
-        now = MPAS_get_clock_time(simulationClock, MPAS_NOW)
-        call MPAS_add_clock_alarm(simulationClock, 'soundingAlarm', now, alarmTimeInterval=intv) 
+
+        call mpas_pool_get_subpool(all_pools, 'mesh', mesh)
+        call mpas_pool_get_subpool(all_pools, 'state', state)
+        call mpas_pool_get_subpool(all_pools, 'diag', diag)
+
+        call mpas_pool_get_config(configs, 'config_sounding_interval', soundingInterval)
+
+        if (trim(soundingInterval) == 'none') then
+            return
+        end if
 
         inquire(file='sounding_locations.txt', exist=exists)
 
@@ -61,16 +93,24 @@ module mpas_atm_soundings
             write(stderrUnit,*) 'Sounding location file ''sounding_locations.txt'' not found.'
             return
         end if
+      
+        simulationClock => simulation_clock
+        call MPAS_set_timeInterval(intv, timeString=trim(soundingInterval))
+        now = MPAS_get_clock_time(simulationClock, MPAS_NOW)
+        call MPAS_add_clock_alarm(simulationClock, 'soundingAlarm', now, alarmTimeInterval=intv) 
 
-        open(88, file='sounding_locations.txt', form='formatted', status='old', iostat=ierr)
+        call mpas_new_unit(sndUnit)
+
+        open(sndUnit, file='sounding_locations.txt', form='formatted', status='old', iostat=ierr)
 
         if (ierr /= 0) then
             write(stderrUnit,*) 'Error opening sounding location file ''sounding_locations.txt'''
+            call mpas_release_unit(sndUnit)
             return
         end if
 
         do
-            read(88, fmt=*, iostat=ierr) station_lat, station_lon, station_name
+            read(sndUnit, fmt=*, iostat=ierr) station_lat, station_lon, station_name
             if (ierr == 0) then
                 nSoundings = nSoundings + 1
             else
@@ -78,11 +118,15 @@ module mpas_atm_soundings
             end if
         end do
 
-        if (nSoundings == 0) return
+        if (nSoundings == 0) then
+            close(sndUnit)
+            call mpas_release_unit(sndUnit)
+            return
+        end if
 
         write(stderrUnit,*) 'Read ', nSoundings, ' sounding locations from ''sounding_locations.txt'''
 
-        rewind(88)
+        rewind(sndUnit)
 
         allocate(stationOwned(nSoundings))
         allocate(stationLats(nSoundings))
@@ -98,13 +142,11 @@ module mpas_atm_soundings
         call mpas_pool_get_array(mesh, 'latCell', latCell)
         call mpas_pool_get_array(mesh, 'lonCell', lonCell)
 
-        pi = 2.0 * asin(1.0)
-
         nearestCell = nCells
 
         do i=1,nSoundings
-            read(88, fmt=*) stationLats(i), stationLons(i), stationNames(i)
-            nearestCell = nearest_cell((stationLats(i) * pi / 180.0_RKIND), (stationLons(i) * pi / 180.0_RKIND), &
+            read(sndUnit, fmt=*) stationLats(i), stationLons(i), stationNames(i)
+            nearestCell = nearest_cell((stationLats(i) * pi_const / 180.0_RKIND), (stationLons(i) * pi_const / 180.0_RKIND), &
                                        nearestCell, nCells, maxEdges, nEdgesOnCell, cellsOnCell, latCell, lonCell)
             if (nearestCell <= nCellsSolve) then
                 stationOwned(i) = .true.
@@ -114,12 +156,26 @@ module mpas_atm_soundings
             end if
         end do
 
-        close(88)
+        close(sndUnit)
 
-    end subroutine mpas_atm_soundings_init 
+        call mpas_release_unit(sndUnit)
+
+    end subroutine soundings_setup
 
 
-    subroutine mpas_atm_soundings_write(mesh, state, diag, diag_physics)
+    !-----------------------------------------------------------------------
+    !  routine soundings_compute
+    !
+    !> \brief If soundings alarm is ringing, writes soundings text files
+    !> \author Michael Duda
+    !> \date   20 April 2016
+    !> \details
+    !>  If this routine is called when the 'soundingAlarm' alarm is ringing,
+    !>  each calling task will write the sounding locations within its blocks
+    !>  to text files on disk.
+    !
+    !-----------------------------------------------------------------------
+    subroutine soundings_compute()
 
         use mpas_io_units, only : stderrUnit
         use mpas_derived_types, only : MPAS_pool_type
@@ -130,15 +186,12 @@ module mpas_atm_soundings
 
         implicit none
 
-        type (MPAS_pool_type), intent(inout) :: mesh, state, diag, diag_physics
-
         integer :: iStn, k
         integer, pointer :: nVertLevels, index_qv
         real (kind=RKIND), dimension(:,:), pointer :: pressure_base, pressure_p, uReconstructZonal, uReconstructMeridional, zgrid, &
                                                       theta_m, exner
         real (kind=RKIND), dimension(:,:,:), pointer :: scalars
         real (kind=RKIND) :: tmpc, tdpc, dir, spd, rh, log_rh, qvs, pres
-        real (kind=RKIND) :: pi
         type (MPAS_time_type) :: now
         character(len=StrKIND) :: nowString
         integer :: yyyy, mm, dd, h, m, s
@@ -147,8 +200,6 @@ module mpas_atm_soundings
 
 
         if (MPAS_is_alarm_ringing(simulationClock, 'soundingAlarm')) then
-
-            pi = 2.0 * asin(1.0)
 
             now = MPAS_get_clock_time(simulationClock, MPAS_NOW)
             call mpas_get_time(now, YYYY=yyyy, MM=mm, DD=dd, H=h, M=m, S=s, dateTimeString=nowString)
@@ -164,11 +215,11 @@ module mpas_atm_soundings
             call MPAS_pool_get_array(diag, 'uReconstructZonal', uReconstructZonal)
             call MPAS_pool_get_array(diag, 'uReconstructMeridional', uReconstructMeridional)
 
-            write(stderrUnit,*) '--- Writing soundings at '//trim(nowString)//'---'
+!            write(stderrUnit,*) '--- Writing soundings at '//trim(nowString)//'---'
 
             do iStn=1,nSoundings
                 if (stationOwned(iStn)) then
-                    write(stderrUnit,*) 'Writing sounding for station '//trim(stationNames(iStn))
+!                    write(stderrUnit,*) 'Writing sounding for station '//trim(stationNames(iStn))
 
                     write(fname,'(a,i4.4,i2.2,i2.2,i2.2,i2.2,a)') trim(stationNames(iStn))//'.', yyyy, mm, dd, h, m, '.snd'
                     open(97,file=trim(fname),form='formatted',status='replace')
@@ -201,9 +252,9 @@ module mpas_atm_soundings
                         else
                             dir = acos(-uReconstructMeridional(k,stationCells(iStn)) / spd)
                             if (uReconstructZonal(k,stationCells(iStn)) > 0.0) then
-                                dir = 2.0 * pi - dir
+                                dir = 2.0 * pi_const - dir
                             end if
-                            dir = dir * 180.0_RKIND / pi
+                            dir = dir * 180.0_RKIND / pi_const
                         end if
                         write(97,'(f10.2,f10.2,f9.2,f9.2,f9.2,f9.2)') &
                                     pres, &
@@ -220,16 +271,27 @@ module mpas_atm_soundings
 
             call MPAS_reset_clock_alarm(simulationClock, 'soundingAlarm')
         else
-            write(stderrUnit,*) '--- Not yet time to write soundings ---'
+!            write(stderrUnit,*) '--- Not yet time to write soundings ---'
         end if
+   
+    end subroutine soundings_compute
 
-    end subroutine mpas_atm_soundings_write 
 
-
-    subroutine mpas_atm_soundings_finalize()
+    !-----------------------------------------------------------------------
+    !  routine soundings_cleanup
+    !
+    !> \brief Deallocates memory used to handle soundings
+    !> \author Michael Duda
+    !> \date   20 April 2016
+    !> \details
+    !>  This routine should be called last among public routines in this module
+    !>  to release any allocated memory used in the storage of sounding
+    !>  locations.
+    !
+    !-----------------------------------------------------------------------
+    subroutine soundings_cleanup()
 
         implicit none
-
 
         if (nSoundings > 0) then
             deallocate(stationOwned)
@@ -239,8 +301,8 @@ module mpas_atm_soundings
             deallocate(stationNames)
             nSoundings = 0
         end if
-
-    end subroutine mpas_atm_soundings_finalize 
+   
+    end subroutine soundings_cleanup
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -376,4 +438,4 @@ module mpas_atm_soundings
 
       END FUNCTION RSIF
 
-end module mpas_atm_soundings
+end module soundings

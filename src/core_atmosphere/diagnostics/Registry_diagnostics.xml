@@ -13,6 +13,9 @@
 <!-- PV diagnostics -->
 #include "Registry_pv.xml"
 
+<!-- soundings -->
+#include "Registry_soundings.xml"
+
 <!-- ******************************* -->
 <!-- End includes from diagnostics -->
 <!-- ******************************* -->

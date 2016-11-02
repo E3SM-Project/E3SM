@@ -25,7 +25,6 @@ module atm_core
       use mpas_stream_manager
       use mpas_performance, only : mpas_performance_init
       use mpas_atm_dimensions, only : mpas_atm_set_dims
-      use mpas_atm_soundings, only : mpas_atm_soundings_init
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_setup
 
       implicit none
@@ -165,11 +164,6 @@ module atm_core
 
       call mpas_pool_get_field(diag, 'rw', rw_field)
       call mpas_dmpar_exch_halo_field(rw_field)
-
-      !
-      ! Set up sounding locations
-      !
-      call mpas_atm_soundings_init(clock, mesh, '3:00:00')
 
       call mpas_atm_diag_setup(domain % streamManager, domain % blocklist % configs, &
                                domain % blocklist % structs, domain % clock)
@@ -431,7 +425,6 @@ module atm_core
       use mpas_stream_manager
       use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
-      use mpas_atm_soundings, only : mpas_atm_soundings_write
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_update, mpas_atm_diag_compute, mpas_atm_diag_reset
    
       implicit none
@@ -524,9 +517,6 @@ module atm_core
       call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
       call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
       call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-      call mpas_timer_start('write_soundings')
-      call mpas_atm_soundings_write(mesh, state, diag, diag_physics)
-      call mpas_timer_stop('write_soundings')
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -676,9 +666,6 @@ module atm_core
          call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
          call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
          call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-         call mpas_timer_start('write_soundings')
-         call mpas_atm_soundings_write(mesh, state, diag, diag_physics)
-         call mpas_timer_stop('write_soundings')
 
       end do
    
@@ -859,7 +846,6 @@ module atm_core
       use mpas_decomp
       use mpas_timekeeping
       use mpas_performance, only : mpas_performance_finalize
-      use mpas_atm_soundings, only : mpas_atm_soundings_finalize
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
    
 #ifdef DO_PHYSICS
@@ -873,7 +859,6 @@ module atm_core
       integer :: ierr
 
       ierr = 0
-      call mpas_atm_soundings_finalize()
 
       call mpas_atm_diag_cleanup()
 
