@@ -56,6 +56,8 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                             expect(False, "Could not write file %s in caseroot %s"
                                    %(case_source_mods,caseroot))
 
+    include_dirs.reverse()
+    for include_dir in include_dirs:
         # create xmlchange_cmnds and shell_commands in caseroot
         shell_command_files = glob.glob(os.path.join(include_dir,"shell_commands")) +\
                               glob.glob(os.path.join(include_dir,"xmlchange_cmnds"))
