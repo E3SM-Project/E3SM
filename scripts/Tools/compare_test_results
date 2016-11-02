@@ -1,11 +1,24 @@
 #!/usr/bin/env python
 
-"""
-Analyze results from a test root area, comparing non-BFB
-changes. Purpose is, instead of re-running tests
-in compare mode, which is very slow, allow for very fast analsis of diffs.
+"""Analyze results from a test root area, comparing non-BFB changes.
+
+Purpose is, instead of re-running tests in compare mode, which is very slow,
+allow for very fast analysis of diffs.
+
+Outputs results for each test to stdout (one line per test); possible status
+codes are: PASS, FAIL, SKIP. (A SKIP denotes a test that did not make it to the
+run phase or a test for which the run phase did not pass: we skip baseline
+comparisons in this case.)
+
+In addition, creates files named compare.log.BASELINE_NAME.TIMESTAMP in each
+test directory, which contain more detailed output. Also creates
+*.cprnc.out.BASELINE_NAME.TIMESTAMP files in each run directory.
+
+Returns a 0 exit status if all tests are bit-for-bit, and a non-zero exit status
+(TESTS_FAILED_ERR_CODE) if any tests differed from the baseline.
 
 You may need to load modules for cprnc to work.
+
 """
 
 from standard_script_setup import *
@@ -88,7 +101,7 @@ def _main_func(description):
         parse_command_line(sys.argv, description)
 
     success = compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id, compare_tests)
-    sys.exit(0 if success else 1)
+    sys.exit(0 if success else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
 
