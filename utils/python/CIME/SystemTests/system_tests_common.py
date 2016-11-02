@@ -418,6 +418,7 @@ class FakeTest(SystemTestsCommon):
 
     def run_indv(self, suffix='base', st_archive=False):
         mpilib = self._case.get_value("MPILIB")
+        # This flag is needed by mpt to run a script under mpiexec
         if mpilib == "mpt":
             os.environ["MPI_SHEPHERD"] = "true"
         super(FakeTest, self).run_indv(suffix, st_archive)
