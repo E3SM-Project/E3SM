@@ -1,6 +1,61 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 11-02-2016
+Tag: cime5.2.0-alpha.8
+Answer Changes: None
+Tests: scripts_regression_tests problem specific tests
+Dependencies:
+
+Brief Summary: improved build logging, --output-root option, fix issues with user_mods,
+	fix pea test, update laramie, testreporter fixes
+
+User interface changes:
+M       cime_config/acme/machines/Makefile
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/acme/machines/userdefined_laptop_template/config_machines.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_batch.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/cesm/machines/userdefined_laptop_template/config_machines.xml
+M       cime_config/config_tests.xml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/driver/cesm_comp_mod.F90
+M       scripts/Testing/testreporter.pl
+M       scripts/Tools/bless_test_results
+M       scripts/Tools/case.cmpgen_namelists
+M       scripts/Tools/cime_bisect
+M       scripts/Tools/compare_test_results
+M       scripts/Tools/jenkins_generic_job
+M       scripts/create_newcase
+M       scripts/create_test
+M       utils/perl5lib/Config/SetupTools.pm
+A       utils/python/CIME/SystemTests/erio.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/entry_id.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_cmpgen_namelists.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/user_mod_support.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+
+Modified files: git diff --name-status
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 10-27-2016
 Tag: cime5.2.0-alpha.7
 Answer Changes: None
