@@ -775,7 +775,7 @@
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE>make</GMAKE>
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>

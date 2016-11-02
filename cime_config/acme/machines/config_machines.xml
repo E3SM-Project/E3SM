@@ -288,7 +288,7 @@
 >
     <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
-<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>2</PES_PER_NODE>
@@ -310,7 +310,7 @@
     <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->>
     <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jayesh at mcs dot anl dot gov</SUPPORTED_BY>
-<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>2</PES_PER_NODE>
@@ -339,7 +339,7 @@
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE>make</GMAKE>
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
@@ -393,7 +393,7 @@
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE>make</GMAKE>
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
