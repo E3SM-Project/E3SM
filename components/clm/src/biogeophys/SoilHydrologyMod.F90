@@ -74,7 +74,7 @@ contains
     integer  :: nlevbed                                    !# levels to bedrock
     real(r8) :: dtime                                      !land model time step (sec)
     real(r8) :: xs(bounds%begc:bounds%endc)                !excess soil water above urban ponding limit
-    real(r8) :: vol_ice(bounds%begc:bounds%endc,1:nlevsoi) !partial volume of ice lens in layer
+    real(r8) :: vol_ice(bounds%begc:bounds%endc,1:nlevgrnd) !partial volume of ice lens in layer
     real(r8) :: fff(bounds%begc:bounds%endc)               !decay factor (m-1)
     real(r8) :: s1                                         !variable to calculate qinmax
     real(r8) :: su                                         !variable to calculate qinmax
@@ -291,7 +291,7 @@ contains
      real(r8) :: dtime                                      ! land model time step (sec)
      real(r8) :: s1,su,v                                    ! variable to calculate qinmax
      real(r8) :: qinmax                                     ! maximum infiltration capacity (mm/s)
-     real(r8) :: vol_ice(bounds%begc:bounds%endc,1:nlevsoi) ! partial volume of ice lens in layer
+     real(r8) :: vol_ice(bounds%begc:bounds%endc,1:nlevgrnd) ! partial volume of ice lens in layer
      real(r8) :: alpha_evap(bounds%begc:bounds%endc)        ! fraction of total evap from h2osfc
      real(r8) :: qflx_evap(bounds%begc:bounds%endc)         ! local evaporation array
      real(r8) :: qflx_h2osfc_drain(bounds%begc:bounds%endc) ! bottom drainage from h2osfc
@@ -572,7 +572,7 @@ contains
      integer  :: nlevbed                                 ! # layers to bedrock
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
-     real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
+     real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevgrnd) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
      real(r8) :: rsub_bot(bounds%begc:bounds%endc)       ! subsurface runoff - bottom drainage (mm/s)
      real(r8) :: rsub_top(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
@@ -914,7 +914,7 @@ contains
      integer  :: nlevbed                                 ! # layers to bedrock
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
-     real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
+     real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevgrnd) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
      real(r8) :: rsub_bot(bounds%begc:bounds%endc)       ! subsurface runoff - bottom drainage (mm/s)
      real(r8) :: rsub_top(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
