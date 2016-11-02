@@ -278,12 +278,12 @@
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
-    <CESMSCRATCHROOT>/projects/EarlyPerf_theta/acme/scratch/$USER</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/projects/EarlyPerf_theta/acme/scratch/$USER</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/projects/EarlyPerf_theta/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/EarlyPerf_theta/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>/projects/EarlyPerf_theta/acme/csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/projects/EarlyPerf_theta/acme/baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/projects/EarlyPerf_theta/acme/tools/cprnc</CCSM_CPRNC>
