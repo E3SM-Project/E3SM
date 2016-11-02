@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 
-"""
-Analyze results from a test root area, comparing non-BFB
-changes. Purpose is, instead of re-running tests
-in compare mode, which is very slow, allow for very fast analsis of diffs.
+"""Analyze results from a test root area, comparing non-BFB changes.
+
+Purpose is, instead of re-running tests in compare mode, which is very slow,
+allow for very fast analsis of diffs.
+
+Outputs results for each test to stdout (one line per test); possible status
+codes are: PASS, FAIL, SKIP.
+
+In addition, creates files named compare.log.BASELINE_NAME.TIMESTAMP in each
+test directory, which contain more detailed output. Also creates
+*.cprnc.out.BASELINE_NAME.TIMESTAMP files in each run directory.
 
 You may need to load modules for cprnc to work.
+
 """
 
 from standard_script_setup import *
