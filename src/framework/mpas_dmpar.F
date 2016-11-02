@@ -66,8 +66,6 @@ include 'mpif.h'
    public :: mpas_dmpar_bcast_reals
    public :: mpas_dmpar_bcast_double
    public :: mpas_dmpar_bcast_doubles
-   public :: mpas_dmpar_bcast_single
-   public :: mpas_dmpar_bcast_singles
    public :: mpas_dmpar_bcast_logical
    public :: mpas_dmpar_bcast_char
    public :: mpas_dmpar_bcast_chars
@@ -563,83 +561,6 @@ include 'mpif.h'
 #endif
 
    end subroutine mpas_dmpar_bcast_doubles!}}}
-
-!-----------------------------------------------------------------------
-!  routine mpas_dmpar_bcast_double
-!
-!> \brief MPAS dmpar broadcast double routine.
-!> \author Michael Duda
-!> \date   11/04/13; modified by William Lipscomb 01/21/15
-!> \details
-!>  This routine broadcasts a double to all processors in the communicator.
-!>  An optional argument specifies the source node; else broadcast from IO_NODE.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_single(dminfo, r, proc)!{{{
-
-      implicit none
-
-      type (dm_info), intent(in) :: dminfo !< Input: Domain information
-      real(kind=R4KIND), intent(inout) :: r !< Input/Output: Double to be broadcast
-      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
-
-#ifdef _MPI
-      integer :: mpi_ierr, source
-      integer :: threadNum
-
-      threadNum = mpas_threading_get_thread_num()
-
-      if ( threadNum == 0 ) then
-         if (present(proc)) then
-            source = proc
-         else
-            source = IO_NODE
-         endif
-
-         call MPI_Bcast(r, 1, MPI_REAL4, source, dminfo % comm, mpi_ierr)
-      end if
-#endif
-
-   end subroutine mpas_dmpar_bcast_single!}}}
-
-!-----------------------------------------------------------------------
-!  routine mpas_dmpar_bcast_doubles
-!
-!> \brief MPAS dmpar broadcast doubles routine.
-!> \author Michael Duda
-!> \date   11/04/13; modified by William Lipscomb 01/21/15
-!> \details
-!>  This routine broadcasts an array of doubles to all processors in the communicator.
-!>  An optional argument specifies the source node; else broadcast from IO_NODE.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_singles(dminfo, n, rarray, proc)!{{{
-
-      implicit none
-
-      type (dm_info), intent(in) :: dminfo !< Input: Domain information
-      integer, intent(in) :: n !< Input: Length of array
-      real(kind=R4KIND), dimension(n), intent(inout) :: rarray !< Input/Output: Array of doubles to be broadcast
-      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
-
-#ifdef _MPI
-      integer :: mpi_ierr, source
-      integer :: threadNum
-
-      threadNum = mpas_threading_get_thread_num()
-
-      if ( threadNum == 0 ) then
-         if (present(proc)) then
-            source = proc
-         else
-            source = IO_NODE
-         endif
-
-         call MPI_Bcast(rarray, n, MPI_REAL4, source, dminfo % comm, mpi_ierr)
-      end if
-#endif
-
-   end subroutine mpas_dmpar_bcast_singles!}}}
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_bcast_logical
@@ -1412,59 +1333,6 @@ include 'mpif.h'
       end if
 
    end subroutine mpas_dmpar_max_real_array!}}}
-
-!-----------------------------------------------------------------------
-!  routine mpas_dmpar_maxloc_real_array
-!
-!> \brief MPAS dmpar location of maximum real value
-!> \author Michael Duda
-!> \date   03/13/14
-!> \details
-!>  Returns the maximum real among arrays of reals provided by all tasks, as
-!   well as the corresponding location of that maximum. If the maximum value
-!   occurs in more than one location, the returned location may be any of these.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_dmpar_maxloc_real_array(dminfo, nElements, inArray, inLoc, maxVal, maxLoc)!{{{
-
-      implicit none
-
-      type (dm_info), intent(in) :: dminfo !< Input: Domain information
-      integer, intent(in) :: nElements !< Input: Length of arrays
-      real(kind=RKIND), dimension(nElements), intent(in) :: inArray   !< Input: Array of reals
-      integer, dimension(nElements), intent(in) :: inLoc              !< Input: Array of locations
-      real(kind=RKIND), intent(out) :: maxVal                         !< Output: Maximum of all reals
-      integer, intent(out) :: maxLoc                                  !< Output: Maximum of all reals
-
-      integer :: mpi_ierr
-      real(kind=RKIND), dimension(2) :: in, out
-      integer :: i
-
-      !
-      ! Find local max and maxloc
-      ! NB: We will have a problem on our hands if the maxloc value exceeds the
-      ! range of exactly representable integral values for the realkind being used
-      !
-      in(1) = inArray(1)
-      in(2) = 1.0
-      do i=2,nElements
-         if (inArray(i) > in(1)) then
-            in(1) = inArray(i)
-            in(2) = i
-         end if
-      end do
-
-#ifdef _MPI
-#ifdef SINGLE_PRECISION
-      call MPI_Allreduce(in, out, 1, MPI_2REAL, MPI_MAXLOC, dminfo % comm, mpi_ierr)
-#else
-      call MPI_Allreduce(in, out, 1, MPI_2DOUBLE_PRECISION, MPI_MAXLOC, dminfo % comm, mpi_ierr)
-#endif
-#endif
-      maxVal = out(1)
-      maxLoc = out(2)
-
-   end subroutine mpas_dmpar_maxloc_real_array!}}}
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_scatter_ints
