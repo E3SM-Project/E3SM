@@ -279,8 +279,6 @@
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/projects/EarlyPerf_theta/acme/scratch/$USER</CIME_OUTPUT_ROOT>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/projects/EarlyPerf_theta/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/EarlyPerf_theta/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
