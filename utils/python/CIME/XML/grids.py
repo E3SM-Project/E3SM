@@ -242,15 +242,18 @@ class Grids(GenericXML):
                             domain_name = file_node.text
                     elif grid_attrib is not None:
                         grid_match = re.search(comp_name.lower(), grid_attrib)
+                        print "grid_attrib %s comp_name %s %s"%(grid_attrib, comp_name, grid_match)
                         if grid_match is not None:
                             domain_name = file_node.text
                     elif mask_attrib is not None:
                         mask_match = re.search(mask_name.lower(), mask_attrib)
                         if mask_match is not None:
                             domain_name = file_node.text
-                if domain_name:
-                    domains[file_name] = os.path.basename(domain_name)
-                    domains[path_name] = os.path.dirname(domain_name)
+                    if domain_name:
+                        domains[file_name] = os.path.basename(domain_name)
+                        path = os.path.dirname(domain_name)
+                        if len(path) > 0:
+                            domains[path_name] = path
         return domains
 
     def _get_component_grids_from_longname(self, name):
