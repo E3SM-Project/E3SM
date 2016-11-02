@@ -489,6 +489,9 @@ class EnvBatch(EnvBase):
 
     def get_default_queue(self):
         node = self.get_optional_node("queue", attributes={"default" : "true"})
+        if node is None:
+            node = self.get_optional_node("queue")
+        expect(node is not None, "No queues found")
         self._default_walltime = node.get("walltimemax")
         return(node)
 
