@@ -28,13 +28,11 @@ OBJS = mpas_kind_types.o \
        mpas_c_interfacing.o \
        random_id.o \
        streams.o \
-       timer.o \
        pool_hash.o \
        mpas_derived_types.o \
        mpas_domain_routines.o \
        mpas_field_routines.o \
        mpas_pool_routines.o \
-       mpas_performance.o \
        xml_stream_parser.o \
        regex_matching.o \
        mpas_field_accessor.o

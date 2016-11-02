@@ -28,7 +28,6 @@ module atm_time_integration
    use mpas_timekeeping, only: MPAS_Time_type, MPAS_TimeInterval_type, &
                                mpas_set_time, mpas_set_timeInterval, mpas_get_time, operator(+), add_t_ti
    use mpas_timer
-   use mpas_performance
 
 #ifdef DO_PHYSICS
    use mpas_atmphys_driver_microphysics

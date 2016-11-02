@@ -23,7 +23,6 @@ module atm_core
       use mpas_timekeeping
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_performance, only : mpas_performance_init
       use mpas_atm_dimensions, only : mpas_atm_set_dims
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_setup
 
@@ -60,11 +59,6 @@ module atm_core
       call mpas_pool_get_dimension(state, 'maxEdges2', maxEdges2)
       call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
       call mpas_atm_set_dims(nVertLevels, maxEdges, maxEdges2, num_scalars)
-
-      !
-      ! Initialize performance module
-      !
-      call mpas_performance_init()
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -845,7 +839,6 @@ module atm_core
    
       use mpas_decomp
       use mpas_timekeeping
-      use mpas_performance, only : mpas_performance_finalize
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
    
 #ifdef DO_PHYSICS
@@ -864,11 +857,6 @@ module atm_core
 
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
-
-      !
-      ! Finalize performance module
-      !
-      call mpas_performance_finalize()
 
 #ifdef DO_PHYSICS
          block_ptr => domain % blocklist
