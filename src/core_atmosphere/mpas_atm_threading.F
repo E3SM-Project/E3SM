@@ -1,18 +1,18 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! Copyright (c) 2015,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module mpas_threading2
+module mpas_atm_threading
 
 
     contains
 
 
     !-----------------------------------------------------------------------
-    !  routine mpas_threading_init
+    !  routine mpas_atm_threading_init
     !
     !> \brief  Pre-computes thread loop bounds for cell, edge, and vertex elements
     !> \author Michael Duda
@@ -33,7 +33,7 @@ module mpas_threading2
     !>  output argument, ierr.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_threading_init(blocklist, ierr) 
+    subroutine mpas_atm_threading_init(blocklist, ierr) 
 
         use mpas_derived_types, only : block_type
         use mpas_pool_routines, only : mpas_pool_get_dimension
@@ -120,24 +120,24 @@ module mpas_threading2
             block => block % next
         end do
 
-    end subroutine mpas_threading_init
+    end subroutine mpas_atm_threading_init
 
 
     !-----------------------------------------------------------------------
-    !  routine mpas_threading_finalize
+    !  routine mpas_atm_threading_finalize
     !
     !> \brief  Deallocates memory associated with threading in MPAS
     !> \author Michael Duda
     !> \date   6 July 2015
     !> \details
     !>  This routine deallocates any memory that was allocated in the call to
-    !>  mpas_threading_init() for each block in the input block list.
+    !>  mpas_atm_threading_init() for each block in the input block list.
     !>
     !>  At present, a return value of 0 is always returned in the optional
     !>  output argument, ierr.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_threading_finalize(blocklist, ierr) 
+    subroutine mpas_atm_threading_finalize(blocklist, ierr) 
 
         use mpas_derived_types, only : block_type
 
@@ -169,6 +169,6 @@ module mpas_threading2
             block => block % next
         end do
 
-    end subroutine mpas_threading_finalize
+    end subroutine mpas_atm_threading_finalize
  
-end module mpas_threading2
+end module mpas_atm_threading

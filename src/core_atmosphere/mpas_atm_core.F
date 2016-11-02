@@ -25,6 +25,7 @@ module atm_core
       use mpas_stream_manager
       use mpas_atm_dimensions, only : mpas_atm_set_dims
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_setup
+      use mpas_atm_threading, only : mpas_atm_threading_init
 
       implicit none
 
@@ -49,6 +50,16 @@ module atm_core
       integer, pointer :: nVertLevels, maxEdges, maxEdges2, num_scalars
 
       ierr = 0
+
+
+      !
+      ! Setup threading
+      !
+      call mpas_atm_threading_init(domain % blocklist, ierr)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Threading setup failed for core '//trim(domain % core % coreName))
+      end if
+
 
       !
       ! Set up inner dimensions used by arrays in optimized dynamics routines
@@ -840,6 +851,7 @@ module atm_core
       use mpas_decomp
       use mpas_timekeeping
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
+      use mpas_atm_threading, only : mpas_atm_threading_finalize
    
 #ifdef DO_PHYSICS
       use mpas_atmphys_finalize
@@ -866,6 +878,11 @@ module atm_core
             block_ptr => block_ptr%next
          end do
 #endif
+
+      !
+      ! Finalize threading
+      !
+      call mpas_atm_threading_finalize(domain % blocklist)
    
    end function atm_core_finalize
 
