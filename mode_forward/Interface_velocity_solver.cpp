@@ -512,7 +512,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
       numProcs + 1), globalOffsetVertices(numProcs + 1), globalOffsetEdge(
       numProcs + 1);
 
-
+  triangleToFVertex.clear();
   triangleToFVertex.reserve(nVertices_F);
   std::vector<int> fVertexToTriangle(nVertices_F, NotAnId);
   bool changed = false;
