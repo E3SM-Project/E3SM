@@ -89,6 +89,16 @@ module ColumnPhysicalPropertiesType
  ! use LandunitType          , only : lun                
  ! use ColumnType            , only : col   
 
+!  moved from CanopyStateType.F90
+  use landunit_varcon , only : istsoil, istcrop
+  use clm_varcon      , only : spval  
+  use clm_varpar      , only : nlevcan
+  use clm_varctl      , only : iulog, use_cn
+!  use LandunitType    , only : lun                
+!  use ColumnType      , only : col                
+!  use PatchType       , only : pft   
+
+
   implicit none
   save
   private
@@ -270,6 +280,21 @@ module ColumnPhysicalPropertiesType
      real(r8), pointer :: i_0_col           (:)     ! col VIC average saturation in top soil layers 
      real(r8), pointer :: ice_col           (:,:)   ! col VIC soil ice (kg/m2) for VIC soil layers
 
+
+!    moved from CanopyStateType.F90
+     real(r8) , pointer :: alt_col                  (:)   ! col current depth of thaw 
+     integer  , pointer :: alt_indx_col             (:)   ! col current depth of thaw 
+     real(r8) , pointer :: altmax_col               (:)   ! col maximum annual depth of thaw 
+     real(r8) , pointer :: altmax_lastyear_col      (:)   ! col prior year maximum annual depth of thaw 
+     integer  , pointer :: altmax_indx_col          (:)   ! col maximum annual depth of thaw 
+     integer  , pointer :: altmax_lastyear_indx_col (:)   ! col prior year maximum annual depth of thaw 
+
+
+!    moved from FrictionVelocityType.F90
+     real(r8), pointer :: z0mg_col         (:)   ! col roughness length over ground, momentum  [m] 
+     real(r8), pointer :: z0hg_col         (:)   ! col roughness length over ground, sensible heat [m]
+     real(r8), pointer :: z0qg_col         (:)   ! col roughness length over ground, latent heat [m]
+
    contains
 
      procedure, public :: Init => init_col_pp
@@ -283,7 +308,13 @@ module ColumnPhysicalPropertiesType
      procedure, private :: InitCold  => initcold_col_pp
 
 !!!!!****   moved from SoilHydrologyType.F90
-     procedure, private :: ReadSoilHydrologyNL
+!!!!!   maybe need to create SoilHydrologyCon.F90, similar as LakeCon.F90????
+
+
+!!!*******     procedure, private :: ReadSoilHydrologyNL
+
+
+
 
   end type column_physical_properties
 
@@ -322,6 +353,10 @@ module ColumnPhysicalPropertiesType
     use soilorder_varcon, only : ks_sorption
     use soilorder_varcon, only : r_weather,r_adsorp,r_desorp,r_occlude
     use soilorder_varcon, only : k_s1_biochem,k_s2_biochem,k_s3_biochem,k_s4_biochem
+
+    ! !USES:  moved from CanopyStateType.F90
+    use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd
+    use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
 
     class(column_physical_properties)         :: this
     type(bounds_type), intent(in) :: bounds 
@@ -513,6 +548,22 @@ module ColumnPhysicalPropertiesType
 
     end do
 
+! moved from CanopyStateType.F90
+
+    allocate(this%alt_col                  (begc:endc))           ; this%alt_col                  (:)   = spval;     
+    allocate(this%altmax_col               (begc:endc))           ; this%altmax_col               (:)   = spval
+    allocate(this%altmax_lastyear_col      (begc:endc))           ; this%altmax_lastyear_col      (:)   = spval
+    allocate(this%alt_indx_col             (begc:endc))           ; this%alt_indx_col             (:)   = huge(1)
+    allocate(this%altmax_indx_col          (begc:endc))           ; this%altmax_indx_col          (:)   = huge(1)
+    allocate(this%altmax_lastyear_indx_col (begc:endc))           ; this%altmax_lastyear_indx_col (:)   = huge(1)
+
+
+! moved from FrictionVelocityType.F90
+
+    allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = nan
+    allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = nan
+    allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = nan
+
 
   end subroutine initallocation_col_pp
 
@@ -530,6 +581,12 @@ module ColumnPhysicalPropertiesType
 
 !   mvoed from SoilStateType.F90
     use histFileMod   , only: hist_addfld1d, hist_addfld2d, no_snow_normal
+
+    !  moved from CanopyStateType.F90
+
+    use clm_varctl    , only: use_cn
+    use clm_varpar    , only: nlevgrnd
+    use histFileMod   , only: hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
     class(column_physical_properties) :: this
@@ -538,6 +595,10 @@ module ColumnPhysicalPropertiesType
     ! !LOCAL VARIABLES:
     integer :: begp, endp
     integer :: begc, endc
+
+
+    ! moved from CanopyStateType.F90
+    real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
     !---------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -670,6 +731,59 @@ module ColumnPhysicalPropertiesType
             ptr_col=this%watfc_col, default='inactive')
     end if
 
+!  moved from CanopyStateType.F90
+
+   if (use_cn) then
+       this%alt_col(begc:endc) = spval
+       call hist_addfld1d (fname='ALT', units='m', &
+            avgflag='A', long_name='current active layer thickness', &
+            ptr_col=this%alt_col)
+
+       this%altmax_col(begc:endc) = spval
+       call hist_addfld1d (fname='ALTMAX', units='m', &
+            avgflag='A', long_name='maximum annual active layer thickness', &
+            ptr_col=this%altmax_col)
+
+       this%altmax_lastyear_col(begc:endc) = spval
+       call hist_addfld1d (fname='ALTMAX_LASTYEAR', units='m', &
+            avgflag='A', long_name='maximum prior year active layer thickness', &
+            ptr_col=this%altmax_lastyear_col)
+    end if
+
+    ! Allow active layer fields to be optionally output even if not running CN
+
+    if (.not. use_cn) then
+       this%alt_col(begc:endc) = spval
+       call hist_addfld1d (fname='ALT', units='m', &
+            avgflag='A', long_name='current active layer thickness', &
+            ptr_col=this%alt_col, default='inactive')
+
+       this%altmax_col(begc:endc) = spval
+       call hist_addfld1d (fname='ALTMAX', units='m', &
+            avgflag='A', long_name='maximum annual active layer thickness', &
+            ptr_col=this%altmax_col, default='inactive')
+
+       this%altmax_lastyear_col(begc:endc) = spval
+       call hist_addfld1d (fname='ALTMAX_LASTYEAR', units='m', &
+            avgflag='A', long_name='maximum prior year active layer thickness', &
+            ptr_col=this%altmax_lastyear_col, default='inactive')
+    end if
+
+!   moved from FrictionVelocityType.F90
+    this%z0mg_col(begc:endc) = spval
+    call hist_addfld1d (fname='Z0MG', units='m', &
+         avgflag='A', long_name='roughness length over ground, momentum', &
+         ptr_col=this%z0mg_col, default='inactive')
+
+    this%z0hg_col(begc:endc) = spval
+    call hist_addfld1d (fname='Z0HG', units='m', &
+         avgflag='A', long_name='roughness length over ground, sensible heat', &
+         ptr_col=this%z0hg_col, default='inactive')
+
+    this%z0qg_col(begc:endc) = spval
+    call hist_addfld1d (fname='Z0QG', units='m', &
+         avgflag='A', long_name='roughness length over ground, latent heat', &
+         ptr_col=this%z0qg_col, default='inactive')
 
   end subroutine inithistory_col_pp
 
@@ -1284,6 +1398,29 @@ module ColumnPhysicalPropertiesType
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl, dzsoifl)
 
+!   moved from CanopyStateType.F90
+
+    do c = bounds%begc, bounds%endc
+       l = col%landunit(c)
+
+       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          this%alt_col(c)               = 0._r8 !iniitialized to spval for all columns
+          this%altmax_col(c)            = 0._r8 !iniitialized to spval for all columns
+          this%altmax_lastyear_col(c)   = 0._r8 !iniitialized to spval for all columns
+          this%alt_indx_col(c)          = 0     !initiialized to huge  for all columns
+          this%altmax_indx_col(c)       = 0     !initiialized to huge  for all columns
+          this%altmax_lastyear_indx_col = 0     !initiialized to huge  for all columns
+       end if
+    end do
+
+!   moved from FrictionVelocity.F90
+
+    do c = bounds%begc, bounds%endc
+       l = col%landunit(c)
+       if (lun%lakpoi(l)) then !lake
+          this%z0mg_col(c) = 0.0004_r8
+       end if
+    end do
 
 
   end subroutine initcold_col_pp
@@ -1299,6 +1436,10 @@ module ColumnPhysicalPropertiesType
     use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
     use restUtilMod
     
+    !  moved from CanopyStateType.F90
+    use spmdMod    , only : masterproc
+
+
 !   moved from SoilStateType.F90
 
     ! !USES:
@@ -1341,6 +1482,32 @@ module ColumnPhysicalPropertiesType
 !!!   *********DW********** moved (use_dynroot) into patch level datastructure
 !!!    if(use_dynroot) then
 !!!    end if
+
+
+    if (use_cn) then
+       call restartvar(ncid=ncid, flag=flag, varname='altmax', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_col) 
+
+       call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_col) 
+
+       call restartvar(ncid=ncid, flag=flag, varname='altmax_indx', xtype=ncd_int,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_indx_col) 
+
+       call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear_indx', xtype=ncd_int,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_indx_col) 
+    end if
+
+!   moved from FrictionVelocityType.F90
+
+    call restartvar(ncid=ncid, flag=flag, varname='Z0MG', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='ground momentum roughness length', units='m', &
+         interpinic_flag='interp', readvar=readvar, data=this%z0mg_col)
 
   end subroutine restart_col_pp
 
@@ -1467,6 +1634,17 @@ module ColumnPhysicalPropertiesType
     deallocate(this%k_s3_biochem      )
     deallocate(this%k_s4_biochem      )
 
+    deallocate(this%alt_col              )   
+    deallocate(this%altmax_col           )
+    deallocate(this%altmax_lastyear_col  )
+    deallocate(this%alt_indx_col         )
+    deallocate(this%altmax_indx_col      )
+    deallocate(this%altmax_lastyear_indx_col )
+
+    deallocate(this%z0mg_col         )
+    deallocate(this%z0qg_col         )
+    deallocate(this%z0hg_col         )
+    
   end subroutine clean_col_pp
 
 end module ColumnPhysicalPropertiesType
