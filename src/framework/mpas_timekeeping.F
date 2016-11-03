@@ -1316,6 +1316,8 @@ module mpas_timekeeping
             if (present(ierr)) ierr = 1
             write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
             return
+         else ! no second decimals are present - do nothing here
+            deallocate(subStrings)
          end if
 
          call mpas_split_string(timeString_, "_", subStrings)
