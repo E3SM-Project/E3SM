@@ -27,6 +27,18 @@
 					description="if true, transit time distribution forcing source is applied to tracers in 'activeTracers' category"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_surface_salinity_monthly_restoring" type="logical" default_value=".false." units="unitless"
+					description="if true, apply monthly salinity restoring"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_salinity_restoring_constant_piston_velocity" type="real" default_value="0.0" units="m/year"
+					description="maximum allowable difference between surface salinity and climatology"
+					possible_values="any non-negative number"
+		/>
+		<nml_option name="config_salinity_restoring_max_difference" type="real" default_value="0.5" units="psu"
+					description="maximum allowable difference between surface salinity and climatology"
+					possible_values="any non-negative number"
+		/>
 	</nml_record>
 
 	<packages>
@@ -166,4 +178,10 @@
 				/>
 			</var_array>
 		</var_struct>
+	</var_struct>
+
+	<var_struct name="surfaceSalinityMonthlyForcing" time_levs="1">
+		<var name="surfaceSalinityMonthlyClimatologyValue" type="real" dimensions="nCells Time" array_group="activeGRP" units="psu"
+			 description="monthly surface salinity climatology interpolated to current timestep"
+		/>
 	</var_struct>
