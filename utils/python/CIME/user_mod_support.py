@@ -49,11 +49,25 @@ def apply_user_mods(caseroot, user_mods_path):
                             expect(False, "Could not write file %s in caseroot %s"
                                    %(case_source_mods,caseroot))
 
+    # Reverse include_dirs to make sure xmlchange commands are called in the
+    # correct order; it may be desireable to reverse include_dirs above the
+    # previous loop and then append user_nl changes rather than prepend them.
+    include_dirs.reverse()
+    for include_dir in include_dirs:
         # create xmlchange_cmnds and shell_commands in caseroot
         shell_command_files = glob.glob(os.path.join(include_dir,"shell_commands")) +\
                               glob.glob(os.path.join(include_dir,"xmlchange_cmnds"))
         for shell_commands_file in shell_command_files:
             case_shell_commands = shell_commands_file.replace(include_dir, caseroot)
+            # add commands from both shell_commands and xmlchange_cmnds to
+            # the same file (caseroot/shell_commands)
+            case_shell_commands = case_shell_commands.replace("xmlchange_cmnds","shell_commands")
+            # Note that use of xmlchange_cmnds has been deprecated and will soon
+            # be removed altogether, so new tests should rely on shell_commands
+            if shell_commands_file.endswith("xmlchange_cmnds"):
+                logger.warn("xmlchange_cmnds is deprecated and will be removed " +\
+                            "in a future release; please rename %s shell_commands" %\
+                            shell_commands_file)
             with open(shell_commands_file,"r") as fd:
                 new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
             with open(case_shell_commands, "a") as fd:
