@@ -2717,12 +2717,12 @@
 			description="Flux of mass through the ocean surface. Positive into ocean."
 			packages="landIceFluxesPKG"
 		/>
-		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W s^{-1}"
+		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^{-2}"
 			description="Flux of heat into the ocean at land ice-ocean interface. Positive into ocean."
 			packages="landIceFluxesPKG"
 		/>
 		<!-- Output fields from standalone land-ice flux computaiton -->
-		<var name="heatFluxToLandIce"  type="real" dimensions="nCells Time" units="W s^{-1}"
+		<var name="heatFluxToLandIce"  type="real" dimensions="nCells Time" units="W m^{-2}"
 			description="Flux of heat out of ice at land ice-ocean interface. Positive into ocean."
 			packages="landIceFluxesPKG"
 		/>
