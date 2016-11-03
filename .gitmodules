@@ -9,3 +9,7 @@
 	path = components/mpas-cice/model
 	url = git@github.com:ACME-Climate/MPAS.git
 	branch = cice/develop
+[submodule "alm-mpp"]
+	path = components/clm/src/external_models/mpp
+	url = git@github.com:ACME-Climate/mpp.git
+	branch = alm/develop
