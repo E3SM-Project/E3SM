@@ -125,6 +125,8 @@ contains
     use infnan,           only: nan, assignment(=)
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
 #endif
+    use cam_abortutils, only: endrun
+
     implicit none
     type (element_t),  pointer    :: elem(:)
     type (fvm_struct), pointer    :: fvm(:)
@@ -158,6 +160,7 @@ contains
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
 
+    character(len=128) :: errmsg
 
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
@@ -236,6 +239,13 @@ contains
        else
            nelem      = CubeElemCount()
            nelem_edge = CubeEdgeCount()
+       end if
+
+       ! we want to exit elegantly when we are using too many processors.
+       if (nelem < par%nprocs) then
+          write(errmsg, '(A72,I5,A3,I5)') 'prim_driver_mod.F90: Number of tasks is greater than number of elements.', &
+                                          par%nprocs, ' > ', nelem
+          call endrun(trim(errmsg))
        end if
 
        allocate(GridVertex(nelem))
@@ -975,24 +985,24 @@ contains
       ! should be optimize and combined with the above caculation
       do ie=nets,nete
         do k=1,nlev
-	    do i=1,np
-	      do j=1,np
-		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-	      enddo
-	    enddo
+      do i=1,np
+        do j=1,np
+      elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+        enddo
+      enddo
           !write air density in dp_fvm field of FVM
           fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
       call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm) !boundary exchange
       do ie=nets,nete
-	    do i=1-nhc,nc+nhc
-	      do j=1-nhc,nc+nhc
+      do i=1-nhc,nc+nhc
+        do j=1-nhc,nc+nhc
           !phl is it necessary to compute psc here?
-	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
-	      enddo
-	    enddo
+          fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
+        enddo
+      enddo
       enddo
       if (hybrid%masterthread) then
          write(iulog,*) 'FVM tracers initialized.'
