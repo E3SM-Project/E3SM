@@ -8,12 +8,28 @@ from CIME.SystemTests.system_tests_common import *
 
 import sys, signal
 
-def _signal_handler(*_):
-    expect(False, "Problem timed out!")
+def _iter_signal_names():
+    for signame in [item for item in dir(signal) if item.startswith("SIG") and not item.startswith("SIG_")]:
+        yield signame
+
+def _signal_handler(signum, _):
+    name = "Unknown"
+    for signame in _iter_signal_names():
+        if signum == getattr(signal, signame):
+            name = signame
+
+    expect(False, "Job killed due to receiving signal %d (%s)" % (signum, name))
 
 def _set_up_signal_handlers():
-    signal.signal(signal.SIGTERM, _signal_handler)
-    signal.signal(signal.SIGINT, _signal_handler)
+    """
+    Add handles for all signals that might be used to abort a test
+
+    We need to handle a wide variety due to different implementations of the
+    timeout mechanism for different batch systems.
+    """
+    for signame in ["SIGINT", "SIGTERM", "SIGXCPU", "SIGUSR1", "SIGUSR2"]:
+        signum = getattr(signal, signame)
+        signal.signal(signum, _signal_handler)
 
 def case_test(case, testname=None):
     if testname is None:
