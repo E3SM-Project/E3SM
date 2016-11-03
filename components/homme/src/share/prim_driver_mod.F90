@@ -243,7 +243,8 @@ contains
 
        ! we want to exit elegantly when we are using too many processors.
        if (nelem < par%nprocs) then
-          write(errmsg, '(A72,I5,A3,I5)') 'prim_driver_mod.F90: Number of tasks is greater than number of elements.', &
+          write(errmsg, '(A72,A80,I5,A3,I5)') 'prim_driver_mod.F90: Number of tasks is greater than number of elements.', &
+                                          'To run with more MPI tasks than elements in CAM, set namelist variable dyn_npes.', &
                                           par%nprocs, ' > ', nelem
           call endrun(trim(errmsg))
        end if
