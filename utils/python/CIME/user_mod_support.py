@@ -56,6 +56,9 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                             expect(False, "Could not write file %s in caseroot %s"
                                    %(case_source_mods,caseroot))
 
+    # Reverse include_dirs to make sure xmlchange commands are called in the
+    # correct order; it may be desireable to reverse include_dirs above the
+    # previous loop and then append user_nl changes rather than prepend them.
     include_dirs.reverse()
     for include_dir in include_dirs:
         # create xmlchange_cmnds and shell_commands in caseroot
