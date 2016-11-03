@@ -77,6 +77,8 @@ module soundings
         type (MPAS_time_type) :: now
 
 
+        simulationClock => simulation_clock
+
         call mpas_pool_get_subpool(all_pools, 'mesh', mesh)
         call mpas_pool_get_subpool(all_pools, 'state', state)
         call mpas_pool_get_subpool(all_pools, 'diag', diag)
@@ -94,7 +96,6 @@ module soundings
             return
         end if
       
-        simulationClock => simulation_clock
         call MPAS_set_timeInterval(intv, timeString=trim(soundingInterval))
         now = MPAS_get_clock_time(simulationClock, MPAS_NOW)
         call MPAS_add_clock_alarm(simulationClock, 'soundingAlarm', now, alarmTimeInterval=intv) 
