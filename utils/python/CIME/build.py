@@ -487,7 +487,7 @@ def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incro
 ###############################################################################
     with open(file_build, "w") as fd:
         stat = run_cmd("MODEL=%s SMP=%s %s/buildlib %s %s %s " %
-                       (compclass, stringify_bool(smp), config_dir, caseroot, bldroot, libroot),
+                       (compclass, stringify_bool(smp), config_dir, caseroot, libroot, bldroot),
                        from_dir=bldroot, verbose=True, arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
     analyze_build_log(compclass, file_build, compiler)
