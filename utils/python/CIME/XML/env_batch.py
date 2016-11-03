@@ -336,6 +336,9 @@ class EnvBatch(EnvBase):
                         rval = eval(val)
                     except:
                         rval = val
+                    # need a correction for tasks per node 
+                    if flag == "-n" and rval<= 0:
+                        rval = 1
 
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:

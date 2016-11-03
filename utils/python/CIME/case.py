@@ -983,6 +983,12 @@ class Case(object):
             }
 
         executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+        # special case for aprun if using < 1 full node
+        if executable == "aprun":
+            totalpes = self.get_value("TOTALPES")
+            pes_per_node = self.get_value("PES_PER_NODE")
+            if totalpes < pes_per_node:
+                args["tasks_per_node"] = "-N "+str(totalpes)
 
         mpi_arg_string = " ".join(args.values())
 

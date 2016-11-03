@@ -590,6 +590,24 @@ for mct, etc.
   <MPICXX> CC </MPICXX>
 </compiler>
 
+<compiler COMPILER="intel" MACH="theta">
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -xMIC-AVX512 </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -xMIC-AVX512 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -xMIC-AVX512 </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g -xMIC-AVX512 </ADD_CFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_SLIBS> -L$(NETCDF_DIR)/lib -lnetcdff -L$(NETCDF_DIR)/lib -lnetcdf -Wl,-rpath -Wl,$(NETCDF_DIR)/lib </ADD_SLIBS>
+  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
+  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="mac">
   <NETCDF_PATH> $(NETCDF_PATH)</NETCDF_PATH>
   <ADD_LDFLAGS>-framework Accelerate</ADD_LDFLAGS>

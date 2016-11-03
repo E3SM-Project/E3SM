@@ -409,7 +409,9 @@ class EnvMachSpecific(EnvBase):
                                            default=arg_node.get("default"))
                 args[arg_node.get("name")] = arg_value
 
-        executable = self.get_node("executable", root=the_match)
+        exec_node = self.get_node("executable", root=the_match)
+        expect(exec_node is not None,"No executable found")
+        executable = exec_node.text
 
-        return executable.text, args
+        return executable, args
 
