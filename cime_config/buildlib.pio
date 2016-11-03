@@ -95,7 +95,7 @@ def _main_func(description):
                         shutil.copy2(item, "%s/include"%installpath)
             expect_string = "D_NETCDF;"
             pnetcdf_string = "D_PNETCDF"
-            netcdf4_string = "D_NETCDF4P"
+            netcdf4_string = "D_NETCDF4"
         else:
             globs_to_copy = (os.path.join("src","clib","libpioc.*"),
                              os.path.join("src","flib","libpiof.*"),
