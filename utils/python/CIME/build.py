@@ -59,7 +59,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         # thread_bad_results captures error output from thread (expected to be empty)
         # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
-            args=(config_dir, model, caseroot, bldroot, libroot, incroot, file_build,
+            args=(config_dir, model, caseroot, libroot, bldroot, incroot, file_build,
                   thread_bad_results, smp, compiler))
         t.start()
 
@@ -80,7 +80,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             logger.debug("Now build aquap ocn component")
             # thread_bad_results captures error output from thread (expected to be empty)
             # logs is a list of log files to be compressed and added to the case logs/bld directory
-            _build_model_thread(config_dir, comp, caseroot, bldroot, libroot, incroot, file_build,
+            _build_model_thread(config_dir, comp, caseroot, libroot, bldroot, incroot, file_build,
                                 thread_bad_results, smp, compiler)
             logs.append(file_build)
     expect(not thread_bad_results, "\n".join(thread_bad_results))
@@ -474,7 +474,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
         # thread_bad_results captures error output from thread (expected to be empty)
         # logs is a list of log files to be compressed and added to the case logs/bld directory
         thread_bad_results = []
-        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot,
+        _build_model_thread(config_lnd_dir, "lnd", caseroot, libroot, bldroot, incroot,
                             file_build, thread_bad_results, smp, compiler)
         logs.append(file_build)
         expect(not thread_bad_results, "\n".join(thread_bad_results))
@@ -482,7 +482,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
     return logs
 
 ###############################################################################
-def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build,
+def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incroot, file_build,
                         thread_bad_results, smp, compiler):
 ###############################################################################
     with open(file_build, "w") as fd:
