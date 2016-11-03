@@ -35,7 +35,7 @@ module cice_constants
 
   ! fundamental constants
   real (kind=RKIND), parameter, public :: &
-       pii = 3.141592653589793, &
+       pii = 3.141592653589793_RKIND, &
        ciceDegreesToRadians = pii / 180.0_RKIND, &
        ciceRadiansToDegrees = 180.0_RKIND / pii, &
        ciceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, &
@@ -45,8 +45,8 @@ module cice_constants
   ! Earth constants
   real (kind=RKIND), parameter, public :: &
        ciceGravity = gravit, &    ! gravitational acceleration (m/s^2)
-       earthRadius = 6371229.0, & ! radius of Earth in [m]
-       omega       = 7.29212e-5   ! angular rotation rate of the Earth [s-1]
+       earthRadius = 6371229.0_RKIND, & ! radius of Earth in [m]
+       omega       = 7.29212e-5_RKIND   ! angular rotation rate of the Earth [s-1]
 
   character (len=*), public, parameter :: &
        coupleAlarmID = 'coupling'
