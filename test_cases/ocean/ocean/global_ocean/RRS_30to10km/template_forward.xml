@@ -1,7 +1,7 @@
 <template>
 	<namelist>
-		<option name="config_dt">'00:01:00'</option>
-		<option name="config_btr_dt">'00:00:03'</option>
+		<option name="config_dt">'00:10:00'</option>
+		<option name="config_btr_dt">'00:00:24'</option>
 		<option name="config_run_duration">'0000_00:01:00'</option>
 		<option name="config_mom_del4">1.5e10</option>
 		<option name="config_hmix_scaleWithMesh">.true.</option>
