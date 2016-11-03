@@ -140,15 +140,11 @@ module atm_time_integration
    !                  and some diagnostics in diag 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
-      use ieee_arithmetic, only : ieee_is_nan
-
       implicit none
 
       type (domain_type), intent(inout) :: domain
       real (kind=RKIND), intent(in) :: dt
       integer, intent(in) :: itimestep
-
-      real (kind=RKIND), parameter :: pi_const = 2.0_RKIND*asin(1.0_RKIND)
 
       integer :: thread
       integer :: iCell, k, iEdge
@@ -167,17 +163,11 @@ module atm_time_integration
       integer :: dynamics_substep, dynamics_split
       real (kind=RKIND) :: dt_dynamics
 
-      real (kind=RKIND) :: scalar_min, scalar_max
-      real (kind=RKIND) :: global_scalar_min, global_scalar_max
-
       integer, pointer :: config_number_of_sub_steps
       integer, pointer :: config_time_integration_order
       logical, pointer :: config_scalar_advection
       logical, pointer :: config_positive_definite
       logical, pointer :: config_monotonic
-      logical, pointer :: config_print_global_minmax_vel
-      logical, pointer :: config_print_detailed_minmax_vel
-      logical, pointer :: config_print_global_minmax_sca
       real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: config_microp_scheme
       character (len=StrKIND), pointer :: config_convection_scheme
@@ -211,23 +201,11 @@ module atm_time_integration
       type (field2DReal), pointer :: pv_edge_field
       type (field2DReal), pointer :: rho_edge_field
 
-      real (kind=RKIND) :: spd
       real (kind=RKIND), dimension(:,:), pointer :: w
-      real (kind=RKIND), dimension(:,:), pointer :: u, v, uReconstructZonal, uReconstructMeridional, uReconstructX, uReconstructY, uReconstructZ
+      real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructZonal, uReconstructMeridional, uReconstructX, uReconstructY, uReconstructZ
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars, scalars_1, scalars_2
 
       real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
-
-      real (kind=RKIND), dimension(:), pointer :: latCell
-      real (kind=RKIND), dimension(:), pointer :: lonCell
-      real (kind=RKIND), dimension(:), pointer :: latEdge
-      real (kind=RKIND), dimension(:), pointer :: lonEdge
-      integer, dimension(:), pointer :: indexToCellID
-      integer :: indexMax, indexMax_global
-      integer :: kMax, kMax_global
-      real (kind=RKIND) :: latMax, latMax_global
-      real (kind=RKIND) :: lonMax, lonMax_global
-      real (kind=RKIND), dimension(5) :: localVals, globalVals
 
       logical, parameter :: debug = .false.
 
@@ -243,9 +221,6 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_convection_scheme', config_convection_scheme)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_vel', config_print_global_minmax_vel)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_print_detailed_minmax_vel', config_print_detailed_minmax_vel)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_sca', config_print_global_minmax_sca)
 
       !  config variables for dynamics-transport splitting, WCS 18 November 2014
       call mpas_pool_get_config(domain % blocklist % configs, 'config_split_dynamics_transport', config_split_dynamics_transport)
@@ -1089,296 +1064,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       end do
 #endif
 
-
-      if (config_print_detailed_minmax_vel) then
-         write(0,*) ' '
-
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-            call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-
-            call mpas_pool_get_array(state, 'w', w, 2)
-            call mpas_pool_get_array(state, 'u', u, 2)
-            call mpas_pool_get_array(diag, 'v', v)
-            call mpas_pool_get_array(mesh, 'indexToCellID', indexToCellID)
-            call mpas_pool_get_array(mesh, 'latCell', latCell)
-            call mpas_pool_get_array(mesh, 'lonCell', lonCell)
-            call mpas_pool_get_array(mesh, 'latEdge', latEdge)
-            call mpas_pool_get_array(mesh, 'lonEdge', lonEdge)
-            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
-            call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
-            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
-
-            scalar_min = 1.0e20
-            indexMax = -1
-            kMax = -1
-            latMax = 0.0
-            lonMax = 0.0
-            do iCell = 1, nCellsSolve
-            do k = 1, nVertLevels
-               if (w(k,iCell) < scalar_min) then
-                  scalar_min = w(k,iCell)
-                  indexMax = iCell
-                  kMax = k
-                  latMax = latCell(iCell)
-                  lonMax = lonCell(iCell)
-               end if
-            end do
-            end do
-            localVals(1) = scalar_min
-            localVals(2) = real(indexMax,kind=RKIND)
-            localVals(3) = real(kMax,kind=RKIND)
-            localVals(4) = latMax
-            localVals(5) = lonMax
-            call mpas_dmpar_minattributes_real(domain % dminfo, scalar_min, localVals, globalVals)
-            global_scalar_min = globalVals(1)
-            indexMax_global = int(globalVals(2))
-            kMax_global = int(globalVals(3))
-            latMax_global = globalVals(4)
-            lonMax_global = globalVals(5)
-            latMax_global = latMax_global * 180.0_RKIND / pi_const
-            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
-            if (lonMax_global > 180.0) then
-               lonMax_global = lonMax_global - 360.0
-            end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min w: ', global_scalar_min, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
-
-            scalar_max = -1.0e20
-            indexMax = -1
-            kMax = -1
-            latMax = 0.0
-            lonMax = 0.0
-            do iCell = 1, nCellsSolve
-            do k = 1, nVertLevels
-               if (w(k,iCell) > scalar_max) then
-                  scalar_max = w(k,iCell)
-                  indexMax = iCell
-                  kMax = k
-                  latMax = latCell(iCell)
-                  lonMax = lonCell(iCell)
-               end if
-            end do
-            end do
-            localVals(1) = scalar_max
-            localVals(2) = real(indexMax,kind=RKIND)
-            localVals(3) = real(kMax,kind=RKIND)
-            localVals(4) = latMax
-            localVals(5) = lonMax
-            call mpas_dmpar_maxattributes_real(domain % dminfo, scalar_max, localVals, globalVals)
-            global_scalar_max = globalVals(1)
-            indexMax_global = int(globalVals(2))
-            kMax_global = int(globalVals(3))
-            latMax_global = globalVals(4)
-            lonMax_global = globalVals(5)
-            latMax_global = latMax_global * 180.0_RKIND / pi_const
-            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
-            if (lonMax_global > 180.0) then
-               lonMax_global = lonMax_global - 360.0
-            end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max w: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
-
-            scalar_min = 1.0e20
-            indexMax = -1
-            kMax = -1
-            latMax = 0.0
-            lonMax = 0.0
-            do iEdge = 1, nEdgesSolve
-            do k = 1, nVertLevels
-               if (u(k,iEdge) < scalar_min) then
-                  scalar_min = u(k,iEdge)
-                  indexMax = iEdge
-                  kMax = k
-                  latMax = latEdge(iEdge)
-                  lonMax = lonEdge(iEdge)
-               end if
-            end do
-            end do
-            localVals(1) = scalar_min
-            localVals(2) = real(indexMax,kind=RKIND)
-            localVals(3) = real(kMax,kind=RKIND)
-            localVals(4) = latMax
-            localVals(5) = lonMax
-            call mpas_dmpar_minattributes_real(domain % dminfo, scalar_min, localVals, globalVals)
-            global_scalar_min = globalVals(1)
-            indexMax_global = int(globalVals(2))
-            kMax_global = int(globalVals(3))
-            latMax_global = globalVals(4)
-            lonMax_global = globalVals(5)
-            latMax_global = latMax_global * 180.0_RKIND / pi_const
-            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
-            if (lonMax_global > 180.0) then
-               lonMax_global = lonMax_global - 360.0
-            end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min u: ', global_scalar_min, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
-
-            scalar_max = -1.0e20
-            indexMax = -1
-            kMax = -1
-            latMax = 0.0
-            lonMax = 0.0
-            do iEdge = 1, nEdgesSolve
-            do k = 1, nVertLevels
-               if (u(k,iEdge) > scalar_max) then
-                  scalar_max = u(k,iEdge)
-                  indexMax = iEdge
-                  kMax = k
-                  latMax = latEdge(iEdge)
-                  lonMax = lonEdge(iEdge)
-               end if
-            end do
-            end do
-            localVals(1) = scalar_max
-            localVals(2) = real(indexMax,kind=RKIND)
-            localVals(3) = real(kMax,kind=RKIND)
-            localVals(4) = latMax
-            localVals(5) = lonMax
-            call mpas_dmpar_maxattributes_real(domain % dminfo, scalar_max, localVals, globalVals)
-            global_scalar_max = globalVals(1)
-            indexMax_global = int(globalVals(2))
-            kMax_global = int(globalVals(3))
-            latMax_global = globalVals(4)
-            lonMax_global = globalVals(5)
-            latMax_global = latMax_global * 180.0_RKIND / pi_const
-            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
-            if (lonMax_global > 180.0) then
-               lonMax_global = lonMax_global - 360.0
-            end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max u: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
-
-            scalar_max = -1.0e20
-            indexMax = -1
-            kMax = -1
-            latMax = 0.0
-            lonMax = 0.0
-            do iEdge = 1, nEdgesSolve
-            do k = 1, nVertLevels
-               spd = sqrt(u(k,iEdge)*u(k,iEdge) + v(k,iEdge)*v(k,iEdge))
-               if (spd > scalar_max) then
-                  scalar_max = spd
-                  indexMax = iEdge
-                  kMax = k
-                  latMax = latEdge(iEdge)
-                  lonMax = lonEdge(iEdge)
-               end if
-            end do
-            end do
-            localVals(1) = scalar_max
-            localVals(2) = real(indexMax,kind=RKIND)
-            localVals(3) = real(kMax,kind=RKIND)
-            localVals(4) = latMax
-            localVals(5) = lonMax
-            call mpas_dmpar_maxattributes_real(domain % dminfo, scalar_max, localVals, globalVals)
-            global_scalar_max = globalVals(1)
-            indexMax_global = int(globalVals(2))
-            kMax_global = int(globalVals(3))
-            latMax_global = globalVals(4)
-            lonMax_global = globalVals(5)
-            latMax_global = latMax_global * 180.0_RKIND / pi_const
-            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
-            if (lonMax_global > 180.0) then
-               lonMax_global = lonMax_global - 360.0
-            end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max wsp: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
-
-            !
-            ! Check for NaNs
-            !
-            do iCell = 1, nCellsSolve
-            do k = 1, nVertLevels
-               if (ieee_is_nan(w(k,iCell))) then
-                  call mpas_dmpar_global_abort('NaN detected in ''w'' field.')
-               end if
-            end do
-            end do
-
-            do iEdge = 1, nEdgesSolve
-            do k = 1, nVertLevels
-               if (ieee_is_nan(u(k,iEdge))) then
-                  call mpas_dmpar_global_abort('NaN detected in ''u'' field.')
-               end if
-            end do
-            end do
-
-            block => block % next
-         end do
-
-      else if (config_print_global_minmax_vel) then
-         write(0,*) ' '
-
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-
-            call mpas_pool_get_array(state, 'w', w, 2)
-            call mpas_pool_get_array(state, 'u', u, 2)
-            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
-            call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
-            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
-
-            scalar_min = 0.0
-            scalar_max = 0.0
-            do iCell = 1, nCellsSolve
-            do k = 1, nVertLevels
-               scalar_min = min(scalar_min, w(k,iCell))
-               scalar_max = max(scalar_max, w(k,iCell))
-            end do
-            end do
-            call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
-            call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-            write(0,*) 'global min, max w ', global_scalar_min, global_scalar_max
-
-            scalar_min = 0.0
-            scalar_max = 0.0
-            do iEdge = 1, nEdgesSolve
-            do k = 1, nVertLevels
-               scalar_min = min(scalar_min, u(k,iEdge))
-               scalar_max = max(scalar_max, u(k,iEdge))
-            end do
-            end do
-            call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
-            call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-            write(0,*) 'global min, max u ', global_scalar_min, global_scalar_max
-
-            block => block % next
-         end do
-      end if
-
-      if (config_print_global_minmax_sca) then
-         if (.not. (config_print_global_minmax_vel .or. config_print_detailed_minmax_vel)) write(0,*) ' '
-
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-
-            call mpas_pool_get_array(state, 'scalars', scalars, 2)
-            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
-            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
-            call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
-
-            do iScalar = 1, num_scalars
-               scalar_min = 0.0
-               scalar_max = 0.0
-               do iCell = 1, nCellsSolve
-               do k = 1, nVertLevels
-                  scalar_min = min(scalar_min, scalars(iScalar,k,iCell))
-                  scalar_max = max(scalar_max, scalars(iScalar,k,iCell))
-               end do
-               end do
-               call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
-               call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-               write(0,'(a,i4,2(1x,e17.10))') ' global min, max scalar ', iScalar, global_scalar_min, global_scalar_max
-            end do
-
-            block => block % next
-         end do
-      end if
+      call summarize_timestep(domain)
 
    end subroutine atm_srk3
 
@@ -5745,5 +5431,343 @@ MPAS_GPTL_STOP('mono_exch_2')
 
    end subroutine atm_rk_dynamics_substep_finish
 
+
+   subroutine summarize_timestep(domain)
+
+       use ieee_arithmetic, only : ieee_is_nan
+
+       implicit none
+
+       type (domain_type), intent(inout) :: domain
+
+       real (kind=RKIND), parameter :: pi_const = 2.0_RKIND*asin(1.0_RKIND)
+
+       logical, pointer :: config_print_global_minmax_vel
+       logical, pointer :: config_print_detailed_minmax_vel
+       logical, pointer :: config_print_global_minmax_sca
+
+       type (block_type), pointer :: block
+
+       integer :: iCell, k, iEdge, iScalar
+       integer, pointer :: num_scalars, nCellsSolve, nEdgesSolve, nVertLevels
+
+       type (mpas_pool_type), pointer :: state
+       type (mpas_pool_type), pointer :: diag
+       type (mpas_pool_type), pointer :: mesh
+
+       real (kind=RKIND) :: scalar_min, scalar_max
+       real (kind=RKIND) :: global_scalar_min, global_scalar_max
+
+       real (kind=RKIND), dimension(:), pointer :: latCell
+       real (kind=RKIND), dimension(:), pointer :: lonCell
+       real (kind=RKIND), dimension(:), pointer :: latEdge
+       real (kind=RKIND), dimension(:), pointer :: lonEdge
+       integer, dimension(:), pointer :: indexToCellID
+       integer :: indexMax, indexMax_global
+       integer :: kMax, kMax_global
+       real (kind=RKIND) :: latMax, latMax_global
+       real (kind=RKIND) :: lonMax, lonMax_global
+       real (kind=RKIND), dimension(5) :: localVals, globalVals
+
+       real (kind=RKIND) :: spd
+       real (kind=RKIND), dimension(:,:), pointer :: w
+       real (kind=RKIND), dimension(:,:), pointer :: u, v, uReconstructZonal, uReconstructMeridional, uReconstructX, uReconstructY, uReconstructZ
+       real (kind=RKIND), dimension(:,:,:), pointer :: scalars, scalars_1, scalars_2
+
+       call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_vel', config_print_global_minmax_vel)
+       call mpas_pool_get_config(domain % blocklist % configs, 'config_print_detailed_minmax_vel', config_print_detailed_minmax_vel)
+       call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_sca', config_print_global_minmax_sca)
+
+      if (config_print_detailed_minmax_vel) then
+         write(0,*) ' '
+
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+
+            call mpas_pool_get_array(state, 'w', w, 2)
+            call mpas_pool_get_array(state, 'u', u, 2)
+            call mpas_pool_get_array(diag, 'v', v)
+            call mpas_pool_get_array(mesh, 'indexToCellID', indexToCellID)
+            call mpas_pool_get_array(mesh, 'latCell', latCell)
+            call mpas_pool_get_array(mesh, 'lonCell', lonCell)
+            call mpas_pool_get_array(mesh, 'latEdge', latEdge)
+            call mpas_pool_get_array(mesh, 'lonEdge', lonEdge)
+            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
+            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+
+            scalar_min = 1.0e20
+            indexMax = -1
+            kMax = -1
+            latMax = 0.0
+            lonMax = 0.0
+            do iCell = 1, nCellsSolve
+            do k = 1, nVertLevels
+               if (w(k,iCell) < scalar_min) then
+                  scalar_min = w(k,iCell)
+                  indexMax = iCell
+                  kMax = k
+                  latMax = latCell(iCell)
+                  lonMax = lonCell(iCell)
+               end if
+            end do
+            end do
+            localVals(1) = scalar_min
+            localVals(2) = real(indexMax,kind=RKIND)
+            localVals(3) = real(kMax,kind=RKIND)
+            localVals(4) = latMax
+            localVals(5) = lonMax
+            call mpas_dmpar_minattributes_real(domain % dminfo, scalar_min, localVals, globalVals)
+            global_scalar_min = globalVals(1)
+            indexMax_global = int(globalVals(2))
+            kMax_global = int(globalVals(3))
+            latMax_global = globalVals(4)
+            lonMax_global = globalVals(5)
+            latMax_global = latMax_global * 180.0_RKIND / pi_const
+            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
+            if (lonMax_global > 180.0) then
+               lonMax_global = lonMax_global - 360.0
+            end if
+            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min w: ', global_scalar_min, &
+                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+
+            scalar_max = -1.0e20
+            indexMax = -1
+            kMax = -1
+            latMax = 0.0
+            lonMax = 0.0
+            do iCell = 1, nCellsSolve
+            do k = 1, nVertLevels
+               if (w(k,iCell) > scalar_max) then
+                  scalar_max = w(k,iCell)
+                  indexMax = iCell
+                  kMax = k
+                  latMax = latCell(iCell)
+                  lonMax = lonCell(iCell)
+               end if
+            end do
+            end do
+            localVals(1) = scalar_max
+            localVals(2) = real(indexMax,kind=RKIND)
+            localVals(3) = real(kMax,kind=RKIND)
+            localVals(4) = latMax
+            localVals(5) = lonMax
+            call mpas_dmpar_maxattributes_real(domain % dminfo, scalar_max, localVals, globalVals)
+            global_scalar_max = globalVals(1)
+            indexMax_global = int(globalVals(2))
+            kMax_global = int(globalVals(3))
+            latMax_global = globalVals(4)
+            lonMax_global = globalVals(5)
+            latMax_global = latMax_global * 180.0_RKIND / pi_const
+            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
+            if (lonMax_global > 180.0) then
+               lonMax_global = lonMax_global - 360.0
+            end if
+            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max w: ', global_scalar_max, &
+                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+
+            scalar_min = 1.0e20
+            indexMax = -1
+            kMax = -1
+            latMax = 0.0
+            lonMax = 0.0
+            do iEdge = 1, nEdgesSolve
+            do k = 1, nVertLevels
+               if (u(k,iEdge) < scalar_min) then
+                  scalar_min = u(k,iEdge)
+                  indexMax = iEdge
+                  kMax = k
+                  latMax = latEdge(iEdge)
+                  lonMax = lonEdge(iEdge)
+               end if
+            end do
+            end do
+            localVals(1) = scalar_min
+            localVals(2) = real(indexMax,kind=RKIND)
+            localVals(3) = real(kMax,kind=RKIND)
+            localVals(4) = latMax
+            localVals(5) = lonMax
+            call mpas_dmpar_minattributes_real(domain % dminfo, scalar_min, localVals, globalVals)
+            global_scalar_min = globalVals(1)
+            indexMax_global = int(globalVals(2))
+            kMax_global = int(globalVals(3))
+            latMax_global = globalVals(4)
+            lonMax_global = globalVals(5)
+            latMax_global = latMax_global * 180.0_RKIND / pi_const
+            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
+            if (lonMax_global > 180.0) then
+               lonMax_global = lonMax_global - 360.0
+            end if
+            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min u: ', global_scalar_min, &
+                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+
+            scalar_max = -1.0e20
+            indexMax = -1
+            kMax = -1
+            latMax = 0.0
+            lonMax = 0.0
+            do iEdge = 1, nEdgesSolve
+            do k = 1, nVertLevels
+               if (u(k,iEdge) > scalar_max) then
+                  scalar_max = u(k,iEdge)
+                  indexMax = iEdge
+                  kMax = k
+                  latMax = latEdge(iEdge)
+                  lonMax = lonEdge(iEdge)
+               end if
+            end do
+            end do
+            localVals(1) = scalar_max
+            localVals(2) = real(indexMax,kind=RKIND)
+            localVals(3) = real(kMax,kind=RKIND)
+            localVals(4) = latMax
+            localVals(5) = lonMax
+            call mpas_dmpar_maxattributes_real(domain % dminfo, scalar_max, localVals, globalVals)
+            global_scalar_max = globalVals(1)
+            indexMax_global = int(globalVals(2))
+            kMax_global = int(globalVals(3))
+            latMax_global = globalVals(4)
+            lonMax_global = globalVals(5)
+            latMax_global = latMax_global * 180.0_RKIND / pi_const
+            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
+            if (lonMax_global > 180.0) then
+               lonMax_global = lonMax_global - 360.0
+            end if
+            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max u: ', global_scalar_max, &
+                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+
+            scalar_max = -1.0e20
+            indexMax = -1
+            kMax = -1
+            latMax = 0.0
+            lonMax = 0.0
+            do iEdge = 1, nEdgesSolve
+            do k = 1, nVertLevels
+               spd = sqrt(u(k,iEdge)*u(k,iEdge) + v(k,iEdge)*v(k,iEdge))
+               if (spd > scalar_max) then
+                  scalar_max = spd
+                  indexMax = iEdge
+                  kMax = k
+                  latMax = latEdge(iEdge)
+                  lonMax = lonEdge(iEdge)
+               end if
+            end do
+            end do
+            localVals(1) = scalar_max
+            localVals(2) = real(indexMax,kind=RKIND)
+            localVals(3) = real(kMax,kind=RKIND)
+            localVals(4) = latMax
+            localVals(5) = lonMax
+            call mpas_dmpar_maxattributes_real(domain % dminfo, scalar_max, localVals, globalVals)
+            global_scalar_max = globalVals(1)
+            indexMax_global = int(globalVals(2))
+            kMax_global = int(globalVals(3))
+            latMax_global = globalVals(4)
+            lonMax_global = globalVals(5)
+            latMax_global = latMax_global * 180.0_RKIND / pi_const
+            lonMax_global = lonMax_global * 180.0_RKIND / pi_const
+            if (lonMax_global > 180.0) then
+               lonMax_global = lonMax_global - 360.0
+            end if
+            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max wsp: ', global_scalar_max, &
+                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+
+            !
+            ! Check for NaNs
+            !
+            do iCell = 1, nCellsSolve
+            do k = 1, nVertLevels
+               if (ieee_is_nan(w(k,iCell))) then
+                  call mpas_dmpar_global_abort('NaN detected in ''w'' field.')
+               end if
+            end do
+            end do
+
+            do iEdge = 1, nEdgesSolve
+            do k = 1, nVertLevels
+               if (ieee_is_nan(u(k,iEdge))) then
+                  call mpas_dmpar_global_abort('NaN detected in ''u'' field.')
+               end if
+            end do
+            end do
+
+            block => block % next
+         end do
+
+      else if (config_print_global_minmax_vel) then
+         write(0,*) ' '
+
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+
+            call mpas_pool_get_array(state, 'w', w, 2)
+            call mpas_pool_get_array(state, 'u', u, 2)
+            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
+            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+
+            scalar_min = 0.0
+            scalar_max = 0.0
+            do iCell = 1, nCellsSolve
+            do k = 1, nVertLevels
+               scalar_min = min(scalar_min, w(k,iCell))
+               scalar_max = max(scalar_max, w(k,iCell))
+            end do
+            end do
+            call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+            call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
+            write(0,*) 'global min, max w ', global_scalar_min, global_scalar_max
+
+            scalar_min = 0.0
+            scalar_max = 0.0
+            do iEdge = 1, nEdgesSolve
+            do k = 1, nVertLevels
+               scalar_min = min(scalar_min, u(k,iEdge))
+               scalar_max = max(scalar_max, u(k,iEdge))
+            end do
+            end do
+            call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+            call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
+            write(0,*) 'global min, max u ', global_scalar_min, global_scalar_max
+
+            block => block % next
+         end do
+      end if
+
+      if (config_print_global_minmax_sca) then
+         if (.not. (config_print_global_minmax_vel .or. config_print_detailed_minmax_vel)) write(0,*) ' '
+
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+
+            call mpas_pool_get_array(state, 'scalars', scalars, 2)
+            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+            call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+
+            do iScalar = 1, num_scalars
+               scalar_min = 0.0
+               scalar_max = 0.0
+               do iCell = 1, nCellsSolve
+               do k = 1, nVertLevels
+                  scalar_min = min(scalar_min, scalars(iScalar,k,iCell))
+                  scalar_max = max(scalar_max, scalars(iScalar,k,iCell))
+               end do
+               end do
+               call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+               call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
+               write(0,'(a,i4,2(1x,e17.10))') ' global min, max scalar ', iScalar, global_scalar_min, global_scalar_max
+            end do
+
+            block => block % next
+         end do
+      end if
+
+   end subroutine summarize_timestep
 
 end module atm_time_integration
