@@ -68,9 +68,13 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
             case_shell_commands = shell_commands_file.replace(include_dir, caseroot)
             # add commands from both shell_commands and xmlchange_cmnds to
             # the same file (caseroot/shell_commands)
+            case_shell_commands = case_shell_commands.replace("xmlchange_cmnds","shell_commands")
             # Note that use of xmlchange_cmnds has been deprecated and will soon
             # be removed altogether, so new tests should rely on shell_commands
-            case_shell_commands = case_shell_commands.replace("xmlchange_cmnds","shell_commands")
+            if shell_commands_file.endswith("xmlchange_cmnds"):
+                logger.warn("xmlchange_cmnds is deprecated and will be removed " +\
+                            "in a future release; please rename this file " +\
+                            "shell_commands")
             with open(shell_commands_file,"r") as fd:
                 new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
             with open(case_shell_commands, "a") as fd:
