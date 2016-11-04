@@ -395,7 +395,7 @@
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
-  <machine MACH="corip2">
+  <machine MACH="cori-knl">
     <DESC>NERSC XC* KNL, os is CNL, 68 pes/node, batch system is Slurm</DESC>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>

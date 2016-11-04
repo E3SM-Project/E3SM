@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy   import deepcopy
-import glob, os, shutil, traceback
+import glob, os, shutil, traceback, math
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
@@ -110,10 +110,10 @@ class Case(object):
         """
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
-        total_tasks = self.get_value("TOTALPES")
+        total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
-        
+        logger.warn("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
         self.num_nodes = env_mach_pes.get_total_nodes(total_tasks, self.thread_count)
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
         smt_factor = self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")
