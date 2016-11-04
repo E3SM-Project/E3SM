@@ -1178,26 +1178,46 @@ contains
 
       ! landIceFreshwaterFlux
       variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
-      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      if (associated(landIceFreshwaterFlux)) then
+         averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
+         rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      else
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+      end if
 
       ! continue accumulating fresh water inputs
       netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
 
       ! accumulatedLandIceMass
       variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
-      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      if (associated(accumulatedLandIceMass)) then
+         averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
+         rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      else
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+      end if
 
       ! accumulatedLandIceHeat
       variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
-      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      if (associated(accumulatedLandIceHeat)) then
+         averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
+         rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      else
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+      end if
 
       ! accumulatedLandIceFrazilMass
       variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
-      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      if (associated(accumulatedLandIceFrazilMass)) then
+         averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
+         rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      else
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+      end if
 
       ! calculate fresh water conservation check quantities
       absoluteFreshWaterConservation = totalVolumeChange - netFreshwaterInput
