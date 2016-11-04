@@ -38,7 +38,6 @@ class TaskMaker(object):
 
         self.DEFAULT_RUN_EXE_TEMPLATE_STR = "__DEFAULT_RUN_EXE__"
         self.MAX_TASKS_PER_NODE = 1 if self.MAX_TASKS_PER_NODE < 1 else self.MAX_TASKS_PER_NODE
-
         self._compute_values()
 
     def _compute_values(self):
@@ -76,7 +75,7 @@ class TaskMaker(object):
                     maxt[total_tasks] = 0
                     total_tasks -= 1
 
-        logger.info("total tasks is: %s" % total_tasks)
+#        logger.info("total tasks is: %s" % total_tasks)
 
         # compute min/max threads over all mpi tasks and sum threads
 	# reset maxt values from zero to one after checking for min values
@@ -163,7 +162,7 @@ class TaskMaker(object):
 	# add all the calculated numbers as instance data.
         self.totaltasks = total_tasks
         self.num_tasks   = total_tasks
-        self.tasks_per_node = max_tasks_per_node
+        self.tasks_per_node = tasks_per_node
         self.tasks_per_numa = task_per_numa
         self.maxthreads = max_threads
         self.min_threads = min_threads
@@ -175,6 +174,10 @@ class TaskMaker(object):
         self.opt_node_count = total_node_count
         self.num_nodes = max_total_node_count
         self.pbsrs = pbsrs + "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=$MODEL" % (max_total_node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
+        smt_factor = self.MAX_TASKS_PER_NODE/self.PES_PER_NODE
+
+        self.cores_per_task = ((self.MAX_TASKS_PER_NODE/smt_factor) \
+                               / self.tasks_per_node) * 2
 
         # calculate ptile..
         if self.MAX_TASKS_PER_NODE > self.PES_PER_NODE:

@@ -28,7 +28,7 @@ from CIME.XML.env_build             import EnvBuild
 from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
-
+from CIME.task_maker                import TaskMaker
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
 
@@ -91,6 +91,31 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_classes = []
+        
+        self.thread_count = None
+        self.tasks_per_node = None
+        self.num_nodes = None
+        self.tasks_per_numa = None
+        self.cores_per_task = None
+
+        # check if case has been configured and if so initialize derived
+        if self.get_value("CASEROOT") is not None:
+            self.initialize_derived_attributes()
+
+    def initialize_derived_attributes(self):
+        """
+        These are derived variables which can be used in the config_* files 
+        for variable substitution using the {{ var }} syntax
+        """
+        task_maker = TaskMaker(self)
+        self.thread_count = task_maker.thread_count
+        self.tasks_per_node = task_maker.tasks_per_node
+        self.num_nodes = task_maker.num_nodes
+        self.tasks_per_numa = task_maker.tasks_per_numa
+        smt_factor = self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")
+        
+        self.cores_per_task = ((self.get_value("MAX_TASKS_PER_NODE")/smt_factor) \
+                               / self.tasks_per_node) * 2
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -656,7 +681,7 @@ class Case(object):
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
 
-
+        self.initialize_derived_attributes()
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
