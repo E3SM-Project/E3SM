@@ -473,42 +473,9 @@ module namelist_mod
        nEndStep = nmax
 #endif
 
-       if (integration == "semi_imp") then
-          ! =========================
-          ! set solver defaults
-          ! =========================
-          precon_method = "identity"
-          maxits        = 100
-          tol           = 1.0D-13
-          debug_level   = CG_NO_DEBUG
-
-          print *,'HYPERVIS order = ',hypervis_order
-          if (hypervis_order /= 0) then
-             call abortmp("Error: hypervis_order > 0 not supported for semi-implicit model")
-          endif
-
-          write(iulog,*)"reading solver namelist..."
-#if defined(CAM)
-       unitn=getunit()
-       open( unitn, file=trim(nlfilename), status='old' )
-       ierr = 1
-       do while ( ierr /= 0 )
-          read (unitn,solver_nl,iostat=ierr)
-          if (ierr < 0) then
-             call abortmp( subname//':: namelist read returns an'// &
-                  ' end of file or end of record condition' )
-          end if
-       end do
-       close( unitn )
-       call freeunit( unitn )
-#elif defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-          read(unit=7,nml=solver_nl)
-#else
-          read(*,nml=solver_nl)
-#endif
-       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
+       if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
                     (integration .ne. "full_imp")) then
-          call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
+          call abortmp('integration must be explicit, full_imp, or runge_kutta')
        end if
 
        if (integration == "full_imp") then
@@ -755,7 +722,7 @@ module namelist_mod
 
     call MPI_bcast(uselapi,1,MPIlogical_t,par%root,par%comm,ierr)
 
-    if ((integration == "semi_imp").or.(integration == "full_imp")) then
+    if (integration == "full_imp") then
        call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
        call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
        call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -1050,15 +1017,6 @@ module namelist_mod
 
        write(iulog,*)"readnl: energy_fixer  = ",energy_fixer
        write(iulog,*)"readnl: runtype       = ",runtype
-
-       if (integration == "semi_imp") then
-          print *
-          write(iulog,*)"solver: precon_method  = ",precon_method
-          write(iulog,*)"solver: max iterations = ",maxits
-          write(iulog,*)"solver: tolerance      = ",tol
-          write(iulog,*)"solver: debug_level    = ",debug_level
-       endif
-
 
        if (hypervis_power /= 0)then
           write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power

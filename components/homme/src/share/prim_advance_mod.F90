@@ -52,11 +52,6 @@ contains
 
     call initEdgeBuffer(par,edge3p1,elem,4*nlev)
 
-    if(integration == 'semi_imp') then
-       call initEdgeBuffer(par,edge1,elem,nlev)
-       call initEdgeBuffer(par,edge2,elem,2*nlev)
-    end if
-
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
     allocate(ur_weights(qsplit))
     ur_weights(:)=0.0d0

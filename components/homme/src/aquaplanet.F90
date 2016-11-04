@@ -63,8 +63,6 @@ module aquaplanet
 
 
 
-  logical :: exp_int=.true.
-
   public :: aquaplanet_init_state
   public :: aquaplanet_forcing
   public :: Potential_Temperature
@@ -321,8 +319,6 @@ contains
     real (kind=real_kind), parameter :: href = 7.34D03 ! atmosphere stadart height [m]
     !   real (kind=real_kind), parameter :: href = 6.00D03 ! atmosphere stadart height [m]
 
-    exp_int=.true.
-    if(integration.eq."semi_imp") exp_int=.false.
 
     do k=1,npin
        th(k) =Potential_Temperature(temp(k),press(k),tt00)

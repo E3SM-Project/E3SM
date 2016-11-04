@@ -11,7 +11,7 @@ module control_mod
 
   integer, public, parameter :: MAX_STRING_LEN=240
   integer, public, parameter :: MAX_FILE_LEN=240
-  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
+  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
 ! none of this is used anymore:
   logical, public  :: use_semi_lagrange_transport   = .false.
