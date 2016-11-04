@@ -64,6 +64,7 @@ module ocn_forward_mode
    use ocn_tracer_ecosys
    use ocn_tracer_DMS
    use ocn_tracer_MacroMolecules
+   use ocn_tracer_surface_restoring
    use ocn_gm
 
    use ocn_high_freq_thickness_hmix_del2
@@ -457,6 +458,8 @@ module ocn_forward_mode
 
       logical, pointer :: config_write_output_on_startup
       logical, pointer :: config_use_ecosysTracers
+      logical, pointer :: config_use_activeTracers_surface_restoring
+      logical, pointer :: config_use_surface_salinity_monthly_restoring
 
       ierr = 0
 
@@ -464,6 +467,10 @@ module ocn_forward_mode
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(domain % configs, 'config_sw_absorption_type', config_sw_absorption_type)
       call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+      call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
+                                                   config_use_activeTracers_surface_restoring)
+      call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
+                                                   config_use_surface_salinity_monthly_restoring)
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
@@ -491,6 +498,13 @@ module ocn_forward_mode
         call mpas_timer_start('io_ecosys',.false.)
         call ocn_get_ecosysData(domain % streamManager, domain, domain % clock, .true.)
         call mpas_timer_stop('io_ecosys')
+      endif
+
+      ! read initial data required for monthly surface salinity restoring
+      if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
+        call mpas_timer_start('io_monthly_surface_salinity',.false.)
+        call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_monthly_surface_salinity')
       endif
 
       ! During integration, time level 1 stores the model state at the beginning of the
@@ -581,6 +595,10 @@ module ocn_forward_mode
             if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain)
 
             if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain)
+
+            if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
+               call ocn_salinity_restoring_forcing_write_restart(domain)
+
          end if
 
          call mpas_timer_start('reset_io_alarms')
@@ -604,6 +622,13 @@ module ocn_forward_mode
            call mpas_timer_start('io_ecosys',.false.)
            call ocn_get_ecosysData(domain % streamManager, domain, domain % clock, .false.)
            call mpas_timer_stop('io_ecosys')
+         endif
+
+         ! read next time level data required for monthly surface salinity restoring
+         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
+           call mpas_timer_start('io_monthly_surface_salinity',.false.)
+           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
+           call mpas_timer_stop('io_monthly_surface_salinity')
          endif
 
          ! Validate that the state is OK to run with for the next timestep.
