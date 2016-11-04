@@ -68,6 +68,7 @@ module mpas_init_atm_gwd
       type (mpas_pool_type), pointer :: mesh, state
       integer :: iCell, i
       real (kind=RKIND) :: dc
+      real (kind=RKIND), pointer :: config_gwd_cell_scaling
       integer, pointer :: nCells
       integer, pointer :: nEdges
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -87,6 +88,7 @@ module mpas_init_atm_gwd
 
       call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
       call mpas_pool_get_config(domain % configs, 'config_geog_data_path', config_geog_data_path)
+      call mpas_pool_get_config(domain % configs, 'config_gwd_cell_scaling', config_gwd_cell_scaling)
 
       !
       ! Retrieve pointers to arrays holding the latitudes and longitudes of
@@ -134,6 +136,11 @@ module mpas_init_atm_gwd
          onUnitSphere = .false.
       end if
 
+      if (config_gwd_cell_scaling /= 1.0) then
+         write(stderrUnit,*) 'Using effective cell diameters scaled by a factor of ', config_gwd_cell_scaling
+         write(stderrUnit,*) 'in the computation of GWD static fields.'
+      end if
+
       !
       ! Main loop to compute each of the GWDO fields for every horizontal
       ! grid cell in the mesh.
@@ -152,6 +159,7 @@ module mpas_init_atm_gwd
          if (onUnitSphere) then
             dc = dc * sphere_radius
          end if
+         dc = dc * config_gwd_cell_scaling
 
          !
          ! Cut out a rectangular piece of the global 30-arc-second topography

@@ -69,6 +69,7 @@
         <nml_record name="preproc_stages" in_defaults="true">
                 <nml_option name="config_static_interp"         type="logical"       default_value="true"/>
                 <nml_option name="config_native_gwd_static"     type="logical"       default_value="true"/>
+                <nml_option name="config_gwd_cell_scaling"      type="real"          default_value="1.0"      in_defaults="false"/>
                 <nml_option name="config_vertical_grid"         type="logical"       default_value="true"/>
                 <nml_option name="config_met_interp"            type="logical"       default_value="true"/>
                 <nml_option name="config_input_sst"             type="logical"       default_value="false"/>
