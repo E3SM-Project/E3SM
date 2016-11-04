@@ -171,7 +171,7 @@ module atm_core
       call mpas_dmpar_exch_halo_field(rw_field)
 
       call mpas_atm_diag_setup(domain % streamManager, domain % blocklist % configs, &
-                               domain % blocklist % structs, domain % clock)
+                               domain % blocklist % structs, domain % clock, domain % dminfo)
 
    end function atm_core_init
 
