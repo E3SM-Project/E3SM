@@ -42,6 +42,7 @@ module init_atm_cases
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       use mpas_stream_manager
+      use mpas_init_atm_gwd, only : compute_gwd_fields
 
       implicit none
 
@@ -50,6 +51,7 @@ module init_atm_cases
 
 
       integer :: i
+      integer :: ierr
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: mesh
@@ -60,6 +62,7 @@ module init_atm_cases
 
       integer, pointer :: config_init_case
       logical, pointer :: config_static_interp
+      logical, pointer :: config_native_gwd_static
       logical, pointer :: config_met_interp
 
       character(len=StrKIND), pointer :: mminlu
@@ -173,6 +176,7 @@ module init_atm_cases
          do while (associated(block_ptr))
 
             call mpas_pool_get_config(block_ptr % configs, 'config_static_interp', config_static_interp)
+            call mpas_pool_get_config(block_ptr % configs, 'config_native_gwd_static', config_native_gwd_static)
             call mpas_pool_get_config(block_ptr % configs, 'config_met_interp', config_met_interp)
 
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
@@ -205,6 +209,20 @@ module init_atm_cases
 
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
                call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
+            end if
+
+            if (config_native_gwd_static) then
+               write(0,*) ' '
+               write(0,*) 'Computing GWDO static fields on the native MPAS mesh'
+               write(0,*) ' '
+               ierr = compute_gwd_fields(domain)
+               if (ierr /= 0) then
+                  write(0,*) '****************************************************************'
+                  write(0,*) 'Error while trying to compute sub-grid-scale orography'
+                  write(0,*) 'statistics for use with the GWDO scheme.'
+                  write(0,*) '****************************************************************'
+                  call mpas_dmpar_global_abort('Error calculating GWDO statistics')
+               end if
             end if
 
             !
