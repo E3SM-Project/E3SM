@@ -47,25 +47,28 @@ module soundings
     !>  which grid cell contains each of the locations.
     !
     !-----------------------------------------------------------------------
-    subroutine soundings_setup(configs, all_pools, simulation_clock)
+    subroutine soundings_setup(configs, all_pools, simulation_clock, dminfo)
 
-        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type
+        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, dm_info
         use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config
         use mpas_io_units, only : stderrUnit, mpas_new_unit, mpas_release_unit
         use mpas_timekeeping, only : MPAS_timeInterval_type, MPAS_time_type, MPAS_set_timeInterval, &
                                      MPAS_get_clock_time, MPAS_add_clock_alarm, MPAS_NOW
+        use mpas_dmpar, only : IO_NODE, mpas_dmpar_bcast_int, mpas_dmpar_bcast_logical, mpas_dmpar_bcast_char
 
         implicit none
 
         type (MPAS_pool_type), pointer :: configs
         type (MPAS_pool_type), pointer :: all_pools
         type (MPAS_clock_type), pointer :: simulation_clock
+        type (dm_info), intent(in) :: dminfo
 
         character(len=StrKIND), pointer :: soundingInterval
 
         integer :: i, ierr
         integer :: sndUnit
         real (kind=RKIND) :: station_lat, station_lon
+        character (len=StrKIND) :: tempstr
         character (len=StrKIND) :: station_name
         logical :: exists
         integer :: nearestCell
@@ -89,7 +92,10 @@ module soundings
             return
         end if
 
-        inquire(file='sounding_locations.txt', exist=exists)
+        if (dminfo % my_proc_id == IO_NODE) then
+            inquire(file='sounding_locations.txt', exist=exists)
+        end if
+        call mpas_dmpar_bcast_logical(dminfo, exists)
 
         if (.not. exists) then
             write(stderrUnit,*) 'Sounding location file ''sounding_locations.txt'' not found.'
@@ -100,34 +106,46 @@ module soundings
         now = MPAS_get_clock_time(simulationClock, MPAS_NOW)
         call MPAS_add_clock_alarm(simulationClock, 'soundingAlarm', now, alarmTimeInterval=intv) 
 
-        call mpas_new_unit(sndUnit)
+        if (dminfo % my_proc_id == IO_NODE) then
+            call mpas_new_unit(sndUnit)
 
-        open(sndUnit, file='sounding_locations.txt', form='formatted', status='old', iostat=ierr)
+            open(sndUnit, file='sounding_locations.txt', form='formatted', status='old', iostat=ierr)
+        end if
+        call mpas_dmpar_bcast_int(dminfo, ierr)
 
         if (ierr /= 0) then
             write(stderrUnit,*) 'Error opening sounding location file ''sounding_locations.txt'''
-            call mpas_release_unit(sndUnit)
+            if (dminfo % my_proc_id == IO_NODE) then
+                call mpas_release_unit(sndUnit)
+            end if
             return
         end if
 
-        do
-            read(sndUnit, fmt=*, iostat=ierr) station_lat, station_lon, station_name
-            if (ierr == 0) then
-                nSoundings = nSoundings + 1
-            else
-                exit
-            end if
-        end do
+        if (dminfo % my_proc_id == IO_NODE) then
+            do
+                read(sndUnit, fmt=*, iostat=ierr) station_lat, station_lon, station_name
+                if (ierr == 0) then
+                    nSoundings = nSoundings + 1
+                else
+                    exit
+                end if
+            end do
+        end if
+        call mpas_dmpar_bcast_int(dminfo, nSoundings)
 
         if (nSoundings == 0) then
-            close(sndUnit)
-            call mpas_release_unit(sndUnit)
+            if (dminfo % my_proc_id == IO_NODE) then
+                close(sndUnit)
+                call mpas_release_unit(sndUnit)
+            end if
             return
         end if
 
         write(stderrUnit,*) 'Read ', nSoundings, ' sounding locations from ''sounding_locations.txt'''
 
-        rewind(sndUnit)
+        if (dminfo % my_proc_id == IO_NODE) then
+            rewind(sndUnit)
+        end if
 
         allocate(stationOwned(nSoundings))
         allocate(stationLats(nSoundings))
@@ -146,7 +164,11 @@ module soundings
         nearestCell = nCells
 
         do i=1,nSoundings
-            read(sndUnit, fmt=*) stationLats(i), stationLons(i), stationNames(i)
+            if (dminfo % my_proc_id == IO_NODE) then
+                read(sndUnit, fmt='(a)') tempstr
+            end if
+            call mpas_dmpar_bcast_char(dminfo, tempstr)
+            read(tempstr, fmt=*) stationLats(i), stationLons(i), stationNames(i)
             nearestCell = nearest_cell((stationLats(i) * pi_const / 180.0_RKIND), (stationLons(i) * pi_const / 180.0_RKIND), &
                                        nearestCell, nCells, maxEdges, nEdgesOnCell, cellsOnCell, latCell, lonCell)
             if (nearestCell <= nCellsSolve) then
@@ -157,9 +179,11 @@ module soundings
             end if
         end do
 
-        close(sndUnit)
+        if (dminfo % my_proc_id == IO_NODE) then
+            close(sndUnit)
 
-        call mpas_release_unit(sndUnit)
+            call mpas_release_unit(sndUnit)
+        end if
 
     end subroutine soundings_setup
 
