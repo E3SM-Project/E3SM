@@ -26,9 +26,9 @@ module control_mod
   integer, public, parameter :: TRACERTRANSPORT_SEMILAGRANG_GLL = 2
   integer, public, parameter :: TRACERTRANSPORT_LAGRANGIAN_FVM  = 3
   integer, public, parameter :: TRACERTRANSPORT_FLUXFORM_FVM    = 4
-  integer, public            :: tracer_transport_type = TRACERTRANSPORT_SE_GLL
-  integer, public, parameter :: TRACER_GRIDTYPE_GLL = 11
-  integer, public, parameter :: TRACER_GRIDTYPE_FVM = 12
+  integer, public            :: tracer_transport_type           = TRACERTRANSPORT_SE_GLL
+  integer, public, parameter :: TRACER_GRIDTYPE_GLL             = 11
+  integer, public, parameter :: TRACER_GRIDTYPE_FVM             = 12
   integer, public            :: tracer_grid_type = TRACER_GRIDTYPE_GLL
 
 !shallow water advection tests:
@@ -188,20 +188,29 @@ module control_mod
 #ifndef CAM
   real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
 #endif
+
   integer, public, parameter :: west  = 1
   integer, public, parameter :: east  = 2
   integer, public, parameter :: south = 3
   integer, public, parameter :: north = 4
-
   integer, public, parameter :: swest = 5
   integer, public, parameter :: seast = 6
   integer, public, parameter :: nwest = 7
   integer, public, parameter :: neast = 8
   
-  logical, public            :: test_cfldep=.FALSE.
+  logical, public :: test_cfldep          = .FALSE.
+  logical, public :: disable_diagnostics  = .FALSE.
 
-  logical, public :: disable_diagnostics = .FALSE. 
+  ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
+  real, parameter :: pi               = 4.d0*atan(1.d0)
+  real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)
+  real(real_kind), public :: dcmip2_0_Rm      = 3.d0*pi/4.d0   ! radius of mountain range        (radians)
+  real(real_kind), public :: dcmip2_0_zetam   = pi/16.d0       ! mountain oscillation half-width (radians)
 
-
+  ! parameters for dcmip12 test 2-x: mountain waves
+  real(real_kind), public :: dcmip2_x_ueq     = 20.d0          ! wind speed at equator (m/s)
+  real(real_kind), public :: dcmip2_x_h0      = 250.0d0        ! mountain height       (m)
+  real(real_kind), public :: dcmip2_x_d       = 5000.0d0       ! mountain half width   (m)
+  real(real_kind), public :: dcmip2_x_xi      = 4000.0d0       ! mountain wavelength   (m)
 
 end module control_mod

@@ -109,10 +109,8 @@ end do
 ;_____________________________________________________________________
 ; get potential-temperature differences at several times
 
-ts = 0.50                                                              ; timestep in seconds
-interval = 200                                                        ; steps per write
-
-t_sec = ts * interval * t_index                                            ; get time from time-index
+days2sec = 3600.0*24.0
+t_sec = time(t_index)*days2sec
 
 theta      = f->T(t_index,:,:,:)*(p_ref/p0)^kappa
 theta_mean = T_mean*(p_ref/p0)^kappa

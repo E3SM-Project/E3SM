@@ -4,9 +4,9 @@
 
 program prim_main
 #ifdef _PRIM
-  use prim_driver_mod, only : prim_init1, prim_init2, prim_run, prim_finalize,&
+  use prim_driver_mod,  only: prim_init1, prim_init2, prim_run, prim_finalize,&
                               leapfrog_bootstrap, prim_run_subcycle
-  use hybvcoord_mod, only : hvcoord_t, hvcoord_init
+  use hybvcoord_mod,    only: hvcoord_t, hvcoord_init
 #endif
 
   use parallel_mod,     only: parallel_t, initmp, syncmp, haltmp, abortmp
@@ -39,7 +39,6 @@ program prim_main
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
 #endif
 
-
   implicit none
 
   type (element_t),  pointer  :: elem(:)
@@ -66,8 +65,6 @@ program prim_main
   ! Begin executable code set distributed memory world...
   ! =====================================================
   par=initmp()
-
-
 
   ! =====================================
   ! Set number of threads...

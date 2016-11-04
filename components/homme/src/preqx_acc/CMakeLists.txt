@@ -116,6 +116,7 @@ SET(PREQX_SRCS_F90
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
+  ${SRC_DIR}/test_mod.F90
   )
 
 SET(PREQX_SRCS_C
