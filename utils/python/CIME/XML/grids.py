@@ -218,8 +218,12 @@ class Grids(GenericXML):
         grids = [("atm", "a%"), ("lnd", "l%"), ("ocn", "o%"), \
                  ("ice", "i%"), ("rof", "r%"), ("glc", "g%"), ("wav", "w%")]
         domains = {}
+        mask_name = None
         if 'm%' in component_grids:
             mask_name = component_grids['m%']
+        else:
+            mask_name = component_grids['oi%']
+
         for grid in grids:
             grid_name = component_grids[grid[1]]
             domain_node = self.get_optional_node(nodename="domain", attributes={"name":grid_name})
@@ -237,12 +241,13 @@ class Grids(GenericXML):
                     domain_name = ""
                     if grid_attrib is not None and mask_attrib is not None:
                         grid_match = re.search(comp_name.lower(), grid_attrib)
-                        mask_match = re.search(mask_name, mask_attrib)
+                        mask_match = None
+                        if mask_name is not None:
+                            mask_match = re.search(mask_name, mask_attrib)
                         if grid_match is not None and mask_match is not None:
                             domain_name = file_node.text
                     elif grid_attrib is not None:
                         grid_match = re.search(comp_name.lower(), grid_attrib)
-                        print "grid_attrib %s comp_name %s %s"%(grid_attrib, comp_name, grid_match)
                         if grid_match is not None:
                             domain_name = file_node.text
                     elif mask_attrib is not None:
@@ -254,6 +259,7 @@ class Grids(GenericXML):
                         path = os.path.dirname(domain_name)
                         if len(path) > 0:
                             domains[path_name] = path
+        print domains
         return domains
 
     def _get_component_grids_from_longname(self, name):
@@ -394,8 +400,13 @@ class Grids(GenericXML):
                 if grid1_value != grid2_value and grid1_value != 'null' and grid2_value != 'null':
                     map_ = gridmaps[node.text]
                     if map_ == 'idmap':
-                        logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
-                                       %(node.text, grid1_name, grid1_value, grid2_name, grid2_value))
+                        if node.text in ("ROF2OCN_LIQ_RMAPNAME" , "ROF2OCN_ICE_RMAPNAME") and \
+                                "ROF2OCN_RMAPNAME" in gridmaps and gridmaps["ROF2OCN_RMAPNAME"] != "idmap":
+                            map_ = gridmaps["ROF2OCN_RMAPNAME"]
+                            gridmaps[node.text] = map_
+                        else:
+                            logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
+                                           %(node.text, grid1_name, grid1_value, grid2_name, grid2_value))
 
         return gridmaps
 

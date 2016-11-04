@@ -16,7 +16,7 @@ class Component(EntryID):
         initialize an object
         """
         files = Files()
-        schema = files.get_schema("CONFIG_DRV_FILE")
+        schema = None
         # not checking schema on external components yet
         cimeroot = get_cime_root()
         if  cimeroot in os.path.abspath(infile):

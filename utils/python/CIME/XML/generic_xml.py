@@ -267,3 +267,10 @@ class GenericXML(object):
         if element_node is not None:
             return element_node.text
         return None
+
+    def set_element_text(self, element_name, new_text, attributes=None, root=None, xpath=None):
+        element_node = self.get_optional_node(element_name, attributes, root, xpath)
+        if element_node is not None:
+            element_node.text = new_text
+            return new_text
+        return None
