@@ -791,7 +791,7 @@ contains
 
       ! runtype=0: initial run
       if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
-      call set_test_initial_conditions(elem,hybrid,hvcoord,tl,nets,nete,fvm)
+      call set_test_initial_conditions(elem,deriv(hybrid%ithr),hybrid,hvcoord,tl,nets,nete,fvm)
       if (hybrid%masterthread) write(iulog,*) '...done'
 
       ! scale PS to achieve prescribed dry mass

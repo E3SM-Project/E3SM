@@ -3,5 +3,5 @@
 
 preqx_setup()
 #              name                 target NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(preqx-nlev60-interp  preqx  4  4  60   FALSE   FALSE       1)
+createTestExec(preqx-nlev60-interp  preqx  4  4  60   FALSE   FALSE       4)
 

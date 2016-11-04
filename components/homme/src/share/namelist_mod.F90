@@ -86,8 +86,7 @@ module namelist_mod
     tol,           &
     debug_level,   &
     vert_remap_q_alg, &
-    test_cfldep,   &
-    se_prescribed_wind_2d
+    test_cfldep
 
 #ifndef CAM
   use control_mod, only:              &
@@ -286,8 +285,8 @@ module namelist_mod
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
       vert_remap_q_alg, &
-      test_cfldep, &                 ! fvm: test shape of departure grid cell and cfl number
-      se_prescribed_wind_2d
+      test_cfldep                   ! fvm: test shape of departure grid cell and cfl number
+
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
@@ -694,44 +693,43 @@ module namelist_mod
 
     npart  = par%nprocs
 
-    ! =====================================
-    !  Spread the namelist stuff around
-    ! =====================================
+    ! Broadcast namelist variables to all MPI processes
 
-    call MPI_bcast(PARTMETHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(TOPOLOGY     ,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(test_case    ,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(tasknum ,1,MPIinteger_t,par%root,par%comm,ierr)
-
-    call MPI_bcast( ne        ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(qsize     ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(ntrac     ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(test_cfldep,1,MPIlogical_t,par%root,par%comm,ierr)
-
-
-    call MPI_bcast(sub_case ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remapfreq ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(PARTMETHOD ,     1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
+    call MPI_bcast(test_case,       MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
+    call MPI_bcast(tasknum,         1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(ntrac,           1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(test_cfldep,     1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(remapfreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
-    call MPI_bcast(statefreq ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(restartfreq,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(multilevel ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(useframes ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(runtype   ,1,MPIinteger_t,par%root,par%comm,ierr)
-#ifdef CAM
-    phys_tscale = se_phys_tscale
-    limiter_option  = se_limiter_option
-    nsplit = se_nsplit
-    call MPI_bcast(vthreads  ,1,MPIinteger_t,par%root,par%comm,ierr)
-#else
-    call MPI_bcast(omega     ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(pertlim   ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(nmax      ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(NTHREADS  ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(vert_num_threads,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(nthreads_accel  ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(ndays     ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(multilevel,      1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(useframes,       1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
 
+#ifdef CAM
+    phys_tscale     = se_phys_tscale
+    limiter_option  = se_limiter_option
+    nsplit          = se_nsplit
+    call MPI_bcast(vthreads  ,      1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(se_met_nudge_u,  1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(se_met_nudge_p,  1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(se_met_nudge_t,  1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(se_met_tevolve,  1, MPIinteger_t, par%root,par%comm,ierr)
+#else
+    call MPI_bcast(omega,           1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(pertlim,         1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(nmax,            1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(NTHREADS,        1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vert_num_threads,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(nthreads_accel,  1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(ndays,           1, MPIinteger_t, par%root,par%comm,ierr)
     nEndStep = nmax
 
     call MPI_bcast(omega,           1, MPIreal_t,    par%root,par%comm,ierr)
@@ -741,15 +739,11 @@ module namelist_mod
     call MPI_bcast(dcmip2_0_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_0_rm,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_0_zetam,  1, MPIreal_t,    par%root,par%comm,ierr)
-
     call MPI_bcast(dcmip2_x_ueq,    1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_x_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_x_d,      1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_x_xi,     1, MPIreal_t,    par%root,par%comm,ierr)
-
 #endif
-
-
     call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
@@ -758,21 +752,14 @@ module namelist_mod
     call MPI_bcast(energy_fixer,    1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
-    call MPI_bcast(fine_ne,       1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(nu,            1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(nu_s,          1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(nu_q,          1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(nu_div,        1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(nu_p,          1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(nu_top,        1,MPIreal_t   ,par%root,par%comm,ierr)
-
-#if ( defined CAM )
-    call MPI_bcast(se_met_nudge_u, 1, MPIreal_t, par%root,par%comm,ierr)
-    call MPI_bcast(se_met_nudge_p, 1, MPIreal_t, par%root,par%comm,ierr)
-    call MPI_bcast(se_met_nudge_t, 1, MPIreal_t, par%root,par%comm,ierr)
-    call MPI_bcast(se_met_tevolve, 1, MPIinteger_t, par%root,par%comm,ierr)
-#endif
+    call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(max_hypervis_courant,1,MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(nu,              1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(nu_s,            1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(nu_q,            1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(nu_div,          1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(nu_p,            1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(nu_top,          1, MPIreal_t   , par%root,par%comm,ierr)
 
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
@@ -834,7 +821,6 @@ module namelist_mod
     call MPI_bcast(vanalytic, 1,              MPIinteger_t, par%root, par%comm,ierr)
     call MPI_bcast(vtop     , 1,              MPIreal_t   , par%root, par%comm,ierr)
 
-    call MPI_bcast(se_prescribed_wind_2d,1 ,MPIlogical_t  ,par%root,par%comm,ierr)
 #ifndef CAM
     call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
@@ -1134,8 +1120,6 @@ module namelist_mod
 
        write(iulog,*)"readnl: energy_fixer  = ",energy_fixer
        write(iulog,*)"readnl: runtype       = ",runtype
-
-       write(iulog,*)"readnl: se_prescribed_wind_2d = ", se_prescribed_wind_2d
 
        if (integration == "semi_imp") then
           print *
