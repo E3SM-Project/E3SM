@@ -48,6 +48,7 @@ def _main_func():
     rc, out, err = run_cmd(cmd)
     expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
     logger.info(out)
+
 ###############################################################################
 
 if __name__ == "__main__":
