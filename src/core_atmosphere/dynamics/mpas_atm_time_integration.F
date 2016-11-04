@@ -150,6 +150,14 @@ module atm_time_integration
       integer :: iCell, k, iEdge
       type (block_type), pointer :: block
 
+      integer, pointer :: nThreads
+      integer, dimension(:), pointer :: cellThreadStart, cellThreadEnd
+      integer, dimension(:), pointer :: cellSolveThreadStart, cellSolveThreadEnd
+      integer, dimension(:), pointer :: edgeThreadStart, edgeThreadEnd
+      integer, dimension(:), pointer :: edgeSolveThreadStart, edgeSolveThreadEnd
+      integer, dimension(:), pointer :: vertexThreadStart, vertexThreadEnd
+      integer, dimension(:), pointer :: vertexSolveThreadStart, vertexSolveThreadEnd
+
       integer :: rk_step, number_of_sub_steps
       integer :: iScalar
 
@@ -323,15 +331,32 @@ module atm_time_integration
          ! mesh is needed for atm_compute_moist_coefficients
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
 
+         call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+         call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+         call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+         call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+         call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+         call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+         call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
 !$OMP PARALLEL DO
-         do thread=1,block % nThreads
+         do thread=1,nThreads
             call atm_rk_integration_setup(state, diag, &
-                                          block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                          block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                          block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                          block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                          block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                          cellThreadStart(thread), cellThreadEnd(thread), &
+                                          vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                          edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                          cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                          vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                          edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
          end do
 !$OMP END PARALLEL DO
 
@@ -347,15 +372,32 @@ module atm_time_integration
          ! mesh is needed for atm_compute_moist_coefficients
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
 
+         call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+         call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+         call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+         call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+         call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+         call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+         call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
 !$OMP PARALLEL DO
-         do thread=1,block % nThreads
+         do thread=1,nThreads
             call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh, &     !MGD could do away with dimensions arg
-                                                 block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                                 block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                                 block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                                 block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                                 block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                                 cellThreadStart(thread), cellThreadEnd(thread), &
+                                                 vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                                 edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                                 cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                                 vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                                 edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
          end do
 !$OMP END PARALLEL DO
 
@@ -405,14 +447,26 @@ module atm_time_integration
 
             call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
+            call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+            call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+            call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+            call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+            call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
             rk_step = 1
 !$OMP PARALLEL DO
-            do thread=1,block % nThreads
+            do thread=1,nThreads
                call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
-                                          block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                          block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                          block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                          cellThreadStart(thread), cellThreadEnd(thread), &
+                                          edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                          cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                          edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
             end do
 !$OMP END PARALLEL DO
             block => block % next
@@ -440,13 +494,25 @@ module atm_time_integration
    
                  call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
+                 call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+                 call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+                 call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+                 call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+                 call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+                 call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+                 call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+                 call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+                 call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
 !$OMP PARALLEL DO
-                 do thread=1,block % nThreads
+                 do thread=1,nThreads
                     call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
-                                                     block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                                     block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                                     block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                                     block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                                     cellThreadStart(thread), cellThreadEnd(thread), &
+                                                     edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                                     cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                                     edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
                  end do
 !$OMP END PARALLEL DO
                  block => block % next
@@ -467,6 +533,23 @@ module atm_time_integration
                call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
+               call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
                allocate(delsq_theta(nVertLevels,nCells+1))
                allocate(delsq_w(nVertLevels,nCells+1))
 !!               allocate(qtot(nVertLevels,nCells+1))  ! initializing this earlier in solution sequence
@@ -478,14 +561,14 @@ module atm_time_integration
 
 MPAS_GPTL_START('dyn_tend')
 !$OMP PARALLEL DO
-               do thread=1,block % nThreads
+               do thread=1,nThreads
                   call atm_compute_dyn_tend( tend, tend_physics, state, diag, mesh, block % configs, nVertLevels, rk_step, dt, & 
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                             cellThreadStart(thread), cellThreadEnd(thread), &
+                                             vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                             edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                             vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                             edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
                end do
 !$OMP END PARALLEL DO
 MPAS_GPTL_STOP('dyn_tend')
@@ -559,14 +642,26 @@ MPAS_GPTL_STOP('dyn_tend')
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
    
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+               call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
                
 !$OMP PARALLEL DO
-               do thread=1,block % nThreads
+               do thread=1,nThreads
                   call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs, &
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                             cellThreadStart(thread), cellThreadEnd(thread), &
+                                             edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                             edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
                end do
 !$OMP END PARALLEL DO
                block => block % next
@@ -594,16 +689,33 @@ MPAS_GPTL_STOP('dyn_tend')
                   call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
+                  call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+                  call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+                  call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
 !$OMP PARALLEL DO
-                  do thread=1,block % nThreads
+                  do thread=1,nThreads
                      call atm_advance_acoustic_step( state, diag, tend,  mesh, block % configs, nCells, nVertLevels, &
                                              rk_sub_timestep(rk_step), small_step, &
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                             cellThreadStart(thread), cellThreadEnd(thread), &
+                                             vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                             edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                             vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                             edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
                   end do
 !$OMP END PARALLEL DO
 
@@ -649,16 +761,33 @@ MPAS_GPTL_STOP('dyn_tend')
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
 
+               call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
 !$OMP PARALLEL DO
-               do thread=1,block % nThreads
+               do thread=1,nThreads
                   call atm_recover_large_step_variables( state, diag, tend, mesh, block % configs, rk_timestep(rk_step), &
                                              number_sub_steps(rk_step), rk_step, &
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                             cellThreadStart(thread), cellThreadEnd(thread), &
+                                             vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                             edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                             vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                             edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
                end do
 !$OMP END PARALLEL DO
 
@@ -695,6 +824,23 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                   call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
+                  call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+                  call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+                  call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
                   allocate(scalar_old_arr(nVertLevels,nCells+1))
                   allocate(scalar_new_arr(nVertLevels,nCells+1))
                   allocate(s_max_arr(nVertLevels,nCells+1))
@@ -715,27 +861,27 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
                   !       so we use the advance_scalars routine for the first two RK substeps.
                   !
 !$OMP PARALLEL DO
-                  do thread=1,block % nThreads
+                  do thread=1,nThreads
                      if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                         call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
-                                                block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                                block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                                block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                                block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                                block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                                block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
+                                                cellThreadStart(thread), cellThreadEnd(thread), &
+                                                vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                                edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                                cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                                vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                                edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread), &
                                                 horiz_flux_array, rk_step, config_time_integration_order, &
                                                 advance_density=.false. )
                      else
          
                         block % domain = domain 
                         call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
-                                                block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                                block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                                block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                                block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                                block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                                block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
+                                                cellThreadStart(thread), cellThreadEnd(thread), &
+                                                vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                                edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                                cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                                vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                                edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread), &
                                                 scalar_old_arr, scalar_new_arr, s_max_arr, s_min_arr, wdtn_arr, &
                                                 scale_array, flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
                                                 advance_density=.false.)
@@ -779,15 +925,26 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                call mpas_pool_get_dimension(state, 'nVertices', nVertices)
                call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
+               call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+
                allocate(ke_vertex(nVertLevels,nVertices+1))
                allocate(ke_edge(nVertLevels,nEdges+1))
    
 !$OMP PARALLEL DO
-               do thread=1,block % nThreads
+               do thread=1,nThreads
                   call atm_compute_solve_diagnostics(dt, state, 2, diag, mesh, block % configs, &
-                                                     block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                                     block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                                     block % edgeThreadStart(thread), block % edgeThreadEnd(thread), rk_step)
+                                                     cellThreadStart(thread), cellThreadEnd(thread), &
+                                                     vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                                     edgeThreadStart(thread), edgeThreadEnd(thread), rk_step)
                end do
 !$OMP END PARALLEL DO
 
@@ -841,15 +998,32 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             call mpas_pool_get_subpool(block % structs, 'state', state)
             call mpas_pool_get_subpool(block % structs, 'diag', diag)
 
+            call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+            call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+            call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+            call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+            call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+            call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+            call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+            call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
 !$OMP PARALLEL DO
-            do thread=1,block % nThreads
+            do thread=1,nThreads
                call atm_rk_dynamics_substep_finish(state, diag, dynamics_substep, dynamics_split, &
-                                                block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                                block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                                block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                                block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                                block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                                block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                                cellThreadStart(thread), cellThreadEnd(thread), &
+                                                vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                                edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                                cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                                vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                                edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
             end do
 !$OMP END PARALLEL DO
 
@@ -897,6 +1071,23 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
+               call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+               call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
                allocate(scalar_old_arr(nVertLevels,nCells+1))
                allocate(scalar_new_arr(nVertLevels,nCells+1))
                allocate(s_max_arr(nVertLevels,nCells+1))
@@ -922,27 +1113,27 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
                !  The latest version of atm_advance_scalars does not need the arrays scalar_tend_array or rho_zz_int
                !  We can remove scalar_tend_array????  WCS 20160921
 !$OMP PARALLEL DO
-               do thread=1,block % nThreads
+               do thread=1,nThreads
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                      call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
+                                             cellThreadStart(thread), cellThreadEnd(thread), &
+                                             vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                             edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                             vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                             edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread), &
                                              horiz_flux_array, rk_step, config_time_integration_order, &
                                              advance_density=.true., scalar_tend=scalar_tend_array, rho_zz_int=rho_zz_int )
                   else
       
                      block % domain = domain 
                      call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
-                                             block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                             block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                             block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                             block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                             block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                             block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
+                                             cellThreadStart(thread), cellThreadEnd(thread), &
+                                             vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                             edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                             vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                             edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread), &
                                              scalar_old_arr, scalar_new_arr, s_max_arr, s_min_arr, wdtn_arr, &
                                              scale_array, flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
                                              advance_density=.true., rho_zz_int=rho_zz_int)
@@ -1030,6 +1221,11 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          call mpas_pool_get_array(state, 'scalars', scalars_2, 2)
          call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
+         call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+         call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+         call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
          if (config_convection_scheme == 'cu_tiedtke' &
              .or. config_convection_scheme == 'cu_grell_freitas') then
 
@@ -1053,9 +1249,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          if (trim(config_microp_scheme) /= 'off')  then
             call mpas_timer_start('microphysics')
 !$OMP PARALLEL DO
-            do thread=1,block % nThreads
+            do thread=1,nThreads
                call microphysics_driver ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep, &
-                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+                                          cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
             end do
 !$OMP END PARALLEL DO
             call mpas_timer_stop('microphysics')

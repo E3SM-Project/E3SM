@@ -27,21 +27,6 @@
       ! Data structures for exchange lists for a block (exchanging standard fields)
       type (parallel_info), pointer :: parinfo
 
-      ! Loop bounds for threaded loops
-      integer :: nThreads = 0
-      integer, dimension(:), pointer :: cellThreadStart => null()
-      integer, dimension(:), pointer :: cellThreadEnd => null()
-      integer, dimension(:), pointer :: cellSolveThreadStart => null()
-      integer, dimension(:), pointer :: cellSolveThreadEnd => null()
-      integer, dimension(:), pointer :: edgeThreadStart => null()
-      integer, dimension(:), pointer :: edgeThreadEnd => null()
-      integer, dimension(:), pointer :: edgeSolveThreadStart => null()
-      integer, dimension(:), pointer :: edgeSolveThreadEnd => null()
-      integer, dimension(:), pointer :: vertexThreadStart => null()
-      integer, dimension(:), pointer :: vertexThreadEnd => null()
-      integer, dimension(:), pointer :: vertexSolveThreadStart => null()
-      integer, dimension(:), pointer :: vertexSolveThreadEnd => null()
-
       ! Linked list pointers
       type (block_type), pointer :: prev => null()
       type (block_type), pointer :: next => null()

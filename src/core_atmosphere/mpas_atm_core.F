@@ -280,6 +280,15 @@ module atm_core
       integer :: thread
       character(len=StrKIND), pointer :: mminlu
 
+      integer, pointer :: nThreads
+      integer, dimension(:), pointer :: cellThreadStart, cellThreadEnd
+      integer, dimension(:), pointer :: cellSolveThreadStart, cellSolveThreadEnd
+      integer, dimension(:), pointer :: edgeThreadStart, edgeThreadEnd
+      integer, dimension(:), pointer :: edgeSolveThreadStart, edgeSolveThreadEnd
+      integer, dimension(:), pointer :: vertexThreadStart, vertexThreadEnd
+      integer, dimension(:), pointer :: vertexSolveThreadStart, vertexSolveThreadEnd
+
+
       logical, pointer :: config_do_restart, config_do_DAcycling
 
       call atm_compute_signs(mesh)
@@ -339,22 +348,39 @@ module atm_core
       allocate(ke_vertex(nVertLevels,nVertices+1))  ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
       allocate(ke_edge(nVertLevels,nEdges+1))       ! ke_edge is a module variable defined in mpas_atm_time_integration.F
 
+      call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+      call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+      call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+      call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+      call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+      call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+      call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
 !$OMP PARALLEL DO
-      do thread=1,block % nThreads
+      do thread=1,nThreads
          if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
             call atm_init_coupled_diagnostics(state, 1, diag, mesh, block % configs, &
-                                          block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                          block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                          block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
-                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
-                                          block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
-                                          block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+                                              cellThreadStart(thread), cellThreadEnd(thread), &
+                                              vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                              edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                              cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                              vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                              edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
          end if
 
          call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
-                                            block % cellThreadStart(thread), block % cellThreadEnd(thread), &
-                                            block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                            block % edgeThreadStart(thread), block % edgeThreadEnd(thread))
+                                            cellThreadStart(thread), cellThreadEnd(thread), &
+                                            vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                            edgeThreadStart(thread), edgeThreadEnd(thread))
       end do
 !$OMP END PARALLEL DO
 
