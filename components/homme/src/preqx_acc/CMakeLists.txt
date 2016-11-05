@@ -132,26 +132,6 @@ ENDIF ()
 # Make SRCS global so the tests can access it
 SET(EXEC_SOURCES ${PREQX_ACC_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90})
 
-# Set up defaults
-IF (NOT PREQX_NP)
-  SET (PREQX_NP 4) 
-ENDIF ()
-IF (NOT PREQX_PLEV)
-  SET (PREQX_PLEV 20) 
-ENDIF ()
-IF (NOT PREQX_USE_PIO)
-  SET (PREQX_USE_PIO FALSE) 
-ENDIF ()
-IF (NOT PREQX_USE_ENERGY)
-  SET (PREQX_USE_ENERGY FALSE) 
-ENDIF ()
-IF (NOT PREQX_NC)
-  SET (PREQX_NC 4)
-ENDIF ()
-IF (NOT QSIZE_D)
-  SET (QSIZE_D 4)
-ENDIF ()
-
 
 SET(USE_OPENACC TRUE)
 SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OPENACC_Fortran_FLAGS}")
@@ -170,8 +150,5 @@ endmacro(preqx_acc_setup)
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
 
-preqx_acc_setup()
-createTestExec(preqx_acc preqx_acc ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
-               ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
 
