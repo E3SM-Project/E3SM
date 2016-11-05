@@ -9,7 +9,7 @@
 module prim_advance_mod
 
   use control_mod,    only: qsplit,rsplit
-  use derivative_mod, only: derivative_t, vorticity, divergence, gradient, gradient_wk
+  use derivative_mod, only: derivative_t
   use dimensions_mod, only: np, nlev, nlevp, nvar, nc, nelemd
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
@@ -135,7 +135,6 @@ contains
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t
     use time_mod,       only: timelevel_qdp, tevolve
-    use diffusion_mod,  only: prim_diffusion
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize

@@ -557,8 +557,7 @@ contains
                                     topology,columnpackage, moisture, rsplit, qsplit, rk_stage_user,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, tracer_transport_type
-    use derivative_mod,       only: derivinit, interpolate_gll2fvm_points, v2pinit
-    use filter_mod,           only: filter_t, fm_filter_create, taylor_filter_create, fm_transfer, bv_transfer
+    use derivative_mod,       only: derivinit, interpolate_gll2fvm_points
     use fvm_control_volume_mod, only: n0_fvm, np1_fvm,fvm_supercycling
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
