@@ -4,7 +4,7 @@ all: build_tables
 	mv build_tables ../../..
 
 build_tables: build_tables.o atmphys_build_tables_thompson.o
-	$(LINKER) $(LDFLAGS) -o build_tables build_tables.o atmphys_build_tables_thompson.o -L../../framework -lframework -L../physics/ -lphys
+	$(LINKER) $(LDFLAGS) -o build_tables build_tables.o atmphys_build_tables_thompson.o -L../../framework -L../physics -lphys -lframework
 
 
 build_tables.o: \
