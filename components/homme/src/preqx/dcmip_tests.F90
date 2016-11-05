@@ -96,7 +96,7 @@ subroutine dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       eta_dot = -g*rho*w/p0
 
       ! store vertical mass flux
-      elem(ie)%derived%eta_dot_dpdn(i,j,k) = eta_dot * dp_dn
+      elem(ie)%derived%eta_dot_dpdn_prescribed(i,j,k) = eta_dot * dp_dn
 
   enddo; enddo; enddo; enddo
 
@@ -163,7 +163,7 @@ subroutine dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       eta_dot = -g*rho*w/p0
 
       ! store vertical mass flux
-      elem(ie)%derived%eta_dot_dpdn(i,j,k) = eta_dot * dp_dn
+      elem(ie)%derived%eta_dot_dpdn_prescribed(i,j,k) = eta_dot * dp_dn
 
   enddo; enddo; enddo; enddo
 
@@ -232,10 +232,10 @@ subroutine dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,time,n0,n1,deriv)
 
       ! get vertical mass flux
       grad_p = gradient_sphere(p_i,deriv,elem(ie)%Dinv)
-      elem(ie)%derived%eta_dot_dpdn(:,:,k) = -u_i*grad_p(:,:,1) - v_i*grad_p(:,:,2)
+      elem(ie)%derived%eta_dot_dpdn_prescribed(:,:,k) = -u_i*grad_p(:,:,1) - v_i*grad_p(:,:,2)
     enddo;
-    elem(ie)%derived%eta_dot_dpdn(:,:,1)     = 0
-    elem(ie)%derived%eta_dot_dpdn(:,:,nlevp) = 0
+    elem(ie)%derived%eta_dot_dpdn_prescribed(:,:,1)     = 0
+    elem(ie)%derived%eta_dot_dpdn_prescribed(:,:,nlevp) = 0
   enddo;
 
 end subroutine

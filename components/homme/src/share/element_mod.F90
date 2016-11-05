@@ -53,6 +53,7 @@ module element_mod
     real (kind=real_kind) :: phi(np,np,nlev)                          ! geopotential
     real (kind=real_kind) :: omega_p(np,np,nlev)                      ! vertical tendency (derived)       
     real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
+    real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
 
     ! semi-implicit diagnostics: computed in explict-component, reused in Helmholtz-component.
     real (kind=real_kind) :: grad_lnps(np,np,2)                       ! gradient of log surface pressure               
@@ -138,6 +139,7 @@ module element_mod
     real (kind=real_kind) :: phi(np,np,nlev)                          ! geopotential
     real (kind=real_kind) :: omega_p(np,np,nlev)                      ! vertical tendency (derived)
     real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
+    real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
 
     ! semi-implicit diagnostics: computed in explict-component, reused in Helmholtz-component.
     real (kind=real_kind) :: grad_lnps(np,np,2)                       ! gradient of log surface pressure
