@@ -935,7 +935,7 @@ contains
     !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
     !       tl%n0    time t + dt_q
 
-    use control_mod,        only: statefreq, energy_fixer, ftype, qsplit, rsplit, test_cfldep, disable_diagnostics
+    use control_mod,        only: statefreq, ftype, qsplit, rsplit, test_cfldep, disable_diagnostics
     use fvm_control_volume_mod, only: n0_fvm
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
@@ -975,10 +975,8 @@ contains
        nstep_end = tl%nstep + qsplit*rsplit  ! nstep at end of this routine
     endif
 
-    ! activate energy diagnostics if using an energy fixer
-    compute_energy = energy_fixer > 0
-
     ! activate diagnostics periodically for display to stdout
+    compute_energy = .false.
     compute_diagnostics   = .false.
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics= .true.
@@ -1120,12 +1118,6 @@ contains
       call t_startf("prim_energy_halftimes")
       call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
       call t_stopf("prim_energy_halftimes")
-    endif
-
-    if (energy_fixer > 0) then
-      call t_startf("prim_energy_fixer")
-      call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
-      call t_stopf("prim_energy_fixer")
     endif
 
     if (compute_diagnostics) then
@@ -1411,120 +1403,6 @@ contains
     ! end of the hybrid program
     ! ==========================
   end subroutine prim_finalize
-
-
-
-!=======================================================================================================!
-  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
-!
-! non-subcycle code:
-!  Solution is given at times u(t-1),u(t),u(t+1)
-!  E(n=1) = energy before dynamics
-!  E(n=2) = energy after dynamics
-!
-!  fixer will add a constant to the temperature so E(n=2) = E(n=1)
-!
-    use parallel_mod, only: global_shared_buf, global_shared_sum
-    use kinds, only : real_kind
-    use hybvcoord_mod, only : hvcoord_t
-    use physical_constants, only : Cp
-    use time_mod, only : timelevel_t
-    use control_mod, only : use_cpstar, energy_fixer
-    use hybvcoord_mod, only : hvcoord_t
-    use global_norms_mod, only: wrap_repro_sum
-    use parallel_mod, only : abortmp
-    type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
-    integer :: t2,n,nets,nete
-    type (element_t)     , intent(inout), target :: elem(:)
-    type (hvcoord_t)                  :: hvcoord
-    type (TimeLevel_t), intent(inout)       :: tl
-    integer, intent(in)                    :: nsubstep
-
-    integer :: ie,k,i,j,nmax
-    real (kind=real_kind), dimension(np,np,nlev)  :: dp   ! delta pressure
-    real (kind=real_kind), dimension(np,np,nlev)  :: sumlk
-    real (kind=real_kind), pointer  :: PEner(:,:,:)
-    real (kind=real_kind), dimension(np,np)  :: suml
-    real (kind=real_kind) :: psum(nets:nete,4),psum_g(4),beta
-
-    ! when forcing is applied during dynamics timstep, actual forcing is
-    ! slightly different (about 0.1 W/m^2) then expected by the physics
-    ! since u & T are changing while FU and FT are held constant.
-    ! to correct for this, save compute de_from_forcing at step 1
-    ! and then adjust by:  de_from_forcing_step1 - de_from_forcing_stepN
-    real (kind=real_kind),save :: de_from_forcing_step1
-    real (kind=real_kind)      :: de_from_forcing
-
-    t2=tl%np1    ! timelevel for T
-    if (use_cpstar /= 0 ) then
-       call abortmp('Energy fixer requires use_cpstar=0')
-    endif
-
-
-    psum = 0
-    do ie=nets,nete
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k,dp)
-#endif
-       do k=1,nlev
-          dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
-       enddo
-       suml=0
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k, i, j)
-#endif
-       do k=1,nlev
-          do i=1,np
-          do j=1,np
-                sumlk(i,j,k) = cp*dp(i,j,k)
-          enddo
-          enddo
-       enddo
-       suml=0
-       do k=1,nlev
-          do i=1,np
-          do j=1,np
-             suml(i,j) = suml(i,j) + sumlk(i,j,k)
-          enddo
-          enddo
-       enddo
-       PEner => elem(ie)%accum%PEner(:,:,:)
-
-       ! psum(:,4) = energy before forcing
-       ! psum(:,1) = energy after forcing, before dynamics
-       ! psum(:,2) = energy after dynamics
-       ! psum(:,3) = cp*dp (internal energy added is beta*psum(:,3))
-       psum(ie,3) = psum(ie,3) + SUM(suml(:,:)*elem(ie)%spheremp(:,:))
-       do n=1,2
-          psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-               (PEner(:,:,n) + &
-               elem(ie)%accum%IEner(:,:,n) + &
-               elem(ie)%accum%KEner(:,:,n) ) )
-       enddo
-    enddo
-
-    nmax=3
-
-    do ie=nets,nete
-       do n=1,nmax
-          global_shared_buf(ie,n) = psum(ie,n)
-       enddo
-    enddo
-    call wrap_repro_sum(nvars=nmax, comm=hybrid%par%comm)
-    do n=1,nmax
-       psum_g(n) = global_shared_sum(n)
-    enddo
-
-    beta = ( psum_g(1)-psum_g(2) )/psum_g(3)
-
-    ! apply fixer
-    do ie=nets,nete
-       elem(ie)%state%T(:,:,:,t2) =  elem(ie)%state%T(:,:,:,t2) + beta
-    enddo
-    end subroutine prim_energy_fixer
-!=======================================================================================================!
 
 
 

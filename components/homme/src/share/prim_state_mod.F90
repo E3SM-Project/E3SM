@@ -12,7 +12,7 @@ module prim_state_mod
   use hybrid_mod,       only: hybrid_t
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case, runtype, moisture, &
-                              tstep_type,energy_fixer, qsplit, ftype, use_cpstar, rsplit
+                              tstep_type,qsplit, ftype, use_cpstar, rsplit
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
@@ -812,7 +812,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     logical :: wet
 
 
-    logical tstagger
     integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
 
     nm_f = 1
@@ -825,17 +824,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        t2=tl%np1
        call TimeLevel_Qdp(tl, qsplit, t1_qdp, t2_qdp) !get np1 into t2_qdp
     endif
-
-
-
-! energy_fixer
-!     <0         disabled, but compute energy non-staggered in time
-!     0          disabled, but compute energy staggered in time (for use with leapfrog code)
-!    >0          Enabled.  energy fixer requires dry formulation (use_cpstar=0) and non-staggered in time
-!
-    tstagger = .false.
-    if (energy_fixer==0) tstagger = .true.
-
 
     !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
     !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
@@ -870,15 +858,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                 cp_star1=cp
                 cp_star2=cp
              endif
-             if (tstagger) then
-                sumlk(i,j,k) = sumlk(i,j,k) + cp_star1*elem(ie)%state%T(i,j,k,t2) *dpt1(i,j,k)/2 
-                sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t1) *dpt2(i,j,k)/2
-                suml2k(i,j,k) = suml2k(i,j,k) + (cp_star1-cp)*elem(ie)%state%T(i,j,k,t2) *dpt1(i,j,k)/2 
-                suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t1) *dpt2(i,j,k)/2
-             else
-                sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
-                suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
-             endif
+             sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
+             suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
           enddo
           enddo
        enddo
@@ -897,18 +878,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !$omp parallel do private(k,E)
 #endif
        do k=1,nlev
-          if (tstagger) then
-             E = (elem(ie)%state%v(:,:,1,k,t2)**2 +  &
+          E = (elem(ie)%state%v(:,:,1,k,t2)**2 +  &
                   elem(ie)%state%v(:,:,2,k,t2)**2 ) / 2 
-             sumlk(:,:,k) = E*dpt1(:,:,k)/2
-             E = (elem(ie)%state%v(:,:,1,k,t1)**2 +  &
-                  elem(ie)%state%v(:,:,2,k,t1)**2 ) / 2 
-             sumlk(:,:,k) = sumlk(:,:,k) + E*dpt2(:,:,k)/2
-          else
-             E = (elem(ie)%state%v(:,:,1,k,t2)**2 +  &
-                  elem(ie)%state%v(:,:,2,k,t2)**2 ) / 2 
-             sumlk(:,:,k) = E*dpt2(:,:,k)
-          endif
+          sumlk(:,:,k) = E*dpt2(:,:,k)
        enddo
        suml=0
        do k=1,nlev
@@ -921,12 +893,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          if (tstagger) then
-             suml = suml + elem(ie)%state%phis(:,:)*dpt1(:,:,k)/2
-             suml = suml + elem(ie)%state%phis(:,:)*dpt2(:,:,k)/2
-          else
-             suml = suml + elem(ie)%state%phis(:,:)*dpt2(:,:,k)
-          endif
+          suml = suml + elem(ie)%state%phis(:,:)*dpt2(:,:,k)
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
 

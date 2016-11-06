@@ -369,7 +369,6 @@ module namelist_mod
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
-    energy_fixer = -1      ! no fixer, non-staggered-in-time formulas
     se_partmethod = -1
     se_ne       = -1
     se_topology = 'none'
@@ -677,7 +676,6 @@ module namelist_mod
     call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(energy_fixer,    1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
@@ -1015,7 +1013,6 @@ module namelist_mod
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
        write(iulog,*)"readnl: physics       = ",physics
 
-       write(iulog,*)"readnl: energy_fixer  = ",energy_fixer
        write(iulog,*)"readnl: runtype       = ",runtype
 
        if (hypervis_power /= 0)then
