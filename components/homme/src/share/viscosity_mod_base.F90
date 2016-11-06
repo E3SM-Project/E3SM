@@ -19,7 +19,7 @@ use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
-use edge_mod, only : edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
+use edge_mod, only : edgevpack, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack
 
 use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish

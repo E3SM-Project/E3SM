@@ -72,7 +72,7 @@ contains
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
+    use cube_mod, only : cube_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
@@ -145,7 +145,6 @@ contains
 
     real(kind=real_kind), allocatable :: aratio(:,:)
     real(kind=real_kind) :: area(1),xtmp
-    character(len=80) rot_type   ! cube edge rotation type
 
     integer  :: i
     integer,allocatable :: TailPartition(:)
@@ -193,12 +192,6 @@ contains
        repro_sum_logunit=6                           )
        if(par%masterproc) print *, "Initialized repro_sum"
 #endif
-    ! ====================================
-    ! Set cube edge rotation type for model
-    ! unnecessary complication here: all should
-    ! be on the same footing. RDL
-    ! =====================================
-    rot_type="contravariant"
 
 #ifndef CAM
     if (par%masterproc) then
@@ -411,7 +404,6 @@ contains
 
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points,area(1))
-          !call rotation_init_atomic(elem(ie),rot_type)
        enddo
     end if
 

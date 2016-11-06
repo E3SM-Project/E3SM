@@ -43,9 +43,6 @@ module edge_mod_base
   !----------------------------------------------------------------
   public :: edgeSpack
   public :: edgeSunpackMIN, edgeSunpackMAX
-  public :: edgerotate
-
-  public :: buffermap
 
   logical, private :: threadsafe=.true.
 
@@ -1725,114 +1722,6 @@ endif
     end do
 
   end subroutine LongEdgeVunpackMIN
-
-  ! =============================
-  ! edgerotate:
-  !
-  ! Rotate edges in buffer...
-  ! =============================
-  subroutine edgerotate(edge,vlyr,kptr,desc)
-    use dimensions_mod, only : np
-    type (EdgeBuffer_t)           :: edge         ! edge struct
-    integer, intent(in)           :: vlyr         ! number of 2d vector fields to rotate
-    integer, intent(in)           :: kptr         ! layer pointer into edge buffer
-    type (EdgeDescriptor_t), intent(in) :: desc
-
-    ! Local variables
-
-    integer :: i,k,k1,k2
-    integer :: irot,ia,nbr
-
-    real(kind=real_kind), dimension(:,:,:), pointer :: R
-    real(kind=real_kind)  :: tmp1,tmp2
-
-    print *,'entered into edgerotate... Note that this code is currently not functional' 
-    stop 'ERROR: edgerotate'
-#ifdef _USEASSOCIATED
-    if (associated(rot)) then
-#else
-       if (desc%use_rotation == 1) then
-#endif
-
-          do irot=1,SIZE(desc%rot)
-
-             nbr  =  desc%rot(irot)%nbr
-             R    => desc%rot(irot)%R
-
-             ia=desc%putmapP(nbr)
-
-             ! ========================================
-             ! If nbr direction is (1-4) => is an edge
-             ! ========================================
-
-             if (nbr <= 4) then
-
-                ! ========================================================
-                !  Is an edge. Rotate it in place
-                ! ========================================================
-
-!                do i=1,np
-!                   do k=1,vlyr,2
-!                      k1 = kptr + k
-!                      k2 = k1 + 1
-!                      tmp1=R(1,1,i)*edge%buf(k1,ia+i) + R(1,2,i)*edge%buf(k2,ia+i)
-!                      tmp2=R(2,1,i)*edge%buf(k1,ia+i) + R(2,2,i)*edge%buf(k2,ia+i)
-!                      edge%buf(k1,ia+i)=tmp1
-!                      edge%buf(k2,ia+i)=tmp2
-!                   end do
-!                end do
-
-             else
-
-                ! ===================================================
-                ! Is an element corner point, but not a cube corner
-                ! point, just rotate it in place.
-                ! ===================================================
-
-!                if (ia /= -1) then
-!                   do k=1,vlyr,2
-!                      k1 = kptr + k
-!                      k2 = k1+1
-!                      tmp1=R(1,1,1)*edge%buf(k1,ia+1) + R(1,2,1)*edge%buf(k2,ia+1)
-!                      tmp2=R(2,1,1)*edge%buf(k1,ia+1) + R(2,2,1)*edge%buf(k2,ia+1)
-!                      edge%buf(k1,ia+1)=tmp1
-!                      edge%buf(k2,ia+1)=tmp2
-!                   end do
-!                end if
-
-             end if
-
-          end do
-
-       endif
-
-     end subroutine edgerotate
-
-     ! =============================================
-     ! buffermap:
-     !
-     ! buffermap translates element number, inum and
-     ! element edge/corner, facet, into an edge buffer 
-     ! memory location, loc.
-     ! =============================================
-
-     function buffermap(inum,facet) result(loc)
-       use dimensions_mod, only : np
-       integer, intent(in) :: inum   
-       integer, intent(in) :: facet
-       integer :: loc
-
-       if (facet>4) then
-          if (inum == -1) then
-             loc = inum
-          else
-             loc=(inum-1)*(4*np+4)+4*np+(facet-5)
-          end if
-       else
-          loc=(inum-1)*(4*np+4)+np*(facet-1)
-       end if
-
-     end function buffermap
 
   ! ===========================================
   !  FreeGhostBuffer:

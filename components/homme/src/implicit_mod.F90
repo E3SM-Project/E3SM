@@ -12,7 +12,7 @@ contains
     use physical_constants, only : g
     use element_mod, only : element_t
     use parallel_mod, only : parallel_t, abortmp
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -210,7 +210,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only: EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -533,7 +533,7 @@ contains
     use physical_constants, only : g
     use element_mod, only : element_t
 !    use parallel_mod, only : parallel_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
 !    use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -633,7 +633,7 @@ contains
     use physical_constants, only : rearth, g
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use derivative_mod, only : derivative_t,  gradient_wk, divergence, &
@@ -910,7 +910,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1217,7 +1217,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1395,7 +1395,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1605,7 +1605,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1778,7 +1778,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack,  edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &

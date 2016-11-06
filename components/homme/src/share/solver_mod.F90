@@ -234,7 +234,6 @@ contains
  !~ elem,edge1,red,hybrid,deriv,nets,nete,vecIn)
     use dimensions_mod, only : nlev, np,npsq
 !    use element_mod, only : element_t
-!    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!, edgerotate
 !    use derivative_mod, only : derivative_t, laplace_sphere_wk
 !    use control_mod, only : maxits, while_iter, tol, precon_method
 
@@ -308,7 +307,7 @@ contains
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad, cg_create
-    use edge_mod, only : edgevpack, edgevunpack!, edgerotate
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
     use control_mod, only : maxits, tol, precon_method
@@ -803,7 +802,7 @@ tol=1.e-12
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad, cg_create
-    use edge_mod, only : edgevpack, edgevunpack!, edgerotate
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
     use control_mod, only : maxits, tol, precon_method

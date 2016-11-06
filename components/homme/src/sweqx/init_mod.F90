@@ -34,7 +34,7 @@ contains
                            MeshCubeElemCount, &
                            MeshCubeEdgeCount
     ! --------------------------------
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
+    use cube_mod, only : cube_init_atomic, set_corner_coordinates, &
          assign_node_numbers_to_elem
 
     ! --------------------------------
@@ -117,7 +117,6 @@ contains
     integer :: n_domains
     real(kind=real_kind) :: et,st
 
-    character(len=80) rot_type   ! cube edge rotation type
     real(kind=real_kind), allocatable       :: mass(:,:,:)
 
     logical, parameter :: Debug = .FALSE.
@@ -134,12 +133,6 @@ contains
     call t_startf('init')
 
     call readnl(par)
-
-    ! =====================================
-    ! Set cube edge rotation type for model
-    ! =====================================
-
-    rot_type="contravariant"
 
     if (par%masterproc) then
 
@@ -289,7 +282,6 @@ contains
 
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
-          call rotation_init_atomic(elem(ie),rot_type)
        enddo
        if(par%masterproc) write(6,*)"...done."
     end if

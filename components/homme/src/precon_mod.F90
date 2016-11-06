@@ -36,7 +36,7 @@ contains
     use precon_type_mod, only : precon_type
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad
-    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
     use control_mod, only : maxits, tol, precon_method
@@ -209,7 +209,7 @@ contains
           call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,ie)
 
           kptr=0
-          call edgerotate(edge2,2*nlev,kptr,elem(ie)%desc)
+          !call edgerotate(edge2,2*nlev,kptr,elem(ie)%desc)
 
        end do
 

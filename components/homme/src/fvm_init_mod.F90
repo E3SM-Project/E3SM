@@ -89,7 +89,6 @@ contains
     integer :: nxyp, istartP
     real(kind=real_kind) :: et,st
 
-    character(len=80) rot_type   ! cube edge rotation type
     real(kind=real_kind), allocatable       :: mass(:,:,:)
 
     logical, parameter :: Debug = .FALSE.
@@ -110,8 +109,6 @@ contains
     ! =====================================
     ! Set cube edge rotation type for model
     ! =====================================
-
-    rot_type="contravariant"
 
     if (par%masterproc) then
 
@@ -221,7 +218,6 @@ contains
      gp=gausslobatto(np)
      do ie=1,nelemd
         call cube_init_atomic(elem(ie),gp%points)
-        call rotation_init_atomic(elem(ie),rot_type)
      enddo
      if(par%masterproc) write(6,*)"...done."
     ! =================================================================
