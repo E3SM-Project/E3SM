@@ -89,8 +89,5 @@ SET(EXEC_SOURCES ${SWEQX_SRCS} )
 
 endmacro(sweqx_setup)
 
-############################################################################
-# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
-############################################################################
 
 
