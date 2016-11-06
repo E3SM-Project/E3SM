@@ -99,7 +99,6 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_DIR}/interpolate_driver_mod.F90 
   ${SRC_DIR}/netcdf_io_mod.F90 
   ${SRC_SHARE_DIR}/mesh_mod.F90 
-  ${SRC_SHARE_DIR}/Manager.F90
   ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
   ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp 
   ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 

@@ -94,7 +94,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/metis_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
-  ${SRC_SHARE_DIR}/Manager.F90
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90 

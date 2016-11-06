@@ -106,7 +106,6 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/interpolate_driver_mod.F90 
   ${SRC_DIR}/netcdf_io_mod.F90 
   ${SRC_SHARE_DIR}/mesh_mod.F90 
-  ${SRC_SHARE_DIR}/Manager.F90
   ${SRC_DIR}/prim_main.F90 
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 

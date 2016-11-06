@@ -26,7 +26,6 @@ module prim_driver_mod
   use column_types_mod, only : ColumnModel_t
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
-  use Manager
   use test_mod,         only: set_test_initial_conditions, apply_test_forcing
 #endif
 
@@ -301,9 +300,6 @@ contains
        allocate(elem(nelemd))
        call setup_element_pointers(elem)
        call allocate_element_desc(elem)
-#ifndef CAM
-       call ManagerInit()
-#endif
     endif
 
     if (ntrac>0) then
