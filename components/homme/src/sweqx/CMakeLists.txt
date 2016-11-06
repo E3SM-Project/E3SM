@@ -80,8 +80,6 @@ SET(SWEQX_SRCS
   ${SRC_UTILS}/shr_vmath_mod.F90
   ${SRC_UTILS}/shr_const_mod.F90
   ${SRC_UTILS}/shr_spfn_mod.F90
-  ${SRC_BASE}/ref_state_mod.F90
-  ${SRC_BASE}/jrio.c
 )
 
 SET(EXEC_SOURCES ${SWEQX_SRCS} )

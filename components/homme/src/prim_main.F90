@@ -27,10 +27,6 @@ program prim_main
   use fvm_control_volume_mod, only: fvm_struct
   use fvm_control_volume_mod, only: n0_fvm
 
-#ifdef _REFSOLN
-  use prim_state_mod, only : prim_printstate_par
-#endif
-
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
   use interpolate_driver_mod, only : interpolate_driver
@@ -248,10 +244,6 @@ program prim_main
 #else
      call prim_movie_output(elem, tl, hvcoord, par, fvm)
 #endif
-
-#ifdef _REFSOLN
-     call prim_printstate_par(elem, tl,hybrid,hvcoord,nets,nete, par)
-#endif 
 
      ! ============================================================
      ! Write restart files if required 

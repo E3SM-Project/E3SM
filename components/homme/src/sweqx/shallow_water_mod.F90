@@ -33,10 +33,6 @@ module shallow_water_mod
   ! ------------------------
   use parallel_mod, only : parallel_t
   ! ------------------------
-#ifdef _REFSOLN
-  use ref_state_mod, only : ref_state_read, ref_state_write
-#endif
-  ! ------------------------
   use common_io_mod, only: output_prefix     ! Added to support output_prefix 
   ! ------------------------
   use viscosity_mod, only: biharmonic_wk, neighbor_minmax
@@ -300,9 +296,6 @@ contains
 
     n0 = tl%n0
     k=1
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if (tl%nstep == 0) then
        if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"sweq.mass",status="unknown",form="formatted")
@@ -439,9 +432,6 @@ contains
 
 
     time   = Time_at(tl%nstep)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if (hybrid%masterthread) then
        if (tl%nstep==0) then
           Imass_init   = Imass
@@ -489,9 +479,6 @@ contains
 
     end if
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     Imass_last=Imass
     Ipenergy_last=Ipenergy
     Ikenergy_last=Ikenergy
@@ -1069,10 +1056,6 @@ contains
 
     integer ie,k
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
     if (tl%nstep == 0) then
        if (hybrid%masterthread) then
           if(sub_case == 1)then
@@ -1145,9 +1128,6 @@ contains
     enddo
 
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 
 10  format("      time           l1              l2              linf           ")
 20  format("====================================================================")
@@ -1407,9 +1387,6 @@ contains
 
     time_tmp   = Time_at(tl%nstep)
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
        if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc2.l1.errors",form="formatted")
@@ -1438,9 +1415,6 @@ contains
        write(*,'(f6.2,a,3e15.7)') time_tmp/secpday,' days  l1,l2,linf=',&
             l1,l2,linf
     end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 
 10  format("      time           l1              l2              linf           ")
 20  format("====================================================================")
@@ -1750,9 +1724,6 @@ contains
     real (kind=real_kind) :: l1,l2,linf
     integer ie,npts
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
        if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc5.l1.errors",form="formatted")
@@ -1766,94 +1737,7 @@ contains
        v(:,:,:,ie) = elem(ie)%state%v(:,:,:,1,tl%n0)
     end do
 
-    ! ======================================================
-    ! write in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-!  Parallel version of ref_state, comment out if reading below
-!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       pt(:,:,ie)=p(:,:,ie)
-!       vt(:,:,:,ie)=v(:,:,:,ie)
-!    end do
-#endif
-
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    npts=np
-
-    l1   = l1_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%masterthread) then
-       write(iounit+0,30)REAL(simday),l1
-       write(iounit+1,30)REAL(simday),l2
-       write(iounit+2,30)REAL(simday),linf
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-#endif
-
-30  format(f11.6,4x,e13.6)
-
   end subroutine tc5_errors
-#if 0
-  subroutine tc5_init_diag(iounit,t1,hybrid)
-    implicit none
-
-    type (hybrid_t) , intent(in) :: hybrid
-    type (TimeLevel_t)  , intent(in) :: tl    
-    integer ,         intent(in) :: iounit
-    real(kind=real_kind)         :: time,time_io,tmp
-
-    time   = Time_at(tl%nstep)/secpday
-
-    if (hybrid%masterthread) then
-       open(iounit+0,file=TRIM(output_prefix)//"swtc5.mass",status="unknown",form="formatted")
-       open(iounit+1,file=TRIM(output_prefix)//"swtc5.energy",status="unknown",form="formatted")
-       open(iounit+2,file=TRIM(output_prefix)//"swtc5.penst",status="unknown",form="formatted")
-       open(iounit+3,file=TRIM(output_prefix)//"swtc5.vort",status="unknown",form="formatted")
-       open(iounit+4,file=TRIM(output_prefix)//"swtc5.div",status="unknown",form="formatted")
-       open(iounit+5,file=TRIM(output_prefix)//"swtc5.rmsdiv",status="unknown",form="formatted")
-       !==================================
-       ! If we have a restart run
-       !==================================
-       if(tl%nstep .ne. 0) then 
-          !========================================================
-          ! Advance diagnostic output file to the proper time index 
-          !========================================================
-          do while ( time_io .lt. time ) 
-             read(iounit+0,*)time_io,tmp,Imass0
-             read(iounit+1,*)time_io,tmp,Ienergy0
-             read(iounit+2,*)time_io,tmp,Ipenst0
-             read(iounit+3,*)time_io,tmp
-             read(iounit+4,*)time_io,tmp
-             read(iounit+5,*)time_io,tmp
-          enddo
-       endif
-    end if
-
-
-  end subroutine tc5_init_diag
-#endif
 
 
   ! ======================================================
@@ -1900,9 +1784,6 @@ contains
 
     n0 = tl%n0
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if (tl%nstep == 0) then
        if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc5.mass",status="unknown",form="formatted")
@@ -2005,9 +1886,6 @@ contains
 
     time   = Time_at(tl%nstep)
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if (hybrid%masterthread) then
        !print *,'mass, pmean/g = ',Imass,pmean/g
        if (tl%nstep==0) then
@@ -2033,9 +1911,6 @@ contains
 
     end if
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 
   end subroutine tc5_invariants
 
@@ -2208,9 +2083,6 @@ contains
     real (kind=real_kind) :: l1,l2,linf
     integer ie,npts
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if (tl%nstep == 0) then
        if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc6.l1.errors",form="formatted")
@@ -2224,52 +2096,6 @@ contains
        v(:,:,:,ie) = elem(ie)%state%v(:,:,:,1,tl%n0)
     end do
 
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-!  Parallel version of ref_state, comment out read below if writing here
-!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       pt(:,:,ie)=p(:,:,ie)
-!       vt(:,:,:,ie)=v(:,:,:,ie)
-!    end do
-#endif
-
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-#ifdef _REFSOLN
-#if (defined HORIZ_OPENMP)
-!    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    ! Get the state variables from the simulation (layer 1 only)...
-
-    npts = np
-
-    l1   = l1_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%masterthread) then
-       write(iounit+0,30)REAL(simday),l1
-       write(iounit+1,30)REAL(simday),l2
-       write(iounit+2,30)REAL(simday),linf
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#endif
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 
 10  format("      time           l1              l2              linf           ")
 20  format("====================================================================")
@@ -3025,9 +2851,6 @@ contains
 
     integer ie,k
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if (tl%nstep == 0) then
        if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"vortex.l1.errors",form="formatted")
@@ -3065,10 +2888,6 @@ contains
     enddo
 
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
 10  format("      time           l1              l2              linf           ")
 20  format("====================================================================")
 30  format(f11.6,4x,e13.6)
@@ -3100,9 +2919,6 @@ contains
 
     integer ie,k,i,j
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if (tl%nstep == 0) then
        if (hybrid%masterthread) then
 
@@ -3153,10 +2969,6 @@ contains
        end if
     enddo
 
-
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 
 10  format("      time           l1              l2              linf           ")
 20  format("====================================================================")
@@ -3975,9 +3787,6 @@ contains
     real (kind=real_kind) :: l1,l2,linf
     integer ie,npts
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
        if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"sjtc1.l1.errors",form="formatted")
@@ -3990,54 +3799,6 @@ contains
        p(:,:,ie)   = elem(ie)%state%p(:,:,1,tl%n0) + pmean
        v(:,:,:,ie) = elem(ie)%state%v(:,:,:,1,tl%n0)
     end do
-
-    ! ======================================================
-    ! write in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-!  Parallel version of ref_state, comment out if reading below
-!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       pt(:,:,ie)=p(:,:,ie)
-!       vt(:,:,:,ie)=v(:,:,:,ie)
-!    end do
-#endif
-
-    ! ======================================================
-    ! read in the reference state for this simulated day...
-    ! ======================================================
-
-#ifdef _REFSOLN
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-   call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-   !$OMP BARRIER
-#endif
-
-    npts=np
-
-    l1   = l1_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%masterthread) then
-       write(iounit+0,30)REAL(simday),l1
-       write(iounit+1,30)REAL(simday),l2
-       write(iounit+2,30)REAL(simday),linf
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-#endif
-
-30  format(f11.6,4x,e13.6)
 
   end subroutine sj1_errors
 

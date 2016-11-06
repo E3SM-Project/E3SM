@@ -21,9 +21,6 @@ module prim_state_mod
   use perf_mod,         only: t_startf, t_stopf
   use physical_constants, only : p0,Cp,g
   use fvm_control_volume_mod, only: fvm_struct
-#ifdef _REFSOLN
-  use ref_state_mod,    only : ref_state_read, ref_state_write
-#endif
 
 implicit none
 private
@@ -33,7 +30,6 @@ private
 
 
   public :: prim_printstate
-  public :: prim_printstate_par
   public :: prim_printstate_init
   public :: prim_energy_halftimes
   public :: prim_diag_scalars
@@ -764,78 +760,6 @@ contains
   end subroutine prim_printstate
    
    
-  subroutine prim_printstate_par(elem, tl,hybrid,hvcoord,nets,nete, par)
-    type (element_t), intent(in) :: elem(:)
-    type (TimeLevel_t), target, intent(in) :: tl
-    type (hybrid_t),intent(in)     :: hybrid
-    type (hvcoord_t), intent(in)   :: hvcoord
-    integer,intent(in)             :: nets,nete
-    character(len=*), parameter    :: fstub = "state_norms"
-    integer	                   :: simday
-    type(parallel_t)               :: par
-
-    real (kind=real_kind)  :: v(np,np,2,nlev,nets:nete)
-    real (kind=real_kind)  :: t(np,np,nlev,nets:nete)
-    real (kind=real_kind)  :: ps_v(np,np,nets:nete)
-    real (kind=real_kind)  :: vp(np,np,2,nlev,nets:nete)
-    real (kind=real_kind)  :: tp(np,np,nlev,nets:nete)
-    real (kind=real_kind)  :: ps_vp(np,np,nets:nete)
-    real (kind=real_kind) :: l1,l2,linf
-    integer               :: n0,i,j,k,ie,npts
-
-    npts=SIZE(elem(1)%state%lnps(:,:,n0),1)
-    n0=tl%n0
-    do ie=nets,nete
-       v(:,:,:,:,ie)=elem(ie)%state%v(:,:,:,:,n0) 
-       T(:,:,:,ie)=elem(ie)%state%T(:,:,:,n0) 
-       ps_v(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
-    enddo
-       simday = 0
-
-#ifdef _REFSOLN
-! parallel write file with state vector in unformatted blocks for later calculation of norms
-!    call ref_state_write(v(:,:,:,:,nets:nete),T(:,:,:,nets:nete),ps_v(:,:,nets:nete), & 
-!	fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       vp(:,:,:,:,ie)=v(:,:,:,:,ie)
-!       Tp(:,:,:,ie)=T(:,:,:,ie)
-!       ps_vp(:,:,ie)=ps_v(:,:,ie)
-!    end do
-#endif
-
-#ifdef _REFSOLN
-! parallel read file with state vector in unformatted blocks as written above
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-!    call ref_state_read(vp(:,:,:,:,nets:nete),Tp(:,:,:,nets:nete),ps_vp(:,:,nets:nete), & 
-!	fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    npts=np
-
-    l1   = l1_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(ps_v(:,:,nets:nete),ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-#endif
-
-
-  end subroutine prim_printstate_par
-
-!=======================================================================================================! 
-
 
 subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 

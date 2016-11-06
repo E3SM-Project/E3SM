@@ -232,7 +232,6 @@ contains
     use interpolate_mod, only : get_interp_lat, get_interp_lon, get_interp_gweight
 #if defined(_PRIM)
     use hybvcoord_mod, only : hvcoord_t
-    use physics_io_mod, only : physics_movie_init
 #endif
 
     type (TimeLevel_t), intent(in)         :: tl     ! time level struct
@@ -363,11 +362,6 @@ contains
     call nf_variable_attributes(ncdf, 'C4', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C5', 'concentration','kg/kg')
 
-#if defined(_PRIM)
-    if(columnpackage.ne.'none') then
-       call physics_movie_init(ncdf)
-    end if
-#endif
     call nf_output_init_complete(ncdf)
     allocate(lon(nlon), lat(nlat), gw(nlat))
     allocate(lev(nlev), ilev(nlev+1))
@@ -443,7 +437,6 @@ contains
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
     use hybvcoord_mod, only :  hvcoord_t 
-    use physics_io_mod, only : physics_movie_output
 #endif
     use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
     use derivative_mod, only : derivinit, derivative_t, laplace_sphere_wk
@@ -1076,11 +1069,6 @@ contains
              !
              ! However, these two routines are still conditionally compiled for either PIO or PIO_INTERP
              ! and hence must be protected by an #ifdef:
-#ifdef PIO_INTERP
-             if(columnpackage.ne.'none') then
-                call physics_movie_output(ncdf(ios),elem, interpdata, output_varnames, ncnt)
-             end if
-#endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !            end _PRIM only I/O
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -309,9 +309,6 @@ subroutine fvm_readnl(par)
        sub_case,      &
        tasknum,	      &       ! used dg model in AIX machine
        remapfreq,     &       ! number of steps per remapping call
-#ifdef _PRIMDG
-       remap_type,    &       ! selected remapping option
-#endif
        statefreq,     &       ! number of steps per printstate call
        restartfreq,   &       
        restartfile,   &       ! name of the restart file for INPUT

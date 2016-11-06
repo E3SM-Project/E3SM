@@ -89,9 +89,7 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
                ${UTILS_SHARE_DIR}/shr_const_mod.F90
                ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
-               ${SRC_DIR}/ref_state_mod.F90
                ${SRC_SHARE_DIR}/perfmodel_mod.F90
-               ${SRC_DIR}/jrio.c
                ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp
                ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp
                ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp

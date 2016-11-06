@@ -108,9 +108,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
   ${SRC_SHARE_DIR}/Manager.F90
   ${SRC_DIR}/prim_main.F90 
-  ${SRC_DIR}/ref_state_mod.F90 
-  ${PHYSICS_DIR}/physics_types_mod.F90
-  ${PHYSICS_DIR}/physics_io_mod.F90 
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
@@ -119,7 +116,6 @@ SET(PREQX_SRCS_F90
 
 SET(PREQX_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
-  ${SRC_DIR}/jrio.c
 )
 
 # If the user specified a file for custom compiler options use those
