@@ -39,16 +39,12 @@ module control_mod
 
   integer, public  :: tstep_type= 5                           ! 0 = leapfrog
                                                               ! 1 = RK (foward-in-time)
-  integer, public  :: rk_stage_user  = 0                      ! number of RK stages to use  
+  integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
   integer, public  :: ftype = 0                                ! Forcing Type
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
   integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
-  integer, public  :: energy_fixer = 0    !  -1: No fixer, use non-staggered formula
-                                          !   0: No Fixer, use staggered in time formula
-                                          !       (only for leapfrog)
-                                          !   1 or 4:  Enable fixer, non-staggered formula
-
+  integer, public  :: energy_fixer = 0    !  not used anymore
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
@@ -56,7 +52,7 @@ module control_mod
   integer, public :: physics = 0          ! Defines if the program is to use its own physics (HOMME standalone), valid values 1,2,3
                                           ! physics = 0, no physics
                                           ! physics = 1, Use physics
-  integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency
+  integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
