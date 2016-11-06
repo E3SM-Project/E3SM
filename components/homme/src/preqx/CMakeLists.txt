@@ -125,41 +125,11 @@ ENDIF ()
 # Make SRCS global so the tests can access it
 SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} )
 
-# Set up defaults
-IF (NOT PREQX_NP)
-  SET (PREQX_NP 4) 
-ENDIF ()
-IF (NOT PREQX_PLEV)
-  SET (PREQX_PLEV 20) 
-ENDIF ()
-IF (NOT PREQX_USE_PIO)
-  SET (PREQX_USE_PIO FALSE) 
-ENDIF ()
-IF (NOT PREQX_USE_ENERGY)
-  SET (PREQX_USE_ENERGY FALSE) 
-ENDIF ()
-IF (NOT PREQX_NC)
-  SET (PREQX_NC 4)
-ENDIF ()
-IF (NOT QSIZE_D)
-  SET (QSIZE_D 4)
-ENDIF ()
-# for some of matt's old scripts which use preqx_qsize_d
-IF (PREQX_QSIZE_D)      
-  SET (QSIZE_D ${PREQX_QSIZE_D})
-ENDIF ()
-
-SET(USE_OPENACC FALSE)
 IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
 endmacro(preqx_setup)
 
-preqx_setup()
-############################################################################
-# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
-############################################################################
-createTestExec(preqx preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
 
