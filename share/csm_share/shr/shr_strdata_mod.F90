@@ -1184,7 +1184,7 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
          read (nUnit, nml=shr_strdata_nml, iostat=rCode)
          if (rCode /= 0) then
             write(logunit,F01) 'ERROR: reading input namelist shr_strdata_input from file, &
-                 '//trim(file)//' iostat=',rCode
+                 &'//trim(file)//' iostat=',rCode
             call shr_sys_abort(subName//": namelist read error "//trim(file))
          end if
       end if
