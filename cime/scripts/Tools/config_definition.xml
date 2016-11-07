@@ -1661,6 +1661,20 @@
 
 
   <!-- ======================================================================= -->
+  <!-- MPASCICE                                                                -->
+  <!-- ======================================================================= -->
+
+  <entry id="MPASCICE_IC_MODE"
+	 type="char"
+	 valid_values="cold_start,spunup"
+	 value=""
+	 group="build_component_mpas-cice"
+	 sdesc="Option to describe the MPASCICE initial condition mode"
+	 ></entry>
+
+
+
+  <!-- ======================================================================= -->
   <!-- CICE                                                                    -->
   <!-- ======================================================================= -->
 
@@ -3956,28 +3970,54 @@
          sdesc="pio rearranger communication flow control direction"
          ></entry> 
 
-  <entry id="PIO_REARR_COMM_MAX_PEND_REQ"
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO"
          type="integer"
          valid_values="" 
-         value="64" 
+         value="0" 
          group="run_pio"
-         sdesc="pio rearranger communication max pending requests"
+         sdesc="pio rearranger communication max pending requests (comp2io) : 0 implies CIME internally calculates the value ( = max(64, 2 * PIO_NUMTASKS) ), -1 implies no bound on max pending requests"
          ></entry>
 
-  <entry id="PIO_REARR_COMM_ENABLE_HS"
+  <entry id="PIO_REARR_COMM_ENABLE_HS_COMP2IO"
          type="logical"
          valid_values="TRUE,FALSE"  
          value="TRUE" 
          group="run_pio"
-         sdesc="pio rearranger communiation options: TRUE implies enable handshake" 
+         sdesc="pio rearranger communiation options (comp2io): TRUE implies enable handshake" 
          ></entry> 
 
-  <entry id="PIO_REARR_COMM_ENABLE_ISEND"
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_COMP2IO"
          type="logical"
          valid_values="TRUE,FALSE"  
          value="FALSE" 
          group="run_pio"
-         sdesc="pio rearranger communiation options: TRUE implies enable isend" 
+         sdesc="pio rearranger communiation options (comp2io): TRUE implies enable isend" 
+         ></entry> 
+
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP"
+         type="integer"
+         valid_values="" 
+         value="64" 
+         group="run_pio"
+         sdesc="pio rearranger communication max pending requests (io2comp) : -1 implies no bound on max pending requests"
+         ></entry>
+
+  <!-- Handshaking is a very bad idea for large process counts and for  -->
+  <!-- io2comp (but important for comp2io) -->
+  <entry id="PIO_REARR_COMM_ENABLE_HS_IO2COMP"
+         type="logical"
+         valid_values="TRUE,FALSE"  
+         value="FALSE" 
+         group="run_pio"
+         sdesc="pio rearranger communiation options (io2comp): TRUE implies enable handshake" 
+         ></entry> 
+
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_IO2COMP"
+         type="logical"
+         valid_values="TRUE,FALSE"  
+         value="TRUE" 
+         group="run_pio"
+         sdesc="pio rearranger communiation options (io2comp): TRUE implies enable isend" 
          ></entry> 
 
   <entry id="OCN_PIO_STRIDE"

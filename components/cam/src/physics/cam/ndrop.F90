@@ -1058,7 +1058,7 @@ subroutine dropmixnuc( &
                ptend%q(i,:,lptr) = 0.0_r8
                ptend%q(i,top_lev:pver,lptr) = raertend(top_lev:pver)           ! set tendencies for interstitial aerosol
                qqcw(mm)%fld(i,:) = 0.0_r8
-               qqcw(mm)%fld(i,top_lev:pver) = raercol_cw(top_lev:pver,mm,nnew) ! update cloud-borne aerosol
+               qqcw(mm)%fld(i,top_lev:pver) = max(raercol_cw(top_lev:pver,mm,nnew),0.0_r8) ! update cloud-borne aerosol; HW: ensure non-negative
             end do
          end do
 

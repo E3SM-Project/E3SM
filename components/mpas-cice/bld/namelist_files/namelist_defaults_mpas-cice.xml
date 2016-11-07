@@ -5,11 +5,12 @@
 
 <!-- cice_model -->
 <config_dt>1800.0</config_dt>
-<config_dt ice_grid="oQU240">3600.0</config_dt>
+<config_dt ice_grid="oQU240">7200.0</config_dt>
 <config_dt ice_grid="oQU120">3600.0</config_dt>
 <config_dt ice_grid="mpas120">3600.0</config_dt>
 <config_dt ice_grid="oEC60to30">1800.0</config_dt>
 <config_dt ice_grid="oRRS30to10">900.0</config_dt>
+<config_dt ice_grid="oRRS18to6">900.0</config_dt>
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
@@ -77,11 +78,13 @@
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 
 <!-- velocity_solver -->
+<config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU240">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU120">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="mpas120">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oRRS18to6">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS15to5">2</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
@@ -146,6 +149,120 @@
 <config_snow_porosity_at_ice_surface>-0.3</config_snow_porosity_at_ice_surface>
 <config_new_ice_fraction_biotracer>0.80</config_new_ice_fraction_biotracer>
 <config_fraction_biotracer_in_frazil>0.80</config_fraction_biotracer_in_frazil>
+<config_ratio_Si_to_N_diatoms>1.80</config_ratio_Si_to_N_diatoms>
+<config_ratio_Si_to_N_small_plankton>0.00</config_ratio_Si_to_N_small_plankton>
+<config_ratio_Si_to_N_phaeocystis>0.00</config_ratio_Si_to_N_phaeocystis>
+<config_ratio_S_to_N_diatoms>0.03</config_ratio_S_to_N_diatoms>
+<config_ratio_S_to_N_small_plankton>0.03</config_ratio_S_to_N_small_plankton>
+<config_ratio_S_to_N_phaeocystis>0.03</config_ratio_S_to_N_phaeocystis>
+<config_ratio_Fe_to_C_diatoms>0.0033</config_ratio_Fe_to_C_diatoms>
+<config_ratio_Fe_to_C_small_plankton>0.0033</config_ratio_Fe_to_C_small_plankton>
+<config_ratio_Fe_to_C_phaeocystis>0.1</config_ratio_Fe_to_C_phaeocystis>
+<config_ratio_Fe_to_N_diatoms>0.023</config_ratio_Fe_to_N_diatoms>
+<config_ratio_Fe_to_N_small_plankton>0.023</config_ratio_Fe_to_N_small_plankton>
+<config_ratio_Fe_to_N_phaeocystis>0.7</config_ratio_Fe_to_N_phaeocystis>
+<config_ratio_Fe_to_DON>0.023</config_ratio_Fe_to_DON>
+<config_ratio_Fe_to_DOC_saccharids>0.1</config_ratio_Fe_to_DOC_saccharids>
+<config_ratio_Fe_to_DOC_lipids>0.033</config_ratio_Fe_to_DOC_lipids>
+<config_respiration_fraction_of_growth>0.05</config_respiration_fraction_of_growth>
+<config_rapid_mobile_to_stationary_time>5200.0</config_rapid_mobile_to_stationary_time>
+<config_long_mobile_to_stationary_time>173000.0</config_long_mobile_to_stationary_time>
+<config_algal_maximum_velocity>0.0000000111</config_algal_maximum_velocity>
+<config_ratio_Fe_to_dust>0.035</config_ratio_Fe_to_dust>
+<config_solubility_of_Fe_in_dust>0.005</config_solubility_of_Fe_in_dust>
+<config_chla_absorptivity_of_diatoms>0.03</config_chla_absorptivity_of_diatoms>
+<config_chla_absorptivity_of_small_plankton>0.01</config_chla_absorptivity_of_small_plankton>
+<config_chla_absorptivity_of_phaeocystis>0.05</config_chla_absorptivity_of_phaeocystis>
+<config_light_attenuation_diatoms>0.8</config_light_attenuation_diatoms>
+<config_light_attenuation_small_plankton>0.67</config_light_attenuation_small_plankton>
+<config_light_attenuation_phaeocystis>0.67</config_light_attenuation_phaeocystis>
+<config_light_inhibition_diatoms>0.018</config_light_inhibition_diatoms>
+<config_light_inhibition_small_plankton>0.0025</config_light_inhibition_small_plankton>
+<config_light_inhibition_phaeocystis>0.01</config_light_inhibition_phaeocystis>
+<config_maximum_growth_rate_diatoms>1.44</config_maximum_growth_rate_diatoms>
+<config_maximum_growth_rate_small_plankton>0.851</config_maximum_growth_rate_small_plankton>
+<config_maximum_growth_rate_phaeocystis>0.851</config_maximum_growth_rate_phaeocystis>
+<config_temperature_growth_diatoms>0.06</config_temperature_growth_diatoms>
+<config_temperature_growth_small_plankton>0.06</config_temperature_growth_small_plankton>
+<config_temperature_growth_phaeocystis>0.06</config_temperature_growth_phaeocystis>
+<config_grazed_fraction_diatoms>0.0</config_grazed_fraction_diatoms>
+<config_grazed_fraction_small_plankton>0.1</config_grazed_fraction_small_plankton>
+<config_grazed_fraction_phaeocystis>0.1</config_grazed_fraction_phaeocystis>
+<config_mortality_diatoms>0.007</config_mortality_diatoms>
+<config_mortality_small_plankton>0.007</config_mortality_small_plankton>
+<config_mortality_phaeocystis>0.007</config_mortality_phaeocystis>
+<config_temperature_mortality_diatoms>0.03</config_temperature_mortality_diatoms>
+<config_temperature_mortality_small_plankton>0.03</config_temperature_mortality_small_plankton>
+<config_temperature_mortality_phaeocystis>0.03</config_temperature_mortality_phaeocystis>
+<config_exudation_diatoms>0.0</config_exudation_diatoms>
+<config_exudation_small_plankton>0.0</config_exudation_small_plankton>
+<config_exudation_phaeocystis>0.0</config_exudation_phaeocystis>
+<config_nitrate_saturation_diatoms>1.0</config_nitrate_saturation_diatoms>
+<config_nitrate_saturation_small_plankton>1.0</config_nitrate_saturation_small_plankton>
+<config_nitrate_saturation_phaeocystis>1.0</config_nitrate_saturation_phaeocystis>
+<config_ammonium_saturation_diatoms>0.3</config_ammonium_saturation_diatoms>
+<config_ammonium_saturation_small_plankton>0.3</config_ammonium_saturation_small_plankton>
+<config_ammonium_saturation_phaeocystis>0.3</config_ammonium_saturation_phaeocystis>
+<config_silicate_saturation_diatoms>4.0</config_silicate_saturation_diatoms>
+<config_silicate_saturation_small_plankton>0.0</config_silicate_saturation_small_plankton>
+<config_silicate_saturation_phaeocystis>0.0</config_silicate_saturation_phaeocystis>
+<config_iron_saturation_diatoms>1.0</config_iron_saturation_diatoms>
+<config_iron_saturation_small_plankton>0.2</config_iron_saturation_small_plankton>
+<config_iron_saturation_phaeocystis>0.1</config_iron_saturation_phaeocystis>
+<config_fraction_spilled_to_DON>0.6</config_fraction_spilled_to_DON>
+<config_degredation_of_DON>0.03</config_degredation_of_DON>
+<config_fraction_DON_ammonium>0.25</config_fraction_DON_ammonium>
+<config_fraction_loss_to_saccharids>0.4</config_fraction_loss_to_saccharids>
+<config_fraction_loss_to_lipids>0.4</config_fraction_loss_to_lipids>
+<config_fraction_exudation_to_saccharids>1.0</config_fraction_exudation_to_saccharids>
+<config_fraction_exudation_to_lipids>1.0</config_fraction_exudation_to_lipids>
+<config_remineralization_saccharids>0.03</config_remineralization_saccharids>
+<config_remineralization_lipids>0.03</config_remineralization_lipids>
+<config_maximum_brine_temperature>0.0</config_maximum_brine_temperature>
+<config_salinity_dependence_of_growth>1.0</config_salinity_dependence_of_growth>
+<config_minimum_optical_depth>0.1</config_minimum_optical_depth>
+<config_slopped_grazing_fraction>0.5</config_slopped_grazing_fraction>
+<config_excreted_fraction>0.5</config_excreted_fraction>
+<config_fraction_mortality_to_ammonium>0.5</config_fraction_mortality_to_ammonium>
+<config_fraction_iron_remineralized>0.3</config_fraction_iron_remineralized>
+<config_nitrification_rate>0.0</config_nitrification_rate>
+<config_desorption_loss_particulate_iron>3065.0</config_desorption_loss_particulate_iron>
+<config_maximum_loss_fraction>0.9</config_maximum_loss_fraction>
+<config_maximum_ratio_iron_to_saccharids>0.2</config_maximum_ratio_iron_to_saccharids>
+<config_respiration_loss_to_DMSPd>0.75</config_respiration_loss_to_DMSPd>
+<config_DMSP_to_DMS_conversion_fraction>0.5</config_DMSP_to_DMS_conversion_fraction>
+<config_DMSP_to_DMS_conversion_time>3.0</config_DMSP_to_DMS_conversion_time>
+<config_DMS_oxidation_time>10.0</config_DMS_oxidation_time>
+<config_mobility_type_diatoms>0.0</config_mobility_type_diatoms>
+<config_mobility_type_small_plankton>0.5</config_mobility_type_small_plankton>
+<config_mobility_type_phaeocystis>0.5</config_mobility_type_phaeocystis>
+<config_mobility_type_nitrate>-1.0</config_mobility_type_nitrate>
+<config_mobility_type_ammonium>1.0</config_mobility_type_ammonium>
+<config_mobility_type_silicate>-1.0</config_mobility_type_silicate>
+<config_mobility_type_DMSPp>0.5</config_mobility_type_DMSPp>
+<config_mobility_type_DMSPd>-1.0</config_mobility_type_DMSPd>
+<config_mobility_type_humics>1.0</config_mobility_type_humics>
+<config_mobility_type_saccharids>0.5</config_mobility_type_saccharids>
+<config_mobility_type_lipids>0.5</config_mobility_type_lipids>
+<config_mobility_type_proteins>0.5</config_mobility_type_proteins>
+<config_mobility_type_dissolved_iron>0.5</config_mobility_type_dissolved_iron>
+<config_mobility_type_particulate_iron>0.5</config_mobility_type_particulate_iron>
+<config_mobility_type_black_carbon1>1.0</config_mobility_type_black_carbon1>
+<config_mobility_type_black_carbon2>1.0</config_mobility_type_black_carbon2>
+<config_mobility_type_dust1>1.0</config_mobility_type_dust1>
+<config_mobility_type_dust2>1.0</config_mobility_type_dust2>
+<config_mobility_type_dust3>1.0</config_mobility_type_dust3>
+<config_mobility_type_dust4>1.0</config_mobility_type_dust4>
+<config_ratio_C_to_N_diatoms>7.0</config_ratio_C_to_N_diatoms>
+<config_ratio_C_to_N_small_plankton>7.0</config_ratio_C_to_N_small_plankton>
+<config_ratio_C_to_N_phaeocystis>7.0</config_ratio_C_to_N_phaeocystis>
+<config_ratio_chla_to_N_diatoms>2.1</config_ratio_chla_to_N_diatoms>
+<config_ratio_chla_to_N_small_plankton>1.1</config_ratio_chla_to_N_small_plankton>
+<config_ratio_chla_to_N_phaeocystis>0.84</config_ratio_chla_to_N_phaeocystis>
+<config_scales_absorption_diatoms>2.0</config_scales_absorption_diatoms>
+<config_scales_absorption_small_plankton>4.0</config_scales_absorption_small_plankton>
+<config_scales_absorption_phaeocystis>5.0</config_scales_absorption_phaeocystis>
+<config_ratio_C_to_N_proteins>7.0</config_ratio_C_to_N_proteins>
 
 <!-- shortwave -->
 <config_shortwave_type>'dEdd'</config_shortwave_type>

@@ -1286,7 +1286,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     use aero_model,         only: aero_model_drydep
     use carma_intr,         only: carma_emission_tend, carma_timestep_tend
     use carma_flags_mod,    only: carma_do_aerosol, carma_do_emission
-    use check_energy,       only: check_energy_chng
+    use check_energy,       only: check_energy_chng, &
+                                  check_water, & 
+                                  check_prect, &
+                                  check_qflx 
     use check_energy,       only: check_tracers_data, check_tracers_init, check_tracers_chng
     use time_manager,       only: get_nstep
     use cam_abortutils,         only: endrun
@@ -1302,6 +1305,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use unicon_cam,         only: unicon_cam_org_diags
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
+    use phys_control,       only: use_qqflx_fixer
 
     implicit none
 
@@ -1443,12 +1447,24 @@ end if ! l_tracer_aero
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
 
-    ! Check if latent heat flux exceeds the total moisture content of the
-    ! lowest model layer, thereby creating negative moisture.
+!!== KZ_WCON
 
-    call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
-         state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
-         cam_in%lhf , cam_in%cflx )
+    call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
+
+    if(.not.use_qqflx_fixer) then 
+
+       ! Check if latent heat flux exceeds the total moisture content of the
+       ! lowest model layer, thereby creating negative moisture.
+
+       call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
+            state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
+            cam_in%lhf , cam_in%cflx )
+
+    end if 
+
+    call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
+
+!!== KZ_WCON
 
     call t_stopf('tphysac_init')
 
@@ -1741,7 +1757,11 @@ subroutine tphysbc (ztodt,               &
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
     use time_manager,    only: is_first_step, get_nstep
     use convect_shallow, only: convect_shallow_tend
-    use check_energy,    only: check_energy_chng, check_energy_fix, check_energy_timestep_init
+    use check_energy,    only: check_energy_chng, check_energy_fix, &
+                               check_qflx,  & 
+                               check_water, & 
+                               check_prect, & 
+                               check_energy_timestep_init
     use check_energy,    only: check_tracers_data, check_tracers_init, check_tracers_chng
     use dycore,          only: dycore_is
     use aero_model,      only: aero_model_wetdep
@@ -1758,6 +1778,7 @@ subroutine tphysbc (ztodt,               &
     use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
+    use phys_control,    only: use_qqflx_fixer, use_mass_borrower
 
     implicit none
 
@@ -1983,12 +2004,38 @@ subroutine tphysbc (ztodt,               &
     tend %dudt(:ncol,:pver)  = 0._r8
     tend %dvdt(:ncol,:pver)  = 0._r8
 
-    !
-    ! Make sure that input tracers are all positive (otherwise,
-    ! clybry_fam_adj will crash every few years).
-    !
-    call qneg3('TPHYSBCb',lchnk  ,ncol    ,pcols   ,pver    , &
-         1, pcnst, qmin  ,state%q )
+!!== KZ_WCON
+    call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
+    call check_water(state, tend, "PHYBC01", nstep, ztodt)
+
+
+    if(use_mass_borrower) then 
+
+      !! printout diagnostic information
+      !!.................................................................
+       call qneg3('TPHYSBCb',lchnk  ,ncol    ,pcols   ,pver    , &
+            1, pcnst, qmin  ,state%q, .False.)
+
+      !! tracer borrower for mass conservation 
+      !!.................................................................
+
+       do m = 1, pcnst 
+          call massborrow("PHYBC01",lchnk,ncol,state%psetcols,m,m,qmin(m),state%q(1,1,m),state%pdel)
+       end do
+
+!!      call qneg3('TPHYSBCb',lchnk  ,ncol    ,pcols   ,pver    , &
+!!           1, pcnst, qmin  ,state%q, .True. )
+    else
+
+      !! original fixer to make sure tracers are all positive
+      !!.................................................................
+
+      call qneg3('TPHYSBCb',lchnk  ,ncol    ,pcols   ,pver    , &
+           1, pcnst, qmin  ,state%q, .True. )
+
+    end if 
+
+!!== KZ_WCON
 
     ! Validate state coming from the dynamics.
     if (state_debug_checks) &
@@ -1996,11 +2043,38 @@ subroutine tphysbc (ztodt,               &
 
     call clybry_fam_adj( ncol, lchnk, map2chm, state%q, pbuf )
 
-    ! Since clybry_fam_adj operates directly on the tracers, and has no
-    ! physics_update call, re-run qneg3.
+!!== KZ_WCON
 
-    call qneg3('TPHYSBCc',lchnk  ,ncol    ,pcols   ,pver    , &
-         1, pcnst, qmin  ,state%q )
+    if(use_mass_borrower) then
+
+       !! if use_mass_borrower = True, only printout diagnostic information
+       !!.................................................................
+
+       call qneg3('TPHYSBCc',lchnk  ,ncol    ,pcols   ,pver    , &
+            1, pcnst, qmin  ,state%q, .False. )
+
+       !! tracer borrower for mass conservation 
+       !!.................................................................
+       do m = 1, pcnst
+          call massborrow("PHYBC02",lchnk,ncol,state%psetcols,m,m,qmin(m),state%q(1,1,m),state%pdel)
+       end do
+
+!!       call qneg3('TPHYSBCc',lchnk  ,ncol    ,pcols   ,pver    , &
+!!            1, pcnst, qmin  ,state%q, .True. )
+
+    else
+
+       !! original fixer to make sure tracers are all positive
+       !!.................................................................
+
+       call qneg3('TPHYSBCc',lchnk  ,ncol    ,pcols   ,pver    , &
+            1, pcnst, qmin  ,state%q, .True. )
+
+    end if
+
+
+    call check_water(state, tend, "PHYBC02", nstep, ztodt)
+!!== KZ_WCON
 
     ! Validate output of clybry_fam_adj.
     if (state_debug_checks) &
@@ -2266,6 +2340,21 @@ end if
        
           else ! Calculate CLUBB macrophysics
 
+
+!!== KZ_WATCON 
+
+    !! qqflx fixer to avoid negative water vapor in the surface layer
+    !! due to strong negative qflx  
+    !!.................................................................
+
+    if(use_qqflx_fixer) then
+       call qqflx_fixer('TPHYSBC ', lchnk, ncol, cld_macmic_ztodt, &
+            state%q(1,1,1), state%rpdel(1,1), cam_in%shf, &
+            cam_in%lhf , cam_in%cflx/cld_macmic_num_steps )
+
+    end if
+!!== KZ_WATCON 
+
              ! =====================================================
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
@@ -2289,7 +2378,7 @@ end if
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-                     cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
  
           endif

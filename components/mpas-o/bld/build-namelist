@@ -434,7 +434,6 @@ if ($CONTINUE_RUN eq 'TRUE') {
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_pio_num_iotasks');
 add_default($nl, 'config_pio_stride');
-add_default($nl, 'config_restart_forcing_fields');
 
 #################################
 # Namelist group: decomposition #
@@ -465,13 +464,11 @@ add_default($nl, 'config_1dCVTgenerator_stretch1');
 add_default($nl, 'config_1dCVTgenerator_stretch2');
 add_default($nl, 'config_1dCVTgenerator_dzSeed');
 
-####################################
-# Namelist group: init_ssh_and_ssp #
-####################################
+################################################
+# Namelist group: init_ssh_and_landIcePressure #
+################################################
 
-add_default($nl, 'config_read_ssh_and_ssp_from_stream');
 add_default($nl, 'config_iterative_init_variable');
-add_default($nl, 'config_modify_open_ocean_ssh');
 
 ####################################
 # Namelist group: time_integration #
@@ -681,11 +678,12 @@ add_default($nl, 'config_forcing_restart_file');
 
 add_default($nl, 'config_use_frazil_ice_formation');
 add_default($nl, 'config_frazil_heat_of_fusion');
-add_default($nl, 'config_frazil_sea_ice_density');
+add_default($nl, 'config_frazil_ice_density');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
-add_default($nl, 'config_frazil_ice_reference_salinity');
+add_default($nl, 'config_frazil_sea_ice_reference_salinity');
+add_default($nl, 'config_frazil_land_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
@@ -699,9 +697,6 @@ add_default($nl, 'config_land_ice_flux_useHollandJenkinsAdvDiff');
 add_default($nl, 'config_land_ice_flux_attenuation_coefficient');
 add_default($nl, 'config_land_ice_flux_boundaryLayerThickness');
 add_default($nl, 'config_land_ice_flux_boundaryLayerNeighborWeight');
-add_default($nl, 'config_land_ice_flux_Tf0');
-add_default($nl, 'config_land_ice_flux_dTf_dS');
-add_default($nl, 'config_land_ice_flux_dTf_dp');
 add_default($nl, 'config_land_ice_flux_cp_ice');
 add_default($nl, 'config_land_ice_flux_rho_ice');
 add_default($nl, 'config_land_ice_flux_topDragCoeff');
@@ -744,6 +739,11 @@ add_default($nl, 'config_common_level_weight');
 #######################
 
 add_default($nl, 'config_eos_type');
+add_default($nl, 'config_freezing_temperature_coeff_0');
+add_default($nl, 'config_freezing_temperature_coeff_S');
+add_default($nl, 'config_freezing_temperature_coeff_p');
+add_default($nl, 'config_freezing_temperature_coeff_pS');
+add_default($nl, 'config_freezing_temperature_reference_pressure');
 
 ##############################
 # Namelist group: eos_linear #
@@ -908,11 +908,15 @@ add_default($nl, 'config_global_ocean_temperature_file');
 add_default($nl, 'config_global_ocean_salinity_file');
 add_default($nl, 'config_global_ocean_tracer_nlat_dimname');
 add_default($nl, 'config_global_ocean_tracer_nlon_dimname');
+add_default($nl, 'config_global_ocean_tracer_ndepth_dimname');
+add_default($nl, 'config_global_ocean_tracer_depth_conversion_factor');
+add_default($nl, 'config_global_ocean_tracer_vert_levels');
 add_default($nl, 'config_global_ocean_temperature_varname');
 add_default($nl, 'config_global_ocean_salinity_varname');
 add_default($nl, 'config_global_ocean_tracer_latlon_degrees');
 add_default($nl, 'config_global_ocean_tracer_lat_varname');
 add_default($nl, 'config_global_ocean_tracer_lon_varname');
+add_default($nl, 'config_global_ocean_tracer_depth_varname');
 add_default($nl, 'config_global_ocean_tracer_method');
 add_default($nl, 'config_global_ocean_smooth_TS_iterations');
 add_default($nl, 'config_global_ocean_swData_file');
@@ -961,6 +965,20 @@ add_default($nl, 'config_global_ocean_windstress_zonal_varname');
 add_default($nl, 'config_global_ocean_windstress_meridional_varname');
 add_default($nl, 'config_global_ocean_windstress_method');
 add_default($nl, 'config_global_ocean_windstress_conversion_factor');
+add_default($nl, 'config_global_ocean_ecosys_file');
+add_default($nl, 'config_global_ocean_ecosys_forcing_file');
+add_default($nl, 'config_global_ocean_ecosys_nlat_dimname');
+add_default($nl, 'config_global_ocean_ecosys_nlon_dimname');
+add_default($nl, 'config_global_ocean_ecosys_ndepth_dimname');
+add_default($nl, 'config_global_ocean_ecosys_depth_conversion_factor');
+add_default($nl, 'config_global_ocean_ecosys_vert_levels');
+add_default($nl, 'config_global_ocean_ecosys_lat_varname');
+add_default($nl, 'config_global_ocean_ecosys_lon_varname');
+add_default($nl, 'config_global_ocean_ecosys_depth_varname');
+add_default($nl, 'config_global_ocean_ecosys_latlon_degrees');
+add_default($nl, 'config_global_ocean_ecosys_method');
+add_default($nl, 'config_global_ocean_ecosys_forcing_time_dimname');
+add_default($nl, 'config_global_ocean_smooth_ecosys_iterations');
 
 ################################
 # Namelist group: cvmix_WSwSBF #
@@ -1203,7 +1221,6 @@ add_default($nl, 'config_isomip_temperature_piston_velocity');
 add_default($nl, 'config_isomip_restoring_salinity');
 add_default($nl, 'config_isomip_salinity_piston_velocity');
 add_default($nl, 'config_isomip_coriolis_parameter');
-add_default($nl, 'config_isomip_effective_density');
 add_default($nl, 'config_isomip_southern_boundary');
 add_default($nl, 'config_isomip_northern_boundary');
 add_default($nl, 'config_isomip_western_boundary');
@@ -1254,6 +1271,7 @@ add_default($nl, 'config_use_ecosysTracers_exponential_decay');
 add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
 add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_value');
+add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling');
 
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #
@@ -1267,6 +1285,7 @@ add_default($nl, 'config_use_DMSTracers_exponential_decay');
 add_default($nl, 'config_use_DMSTracers_idealAge_forcing');
 add_default($nl, 'config_use_DMSTracers_ttd_forcing');
 add_default($nl, 'config_use_DMSTracers_surface_value');
+add_default($nl, 'config_use_DMSTracers_sea_ice_coupling');
 
 ########################################################
 # Namelist group: tracer_forcing_MacroMoleculesTracers #
@@ -1280,6 +1299,7 @@ add_default($nl, 'config_use_MacroMoleculesTracers_exponential_decay');
 add_default($nl, 'config_use_MacroMoleculesTracers_idealAge_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_ttd_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_value');
+add_default($nl, 'config_use_MacroMoleculesTracers_sea_ice_coupling');
 
 ##################################
 # Namelist group: AM_globalStats #
@@ -1563,7 +1583,7 @@ my @groups = qw(run_modes
                 decomposition
                 init_setup
                 cvtgenerator
-                init_ssh_and_ssp
+                init_ssh_and_landicepressure
                 time_integration
                 ale_vertical_grid
                 ale_frequency_filtered_thickness

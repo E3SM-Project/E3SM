@@ -15,22 +15,24 @@ mkdir -p $BUILD_ROOT/titan-cpu     || exit -1
 cd $BUILD_ROOT/titan-cpu
  
 if [ $do_cmake -eq 1 ]; then
-rm -rf CMakeFiles CMakeCache.txt
-cmake                                                                          \
-  -C $HOMME_ROOT/cmake/machineFiles/titan.cmake                                \
-  -DOPT_FLAGS="-O2 -Kieee -Mvect=nosse"                                        \
-  -DWITH_PNETCDF=TRUE                                                          \
-  -DPREQX_NP=4                                                                 \
-  -DPREQX_PLEV=$NLEVELS                                                        \
-  -DPREQX_QSIZE_D=$TRACERS                                                     \
-  -DBUILD_HOMME_SWEQX=TRUE                                                     \
-  -DBUILD_HOMME_PREQX=TRUE                                                     \
-  -DBUILD_HOMME_PREQX_ACC=TRUE                                                 \
-  -DENABLE_OPENMP=TRUE                                                         \
-  -DHOMME_PROJID=STF006                                                        \
-  -DOPENACC_Fortran_FLAGS="-acc -ta=tesla,pin,cc35,cuda7.0 -Minfo=accel"       \
-  -DOPENACC_Linker_FLAGS="-acc -ta=tesla,pin,cc35,cuda7.0 -Mcuda"              \
+#rm -rf CMakeCache.txt CMakeFiles cmake_fortran_c_interface.h cmake_install.cmake CTestTestfile.cmake Makefile src test_execs tests utils
+rm -rf CMakeCache.txt CMakeFiles #cmake_fortran_c_interface.h cmake_install.cmake CTestTestfile.cmake Makefile src test_execs tests utils
+cmake                                                                                 \
+  -C $HOMME_ROOT/cmake/machineFiles/titan.cmake                                       \
+  -DOPT_FLAGS="-O2 -Kieee -Mvect=nosse"                                               \
+  -DWITH_PNETCDF=TRUE                                                                 \
+  -DPREQX_NP=4                                                                        \
+  -DPREQX_PLEV=$NLEVELS                                                               \
+  -DQSIZE_D=$NTRACERS                                                                 \
+  -DBUILD_HOMME_SWEQX=TRUE                                                            \
+  -DBUILD_HOMME_PREQX=TRUE                                                            \
+  -DBUILD_HOMME_PREQX_ACC=TRUE                                                        \
+  -DENABLE_OPENMP=TRUE                                                                \
+  -DHOMME_PROJID=STF006                                                               \
+  -DOPENACC_Fortran_FLAGS="-acc -ta=tesla,pin,cc35,cuda7.5 -Minfo=accel"              \
+  -DOPENACC_Linker_FLAGS="-acc -ta=tesla,pin,cc35,cuda7.5 -Mcuda"                     \
   -DPREQX_CUSTOM_FLAGS_FILE=${HOMME_ROOT}/compile_scripts/titan/customFlags.cmake.cpu \
+  -DUSE_NUM_PROCS=16                                                                  \
   $HOMME_ROOT                                               
 fi
 
@@ -42,5 +44,5 @@ if [ $do_make -eq 1 ]; then
 make -j32                                                   || exit -1
 mkdir -p $HOMME_ROOT/build/preqx
 cp ./src/preqx/preqx $HOMME_ROOT/build/preqx/preqx.cpu      || exit -1
-#cp ./src/preqx_acc/preqx_acc $HOMME_ROOT/build/preqx/preqx.openacc      || exit -1
+cp ./src/preqx_acc/preqx_acc $HOMME_ROOT/build/preqx/preqx.openacc      || exit -1
 fi

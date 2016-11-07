@@ -237,7 +237,7 @@ contains
     allocate(this%vsfm_mass_col_1d(          ncells))                     ; this%vsfm_mass_col_1d       (:)   = nan
     allocate(this%vsfm_smpl_col_1d(          ncells))                     ; this%vsfm_smpl_col_1d       (:)   = nan
     allocate(this%vsfm_soilp_col_1d(         ncells))                     ; this%vsfm_soilp_col_1d      (:)   = nan
-    allocate(this%soilp_col              (begc:endc,1:nlevgrnd))          ; this%soilp_col              (:,:) = nan
+    allocate(this%soilp_col              (begc:endc,1:nlevgrnd))          ; this%soilp_col              (:,:) = 0._r8
 
   end subroutine InitAllocate
 

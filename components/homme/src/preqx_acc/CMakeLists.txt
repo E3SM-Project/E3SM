@@ -15,6 +15,11 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                             ${UTILS_TIMING_DIR} )
 
 SET(PREQX_SRCS_F90
+  ${SRC_DIR}/test_src/asp_tests.F90
+  ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
+  ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
+  ${SRC_DIR}/test_src/dcmip2012_test4.F90
+  ${SRC_DIR}/test_src/dcmip2012_test5.F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
   ${SRC_SHARE_DIR}/derivative_mod_base.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90
@@ -22,6 +27,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/solver_init_mod_base.F90
   ${SRC_SHARE_DIR}/vertremap_mod_base.F90
   ${SRC_SHARE_DIR}/viscosity_mod_base.F90
+  ${SRC_DIR}/preqx/dcmip_tests.F90
   ${SRC_DIR}/preqx_acc/bndry_mod.F90
   ${SRC_DIR}/preqx_acc/derivative_mod.F90
   ${SRC_DIR}/preqx_acc/edge_mod.F90
@@ -87,11 +93,9 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/namelist_mod.F90 
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_DIR}/checksum_mod.F90 
-  ${SRC_DIR}/baroclinic_inst_mod.F90 
   ${SRC_SHARE_DIR}/diffusion_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_DIR}/asp_tests.F90 
-  ${SRC_SHARE_DIR}/prim_state_mod.F90 
+  ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_DIR}/prim_restart_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90 
   ${SRC_SHARE_DIR}/prim_advance_mod.F90 
@@ -112,6 +116,7 @@ SET(PREQX_SRCS_F90
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
+  ${SRC_DIR}/test_mod.F90
   )
 
 SET(PREQX_SRCS_C
@@ -127,26 +132,6 @@ ENDIF ()
 # Make SRCS global so the tests can access it
 SET(EXEC_SOURCES ${PREQX_ACC_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90})
 
-# Set up defaults
-IF (NOT PREQX_NP)
-  SET (PREQX_NP 4) 
-ENDIF ()
-IF (NOT PREQX_PLEV)
-  SET (PREQX_PLEV 20) 
-ENDIF ()
-IF (NOT PREQX_USE_PIO)
-  SET (PREQX_USE_PIO FALSE) 
-ENDIF ()
-IF (NOT PREQX_USE_ENERGY)
-  SET (PREQX_USE_ENERGY FALSE) 
-ENDIF ()
-IF (NOT PREQX_NC)
-  SET (PREQX_NC 4)
-ENDIF ()
-IF (NOT QSIZE_D)
-  SET (QSIZE_D 4)
-ENDIF ()
-
 
 SET(USE_OPENACC TRUE)
 SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OPENACC_Fortran_FLAGS}")
@@ -160,13 +145,5 @@ endmacro(preqx_acc_setup)
 
 
 
-
-############################################################################
-# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
-############################################################################
-
-preqx_acc_setup()
-createTestExec(preqx_acc preqx_acc ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
-               ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
 

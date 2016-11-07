@@ -42,8 +42,8 @@ _TEST_SUITES = {
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
                               "SMS.hcru_hcru.I1850CRUCLM45CN",
-                              ("SMS_Ly3.1x1_smallvilleIA.ICLM45BGCCROP", "force_netcdf_pio"),
-                              "ERS.ne11_qu240.I20TRCLM45",
+                              ("SMS_Ly3.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
+                              "ERS.ne11_oQU240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
                              ),
 
@@ -93,11 +93,14 @@ _TEST_SUITES = {
                          "SMS_D_Ln1.ne30_ne30.FC5AV1C-04",
                          "SMS_D_Ln1.ne30_oEC.F1850C5AV1C-02",
                          "SMS_D_Ln5.ne16_ne16.F1850C5AV1C-04",
+                         "SMS_D_Ln5.ne16_ne16.F20TRC5AV1C-03",
+                         "SMS_D_Ln5.ne16_ne16.FC5AV1C-04P",
                          "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
                         ),
 
     "acme_integration" : ("acme_developer",
-                          ("ERS.f19_f19.FAMIPC5",
+                          ("ERS.ne11_oQU240.A_WCYCL1850",
+                           "ERS.f19_f19.FAMIPC5",
                            "ERS.ne16_ne16.FC5PM",
                            "ERS.ne16_ne16.FC5PLMOD",
                            "ERS.ne16_ne16.FC5MAM4",
@@ -125,6 +128,7 @@ _TEST_SUITES = {
                            "ERS_Ld5.ne16_ne16.FC5AV1C-04",
                            "ERS_Ld5.ne30_oEC.F1850C5AV1C-02",
                            "ERS_Ld5.ne16_ne16.F1850C5AV1C-04",
+                           "ERS_Ld5.ne16_ne16.F20TRC5AV1C-03",
                            "SMS_D_Ld1.ne16_ne16.FC5ATMMODCOSP")
                           ),
 }

@@ -948,9 +948,9 @@ main_i_loop: &
 
       do lmz = 1, gas_pcnst
          if (lmapcc_all(lmz) > 0) then
-            q(i,k,lmz) = qgcm4(lmz)
+            q(i,k,lmz) = max(qgcm4(lmz),0.0_r8)  ! HW, to ensure non-negative
             if (lmapcc_all(lmz) >= lmapcc_val_aer) then
-               qqcw(i,k,lmz) = qqcwgcm4(lmz)
+               qqcw(i,k,lmz) = max(qqcwgcm4(lmz),0.0_r8)  !HW, to ensure non-negative
             end if
          end if
       end do

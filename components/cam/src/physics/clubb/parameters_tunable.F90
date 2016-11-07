@@ -61,7 +61,8 @@ module parameters_tunable
     clubb_gamma_coefb,             &
     clubb_mu,                      &
     clubb_nu1,                     &
-    clubb_c_K10
+    clubb_c_K10,                   &
+    clubb_wpxp_L_thresh
     
 
   ! Model constant parameters
@@ -111,7 +112,7 @@ module parameters_tunable
     C6rt_Lscale0  = 14.0_core_rknd,      & ! Damp C6rt as a fnct. of Lscale  [-]
     C6thl_Lscale0 = 14.0_core_rknd,      & ! Damp C6thl as a fnct. of Lscale [-]
     C7_Lscale0    = 0.8500000_core_rknd, & ! Damp C7 as a fnct. of Lscale    [-]
-    wpxp_L_thresh = 60.0_core_rknd         ! Lscale threshold: damp C6 & C7  [m]
+    wpxp_L_thresh = huge(1.0_core_rknd)    ! Lscale threshold: damp C6 & C7  [m]
 !$omp threadprivate(C6rt_Lscale0, C6thl_Lscale0, C7_Lscale0, wpxp_L_thresh)
 
   ! Note: DD 1987 is Duynkerke & Driedonks (1987).
@@ -339,7 +340,8 @@ module parameters_tunable
     clubb_gamma_coefb,             &
     clubb_mu,                      &
     clubb_nu1,                     &
-    clubb_c_K10
+    clubb_c_K10,                   &
+    clubb_wpxp_L_thresh
 
     integer :: read_status
     integer :: iunit
@@ -367,6 +369,7 @@ module parameters_tunable
     clubb_mu = init_value
     clubb_nu1 = init_value
     clubb_c_K10 = init_value
+    clubb_wpxp_L_thresh = init_value
 
     if (masterproc) then
       iunit = getunit()
@@ -401,6 +404,7 @@ module parameters_tunable
    call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_c_K10,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_wpxp_L_thresh, 1, mpir8,  0, mpicom)
 #endif
 
 
@@ -850,6 +854,7 @@ module parameters_tunable
     if (clubb_mu /= init_value) mu = clubb_mu
     if (clubb_nu1 /= init_value) nu1 = clubb_nu1
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
+    if (clubb_wpxp_L_thresh /= init_value)wpxp_L_thresh = clubb_wpxp_L_thresh
 
     ! Put the variables in the output array
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &

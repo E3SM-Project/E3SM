@@ -19,6 +19,8 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
 
 # Make SRCS global so the tests can access it
 SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
+  ${SRC_DIR}/test_src/asp_tests.F90
+  ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/physical_constants.F90
@@ -81,11 +83,9 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/namelist_mod.F90 
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_DIR}/checksum_mod.F90 
-  ${SRC_DIR}/baroclinic_inst_mod.F90 
   ${SRC_SHARE_DIR}/diffusion_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_DIR}/asp_tests.F90 
-  ${SRC_SHARE_DIR}/prim_state_mod.F90 
+  ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_DIR}/prim_restart_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90 
   ${SRC_SHARE_DIR}/prim_advance_mod.F90 
@@ -116,6 +116,7 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
+  ${SRC_DIR}/test_mod.F90
 )
 
 

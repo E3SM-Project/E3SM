@@ -1096,6 +1096,26 @@ model.
 Default: 5
 </entry>
 
+<!-- Fixers -->
+
+<entry id="use_mass_borrower" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new mass borrower (instead of QNEG3).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_qqflx_fixer" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new qqflx fixer (instead of QNEG4). 
+Default: set by build-namelist.
+</entry>
+
+<entry id="print_fixer_message" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to printout fixer diagnostic message. 
+Default: set by build-namelist.
+</entry>
+
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -2193,6 +2213,13 @@ Tunable exponent coefficient for autoconversion
 Default: -1.79_r8
 </entry>
 
+<entry id="cld_sed" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+scale factor for cloud sedimentation velocity
+Default: 1.0D0
+</entry>
+
+
 
 
 <!-- micro_aero -->
@@ -2812,6 +2839,17 @@ clubb ice shallow convection factor
 Default: 50.e-6
 </entry>
 
+<entry id="clubb_tk1" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 268.15D0
+</entry>
+
+<entry id="clubb_tk2" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 238.15D0
+</entry>
 
 
 <!-- Clubb tunable parameters -->
@@ -3007,6 +3045,12 @@ Default: 20.0
        group="clubb_param_nl" valid_values="" >
 Coefficient of Kh_zm
 Default: 0.60
+</entry>
+
+<entry id="clubb_wpxp_L_thresh"  type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Lscale threshold: damp C6 & C7  [m]
+Default: 60.0D0
 </entry>
 
 <!-- CARMA Sectional Microphysics -->

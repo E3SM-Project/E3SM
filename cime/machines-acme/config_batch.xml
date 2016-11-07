@@ -151,6 +151,13 @@
       </directives>
     </batch_system> 
 
+    <!-- anvil is PBS -->
+    <batch_system MACH="anvil" version="x.y">
+      <directives>
+        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      </directives>
+    </batch_system> 
+
     <!-- eos is PBS -->
     <batch_system MACH="eos" version="x.y">
     <jobid_pattern>^(\d+)</jobid_pattern>

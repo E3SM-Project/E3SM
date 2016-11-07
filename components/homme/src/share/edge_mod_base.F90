@@ -948,6 +948,7 @@ endif
     integer :: is,ie,in,iw
     integer :: ks,ke,kblock
     logical :: done
+    integer :: getmapL
 
     !call t_adj_detailf(+2)
     !call t_startf('edgeVunpack')
@@ -970,40 +971,44 @@ endif
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
-        if(edge%getmap(ll,ielem) /= -1) then 
+        getmapL = edge%getmap(ll,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive((kptr+k-1)+getmapL+1)
             enddo
         endif
     end do
 
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if(edge%getmap(ll,ielem) /= -1) then 
+        getmapL = edge%getmap(ll,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,1 ,k)=v(np,1 ,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(np ,1 ,k)=v(np,1 ,k)+edge%receive((kptr+k-1)+getmapL+1)
             enddo
         endif
     end do
 
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if(edge%getmap(ll,ielem) /= -1) then 
+        getmapL = edge%getmap(ll,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,np,k)=v(np,np,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(np ,np,k)=v(np,np,k)+edge%receive((kptr+k-1)+getmapL+1)
             enddo
         endif
     end do
 
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if(edge%getmap(ll,ielem) /= -1) then 
+        getmapL = edge%getmap(ll,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,np,k)=v(1 ,np,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(1  ,np,k)=v(1 ,np,k)+edge%receive((kptr+k-1)+getmapL+1)
             enddo
         endif
     end do
@@ -1340,6 +1345,7 @@ endif
     ! Local
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
+    integer :: getmapL
 
     threadsafe=.false.
 
@@ -1360,40 +1366,44 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,np,k)=MAX(v(np,np,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(np ,np,k)=MAX(v(np,np,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
@@ -1413,6 +1423,7 @@ endif
     ! Local
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
+    integer :: getmapL
 
 !pw call t_startf('edgeSunpack')
     threadsafe=.false.
@@ -1429,44 +1440,48 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
@@ -1489,6 +1504,7 @@ endif
 
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
+    integer :: getmapL
 
 !pw call t_startf('edgeSunpack')
     threadsafe=.false.
@@ -1505,40 +1521,44 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MiN(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MiN(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MIN(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MIN(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(k)=MIN(v(k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
@@ -1559,6 +1579,7 @@ endif
     ! Local
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
+    integer :: getmapL
 
     threadsafe=.false.
 
@@ -1579,40 +1600,44 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,np,k)=MIN(v(np,np,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(np ,np,k)=MIN(v(np,np,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if(edge%getmap(l,ielem) /= -1) then 
+        getmapL = edge%getmap(l,ielem)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(kptr+k+edge%getmap(l,ielem)))
+                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(kptr+k+getmapL))
             enddo
         endif
     end do
@@ -1637,6 +1662,7 @@ endif
     ! Local
     integer :: i,k,l
     integer :: is,ie,in,iw
+    integer :: getmapL
 
     threadsafe=.false.
 
@@ -1656,40 +1682,44 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+        getmapL = desc%getmapP(l)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%buf(kptr+k,desc%getmapP(l)+1))
+                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%buf(kptr+k,getmapL+1))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+        getmapL = desc%getmapP(l)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%buf(kptr+k,desc%getmapP(l)+1))
+                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%buf(kptr+k,getmapL+1))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+        getmapL = desc%getmapP(l)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,np,k)=MIN(v(np,np,k),edge%buf(kptr+k,desc%getmapP(l)+1))
+                v(np ,np,k)=MIN(v(np,np,k),edge%buf(kptr+k,getmapL+1))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+        getmapL = desc%getmapP(l)
+        if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,np,k)=MIN(v(1 ,np,k),edge%buf(kptr+k,desc%getmapP(l)+1))
+                v(1  ,np,k)=MIN(v(1 ,np,k),edge%buf(kptr+k,getmapL+1))
             enddo
         endif
     end do

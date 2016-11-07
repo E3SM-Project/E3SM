@@ -138,14 +138,6 @@ Valid values: Any positive integer value greater than 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_restart_forcing_fields" type="logical"
-	category="io" group="io">
-Controls whether forcing related fields are part of the restart stream or not.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 
 <!-- decomposition -->
 
@@ -268,29 +260,13 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- init_ssh_and_ssp -->
-
-<entry id="config_read_ssh_and_ssp_from_stream" type="logical"
-	category="init_ssh_and_ssp" group="init_ssh_and_ssp">
-Logical flag that determines if the sea-surface height and pressure have been read from an input stream instead of being calculated.  This allows iterative balancing of the two fields using both init and forward mode.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
+<!-- init_ssh_and_landIcePressure -->
 
 <entry id="config_iterative_init_variable" type="char*1024"
-	category="init_ssh_and_ssp" group="init_ssh_and_ssp">
-Which variable, ssh or ssp, is modified based on a previous forward run with the other held fixed during each init.
+	category="init_ssh_and_landIcePressure" group="init_ssh_and_landIcePressure">
+Which variable, ssh or landIcePressure, is computed from the other.  If landIcePressure is to be computed, 'landIcePressure_from_top_density' indicates that the top density (rather than the mean density displaced by land ice) should be used to compute the landIcePressure.
 
-Valid values: 'ssh' or 'ssp'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_modify_open_ocean_ssh" type="logical"
-	category="init_ssh_and_ssp" group="init_ssh_and_ssp">
-Logical flag that determines if the SSH gets modified in the open ocean (where modifySSHMask == 1) to attempt to put the system in balance there.  By default, regions of open ocean are not balanced.
-
-Valid values: .true. or .false.
+Valid values: 'ssh', 'landIcePressure_from_top_density' or 'landIcePressure'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1226,7 +1202,7 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_frazil_sea_ice_density" type="real"
+<entry id="config_frazil_ice_density" type="real"
 	category="frazil_ice" group="frazil_ice">
 Assumed density of frazil. NOTE: test and make consistent with ACME.
 
@@ -1258,11 +1234,19 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_frazil_ice_reference_salinity" type="real"
+<entry id="config_frazil_sea_ice_reference_salinity" type="real"
 	category="frazil_ice" group="frazil_ice">
-assumed salinity of frazil ice.
+assumed salinity of frazil ice in the open ocean.
 
 Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_land_ice_reference_salinity" type="real"
+	category="frazil_ice" group="frazil_ice">
+assumed salinity of frazil ice under land ice.
+
+Valid values: Any non-negative real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1289,7 +1273,7 @@ Default: Defined in namelist_defaults.xml
 	category="land_ice_fluxes" group="land_ice_fluxes">
 Selects the mode in which land-ice fluxes are computed.
 
-Valid values: 'off','standalone','coupled'
+Valid values: 'off','pressure_only','standalone','coupled'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1330,30 +1314,6 @@ Default: Defined in namelist_defaults.xml
 The for horizontal neighbors used to horizontally smooth boundary layer T and S.
 
 Valid values: Most likely a value between 0 (no smoothing) and 1 (neighbors get same weight as this cell).
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_flux_Tf0" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The constant term in the linearization of the freezing temperature.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_flux_dTf_dS" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The salinity coefficient in the linearization of the freezing temperature.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_flux_dTf_dp" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The pressure coefficient in the linearization of the freezing temperature.
-
-Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1505,6 +1465,46 @@ Default: Defined in namelist_defaults.xml
 Character string to choose EOS formulation
 
 Valid values: Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_coeff_0" type="real"
+	category="eos" group="eos">
+The freezing temperature at zero pressure.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_coeff_S" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to salinity in the freezing temperature.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_coeff_p" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to the (limited) pressure in the freezing temperature.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_coeff_pS" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to salinity times pressure in the freezing temperature.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_reference_pressure" type="real"
+	category="eos" group="eos">
+The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0.
+
+Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2450,6 +2450,30 @@ Valid values: Dim name from input files.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_global_ocean_tracer_ndepth_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of vertical levels in tracer initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_depth_conversion_factor" type="real"
+	category="global_ocean" group="global_ocean">
+Conversion factor for tracer initial condition depth levels. Should convert units on input depth levels to meters.
+
+Valid values: Any positive real value greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_vert_levels" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of vertical levels in tracer initial condition file.  Set to -1 to read from file with config_global_ocean_tracer_ndepth_dimname
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_global_ocean_temperature_varname" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Name of the variable containing temperature in temperature initial condition file.
@@ -2485,6 +2509,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_global_ocean_tracer_lon_varname" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Name of the variable containing longitude coordinates for tracer values in temperature initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_depth_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing depth coordinates for tracer values in temperature initial condition file.
 
 Valid values: Variable name from input file.
 Default: Defined in namelist_defaults.xml
@@ -2871,6 +2903,118 @@ Default: Defined in namelist_defaults.xml
 Factor to convert input windstress to N m^{-1}
 
 Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_file" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of file containing global values of ecosys variables
+
+Valid values: ecosys.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_forcing_file" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of file containing global values of ecosys forcing fields
+
+Valid values: ecosys_forcing.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_nlat_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of latitude lines in ecosys initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_nlon_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of longitude lines in ecosys initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_ndepth_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of vertical levels in ecosys initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_depth_conversion_factor" type="real"
+	category="global_ocean" group="global_ocean">
+Conversion factor for ecosys initial condition depth levels. Should convert units on input depth levels to meters.
+
+Valid values: Any positive real value greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_vert_levels" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of vertical levels in ecosys initial condition file.  Set to -1 to read from file with config_global_ocean_ecosys_ndepth_dimname
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_lat_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing latitude coordinates for ecosys values in ecosys initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_lon_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing longitude coordinates for ecosys values in ecosys initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_depth_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing depth coordinates for ecosys values in ecosys initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_latlon_degrees" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if the Lat/Lon fields for ecosys should be converted to radians. True means input is degrees, false means input is radians.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_method" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Method to interpolate shortwave data to MPAS mesh.
+
+Valid values: bilinear_interpolation, nearest_neighbor
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_forcing_time_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines the times in ecosys forcing files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_smooth_ecosys_iterations" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of smoothing iterations on ecosystem variables.
+
+Valid values: Any positive integer value greater or equal to 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -4477,14 +4621,6 @@ Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_isomip_effective_density" type="real"
-	category="isomip" group="isomip">
-The initial value for the effective density in land ice, used to determine flotation with land-ice coupling.
-
-Valid values: Any non-negative real number.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_isomip_southern_boundary" type="real"
 	category="isomip" group="isomip">
 The y location of the southern boundary.
@@ -4774,6 +4910,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, couple ecosys fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- tracer_forcing_DMSTracers -->
 
@@ -4841,6 +4985,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_DMSTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, couple DMS fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- tracer_forcing_MacroMoleculesTracers -->
 
@@ -4903,6 +5055,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_MacroMoleculesTracers_surface_value" type="logical"
 	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
 if true, surface value is computed for 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, couple MacroMolecules fields with sea ice
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

@@ -15,7 +15,8 @@
 <dtime dyn="fv"    waccmx="1"      >300 </dtime>
 
 <dtime dyn="se"                    >1800</dtime>
-<dtime dyn="se"    hgrid="ne11np4" >1800</dtime>
+<dtime dyn="se"    hgrid="ne4np4"  >7200</dtime>
+<dtime dyn="se"    hgrid="ne11np4" >7200</dtime>
 <dtime dyn="se"    hgrid="ne16np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne30np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne60np4" >1800</dtime>
@@ -137,8 +138,9 @@
 <ncdata           hgrid="8x16"      nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_8x16_L30_c090102.nc</ncdata>
 
 
-<ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160614.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
 <ncdata dyn="se" hgrid="ne11np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
+<ncdata dyn="se" hgrid="ne11np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne11np4_L30_c160824.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_c120525.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne16np4_L30_c090306.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne16np4_L72_c160614.nc</ncdata>
@@ -804,6 +806,11 @@
 <clubb_liq_sh                                     > 10.e-6  </clubb_liq_sh>
 <clubb_ice_deep                                   > 25.e-6  </clubb_ice_deep>
 <clubb_ice_sh                                     > 50.e-6  </clubb_ice_sh>
+<clubb_tk1                                        > 268.15D0  </clubb_tk1>
+<clubb_tk2                                        > 238.15D0  </clubb_tk2>
+<clubb_wpxp_L_thresh                              > 60.0D0   </clubb_wpxp_L_thresh>
+
+
 
 <!-- CLUBB_history -->
 <clubb_history               > .false. </clubb_history>
@@ -843,6 +850,7 @@
 <prc_coef1            microphys="mg2">  1350.0      </prc_coef1>
 <prc_exp              microphys="mg2">  2.47        </prc_exp>
 <prc_exp1             microphys="mg2">  -1.79       </prc_exp1>
+<cld_sed              microphys="mg2">  1.0D0       </cld_sed>
 
 
 <micro_mg_precip_frac_method                  >  max_overlap </micro_mg_precip_frac_method>
@@ -1277,6 +1285,7 @@
 <nu_top hgrid="ne240np4"> 1.0e5 </nu_top>
 
 <nu>                   1.0e15 </nu>
+<nu hgrid="ne4np4" >   5.0e17 </nu>
 <nu hgrid="ne11np4" >  2.0e16 </nu>
 <nu hgrid="ne16np4" >  7.0e15 </nu>
 <nu hgrid="ne30np4" >  1.0e15 </nu>
@@ -1299,6 +1308,7 @@
 <nu_q> -1.0 </nu_q>
 
 <nu_p>                   1.0e15 </nu_p>
+<nu_p hgrid="ne4np4" >   5.0e17 </nu_p>
 <nu_p hgrid="ne11np4" >  2.0e16 </nu_p>
 <nu_p hgrid="ne16np4" >  7.0e15 </nu_p>
 <nu_p hgrid="ne30np4" >  1.0e15 </nu_p>
@@ -1312,6 +1322,7 @@
 
 
 <nu_div>                   2.5e15 </nu_div>
+<nu_div hgrid="ne4np4" >  1.25e18 </nu_div>
 <nu_div hgrid="ne11np4" >  5.0e16 </nu_div>
 <nu_div hgrid="ne16np4" > 15.5e15 </nu_div>
 <nu_div hgrid="ne30np4" >  2.5e15 </nu_div>
@@ -1326,6 +1337,7 @@
 <hypervis_order >     2 </hypervis_order>
 
 <hypervis_subcycle>                   3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne4np4" >   3 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne11np4" >  3 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne16np4" >  3 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne30np4" >  3 </hypervis_subcycle>
@@ -1345,6 +1357,7 @@
 <qsplit > 1 </qsplit>
 
 <rsplit >                  3 </rsplit>
+<rsplit hgrid="ne4np4" >   2 </rsplit>
 <rsplit hgrid="ne11np4" >  2 </rsplit>
 <rsplit hgrid="ne16np4" >  3 </rsplit>
 <rsplit hgrid="ne30np4" >  3 </rsplit>
@@ -1353,7 +1366,8 @@
 <rsplit hgrid="ne240np4">  3 </rsplit>
 
 <se_nsplit>                   2 </se_nsplit>
-<se_nsplit hgrid="ne11np4" >  1 </se_nsplit>
+<se_nsplit hgrid="ne4np4" >   2 </se_nsplit>
+<se_nsplit hgrid="ne11np4" >  4 </se_nsplit>
 <se_nsplit hgrid="ne16np4" >  1 </se_nsplit>
 <se_nsplit hgrid="ne30np4" >  2 </se_nsplit>
 <se_nsplit hgrid="ne60np4" >  4 </se_nsplit>
@@ -1564,6 +1578,7 @@
 
 <!-- SST datasets used with DOM/CSIM4 and DOCN -->
 <!-- Present day SST -->
+<!-- Warning: I think bndtvs has been superseded by SSTICE* (pjc, 2016-8-5) -->
 <bndtvs hgrid="0.23x0.31"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_c061106.nc</bndtvs>
 <bndtvs hgrid="0.47x0.63"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_c061106.nc</bndtvs>
 <bndtvs hgrid="0.5x0.625"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.5x0.625_1949_2001_c040402.nc</bndtvs>

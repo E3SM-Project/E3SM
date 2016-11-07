@@ -20,7 +20,7 @@ module baroclinic_inst_mod
 !  Jablonowski and Williamson, QJR (2006) 132 
 !
     ! ====================
-    use kinds, only : real_kind
+    use kinds, only : real_kind, iulog
     ! ====================
     use physical_constants, only : omega, rearth, rgas, p0, dd_pi, Cp,g
     ! ====================
@@ -84,6 +84,7 @@ subroutine jw_baroclinic(elem,hybrid,hvcoord,nets,nete)
 
    real(kind=real_kind), allocatable :: var3d(:,:,:,:)
 
+   if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
 
 !      Call eta_levels(ak,bk,eta,etai)
 !          interfaces   p(k) = hyai(k)*ps0 + hybi(k)*ps
@@ -258,16 +259,8 @@ if (qsize==10) then
 endif
 
 
-
 !=======================================================================================================!
  end subroutine 
-
-
-
-
-
-
-
 
 
 
@@ -326,6 +319,8 @@ endif
     nm1= 1
     n0 = 2
     np1= 3
+
+    if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
 
     do k=1,nhl
 #if 1

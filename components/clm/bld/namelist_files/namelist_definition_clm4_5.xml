@@ -1122,7 +1122,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*10" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oRRS15to5,mp120v1,oQU240,oQU120,oRRS30to10,360x720cru,NLDASww3a">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oRRS18to6,oRRS15to5,mp120v1,oQU240,oQU120,oRRS30to10,360x720cru,NLDASww3a">
 Land mask description
 </entry> 
 
@@ -1593,6 +1593,11 @@ Type of saturation function used in VSFM.
     smooth_brooks_corey_bz2  = use the smooth approximation of Brooks Corey Model with no quadratic term
     smooth_brooks_corey_bz3  = use the smooth approximation of Brooks Corey Model with no cubic term
     van_genuchten            = use the van Genuchten model
+</entry>
+
+<entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
+       group="clm_inparm" valid_values="">
+Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
 </entry>
 
 </namelist_definition>

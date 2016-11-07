@@ -380,8 +380,11 @@ contains
     ! !USES
     use spmdMod          , only : masterproc, iam
     use clm_time_manager , only : get_nstep
+    use clm_varctl       , only : vsfm_use_dynamic_linesearch
     !
     implicit none
+#include "finclude/petscsys.h"
+#include "finclude/petscsnes.h"
     !
     ! !ARGUMENTS
     class(sysofeqns_base_type) :: soe
@@ -397,12 +400,65 @@ contains
     PetscInt, parameter        :: max_num_time_cuts = 20
     PetscReal                  :: target_time
     PetscReal                  :: dt_iter
+    PetscInt                   :: linesearch_iter
+    SNESLineSearch             :: linesearch
+    PetscInt                   :: max_linesearch_iter
+    PetscInt, pointer          :: linesearch_iter_types(:)
+    PetscInt, parameter        :: LS_BASIC = 1
+    PetscInt, parameter        :: LS_BT    = 2
+    PetscInt, parameter        :: LS_L2    = 3
+    PetscInt, parameter        :: LS_CP    = 4
+    PetscBool                  :: is_default_linesearch_basic
+    PetscBool                  :: is_default_linesearch_bt
+    PetscBool                  :: is_default_linesearch_l2
+    PetscBool                  :: is_default_linesearch_cp
+    character(len=32)          :: linesearch_name
 
     ! initialize
+    linesearch_iter = 0
     num_time_cuts  = 0
     soe%time       = 0.d0
     target_time    = dt
     dt_iter        = dt
+
+    ! Determine the default linesearch option
+    call SNESGetLineSearch(soe%snes, linesearch, ierr); CHKERRQ(ierr)
+    call PetscObjectTypeCompare(linesearch, SNESLINESEARCHBASIC, is_default_linesearch_basic, ierr); CHKERRQ(ierr)
+    call PetscObjectTypeCompare(linesearch, SNESLINESEARCHBT, is_default_linesearch_bt, ierr); CHKERRQ(ierr)
+    call PetscObjectTypeCompare(linesearch, SNESLINESEARCHL2, is_default_linesearch_l2, ierr); CHKERRQ(ierr)
+    call PetscObjectTypeCompare(linesearch, SNESLINESEARCHCP, is_default_linesearch_cp, ierr); CHKERRQ(ierr)
+
+    ! Check if the default linesearch option was a known option
+    if ( (.not. is_default_linesearch_basic) .and. &
+         (.not. is_default_linesearch_bt   ) .and. &
+         (.not. is_default_linesearch_l2   ) .and. &
+         (.not. is_default_linesearch_cp   ) ) then
+       write(iulog,*) 'Unknown default linesearch option'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Create a list of linesearch options that will be tried before
+    ! cutting the timestep
+    if (is_default_linesearch_bt .or. is_default_linesearch_l2) then
+       max_linesearch_iter = 2
+       allocate(linesearch_iter_types(max_linesearch_iter))
+
+       if (is_default_linesearch_bt) then
+          linesearch_iter_types(1) = LS_BT
+          linesearch_iter_types(2) = LS_L2
+       else
+          linesearch_iter_types(1) = LS_L2
+          linesearch_iter_types(2) = LS_BT
+       endif
+    else
+       max_linesearch_iter = 3
+       allocate(linesearch_iter_types(max_linesearch_iter))
+
+       if (is_default_linesearch_basic) linesearch_iter_types(1) = LS_BASIC
+       if (is_default_linesearch_cp   ) linesearch_iter_types(1) = LS_CP
+       linesearch_iter_types(2) = LS_L2
+       linesearch_iter_types(3) = LS_BT
+    endif
 
     do
 
@@ -412,6 +468,21 @@ contains
        ! Do any pre-solve operations
        call soe%PreSolve()
 
+       select case (linesearch_iter_types(linesearch_iter+1))
+       case (LS_BASIC)
+          call SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC, ierr); CHKERRQ(ierr)
+          linesearch_name = 'linsearch_basic'
+       case (LS_BT)
+          call SNESLineSearchSetType(linesearch, SNESLINESEARCHBT, ierr); CHKERRQ(ierr)
+          linesearch_name = 'linsearch_bt'
+       case (LS_L2)
+          call SNESLineSearchSetType(linesearch, SNESLINESEARCHL2, ierr); CHKERRQ(ierr)
+          linesearch_name = 'linsearch_l2'
+       case (LS_CP)
+          call SNESLineSearchSetType(linesearch, SNESLINESEARCHCP, ierr); CHKERRQ(ierr)
+          linesearch_name = 'linsearch_cp'
+       end select
+
        ! Solve the nonlinear equation
        call SNESSolve(soe%snes, PETSC_NULL_OBJECT, soe%soln, ierr); CHKERRQ(ierr)
 
@@ -420,11 +491,25 @@ contains
 
        ! Did SNES converge?
        if (snes_reason < 0) then
-          ! SNES diverged, so let's cut the timestep and try again.
-          num_time_cuts = num_time_cuts + 1
-          dt_iter = 0.5d0*dt_iter
-          write(iulog,*),'On proc ', iam, ' time_step = ', get_nstep(), &
-               'snes_reason = ',snes_reason,' cutting dt to ',dt_iter
+
+          linesearch_iter = linesearch_iter + 1
+
+          if (vsfm_use_dynamic_linesearch .and. linesearch_iter < max_linesearch_iter) then
+             ! Let's try another linesearch
+             write(iulog,*),'On proc ', iam, ' time_step = ', get_nstep(), &
+                  linesearch_name // ' unsuccessful. Trying another one.'
+             call VecCopy(soe%soln_prev, soe%soln, ierr); CHKERRQ(ierr)
+          else
+             ! All linesearch options failed, reset the linesearch iteration
+             ! counter
+             linesearch_iter = 0
+
+             ! SNES diverged, so let's cut the timestep and try again.
+             num_time_cuts = num_time_cuts + 1
+             dt_iter = 0.5d0*dt_iter
+             write(iulog,*),'On proc ', iam, ' time_step = ', get_nstep(), &
+                  'snes_reason = ',snes_reason,' cutting dt to ',dt_iter
+          endif
 
           call VecCopy(soe%soln_prev, soe%soln, ierr); CHKERRQ(ierr)
        else
@@ -454,6 +539,20 @@ contains
 
        if (soe%time >= target_time) exit
     enddo
+
+    ! Set the linsearch type to be the default setting
+    select case (linesearch_iter_types(1))
+    case (LS_BASIC)
+       call SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC, ierr); CHKERRQ(ierr)
+    case (LS_BT)
+       call SNESLineSearchSetType(linesearch, SNESLINESEARCHBT, ierr); CHKERRQ(ierr)
+    case (LS_L2)
+       call SNESLineSearchSetType(linesearch, SNESLINESEARCHL2, ierr); CHKERRQ(ierr)
+    case (LS_CP)
+       call SNESLineSearchSetType(linesearch, SNESLINESEARCHCP, ierr); CHKERRQ(ierr)
+    end select
+    deallocate(linesearch_iter_types)
+
 
   end subroutine SOEBaseStepDT_SNES
 

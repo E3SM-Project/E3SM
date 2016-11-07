@@ -72,14 +72,15 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- VSFM default -->
 <use_vsfm>.false.</use_vsfm>
 <vsfm_satfunc_type>smooth_brooks_corey_bz3</vsfm_satfunc_type>
+<vsfm_use_dynamic_linesearch>.false.</vsfm_use_dynamic_linesearch>
 
 <!-- ================================================================== -->
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
-<paramfile                 >lnd/clm2/paramdata/clm_params_c160711.nc</paramfile>
+<paramfile                 >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
 <paramfile use_ed=".true." >lnd/clm2/paramdata/clm_params.ED.c140115.nc</paramfile>
-<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c160711.nc</paramfile>
+<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon> 
@@ -176,9 +177,8 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 <!-- HOMME grid ne30 resolution -->
 
 <!-- Initial condition file with CLM45BGC -->
-<!-- Note that we use a BGC initial file even for SP cases (since we haven't bothered to make an SP version at this resolution -->
 <finidat hgrid="ne30np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
-ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.ne30np4_g1v6_simyr1850_c140111.nc
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_g16.e61c667.clm2.r.0021-01-01-00000.nc
 </finidat>
 
 <!-- Initial condition file with CLM45BGC (also works for no-cent, Vertical layers and Nitrification/Denitrification NEED to be on) -->
@@ -212,11 +212,11 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 </finidat>
 
 <finidat hgrid="ne30np4"   maxpft="17"  mask="oQU120" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
-ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne30_qu120.1b78d5b.clm2.r.0021-01-01-00000.nc
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_qu120.1b78d5b.clm2.r.0021-01-01-00000.nc
 </finidat>
 
 <finidat hgrid="ne30np4"   maxpft="17"  mask="oQU120" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
-ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_qu120.1b78d5b.clm2.r.0021-01-01-00000.nc
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne30_qu120.1b78d5b.clm2.r.0021-01-01-00000.nc
 </finidat>
 
 <!-- HOMME grid ne120 resolution -->

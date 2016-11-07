@@ -75,11 +75,6 @@ module seq_diag_mct
    ! Local data
    !----------------------------------------------------------------------------
 
-   !----- local constants -----
-   real(r8),parameter :: HFLXtoWFLX = & ! water flux implied by latent heat of fusion
-   &  - (shr_const_ocn_ref_sal-shr_const_ice_ref_sal) / &
-   &    (shr_const_ocn_ref_sal*shr_const_latice)
-
    !--- C for component ---
    !--- "r" is recieve in the coupler, "s" is send from the coupler
 
@@ -928,10 +923,9 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
          do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
          if = f_area; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
-         if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
+         if = f_wfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
       end do
-      budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX &
-                               * shr_const_rhoice * shr_const_latice
+      budg_dataL(f_hfrz,ic,ip) = -budg_dataL(f_wfrz,ic,ip) * shr_const_latice
    end if
 
    if (present(do_xao)) then
@@ -1117,18 +1111,16 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
          if = f_wrain; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_rain,n)
          if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
          if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
-         if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
+         if = f_wfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
       end do
       ic = c_inh_is  
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX &
-                                *  shr_const_rhoice * shr_const_latice
+      budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
       ic = c_ish_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX &
-                                *  shr_const_rhoice * shr_const_latice
+      budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
    end if
 
    first_time = .false.

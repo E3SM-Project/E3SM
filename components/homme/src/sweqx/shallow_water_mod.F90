@@ -6,7 +6,7 @@ module shallow_water_mod
   ! ------------------------
   use kinds, only : real_kind
   ! ------------------------
-  use physical_constants, only : omega, g, rearth, rrearth, dd_pi
+  use physical_constants, only : omega, g, rearth=>rearth0, rrearth=>rrearth0, dd_pi
   ! ------------------------
   use dimensions_mod, only : nlev, np
   ! ------------------------

@@ -19,7 +19,6 @@
 <config_write_output_on_startup>.true.</config_write_output_on_startup>
 <config_pio_num_iotasks>0</config_pio_num_iotasks>
 <config_pio_stride>1</config_pio_stride>
-<config_restart_forcing_fields>.true.</config_restart_forcing_fields>
 
 <!-- decomposition -->
 <config_num_halos>3</config_num_halos>
@@ -41,16 +40,15 @@
 <config_1dCVTgenerator_stretch2>1.0275</config_1dCVTgenerator_stretch2>
 <config_1dCVTgenerator_dzSeed>1.2</config_1dCVTgenerator_dzSeed>
 
-<!-- init_ssh_and_ssp -->
-<config_read_ssh_and_ssp_from_stream>.false.</config_read_ssh_and_ssp_from_stream>
-<config_iterative_init_variable>'ssp'</config_iterative_init_variable>
-<config_modify_open_ocean_ssh>.false.</config_modify_open_ocean_ssh>
+<!-- init_ssh_and_landIcePressure -->
+<config_iterative_init_variable>'landIcePressure'</config_iterative_init_variable>
 
 <!-- time_integration -->
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30">'00:15:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
+<config_dt ocn_grid="oRRS18to6">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
 
@@ -79,6 +77,7 @@
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oRRS18to6">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
@@ -96,6 +95,7 @@
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="oRRS18to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_tracer_del4>0.0</config_tracer_del4>
@@ -111,6 +111,7 @@
 <config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS18to6">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
@@ -210,11 +211,12 @@
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
 <config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
-<config_frazil_sea_ice_density>0.917e3</config_frazil_sea_ice_density>
+<config_frazil_ice_density>1000.0</config_frazil_ice_density>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
 <config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
-<config_frazil_ice_reference_salinity>4.0</config_frazil_ice_reference_salinity>
+<config_frazil_sea_ice_reference_salinity>4.0</config_frazil_sea_ice_reference_salinity>
+<config_frazil_land_ice_reference_salinity>0.0</config_frazil_land_ice_reference_salinity>
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
@@ -225,9 +227,6 @@
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
 <config_land_ice_flux_boundaryLayerThickness>10.0</config_land_ice_flux_boundaryLayerThickness>
 <config_land_ice_flux_boundaryLayerNeighborWeight>0.0</config_land_ice_flux_boundaryLayerNeighborWeight>
-<config_land_ice_flux_Tf0>9.39e-2</config_land_ice_flux_Tf0>
-<config_land_ice_flux_dTf_dS>-5.73e-2</config_land_ice_flux_dTf_dS>
-<config_land_ice_flux_dTf_dp>-7.53e-8</config_land_ice_flux_dTf_dp>
 <config_land_ice_flux_cp_ice>2.009e3</config_land_ice_flux_cp_ice>
 <config_land_ice_flux_rho_ice>918</config_land_ice_flux_rho_ice>
 <config_land_ice_flux_topDragCoeff>2.5e-3</config_land_ice_flux_topDragCoeff>
@@ -255,6 +254,11 @@
 
 <!-- eos -->
 <config_eos_type>'jm'</config_eos_type>
+<config_freezing_temperature_coeff_0>-1.8</config_freezing_temperature_coeff_0>
+<config_freezing_temperature_coeff_S>0.0</config_freezing_temperature_coeff_S>
+<config_freezing_temperature_coeff_p>6.64670038e-08</config_freezing_temperature_coeff_p>
+<config_freezing_temperature_coeff_pS>-4.44655526e-09</config_freezing_temperature_coeff_pS>
+<config_freezing_temperature_reference_pressure>1e5</config_freezing_temperature_reference_pressure>
 
 <!-- eos_linear -->
 <config_eos_linear_alpha>0.2</config_eos_linear_alpha>
@@ -273,6 +277,7 @@
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30">'0000_00:00:45'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS18to6">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
@@ -394,11 +399,15 @@
 <config_global_ocean_salinity_file>'none'</config_global_ocean_salinity_file>
 <config_global_ocean_tracer_nlat_dimname>'none'</config_global_ocean_tracer_nlat_dimname>
 <config_global_ocean_tracer_nlon_dimname>'none'</config_global_ocean_tracer_nlon_dimname>
+<config_global_ocean_tracer_ndepth_dimname>'none'</config_global_ocean_tracer_ndepth_dimname>
+<config_global_ocean_tracer_depth_conversion_factor>1.0</config_global_ocean_tracer_depth_conversion_factor>
+<config_global_ocean_tracer_vert_levels>-1</config_global_ocean_tracer_vert_levels>
 <config_global_ocean_temperature_varname>'none'</config_global_ocean_temperature_varname>
 <config_global_ocean_salinity_varname>'none'</config_global_ocean_salinity_varname>
 <config_global_ocean_tracer_latlon_degrees>.true.</config_global_ocean_tracer_latlon_degrees>
 <config_global_ocean_tracer_lat_varname>'none'</config_global_ocean_tracer_lat_varname>
 <config_global_ocean_tracer_lon_varname>'none'</config_global_ocean_tracer_lon_varname>
+<config_global_ocean_tracer_depth_varname>'none'</config_global_ocean_tracer_depth_varname>
 <config_global_ocean_tracer_method>'bilinear_interpolation'</config_global_ocean_tracer_method>
 <config_global_ocean_smooth_TS_iterations>0</config_global_ocean_smooth_TS_iterations>
 <config_global_ocean_swData_file>'none'</config_global_ocean_swData_file>
@@ -447,6 +456,20 @@
 <config_global_ocean_windstress_meridional_varname>'none'</config_global_ocean_windstress_meridional_varname>
 <config_global_ocean_windstress_method>'bilinear_interpolation'</config_global_ocean_windstress_method>
 <config_global_ocean_windstress_conversion_factor>1</config_global_ocean_windstress_conversion_factor>
+<config_global_ocean_ecosys_file>'unknown'</config_global_ocean_ecosys_file>
+<config_global_ocean_ecosys_forcing_file>'unknown'</config_global_ocean_ecosys_forcing_file>
+<config_global_ocean_ecosys_nlat_dimname>'none'</config_global_ocean_ecosys_nlat_dimname>
+<config_global_ocean_ecosys_nlon_dimname>'none'</config_global_ocean_ecosys_nlon_dimname>
+<config_global_ocean_ecosys_ndepth_dimname>'none'</config_global_ocean_ecosys_ndepth_dimname>
+<config_global_ocean_ecosys_depth_conversion_factor>1.0</config_global_ocean_ecosys_depth_conversion_factor>
+<config_global_ocean_ecosys_vert_levels>-1</config_global_ocean_ecosys_vert_levels>
+<config_global_ocean_ecosys_lat_varname>'none'</config_global_ocean_ecosys_lat_varname>
+<config_global_ocean_ecosys_lon_varname>'none'</config_global_ocean_ecosys_lon_varname>
+<config_global_ocean_ecosys_depth_varname>'none'</config_global_ocean_ecosys_depth_varname>
+<config_global_ocean_ecosys_latlon_degrees>.true.</config_global_ocean_ecosys_latlon_degrees>
+<config_global_ocean_ecosys_method>'bilinear_interpolation'</config_global_ocean_ecosys_method>
+<config_global_ocean_ecosys_forcing_time_dimname>'none'</config_global_ocean_ecosys_forcing_time_dimname>
+<config_global_ocean_smooth_ecosys_iterations>0</config_global_ocean_smooth_ecosys_iterations>
 
 <!-- cvmix_WSwSBF -->
 <config_cvmix_WSwSBF_vert_levels>100</config_cvmix_WSwSBF_vert_levels>
@@ -662,7 +685,6 @@
 <config_isomip_restoring_salinity>34.4</config_isomip_restoring_salinity>
 <config_isomip_salinity_piston_velocity>1.157e-5</config_isomip_salinity_piston_velocity>
 <config_isomip_coriolis_parameter>-1.4e-4</config_isomip_coriolis_parameter>
-<config_isomip_effective_density>1026.0</config_isomip_effective_density>
 <config_isomip_southern_boundary>0.0</config_isomip_southern_boundary>
 <config_isomip_northern_boundary>1000e3</config_isomip_northern_boundary>
 <config_isomip_western_boundary>0.0</config_isomip_western_boundary>
@@ -704,6 +726,7 @@
 <config_use_ecosysTracers_idealAge_forcing>.false.</config_use_ecosysTracers_idealAge_forcing>
 <config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
 <config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
+<config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 
 <!-- tracer_forcing_DMSTracers -->
 <config_use_DMSTracers>.false.</config_use_DMSTracers>
@@ -714,6 +737,7 @@
 <config_use_DMSTracers_idealAge_forcing>.false.</config_use_DMSTracers_idealAge_forcing>
 <config_use_DMSTracers_ttd_forcing>.false.</config_use_DMSTracers_ttd_forcing>
 <config_use_DMSTracers_surface_value>.false.</config_use_DMSTracers_surface_value>
+<config_use_DMSTracers_sea_ice_coupling>.false.</config_use_DMSTracers_sea_ice_coupling>
 
 <!-- tracer_forcing_MacroMoleculesTracers -->
 <config_use_MacroMoleculesTracers>.false.</config_use_MacroMoleculesTracers>
@@ -724,6 +748,7 @@
 <config_use_MacroMoleculesTracers_idealAge_forcing>.false.</config_use_MacroMoleculesTracers_idealAge_forcing>
 <config_use_MacroMoleculesTracers_ttd_forcing>.false.</config_use_MacroMoleculesTracers_ttd_forcing>
 <config_use_MacroMoleculesTracers_surface_value>.false.</config_use_MacroMoleculesTracers_surface_value>
+<config_use_MacroMoleculesTracers_sea_ice_coupling>.false.</config_use_MacroMoleculesTracers_sea_ice_coupling>
 
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>

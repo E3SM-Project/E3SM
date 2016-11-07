@@ -104,6 +104,7 @@
 <wall_time_limit>-1.0</wall_time_limit> 
 <force_stop_at>month</force_stop_at> 
 <flux_diurnal>.false.</flux_diurnal> 
+<gust_fac>0.0D0</gust_fac> 
 
 <run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers> 
 <run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers> 
@@ -175,11 +176,16 @@
 <pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
 <pio_rearr_comm_type  >$PIO_REARR_COMM_TYPE</pio_rearr_comm_type>
 <pio_rearr_comm_fcd   >$PIO_REARR_COMM_FCD</pio_rearr_comm_fcd>
-<pio_rearr_comm_max_pend_req>$PIO_REARR_COMM_MAX_PEND_REQ</pio_rearr_comm_max_pend_req>
-<pio_rearr_comm_enable_hs PIO_REARR_COMM_ENABLE_HS="TRUE">.true.</pio_rearr_comm_enable_hs>
-<pio_rearr_comm_enable_hs PIO_REARR_COMM_ENABLE_HS="FALSE">.false.</pio_rearr_comm_enable_hs>
-<pio_rearr_comm_enable_isend PIO_REARR_COMM_ENABLE_ISEND="TRUE">.true.</pio_rearr_comm_enable_isend>
-<pio_rearr_comm_enable_isend PIO_REARR_COMM_ENABLE_ISEND="FALSE">.false.</pio_rearr_comm_enable_isend>
+<pio_rearr_comm_max_pend_req_comp2io>$PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO</pio_rearr_comm_max_pend_req_comp2io>
+<pio_rearr_comm_enable_hs_comp2io PIO_REARR_COMM_ENABLE_HS_COMP2IO="TRUE">.true.</pio_rearr_comm_enable_hs_comp2io>
+<pio_rearr_comm_enable_hs_comp2io PIO_REARR_COMM_ENABLE_HS_COMP2IO="FALSE">.false.</pio_rearr_comm_enable_hs_comp2io>
+<pio_rearr_comm_enable_isend_comp2io PIO_REARR_COMM_ENABLE_ISEND_COMP2IO="TRUE">.true.</pio_rearr_comm_enable_isend_comp2io>
+<pio_rearr_comm_enable_isend_comp2io PIO_REARR_COMM_ENABLE_ISEND_COMP2IO="FALSE">.false.</pio_rearr_comm_enable_isend_comp2io>
+<pio_rearr_comm_max_pend_req_io2comp>$PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP</pio_rearr_comm_max_pend_req_io2comp>
+<pio_rearr_comm_enable_hs_io2comp PIO_REARR_COMM_ENABLE_HS_IO2COMP="TRUE">.true.</pio_rearr_comm_enable_hs_io2comp>
+<pio_rearr_comm_enable_hs_io2comp PIO_REARR_COMM_ENABLE_HS_IO2COMP="FALSE">.false.</pio_rearr_comm_enable_hs_io2comp>
+<pio_rearr_comm_enable_isend_io2comp PIO_REARR_COMM_ENABLE_ISEND_IO2COMP="TRUE">.true.</pio_rearr_comm_enable_isend_io2comp>
+<pio_rearr_comm_enable_isend_io2comp PIO_REARR_COMM_ENABLE_ISEND_IO2COMP="FALSE">.false.</pio_rearr_comm_enable_isend_io2comp>
 
 <!-- =========================================  -->
 <!--- seq_maps.rc                               -->

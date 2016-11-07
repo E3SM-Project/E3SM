@@ -199,3 +199,5 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
+
+ADD_SUBDIRECTORY(dcmip_tests)

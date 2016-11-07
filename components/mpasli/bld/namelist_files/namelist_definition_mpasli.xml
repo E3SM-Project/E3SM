@@ -602,4 +602,47 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
+<!-- AM_regionalStats -->
+
+<entry id="config_AM_regionalStats_enable" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+If true, landice analysis member regionalStats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_compute_interval" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_stream_name" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Name of the stream that the regionalStats analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_compute_on_startup" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_write_on_startup" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 </namelist_definition>

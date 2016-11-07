@@ -2096,6 +2096,7 @@ contains
   type(mct_avect) :: avtmp, avtmpG ! temporary avects
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
   real(r8):: areatot_prev, areatot_tmp, areatot_new
+  real(r8):: hlen_max, rlen_min
   integer :: tcnt
   character(len=16384) :: rList             ! list of fields for SM multiply
   character(len=1000) :: fname
@@ -2451,10 +2452,17 @@ contains
       
         if(TUnit%rlen(iunit) > 0._r8) then
            TUnit%hlen(iunit) = TUnit%area(iunit) / TUnit%rlenTotal(iunit) / 2._r8
-           if(TUnit%hlen(iunit) > 50000_r8) then
-              TUnit%hlen(iunit) = 50000_r8   ! allievate the outlier in drainage density estimation. TO DO
+           hlen_max = max(1000.0_r8, sqrt(TUnit%area(iunit))) ! constrain the hillslope length
+           if(TUnit%hlen(iunit) > hlen_max) then
+              TUnit%hlen(iunit) = hlen_max   ! allievate the outlier in drainage density estimation. TO DO
            end if
-           TUnit%tlen(iunit) = TUnit%area(iunit) / TUnit%rlen(iunit) / 2._r8 - TUnit%hlen(iunit)
+           rlen_min = sqrt(TUnit%area(iunit))
+           if(TUnit%rlen(iunit) < rlen_min) then
+              TUnit%tlen(iunit) = TUnit%area(iunit) / rlen_min / 2._r8 - TUnit%hlen(iunit)
+           else
+              TUnit%tlen(iunit) = TUnit%area(iunit) / TUnit%rlen(iunit) / 2._r8 - TUnit%hlen(iunit)
+           end if
+  
            if(TUnit%twidth(iunit) < 0._r8) then
               TUnit%twidth(iunit) = 0._r8
            end if
