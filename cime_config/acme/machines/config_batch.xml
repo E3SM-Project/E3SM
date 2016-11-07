@@ -260,17 +260,19 @@
     </walltimes>
   </batch_system>
 
-
-   <batch_system MACH="mustang" type="moab" version="x.y">
-   <directives>
-     <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-   </directives>
-   <walltimes>
-     <walltime default="true">00:30:00</walltime>
-     <walltime ccsm_estcost="1">02:00:00</walltime>
-     <walltime ccsm_estcost="3">16:00:00</walltime>
-   </walltimes>
-   </batch_system>
+  <batch_system MACH="grizzly" type="moab" version="x.y">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+	<walltimes>
+	  <walltime default="true">00:30:00</walltime>
+	  <walltime ccsm_estcost="1">02:00:00</walltime>
+	  <walltime ccsm_estcost="3">16:00:00</walltime>
+	</walltimes>
+	<queues>
+	   <queue walltimemax="10:00:00" default="true">moab</queue>
+	</queues>
+  </batch_system>
 
    <batch_system MACH="wolf" type="moab" version="x.y">
 	<directives>
@@ -281,6 +283,9 @@
 	  <walltime ccsm_estcost="1">02:00:00</walltime>
 	  <walltime ccsm_estcost="3">16:00:00</walltime>
 	</walltimes>
+	<queues>
+	   <queue walltimemax="16:00:00" default="true">moab</queue>
+	</queues>
     </batch_system>
 
     <batch_system MACH="mesabi" type="pbs">
