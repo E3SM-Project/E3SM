@@ -35,7 +35,7 @@
 
 !--- building look-up table for rain collecting graupel:
  write(0,*)
- write(0,*) '--- enter subroutine qr_acr_qg:'
+ write(0,*) '--- building MP_THOMPSON_QRacrQG_DATA.DBL'
  call qr_acr_qg
  open(unit=11,file='MP_THOMPSON_QRacrQG_DATA.DBL',form='unformatted')
  write(11) tcg_racg
@@ -45,11 +45,10 @@
  write(11) tnr_racg
  write(11) tnr_gacr
  close(unit=11)
- write(0,*) '--- end subroutine qr_acr_qg.'
 
 !--- building look-up table for rain collecting snow:
  write(0,*)
- write(0,*) '--- enter subroutine qr_acr_qs:'
+ write(0,*) '--- building MP_THOMPSON_QRacrQS_DATA.DBL'
  call qr_acr_qs
  open(unit=11,file='MP_THOMPSON_QRacrQS_DATA.DBL',form='unformatted',status='new')
  write(11)tcs_racs1
@@ -65,11 +64,10 @@
  write(11)tnr_sacr1
  write(11)tnr_sacr2
  close(unit=11)
- write(0,*) '--- end subroutine qr_acr_qs'
 
 !--- building look-up table for freezing of cloud droplets:
  write(0,*)
- write(0,*) '--- enter subroutine freezeH2O:'
+ write(0,*) '--- building MP_THOMPSON_freezeH2O_DATA.DBL'
  call freezeH2O
  open(unit=11,file='MP_THOMPSON_freezeH2O_DATA.DBL',form='unformatted')
  write(11) tpi_qrfz
@@ -79,18 +77,33 @@
  write(11) tpi_qcfz
  write(11) tni_qcfz
  close(unit=11)
- write(0,*) '--- end subroutine freezeH2O'
  
 !--- building look-up table for autoconversion of cloud ice to snow:
  write(0,*)
- write(0,*) '--- enter subroutine qi_aut_qs:'
+ write(0,*) '--- building MP_THOMPSON_QIautQS_DATA.DBL'
  call qi_aut_qs
  open(unit=11,file='MP_THOMPSON_QIautQS_DATA.DBL',form='unformatted')
  write(11) tpi_ide
  write(11) tps_iaus
  write(11) tni_iaus
  close(unit=11)
- write(0,*) '--- end subroutine qi_aut_qs'
+
+ write(0,*)
+ write(0,*) 'Finished building all tables.'
+ write(0,*)
+ write(0,*) '*******************************************************************************'
+ write(0,*) 'To preserve these tables when running ''make clean'', please copy the following'
+ write(0,*) 'files to the src/core_atmosphere/physics/physics_wrf/files/ '
+ write(0,*)
+ write(0,*) '  MP_THOMPSON_QRacrQG_DATA.DBL'
+ write(0,*) '  MP_THOMPSON_QRacrQS_DATA.DBL'
+ write(0,*) '  MP_THOMPSON_freezeH2O_DATA.DBL'
+ write(0,*) '  MP_THOMPSON_QIautQS_DATA.DBL'
+ write(0,*)
+ write(0,*) 'Tables in the src/core_atmosphere/physics/physics_wrf/files/ directory '
+ write(0,*) 'will be automatically linked to the top-level MPAS directory when compiling'
+ write(0,*) 'the ''atmosphere'' core.'
+ write(0,*) '*******************************************************************************'
 
  end subroutine build_tables_thompson
 

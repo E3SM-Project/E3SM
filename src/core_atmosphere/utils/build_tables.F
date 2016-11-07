@@ -11,7 +11,10 @@
 
  implicit none
 
- write(0,*) '--- Building tables for Thompson cloud microphysics scheme:'
+ write(0,*) ' '
+ write(0,*) 'Constructing tables for Thompson cloud microphysics scheme'
+ write(0,*) 'This may take as much as 15-20 minutes with an optimized build...'
+
  call build_tables_thompson
 
  stop
