@@ -122,6 +122,7 @@
  real(kind=RKIND), dimension(:,:), allocatable :: maskslab
 
  integer, dimension(:), pointer :: landmask
+ integer :: global_max_landmask
  real(kind=RKIND), dimension(:), pointer :: destField1d
  real(kind=RKIND), dimension(:), pointer :: sst, xice
 
@@ -135,6 +136,22 @@
  call mpas_pool_get_array(fg, 'xice', xice)
 
  call mpas_pool_get_dimension(dims, 'nCells', nCells)
+
+!
+! Try to determine whether we have used a 'grid.nc' or a 'static.nc' file as input. 
+! If we are working from a 'grid.nc', we expect that the global maximum of the landmask 
+! will be 0.
+!
+ call mpas_dmpar_max_int(dminfo, maxval(landmask(1:nCells)), global_max_landmask)
+ if (global_max_landmask == 0) then
+    call mpas_dmpar_global_abort('*******************************************************************************', deferredAbort=.true.)
+    call mpas_dmpar_global_abort('The global maximum of the ''landmask'' field is zero, which suggests that this',  deferredAbort=.true.)
+    call mpas_dmpar_global_abort('field was not in the input file.  A ''landmask'' field is needed to properly',    deferredAbort=.true.)
+    call mpas_dmpar_global_abort('interpolate surface fields.',                                                     deferredAbort=.true.)
+    call mpas_dmpar_global_abort('Please rerun after specifying a static or initial conditions file as input in',   deferredAbort=.true.)
+    call mpas_dmpar_global_abort('the ''streams.init_atmosphere'' file.',                                           deferredAbort=.true.)
+    call mpas_dmpar_global_abort('*******************************************************************************')
+ end if
 
 !open intermediate file:
  call read_met_init(trim(config_sfc_prefix),.false.,timeString,istatus)
