@@ -125,7 +125,6 @@ contains
     use infnan,           only: nan, assignment(=)
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
 #endif
-    use cam_abortutils, only: endrun
 
     implicit none
     type (element_t),  pointer    :: elem(:)
@@ -159,8 +158,6 @@ contains
     integer total_nelem
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
-
-    character(len=128) :: errmsg
 
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
@@ -243,10 +240,7 @@ contains
 
        ! we want to exit elegantly when we are using too many processors.
        if (nelem < par%nprocs) then
-          write(errmsg, '(A72,A80,I5,A3,I5)') 'prim_driver_mod.F90: Number of tasks is greater than number of elements.', &
-                                          'To run with more MPI tasks than elements in CAM, set namelist variable dyn_npes.', &
-                                          par%nprocs, ' > ', nelem
-          call endrun(trim(errmsg))
+          call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
        end if
 
        allocate(GridVertex(nelem))
