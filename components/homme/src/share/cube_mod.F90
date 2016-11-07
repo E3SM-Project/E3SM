@@ -1,3 +1,10 @@
+! --------------------------------------------------------------------------------
+!
+! 08/2016: O. Guba Modifying metric_atomic routine to accomodate for 'epsilon
+! bubble' correction of numerical area. For more details see comments at the
+! beginning of prim_driver_mod.
+
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -443,13 +450,39 @@ contains
     elem%dx_short = 1.0d0/(max_svd*0.5d0*dble(np-1)*rrearth*1000.0d0)
     elem%dx_long  = 1.0d0/(min_svd*0.5d0*dble(np-1)*rrearth*1000.0d0)
 
-    ! optional noramlization:
-    elem%D = elem%D * sqrt(alpha) 
-    elem%Dinv = elem%Dinv / sqrt(alpha) 
-    elem%metdet = elem%metdet * alpha
-    elem%rmetdet = elem%rmetdet / alpha
-    elem%met = elem%met * alpha
-    elem%metinv = elem%metinv / alpha
+    ! Area correction: Bring numerical area from integration weights to
+    ! agreement with geometric area. 
+    ! Three different cases: 
+    ! (1) alpha == 1, this means that cube_init_atomic wasn't
+    ! called with alpha parameter there will be no correction, 
+    ! (2) alpha <> 1 and cubed_sphere_map=0 and correction is so-called
+    ! 'alpha-correction',
+    ! (3) alpha <> 1 and cubed_sphere_map=2 and it is 'epsilon-bubble'
+    ! correction.
+    
+    if( cubed_sphere_map == 0 ) then
+       ! alpha correction for cases (1) and (2).
+       ! It would be better to disable this code when alpha == 1 by using some
+       ! logical flag in control_mod.
+       elem%D = elem%D * sqrt(alpha) 
+       elem%Dinv = elem%Dinv / sqrt(alpha) 
+       elem%metdet = elem%metdet * alpha
+       elem%rmetdet = elem%rmetdet / alpha
+       elem%met = elem%met * alpha
+       elem%metinv = elem%metinv / alpha
+    elseif( cubed_sphere_map == 2 ) then
+       ! eps bubble correction for case (3).
+       do j=2,np-1
+         do i=2,np-1
+           elem%D(i,j,:,:) = elem%D(i,j,:,:) * sqrt(alpha)
+           elem%Dinv(i,j,:,:) = elem%Dinv(i,j,:,:) / sqrt(alpha)
+           elem%metdet(i,j) = elem%metdet(i,j) * alpha
+           elem%rmetdet(i,j) = elem%rmetdet(i,j) / alpha
+           elem%met(i,j,:,:) = elem%met(i,j,:,:) * alpha
+           elem%metinv(i,j,:,:) = elem%metinv(i,j,:,:) / alpha
+         enddo
+       enddo
+    endif ! end of alpha/eps. bubble correction
 
   end subroutine metric_atomic
 

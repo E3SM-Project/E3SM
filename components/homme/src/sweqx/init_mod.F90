@@ -1,3 +1,9 @@
+! -------------------------------------------------------------------------------------------
+! 
+! 08/2016: O. Guba Inserting 'epsilon bubble' corecction for numerical area. For
+! more details see top comments in prim_driver_mod. Note that SW code is not
+! using 'alpha correction'.
+
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -12,12 +18,12 @@ contains
     use thread_mod, only : nthreads, omp_set_num_threads
     ! --------------------------------
     use control_mod, only : filter_counter, restartfreq, topology, &
-          partmethod, while_iter
+          partmethod, while_iter, cubed_sphere_map
     ! --------------------------------
     use namelist_mod, only : readnl
     ! --------------------------------
     use dimensions_mod, only : np, nelem, nlev, nelemd, nelemdmax,  &
-	GlobalUniqueCols
+        GlobalUniqueCols
     ! -------------------------------- 
     use time_mod, only : time_at, nmax
     ! --------------------------------
@@ -83,6 +89,14 @@ contains
     use fvm_mod, only : fvm_init1
     use fvm_control_volume_mod, only : fvm_struct
     use dimensions_mod, only : nc, ntrac
+    ! --------------------------------
+    use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
+    ! --------------------------------
+    use physical_constants, only : dd_pi
+    ! -------------------------------
+    use coordinate_systems_mod, only : sphere_tri_area
+    ! --------------------------------
+
 
     implicit none
 #ifdef _MPI
@@ -123,9 +137,14 @@ contains
 
     logical, parameter :: Debug = .FALSE.
 
+    real(kind=real_kind), allocatable :: aratio(:,:)
+    real(kind=real_kind) :: area(1), area_sphere, area_num, area_dummy, sum_w, delta
+    logical :: repro_sum_use_ddpdd, repro_sum_recompute
+    real(kind=real_kind) :: repro_sum_rel_diff_max
+
     integer,allocatable :: TailPartition(:)
     integer,allocatable :: HeadPartition(:)
-    real(kind=real_kind) :: approx_elements_per_task, xtmp
+    real(kind=real_kind) :: approx_elements_per_task
     type (quadrature_t)   :: gp                     ! element GLL points
 
 
@@ -188,6 +207,19 @@ contains
             if(par%masterproc) print *,"number of procs=", par%nprocs
             call abortmp('There is not enough paralellism in the job, that is, there is less than one elements per task.')
         end if
+
+       call repro_sum_defaultopts(                           &
+            repro_sum_use_ddpdd_out=repro_sum_use_ddpdd,       &
+            repro_sum_rel_diff_max_out=repro_sum_rel_diff_max, &
+            repro_sum_recompute_out=repro_sum_recompute        )
+       call repro_sum_setopts(                              &
+            repro_sum_use_ddpdd_in=repro_sum_use_ddpdd,       &
+            repro_sum_rel_diff_max_in=repro_sum_rel_diff_max, &
+            repro_sum_recompute_in=repro_sum_recompute,       &
+            repro_sum_master=par%masterproc,                      &
+            repro_sum_logunit=6                           )
+       if(par%masterproc) print *, "Initialized repro_sum"
+
 
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
@@ -273,6 +305,7 @@ contains
 
     ! initial 1D grids used to form tensor product element grids:
     gp=gausslobatto(np)
+
     if (topology=="cube") then
        ! ========================================================================
        ! Note it is more expensive to initialize each individual spectral element 
@@ -287,13 +320,72 @@ contains
           enddo
           call assign_node_numbers_to_elem(elem, GridVertex)
        endif
-
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
           call rotation_init_atomic(elem(ie),rot_type)
        enddo
+
+       ! Apply area correction based on epsilon bubble.
+       if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
+          allocate(aratio(nelemd,1))
+          do ie=1,nelemd
+          ! Computing area of element = sum of areas of 2 triangles.
+             call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(2), &
+                                  elem(ie)%corners3D(3), area_sphere)
+             call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(3), &
+                                  elem(ie)%corners3D(4), area_dummy)
+             ! Store element's area in area_sphere.
+             area_sphere = area_sphere + area_dummy
+
+             ! Computing 'numerical area' of the element = sum of integration
+             ! weights.
+             area_num = 0.0
+             do j = 1,np
+                do i = 1,np
+                   area_num = area_num + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
+                enddo
+             enddo
+
+             ! For correction sum of inner weights is needed.
+             sum_w = 0 ! or sum_w=sum(elem(ie)%mp(2:np-1,2:np-1)*elem(ie)%metdet(2:np-1,2:np-1))?
+             do j = 2, np-1
+               do i = 2, np-1
+                  sum_w = sum_w + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
+               enddo
+             enddo
+             ! Which tolerance is to use here?
+             if(sum_w > 1e-15) then
+                ! Calling correction routine
+                delta = (area_sphere - area_num)/sum_w
+                call cube_init_atomic(elem(ie),gp%points,1.0 + delta)
+             else
+                ! Abort since the denominator in correction is too small.
+    call abortmp('Area correction based on eps bubble cannot be done, sum_w is too small.')
+             endif
+             call rotation_init_atomic(elem(ie),rot_type)
+          enddo
+
+          ! Sanity check: print total area now
+          area = 0
+          do ie=1,nelemd
+             aratio(ie,1) = 0.0
+             do j = 1,np
+                do i=1,np
+                   aratio(ie,1) = aratio(ie,1) + &
+                                  gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
+                enddo
+             enddo
+          enddo
+          call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
+          if (par%masterproc) &
+          write(6,*)" <--- corrected area, 4\pi, their diff ", area(1), 4.0d0*dd_pi, area(1)-4.0d0*dd_pi
+          deallocate(aratio)
+       endif ! end if cubed_sphere_map == 2 and np > 2
+
        if(par%masterproc) write(6,*)"...done."
-    end if
+    end if ! topology == 'cube'
+
+
     ! =================================================================
     ! Run the checksum to verify communication schedule
     ! =================================================================
