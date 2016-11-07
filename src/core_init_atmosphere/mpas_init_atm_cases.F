@@ -213,11 +213,10 @@ module init_atm_cases
                write(0,*) ' '
                ierr = compute_gwd_fields(domain)
                if (ierr /= 0) then
-                  write(0,*) '****************************************************************'
-                  write(0,*) 'Error while trying to compute sub-grid-scale orography'
-                  write(0,*) 'statistics for use with the GWDO scheme.'
-                  write(0,*) '****************************************************************'
-                  call mpas_dmpar_global_abort('Error calculating GWDO statistics')
+                  call mpas_dmpar_global_abort('****************************************************************', deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('Error while trying to compute sub-grid-scale orography',           deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('statistics for use with the GWDO scheme.',                         deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('****************************************************************')
                end if
             end if
 
