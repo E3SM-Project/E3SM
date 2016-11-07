@@ -73,7 +73,8 @@ contains
 
     use bndry_mod,          only: sort_neighbor_buffer_mapping
     use control_mod,        only: runtype, restartfreq, filter_counter, integration, &
-                                  topology, partmethod, while_iter, use_semi_lagrange_transport
+                                  topology, partmethod, while_iter, use_semi_lagrange_transport, &
+                                  cubed_sphere_map
     use coordinate_systems_mod, only : sphere_tri_area
     use cube_mod,           only: cubeedgecount , cubeelemcount, cubetopology, &
                                   cube_init_atomic, &
