@@ -3,7 +3,7 @@ Run a testcase.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, find_system_test, append_status
+from CIME.utils import expect, find_system_test, append_status, find_proc_id
 from CIME.SystemTests.system_tests_common import *
 
 import sys, signal
@@ -18,6 +18,17 @@ def _signal_handler(signum, _):
         if signum == getattr(signal, signame):
             name = signame
 
+    # Terminate children
+    proc_ids = find_proc_id(children_only=True)
+    for proc_id in proc_ids:
+        try:
+            os.kill(proc_id, signal.SIGKILL)
+        except OSError:
+            # If the batch system killed the entire process group, these
+            # processes might already be dying
+            pass
+
+    # Throw an exception so SystemTest infrastructure can handle this error
     expect(False, "Job killed due to receiving signal %d (%s)" % (signum, name))
 
 def _set_up_signal_handlers():
