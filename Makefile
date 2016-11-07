@@ -149,8 +149,8 @@ ifort:
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"FFLAGS_OMP = -qopenmp" \
 	"CFLAGS_OMP = -qopenmp" \
@@ -160,7 +160,7 @@ ifort:
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
-ifort-mic:
+ifort-phi:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpiifort" \
 	"CC_PARALLEL = mpiicc" \
@@ -169,14 +169,14 @@ ifort-mic:
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O2 -mmic -convert big_endian -FR" \
-	"CFLAGS_OPT = -O2 -mmic" \
-	"CXXFLAGS_OPT = -O2 -mmic" \
-	"LDFLAGS_OPT = -O2 -mmic" \
-	"FFLAGS_DEBUG = -O0 -mmic -g -convert big_endian -FR -CU -CB -check all -fp-model strict -traceback" \
-	"CFLAGS_DEBUG = -O0 -mmic -g -fp-model strict -traceback" \
-	"CXXFLAGS_DEBUG = -O0 -mmic -g -fp-model strict -traceback" \
-	"LDFLAGS_DEBUG = -O0 -mmic -g -fp-model strict -traceback" \
+	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
+	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
+	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_DEBUG = -O0 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -O0 -g -traceback" \
+	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
+	"LDFLAGS_DEBUG = -O0 -g -fpe0 -traceback" \
 	"FFLAGS_OMP = -qopenmp" \
 	"CFLAGS_OMP = -qopenmp" \
 	"CORE = $(CORE)" \
@@ -194,13 +194,13 @@ ifort-scorep:
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OPT = -O3 -g -convert big_endian -FR" \
+	"CFLAGS_OPT = -O3 -g" \
+	"CXXFLAGS_OPT = -O3 -g" \
+	"LDFLAGS_OPT = -O3 -g" \
 	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"FFLAGS_OMP = -qopenmp" \
 	"CFLAGS_OMP = -qopenmp" \
@@ -693,15 +693,15 @@ endif
 compiler_test:
 ifeq "$(OPENMP)" "true"
 	@echo "Testing compiler for OpenMP support"
-	@echo "int main() { return 0; }" > conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "int main() { return 0; }" > conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "int main() { return 0; }" > conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
 		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
 	@rm -fr conftest.*
 endif
