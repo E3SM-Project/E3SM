@@ -264,17 +264,6 @@
     </desc>
   </entry>
 
-  <entry id="BRNCH_RETAIN_CASENAME">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_begin_stop_restart</group>
-    <file>env_run.xml</file>
-    <desc>
-      Allow same branch casename as reference casename. Only used for branch runs.
-    </desc>
-  </entry>
-
   <entry id="GET_REFCASE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -533,7 +522,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>pbs,lsf,slurm,cobalt,none</valid_values>
+     <valid_values>pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>
@@ -612,24 +601,25 @@
   <!-- definitions build -->
   <!-- ===================================================================== -->
 
-  <entry id="CESMSCRATCHROOT">
+  <entry id="CIME_OUTPUT_ROOT">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>Scratch root directory for each machine. For now, primarily used for shared library builds
-      The scratchroot root directory.  Base diretory for build and run directories.</desc>
+    <desc>Output root directory for each machine.
+                Base directory for build and run directories.
+    </desc>
   </entry>
 
   <entry id="EXEROOT">
     <type>char</type>
     <valid_values></valid_values>
-    <default_value>UNSET</default_value>
+    <default_value>$CIME_OUTPUT_ROOT/$CASE/bld</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>Case executable root directory.
-    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/bld)
+    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/lib)
     This is where the model builds its executable and by default runs the executable.
     Note that EXEROOT needs to have enough disk space for the experimental configuration
     requirements. As an example, a model run can produce more than a terabyte of
@@ -920,6 +910,14 @@
     <desc>timer output depth</desc>
   </entry>
 
+  <entry id="TIMER_DETAIL">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer detail FIXME - add documentation</desc>
+  </entry>
+
   <entry id="PROFILE_PAPI_ENABLE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -929,6 +927,16 @@
     <desc>Enables the papi hardware counters in gptl
     The papi library must be included in the build step for
     this to work.</desc>
+  </entry>
+
+  <entry id="TPROF_TOTAL">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_cesm</group>
+    <file>env_run.xml</file>
+    <desc>Determines number of times profiler is called over the model run period.
+    This sets values for tprof_option and tprof_n that determine the timing output file frequency
+    </desc>
   </entry>
 
   <entry id="COMP_RUN_BARRIERS">
@@ -1780,7 +1788,7 @@
 
   <entry id="RUNDIR">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <default_value>$CIME_OUTPUT_ROOT/$CASE/run</default_value>
     <group>run_desc</group>
     <file>env_run.xml</file>
     <desc>
@@ -3003,7 +3011,7 @@
     <values>
       <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
       <value compset="_POP2"                     >CESM1_MOD</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">CESM1_MOD</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPAS"                     >CESM1_MOD</value>
@@ -3144,8 +3152,8 @@
       <value compset="_POP2">1</value>
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
+      <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
@@ -3175,7 +3183,7 @@
     <values>
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
+      <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
     </values>
@@ -3201,11 +3209,11 @@
        than compset: see https://github.com/ESMCI/cime/issues/120 -->
   <entry id="CPL_ALBAV">
     <type>logical</type>
-    <valid_values>true,false</valid_values>
-    <default_value>false</default_value>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
     <values>
-      <value compset="DATM.+POP\d">true</value>
-      <value compset="DATM.+DOCN%IAF">true</value>
+      <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.+DOCN%IAF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
@@ -3253,9 +3261,6 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>never</default_value>
-    <values>
-      <value compset="CISM\d">nyears</value>
-    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver snapshot history file frequency (like REST_OPTION)</desc>
@@ -3265,9 +3270,6 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values>
-      <value compset="CISM\d">1</value>
-    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver snapshot history file frequency (like REST_N)
@@ -3321,8 +3323,8 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values>
-      <value compset="DATM.*_POP\d"    >TRUE</value>
-      <value compset="CAM.*_POP\d"     >TRUE</value>
+      <value compset="DATM.*_POP\d">TRUE</value>
+      <value compset="CAM.*_POP\d">TRUE</value>
       <value compset="CAM.*_DOCN%SOM">TRUE</value>
     </values>
     <group>run_budgets</group>
@@ -3366,7 +3368,7 @@
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
       <!-- Mariana's fix to allow isotopes to get the proper CO2 value -->
-      <value compset="CAM[45]%WISOall"				>284.7</value>
+      <value compset="CAM..%WISOall"				>284.7</value>
       <value compset="^2000.+CAM[45]%WCSC"			>368.9</value>
       <value compset="^2000.+CAM[45]%MOZM"			>0.000001</value>
       <value compset="^2000.+CAM[45]%MMOS"			>0.000001</value>
@@ -3386,8 +3388,8 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values>
-      <value compset="%WISO"    >TRUE</value>
-      <value compset="%ISO"     >TRUE</value>
+      <value compset="%WISO">TRUE</value>
+      <value compset="%ISO">TRUE</value>
     </values>
     <group>run_flags</group>
     <file>env_run.xml</file>
@@ -3570,6 +3572,15 @@
    <file>env_batch.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
  </entry>
+
+ <entry id="MODEL_VERSION">
+   <type>char</type>
+   <default_value>unknown</default_value>
+   <group>case_der</group>
+   <file>env_case.xml</file>
+   <desc>Apparent version of the model used for this case</desc>
+ </entry>
+
 
  <entry id="PROJECT_REQUIRED">
    <type>logical</type>

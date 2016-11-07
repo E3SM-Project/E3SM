@@ -16,7 +16,7 @@ from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_t
 from CIME.XML.machines import Machines
 from CIME.case import Case
 
-import argparse, math, glob, random
+import argparse, math, glob
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ OR
                         help="Do not setup generated tests, implies --no-build and --no-run")
 
     parser.add_argument("-u", "--use-existing", action="store_true",
-                        help="Use pre-existing case directories. Requires test-id")
+                        help="Use pre-existing case directories they will pick up at the latest PEND state or re-run the first failed state. Requires test-id")
 
     parser.add_argument("--save-timing", action="store_true",
                         help="Enable archiving of performance data.")
@@ -99,7 +99,10 @@ OR
 
     parser.add_argument("-r", "--test-root",
                         help="Where test cases will be created."
-                        " Will default to scratch root XML machine file")
+                        " Will default to output root as defined in the config_machines file")
+
+    parser.add_argument("--output-root",
+                        help="Where the case output is written.")
 
     parser.add_argument("--baseline-root",
                         help="Specifies an root directory for baseline"
@@ -205,6 +208,9 @@ OR
                         "will raise an error. Specifying this option allows "
                         "existing baseline directories to be silently overwritten.")
 
+    parser.add_argument("--wait", action="store_true",
+                        help="On batch systems, wait for submitted jobs to complete")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -289,7 +295,7 @@ OR
                         is  None and args.xml_category is None and args.xml_testlist is None),
                    "At least one of --xml-machine, --xml-testlist, "
                    "--xml-compiler, --xml-category or a valid test name must be provided.")
-                   
+
             test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
                                                            args.xml_compiler, args.xml_testlist,
                                                            machine_name, args.compiler)
@@ -328,7 +334,8 @@ OR
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
         args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.walltime, \
-        args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, args.allow_baseline_overwrite
+        args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, \
+        args.allow_baseline_overwrite, args.output_root, args.wait
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
@@ -430,9 +437,10 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     run_cmd_no_fail(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None, verbose=True)
 
 ###############################################################################
+# pragma pylint: disable=protected-access
 def create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                 baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, project, test_id, parallel_jobs,
-                walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite):
+                walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite, output_root, wait):
 ###############################################################################
     impl = TestScheduler(test_names, test_data=test_data,
                          no_run=no_run, no_build=no_build, no_setup=no_setup, no_batch=no_batch,
@@ -443,9 +451,10 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
                          namelists_only=namelists_only,
                          project=project, parallel_jobs=parallel_jobs, walltime=walltime,
                          proc_pool=proc_pool, use_existing=use_existing, save_timing=save_timing,
-                         queue=queue, allow_baseline_overwrite=allow_baseline_overwrite)
+                         queue=queue, allow_baseline_overwrite=allow_baseline_overwrite,
+                         output_root=output_root)
 
-    success = impl.run_tests()
+    success = impl.run_tests(wait=wait)
 
     if success and single_submit:
         # Get real test root
@@ -481,15 +490,16 @@ def _main_func(description):
                                    (libroot, libroot), arg_stdout=None, arg_stderr=None)
         return
 
-    test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root, baseline_root, clean, \
-        baseline_cmp_name, baseline_gen_name, namelists_only, project, test_id, parallel_jobs, \
-        walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite \
+    test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, \
+    test_root, baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, \
+    project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, \
+    save_timing, queue, allow_baseline_overwrite, output_root, wait \
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                          baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only,
                          project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, save_timing,
-                         queue, allow_baseline_overwrite))
+                         queue, allow_baseline_overwrite, output_root, wait))
 
 ###############################################################################
 

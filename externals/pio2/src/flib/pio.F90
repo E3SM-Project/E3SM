@@ -1,7 +1,7 @@
 !>
-!! @file 
+!! @file
 !! @brief User interface Module for PIO, this is the only file a user program should 'use'
-!! 
+!!
 !<
 
 module pio
@@ -28,9 +28,9 @@ module pio
        pio_nofill, pio_unlimited, pio_fill_int, pio_fill_double, pio_fill_float, &
 #endif
        pio_64bit_offset, pio_64bit_data, &
-       pio_internal_error, pio_bcast_error, pio_return_error
+       pio_internal_error, pio_bcast_error, pio_return_error, pio_rearr_opt_t
 
-  use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
+  use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit
 
   use pio_nf, only:        &
        PIO_enddef,            &
@@ -111,11 +111,11 @@ contains
          logical(C_BOOL), intent(out) :: iotask
        end function PIOc_iam_iotask
     end interface
-    
+
     ierr = PIOc_iam_iotask(iosystem%iosysid, ctask)
     task = ctask
   end function pio_iam_iotask
-  
+
 !>
 !! @public
 !! @brief Integer function returns rank of IO task.
@@ -131,7 +131,7 @@ contains
          integer(C_INT), intent(out) :: rank
        end function PIOc_iotask_rank
     end interface
-    
+
     ierr = PIOc_iotask_rank(iosystem%iosysid, rank)
   end function pio_iotask_rank
 

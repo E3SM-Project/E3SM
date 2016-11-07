@@ -50,7 +50,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
     default_baseline_root = _MACHINE.get_value("CCSM_BASELINE")
     default_compiler      = _MACHINE.get_default_compiler()
-    scratch_root          = _MACHINE.get_value("CESMSCRATCHROOT")
+    scratch_root          = _MACHINE.get_value("CIME_OUTPUT_ROOT")
     default_testroot      = os.path.join(scratch_root)
 
     CIME.utils.setup_standard_logging_options(parser)
@@ -106,7 +106,7 @@ def _main_func(description):
     baseline_name, baseline_root, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests = \
         parse_command_line(sys.argv, description)
 
-    success = CIME.bless_test_results.bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests)
+    success = bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests)
     sys.exit(0 if success else 1)
 
 ###############################################################################

@@ -27,6 +27,19 @@ contains
   end subroutine test_shr_string_listDiff_default
 
   @Test
+  subroutine test_shr_string_listDiff_oneElementList2()
+    ! Make sure that it correctly handles the edge case of a single element in list2
+    ! (i.e., with no delimiters).
+    character(len=list_len) :: actual
+
+    call shr_string_listDiff( &
+         list1 = 'first:second:third:fourth', &
+         list2 = 'third', &
+         listout = actual)
+    @assertEqual('first:second:fourth', actual)
+  end subroutine test_shr_string_listDiff_oneElementList2
+
+  @Test
   subroutine test_shr_string_listDiff_emptyList2()
     character(len=list_len) :: actual
 
@@ -47,6 +60,17 @@ contains
          listout = actual)
     @assertEqual(' ', actual)
   end subroutine test_shr_string_listDiff_List2equalsList1
+
+  @Test
+  subroutine test_shr_string_listDiff_elementNotInList1()
+    character(len=list_len) :: actual
+
+    call shr_string_listDiff( &
+         list1 = 'first:second:third:fourth', &
+         list2 = 'fifth', &
+         listout = actual)
+    @assertEqual('first:second:third:fourth', actual)
+  end subroutine test_shr_string_listDiff_elementNotInList1
 
   ! ------------------------------------------------------------------------
   ! Tests of shr_string_listAddSuffix

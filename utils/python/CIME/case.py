@@ -5,12 +5,12 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy   import deepcopy
-import glob, os, shutil, traceback
+import glob, os, shutil, traceback, math
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_build_threaded
+from CIME.utils                     import get_build_threaded, get_current_commit
 from CIME.XML.build                 import Build
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -29,7 +29,6 @@ from CIME.XML.env_build             import EnvBuild
 from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
-
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
 
@@ -92,6 +91,37 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_classes = []
+        self._is_env_loaded = False
+        
+        self.thread_count = None
+        self.tasks_per_node = None
+        self.num_nodes = None
+        self.tasks_per_numa = None
+        self.cores_per_task = None
+
+        # check if case has been configured and if so initialize derived
+        if self.get_value("CASEROOT") is not None:
+            self.initialize_derived_attributes()
+
+    def initialize_derived_attributes(self):
+        """
+        These are derived variables which can be used in the config_* files 
+        for variable substitution using the {{ var }} syntax
+        """
+        env_mach_pes = self.get_env("mach_pes")
+        comp_classes = self.get_values("COMP_CLASSES")
+        total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+        self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
+        self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
+        logger.warn("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
+        self.num_nodes = env_mach_pes.get_total_nodes(total_tasks, self.thread_count)
+        self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
+        smt_factor = self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")
+        
+        self.cores_per_task = ((self.get_value("MAX_TASKS_PER_NODE")/smt_factor) \
+                               / self.tasks_per_node) * 2
+
+
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -130,6 +160,10 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
         self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
+
+    def get_case_root(self):
+        """Returns the root directory for this case."""
+        return self._caseroot
 
     def get_env(self, short_name):
         full_name = "env_%s.xml" % (short_name)
@@ -313,10 +347,6 @@ class Case(object):
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
-        If a file has not been defined, set an id/value pair in the
-        case dictionary, this will be used later. Note that in
-        create_newcase, when this is called and are setting the
-        command line options none of these files have been defined
         If a file has been defined, and the variable is in the file,
         then that value will be set in the file object and the file
         name is returned
@@ -326,6 +356,18 @@ class Case(object):
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
+            if (result is not None):
+                logger.debug("Will rewrite file %s %s",env_file.filename, item)
+                self._env_files_that_need_rewrite.add(env_file)
+                return result
+
+    def set_valid_values(self, item, valid_values):
+        """
+        Update or create a valid_values entry for item and populate it
+        """
+        result = None
+        for env_file in self._env_entryid_files:
+            result = env_file.set_valid_values(item, valid_values)
             if (result is not None):
                 logger.debug("Will rewrite file %s %s",env_file.filename, item)
                 self._env_files_that_need_rewrite.add(env_file)
@@ -491,7 +533,7 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None):
+                  walltime=None, queue=None, output_root=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -669,6 +711,12 @@ class Case(object):
         elif machobj.get_value("PROJECT_REQUIRED"):
             expect(project is not None, "PROJECT_REQUIRED is true but no project found")
 
+        # Resolve the CIME_OUTPUT_ROOT variable, other than this
+        # we don't want to resolve variables until we need them
+        if output_root is None:
+            output_root = self.get_value("CIME_OUTPUT_ROOT")
+        self.set_value("CIME_OUTPUT_ROOT", output_root)
+
         # Overwriting an existing exeroot or rundir can cause problems
         exeroot = self.get_value("EXEROOT")
         rundir = self.get_value("RUNDIR")
@@ -688,10 +736,13 @@ class Case(object):
 
         # Turn on short term archiving as cesm default setting
         model = get_model()
+        self.set_model_version(model)
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
+            self.set_value("TIMER_LEVEL", 4)
         if test:
             self.set_value("TEST",True)
+        self.initialize_derived_attributes()
 
 
     def get_compset_var_settings(self):
@@ -728,6 +779,7 @@ class Case(object):
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
+                    os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
@@ -868,16 +920,7 @@ class Case(object):
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods_dir)
             self.set_value("USER_MODS_FULLPATH",user_mods_path)
-            ninst_vals = {}
-            for i in xrange(1,len(self._component_classes)):
-                comp_class = self._component_classes[i]
-                comp_name  = self._components[i-1]
-                if comp_class == "DRV":
-                    continue
-                ninst_comp = self.get_value("NINST_%s"%comp_class)
-                if ninst_comp > 1:
-                    ninst_vals[comp_name] = ninst_comp
-            apply_user_mods(self._caseroot, user_mods_path, ninst_vals)
+            apply_user_mods(self._caseroot, user_mods_path)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
 
@@ -971,6 +1014,12 @@ class Case(object):
             }
 
         executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+        # special case for aprun if using < 1 full node
+        if executable == "aprun":
+            totalpes = self.get_value("TOTALPES")
+            pes_per_node = self.get_value("PES_PER_NODE")
+            if totalpes < pes_per_node:
+                args["tasks_per_node"] = "-N "+str(totalpes)
 
         mpi_arg_string = " ".join(args.values())
 
@@ -979,3 +1028,32 @@ class Case(object):
             mpi_arg_string += " : "
 
         return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+
+    def set_model_version(self, model):
+        version = "unknown"
+        srcroot = self.get_value("SRCROOT")
+        if model == "cesm":
+            changelog = os.path.join(srcroot,"ChangeLog")
+            if os.path.isfile(changelog):
+                for line in open(changelog, "r"):
+                    m = re.search("Tag name: (cesm.*)$", line)
+                    if m is not None:
+                        version = m.group(1)
+                        break
+        elif model == "acme":
+            version = get_current_commit(True, srcroot)
+        self.set_value("MODEL_VERSION", version)
+
+        if version != "unknown":
+            logger.info("%s model version found: %s"%(model, version))
+        else:
+            logger.warn("WARNING: No %s Model version found."%(model))
+
+    def load_env(self):
+        if not self._is_env_loaded:
+            compiler = self.get_value("COMPILER")
+            debug=self.get_value("DEBUG"),
+            mpilib=self.get_value("MPILIB")
+            env_module = self.get_env("mach_specific")
+            env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
+            self._is_env_loaded = True

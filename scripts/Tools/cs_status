@@ -6,7 +6,6 @@ no errors occured (not based on test statuses).
 
 from standard_script_setup import *
 import argparse, sys, os, logging
-from CIME.utils import expect
 from CIME.test_status import *
 
 ###############################################################################
@@ -40,20 +39,20 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     return args.paths
 
 ###############################################################################
-def cs_status(test_paths, model):
+def cs_status(test_paths):
 ###############################################################################
     for test_path in test_paths:
         ts = TestStatus(test_dir=os.path.dirname(test_path))
         test_name = ts.get_name()
         summary = ts.get_overall_test_status()
         print "%s (Overall: %s), details:" % (test_name, summary)
-        ts.phase_statuses_dump(sys.stdout);
+        ts.phase_statuses_dump(sys.stdout, prefix='  ')
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
     test_paths = parse_command_line(sys.argv, description)
-    cs_status(test_paths,CIME.utils.get_model())
+    cs_status(test_paths)
 
 ###############################################################################
 

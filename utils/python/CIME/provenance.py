@@ -30,7 +30,6 @@ def save_build_provenance_acme(case, lid=None):
     exeroot = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
     lid = os.environ["LID"] if lid is None else lid
-
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.%s" % lid)
     if os.path.exists(describe_prov):
@@ -73,8 +72,13 @@ def save_build_provenance_acme(case, lid=None):
                 os.remove(generic_name)
             os.symlink(the_match, generic_name)
 
+
 def save_build_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
-    pass
+    version = case.get_value("MODEL_VERSION")
+    # version has already been recorded
+    caseroot = case.get_value("CASEROOT")
+    with open(os.path.join(caseroot, "README.case"), "a") as fd:
+        fd.write("CESM version is %s\n"%version)
 
 def save_build_provenance(case, lid=None):
     model = case.get_value("MODEL")

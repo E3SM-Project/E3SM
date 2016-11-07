@@ -5,8 +5,6 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.generic_xml import GenericXML
 
-_VERSION = "1.0"
-
 logger = logging.getLogger(__name__)
 
 class TestSpec(GenericXML):
@@ -22,8 +20,6 @@ class TestSpec(GenericXML):
             testnodes = self.get_nodes('test')
             for node in testnodes:
                 self._testnodes[node.get("name")] = node
-        else:
-            self.root.set('version', _VERSION)
 
     def set_header(self, testroot, machine, testid, baselinetag=None, baselineroot=None):
         tlelem = ET.Element('testlist')

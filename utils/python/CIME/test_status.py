@@ -1,5 +1,26 @@
 """
-Functions for managing the TestStatus file
+Contains the crucial TestStatus class which manages phase-state of a test
+case and ensure that this state is represented by the TestStatus file in
+the case.
+
+TestStatus objects are only modifiable via the set_status method and this
+is only allowed if the object is being accessed within the context of a
+context manager. Example:
+
+    with TestStatus(test_dir=caseroot) as ts:
+        ts.set_status(RUN_PHASE, TEST_PASS_STATUS)
+
+This file also contains all of the hardcoded phase information which includes
+the phase names, phase orders, potential phase states, and which phases are
+required (core phases).
+
+Additional important design decisions:
+1) In order to ensure that incomplete tests are always left in a PEND
+   state, updating a core phase to a PASS state will automatically set the next
+   core state to PEND.
+2) If the user repeats a core state, that invalidates all subsequent state. For
+   example, if a user rebuilds their case, then any of the post-run states like the
+   RUN state are no longer valid.
 """
 
 from CIME.XML.standard_module_setup import *
@@ -79,6 +100,9 @@ class TestStatus(object):
         Create a TestStatus object
 
         If test_dir is not specified, it is set to the current working directory
+
+        no_io is intended only for testing, and should be kept False in
+        production code
         """
         test_dir = os.getcwd() if test_dir is None else test_dir
         self._filename = os.path.join(test_dir, TEST_STATUS_FILENAME)
@@ -111,14 +135,6 @@ class TestStatus(object):
         """
         Update the status of this test by changing the status of given phase to the
         given status.
-
-        Key implematation details:
-        1) In order to ensure that incomplete tests are always left in a PEND
-        state, updating a core phase to a PASS state will automatically set the next
-        core state to PEND.
-        2) If the user repeats a core state, that invalidates all subsequent state. For
-        example, if a user rebuilds their case, then any of the post-run states like the
-        RUN state are no longer valid.
 
         >>> with TestStatus(test_dir="/", test_name="ERS.foo.A", no_io=True) as ts:
         ...     ts.set_status(CREATE_NEWCASE_PHASE, "PASS")
@@ -161,7 +177,7 @@ class TestStatus(object):
                 expect(self._phase_statuses[previous_core_phase][0] == TEST_PASS_STATUS,
                        "Cannot move past core phase '%s', it didn't pass" % previous_core_phase)
 
-        reran_phase = (phase in self._phase_statuses and self._phase_statuses[phase][0] != TEST_PEND_STATUS)
+        reran_phase = (phase in self._phase_statuses and self._phase_statuses[phase][0] != TEST_PEND_STATUS and phase in CORE_PHASES)
         if reran_phase:
             # All subsequent phases are invalidated
             phase_idx = ALL_PHASES.index(phase)
@@ -185,18 +201,19 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self, fd):
+    def phase_statuses_dump(self, fd, prefix=''):
         """
         Args:
             fd: file open for writing
+            prefix: string printed at the start of each line
         """
         if self._phase_statuses:
             for phase, data in self._phase_statuses.iteritems():
                 status, comments = data
                 if not comments:
-                    fd.write("%s %s %s\n" % (status, self._test_name, phase))
+                    fd.write("%s%s %s %s\n" % (prefix, status, self._test_name, phase))
                 else:
-                    fd.write("%s %s %s %s\n" % (status, self._test_name, phase, comments))
+                    fd.write("%s%s %s %s %s\n" % (prefix, status, self._test_name, phase, comments))
 
     def flush(self):
         if self._phase_statuses and not self._no_io:

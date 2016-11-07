@@ -12,7 +12,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="datm" compclass="atm">
-    <rest_file_extension>\.r\..*</rest_file_extension>
+    <rest_file_extension>\.r.*</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.atm</rpointer_file>

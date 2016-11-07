@@ -2,18 +2,14 @@
 
 from Tools.standard_script_setup import *
 from shutil import copyfile
-from CIME.utils         import expect, get_model
+from CIME.utils         import expect
 from CIME.case          import Case
-
-import stat
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args, cimeroot):
 ###############################################################################
-
-    cime_model = CIME.utils.get_model()
 
     parser = argparse.ArgumentParser()
 
@@ -57,10 +53,6 @@ def parse_command_line(args, cimeroot):
                         help="Specify a target size description for the number of cores"
                          "Allowed options are   ('S','M','L','X1','X2','[0-9]x[0-9]','[0-9]')")
 
-    parser.add_argument("--mach-dir", "-mach_dir",
-                        help="Specify the locations of the Machines directory, other than the default"
-                        "The default is CIMEROOT/machines")
-
     parser.add_argument("--user-mods-dir", "-user_mods_dir",
                         help="Path to directory with user_nl_* files and xmlchange "
                         "commands to utilize. This can also include SourceMods")
@@ -91,6 +83,9 @@ def parse_command_line(args, cimeroot):
     parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
+
+    parser.add_argument("--output-root",
+                        help="Alternative path for the directory where case output is written")
 
     # hidden argument indicating called from create_test
     parser.add_argument("--test", "-test", action="store_true",
@@ -131,9 +126,9 @@ def parse_command_line(args, cimeroot):
 
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
-        args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
+        args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime, args.queue
+        args.walltime, args.queue, args.output_root
 
 ###############################################################################
 def _main_func():
@@ -142,9 +137,9 @@ def _main_func():
 
     caseroot, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
-        machine_dir, user_mods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test, ninst, walltime, queue \
-        = parse_command_line(sys.argv, cimeroot)
+        user_mods_dir, user_compset, pesfile, \
+        user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
+        output_root = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(caseroot)
 
@@ -164,7 +159,7 @@ def _main_func():
                           pecount=pecount, compiler=compiler, mpilib=mpilib,
                           user_compset=user_compset, pesfile=pesfile,
                           user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                          walltime=walltime, queue=queue)
+                          walltime=walltime, queue=queue, output_root=output_root)
 
         case.create_caseroot()
 

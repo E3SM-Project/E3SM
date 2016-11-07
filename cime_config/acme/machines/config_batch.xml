@@ -48,9 +48,23 @@
        <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
-       <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
      </submit_args>
    </batch_system>
+
+  <batch_system type="cobalt_theta" version="x.y">
+    <batch_query>qstat</batch_query>
+    <batch_submit>qsub</batch_submit>
+    <batch_directive>#COBALT</batch_directive>
+    <jobid_pattern>(\d+)</jobid_pattern>
+    <depend_string> --dependencies</depend_string>
+    <submit_args>
+      <arg flag="-A" name="PROJECT"/>
+      <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="--mode script"/>
+    </submit_args>
+  </batch_system>
 
   <batch_system type="lsf" version="9.1">
     <batch_query args=" -w" >bjobs</batch_query>
@@ -147,6 +161,17 @@
       </queues>
     </batch_system>
 
+    <!-- anvil is PBS -->
+    <batch_system MACH="anvil" type="pbs" version="x.y">
+      <directives>
+        <directive>-A {{ PROJECT }}</directive>
+        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      </directives>
+      <queues>
+	<queue walltimemax="01:00:00" jobmin="1" jobmax="4320" default="true">acme</queue>
+      </queues>
+    </batch_system>
+
     <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" type="slurm" version="x.y">
       <queues>
@@ -183,6 +208,12 @@
     <batch_system MACH="cetus" type="cobalt">
       <queues>
         <queue walltimemax="00:59:00" jobmin="1" jobmax="4096" default="true">default</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="theta" type="cobalt_theta">
+      <queues>
+        <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
       </queues>
     </batch_system>
 

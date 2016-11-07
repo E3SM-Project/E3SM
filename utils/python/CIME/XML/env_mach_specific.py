@@ -51,7 +51,6 @@ class EnvMachSpecific(EnvBase):
                 for node in nodes:
                     self.add_child(node)
 
-
     def get_full_records(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
         <element_name attribute='attribute_value>value</element_name>"""
@@ -76,9 +75,8 @@ class EnvMachSpecific(EnvBase):
             group   = super(EnvMachSpecific, self)._get_group(node)
             val     = node.text
             attr    = node.attrib['name']
-            t       = self._get_type(node)
+            t       = self._get_type_info(node)
             desc    = self._get_description(node)
-            #default = super(EnvBase , self).get_default(node)
             default = self._get_default(node)
             filename    = self.filename
 
@@ -89,25 +87,34 @@ class EnvMachSpecific(EnvBase):
 
         return results
 
-    def _get_env_for_case(self, compiler, debug, mpilib):
+    def _get_modules_for_case(self, compiler, debug, mpilib):
         module_nodes = self.get_nodes("modules")
-        env_nodes    = self.get_nodes("environment_variables")
-
         modules_to_load = None
         if module_nodes is not None:
             modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
+
+        return modules_to_load
+
+    def _get_envs_for_case(self, compiler, debug, mpilib):
+        env_nodes = self.get_nodes("environment_variables")
 
         envs_to_set = None
         if env_nodes is not None:
             envs_to_set = self._compute_env_actions(env_nodes, compiler, debug, mpilib)
 
-        return modules_to_load, envs_to_set
+        return envs_to_set
 
-    def load_env_for_case(self, compiler, debug, mpilib):
-        modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
-
+    def load_env(self, compiler, debug, mpilib):
+        """
+        Should only be called by case.load_env
+        """
+        # Do the modules so we can refer to env vars set by the modules
+        # in the environment_variables block
+        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
         if (modules_to_load is not None):
             self.load_modules(modules_to_load)
+
+        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
         if (envs_to_set is not None):
             self.load_envs(envs_to_set)
 
@@ -149,7 +156,8 @@ class EnvMachSpecific(EnvBase):
             expect(False, "Unhandled module system '%s'" % module_system)
 
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
-        modules_to_load, envs_to_set = self._get_env_for_case(compiler, debug, mpilib)
+        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
+        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
 
         filename = ".env_mach_specific.%s" % shell
         lines = []
@@ -158,7 +166,6 @@ class EnvMachSpecific(EnvBase):
 
         if envs_to_set is not None:
             for env_name, env_value in envs_to_set:
-                # Let bash do the work on evaluating and resolving env_value
                 if shell == "sh":
                     lines.append("export %s=%s" % (env_name, env_value))
                 elif shell == "csh":
@@ -171,8 +178,7 @@ class EnvMachSpecific(EnvBase):
 
     def load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
-            # Let bash do the work on evaluating and resolving env_value
-            os.environ[env_name] = run_cmd_no_fail("echo %s" % env_value)
+            os.environ[env_name] = env_value
 
     # Private API
 
@@ -190,7 +196,16 @@ class EnvMachSpecific(EnvBase):
                 for child in node:
                     expect(child.tag == child_tag, "Expected %s element" % child_tag)
                     if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
-                        result.append( (child.get("name"), child.text) )
+                        val = child.text
+                        if val is not None:
+                            # We allow a couple special substitutions for these fields
+                            for repl_this, repl_with in [("$COMPILER", compiler), ("$MPILIB", mpilib)]:
+                                val = val.replace(repl_this, repl_with)
+
+                            val = self.get_resolved_value(val)
+                            expect("$" not in val, "Not safe to leave unresolved items in env var value: '%s'" % val)
+                        # intentional unindent, result is appended even if val is None
+                        result.append( (child.get("name"), val) )
 
         return result
 
@@ -209,9 +224,12 @@ class EnvMachSpecific(EnvBase):
 
     def _match(self, my_value, xml_value):
         if (xml_value.startswith("!")):
-            return my_value != xml_value[1:]
+            result = my_value != xml_value[1:]
         else:
-            return my_value == xml_value
+            result = my_value == xml_value
+        logger.debug("(env_mach_specific) _match %s %s %s"%(my_value, xml_value, result))
+        return result
+
 
     def _get_module_commands(self, modules_to_load, shell):
         # Note this is independent of module system type
@@ -225,6 +243,7 @@ class EnvMachSpecific(EnvBase):
 
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_commands(modules_to_load, "python"):
+            logger.debug("module command is %s"%cmd)
             py_module_code = run_cmd_no_fail(cmd)
             exec(py_module_code)
 
@@ -390,7 +409,9 @@ class EnvMachSpecific(EnvBase):
                                            default=arg_node.get("default"))
                 args[arg_node.get("name")] = arg_value
 
-        executable = self.get_node("executable", root=the_match)
+        exec_node = self.get_node("executable", root=the_match)
+        expect(exec_node is not None,"No executable found")
+        executable = exec_node.text
 
-        return executable.text, args
+        return executable, args
 

@@ -2,20 +2,14 @@
 
 from Tools.standard_script_setup import *
 
-from CIME.utils import expect, get_model
+from CIME.utils import expect
 from CIME.case  import Case
-
-import stat
-import glob
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args):
 ###############################################################################
-
-    cime_model = CIME.utils.get_model()
-
     parser = argparse.ArgumentParser()
 
     CIME.utils.setup_standard_logging_options(parser)

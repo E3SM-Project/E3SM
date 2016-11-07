@@ -64,9 +64,23 @@
        <arg flag="-n" name=" $TOTALPES / $PES_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
-       <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
       </submit_args>
    </batch_system>
+
+  <batch_system type="cobalt_theta" version="x.y">
+    <batch_query>qstat</batch_query>
+    <batch_submit>qsub</batch_submit>
+    <batch_directive>#COBALT</batch_directive>
+    <jobid_pattern>(\d+)</jobid_pattern>
+    <depend_string> --dependencies</depend_string>
+    <submit_args>
+      <arg flag="-A" name="PROJECT"/>
+      <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="--mode script"/>
+    </submit_args>
+  </batch_system>
 
   <batch_system type="lsf" version="9.1">
     <batch_query args=" -w" >bjobs</batch_query>
@@ -242,7 +256,7 @@
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
+      <queue default="true" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
     </queues>
     <submit_args>
       <arg flag="-l " name="select=$TOTALPES"/>
@@ -253,6 +267,12 @@
   <batch_system MACH="mira" type="cobalt">
     <queues>
       <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="theta" type="cobalt_theta">
+    <queues>
+      <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
     </queues>
   </batch_system>
 
@@ -341,9 +361,12 @@
    </batch_system>
 
    <batch_system MACH="corip1" type="slurm" version="x.y">
+     <directives>
+       <directive>-C haswell </directive>
+     </directives>
      <queues>
        <queue walltimemax="06:00:00" jobmin="1" jobmax="45440">regular</queue>
-       <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue>
+     <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
      </queues>
    </batch_system>
 
@@ -379,10 +402,12 @@
 
   <batch_system MACH="yellowstone" type="lsf" version="9.1">
     <queues>
-      <queue walltimemax="24:00" jobmin="1" jobmax="1" jobname="case.lt_archive">hpss</queue>
+      <!-- the hpss queue that should be used for lt_archive jobs on yellowstone does not have modules installed and so rejects our python job -->
+      <queue walltimemax="24:00" jobmin="1" jobmax="1" jobname="case.lt_archive">caldera</queue>
       <queue walltimemax="24:00" jobmin="1" jobmax="8" >caldera</queue>
       <queue walltimemax="12:00" jobmin="9" jobmax="16384" default="true">regular</queue>
       <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
+      <queue walltimemax="12:00" jobmin="1" jobmax="16384">premium</queue>
     </queues>
   </batch_system>
 

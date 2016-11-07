@@ -1,0 +1,81 @@
+#! /bin/csh -fx
+
+#==============================================================================
+# Purpose: Build the mct library
+#==============================================================================
+
+cd $CASEROOT
+
+set CIMEROOT	= `./xmlquery  CIMEROOT	 -value `
+set CASETOOLS	= `./xmlquery  CASETOOLS -value `
+set GMAKE	= `./xmlquery  GMAKE	 -value `
+set GMAKE_J	= `./xmlquery  GMAKE_J	 -value `
+set MACH	= `./xmlquery  MACH	 -value `
+set MPILIB	= `./xmlquery  MPILIB	 -value `
+set OS		= `./xmlquery  OS	 -value `
+
+setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory
+setenv MCT_LIBDIR $1
+setenv LIBDIR $2
+echo "MCT_LIBDIR   $MCT_LIBDIR"
+
+  cd $MCT_LIBDIR
+  echo "Copying source to EXEROOT..."
+  if ( (-M $MCT_DIR/Makefile ) >= (-M Makefile ) ) then
+    cp $MCT_DIR/Makefile .
+  endif
+  if (! -d mct ) then
+    mkdir mct
+  endif
+  if ( (-M $MCT_DIR/mct/Makefile ) >= (-M mct/Makefile ) ) then
+    cp $MCT_DIR/mct/Makefile mct
+  endif
+  if (! -d mpeu ) then
+    mkdir mpeu
+  endif
+  if ( (-M $MCT_DIR/mpeu/Makefile ) >= (-M mpeu/Makefile ) ) then
+    cp $MCT_DIR/mpeu/Makefile mpeu
+  endif
+  if (! -d mpi-serial ) then
+    mkdir mpi-serial
+  endif
+  if ( "$MPILIB" == "mpi-serial" ) then
+    if ( (-M $MCT_DIR/mpi-serial/Makefile ) >= (-M mpi-serial/Makefile ) ) then
+      cp $MCT_DIR/mpi-serial/Makefile mpi-serial/
+    endif
+    cp -p $MCT_DIR/mpi-serial/*.h mpi-serial/
+  endif
+  set runconf = 0
+  set runclean = 0
+
+# run configure with correct arguments if necessary
+  #if ($runconf == 1) then
+    echo "Running configure..."
+    echo "for OS=$OS MACH=$MACH"
+    $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mct
+    #if($? != 0) then
+    #  rm mct_conf*
+    #endif
+  #endif
+
+  if ($runclean == 1) then
+    $GMAKE clean
+  endif
+
+  cp -p Makefile.conf Makefile.conf.old
+
+  $GMAKE  SRCDIR=$MCT_DIR   || exit 1
+
+
+  cp -p mct/lib*.a $LIBDIR/lib
+  cp -p mpeu/lib*.a $LIBDIR/lib
+  if ( "$MPILIB" == "mpi-serial" ) then
+    cp -p mpi-serial/lib*.a $LIBDIR/lib
+    cp -p mpi-serial/*.h $LIBDIR/include
+    cp -p mpi-serial/*.mod $LIBDIR/include
+  endif
+  cp -p mct/*.mod $LIBDIR/include/
+  cp -p mpeu/*.mod $LIBDIR/include/
+
+exit 0
+

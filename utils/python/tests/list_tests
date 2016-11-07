@@ -3,6 +3,7 @@
 import unittest
 DEBUG = False
 
+#pylint: disable=protected-access
 def list_tests_from():
     loader = unittest.TestLoader()
     suite = loader.discover(".", pattern="scripts_regression_tests.py")
@@ -17,5 +18,5 @@ def list_tests_from():
                     print btestname[1][1:-1] + "." + btestname[0]
 
 if __name__ == "__main__":
-  # Include the directories
-  list_tests_from()
+    # Include the directories
+    list_tests_from()

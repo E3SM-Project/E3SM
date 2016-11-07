@@ -416,6 +416,16 @@ class FakeTest(SystemTestsCommon):
 
             build.post_build(self._case, [])
 
+    def run_indv(self, suffix='base', st_archive=False):
+        mpilib = self._case.get_value("MPILIB")
+        # This flag is needed by mpt to run a script under mpiexec
+        if mpilib == "mpt":
+            os.environ["MPI_SHEPHERD"] = "true"
+        super(FakeTest, self).run_indv(suffix, st_archive)
+
+
+
+
 class TESTRUNPASS(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
@@ -472,11 +482,14 @@ cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
 cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
 """ % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
-        FakeTest.build_phase(self,
-                       sharedlib_only=sharedlib_only, model_only=model_only)
+        super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
+                                              model_only=model_only)
+
+    def run_indv(self, suffix=None, st_archive=False ):
+        super(TESTTESTDIFF,self).run_indv(suffix, st_archive)
 
     def run_phase(self):
-        self.run_indv(suffix=None)
+        super(TESTTESTDIFF, self).run_phase()
         self._component_compare_test("base", "rest")
 
 class TESTRUNFAIL(FakeTest):
@@ -498,11 +511,14 @@ class TESTRUNFAILEXC(TESTRUNPASS):
     def run_phase(self):
         raise RuntimeError("Exception from run_phase")
 
-class TESTBUILDFAIL(FakeTest):
+class TESTBUILDFAIL(TESTRUNPASS):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
-        if (not sharedlib_only):
-            expect(False, "Intentional fail for testing infrastructure")
+        if "TESTBUILDFAIL_PASS" in os.environ:
+            TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
+        else:
+            if (not sharedlib_only):
+                expect(False, "Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):
 

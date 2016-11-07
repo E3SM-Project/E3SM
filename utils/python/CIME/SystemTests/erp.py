@@ -53,15 +53,17 @@ class ERP(SystemTestsCommon):
         # Build two executables, one using the original tasks and threads (ERP1) and
         # one using the modified tasks and threads (ERP2)
         # The reason we currently need two executables that CESM-CICE has a compile time decomposition
-        # For cases where ERP works, changing this decomposition will not effect answers, but it will
-        # effect the executable that is used
+        # For cases where ERP works, changing this decomposition will not affect answers, but it will
+        # affect the executable that is used
         self._case.set_value("SMP_BUILD","0")
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
 
             if (bld == 2):
                 # halve the number of tasks and threads
-                for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
+                for comp in self._case.get_values("COMP_CLASSES"):
+                    if comp == "DRV":
+                        comp = "CPL"
                     ntasks    = self._case.get_value("NTASKS_%s"%comp)
                     nthreads  = self._case.get_value("NTHRDS_%s"%comp)
                     rootpe    = self._case.get_value("ROOTPE_%s"%comp)
@@ -72,11 +74,11 @@ class ERP(SystemTestsCommon):
                         self._case.set_value("NTASKS_%s"%comp, ntasks/2)
                         self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
 
-            # Note, some components, like CESM-CICE, have
-            # decomposition information in env_build.xml
-            # case_setup(self._case, test_mode=True, reset=True)that
-            # needs to be regenerated for the above new tasks and thread counts
-            case_setup(self._case, test_mode=True, reset=True)
+                # Note, some components, like CESM-CICE, have
+                # decomposition information in env_build.xml
+                # case_setup(self._case, test_mode=True, reset=True)that
+                # needs to be regenerated for the above new tasks and thread counts
+                case_setup(self._case, test_mode=True, reset=True)
 
             # Now rebuild the system, given updated information in env_build.xml
 
