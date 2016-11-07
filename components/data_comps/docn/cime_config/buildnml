@@ -1,17 +1,247 @@
 #!/usr/bin/env python
 
-"""
-build data model library
+"""Namelist creator for CIME's data ocn model.
 """
 
-import sys, os
+# Typically ignore this.
+# pylint: disable=invalid-name
 
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
-sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
+# Disable these because this is our standard setup
+# pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
+
+import os, shutil, sys, glob
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
-from CIME.buildnml import build_data_nml
+from CIME.case import Case
+from CIME.nmlgen import NamelistGenerator
+from CIME.utils import expect
+from CIME.utils import handle_standard_logging_options
+from CIME.utils import setup_standard_logging_options
+from CIME.buildnml import create_namelist_infile
 
-build_data_nml(sys.argv, 'ocn')
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def _parse_input(argv):
+###############################################################################
+
+    if "--test" in argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    parser = argparse.ArgumentParser()
+
+    setup_standard_logging_options(parser)
+
+    parser.add_argument("caseroot",
+                        help="case directory")
+
+    args = parser.parse_args()
+
+    handle_standard_logging_options(args)
+
+    return args.caseroot
+
+# pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+####################################################################################
+def _create_namelists(case, confdir, inst_string, infile, definition_file):
+####################################################################################
+    """Write out the namelist for this component.
+
+    Most arguments are the same as those for `NamelistGenerator`. The
+    `inst_string` argument is used as a suffix to distinguish files for
+    different instances. The `confdir` argument is used to specify the directory
+    in which output files will be placed.
+    """
+
+    #----------------------------------------------------
+    # Get a bunch of information from the case.
+    #----------------------------------------------------
+    din_loc_root = case.get_value("DIN_LOC_ROOT")
+    ocn_domain_file = case.get_value("OCN_DOMAIN_FILE")
+    ocn_domain_path = case.get_value("OCN_DOMAIN_PATH")
+    docn_mode = case.get_value("DOCN_MODE")
+    ocn_grid = case.get_value("OCN_GRID")
+    sstice_stream = case.get_value("SSTICE_STREAM")
+
+    #----------------------------------------------------
+    # Check for incompatible options.
+    #----------------------------------------------------
+    expect(ocn_grid != "null",
+           "OCN_GRID cannot be null")
+    expect(docn_mode != "NULL",
+           "DOCN_MODE cannot be NULL")
+
+    #----------------------------------------------------
+    # Log some settings.
+    #----------------------------------------------------
+    logger.info("DOCN mode is %s", docn_mode)
+    logger.info("DOCN grid is %s", ocn_grid)
+
+    #----------------------------------------------------
+    # Clear out old data.
+    #----------------------------------------------------
+    data_list_path = os.path.join(case.get_case_root(), "Buildconf",
+                                  "docn.input_data_list")
+    if os.path.exists(data_list_path):
+        os.remove(data_list_path)
+
+    #----------------------------------------------------
+    # Create configuration information.
+    #----------------------------------------------------
+    config = {}
+    config['ocn_grid'] = ocn_grid
+    config['docn_mode'] = docn_mode
+    config['sstice_stream'] = sstice_stream
+
+    #----------------------------------------------------
+    # Construct the namelist generator.
+    #----------------------------------------------------
+    nmlgen = NamelistGenerator(case, infile, definition_file, config)
+
+    #----------------------------------------------------
+    # Construct the list of streams.
+    #----------------------------------------------------
+    streams = nmlgen.get_streams()
+
+    #----------------------------------------------------
+    # For each stream, create stream text file and update
+    # shr_strdata_nml group and input data list.
+    #----------------------------------------------------
+    for stream in streams:
+
+        # Ignore null values.
+        if stream is None or stream in ("NULL", ""):
+            continue
+
+        inst_stream = stream + inst_string
+        logger.info("DOCN stream is %s", inst_stream)
+        stream_path = os.path.join(confdir, "docn.streams.txt." + inst_stream)
+        user_stream_path = os.path.join(case.get_case_root(),
+                                        "user_docn.streams.txt." + inst_stream)
+
+        # Use the user's stream file, or create one if necessary.
+        if os.path.exists(user_stream_path):
+            shutil.copyfile(user_stream_path, stream_path)
+        else:
+            nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
+
+    #----------------------------------------------------
+    # Create `shr_strdata_nml` namelist group.
+    #----------------------------------------------------
+    # set per-stream variables
+    nmlgen.create_shr_strdata_nml()
+
+    # set variables that are not per-stream
+    if ocn_domain_file != "UNSET":
+        full_domain_path = os.path.join(ocn_domain_path, ocn_domain_file)
+        nmlgen.add_default("domainfile", value=full_domain_path)
+    nmlgen.add_default("vectors")
+
+    #----------------------------------------------------
+    # Create `docn_nml` namelist group.
+    #----------------------------------------------------
+    entries = nmlgen.get_definition_entries()
+    for entry in entries:
+        nmlgen.add_default(entry)
+
+    #----------------------------------------------------
+    # Finally, write out all the namelists.
+    #----------------------------------------------------
+    namelist_file = os.path.join(confdir, "docn_in")
+    nmlgen.write_output_file(namelist_file, data_list_path, groups=['docn_nml','shr_strdata_nml'])
+
+###############################################################################
+def _main_func():
+###############################################################################
+
+    # Build the component namelist and required stream txt files
+
+    compname = "docn"
+    caseroot = _parse_input(sys.argv)
+
+    with Case(caseroot) as case:
+        cimeroot = case.get_value("CIMEROOT")
+        rundir = case.get_value("RUNDIR")
+        ninst = case.get_value("NINST_OCN")
+        din_loc_root = case.get_value("DIN_LOC_ROOT")
+
+        if not os.path.isdir(din_loc_root):
+            os.makedirs(din_loc_root)
+            logger.info("Created input root directory %s" %din_loc_root)
+
+        # determine directory for user modified namelist_definitions.xml
+        user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
+        expect (os.path.isdir(user_xml_dir),
+                "user_xml_dir %s does not exist " %user_xml_dir)
+
+        # NOTE: User definition *replaces* existing definition.
+        namelist_xml_dir = os.path.join(cimeroot, "components", "data_comps", compname, "cime_config")
+        definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_docn.xml")]
+        user_definition = os.path.join(user_xml_dir, "namelist_definition_docn.xml")
+        if os.path.isfile(user_definition):
+            definition_file = [user_definition]
+
+        # Checkout if definition file exists
+        for file_ in definition_file:
+            expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
+
+        confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
+        if not os.path.isdir(confdir):
+            os.makedirs(confdir)
+
+        # Loop over instances
+        inst_string = ""
+        inst_counter = 1
+        while (inst_counter <= ninst):
+
+            # determine instance string
+            inst_string = ""
+            if ninst > 1:
+                inst_string = '_' + '%04d' % inst_counter
+
+            # If multi-instance case does not have restart file, use
+            # single-case restart for each instance
+            rpointer = "rpointer." + compname
+            if (os.path.isfile(os.path.join(rundir,rpointer)) and
+                (not os.path.isfile(os.path.join(rundir,rpointer + inst_string)))):
+                shutil.copy(os.path.join(rundir, rpointer),
+                            os.path.join(rundir, rpointer + inst_string))
+
+            inst_string_label = inst_string
+            if not inst_string_label:
+                inst_string_label = "\"\""
+
+            # create namelist output infile using user_nl_file as input
+            user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
+            expect(os.path.isfile(user_nl_file),
+                   "Missing required user_nl_file %s " %(user_nl_file))
+            infile = os.path.join(confdir, "namelist_infile")
+            create_namelist_infile(case, user_nl_file, infile)
+            namelist_infile = [infile]
+
+            # create namelist and stream file(s) data component
+            _create_namelists(case, confdir, inst_string, namelist_infile, definition_file)
+
+            # copy namelist files and stream text files, to rundir
+            if os.path.isdir(rundir):
+                filename = compname + "_in"
+                file_src  = os.path.join(confdir, filename)
+                file_dest = os.path.join(rundir, filename)
+                if inst_string:
+                    file_dest += inst_string
+                shutil.copy(file_src,file_dest)
+
+                for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
+                    shutil.copy(txtfile, rundir)
+
+            # increment instance counter
+            inst_counter = inst_counter + 1
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()
