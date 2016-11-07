@@ -38,18 +38,18 @@
   </help>
 
   <compset>
-    <alias>A</alias>
-    <lname>2000_DATM%NYF_DLND%NULL_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV</lname>
+    <alias>A</alias>           
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>AWAV</alias>
-    <lname>2000_DATM%WW3_DLND%NULL_DICE%COPY_DOCN%COPY_DROF%NULL_SGLC_WW3</lname>
+    <alias>AWAV</alias>           
+    <lname>2000_DATM%WW3_SLND_DICE%COPY_DOCN%COPY_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset grid="r%rx1">
     <alias>AIAF</alias>
-    <lname>2000_DATM%IAF_SLND_DICE%SIAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
+    <lname>2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
