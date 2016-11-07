@@ -6,16 +6,6 @@
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
 
-#ifdef _GPTL
-#define MPAS_GPTL_START(T) call gptlstart(T)
-#define MPAS_GPTL_STOP(T) call gptlstop(T)
-#define MPAS_GPTL_PRINT(T) call gptlpr(T)
-#else
-#define MPAS_GPTL_START(T) !!! call gptlstart(T)
-#define MPAS_GPTL_STOP(T) !!! call gptlstop(T)
-#define MPAS_GPTL_PRINT(T) !!! call gptlpr(T)
-#endif
-
 module atm_time_integration
 
    use mpas_derived_types
@@ -102,9 +92,7 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_time_integration', config_time_integration)
 
       if (trim(config_time_integration) == 'SRK3') then
-         MPAS_GPTL_START('atm_srk3')
          call atm_srk3(domain, dt, itimestep)
-         MPAS_GPTL_STOP('atm_srk3')
       else
          call mpas_dmpar_global_abort('Unknown time integration option '//trim(config_time_integration), deferredAbort=.true.)
          call mpas_dmpar_global_abort('Currently, only ''SRK3'' is supported.')
@@ -559,7 +547,6 @@ module atm_time_integration
                allocate(delsq_vorticity(nVertLevels,nVertices+1))
                allocate(dpdz(nVertLevels,nCells+1))
 
-MPAS_GPTL_START('dyn_tend')
 !$OMP PARALLEL DO
                do thread=1,nThreads
                   call atm_compute_dyn_tend( tend, tend_physics, state, diag, mesh, block % configs, nVertLevels, rk_step, dt, & 
@@ -571,7 +558,6 @@ MPAS_GPTL_START('dyn_tend')
                                              edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
                end do
 !$OMP END PARALLEL DO
-MPAS_GPTL_STOP('dyn_tend')
 
                deallocate(delsq_theta)
                deallocate(delsq_w)
@@ -810,7 +796,6 @@ MPAS_GPTL_STOP('dyn_tend')
                   call mpas_timer_start('atm_advance_scalars')
                else
                   call mpas_timer_start('atm_advance_scalars_mono')
-MPAS_GPTL_START('atm_advance_scalars_mono')
                end if
                block => domain % blocklist
                do while (associated(block))
@@ -908,7 +893,6 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                   call mpas_timer_stop('atm_advance_scalars')
                else
-MPAS_GPTL_STOP('atm_advance_scalars_mono')
                   call mpas_timer_stop('atm_advance_scalars_mono')
                end if
 
@@ -1057,7 +1041,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                call mpas_timer_start('atm_advance_scalars')
             else
                call mpas_timer_start('atm_advance_scalars_mono')
-MPAS_GPTL_START('atm_advance_scalars_mono')
             end if
             block => domain % blocklist
             do while (associated(block))
@@ -1162,7 +1145,6 @@ MPAS_GPTL_START('atm_advance_scalars_mono')
             if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                call mpas_timer_stop('atm_advance_scalars')
             else
-MPAS_GPTL_STOP('atm_advance_scalars_mono')
                call mpas_timer_stop('atm_advance_scalars_mono')
             end if
 
@@ -3375,9 +3357,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 
 !$OMP BARRIER
 !$OMP MASTER
-MPAS_GPTL_START('mono_exch_1')
       call mpas_dmpar_exch_halo_field(scalars_old_field)
-MPAS_GPTL_STOP('mono_exch_1')
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -3688,7 +3668,6 @@ MPAS_GPTL_STOP('mono_exch_1')
          !
 !$OMP BARRIER
 !$OMP MASTER
-MPAS_GPTL_START('mono_exch_2')
          tempField => tempFieldTarget
 
          tempField % block => block
@@ -3704,7 +3683,6 @@ MPAS_GPTL_START('mono_exch_2')
 
          tempField % array => scale_arr
          call mpas_dmpar_exch_halo_field(tempField, (/ 1 /))
-MPAS_GPTL_STOP('mono_exch_2')
 !$OMP END MASTER
 !$OMP BARRIER
 
