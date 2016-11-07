@@ -968,6 +968,43 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="anvil">
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <MPI_PATH MPILIB="mvapich">/blues/gpfs/home/software/spack-0.9.1/opt/spack/linux-centos6-x86_64/intel-16.0.3/mvapich2-2.2b-ow5ikyjehwemgdr4h6k7ii7da6hs6lfz</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas </ADD_SLIBS>
+  <ADD_SLIBS> -Wl,-rpath -Wl,$(NETCDFROOT)/lib </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="anvil">
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <MPI_PATH MPILIB="mvapich">/soft/spack/opt/spack/linux-x86_64/gcc-4.4.7/gcc-5.3.0-fygfl7rvyuiteto27dlhmilp5cstw2o2</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</GPTL_CPPDEFS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="anvil">
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <MPI_PATH MPILIB="mvapich">soft/spack/opt/spack/linux-x86_64/pgi-16.3-0/mvapich2-2.2b-2t45yukj4ij6ek24fwimzydo2dg6i3n2</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich"> mpi</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <ADD_SLIBS> -rpath $(NETCDFROOT)/lib </ADD_SLIBS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+</compiler>
+
 <compiler COMPILER="pgi" MACH="eastwind">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
