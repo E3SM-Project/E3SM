@@ -1391,7 +1391,7 @@
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
+    <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>16</PES_PER_NODE>
 
@@ -1426,7 +1426,7 @@
       <modules>
 	<command name="purge"></command>
 	<command name="load">TACC</command>
-	<command name="load">python/2.7.9</command>
+	<command name="load">python/2.7.12</command>
 	<command name="load">intel/15.0.2</command>
 	<command name="load">perl/5.16.2</command>
 	<command name="load">cmake/3.1.0</command>
@@ -1450,6 +1450,7 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="NETCDF_PATH">$TACC_NETCDF_DIR</env>
       <env name="PNETCDF_PATH">$TACC_PNETCDF_DIR</env>
+      <env name="PERL5LIB">/scratch/projects/xsede/CESM/perl5/lib/perl5/x86_64-linux-thread-multi:/scratch/projects/xsede/CESM/perl5/lib/perl5</env>
      </environment_variables>
   </machine>
 
