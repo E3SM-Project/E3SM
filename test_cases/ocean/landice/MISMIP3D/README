@@ -13,3 +13,14 @@ this fairly straightforward.
 After running the desired resolution Stnd experiment to steady state, setting up and running the
 perturbation experiments must be done manually.  See the other README file in this directory
 for instructions.
+
+
+One strategy is to run Stnd to steady state for a coarse resolution and then use the final state
+of the coarse run as the initial condition for a finer resolution.  I compared this piggyback strategy
+to a full spinup of the 1km resolution (with GLP on) and found the steady state solution for both
+strategies to have an identical grounding line.  The full spinup took about 25,000 years to equilibrate
+while the piggyback method took about 5000 years.
+To do this, first make sure you've run the standard IC set up script on the finer resolution file, then:
+MPAS-Tools/grid_gen/landice_grid_tools/interpolate_to_mpasli_grid.py -m d -s coarse-res-output-or-restart-file-with-final-time.nc -d finer-res.nc --thickness-only
+This makes use of the extrapolation that the 'd' method uses, and interpolates the thickness field only.
+
