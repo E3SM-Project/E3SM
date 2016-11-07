@@ -792,6 +792,8 @@ def transform_vars(text, case=None, subgroup=None, check_members=None, default=N
     directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
     # loop through directive text, replacing each string enclosed with
     # template characters with the necessary values.
+    if check_members is None and case is not None:
+        check_members = case
     while directive_re.search(text):
         m = directive_re.search(text)
         variable = m.groups()[0]

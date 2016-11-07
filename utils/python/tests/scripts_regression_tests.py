@@ -26,6 +26,7 @@ TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
 MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
+NO_CMAKE    = False
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
@@ -1421,6 +1422,13 @@ file(WRITE query.out "${{{}}}")
 
         environment = os.environ.copy()
         environment.update(env)
+        os_ = MACHINE.get_value("OS")
+        # cmake will not work on cray systems without this flag
+        if os_ == "CNL":
+            cmake_args = "-DCMAKE_SYSTEM_NAME=Catamount"
+        else:
+            cmake_args = ""
+
         run_cmd_assert_result(self.parent, "cmake . 2>&1", from_dir=temp_dir, env=environment)
 
         with open(output_name, "r") as output:
@@ -1777,7 +1785,10 @@ class I_TestCMakeMacros(H_TestMakeMacros):
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
         test_xml = _wrap_config_build_xml(xml_string)
-        return CMakeTester(self, get_macros(self._maker, test_xml, "CMake"))
+        if (NO_CMAKE):
+            self.skipTest("Skipping cmake test")
+        else:
+            return CMakeTester(self, get_macros(self._maker, test_xml, "CMake"))
 
 ###############################################################################
 class S_TestManageAndQuery(unittest.TestCase):
@@ -1848,6 +1859,11 @@ def _main_func():
         sys.argv.remove("--no-batch")
         global NO_BATCH
         NO_BATCH = True
+
+    if "--no-cmake" in sys.argv:
+        sys.argv.remove("--no-cmake")
+        global NO_CMAKE
+        NO_CMAKE = True
 
     args = lambda: None # just something to set attrs on
     for log_param in ["debug", "silent", "verbose"]:

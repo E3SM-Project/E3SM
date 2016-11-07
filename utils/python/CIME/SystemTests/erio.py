@@ -5,6 +5,7 @@ This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
+
 import shutil
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class ERIO(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case, expected=["TEST"])
 
         self._pio_types = self._case.get_env("run").get_valid_values("PIO_TYPENAME")
+        self._stop_n = self._case.get_value("STOP_N")
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         """
@@ -55,7 +57,6 @@ class ERIO(SystemTestsCommon):
 
         shutil.copy(pio_exe_path, base_exe_path)
 
-        stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
         expect(stop_n > 0, "Bad STOP_N: %d" % stop_n)
 
@@ -63,14 +64,14 @@ class ERIO(SystemTestsCommon):
         rest_n = stop_n/2 + 1
         self._case.set_value("REST_N", rest_n)
         self._case.set_value("REST_OPTION", stop_option)
-        self._case.set_value("HIST_N", stop_n)
+        self._case.set_value("HIST_N", self._stop_n)
         self._case.set_value("HIST_OPTION", stop_option)
         self._case.set_value("CONTINUE_RUN", False)
         self._case.flush()
 
-        expect(stop_n > 2, "ERROR: stop_n value %d too short"%stop_n)
+        expect(self._stop_n > 2, "ERROR: stop_n value %d too short"%self._stop_n)
         logger.info("doing an %s %s initial test with restart file at %s %s with pio type %s"
-                    %(str(stop_n), stop_option, str(rest_n), stop_option, pio_type))
+                    %(str(self._stop_n), stop_option, str(rest_n), stop_option, pio_type))
         self.run_indv(suffix=pio_type)
 
     def _restart_run(self, pio_type, other_pio_type):
@@ -85,19 +86,18 @@ class ERIO(SystemTestsCommon):
 
         shutil.copy(pio_exe_path, base_exe_path)
 
-        stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
 
-        rest_n = stop_n/2 + 1
-        stop_new = stop_n - rest_n
-        expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,stop_n,rest_n))
+        rest_n = self._stop_n/2 + 1
+        stop_new = self._stop_n - rest_n
+        expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,self._stop_n,rest_n))
 
         self._case.set_value("STOP_N", stop_new)
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
         self._case.flush()
         logger.info("doing an %s %s restart test with %s against %s"
-                    %(str(stop_n), stop_option, pio_type, other_pio_type))
+                    %(str(stop_new), stop_option, pio_type, other_pio_type))
 
         suffix = "%s.%s" % (other_pio_type, pio_type)
         self.run_indv(suffix=suffix)
