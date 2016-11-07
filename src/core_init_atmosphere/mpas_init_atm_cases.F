@@ -236,7 +236,10 @@ module init_atm_cases
 
             call init_atm_case_gfs(block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
                                    diag, diag_physics, config_init_case, block_ptr % dimensions, block_ptr % configs)
-            if (config_met_interp) call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
+            
+            if (config_met_interp) then
+               call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
+            end if
 
             block_ptr => block_ptr % next
          end do
@@ -4564,9 +4567,11 @@ write(0,*) 'PROCESSING OMLD'
 
          do k = 1, nVertLevels
             do iCell = 1, nCells
-               es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
-               es = min(es,0.99*0.01*pressure(k,iCell))
-               rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+!              es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
+!              es = min(es,0.99*0.01*pressure(k,iCell))
+!              rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+               rs = rslf(pressure(k,iCell),t(k,iCell))
+               if(t(k,iCell) .lt. svpt0) rs = rsif(pressure(k,iCell),t(k,iCell))
                scalars(index_qv,k,iCell) = 0.01_RKIND*rs*relhum(k,iCell)
              enddo
          enddo

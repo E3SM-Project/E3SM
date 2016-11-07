@@ -21,6 +21,7 @@
                 <dim name="nSoilLevels"        definition="namelist:config_nsoillevels"/>
                 <dim name="nFGLevels"          definition="namelist:config_nfglevels"/>
                 <dim name="nFGSoilLevels"      definition="namelist:config_nfgsoillevels"/>
+                <dim name="nGocartLevels"      definition="namelist:config_gocart"/>
                 <dim name="nVertLevelsP1"      definition="nVertLevels+1"/>
                 <dim name="nMonths"            definition="namelist:config_months"/>
         </dims>
@@ -45,6 +46,7 @@
                 <nml_option name="config_nsoillevels"           type="integer"       default_value="4"/>
                 <nml_option name="config_nfglevels"             type="integer"       default_value="38"/>
                 <nml_option name="config_nfgsoillevels"         type="integer"       default_value="4"/>
+                <nml_option name="config_gocart"                type="integer"       default_value="30"/>
                 <nml_option name="config_months"                type="integer"       default_value="12"      in_defaults="false"/>
         </nml_record>
 
@@ -346,11 +348,11 @@
                         <var name="surface_pressure" packages="met_stage_out"/>
                         <var name="precipw" packages="met_stage_out"/>
 			<var name="h_oml_initial" packages="met_stage_out"/>
-			<var name="u10" packages="met_stage_out"/>
-			<var name="v10" packages="met_stage_out"/>
-			<var name="q2" packages="met_stage_out"/>
+                        <var name="u10" packages="met_stage_out"/>
+                        <var name="v10" packages="met_stage_out"/>
+                        <var name="q2" packages="met_stage_out"/>
 			<var name="rh2" packages="met_stage_out"/>
-			<var name="t2m" packages="met_stage_out"/>
+                        <var name="t2m" packages="met_stage_out"/>
 		</stream>
 
 		<stream name="surface" 
@@ -541,8 +543,8 @@
                 <var name="u10"                               type="real"     dimensions="nCells Time"/>
                 <var name="v10"                               type="real"     dimensions="nCells Time"/>
                 <var name="q2"                                type="real"     dimensions="nCells Time"/>
-                <var name="t2m"                               type="real"     dimensions="nCells Time"/>
                 <var name="rh2"                               type="real"     dimensions="nCells Time"/>
+                <var name="t2m"                               type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="diag" time_levs="1">

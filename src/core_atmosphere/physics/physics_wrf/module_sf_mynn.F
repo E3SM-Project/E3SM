@@ -1,13 +1,15 @@
-!==================================================================================================
-! copied for implementation in MPAS from WRF version 3.6.1
+!=================================================================================================================
+! copied for implementation in MPAS from WRF version 3.6.1.
 
 ! modifications made to sourcecode:
 ! * used preprocessing option to replace module_model_constants with mpas_atmphys_constants.
 !   Laura D. Fowler (laura@ucar.edu / 2014-09-25).
 ! * used preprocessing option to include the actual mean distance between cell centers.
 !   Laura D. Fowler (laura@ucar.edu / 2015-01-06).
+! * used "dummy" variables in the call to mym_condensation.
+!   Laura D. Fowler (laura@ucar.edu / 2016-10-28).
 
-!==================================================================================================
+!=================================================================================================================
 
 MODULE module_sf_mynn
 
@@ -302,6 +304,11 @@ CONTAINS
                                                             RHO1D, &
                                                            dz8w1d
 
+      ! VARIABLE FOR PASSING TO MYM_CONDENSATION
+      REAL,     DIMENSION(kts:kts+1 ) :: dummy1,dummy2,dummy3,dummy4, &
+                                         dummy5,dummy6,dummy7,dummy8, &
+                                         dummy9,dummy10
+
       REAL,     DIMENSION( its:ite ) ::  vt1,vq1
       REAL,     DIMENSION(kts:kts+1) ::  thl, qw, vt, vq
       REAL                           ::  ql
@@ -326,10 +333,10 @@ CONTAINS
         ENDDO
 
         IF (itimestep==1) THEN
-!           write(0,*)
-!           write(0,*) '--- sfc_mynn itimestep = ', itimestep
-!           write(0,*) '--- initialize vt1, vq1, ust, mol, qsfc, qstar'
-!           write(0,*)
+!          write(0,*)
+!          write(0,*) '--- sfc_mynn itimestep = ', itimestep
+!          write(0,*) '--- initialize vt1, vq1, ust, mol, qsfc, qstar'
+!          write(0,*)
            DO i=its,ite
               vt1(i)=0.
               vq1(i)=0.
@@ -339,29 +346,34 @@ CONTAINS
               qstar(i,j)=0.0
            ENDDO
         ELSE
-!           write(0,*)
-!           write(0,*) '--- sfc_mynn itimestep = ', itimestep
-!           write(0,*) '--- call mym_condensation:'
-!           write(0,*)
+!          write(0,*)
+!          write(0,*) '--- sfc_mynn itimestep = ', itimestep
+!          write(0,*) '--- call mym_condensation:'
+!          write(0,*)
            DO i=its,ite
               do k = kts,kts+1
                 ql = qc3d(i,k,j)/(1.+qc3d(i,k,j))
                 qw(k) = qv3d(i,k,j)/(1.+qv3d(i,k,j)) + ql
                 thl(k) = th3d(i,k,j)-xlvcp*ql/pi3d(i,k,j)
+                dummy1(k)  = dz8w(i,k,j)
+                dummy2(k)  = thl(k)
+                dummy3(k)  = qw(k)
+                dummy4(k)  = p3d(i,k,j)
+                dummy5(k)  = pi3d(i,k,j)
+                dummy6(k)  = tsq(i,k,j)
+                dummy7(k)  = qsq(i,k,j)
+                dummy8(k)  = cov(i,k,j)
+                dummy9(k)  = Sh3d(i,k,j)
+                dummy10(k) = el_pbl(i,k,j)
               end do
 
               ! NOTE: The last grid number is kts+1 instead of kte.
               CALL mym_condensation (kts,kts+1, &
-                   &            dz8w(i,kts:kts+1,j), &
-                   &            thl(kts:kts+1), qw(kts:kts+1), &
-                   &            p3d(i,kts:kts+1,j),     &
-                   &            pi3d(i,kts:kts+1,j),    &
-                   &            tsq(i,kts:kts+1,j),     &
-                   &            qsq(i,kts:kts+1,j),     &
-                   &            cov(i,kts:kts+1,j),     &
-                   &            Sh3d(i,kts:kts+1,j),    & !JOE - cloud PDF testing
-                   &            el_pbl(i,kts:kts+1,j),  & !JOE - cloud PDF testing
-                   &            bl_mynn_cloudpdf,       & !JOE - cloud PDF testing
+                   &            dummy1,dummy2,dummy3, &
+                   &            dummy4,dummy5,dummy6, &
+                   &            dummy7,dummy8,dummy9, &
+                   &            dummy10,              &
+                   &            bl_mynn_cloudpdf,     &
                    &            vt(kts:kts+1), vq(kts:kts+1))
               vt1(i) = vt(kts)
               vq1(i) = vq(kts)

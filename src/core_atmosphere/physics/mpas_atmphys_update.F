@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_update
  use mpas_kind_types
  use mpas_derived_types
@@ -20,33 +20,31 @@
           update_radiation_diagnostics
 
 
-!>\brief update diagnostics.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_update:
-!> -----------------------------------
-!> physics_update              : not used.
-!> update_radiation_diagnostics: update accumulated radiation diagnostics.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!Update diagnostics.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_update:
+! -----------------------------------
+! physics_update              : not used.
+! update_radiation_diagnostics: update accumulated radiation diagnostics.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * renamed config_conv_deep_scheme to config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains
 
  
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_update(domain,dt)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(domain_type),intent(in):: domain
@@ -56,10 +54,9 @@
  type(block_type),pointer:: block
  integer:: i,j,k
 
-!--------------------------------------------------------------------------------------------------
-
-! write(0,*)
-! write(0,*) '--- begin physics_update:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- begin physics_update:'
  block => domain % blocklist
  do while(associated(block))
 
@@ -72,9 +69,9 @@
 
  end subroutine physics_update
 
-!==================================================================================================
+!=================================================================================================================
  subroutine update_radiation_diagnostics(configs,mesh,diag_physics,its,ite)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
@@ -104,7 +101,7 @@
 !local variables and arrays:
  integer:: iCell
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_bucket_radt',bucket_radt)
 
@@ -257,6 +254,6 @@
 
  end subroutine update_radiation_diagnostics
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_update
-!==================================================================================================
+!=================================================================================================================

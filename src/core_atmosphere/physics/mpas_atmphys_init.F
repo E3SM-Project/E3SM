@@ -26,9 +26,9 @@
  private
  public:: physics_init
 
-! MPAS main initialization subroutine for all physics parameterizations.
-! Laura D. Fowler (send comments to laura@ucar.edu).
-! 2013-05-01.
+!MPAS main initialization subroutine for all physics parameterizations.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
 !
 ! subroutines in mpas_atmphys_init:
 ! ---------------------------------
@@ -62,6 +62,9 @@
 ! * modified the initialization of i_rainc and i_rainnc, now that the convection and cloud microphysics
 !   parameterizations are in "packages."
 !   Laura D. Fowler (laura@ucar.edu) / 2106-04-13.
+! * removed the calculation of the variable dcEdge_m which is no longer needed in the different physics
+!   parameterizations.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
 
 
  contains
@@ -101,16 +104,12 @@
                    config_radt_sw_scheme
 
  integer,pointer:: nCellsSolve,nLags
- integer,dimension(:),pointer  :: nEdgesOnCell
  integer,dimension(:),pointer  :: i_rainc,i_rainnc
  integer,dimension(:),pointer  :: i_acswdnb,i_acswdnbc,i_acswdnt,i_acswdntc, &
                                   i_acswupb,i_acswupbc,i_acswupt,i_acswuptc, &
                                   i_aclwdnb,i_aclwdnbc,i_aclwdnt,i_aclwdntc, &
                                   i_aclwupb,i_aclwupbc,i_aclwupt,i_aclwuptc
- integer,dimension(:,:),pointer:: edgesOnCell
 
-
- real(kind=RKIND),dimension(:),pointer  :: dcEdge,dcEdge_m
  real(kind=RKIND),dimension(:),pointer  :: acswdnb,acswdnbc,acswdnt,acswdntc,  &
                                            acswupb,acswupbc,acswupt,acswuptc,  &
                                            aclwdnb,aclwdnbc,aclwdnt,aclwdntc,  &
@@ -150,12 +149,6 @@
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nLags'      ,nLags      )
-
- call mpas_pool_get_array(mesh,'nEdgesOnCell',nEdgesOnCell)
- call mpas_pool_get_array(mesh,'edgesOnCell' ,edgesOnCell )
- call mpas_pool_get_array(mesh,'dcEdge'      ,dcEdge      )
-
- call mpas_pool_get_array(diag_physics,'dcEdge_m'    ,dcEdge_m    )
 
  call mpas_pool_get_array(diag_physics,'i_acswdnb'   ,i_acswdnb   )
  call mpas_pool_get_array(diag_physics,'i_acswdnbc'  ,i_acswdnbc  )
@@ -217,21 +210,6 @@
 
  currTime = mpas_get_clock_time(clock,MPAS_NOW,ierr)
  call mpas_get_time(curr_time=currTime,DoY=julday,ierr=ierr)
-
-!calculation of the mean distance between cell centers:
- if(.not. config_do_restart) then
-    do iCell = 1, nCellsSolve
-       dcEdge_m(iCell) = 0._RKIND
-       nEdges_m = nEdgesOnCell(iCell)
-       do iEdge = 1, nEdges_m
-          dcEdge_m(iCell) = dcEdge_m(iCell) + dcEdge(edgesOnCell(iEdge,iCell))
-       enddo
-       dcEdge_m(iCell) = dcEdge_m(iCell) / nEdges_m
-!      write(0,102) iCell,nEdges_m,(dcEdge(edgesOnCell(iEdge,iCell)),iEdge=1,nEdges_m),dcEdge_m(iCell)
-    enddo
- endif
- 101 format(8i9,10(1x,e15.8))
- 102 format(2i9,10(1x,e15.8))
 
 !initialization of east-north directions to convert u-tendencies from cell centers to cell
 !edges:
@@ -369,7 +347,7 @@
 
 !initialization of cloud microphysics processes:
  if(config_microp_scheme .ne. 'off') &
-    call microphysics_init(dminfo,mesh,state,time_lev,sfc_input,diag_physics)
+    call microphysics_init(dminfo,mesh,sfc_input,diag_physics)
 
 !initialization of surface layer processes:
  if(config_sfclayer_scheme .ne. 'off') call init_sfclayer

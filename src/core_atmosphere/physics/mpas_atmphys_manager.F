@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_manager
  use mpas_kind_types
  use mpas_derived_types
@@ -69,42 +69,43 @@
  real(kind=RKIND) :: utc_h
 
 
-!>\brief main time manager for physics parameterizations.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_manager:
-!> ------------------------------------
-!> physics_timetracker: check alarms and update boundary conditions if needed.
-!> physics_run_init   : create and initialize alarms used for physics parameterizations.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
-!>      definition of sf_surface_physics in mpas_atmphys_vars.F
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-03-11.
-!>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
-!>    * added call to subroutine o3climatology_from_MPAS to interpolate the climatological ozone
-!>      mixing ratios to the current julian day.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
-!>    * added domain%dminfo in call to subroutine physics_update_sst to print local and global
-!>      min and max values of the updated sea-surface temperatures and sea-ice fractions.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-24.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!Main time manager for physics parameterizations.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_manager:
+! ------------------------------------
+! physics_timetracker: check alarms and update boundary conditions if needed.
+! physics_run_init   : create and initialize alarms used for physics parameterizations.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
+!   definition of sf_surface_physics in mpas_atmphys_vars.F
+!   Laura D. Fowler (laura@ucar.edu) / 2013-03-11.
+! * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+! * added call to subroutine o3climatology_from_MPAS to interpolate the climatological ozone
+!   mixing ratios to the current julian day.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
+! * added domain%dminfo in call to subroutine physics_update_sst to print local and global
+!   min and max values of the updated sea-surface temperatures and sea-ice fractions.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-07-24.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * renamed config_conv_deep_scheme to config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! * added initialization of variables has_reqc,has_reqi,and has_reqs needed in the calls to radiation codes
+!   rrtmg_lwrad and rrmtg_swrad.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-007.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_timetracker(domain,dt,clock,itimestep,xtime_s)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
@@ -149,9 +150,9 @@
  real(kind=RKIND):: utc_s
  real(kind=RKIND):: xtime_m
 
-!==================================================================================================
-! write(0,*)
-! write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
 
  call mpas_pool_get_config(domain%blocklist%configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(domain%blocklist%configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme  )
@@ -344,9 +345,9 @@
 
  end subroutine physics_timetracker
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_run_init(configs,mesh,state,clock,stream_manager)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -375,6 +376,8 @@
                                   config_greeness_update
 
  logical,pointer:: config_frac_seaice
+ logical,pointer:: config_microp_re
+
 
  integer,pointer:: cam_dim1
  integer,pointer:: nMonths
@@ -389,9 +392,9 @@
  character(len=StrKIND) :: stream_interval
  integer:: ierr
 
-!==================================================================================================
-! write(0,*)
-! write(0,*) '--- enter subroutine physics_run_init:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine physics_run_init:'
 
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
@@ -411,6 +414,7 @@
  call mpas_pool_get_config(configs,'config_camrad_abs_update',config_camrad_abs_update)
  call mpas_pool_get_config(configs,'config_greeness_update'  ,config_greeness_update  )
  call mpas_pool_get_config(configs,'config_frac_seaice'      ,config_frac_seaice      )
+ call mpas_pool_get_config(configs,'config_microp_re'        ,config_microp_re        )
 
  call mpas_pool_get_config(configs,'config_dt',config_dt)
 
@@ -680,6 +684,7 @@
     dt_microp = dt_dyn / n_microp
     if(dt_dyn <= dt_microp) dt_microp = dt_dyn
  endif
+ write(0,*) '--- specifics on cloud microphysics option microp_scheme = ',trim(microp_scheme)
  write(0,*) '--- dt_microp = ', dt_microp
  write(0,*) '--- n_microp  = ', n_microp
 !... convection:
@@ -729,9 +734,27 @@
     xice_threshold = 0.02
  endif
 
+!initialization for the calculation of the cloud effective radii of cloud water, cloud ice, and snow:
+ has_reqc = 0
+ has_reqi = 0
+ has_reqs = 0
+ if(config_microp_re) then
+    if(trim(microp_scheme)=='mp_thompson' .or. &
+       trim(microp_scheme)=='mp_wsm6') then
+       if(trim(radt_lw_scheme)=='rrtmg_lw' .and. trim(radt_sw_scheme)=='rrtmg_sw') then
+          has_reqc = 1
+          has_reqi = 1
+          has_reqs = 1
+       endif
+    endif
+ endif
+ write(0,*) '--- has_reqc  = ', has_reqc
+ write(0,*) '--- has_reqi  = ', has_reqi
+ write(0,*) '--- has_reqs  = ', has_reqs
+
  end subroutine physics_run_init
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_manager
-!==================================================================================================
+!=================================================================================================================
  

@@ -1,10 +1,10 @@
 !==================================================================================================
-! copied for implementation in MPAS from WRF version 3.6.1
+! copied for implementation in MPAS from WRF version 3.6.1.
 
 ! modifications made to sourcecode:
 ! * used preprocessing option to replace module_model_constants with mpas_atmphys_constants.
 ! * used preprocessing option to not compile subroutine mynn_bl_init_driver.
-!   Laura D. Fowler (laura@ucar.edu / 2014-09-25).
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-25.
 
 !==================================================================================================
 
@@ -2542,11 +2542,11 @@ ENDIF
     levflag=mynn_level
 
     IF (initflag > 0) THEN
-!       write(0,*)
-!       write(0,*) '--- bl_mynn initflag = ', initflag
-!       write(0,*) '--- bl_mynn mynn_level = ', levflag
-!       write(0,*) '--- initialize sh3d, el_pbl, tsq, qsq, cov'
-!       write(0,*)
+!      write(0,*)
+!      write(0,*) '--- bl_mynn initflag = ', initflag
+!      write(0,*) '--- bl_mynn mynn_level = ', levflag
+!      write(0,*) '--- initialize sh3d, el_pbl, tsq, qsq, cov'
+!      write(0,*)
        Sh3D(its:ite,kts:kte,jts:jte)=0.
        el_pbl(its:ite,kts:kte,jts:jte)=0.
        tsq(its:ite,kts:kte,jts:jte)=0.

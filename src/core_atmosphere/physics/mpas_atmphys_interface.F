@@ -22,8 +22,8 @@
           microphysics_from_MPAS,    &
           microphysics_to_MPAS
 
-! interface for conversion between variables used in the MPAS dynamical core and variables needed in the
-! physics parameterizations.
+!Interface for conversion between variables used in the MPAS dynamical core and variables needed in the
+!physics parameterizations.
 !Laura D. Fowler (send comments to laura@ucar.edu).
 !2013-05-01.
 !
@@ -177,16 +177,16 @@
  
  end subroutine deallocate_forall_physics
 
-!==================================================================================================
+!=================================================================================================================
  subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics,its,ite)
-!==================================================================================================
+!=================================================================================================================
 
 !input variables:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
- integer,intent(in):: its,ite
 
+ integer,intent(in):: its,ite
  integer,intent(in):: time_lev
 
 !inout variables:
@@ -195,6 +195,7 @@
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_ni
+
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: fzm,fzp,rdzw
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,plrad
@@ -343,6 +344,7 @@
 
 !check that the pressure in the layer above the surface is greater than that in the layer
 !above it:
+ 201 format(3i8,10(1x,e15.8))
  do j = jts,jte
  do i = its,ite
     if(pres_p(i,1,j) .le. pres_p(i,2,j)) then
@@ -441,24 +443,19 @@
  enddo
  enddo
 
-!formats: 
- 201 format(3i8,10(1x,e15.8))
- 202 format(2i6,10(1x,e15.8))
- 203 format(i6,10(1x,e15.8))
-
  end subroutine MPAS_to_physics
 
-!==================================================================================================
+!=================================================================================================================
  subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
-!==================================================================================================
+!=================================================================================================================
 
 !input variables:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
  type(mpas_pool_type),intent(in):: diag_physics
- integer,intent(in):: its,ite
 
+ integer,intent(in):: its,ite
  integer:: time_lev
 
 !local pointers:
@@ -466,7 +463,7 @@
  integer,pointer:: index_ni,index_nr
  real(kind=RKIND),dimension(:),pointer    :: nt_c,mu_c
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid,w
- real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b,rtheta_p,rtheta_b
+ real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p
  real(kind=RKIND),dimension(:,:),pointer  :: qv,qc,qr,qi,qs,qg
  real(kind=RKIND),dimension(:,:),pointer  :: ni,nr
@@ -478,8 +475,6 @@
  integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine microphysics_from_MPAS:'
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -487,8 +482,6 @@
  call mpas_pool_get_array(diag,'exner'        ,exner     )
  call mpas_pool_get_array(diag,'pressure_base',pressure_b)
  call mpas_pool_get_array(diag,'pressure_p'   ,pressure_p)
- call mpas_pool_get_array(diag,'rtheta_base'  ,rtheta_b  )
- call mpas_pool_get_array(diag,'rtheta_p'     ,rtheta_p  )
 
  call mpas_pool_get_array(diag_physics,'nt_c'    ,nt_c    )
  call mpas_pool_get_array(diag_physics,'mu_c'    ,mu_c    )
@@ -559,7 +552,6 @@
     microp2_select: select case(microp_scheme)
 
        case("mp_thompson")
-          !number concentrations:
           do j = jts,jte
           do i = its,ite
              muc_p(i,j) = mu_c(i)
@@ -588,21 +580,16 @@
 
  end select microp_select_init
 
-! write(0,*) '--- end subroutine microphysics_from_MPAS.'
-
-!formats:
- 201 format(2i6,10(1x,e15.8))
-
  end subroutine microphysics_from_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
-!==================================================================================================
+!=================================================================================================================
 
 !input variables:
- integer,intent(in):: itimestep
- integer,intent(in):: time_lev
  type(mpas_pool_type),intent(in):: mesh
+
+ integer,intent(in):: itimestep,time_lev
  integer,intent(in):: its,ite
 
 !output variables:
@@ -614,7 +601,6 @@
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_ni,index_nr
- real(kind=RKIND),dimension(:),pointer    :: rdzw
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,tend_sfc_pressure
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,exner_b,pressure_b,rtheta_p,rtheta_b
@@ -633,11 +619,6 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
-! write(0,*)
-! write(0,*) '--- enter subroutine microphysics_to_MPAS:'
-
-!initialization:
- call mpas_pool_get_array(mesh,'rdzw' ,rdzw )
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
 
@@ -743,7 +724,6 @@
     microp2_select: select case(microp_scheme)
 
        case("mp_thompson")
-          !number concentrations:
           do j = jts, jte
           do k = kts, kte
           do i = its, ite
@@ -766,13 +746,8 @@
 
  end select microp_select_init
 
-!formats:
- 201 format(2i6,10(1x,e15.8))
-
-! write(0,*) '--- end subroutine microphysics_to_MPAS'
-
  end subroutine microphysics_to_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_interface
-!==================================================================================================
+!=================================================================================================================

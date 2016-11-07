@@ -1226,8 +1226,9 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
          call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
          call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
 
-         if (config_convection_scheme == 'cu_tiedtke' &
-             .or. config_convection_scheme == 'cu_grell_freitas') then
+         if(config_convection_scheme == 'cu_grell_freitas'          .or. &
+            config_convection_scheme == 'cu_tiedtke'                .or. &
+            config_convection_scheme == 'cu_ntiedtke') then
 
             call mpas_pool_get_array(tend_physics, 'rqvdynten', rqvdynten)
 
@@ -1250,7 +1251,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
             call mpas_timer_start('microphysics')
 !$OMP PARALLEL DO
             do thread=1,nThreads
-               call microphysics_driver ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep, &
+               call driver_microphysics ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep, &
                                           cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
             end do
 !$OMP END PARALLEL DO

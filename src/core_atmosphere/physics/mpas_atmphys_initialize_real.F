@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_initialize_real
  use mpas_kind_types
  use mpas_dmpar
@@ -21,43 +21,43 @@
  public:: physics_initialize_real
 
 
-!>\brief MPAS initialization of surface properties for real case initialization.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_initialize_real:
-!> --------------------------------------------
-!> physics_initialize_real    : main subroutine (called from subroutine init_atm_setup_test_case in
-!>                              ./src/core_init_atmosphere/mpas_init_atm_test_cases.F).
-!> init_soil_layers           : main subroutine for initialization of soil properties. 
-!> init_soil_layers_depth     : initialize height and depth of soil layers needed in NOAH scheme.
-!> init_soil_layers_properties: initialize soil temperature, soil moisture, etc.
-!> adjust_input_soiltemp      : adjust the deep soil temperature to sea-level values.
-!> physics_init_sst           : initialize the skin temperature to the SSTs over oceans.
-!> physics_init_seaice        : correct vegetation and soil typs as function of fractional sea ice.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * revised entire module:
-!>      -> changed nCells to nCellsSolve in every subroutine.
-!>      -> removed modifying snoalb (surface albedo over snow) over sea-ice points.
-!>      -> revised subroutine physics_init_sst.
-!>      -> revised subroutine physics_init_seaice.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-02.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * In subroutine physics_init_seaice, assign the sea-ice land use category as a function of
-!>      the land use category input file (MODIS OR USGS).
-!>      Dominikus Heinzeller (IMK) / 2014-07-24.
+!MPAS initialization of surface properties for real case initialization.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_initialize_real:
+! --------------------------------------------
+! physics_initialize_real    : main subroutine (called from subroutine init_atm_setup_test_case in
+!                              ./src/core_init_atmosphere/mpas_init_atm_test_cases.F).
+! init_soil_layers           : main subroutine for initialization of soil properties. 
+! init_soil_layers_depth     : initialize height and depth of soil layers needed in NOAH scheme.
+! init_soil_layers_properties: initialize soil temperature, soil moisture, etc.
+! adjust_input_soiltemp      : adjust the deep soil temperature to sea-level values.
+! physics_init_sst           : initialize the skin temperature to the SSTs over oceans.
+! physics_init_seaice        : correct vegetation and soil typs as function of fractional sea ice.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * revised entire module:
+!   -> changed nCells to nCellsSolve in every subroutine.
+!   -> removed modifying snoalb (surface albedo over snow) over sea-ice points.
+!   -> revised subroutine physics_init_sst.
+!   -> revised subroutine physics_init_seaice.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-02.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * In subroutine physics_init_seaice, assign the sea-ice land use category as a function of
+!   the land use category input file (MODIS OR USGS).
+!   Dominikus Heinzeller (IMK) / 2014-07-24.
 
 
  contains
 
-!==================================================================================================
+
+!=================================================================================================================
  subroutine physics_initialize_real(mesh, fg, dminfo, dims, configs)
-!==================================================================================================
+!=================================================================================================================
+
 !input arguments:
  type (mpas_pool_type), intent(in) :: mesh
  type (dm_info), intent(in) :: dminfo
@@ -91,10 +91,9 @@
 !temporary:
  integer:: iSoil,nSoilLevels
 
-!--------------------------------------------------------------------------------------------------
-
-! write(0,*)
-! write(0,*) '--- enter physics_initialize_real:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter physics_initialize_real:'
 
  call mpas_pool_get_config(configs, 'config_sfc_prefix', config_sfc_prefix)
  call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
@@ -178,9 +177,9 @@
 
  end subroutine physics_initialize_real
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_soil_layers(mesh,fg,dminfo,dims,configs)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -191,7 +190,7 @@
 !inout arguments:
  type(mpas_pool_type),intent(inout):: fg
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
 !adjust the annual mean deep soil temperature:
  call adjust_input_soiltemps(mesh,fg,dims)
@@ -204,9 +203,9 @@
 
  end subroutine init_soil_layers
 
-!==================================================================================================
+!=================================================================================================================
  subroutine adjust_input_soiltemps(mesh, fg, dims)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type (mpas_pool_type), intent(in) :: mesh
@@ -224,8 +223,7 @@
  real(kind=RKIND),dimension(:),pointer  :: skintemp,soiltemp,tmn
  real(kind=RKIND),dimension(:,:),pointer:: st_fg
 
-!--------------------------------------------------------------------------------------------------
-
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nFGSoilLevels', nFGSoilLevels)
@@ -261,9 +259,9 @@
 
  end subroutine adjust_input_soiltemps
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_soil_layers_depth(mesh, fg, dims, configs)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type (mpas_pool_type), intent(in) :: mesh
@@ -281,10 +279,9 @@
  real(kind=RKIND),dimension(:,:),pointer:: dzs_fg,zs_fg
  real(kind=RKIND),dimension(:,:),pointer:: dzs,zs
 
-!--------------------------------------------------------------------------------------------------
-
-! write(0,*)
-! write(0,*) '--- enter subroutine init_soil_layers_depth:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine init_soil_layers_depth:'
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
@@ -328,9 +325,9 @@
 
  end subroutine init_soil_layers_depth
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_soil_layers_properties(mesh, fg, dminfo, dims, configs)
-!==================================================================================================
+!=================================================================================================================
 
  use mpas_abort, only : mpas_dmpar_global_abort
 
@@ -359,10 +356,9 @@
 
  character(len=StrKIND) :: errstring
 
-!--------------------------------------------------------------------------------------------------
-
+!-----------------------------------------------------------------------------------------------------------------
 !write(0,*)
-! write(0,*) '--- enter subroutine init_soil_layers_properties:'
+!write(0,*) '--- enter subroutine init_soil_layers_properties:'
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
@@ -510,9 +506,9 @@
 
  end subroutine init_soil_layers_properties
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_init_sst(mesh, input, dims, configs)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments: 
  type (mpas_pool_type), intent(in) :: mesh
@@ -533,9 +529,9 @@
 
  logical, pointer :: config_frac_seaice
 
-!--------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine physics_init_sst:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine physics_init_sst:'
 
  call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
 
@@ -576,13 +572,13 @@
        num_seaice_changes
  call physics_message(mess)
 
-! write(0,*) '--- end subroutine physics_init_sst:'
+!write(0,*) '--- end subroutine physics_init_sst:'
 
  end subroutine physics_init_sst
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_init_seaice(mesh, input, dims, configs)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type (mpas_pool_type), intent(in) :: mesh
@@ -616,9 +612,9 @@
  real(kind=RKIND),parameter:: xice_tsk_threshold = 271.
  real(kind=RKIND),parameter:: total_depth        = 3.   ! 3-meter soil depth.
 
-!--------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter physics_init_seaice:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter physics_init_seaice:'
 
  call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
  call mpas_pool_get_config(configs, 'config_landuse_data', config_landuse_data)
@@ -719,11 +715,11 @@
  enddo
  101 format(i9,5(1x,e15.8))
 
-! write(0,*) '--- end physics_init_seaice:'
+!write(0,*) '--- end physics_init_seaice:'
 
  end subroutine physics_init_seaice
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_initialize_real
-!==================================================================================================
+!=================================================================================================================
 

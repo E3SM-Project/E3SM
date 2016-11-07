@@ -43,11 +43,10 @@
  integer :: ierr
 
 !-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine atmphys_setup_packages:'
 
  ierr = 0
-
-! write(0,*)
-! write(0,*) '--- enter subroutine atmphys_setup_packages:'
 
 !--- initialization of all packages for parameterizations of cloud microphysics:
 
@@ -62,9 +61,9 @@
  nullify(mp_wsm6_in)
  call mpas_pool_get_package(packages,'mp_wsm6_inActive',mp_wsm6_in)
 
- if(.not.associated(mp_kessler_in)            .or. &
-    .not.associated(mp_thompson_in)           .or. &
-    .not.associated(mp_wsm6_in)             ) then
+ if(.not.associated(mp_kessler_in)  .or. &
+    .not.associated(mp_thompson_in) .or. &
+    .not.associated(mp_wsm6_in)) then
     write(stderrUnit,*) '===================================================================================='
     write(stderrUnit,*) '* Error while setting up packages for cloud microphysics options in atmosphere core.'
     write(stderrUnit,*) '===================================================================================='
@@ -81,7 +80,7 @@
  elseif(config_microp_scheme == 'mp_thompson') then
     mp_thompson_in = .true.
  elseif(config_microp_scheme == 'mp_wsm6') then
-    mp_wsm6_in = .true. 
+    mp_wsm6_in = .true.
  endif
 
  write(0,*) '--- microp_scheme           = ', trim(config_microp_scheme)
@@ -120,7 +119,8 @@
     cu_grell_freitas_in = .true.
  elseif(config_convection_scheme == 'cu_kain_fritsch') then
     cu_kain_fritsch_in = .true.
- elseif(config_convection_scheme == 'cu_tiedtke') then
+ elseif(config_convection_scheme == 'cu_tiedtke' .or. &
+        config_convection_scheme == 'cu_ntiedtke') then
     cu_tiedtke_in = .true.
  endif
 
@@ -160,6 +160,7 @@
  write(0,*) '--- pbl_scheme              = ', trim(config_pbl_scheme)
  write(0,*) '--- bl_mynn_in              = ', bl_mynn_in
  write(0,*) '--- bl_ysu_in               = ', bl_ysu_in
+ write(0,*)
 
  end function atmphys_setup_packages
 
