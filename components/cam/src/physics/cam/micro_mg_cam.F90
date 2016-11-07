@@ -2343,7 +2343,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
             cldfsnow(i,k) = 0._r8
          end if
          ! If no cloud and snow, then set to 0.25
-         if( ( cldfsnow(i,k) .lt. 1.e-4_r8 ) .and. ( qsout(i,k) .gt. 1.e-6_r8 ) ) then
+         if( ( cldfsnow(i,k) .le. 1.e-4_r8 ) .and. ( qsout(i,k) .gt. 1.e-6_r8 ) ) then
             cldfsnow(i,k) = 0.25_r8
          end if
          ! Calculate in-cloud snow water path
