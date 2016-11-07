@@ -52,9 +52,7 @@ module shr_pio_mod
   integer, allocatable :: io_compid(:)
   integer :: pio_debug_level=0, pio_blocksize=0
   integer(kind=pio_offset_kind) :: pio_buffer_size_limit=-1
-#ifdef PIO1
   type(pio_rearr_opt_t)  :: pio_rearr_opts
-#endif
   integer :: total_comps=0
 
 #define DEBUGI 1
@@ -67,9 +65,9 @@ module shr_pio_mod
 contains
 !>
 !! @public
-!! @brief should be the first routine called after mpi_init. 
+!! @brief should be the first routine called after mpi_init.
 !! It reads the pio default settings from file drv_in, namelist pio_default_inparm
-!! and, if pio_async_interface is true, splits the IO tasks away from the 
+!! and, if pio_async_interface is true, splits the IO tasks away from the
 !! Compute tasks.  It then returns the new compute comm in
 !! Global_Comm and sets module variable io_comm.
 !!
@@ -385,7 +383,6 @@ contains
 
     integer :: iam, ierr, npes, unitn
     logical :: iamroot
-#ifdef PIO1
     namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
           pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
           pio_buffer_size_limit, pio_rearranger, &
@@ -394,11 +391,6 @@ contains
           pio_rearr_comm_enable_isend_comp2io, &
           pio_rearr_comm_max_pend_req_io2comp, pio_rearr_comm_enable_hs_io2comp, &
           pio_rearr_comm_enable_isend_io2comp
-#else
-    namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
-          pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
-          pio_buffer_size_limit, pio_rearranger
-#endif
 
 
     call mpi_comm_rank(Comm, iam  , ierr)
@@ -441,20 +433,6 @@ contains
           end do
           close(unitn)
           call shr_file_freeUnit( unitn )
-
-          ! BUG(wjs, 2015-11-09, cime issue #292) It should be up to the scripts to
-          ! ensure that the runtime pio_typename is compatible with the build-time
-          ! setting of whether pnetcdf or netcdf4p are included in the build. But the
-          ! scripts currently are not handling this correctly, so we need this workaround
-          ! in the code. Once issue #292 is resolved, we can remove this workaround, so
-          ! that the code listens to whatever the runtime settings dictate. (See also
-          ! comments in cime PR #291.)
-          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
-               pio_typename .eq. "netcdf4p") then
-             write(shr_log_unit,*) 'WARNING: for npes == 1, using netcdf instead of '//&
-                  trim(pio_typename)
-             pio_typename = "netcdf"
-          endif
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_iotype_netcdf)
        end if
@@ -546,21 +524,6 @@ contains
           end do
           close(unitn)
           call shr_file_freeUnit( unitn )
-
-          ! BUG(wjs, 2015-11-09, cime issue #292) It should be up to the scripts to
-          ! ensure that the runtime pio_typename is compatible with the build-time
-          ! setting of whether pnetcdf or netcdf4p are included in the build. But the
-          ! scripts currently are not handling this correctly, so we need this workaround
-          ! in the code. Once issue #292 is resolved, we can remove this workaround, so
-          ! that the code listens to whatever the runtime settings dictate. (See also
-          ! comments in cime PR #291.)
-          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
-               pio_typename .eq. "netcdf4p") then
-             write(shr_log_unit,*) 'WARNING: for npes == 1, using netcdf instead of '//&
-                  trim(pio_typename)
-             pio_typename = "netcdf"
-          endif
-
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
        end if
