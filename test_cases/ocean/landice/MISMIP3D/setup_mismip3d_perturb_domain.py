@@ -1,6 +1,11 @@
 #!/usr/bin/env python
-# This script sets up MISMIP3D P experiments.
-# see http://homepages.ulb.ac.be/~fpattyn/mismip3d/Mismip3Dv12.pdf
+'''
+This script sets up MISMIP3D PXXS experiment from the final state of a Stnd experiment
+
+This should be run from a subdirectory where you plan to run the PXXR experiment.
+
+see http://homepages.ulb.ac.be/~fpattyn/mismip3d/Mismip3Dv12.pdf
+'''
 
 
 GLbit = 256
@@ -8,6 +13,8 @@ GLbit = 256
 
 
 import sys
+import os
+import shutil
 from netCDF4 import Dataset
 import numpy as np
 
@@ -16,18 +23,38 @@ import numpy as np
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename", type='string', help="file in which to setup MISMIP3D Perturbation experiment.  This should be a full width domain in which the Stnd experiment initial condition has already been applied..", metavar="FILE")
-parser.add_option("-s", "--stnd", dest="stndfilename", type='string', help="file containing output from the Stnd experiment from which to copy model state. This can be a minimal or full width domain.", metavar="FILE")
+parser.add_option("-o", "--outfile", dest="outfilename", type='string', help="final output file from MISMIP3D Stnd experiments.  This can be minimal width or full width.", metavar="FILE")
+parser.add_option("-r", "--restartfile", dest="restartfilename", type='string', help="final restart file from MISMIP3D Stnd experiments. This can be minimal width or full width.", metavar="FILE")
 parser.add_option("-p", "--perturb", dest="perturb", type='float', help="perturbation amount, presumably 75 or 10", metavar="P")
 options, args = parser.parse_args()
 if not options.filename:
-   print  'Filename to set up required.  Specify with -f'
-if not options.stndfilename:
-   print  'Stnd results filename required.  Specify with -s'
+   sys.exit('ERROR: Filename to set up required.  Specify with -f')
+if not options.outfilename:
+   sys.exit('ERROR: outfile required.')
+if not options.restartfilename:
+   sys.exit('ERROR: restartfile required.')
 if not options.perturb:
-   print  'Perturbation amount required.  Specify with -p'
+   sys.exit('ERROR: Perturbation amount required.  Specify with -p')
+
+
+# make dir if it doesn't exist and move to it
+#directory='P75S'
+#if not os.path.exists(directory):
+#            os.makedirs(directory)
+#os.chdir(directory)
+
+# a file that has the final state from Stnd
+stndfilename = "stnd_final.nc"
+
+# create a new file that has the state from the final time slice of Stnd
+os.system("ncks -O -d Time,-1 " + options.outfilename  + " " + stndfilename)
+
+# Optionally add in the x-velo from the ~final time to help solver on first velo solve
+os.system("ncks -A -v uReconstructX " + options.restartfilename + " " + stndfilename)
+
 
 # Open the Stnd output and get the needed info
-fstnd = Dataset(options.stndfilename, 'r')
+fstnd = Dataset(stndfilename, 'r')
 thicknessStnd = fstnd.variables['thickness'][-1,:]
 if 'uReconstructX' in fstnd.variables:
   haveVelo = True
@@ -191,5 +218,6 @@ gridfile.variables['beta'][0,:] = Cboth
 gridfile.sync()
 gridfile.close()
 
+print " ======="
 print 'Successfully added MISMIP3D perturbation initial conditions to: ', options.filename
-
+print "Please set up graph.info, albany_input.xml, namelist, and streams files as desired!  namelist and streams are set up by test case here: full_width/Stnd/P75"

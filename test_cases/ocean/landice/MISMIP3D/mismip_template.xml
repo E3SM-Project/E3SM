@@ -44,6 +44,7 @@
                                 <member name="edgeMask" type="var"/>
                                 <member name="cellMask" type="var"/>
                                 <member name="surfaceSpeed" type="var"/>
+                                <member name="basalSpeed" type="var"/>
                                 <member name="daysSinceStart" type="var"/>
                         </add_contents>
                 </stream>

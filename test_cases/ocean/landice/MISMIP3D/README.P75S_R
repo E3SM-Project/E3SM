@@ -1,20 +1,16 @@
 
 ====Instructions for setting up PXXS experiment
 
-Run the MISMIP3D full_width setup script for the resolution of interest.
-# Manually renaming the file to avoid confusion
-mv landice_grid.nc P75S_1000m.nc
-# make directory in which to set things up - here a subdirectory of the Stnd experiment (and move the P75S_1000m.nc file from previous step into it).
+# make directory in which to set things up - here a subdirectory of the Stnd experiment
 mkdir P75S
-# create a new file that has the state from the final time slice of Stnd
-ncks -d Time,-1 ../output_31200.nc stnd_final.nc 
-# Optionally add in the x-velo from the ~final time to help solver on first velo solve
-ncks -v uReconstructX ../restart_31300.nc stnd_final.nc 
-# run set up script
-./setup_mismip3d_perturb_domain.py -f P75S_1000m.nc -s stnd_final.nc -p 75
+
+# Copy in a full_width domain for this resolution and rename it if desired.
+
+# run set up script from the directory where you plan to run P75R.
+./setup_mismip3d_perturb_domain.py -f P75S.nc -o ../output_09500.nc -r ../restart_09800.nc -p 75 
 
 # Finally, set up graph.info, namelist, and streams files as desired.
-
+# These are set up by the test case here: full_width/Stnd/P75
 
 
 ====Instructions for setting up PXXR experiment
