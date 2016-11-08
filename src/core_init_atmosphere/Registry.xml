@@ -31,61 +31,224 @@
 <!-- **************************************************************************************** -->
 
         <nml_record name="nhyd_model" in_defaults="true">
-                <nml_option name="config_init_case"             type="integer"       default_value="7"/>
-                <nml_option name="config_calendar_type"         type="character"     default_value="gregorian"   in_defaults="false"/>
-                <nml_option name="config_start_time"            type="character"     default_value="2010-10-23_00:00:00"/>
-                <nml_option name="config_stop_time"             type="character"     default_value="2010-10-23_00:00:00"/>
-                <nml_option name="config_theta_adv_order"       type="integer"       default_value="3"/>
-                <nml_option name="config_coef_3rd_order"        type="real"          default_value="0.25"        in_defaults="false"/>
-                <nml_option name="config_num_halos"             type="integer"       default_value="2"           in_defaults="false"/>
+
+                <nml_option name="config_init_case"             type="integer"       default_value="7"
+                     units="-"
+                     description="config\_init\_case & Type of initial conditions to create: \newline
+                                        1 = Jablonowski \& Williamson barolinic wave (no initial perturbation), \newline
+                                        2 = Jablonowski \& Williamson barolinic wave (with initial perturbation), \newline
+                                        3 = Jablonowski \& Williamson barolinic wave (with normal-mode perturbation), \newline
+                                        4 = squall line, \newline
+                                        5 = super-cell, \newline
+                                        6 = mountain wave, \newline
+                                        7 = real-data initial conditions from, e.g., GFS, \newline
+                                        8 = surface field (SST, sea-ice) update file for use with real-data simulations"
+                     possible_values="1 -- 8"/>
+
+                <nml_option name="config_calendar_type" type="character" default_value="gregorian" in_defaults="false"
+                     units="-"
+                     description="Simulation calendar type"
+                     possible_values="`gregorian',`gregorian_noleap'"/>
+
+                <nml_option name="config_start_time"            type="character"     default_value="2010-10-23_00:00:00"
+                     units="-"
+                     description="Time to begin processing first-guess data (cases 7 and 8 only)"
+                     possible_values="`YYYY-MM-DD_hh:mm:ss'"/>
+
+                <nml_option name="config_stop_time"             type="character"     default_value="2010-10-23_00:00:00"
+                     units="-"
+                     description="Time to end processing first-guess data (case 8 only)"
+                     possible_values="`YYYY-MM-DD_hh:mm:ss'"/>
+
+                <nml_option name="config_theta_adv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Horizontal advection order for theta"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_coef_3rd_order" type="real" default_value="0.25"
+                     units="-"
+                     description="Upwinding coefficient in the 3rd order advection scheme"
+                     possible_values="0 $\leq$ config_coef_3rd_order $\leq$ 1"/>
+
+                <nml_option name="config_num_halos" type="integer" default_value="2" in_defaults="false"
+                     units="-"
+                     description="Number of halo layers for fields"
+                     possible_values="Integer values, typically 2 or 3; DO NOT CHANGE"/>
+
         </nml_record>
 
         <nml_record name="dimensions" in_defaults="true">
-                <nml_option name="config_nvertlevels"           type="integer"       default_value="41"/>
-                <nml_option name="config_nsoillevels"           type="integer"       default_value="4"/>
-                <nml_option name="config_nfglevels"             type="integer"       default_value="38"/>
-                <nml_option name="config_nfgsoillevels"         type="integer"       default_value="4"/>
-                <nml_option name="config_months"                type="integer"       default_value="12"      in_defaults="false"/>
+
+                <nml_option name="config_nvertlevels"           type="integer"       default_value="41"
+                     units="-"
+                     description="The number of vertical levels to be used in the model"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_nsoillevels"           type="integer"       default_value="4"
+                     units="-"
+                     description="The number of vertical soil levels needed by LSM in the model (case 7 only)"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_nfglevels"             type="integer"       default_value="38"
+                     units="-"
+                     description="The number of atmospheric levels (including surface and sea-level) in the first-guess dataset (case 7 only)"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_nfgsoillevels"         type="integer"       default_value="4"
+                     units="-"
+                     description="The number of vertical soil levels in the first-guess dataset (case 7 only)"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_months"                type="integer"       default_value="12"      in_defaults="false"
+                     units="-"
+                     description="The number of months in a year"
+                     possible_values="Positive integer values"/>
+
         </nml_record>
 
         <nml_record name="data_sources" in_defaults="true">
-                <nml_option name="config_geog_data_path"        type="character"     default_value="/glade/p/work/wrfhelp/WPS_GEOG/"/>
-                <nml_option name="config_met_prefix"            type="character"     default_value="CFSR"/>
-                <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"/>
-                <nml_option name="config_fg_interval"           type="integer"       default_value="86400"/>
-                <nml_option name="config_landuse_data"          type="character"     default_value="USGS"/>
-                <nml_option name="config_use_spechumd"          type="logical"       default_value="false"/>
+
+                <nml_option name="config_geog_data_path"        type="character"     default_value="/glade/p/work/wrfhelp/WPS_GEOG/"
+                     units="-"
+                     description="Path to the WPS static data files (case 7 only)"
+                     possible_values="Any valid path"/>
+
+                <nml_option name="config_met_prefix"            type="character"     default_value="CFSR"
+                     units="-"
+                     description="Filename prefix of ungrib intermediate file to use for initial conditions (case 7 only)"
+                     possible_values="Any alpha-numeric string"/>
+
+                <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"
+                     units="-"
+                     description="Filename prefix of ungrib intermediate file to use for SST and sea-ice (cases 7 and 8 only)"
+                     possible_values="Any alpha-numeric string"/>
+
+                <nml_option name="config_fg_interval"           type="integer"       default_value="86400"
+                     units="-"
+                     description="Interval between SST and sea-ice files (case 8 only)"
+                     possible_values="[DDD_]hh:mm:ss"/>
+
+                <nml_option name="config_landuse_data"          type="character"     default_value="USGS"
+                     units="-"
+                     description="The land use classification to use (case 7 only)"
+                     possible_values="`USGS' or `MODIFIED\_IGBP\_MODIS\_NOAH'"/>
+
+                <nml_option name="config_use_spechumd"          type="logical"       default_value="false"
+                     units="-"
+                     description="Whether to use specific-humidity as the first-guess moisture variable. If this option is False, relative humidity will be used."
+                     possible_values="true or false"/>
+
         </nml_record>
 
         <nml_record name="vertical_grid" in_defaults="true">
-                <nml_option name="config_ztop"                  type="real"          default_value="30000.0"/>
-                <nml_option name="config_nsmterrain"            type="integer"       default_value="1"/>
-                <nml_option name="config_smooth_surfaces"       type="logical"       default_value="true"/>
-                <nml_option name="config_dzmin"                 type="real"          default_value="0.3"/>
-                <nml_option name="config_nsm"                   type="integer"       default_value="30"/>
-                <nml_option name="config_tc_vertical_grid"      type="logical"       default_value="true"/>
+
+                <nml_option name="config_ztop"                  type="real"          default_value="30000.0"
+                     units="m"
+                     description="Model top height"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_nsmterrain"            type="integer"       default_value="1"
+                     units="-"
+                     description="Number of smoothing passes to apply to the interpolated terrain field"
+                     possible_values="Non-negative integer values"/>
+
+                <nml_option name="config_smooth_surfaces"       type="logical"       default_value="true"
+                     units="-"
+                     description="Whether to smooth zeta surfaces"
+                     possible_values="true or false"/>
+
+                <nml_option name="config_dzmin"                 type="real"          default_value="0.3"
+                     units="-"
+                     description="Minimum thickness of layers as a fraction of nominal thickness"
+                     possible_values="Real values in the interval (0,1)"/>
+
+                <nml_option name="config_nsm"                   type="integer"       default_value="30"
+                     units="-"
+                     description="Maximum number of smoothing passes for coordinate surfaces"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_tc_vertical_grid"      type="logical"       default_value="true"
+                     units="-"
+                     description="Whether to use the vertical layer profile that was developed for use in real-time TC experiments"
+                     possible_values="true or false"/>
+
         </nml_record>
 
         <nml_record name="preproc_stages" in_defaults="true">
-                <nml_option name="config_static_interp"         type="logical"       default_value="true"/>
-                <nml_option name="config_native_gwd_static"     type="logical"       default_value="true"/>
-                <nml_option name="config_gwd_cell_scaling"      type="real"          default_value="1.0"      in_defaults="false"/>
-                <nml_option name="config_vertical_grid"         type="logical"       default_value="true"/>
-                <nml_option name="config_met_interp"            type="logical"       default_value="true"/>
-                <nml_option name="config_input_sst"             type="logical"       default_value="false"/>
-                <nml_option name="config_frac_seaice"           type="logical"       default_value="false"/>
+
+                <nml_option name="config_static_interp"         type="logical"       default_value="true"
+                     units="-"
+                     description="Whether to interpolate WPS static data (case 7 only)"
+                     possible_values="true or false"/>
+
+                <nml_option name="config_native_gwd_static"     type="logical"       default_value="true"
+                     units="-"
+                     description="Whether to recompute sub-grid-scale orography statistics directly on the native MPAS mesh (case 7 only)"
+                     possible_values="true or false"/>
+
+                <nml_option name="config_gwd_cell_scaling"      type="real"          default_value="1.0"      in_defaults="false"
+                     units="-"
+                     description="Scaling factor for the effective grid cell diameter used in computation of GWD static fields"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_vertical_grid"         type="logical"       default_value="true"
+                     units="-"
+                     description="Whether to generate vertical grid"
+                     possible_values="true or false"/>
+
+                <nml_option name="config_met_interp"            type="logical"       default_value="true"
+                     units="-"
+                     description="Whether to interpolate first-guess fields from intermediate file"
+                     possible_values="true or false"/>
+
+                <nml_option name="config_input_sst"             type="logical"       default_value="false"
+                     units="-"
+                     description="Whether to re-compute SST and sea-ice fields from surface input data set; should be set to .true. when running case 8"
+                     possible_values="true or false"/>
+
+                <nml_option name="config_frac_seaice"           type="logical"       default_value="false"
+                     units="-"
+                     description="Whether to switch sea-ice threshold from 0.5 to 0.02"
+                     possible_values="true or false"/>
+
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
-                <nml_option name="config_pio_num_iotasks"       type="integer"       default_value="0"/>
-                <nml_option name="config_pio_stride"            type="integer"       default_value="1"/>
+
+                <nml_option name="config_pio_num_iotasks" type="integer" default_value="0"
+                     units="-"
+                     description="Number of tasks to perform file I/O"
+                     possible_values="Integer valued, 0 $\leq$ config_pio_num_iotasks $\leq$ \# MPI tasks, 0 indicates all tasks perform I/O"/>
+
+                <nml_option name="config_pio_stride" type="integer" default_value="1"
+                     units="-"
+                     description="Stride between file I/O tasks"
+                     possible_values="Integer valued, $\leq$ (\# MPI tasks) / config_pio_num_iotasks"/>
+
         </nml_record>
 
         <nml_record name="decomposition" in_defaults="true">
-                <nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="x1.40962.graph.info.part."/>
-                <nml_option name="config_number_of_blocks"           type="integer"       default_value="0"                in_defaults="false"/>
-                <nml_option name="config_explicit_proc_decomp"       type="logical"       default_value=".false."          in_defaults="false"/>
-                <nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part." in_defaults="false"/>
+
+                <nml_option name="config_block_decomp_file_prefix" type="character" default_value="x1.40962.graph.info.part."
+                     units="-"
+                     description="Prefix of graph decomposition file, to be suffixed with the MPI task count"
+                     possible_values="Any valid filename"/>
+
+                <nml_option name="config_number_of_blocks" type="integer" default_value="0" in_defaults="false"
+                     units="-"
+                     description="Number of blocks to assign to each MPI task"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_explicit_proc_decomp" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="Whether to use an explicit mapping of blocks to MPI tasks"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graph.info.part." in_defaults="false"
+                     units="-"
+                     description="Prefix of block mapping file"
+                     possible_values="Any valid filename"/>
+
         </nml_record>
 
 
