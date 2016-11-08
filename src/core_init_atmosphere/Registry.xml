@@ -63,10 +63,13 @@
                 <nml_option name="config_smooth_surfaces"       type="logical"       default_value="true"/>
                 <nml_option name="config_dzmin"                 type="real"          default_value="0.3"/>
                 <nml_option name="config_nsm"                   type="integer"       default_value="30"/>
+                <nml_option name="config_tc_vertical_grid"      type="logical"       default_value="true"/>
         </nml_record>
 
         <nml_record name="preproc_stages" in_defaults="true">
                 <nml_option name="config_static_interp"         type="logical"       default_value="true"/>
+                <nml_option name="config_native_gwd_static"     type="logical"       default_value="true"/>
+                <nml_option name="config_gwd_cell_scaling"      type="real"          default_value="1.0"      in_defaults="false"/>
                 <nml_option name="config_vertical_grid"         type="logical"       default_value="true"/>
                 <nml_option name="config_met_interp"            type="logical"       default_value="true"/>
                 <nml_option name="config_input_sst"             type="logical"       default_value="false"/>
@@ -92,6 +95,7 @@
         <packages>
                 <package name="initial_conds" description="Used by test cases that produce initial conditions."/>
                 <package name="sfc_update" description="Used by test cases that produce surface updates."/>
+                <package name="gwd_stage_in" description="Active only if GWD static fields will be generated and other static fields will not be generated"/>
                 <package name="vertical_stage_in" description="Active only if a vertical grid is being generated"/>
                 <package name="vertical_stage_out" description="Active only if a vertical grid is being generated"/>
                 <package name="met_stage_in" description="Active only if meteorological fields are being interpolated"/>
@@ -146,39 +150,39 @@
                         <var name="cellsOnVertex"/>
                         <var name="kiteAreasOnVertex"/>
                         <var name="meshDensity"/>
-                        <var name="edgeNormalVectors" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="localVerticalUnitVectors" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="cellTangentPlane" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="fEdge" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="fVertex" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="ter" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="landmask" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="ivgtyp" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="mminlu" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="isltyp" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="soilcat_bot" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="snoalb" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="soiltemp" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="greenfrac" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="shdmin" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="shdmax" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="albedo12m" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="varsso" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="var2d" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="con" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="oa1" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="oa2" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="oa3" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="oa4" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="ol1" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="ol2" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="ol3" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="ol4" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="deriv_two" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="advCells" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="defc_a" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="defc_b" packages="vertical_stage_in;met_stage_in"/>
-                        <var name="coeffs_reconstruct" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="edgeNormalVectors" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="localVerticalUnitVectors" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="cellTangentPlane" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="fEdge" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="fVertex" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="ter" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="landmask" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="ivgtyp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="mminlu" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="isltyp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="soilcat_bot" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="snoalb" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="soiltemp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="greenfrac" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="shdmin" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="shdmax" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="albedo12m" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="varsso" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="var2d" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="con" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="oa1" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="oa2" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="oa3" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="oa4" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="ol1" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="ol2" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="ol3" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="ol4" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="deriv_two" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="advCells" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="defc_a" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="defc_b" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="coeffs_reconstruct" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="cf1" packages="met_stage_in"/>
                         <var name="cf2" packages="met_stage_in"/>
                         <var name="cf3" packages="met_stage_in"/>
@@ -189,7 +193,7 @@
                         <var name="rdzu" packages="met_stage_in"/>
                         <var name="fzm" packages="met_stage_in"/>
                         <var name="fzp" packages="met_stage_in"/>
-                        <var name="zx" packages="met_stage_in"/>
+                        <var name="zxu" packages="met_stage_in"/>
                         <var name="zz" packages="met_stage_in"/>
                         <var name="zb" packages="met_stage_in"/>
                         <var name="zb3" packages="met_stage_in"/>
@@ -283,7 +287,7 @@
                         <var name="rdzu" packages="vertical_stage_out;met_stage_out"/>
                         <var name="fzm" packages="vertical_stage_out;met_stage_out"/>
                         <var name="fzp" packages="vertical_stage_out;met_stage_out"/>
-                        <var name="zx" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zxu" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zz" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zb" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zb3" packages="vertical_stage_out;met_stage_out"/>
@@ -341,9 +345,11 @@
                         <var name="theta_base" packages="met_stage_out"/>
                         <var name="surface_pressure" packages="met_stage_out"/>
                         <var name="precipw" packages="met_stage_out"/>
+			<var name="h_oml_initial" packages="met_stage_out"/>
                         <var name="u10" packages="met_stage_out"/>
                         <var name="v10" packages="met_stage_out"/>
                         <var name="q2" packages="met_stage_out"/>
+			<var name="rh2" packages="met_stage_out"/>
                         <var name="t2m" packages="met_stage_out"/>
 		</stream>
 
@@ -450,8 +456,8 @@
                 <var name="rdzu"                       type="real"     dimensions="nVertLevels"/>
                 <var name="fzm"                        type="real"     dimensions="nVertLevels"/>
                 <var name="fzp"                        type="real"     dimensions="nVertLevels"/>
-                <var name="zx"                         type="real"     dimensions="nVertLevelsP1 nEdges"/>
-                <var name="zz"                         type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="zxu"                        type="real"     dimensions="nVertLevels nEdges"/>
+                <var name="zz"                         type="real"     dimensions="nVertLevels nCells"/>
                 <var name="zb"                         type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb3"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
 
@@ -486,6 +492,9 @@
                         <var name="qc"      array_group="moist"/>
                         <var name="qr"      array_group="moist"/>
                 </var_array>
+
+                <!-- Climatology for ocean mixed-layer depth -->
+                <var name="h_oml_initial"              type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="fg" time_levs="1">
@@ -528,7 +537,7 @@
                 <var name="sfc_albbck"                        type="real"     dimensions="nCells Time"/>
                 <var name="xland"                             type="real"     dimensions="nCells Time"/>
 
-                <!-- surface fields from first-guess data -->
+                <!-- diagnostic fields that we get from first-guess data, and which we want to have at model initial output time -->
                 <var name="u10"                               type="real"     dimensions="nCells Time"/>
                 <var name="v10"                               type="real"     dimensions="nCells Time"/>
                 <var name="q2"                                type="real"     dimensions="nCells Time"/>

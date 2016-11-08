@@ -12,6 +12,7 @@ module init_atm_cases
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
    use mpas_sort
    use atm_advection
    use mpas_RBF_interpolation
@@ -20,6 +21,7 @@ module init_atm_cases
    use mpas_init_atm_static
    use mpas_init_atm_surface
    use mpas_atmphys_constants, only: svpt0,svp1,svp2,svp3
+   use mpas_atmphys_functions
    use mpas_atmphys_initialize_real
 
    ! Added only clause to keep xlf90 from getting confused from the overloaded abs intrinsic in mpas_timekeeping
@@ -41,6 +43,7 @@ module init_atm_cases
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       use mpas_stream_manager
+      use mpas_init_atm_gwd, only : compute_gwd_fields
 
       implicit none
 
@@ -49,6 +52,7 @@ module init_atm_cases
 
 
       integer :: i
+      integer :: ierr
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: mesh
@@ -59,6 +63,7 @@ module init_atm_cases
 
       integer, pointer :: config_init_case
       logical, pointer :: config_static_interp
+      logical, pointer :: config_native_gwd_static
       logical, pointer :: config_met_interp
 
       character(len=StrKIND), pointer :: mminlu
@@ -75,21 +80,19 @@ module init_atm_cases
       !
       if (config_init_case == 6) then
 #ifndef ROTATED_GRID
-         write(0,*) '*****************************************************************'
-         write(0,*) 'To initialize and run the mountain wave test case (case 6),'
-         write(0,*) '   please clean and re-compile init_atmosphere with -DROTATED_GRID'
-         write(0,*) '   added to the specification of MODEL_FORMULATION'
-         write(0,*) '   at the top of the Makefile.'
-         write(0,*) '*****************************************************************'
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_dmpar_global_abort('*****************************************************************',  deferredAbort=.true.)
+         call mpas_dmpar_global_abort('To initialize and run the mountain wave test case (case 6),',        deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   please clean and re-compile init_atmosphere with -DROTATED_GRID', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   added to the specification of MODEL_FORMULATION',                 deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   at the top of the Makefile.',                                     deferredAbort=.true.)
+         call mpas_dmpar_global_abort('*****************************************************************')
 #endif
       else
 #ifdef ROTATED_GRID
-         write(0,*) '*****************************************************************'
-         write(0,*) 'Only test case 6 should use code compiled with -DROTATED_GRID'
-         write(0,*) '   specified in the Makefile.'
-         write(0,*) '*****************************************************************'
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Only test case 6 should use code compiled with -DROTATED_GRID',     deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   specified in the Makefile.',                                     deferredAbort=.true.)
+         call mpas_dmpar_global_abort('*****************************************************************')
 #endif
       end if
 
@@ -172,6 +175,7 @@ module init_atm_cases
          do while (associated(block_ptr))
 
             call mpas_pool_get_config(block_ptr % configs, 'config_static_interp', config_static_interp)
+            call mpas_pool_get_config(block_ptr % configs, 'config_native_gwd_static', config_native_gwd_static)
             call mpas_pool_get_config(block_ptr % configs, 'config_met_interp', config_met_interp)
 
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
@@ -193,17 +197,27 @@ module init_atm_cases
                !     detected when performing the static_interp step.
                !  
                if (domain % dminfo % nprocs > 1) then
-                  write(0,*) ' '
-                  write(0,*) '****************************************************************'
-                  write(0,*) 'Error: Interpolation of static fields does not work in parallel.'
-                  write(0,*) 'Please run the static_interp step using only a single MPI task.'
-                  write(0,*) '****************************************************************'
-                  write(0,*) ' '
-                  call mpas_dmpar_abort(domain % dminfo)
+                 call mpas_dmpar_global_abort('****************************************************************', deferredAbort=.true.)
+                 call mpas_dmpar_global_abort('Error: Interpolation of static fields does not work in parallel.', deferredAbort=.true.)
+                 call mpas_dmpar_global_abort('Please run the static_interp step using only a single MPI task.',  deferredAbort=.true.)
+                 call mpas_dmpar_global_abort('****************************************************************')
                end if
 
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
                call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
+            end if
+
+            if (config_native_gwd_static) then
+               write(0,*) ' '
+               write(0,*) 'Computing GWDO static fields on the native MPAS mesh'
+               write(0,*) ' '
+               ierr = compute_gwd_fields(domain)
+               if (ierr /= 0) then
+                  call mpas_dmpar_global_abort('****************************************************************', deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('Error while trying to compute sub-grid-scale orography',           deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('statistics for use with the GWDO scheme.',                         deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('****************************************************************')
+               end if
             end if
 
             !
@@ -222,7 +236,10 @@ module init_atm_cases
 
             call init_atm_case_gfs(block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
                                    diag, diag_physics, config_init_case, block_ptr % dimensions, block_ptr % configs)
-            if (config_met_interp) call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
+            
+            if (config_met_interp) then
+               call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
+            end if
 
             block_ptr => block_ptr % next
          end do
@@ -243,12 +260,9 @@ module init_atm_cases
 
       else
 
-         write(0,*) ' '
-         write(0,*) ' ****************************************************'
-         write(0,*) ' Only test cases 1 through 8 are currently supported.'
-         write(0,*) ' ****************************************************'
-         write(0,*) ' '
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_dmpar_global_abort(' ****************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort(' Only test cases 1 through 8 are currently supported.', deferredAbort=.true.)
+         call mpas_dmpar_global_abort(' ****************************************************')
 
       end if
 
@@ -300,7 +314,7 @@ module init_atm_cases
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
       real (kind=RKIND), dimension(:), pointer :: surface_pressure
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx
       real (kind=RKIND), dimension(:,:), pointer :: pressure, ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt
       real (kind=RKIND), dimension(:,:), pointer :: u, ru, w, rw, v
       real (kind=RKIND), dimension(:,:), pointer :: rho, theta
@@ -440,7 +454,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'dss', dss)
@@ -597,8 +611,8 @@ module init_atm_cases
       do i=1, nEdges
         iCell1 = cellsOnEdge(1,i)
         iCell2 = cellsOnEdge(2,i)
-        do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+        do k=1,nz1
+          zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
         end do
       end do
       do i=1, nCells
@@ -1234,7 +1248,7 @@ module init_atm_cases
       integer, intent(in) :: test_case
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx, cqw
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx, cqw
       real (kind=RKIND), dimension(:,:), pointer :: ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt, u, ru
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3
@@ -1339,7 +1353,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'dss', dss)
@@ -1479,8 +1493,8 @@ module init_atm_cases
       do i=1, nEdges
         iCell1 = cellsOnEdge(1,i)
         iCell2 = cellsOnEdge(2,i)
-        do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+        do k=1,nz1
+          zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
         end do
       end do
       do i=1, nCells
@@ -1822,7 +1836,7 @@ module init_atm_cases
       real (kind=RKIND), parameter :: t0=288., hm=250.
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx, cqw
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx, cqw
       real (kind=RKIND), dimension(:,:), pointer :: ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt, u, ru 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars, deriv_two, zb, zb3
 
@@ -1943,7 +1957,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'dss', dss)
@@ -2097,12 +2111,11 @@ module init_atm_cases
       write(0,*) ' hx computation complete '
 
       if (terrain_smooth) then
-         write(0,*) '***************************************************************************'
-         write(0,*) 'Please contact the MPAS-A developers for up-to-date terrain-smoothing code.'
-         write(0,*) 'Otherwise, set terrain_smooth=.false. in the mountain wave test case'
-         write(0,*) '   initialization routine and re-compile.'
-         write(0,*) '***************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('***************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Please contact the MPAS-A developers for up-to-date terrain-smoothing code.', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Otherwise, set terrain_smooth=.false. in the mountain wave test case',        deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   initialization routine and re-compile.',                                   deferredAbort=.true.)
+         call mpas_dmpar_global_abort('***************************************************************************')
       end if
 
       do iCell=1,nCells
@@ -2123,8 +2136,8 @@ module init_atm_cases
       do i=1, nEdges
         iCell1 = cellsOnEdge(1,i)
         iCell2 = cellsOnEdge(2,i)
-        do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+        do k=1,nz1
+          zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
         end do
       end do
       do i=1, nCells
@@ -2480,7 +2493,7 @@ module init_atm_cases
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
       real (kind=RKIND), dimension(:), pointer :: vert_level, latPoints, lonPoints, ter
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx
       real (kind=RKIND), dimension(:,:), pointer :: pressure, ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt
       real (kind=RKIND), dimension(:), pointer :: surface_pressure
       real (kind=RKIND), dimension(:), pointer :: destField1d
@@ -2532,6 +2545,7 @@ module init_atm_cases
       integer, dimension(:), pointer :: mask_array
       integer, dimension(nEdges), target :: edge_mask
       character (len=StrKIND) :: fname
+      logical :: is_sfc_field
 
       real (kind=RKIND) :: flux, fluxk, lat1, lat2, eta_v, r_pert, u_pert, lat_pert, lon_pert, r
       real (kind=RKIND) :: lat, lon, x, y
@@ -2564,6 +2578,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nlat) :: lat_2d
       real (kind=RKIND) :: dlat
       real (kind=RKIND) :: z_edge, z_edge3, d2fdx2_cell1, d2fdx2_cell2
+      real (kind=RKIND) :: alt, als, zetal, zl
 
       !  calculation of the water vapor mixing ratio:
       real (kind=RKIND) :: sh_max,sh_min,global_sh_max,global_sh_min
@@ -2576,6 +2591,7 @@ module init_atm_cases
       integer, pointer :: config_nsm
       real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
+      logical, pointer :: config_tc_vertical_grid
       logical, pointer :: config_use_spechumd
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
@@ -2637,6 +2653,8 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: rh2
       real (kind=RKIND), dimension(:), pointer :: t2m
 
+      character (len=StrKIND) :: errstring
+
       call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
@@ -2645,6 +2663,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_nsm', config_nsm)
       call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
+      call mpas_pool_get_config(configs, 'config_tc_vertical_grid', config_tc_vertical_grid)
       call mpas_pool_get_config(configs, 'config_use_spechumd', config_use_spechumd)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
@@ -2677,7 +2696,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'ter', ter)
@@ -2767,16 +2786,22 @@ module init_atm_cases
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
       if (istatus /= 0) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error opening initial meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error opening initial meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       call read_next_met_field(field, istatus)
       do while (istatus == 0)
          if (trim(field % field) == 'SOILHGT') then
+
+
+write(0,*) 'USING ECMWF TERRAIN...'
+
+            interp_list(1) = FOUR_POINT
+            interp_list(2) = SEARCH
+            interp_list(3) = 0
 
             !
             ! Set up projection
@@ -2802,6 +2827,15 @@ module init_atm_cases
                ndims = 1
             end if
 
+            allocate(rslab(-2:field % nx+3, field % ny))
+            rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
+            rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
+            rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
+            rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
+            rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
+            rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
+            rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
+
             do i=1,nInterpPoints
                lat = latPoints(i)*DEG_PER_RAD
                lon = lonPoints(i)*DEG_PER_RAD
@@ -2809,13 +2843,23 @@ module init_atm_cases
                if (x < 0.5) then
                   lon = lon + 360.0
                   call latlon_to_ij(proj, lat, lon, x, y)
+               else if (x >= real(field%nx)+0.5) then
+                  lon = lon - 360.0
+                  call latlon_to_ij(proj, lat, lon, x, y)
+               end if
+               if (y < 0.5) then
+                  y = 1.0
+               else if (y >= real(field%ny)+0.5) then
+                  y = real(field%ny)
                end if
                if (ndims == 1) then
-                  destField1d(i) = interp_sequence(x, y, 1, field % slab, 1, field % nx, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
+                  destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
                else if (ndims == 2) then
-                  destField2d(k,i) = interp_sequence(x, y, 1, field % slab, 1, field % nx, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
+                  destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
                end if
             end do
+
+            deallocate(rslab)
          end if
    
          deallocate(field % slab)
@@ -2853,7 +2897,7 @@ module init_atm_cases
                                         * (ter(cellsOnCell(j,iCell))-ter(iCell))
                end do
             end if
-            hs(iCell) = ter(iCell) + 0.125*hs(iCell)
+            hs(iCell) = ter(iCell) + 0.216*hs(iCell)
          end do
 
          do iCell=1,nCells
@@ -2865,8 +2909,7 @@ module init_atm_cases
                                           * (hs(cellsOnCell(j,iCell))-hs(iCell))
                end do
             end if
-!           ter(iCell) = hs(iCell) - 0.25*ter(iCell)
-            ter(iCell) = hs(iCell) - 0.125*ter(iCell)
+            ter(iCell) = hs(iCell) - 0.216*ter(iCell)
          end do
 
          ! note that ther variable ter used throughout this section is a pointer to grid % ter % array, here we are passing ter's parent field
@@ -2885,15 +2928,65 @@ module init_atm_cases
 
 !     Metrics for hybrid coordinate and vertical stretching
 
-      str = 1.5
-!      str = 1.
-      zt = config_ztop
-      dz = zt/float(nz1)
+      if (config_tc_vertical_grid) then
 
-      do k=1,nz
-         zw(k) = (real(k-1)/real(nz1))**str*zt
-         if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
-      end do
+         write(0,*) 'Setting up vertical levels as in 2014 TC experiments'
+
+         zt = config_ztop
+         dz = zt/float(nz1)
+
+!... Laura D. Fowler: change the values als,alt,and zetal valid for nVertLevels=41 to values
+!    needed for nVertLevels equal or greater than 55.
+         if (nVertLevels >= 55) then
+            als   =  .075  ! 55 levels.
+            alt   = 1.70   ! 55 levels.
+            zetal =  .75   ! 55 levels.
+         else
+            als   =  .075  ! 41 levels.
+            alt   = 1.23   ! 41 levels.
+            zetal =  .31   ! 41 levels.
+         endif
+         write(0,*)
+         write(0,*) '--- config_tc_vertical_grid = ', config_tc_vertical_grid
+         write(0,*) '--- als   = ', als
+         write(0,*) '--- alt   = ', alt
+         write(0,*) '--- zetal = ',zetal
+         if (nVertLevels /= 55 .and. nVertLevels /= 41) then
+            write(0,*) '********************************************************************************'
+            write(0,*) '* Note: als, alt, and zetal have not been tested for nVertLevels equal ', nVertLevels
+            write(0,*) '*       The values of these parameters have only been tested with 41 and 55 layers'
+            write(0,*) '********************************************************************************'
+         end if
+         write(0,*) ' '
+!... end Laura D. Fowler / 2016-04-12.
+
+         do k=1,nz
+            zl = 1.-alt*(1.-zetal)
+            if ((real(k-1)/real(nz1)).LT.zetal) then
+                 zw(k) =              (als*real(K-1)/real(nz1)      &
+                     +(3.*(1.-alt)+2.*(alt-als)*zetal)              &
+                                     *((K-1)*dz/(zt*zetal))**2      &
+                     -(2.*(1.-alt) +  (alt-als)*zetal)              &
+                                     *(real(k-1)*dz/(zt*zetal))**3) * zt
+            else
+                 zw(K) = (zl+alt*(real(K-1)/real(nz1)-zetal))*zt
+            end if
+            if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
+         end do
+
+      else
+
+         write(0,*) 'Setting up vertical levels as in MPAS 2.0 and earlier'
+
+         str = 1.5
+         zt = config_ztop
+         dz = zt/float(nz1)
+
+         do k=1,nz
+            zw(k) = (real(k-1)/real(nz1))**str*zt
+            if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
+         end do
+      end if
 
 !     ah(k) governs the transition between terrain-following 
 !        and pure height coordinates
@@ -2962,6 +3055,7 @@ module init_atm_cases
 !      cf1 = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 !      cf2 = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
+
 
       write(0,*) ' cf1, cf2, cf3 = ',cf1,cf2,cf3
 
@@ -3070,8 +3164,8 @@ module init_atm_cases
       do i=1, nEdges
          iCell1 = cellsOnEdge(1,i)
          iCell2 = cellsOnEdge(2,i)
-         do k=1,nz
-            zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+         do k=1,nz1
+            zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
          end do
       end do
       do i=1, nCells
@@ -3152,11 +3246,10 @@ module init_atm_cases
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
       if (istatus /= 0) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error opening initial meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error opening initial meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       call read_next_met_field(field, istatus)
@@ -3183,11 +3276,10 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
       call read_met_close()
 
       if (.not. allocated(maskslab)) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'LANDSEA field not found in  meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('LANDSEA field not found in meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       edge_mask(:) = 1
@@ -3202,11 +3294,10 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
       if (istatus /= 0) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error opening initial meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error opening initial meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       call mpas_hash_init(level_hash)
@@ -3867,6 +3958,14 @@ write(0,*) 'Interpolating SKINTEMP'
                   if (x < 0.5) then
                      lon = lon + 360.0
                      call latlon_to_ij(proj, lat, lon, x, y)
+                  else if (x >= real(field%nx)+0.5) then
+                     lon = lon - 360.0
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                  end if
+                  if (y < 0.5) then
+                     y = 1.0
+                  else if (y >= real(field%ny)+0.5) then
+                     y = real(field%ny)
                   end if
                   if (ndims == 1) then
                      if (maskval /= -1.0) then
@@ -3890,6 +3989,57 @@ write(0,*) 'Interpolating SKINTEMP'
                end if
             end do
 
+            !
+            ! In addition to interpolating wind fields to cell edges, we should
+            ! also intperolate to cell centers at the surface in order to
+            ! produce U10 and V10 fields
+            !
+            is_sfc_field = .false.
+            mask_array => landmask
+            if (index(field % field, 'UU') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'u10', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            else if (index(field % field, 'VV') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'v10', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            else if (index(field % field, 'TT') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 't2m', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            else if (index(field % field, 'RH') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'rh2', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            end if
+
+            if (is_sfc_field) then
+               do i=1,nInterpPoints
+                  lat = latPoints(i)*DEG_PER_RAD
+                  lon = lonPoints(i)*DEG_PER_RAD
+                  call latlon_to_ij(proj, lat, lon, x, y)
+                  if (x < 0.5) then
+                     lon = lon + 360.0
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                  end if
+                  destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, &
+                                                   msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+               end do
+            end if
+
             deallocate(rslab)
      
          end if
@@ -3903,12 +4053,12 @@ write(0,*) 'Interpolating SKINTEMP'
       call mpas_hash_destroy(level_hash)
 
       if (too_many_fg_levs) then
-         write(0,*) '*******************************************************************'
-         write(0,*) 'Error: The meteorological data file has more than config_nfglevels.'
-         write(0,*) '       Please increase config_nfglevels to at least ', level_value
-         write(0,*) '       in the namelist and re-run.'
-         write(0,*) '*******************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         write(errstring,'(a,i4)') '       Please increase config_nfglevels to at least ', level_value
+         call mpas_dmpar_global_abort('*******************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error: The meteorological data file has more than config_nfglevels.', deferredAbort=.true.)
+         call mpas_dmpar_global_abort(trim(errstring),                                                       deferredAbort=.true.)
+         call mpas_dmpar_global_abort('       in the namelist and re-run.',                                  deferredAbort=.true.)
+         call mpas_dmpar_global_abort('*******************************************************************')
       end if
 
 
@@ -4079,6 +4229,14 @@ write(0,*) 'PROCESSING SEAICE'
                      if (x < 0.5) then
                         lon = lon + 360.0
                         call latlon_to_ij(proj, lat, lon, x, y)
+                     else if (x >= real(field%nx)+0.5) then
+                        lon = lon - 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     end if
+                     if (y < 0.5) then
+                        y = 1.0
+                     else if (y >= real(field%ny)+0.5) then
+                        y = real(field%ny)
                      end if
                      if (ndims == 1) then
                         destField1d(i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
@@ -4105,6 +4263,105 @@ write(0,*) 'PROCESSING SEAICE'
       end if
 
       call read_met_close()
+
+
+      !
+      ! Get OMLD climatology from a separate file
+      !
+      call read_met_init('OMLD', .true., config_start_time(1:13), istatus)
+
+      if (istatus /= 0) then
+         write(0,*) 'OMLD file not found...'
+      end if
+
+      if (istatus == 0) then
+         call read_next_met_field(field, istatus)
+         do while (istatus == 0)
+            if (index(field % field, 'OMLD') /= 0) then
+
+write(0,*) 'PROCESSING OMLD'
+
+               !
+               ! Set up projection
+               !
+               call map_init(proj)
+          
+               if (field % iproj == PROJ_LATLON) then
+                  call map_set(PROJ_LATLON, proj, &
+                               latinc = real(field % deltalat,RKIND), &
+                               loninc = real(field % deltalon,RKIND), &
+                               knowni = 1.0_RKIND, &
+                               knownj = 1.0_RKIND, &
+                               lat1 = real(field % startlat,RKIND), &
+                               lon1 = real(field % startlon,RKIND))
+               else
+                  write(stderrUnit,*) 'ERROR: We were expecting OMLD field to be on a lat-lon projection...'
+               end if
+
+               if (index(field % field, 'OMLD') /= 0) then
+                  nInterpPoints = nCells
+                  latPoints => latCell
+                  lonPoints => lonCell
+                  call mpas_pool_get_array(state, 'h_oml_initial', destField1d)
+                  ndims = 1
+               end if
+   
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+   
+               masked = 1
+               fillval = 0.0
+               msgval = 0.0
+               mask_array => landmask
+
+
+               allocate(rslab(field % nx, field % ny))
+               rslab(:,:) = field % slab(:,:)
+               do i=1,nInterpPoints
+                  if (mask_array(i) /= masked) then
+                     lat = latPoints(i)*DEG_PER_RAD
+                     lon = lonPoints(i)*DEG_PER_RAD
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                     if (x < 0.5) then
+                        lon = lon + 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     else if (x >= real(field%nx)+0.5) then
+                        lon = lon - 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     end if
+                     if (y < 0.5) then
+                        y = 1.0
+                     else if (y >= real(field%ny)+0.5) then
+                        y = real(field%ny)
+                     end if
+                     if (ndims == 1) then
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                        if (destField1d(i) == msgval) destField1d(i) = fillval
+                     else if (ndims == 2) then
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                        if (destField2d(k,i) == msgval) destField2d(k,i) = fillval
+                     end if
+                  else
+                     if (ndims == 1) then
+                        destField1d(i) = fillval
+                     else if (ndims == 2) then
+                        destField2d(k,i) = fillval
+                     end if
+                  end if
+               end do
+               deallocate(rslab)
+
+            end if
+      
+            deallocate(field % slab)
+            call read_next_met_field(field, istatus)
+         end do
+      end if
+
+      call read_met_close()
+
 
       if (allocated(maskslab)) deallocate(maskslab)
 
@@ -4310,9 +4567,11 @@ write(0,*) 'PROCESSING SEAICE'
 
          do k = 1, nVertLevels
             do iCell = 1, nCells
-               es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
-               es = min(es,0.99*0.01*pressure(k,iCell))
-               rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+!              es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
+!              es = min(es,0.99*0.01*pressure(k,iCell))
+!              rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+               rs = rslf(pressure(k,iCell),t(k,iCell))
+               if(t(k,iCell) .lt. svpt0) rs = rsif(pressure(k,iCell),t(k,iCell))
                scalars(index_qv,k,iCell) = 0.01_RKIND*rs*relhum(k,iCell)
              enddo
          enddo
@@ -4332,6 +4591,13 @@ write(0,*) 'PROCESSING SEAICE'
       ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular potential temperature
       !
       do iCell=1,nCells
+
+         ! Q2
+         es = 6.112 * exp((17.27*(t2m(iCell) - 273.16))/(t2m(iCell) - 35.86))
+         rs = 0.622 * es * 100. / (psfc(iCell) - es * 100.)
+         q2(iCell) = 0.01 * rs * rh2(iCell)
+    
+
          do k=1,nVertLevels
             ! PI
             p(k,iCell) = (pressure(k,iCell) / p0) ** (rgas / cp)
@@ -4606,6 +4872,8 @@ write(0,*) 'PROCESSING SEAICE'
          else if (extrap_type == 1) then
             slope = (zf(2,2) - zf(2,1)) / (zf(1,2) - zf(1,1))
             vertical_interp = zf(2,1) + slope * (target_z - zf(1,1))
+         else if (extrap_type == 2) then
+            vertical_interp = zf(2,1) - (target_z - zf(1,1))*0.0065
          end if
          return
       end if
@@ -4834,6 +5102,5 @@ write(0,*) 'PROCESSING SEAICE'
       end do
 
    end subroutine decouple_variables
-
 
 end module init_atm_cases

@@ -11,6 +11,7 @@
  use mpas_pool_routines
  use mpas_timekeeping
  use mpas_timer
+ use mpas_abort, only : mpas_dmpar_global_abort
  
  use init_atm_hinterp
  use init_atm_llxy
@@ -156,11 +157,9 @@
 !open intermediate file:
  call read_met_init(trim(config_sfc_prefix),.false.,timeString,istatus)
  if(istatus /= 0) then
-    write(0,*) '********************************************************************************'
-    write(0,*) 'Error opening surface file '//   &
-                trim(config_sfc_prefix)//':'//timeString(1:13)
-    write(0,*) '********************************************************************************'
-    call mpas_dmpar_abort(dminfo)
+    call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+    call mpas_dmpar_global_abort('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      deferredAbort=.true.)
+    call mpas_dmpar_global_abort('********************************************************************************')
  else
     write(0,*) 'Processing file ',trim(config_sfc_prefix)//':'//timeString(1:13)
  end if
@@ -189,11 +188,9 @@
 !read sea-surface temperatures and seaice data. open intermediate file:
  call read_met_init(trim(config_sfc_prefix),.false.,timeString(1:13),istatus)
  if(istatus /= 0) then
-    write(0,*) '********************************************************************************'
-    write(0,*) 'Error opening surface file '//   &
-                trim(config_sfc_prefix)//':'//timeString(1:13)
-    write(0,*) '********************************************************************************'
-    call mpas_dmpar_abort(dminfo)
+    call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+    call mpas_dmpar_global_abort('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      deferredAbort=.true.)
+    call mpas_dmpar_global_abort('********************************************************************************')
  end if
 
  if(.not. have_landmask) then

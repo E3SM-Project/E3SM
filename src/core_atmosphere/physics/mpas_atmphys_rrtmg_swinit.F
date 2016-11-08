@@ -9,7 +9,7 @@
 #define DM_BCAST_MACRO(A) call mpas_dmpar_bcast_reals(dminfo,size(A),A)
 #define DM_BCAST_REAL(A) call mpas_dmpar_bcast_real(dminfo,A)
 
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_rrtmg_swinit
  use mpas_dmpar
  use mpas_kind_types
@@ -25,29 +25,28 @@
  public:: rrtmg_initsw_forMPAS
 
 
-!>\brief main initialization module for the RRTMG short wave radiation code, based on the MPI
-!> decomposition used in MPAS. It replaces the initialization in module_ra_rrtgm_sw.F.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_rrtmg_swinit:
-!> -----------------------------------------
-!> rrtmg_swinit_forMPAS: call rrtmg_swlookuptable from subroutine init_radiation_sw.
-!> rrtmg_swlookuptable : read and broadcast all input data on MPAS nodes using MPI decomposition.
-!> rrtmg_swinit        : added initialization specific to rrtmg_sw.
- 
+!Main initialization module for the RRTMG short wave radiation code, based on the MPI decomposition
+!used in MPAS. It replaces the initialization in module_ra_rrtgm_sw.F.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_rrtmg_swinit:
+! -----------------------------------------
+! rrtmg_swinit_forMPAS: call rrtmg_swlookuptable from subroutine init_radiation_sw.
+! rrtmg_swlookuptable : read and broadcast all input data on MPAS nodes using MPI decomposition.
+! rrtmg_swinit        : added initialization specific to rrtmg_sw.
+
 
  contains
 
-!==================================================================================================
+
+!=================================================================================================================
  subroutine rrtmg_initsw_forMPAS(dminfo)
-!==================================================================================================
+!=================================================================================================================
 !input arguments:
  type(dm_info):: dminfo
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
 !read in absorption coefficients and other data:
  call rrtmg_swlookuptable(dminfo)
@@ -58,9 +57,9 @@
 
  end subroutine rrtmg_initsw_forMPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine rrtmg_swlookuptable(dminfo)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -69,7 +68,7 @@
  integer:: i,istat,rrtmg_unit
  logical:: opened
  character(len=StrKIND):: errmess
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
 !get a unit to open init file:
  if(dminfo % my_proc_id == IO_NODE) then
@@ -124,7 +123,7 @@
 
  end subroutine rrtmg_swlookuptable
 
-!==================================================================================================
+!=================================================================================================================
 
 ! **************************************************************************
 !  RRTMG Shortwave Radiative Transfer Model
@@ -1207,6 +1206,6 @@
       
       end subroutine sw_kgb29
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_rrtmg_swinit
-!==================================================================================================
+!=================================================================================================================
