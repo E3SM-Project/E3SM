@@ -145,6 +145,9 @@ sub is_ignore_name
 
     if (    $name eq "NAME" 
 	    or $name eq "SHORTNAME" 
+            or $name eq "NODENAME_REGEX"
+            or $name eq "PROXY"
+            or $name eq "TESTS"
 	    or $name eq "DESC" 
 	    or $name eq "VALID_GRID_MATCH" 
 	    or $name eq "GRID_MATCH" 

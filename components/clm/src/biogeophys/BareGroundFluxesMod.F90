@@ -177,7 +177,6 @@ contains
          qflx_ev_h2osfc   =>    waterflux_vars%qflx_ev_h2osfc_patch   , & ! Output: [real(r8) (:)   ]  evaporation flux from h2osfc (W/m**2) [+ to atm]                      
          qflx_evap_soi    =>    waterflux_vars%qflx_evap_soi_patch    , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)                              
          qflx_evap_tot    =>    waterflux_vars%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg                         
-
          begp             =>    bounds%begp                           , &
          endp             =>    bounds%endp                             &
          )

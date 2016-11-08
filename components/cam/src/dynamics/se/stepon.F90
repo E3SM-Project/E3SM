@@ -12,18 +12,18 @@ module stepon
    use pmgrid,         only: plev, plevp, plat
    use spmd_utils,     only: iam, masterproc, mpicom
    use constituents,   only: pcnst, cnst_name, cnst_longname
-   use cam_abortutils,     only: endrun
+   use cam_abortutils, only: endrun
    use ppgrid,         only: begchunk, endchunk
    use physconst,      only: zvir, cappa
    use physics_types,  only: physics_state, physics_tend
    use dyn_comp,       only: dyn_import_t, dyn_export_t
    use perf_mod,       only: t_startf, t_stopf, t_barrierf
+   use time_manager,   only: get_step_size
 ! from SE
-   use derivative_mod, only : derivinit, deriv_print, derivative_t
-   use quadrature_mod, only : gauss, gausslobatto, quadrature_t
-   use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, &
-                             edgeVpack, edgeVunpack
+   use derivative_mod, only: derivinit, deriv_print, derivative_t
+   use quadrature_mod, only: gauss, gausslobatto, quadrature_t
    use edgetype_mod,       only: EdgeBuffer_t
+   use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
    use parallel_mod,   only : par
 
    implicit none
@@ -68,19 +68,17 @@ CONTAINS
 ! !ROUTINE:  stepon_init --- Time stepping initialization
 !
 ! !INTERFACE:
-subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
+subroutine stepon_init(dyn_in, dyn_out )
 ! !USES:
   use dimensions_mod, only: nlev, nelemd, npsq
-  use hycoef,         only: hyam, hybm
-  use cam_history,    only: phys_decomp, addfld, add_default, dyn_decomp
+  use cam_history,    only: addfld, add_default, horiz_only
+  use cam_history,    only: register_vector_field
   use control_mod,    only: smooth_phis_numcycle
   use gravity_waves_sources, only: gws_init
   use phys_control,   only: use_gw_front
 
 ! !OUTPUT PARAMETERS
 !
-  real(r8), intent(out) :: gw(plat)           ! Gaussian weights
-  real(r8), intent(out) :: etamid(plev)       ! vertical coords at midpoints
   type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
   type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
 
@@ -98,11 +96,8 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
   ! This is not done in dyn_init due to a circular dependency issue.
   if(iam < par%nprocs) then
      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev, numthreads_in=1)
-     if (use_gw_front) call gws_init(dyn_in%elem)
+     if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
-
-  etamid(:) = hyam(:) + hybm(:)
-
 
   ! fields that are written by the dycore
   ! these calls cant be done in dyn_init() because physics grid
@@ -110,42 +105,39 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
   !
   ! Forcing from physics
   ! FU, FV, other dycores, doc, says "m/s" but I think that is m/s^2
-  call addfld ('FU      ','m/s2    ',nlev, 'A','Zonal wind forcing term',dyn_decomp, &
-       begdim1=1,enddim1=npsq,begdim3=1,enddim3=nelemd)
-  call addfld ('FV      ','m/s2    ',nlev, 'A','Meridional wind forcing term',dyn_decomp, &
-       begdim1=1,enddim1=npsq,begdim3=1,enddim3=nelemd)
-  call addfld ('VOR      ','1/s     ',nlev, 'A','Vorticity',dyn_decomp, &
-       begdim1=1,enddim1=npsq,begdim3=1,enddim3=nelemd)
-  call addfld ('DIV      ','1/s     ',nlev, 'A','Divergence',dyn_decomp, &
-       begdim1=1,enddim1=npsq,begdim3=1,enddim3=nelemd)
+  call addfld ('FU',  (/ 'lev' /), 'A', 'm/s2', 'Zonal wind forcing term',     gridname='GLL')
+  call addfld ('FV',  (/ 'lev' /), 'A', 'm/s2', 'Meridional wind forcing term',gridname='GLL')
+  call register_vector_field('FU', 'FV')
+  call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Vorticity',                   gridname='GLL')
+  call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence',                  gridname='GLL')
 
   if (smooth_phis_numcycle>0) then
-     call addfld ('PHIS_SM ','m2/s2      ',1,    'I','Surface geopotential (smoothed)',dyn_decomp,&
-       begdim1=1,enddim1=npsq,begdim3=1,enddim3=nelemd)
-     call addfld ('SGH_SM  ','m       ',1,    'I','Standard deviation of orography (smoothed)',dyn_decomp,&
-       begdim1=1,enddim1=npsq,begdim3=1,enddim3=nelemd)
-     call addfld ('SGH30_SM','m       ',1,    'I','Standard deviation of 30s orography (smoothed)',dyn_decomp,&
-       begdim1=1,enddim1=npsq,begdim3=1,enddim3=nelemd)
+     call addfld ('PHIS_SM',  horiz_only, 'I', 'm2/s2', 'Surface geopotential (smoothed)',                gridname='GLL')
+     call addfld ('SGH_SM',   horiz_only, 'I', 'm',     'Standard deviation of orography (smoothed)',     gridname='GLL')
+     call addfld ('SGH30_SM', horiz_only, 'I', 'm',     'Standard deviation of 30s orography (smoothed)', gridname='GLL')
   endif
 
-  call addfld ('CONVU   ','m/s2    ',nlev, 'A','Zonal component IE->KE conversion term',phys_decomp)
-  call addfld ('CONVV   ','m/s2    ',nlev, 'A','Meridional component IE->KE conversion term',phys_decomp)
-  call addfld ('DIFFU   ','m/s2    ',nlev, 'A','U horizontal diffusion',phys_decomp)
-  call addfld ('DIFFV   ','m/s2    ',nlev, 'A','V horizontal diffusion',phys_decomp)
+  call addfld ('CONVU   ', (/ 'ilev' /),'A', 'm/s2    ','Zonal component IE->KE conversion term',      gridname='physgrid')
+  call addfld ('CONVV   ', (/ 'ilev' /),'A', 'm/s2    ','Meridional component IE->KE conversion term', gridname='physgrid')
+  call register_vector_field('CONVU', 'CONVV')
+  call addfld ('DIFFU   ', (/ 'ilev' /),'A', 'm/s2    ','U horizontal diffusion',                      gridname='physgrid')
+  call addfld ('DIFFV   ', (/ 'ilev' /),'A', 'm/s2    ','V horizontal diffusion',                      gridname='physgrid')
+  call register_vector_field('DIFFU', 'DIFFV')
   
-  call addfld ('ETADOT  ','1/s ',plevp,'A','Vertical (eta) velocity',phys_decomp)
-  call addfld ('U&IC    ','m/s ',plev, 'I','Zonal wind'        ,phys_decomp )
-  call addfld ('V&IC    ','m/s ',plev, 'I','Meridional wind'    ,phys_decomp )
-  call add_default ('U&IC       ',0, 'I')
-  call add_default ('V&IC       ',0, 'I')
+  call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
+  call addfld ('U&IC',   (/ 'lev' /),  'I', 'm/s', 'Zonal wind',              gridname='physgrid' )
+  call addfld ('V&IC',   (/ 'lev' /),  'I', 'm/s', 'Meridional wind',         gridname='physgrid' )
+  ! Don't need to register U&IC V&IC since we don't interpolate IC files
+  call add_default ('U&IC',0, 'I')
+  call add_default ('V&IC',0, 'I')
 
-  call addfld ('PS&IC      ','Pa      ',1,    'I','Surface pressure'    ,phys_decomp)
-  call addfld ('T&IC       ','K       ',plev, 'I','Temperature'         ,phys_decomp)
+  call addfld ('PS&IC', horiz_only,  'I', 'Pa', 'Surface pressure',gridname='physgrid')
+  call addfld ('T&IC',  (/ 'lev' /), 'I', 'K',  'Temperature',     gridname='physgrid')
 
   call add_default ('PS&IC      ',0, 'I')
   call add_default ('T&IC       ',0, 'I')
   do m = 1,pcnst
-     call addfld (trim(cnst_name(m))//'&IC','kg/kg   ',plev, 'I',cnst_longname(m), phys_decomp)
+     call addfld (trim(cnst_name(m))//'&IC', (/ 'lev' /), 'I', 'kg/kg', cnst_longname(m), gridname='physgrid')
   end do
   do m = 1,pcnst
      call add_default(trim(cnst_name(m))//'&IC',0, 'I')
@@ -165,7 +157,6 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   
   use dp_coupling, only: d_p_coupling
   use time_mod,    only: tstep, phys_tscale       ! dynamics timestep
-  use time_manager, only: dtime
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   implicit none
@@ -183,14 +174,14 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
 !-----------------------------------------------------------------------
 
    ! NOTE: dtime_out computed here must match formula below
-   dtime_out=dtime
+   dtime_out = get_step_size()
    if (phys_tscale/=0) then
       dtime_out=phys_tscale  ! set by user in namelist
    endif
 
    if(iam < par%nprocs) then
       if(tstep <= 0)  call endrun( 'bad tstep')
-      if(dtime <= 0)  call endrun( 'bad dtime')
+      if(dtime_out <= 0)  call endrun( 'bad dtime')
    end if
    !----------------------------------------------------------
    ! Move data into phys_state structure.
@@ -210,10 +201,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use parallel_mod,   only: par
    use dyn_comp,       only: TimeLevel
    
-   use time_manager,    only: dtime  ! namelist timestep
    use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp   !  dynamics typestep
    use control_mod,     only: ftype, qsplit, smooth_phis_numcycle
-   use hycoef,          only: hyam, hybm, hyai, hybi, ps0
+   use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
    use nctopo_util_mod, only: phisdyn,sghdyn,sgh30dyn
 
@@ -225,6 +215,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp
    real(r8) :: rec2dt, dyn_ps0
    real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
+   real(r8) :: dtime
+
+   dtime = get_step_size()
 
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
@@ -246,15 +239,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,ie)
    end do
 
-   call t_startf('stepon_bexchV')
    call bndry_exchangeV(par, edgebuf)
-   call t_stopf('stepon_bexchV')
 
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
-!  rec2dt = 1./real(dtime,r8)
-!  if (phys_tscale/=0) then
-!     rec2dt = 1_r8/real(phys_tscale,r8)
-!  endif
 
    rec2dt = 1._r8/dtime
    if (phys_tscale/=0) then
@@ -511,12 +498,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    end subroutine stepon_run2
    
 
-subroutine stepon_run3( dtime, etamid, cam_out, phys_state, dyn_in, dyn_out )
+subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use camsrfexch,  only: cam_out_t     
    use dyn_comp,    only: dyn_run
    use time_mod,    only: tstep
    real(r8), intent(in) :: dtime   ! Time-step
-   real(r8), intent(in)  :: etamid(plev)
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container

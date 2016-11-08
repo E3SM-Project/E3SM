@@ -7,9 +7,8 @@ script is intended to be run by git bisect.
 
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
-import wait_for_tests
 
-import argparse, sys, glob, os, doctest
+import argparse, sys, os, doctest, traceback
 
 from acme_util import expect, warning, verbose_print, run_cmd
 
@@ -17,18 +16,14 @@ from acme_util import expect, warning, verbose_print, run_cmd
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s <testname> [--compare=<baseline-id>] [--no-batch]  [--verbose]
+        usage="""\n%s <testname> <good> [<bad>] [--compare=<baseline-id>] [--no-batch]  [--verbose]
 OR
 %s --help
 OR
 %s --test
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# Bisect broken test ERS.f45_g37.B1850C5.melvin_gnu \033[0m
-    > git bisect start
-    > git bisect good [LAST KNOWN WORKING COMMIT]
-    > git bisect bad [CURRENT COMMIT]
-    > git bisect run cime/scripts-acme/%s ERS.f45_g37.B1850C5.melvin_gnu /scratch/user/acme_scratch
+    > %s ERS.f45_g37.B1850C5 HEAD~4 HEAD
 """ % ((os.path.basename(args[0]), ) * 4),
 
 description=description,
@@ -36,90 +31,93 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_compiler, _, _, default_project, default_testroot, _, _, _ = acme_util.get_machine_info(raw=True)
+    default_project  = acme_util.get_machine_project()
+    default_compiler = acme_util.get_machine_info("COMPILERS")[0]
 
     parser.add_argument("testname", help="Name of failing test.")
 
-    parser.add_argument("-r", "--test-root", action="store", dest="testroot", default=default_testroot,
-                        help="Path to testroot to use for testcases for bisect.")
+    parser.add_argument("good", help="Name of most recent known good commit.")
 
-    parser.add_argument("-c", "--compiler", action="store", dest="compiler", default=default_compiler,
+    parser.add_argument("bad", nargs="?", default="HEAD", help="Name of bad commits, default is current commit.")
+
+    parser.add_argument("-r", "--test-root",
+                        help="Path to testroot to use for testcases for bisect. WARNING. This will be cleared by this script.")
+
+    parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="What compiler to use to build ACME")
 
-    parser.add_argument("-p", "--project", action="store", dest="project", default=default_project,
+    parser.add_argument("-p", "--project", default=default_project,
                         help="Project to be given to create_test.")
 
-    parser.add_argument("-b", "--baseline-name", action="store", dest="baseline_name", default=None,
+    parser.add_argument("-b", "--baseline-name",
                         help="Baseline id for comparing baselines. Not specifying means no comparisons will be done.")
 
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+    parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
 
-    parser.add_argument("-n", "--check-namelists", action="store_true", dest="check_namelists", default=False,
+    parser.add_argument("-n", "--check-namelists", action="store_true",
                         help="Consider a commit to be broken if namelist check fails")
 
-    parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
+    parser.add_argument("-t", "--check-throughput", action="store_true",
                         help="Consider a commit to be broken if throughput check fails (fail if tests slow down)")
 
-    parser.add_argument("-m", "--check-memory", action="store_true", dest="check_memory", default=False,
+    parser.add_argument("-m", "--check-memory", action="store_true",
                         help="Consider a commit to be broken if memory check fails (fail if tests footprint grows)")
-
-    parser.add_argument("--no-batch", action="store_true", dest="no_batch", default=False,
-                        help="Force scripts to not submit tests as batch jobs. Default will be to do whatever is standard on the current machine")
 
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
 
-    if (args.test_root == default_testroot):
-        args.test_root = acme_util.get_machine_info(project=args.project)[4]
+    if (args.test_root is None):
+        args.test_root = os.path.join(acme_util.get_machine_info("CESMSCRATCHROOT", project=args.project), "acme_bisect")
 
-    return args.testname, args.testroot, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory, args.no_batch
+    return args.testname, args.good, args.bad, args.test_root, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory
 
 ###############################################################################
-def acme_bisect(testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch):
+def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory):
 ###############################################################################
     create_test_rel = os.path.join(acme_util.get_acme_scripts_location_within_acme(), "create_test")
+    wait_for_test_rel = os.path.join(acme_util.get_acme_scripts_location_within_acme(), "wait_for_tests")
     expect(create_test_rel, "Please run from root of repository")
 
-    current_sha = acme_util.get_current_commit(short=True)
+    # Important: we only want to test merges
+    commits_we_want_to_test = run_cmd("git rev-list %s..%s --merges --first-parent" % (good, bad)).splitlines()
+    all_commits             = run_cmd("git rev-list %s..%s" % (good, bad)).splitlines()
+    commits_to_skip         = set(all_commits) - set(commits_we_want_to_test)
+    print "Skipping these non-merge commits"
+    for item in commits_to_skip:
+        print item
 
-    print "####################################################################"
-    print "BISECTING COMMIT", current_sha
-    print "####################################################################"
+    # Basic setup
+    run_cmd("git bisect start")
+    run_cmd("git bisect good %s" % good)
+    run_cmd("git bisect bad %s" % bad)
+    run_cmd("git bisect skip %s" % " ".join(commits_to_skip))
 
-    # Formulate and run create_test command
+    # Formulate the create_test command
 
-    extra_args = "--no-batch" if no_batch else ""
     compare_args = "-c -b %s" % baseline_name if baseline_name is not None else ""
-    create_test_cmd = "%s %s --test-root %s --compiler %s -t %s -p %s %s %s" % \
-                      (create_test_rel, testname, testroot, compiler, current_sha, project, compare_args, extra_args)
-    run_cmd(create_test_cmd)
+    project_args = "-p %s" % project if project else ""
+    bisect_cmd = "/bin/rm -rf %s/*acme_bisect && %s %s --test-root %s -t acme_bisect --compiler %s %s %s" % \
+        (testroot, create_test_rel, testname, testroot, compiler, project_args, compare_args)
 
-    # Find testcase area
-    glob_matches = glob.glob("%s/%s*%s" % (testroot, testname, current_sha))
-    expect(len(glob_matches) == 1, "Did not find single match, found: '%s'" % glob_matches)
-    testarea = glob_matches[0]
+    is_batch = acme_util.does_machine_have_batch()
+    if (is_batch):
+        # Forumulate the wait_for_tests command.
 
-    # Build and run test
-    stat = run_cmd("./*test_build", ok_to_fail=True, from_dir=testarea, arg_stdout=None, arg_stderr=None)[0]
-    if (stat != 0):
-        print "BUILD FAILED!"
-        return False
+        wait_for_tests_cmd = "%s %s/*acme_bisect/TestStatus" % (wait_for_test_rel, testroot)
+        if (check_throughput):
+            wait_for_tests_cmd += " -t"
+        if (check_memory):
+            wait_for_tests_cmd += " -m"
+        if (not check_namelists):
+            wait_for_tests_cmd += " -i"
 
-    stat = run_cmd("./*submit", ok_to_fail=True, from_dir=testarea, arg_stdout=None, arg_stderr=None)[0]
-    if (stat != 0):
-        print "SUBMIT FAILED!"
-        return False
+        bisect_cmd += " && %s" % wait_for_tests_cmd
 
-    # Wait for test
-    return wait_for_tests.wait_for_tests([os.path.join(testarea, "TestStatus")],
-                                         no_wait=no_batch, # wait if using batch
-                                         check_throughput=check_throughput,
-                                         check_memory=check_memory,
-                                         ignore_namelists=not check_namelists, # inverse due to opposite defaults
-                                         cdash_build_name=None # don't do cdash stuff
-                                         )
+    run_cmd("git bisect run sh -c '%s'" % bisect_cmd, ok_to_fail=True, verbose=True)
+
+    run_cmd("git bisect reset")
 
 ###############################################################################
 def _main_func(description):
@@ -130,18 +128,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch = \
+    testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory = \
         parse_command_line(sys.argv, description)
 
-    try:
-        rv = acme_bisect(testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch)
-    except:
-        print >> sys.stderr, "Exception in script, aborting bisect entirely:"
-        e = sys.exc_info()[1]
-        print >> sys.stderr, e
-        sys.exit(-1)
-    else:
-        sys.exit(0 if rv else 1)
+    acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory)
 
 ###############################################################################
 

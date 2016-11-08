@@ -43,9 +43,15 @@ my $grid_prefix = '';
 my $decomp_prefix = '';
 
 if ( $GLC_GRID eq 'mpas.gis20km' ) {
-	$grid_date .= '150505';
+	$grid_date .= '150922';
 	$grid_prefix .= 'gis20km';
 	$decomp_prefix .= 'mpasli.graph.info.';
+} elsif ( $GLC_GRID eq 'mpas.ais20km' ) {
+	$grid_date .= '150910';
+	$grid_prefix .= 'ais20km';
+	$decomp_prefix .= 'mpasli.graph.info.';
+} else {
+        die "ERROR: mpasli.buildnml encountered unknown GLC_GRID: $GLC_GRID /n";
 }
 
 chdir "$CASEBUILD/mpasliconf";
@@ -169,12 +175,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "	-->\n";
 	print $stream_file "	<immutable_stream name=" . '"restart"' . "\n";
 	print $stream_file "					  type=" . '"input;output"' . "\n";
-	print $stream_file "					  filename_template=" . '"rst.glc.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "					  filename_template=" . '"mpasli.rst.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file "					  filename_interval=" . '"output_interval"' . "\n";
-	print $stream_file "					  reference_time=" . '"0000-01-01_00:00:00"' . "\n";
 	print $stream_file "					  clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "					  input_interval=" . '"initial_only"' . "\n";
-	print $stream_file "					  output_interval=" . '"01-00-00_00:00:00"' . "/>\n";
+	print $stream_file "					  output_interval=" . '"00-00-00_00:00:01"' . "/>\n";
 	print $stream_file "\n";
 	print $stream_file "	<!--\n";
 	print $stream_file "	output is the main history output stream. You can add auxiliary streams to\n";
@@ -183,29 +188,76 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "\n";
 	print $stream_file "	<stream name=" . '"output"' . "\n";
 	print $stream_file "			type=" . '"output"' . "\n";
-	print $stream_file "			filename_template=" . '"hist.glc.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
-	print $stream_file "			filename_interval=" . '"01-00-00_00:00:00"' . "\n";
-	print $stream_file "			reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "			filename_template=" . '"mpasli.hist.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file "			filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
 	print $stream_file "			clobber_mode=" . '"truncate"' . "\n";
-	print $stream_file "			output_interval=" . '"00-00-01_00:00:00"' . ">\n";
+	print $stream_file "			output_interval=" . '"0001-00-00_00:00:00"' . ">\n";
         # Note: if output_interval is less than dt, then multiples of that interval will be checked.
         # There is some performance hit for making this too small.  For now making it 1 day.
 	print $stream_file "\n";
 	print $stream_file "    <stream name=" . '"basicmesh"' . "/>\n";
-	print $stream_file "    <var_array name=" . '"tracers"' . "/>\n";
 	print $stream_file "    <var name=" . '"xtime"' . "/>\n";
+	print $stream_file "    <var name=" . '"layerCenterSigma"' . "/>\n";
+	print $stream_file "    <var name=" . '"layerInterfaceSigma"' . "/>\n";
 	print $stream_file "    <var name=" . '"thickness"' . "/>\n";
-	print $stream_file "    <var name=" . '"layerThickness"' . "/>\n";
 	print $stream_file "    <var name=" . '"lowerSurface"' . "/>\n";
 	print $stream_file "    <var name=" . '"upperSurface"' . "/>\n";
 	print $stream_file "    <var name=" . '"cellMask"' . "/>\n";
 	print $stream_file "    <var name=" . '"edgeMask"' . "/>\n";
-	print $stream_file "    <var name=" . '"vertexMask"' . "/>\n";
-	print $stream_file "    <var name=" . '"normalVelocity"' . "/>\n";
+#	print $stream_file "    <var name=" . '"vertexMask"' . "/>\n";
+#	print $stream_file "    <var name=" . '"normalVelocity"' . "/>\n";
 	print $stream_file "    <var name=" . '"uReconstructX"' . "/>\n";
 	print $stream_file "    <var name=" . '"uReconstructY"' . "/>\n";
+	print $stream_file "    <var name=" . '"surfaceSpeed"' . "/>\n";
+	print $stream_file "    <var name=" . '"basalSpeed"' . "/>\n";
+	print $stream_file "    <var name=" . '"sfcMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"basalMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"calvingThickness"' . "/>\n";
+	print $stream_file "    <var name=" . '"restoreThickness"' . "/>\n";
+	print $stream_file "    <var name=" . '"deltat"' . "/>\n";
+	print $stream_file "    <var name=" . '"daysSinceStart"' . "/>\n";
+	print $stream_file "    <var name=" . '"simulationStartTime"' . "/>\n";
+	print $stream_file "    <var name=" . '"allowableDtACFL"' . "/>\n";
+	print $stream_file "    <var name=" . '"allowableDtDCFL"' . "/>\n";
 	print $stream_file "\n";
 	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+        print $stream_file "<!--\n";
+	print $stream_file "Streams between this line and the auxiliary stream line below are analysis member streams.\n";
+	print $stream_file "They can be used to perform online analysis of the simulation and control the output of\n";
+	print $stream_file "the analysis data.\n";
+	print $stream_file "-->\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"globalStatsOutput"' . "\n";
+	print $stream_file "        type=" . '"output"' . "\n";
+	print $stream_file "        filename_template=" . '"mpasli.hist.am.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file "        filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
+	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "        packages=" . '"globalStatsAMPKG"' . "\n";
+	print $stream_file "        output_interval=" . '"0000_01:00:00"' . ">\n";
+	print $stream_file "\n";
+	print $stream_file "    <var name=" . '"daysSinceStart"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalIceVolume"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalIceArea"' . "/>\n";
+	print $stream_file "    <var name=" . '"floatingIceVolume"' . "/>\n";
+	print $stream_file "    <var name=" . '"floatingIceArea"' . "/>\n";
+	print $stream_file "    <var name=" . '"groundedIceVolume"' . "/>\n";
+	print $stream_file "    <var name=" . '"groundedIceArea"' . "/>\n";
+	print $stream_file "    <var name=" . '"iceThicknessMin"' . "/>\n";
+	print $stream_file "    <var name=" . '"iceThicknessMax"' . "/>\n";
+	print $stream_file "    <var name=" . '"iceThicknessMean"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalSfcMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalBasalMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalCalvingFlux"' . "/>\n";
+	print $stream_file "    <var name=" . '"xtime"' . "/>\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<!--\n";
+	print $stream_file "All streams below this line are auxiliary streams. They are provided as\n";
+	print $stream_file "groupings of fields that one might be interested in. You can either enable the\n";
+	print $stream_file "stream to write a file for the fileds, or add the stream to another stream that\n";
+	print $stream_file "will already be written.  \n";
+	print $stream_file "-->\n";
 	print $stream_file "\n";
 	print $stream_file "</streams>\n";
 

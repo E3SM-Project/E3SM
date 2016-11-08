@@ -1,4 +1,5 @@
-   module convect_shallow
+
+module convect_shallow
 
    !----------------------------------------------- !
    ! Purpose:                                       !
@@ -14,7 +15,7 @@
    use physconst,         only : cpair, zvir
    use ppgrid,            only : pver, pcols, pverp
    use zm_conv,           only : zm_conv_evap
-   use cam_history,       only : outfld, addfld, add_default, phys_decomp
+   use cam_history,       only : outfld, addfld, horiz_only
    use cam_logfile,       only : iulog
    use phys_control,      only : phys_getopts
 
@@ -23,14 +24,17 @@
    save
 
    public :: &
-             convect_shallow_register,      & ! Register fields in physics buffer
-             convect_shallow_init,          & ! Initialize shallow module
-             convect_shallow_tend,          & ! Return tendencies
-             convect_shallow_use_shfrc	      ! 
+             convect_shallow_register,       & ! Register fields in physics buffer
+             convect_shallow_init,           & ! Initialize shallow module
+             convect_shallow_init_cnst,      & ! 
+             convect_shallow_implements_cnst,&
+             convect_shallow_tend,           & ! Return tendencies
+             convect_shallow_use_shfrc	       ! 
 
    ! The following namelist variable controls which shallow convection package is used.
    !        'Hack'   = Hack shallow convection (default)
    !        'UW'     = UW shallow convection by Sungsu Park and Christopher S. Bretherton
+   !        'UNICON' = General Convection Model by Sungsu Park 
    !        'off'    = No shallow convection
 
    character(len=16) :: shallow_scheme      ! Default set in phys_control.F90, use namelist to change
@@ -57,6 +61,7 @@
    integer    ::         pblh_idx     = 0
    integer    ::      prec_sh_idx     = 0
    integer    ::      snow_sh_idx     = 0
+   integer    ::   cmfmc_sh_idx       = 0
 
    integer :: & ! field index in physics buffer
       sh_flxprc_idx, &
@@ -77,6 +82,7 @@
   !-------------------------------------------------- !
 
   use physics_buffer, only : pbuf_add_field, dtype_r8, dyn_time_lvls
+  use unicon_cam,     only : unicon_cam_register
   
   implicit none
 
@@ -93,7 +99,12 @@
   call pbuf_add_field('NEVAPR_SHCU','physpkg' ,dtype_r8,(/pcols,pver/),       nevapr_shcu_idx )
   call pbuf_add_field('PREC_SH',    'physpkg' ,dtype_r8,(/pcols/),            prec_sh_idx )
   call pbuf_add_field('SNOW_SH',    'physpkg' ,dtype_r8,(/pcols/),            snow_sh_idx )
+  ! Updraft mass flux by shallow convection [ kg/s/m2 ]
+  call pbuf_add_field('CMFMC_SH',   'physpkg' ,dtype_r8,(/pcols,pverp/),      cmfmc_sh_idx )
 
+  if (shallow_scheme .eq. 'UW' .or. shallow_scheme .eq. 'UNICON') then
+     call pbuf_add_field('shfrc', 'physpkg', dtype_r8, (/pcols,pver/), shfrc_idx)
+  end if
   if( shallow_scheme .eq. 'UW' ) then
       call pbuf_add_field('shfrc','physpkg' ,dtype_r8,(/pcols,pver/),shfrc_idx )
   endif
@@ -110,6 +121,10 @@
 ! shallow gbm cloud ice water (kg/kg)
   call pbuf_add_field('SH_CLDICE','physpkg',dtype_r8,(/pcols,pver/),sh_cldice_idx)  
 
+  if (shallow_scheme .eq. 'UNICON') then
+     call unicon_cam_register()
+  end if
+
   end subroutine convect_shallow_register
 
   !=============================================================================== !
@@ -117,16 +132,17 @@
   !=============================================================================== !
 
 
-  subroutine convect_shallow_init(pref_edge)
+  subroutine convect_shallow_init(pref_edge, pbuf2d)
 
   !------------------------------------------------------------------------------- !
   ! Purpose : Declare output fields, and initialize variables needed by convection !
   !------------------------------------------------------------------------------- !
 
-  use cam_history,       only : addfld, add_default, phys_decomp
+  use cam_history,       only : addfld, horiz_only, add_default
   use ppgrid,            only : pcols, pver
   use hk_conv,           only : mfinti
   use uwshcu,            only : init_uwshcu
+  use unicon_cam,        only : unicon_cam_init
   use physconst,         only : rair, gravit, latvap, rhoh2o, zvir, &
                                 cappa, latice, mwdry, mwh2o
   use pmgrid,            only : plev, plevp
@@ -137,9 +153,8 @@
   use physics_buffer,            only : pbuf_get_index, physics_buffer_desc, pbuf_set_field
    use time_manager,    only :  is_first_step
 
-  implicit none
-
   real(r8), intent(in)       :: pref_edge(plevp)        ! Reference pressures at interfaces
+  type(physics_buffer_desc), pointer    :: pbuf2d(:,:)
 
   integer limcnv                                   ! Top interface level limit for convection
   integer k
@@ -149,98 +164,98 @@
   ! Variables for detailed abalysis of UW-ShCu scheme !
   ! ------------------------------------------------- !
 
-  call addfld( 'qt_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qt_preCU'                                         ,  phys_decomp )
-  call addfld( 'sl_pre_Cu    ', 'J/kg'    ,  pver ,  'I' , 'sl_preCU'                                         ,  phys_decomp )
-  call addfld( 'slv_pre_Cu   ', 'J/kg'    ,  pver ,  'I' , 'slv_preCU'                                        ,  phys_decomp )
-  call addfld( 'u_pre_Cu     ', 'm/s'     ,  pver ,  'I' , 'u_preCU'                                          ,  phys_decomp )
-  call addfld( 'v_pre_Cu     ', 'm/s'     ,  pver ,  'I' , 'v_preCU'                                          ,  phys_decomp )
-  call addfld( 'qv_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qv_preCU'                                         ,  phys_decomp )
-  call addfld( 'ql_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'ql_preCU'                                         ,  phys_decomp )
-  call addfld( 'qi_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qi_preCU'                                         ,  phys_decomp )
-  call addfld( 't_pre_Cu     ', 'K'       ,  pver ,  'I' , 't_preCU'                                          ,  phys_decomp )
-  call addfld( 'rh_pre_Cu    ', '%'       ,  pver ,  'I' , 'rh_preCU'                                         ,  phys_decomp )
+  call addfld( 'qt_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qt_preCU'                                          )
+  call addfld( 'sl_pre_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'sl_preCU'                                          )
+  call addfld( 'slv_pre_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'slv_preCU'                                         )
+  call addfld( 'u_pre_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'u_preCU'                                           )
+  call addfld( 'v_pre_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'v_preCU'                                           )
+  call addfld( 'qv_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qv_preCU'                                          )
+  call addfld( 'ql_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'ql_preCU'                                          )
+  call addfld( 'qi_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qi_preCU'                                          )
+  call addfld( 't_pre_Cu',  (/ 'lev' /) ,  'I' , 'K'       , 't_preCU'                                           )
+  call addfld( 'rh_pre_Cu',  (/ 'lev' /) ,  'I' , '%'       , 'rh_preCU'                                          )
 
-  call addfld( 'qt_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qt_afterCU'                                       ,  phys_decomp )
-  call addfld( 'sl_aft_Cu    ', 'J/kg'    ,  pver ,  'I' , 'sl_afterCU'                                       ,  phys_decomp )
-  call addfld( 'slv_aft_Cu   ', 'J/kg'    ,  pver ,  'I' , 'slv_afterCU'                                      ,  phys_decomp )
-  call addfld( 'u_aft_Cu     ', 'm/s'     ,  pver ,  'I' , 'u_afterCU'                                        ,  phys_decomp )
-  call addfld( 'v_aft_Cu     ', 'm/s'     ,  pver ,  'I' , 'v_afterCU'                                        ,  phys_decomp )
-  call addfld( 'qv_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qv_afterCU'                                       ,  phys_decomp )
-  call addfld( 'ql_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'ql_afterCU'                                       ,  phys_decomp )
-  call addfld( 'qi_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qi_afterCU'                                       ,  phys_decomp )
-  call addfld( 't_aft_Cu     ', 'K'       ,  pver ,  'I' , 't_afterCU'                                        ,  phys_decomp )
-  call addfld( 'rh_aft_Cu    ', '%'       ,  pver ,  'I' , 'rh_afterCU'                                       ,  phys_decomp )
+  call addfld( 'qt_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qt_afterCU'                                        )
+  call addfld( 'sl_aft_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'sl_afterCU'                                        )
+  call addfld( 'slv_aft_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'slv_afterCU'                                       )
+  call addfld( 'u_aft_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'u_afterCU'                                         )
+  call addfld( 'v_aft_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'v_afterCU'                                         )
+  call addfld( 'qv_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qv_afterCU'                                        )
+  call addfld( 'ql_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'ql_afterCU'                                        )
+  call addfld( 'qi_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qi_afterCU'                                        )
+  call addfld( 't_aft_Cu',  (/ 'lev' /) ,  'I' , 'K'       , 't_afterCU'                                         )
+  call addfld( 'rh_aft_Cu',  (/ 'lev' /) ,  'I' , '%'       , 'rh_afterCU'                                        )
 
-  call addfld( 'tten_Cu      ', 'K/s'     ,  pver ,  'I' , 'Temprtaure tendency by cumulus convection'        ,  phys_decomp )
-  call addfld( 'rhten_Cu     ', '%/s'     ,  pver ,  'I' , 'RH tendency by cumumus convection'                ,  phys_decomp )
+  call addfld( 'tten_Cu',  (/ 'lev' /) ,  'I' , 'K/s'     , 'Temprtaure tendency by cumulus convection'         )
+  call addfld( 'rhten_Cu',  (/ 'lev' /) ,  'I' , '%/s'     , 'RH tendency by cumumus convection'                 )
 
   ! ------------------------------------------- !
   ! Common Output for Shallow Convection Scheme !
   ! ------------------------------------------- !
 
-  call addfld( 'CMFDT   '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - shallow convection'                           ,  phys_decomp )
-  call addfld( 'CMFDQ   '     , 'kg/kg/s ',  pver ,  'A' , &
-       'QV tendency - shallow convection'                          ,  phys_decomp )
-  call addfld( 'CMFDLIQ '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Cloud liq tendency - shallow convection'                   ,  phys_decomp )
-  call addfld( 'CMFDICE '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Cloud ice tendency - shallow convection'                   ,  phys_decomp )
-  call addfld( 'CMFDQR  '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Q tendency - shallow convection rainout'                   ,  phys_decomp )
-  call addfld( 'EVAPTCM '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - Evaporation/snow prod from Hack convection'   ,  phys_decomp )
-  call addfld( 'FZSNTCM '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - Rain to snow conversion from Hack convection' ,  phys_decomp )
-  call addfld( 'EVSNTCM '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - Snow to rain prod from Hack convection'       ,  phys_decomp )
-  call addfld( 'EVAPQCM '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Q tendency - Evaporation from Hack convection'             ,  phys_decomp )
-  call addfld( 'QC      '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Q tendency - shallow convection LW export'                 ,  phys_decomp )
-  call addfld( 'PRECSH  '     , 'm/s     ',  1,      'A' , &
-       'Shallow Convection precipitation rate'                     ,  phys_decomp )
-  call addfld( 'CMFMC   '     , 'kg/m2/s ',  pverp,  'A' , &
-       'Moist shallow convection mass flux'                        ,  phys_decomp )
-  call addfld( 'CMFSL   '     , 'W/m2    ',  pverp,  'A' , &
-       'Moist shallow convection liquid water static energy flux'  ,  phys_decomp )
-  call addfld( 'CMFLQ   '     , 'W/m2    ',  pverp,  'A' , &
-       'Moist shallow convection total water flux'                 ,  phys_decomp )
-  call addfld( 'CIN     '     , 'J/kg    ',  1    ,  'A' , &
-       'Convective inhibition'                                     ,  phys_decomp )
-  call addfld( 'CBMF    '     , 'kg/m2/s ',  1    ,  'A' , &
-       'Cloud base mass flux'                                      ,  phys_decomp )
-  call addfld( 'CLDTOP  '     , '1       ',  1    ,  'I' , &
-       'Vertical index of cloud top'                               ,  phys_decomp )
-  call addfld( 'CLDBOT  '     , '1       ',  1    ,  'I' , &
-       'Vertical index of cloud base'                              ,  phys_decomp )
-  call addfld( 'PCLDTOP '     , '1       ',  1    ,  'A' , &
-       'Pressure of cloud top'                                     ,  phys_decomp )
-  call addfld( 'PCLDBOT '     , '1       ',  1    ,  'A' , &
-       'Pressure of cloud base'                                    ,  phys_decomp )
+  call addfld( 'CMFDT'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - shallow convection'                            )
+  call addfld( 'CMFDQ'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'QV tendency - shallow convection'                           )
+  call addfld( 'CMFDLIQ'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Cloud liq tendency - shallow convection'                    )
+  call addfld( 'CMFDICE'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Cloud ice tendency - shallow convection'                    )
+  call addfld( 'CMFDQR'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Q tendency - shallow convection rainout'                    )
+  call addfld( 'EVAPTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - Evaporation/snow prod from Hack convection'    )
+  call addfld( 'FZSNTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - Rain to snow conversion from Hack convection'  )
+  call addfld( 'EVSNTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - Snow to rain prod from Hack convection'        )
+  call addfld( 'EVAPQCM'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Q tendency - Evaporation from Hack convection'              )
+  call addfld( 'QC'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Q tendency - shallow convection LW export'                  )
+  call addfld( 'PRECSH'     ,  horiz_only,      'A' , 'm/s', &
+       'Shallow Convection precipitation rate'                      )
+  call addfld( 'CMFMC'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+       'Moist shallow convection mass flux'                         )
+  call addfld( 'CMFSL'     ,  (/ 'ilev' /),  'A' , 'W/m2', &
+       'Moist shallow convection liquid water static energy flux'   )
+  call addfld( 'CMFLQ'     ,  (/ 'ilev' /),  'A' , 'W/m2', &
+       'Moist shallow convection total water flux'                  )
+  call addfld( 'CIN'     ,  horiz_only    ,  'A' , 'J/kg', &
+       'Convective inhibition'                                      )
+  call addfld( 'CBMF'     ,  horiz_only    ,  'A' , 'kg/m2/s', &
+       'Cloud base mass flux'                                       )
+  call addfld( 'CLDTOP'     ,  horiz_only    ,  'I' , '1', &
+       'Vertical index of cloud top'                                )
+  call addfld( 'CLDBOT'     ,  horiz_only    ,  'I' , '1', &
+       'Vertical index of cloud base'                               )
+  call addfld( 'PCLDTOP'     ,  horiz_only    ,  'A' , '1', &
+       'Pressure of cloud top'                                      )
+  call addfld( 'PCLDBOT'     ,  horiz_only    ,  'A' , '1', &
+       'Pressure of cloud base'                                     )
 
-  call addfld( 'FREQSH '      , 'fraction',  1    ,  'A' , &
-       'Fractional occurance of shallow convection'                ,  phys_decomp )
+  call addfld( 'FREQSH'      ,  horiz_only    ,  'A' , 'fraction', &
+       'Fractional occurance of shallow convection'                 )
                                                                                                                     
-  call addfld( 'HKFLXPRC'     , 'kg/m2/s ',  pverp,  'A' , &
-       'Flux of precipitation from HK convection'                  ,  phys_decomp )
-  call addfld( 'HKFLXSNW'     , 'kg/m2/s ',  pverp,  'A' , &
-       'Flux of snow from HK convection'                           ,  phys_decomp )
-  call addfld( 'HKNTPRPD'     , 'kg/kg/s ',  pver ,  'A' , &
-       'Net precipitation production from HK convection'           ,  phys_decomp )
-  call addfld( 'HKNTSNPD'     , 'kg/kg/s ',  pver ,  'A' , &
-       'Net snow production from HK convection'                    ,  phys_decomp )
-  call addfld( 'HKEIHEAT'     , 'W/kg'    ,  pver ,  'A' , &
-       'Heating by ice and evaporation in HK convection'           ,  phys_decomp )
+  call addfld( 'HKFLXPRC'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+       'Flux of precipitation from HK convection'                   )
+  call addfld( 'HKFLXSNW'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+       'Flux of snow from HK convection'                            )
+  call addfld( 'HKNTPRPD'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Net precipitation production from HK convection'            )
+  call addfld( 'HKNTSNPD'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Net snow production from HK convection'                     )
+  call addfld( 'HKEIHEAT'     ,  (/ 'lev' /) ,  'A' , 'W/kg'    , &
+       'Heating by ice and evaporation in HK convection'            )
 
-  call addfld ('ICWMRSH  '    , 'kg/kg   ',  pver,   'A' , &
-       'Shallow Convection in-cloud water mixing ratio '           ,  phys_decomp )
+  call addfld ('ICWMRSH'    ,  (/ 'lev' /),   'A' , 'kg/kg', &
+       'Shallow Convection in-cloud water mixing ratio '            )
 
   if( shallow_scheme .eq. 'UW' ) then
-     call addfld( 'UWFLXPRC'     , 'kg/m2/s ',  pverp,  'A' , &
-          'Flux of precipitation from UW shallow convection'          ,  phys_decomp )
-     call addfld( 'UWFLXSNW'     , 'kg/m2/s ',  pverp,  'A' , &
-          'Flux of snow from UW shallow convection'                   ,  phys_decomp )
+     call addfld( 'UWFLXPRC'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+          'Flux of precipitation from UW shallow convection'           )
+     call addfld( 'UWFLXSNW'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+          'Flux of snow from UW shallow convection'                    )
   end if
 
 
@@ -308,6 +323,15 @@
 
      tke_idx = pbuf_get_index('tke')
 
+  case('UNICON') ! Sungsu Park's General Convection Model
+
+     if ( masterproc ) write(iulog,*) 'convect_shallow_init: General Convection Model by Sungsu Park'
+     if ( eddy_scheme .ne. 'diag_TKE' ) then
+          write(iulog,*)  eddy_scheme
+          write(iulog,*) 'ERROR: shallow convection scheme ',shallow_scheme,' is incompatible with eddy scheme ', eddy_scheme
+          call endrun( 'convect_shallow_init: shallow_scheme and eddy_scheme are incompatible' )
+     endif
+     call unicon_cam_init(pbuf2d)
 
   end select
 
@@ -318,6 +342,58 @@
   rprdtot_idx  = pbuf_get_index('RPRDTOT')
 
   end subroutine convect_shallow_init
+
+!==================================================================================================
+
+function convect_shallow_implements_cnst(name)
+
+   ! Return true if specified constituent is implemented by a shallow convetion package
+
+   use unicon_cam, only: unicon_implements_cnst
+
+   character(len=*), intent(in) :: name          ! constituent name
+   logical :: convect_shallow_implements_cnst    ! return value
+
+   integer :: m
+   !-----------------------------------------------------------------------
+
+   select case (shallow_scheme)
+
+   case('UNICON')
+      convect_shallow_implements_cnst = unicon_implements_cnst(name)
+
+   case default
+      convect_shallow_implements_cnst = .false.
+
+   end select
+
+end function convect_shallow_implements_cnst
+
+!==================================================================================================
+
+subroutine convect_shallow_init_cnst(name, q, gcid)
+
+  ! Initialize constituents if they are not read from the initial file
+
+   use unicon_cam, only: unicon_init_cnst
+
+   character(len=*), intent(in)  :: name     ! constituent name
+   real(r8),         intent(out) :: q(:,:)   ! mass mixing ratio (gcol, plev)
+   integer,          intent(in)  :: gcid(:)  ! global column id
+   !-----------------------------------------------------------------------
+
+   select case (shallow_scheme)
+
+   case('UNICON')
+      call unicon_init_cnst(name, q, gcid)
+
+   case default
+
+   end select
+
+end subroutine convect_shallow_init_cnst
+
+!==================================================================================================
 
   !=============================================================================== !
   !                                                                                !
@@ -335,7 +411,7 @@
      implicit none
      logical :: convect_shallow_use_shfrc     ! Return value
 
-     if ( shallow_scheme .eq. 'UW' ) then
+     if (shallow_scheme .eq. 'UW' .or. shallow_scheme .eq. 'UNICON') then
           convect_shallow_use_shfrc = .true.
      else
 	  convect_shallow_use_shfrc = .false.
@@ -351,7 +427,8 @@
 
   subroutine convect_shallow_tend( ztodt  , cmfmc   , cmfmc2   , &
                                    qc     , qc2     , rliq     , rliq2    , & 
-                                   state  , ptend_all, pbuf    , sh_e_ed_ratio) 
+                                   state  , ptend_all, pbuf    , sh_e_ed_ratio, sgh, sgh30, cam_in) 
+
    use physics_buffer,  only : physics_buffer_desc, pbuf_get_field, pbuf_set_field, pbuf_old_tim_idx
    use cam_history,     only : outfld
    use physics_types,   only : physics_state, physics_ptend
@@ -359,10 +436,13 @@
    use physics_types,   only : physics_state_copy, physics_state_dealloc
    use physics_types,   only : physics_ptend_dealloc
    use physics_types,   only : physics_ptend_sum
+   use camsrfexch,      only : cam_in_t
    
    use constituents,    only : pcnst, cnst_get_ind, cnst_get_type_byind
    use hk_conv,         only : cmfmca
    use uwshcu,          only : compute_uwshcu_inv
+   use unicon_cam,      only : unicon_out_t, unicon_cam_tend
+
    use time_manager,    only : get_nstep, is_first_step
    use wv_saturation,   only : qsat
    use physconst,       only : latice, latvap, rhoh2o
@@ -388,6 +468,9 @@
    real(r8),            intent(inout) :: qc(pcols,pver)                  ! dq/dt due to export of cloud water into environment by shallow and deep convection [ kg/kg/s ]
    real(r8),            intent(inout) :: rliq(pcols)                     ! Vertical integral of qc [ m/s ]
 
+   real(r8),            intent(in) :: sgh(pcols)               ! Std. deviation of orography
+   real(r8),            intent(in) :: sgh30(pcols)             ! Std. deviation of 30 s orography for tms
+   type(cam_in_t),      intent(in) :: cam_in
 
    ! --------------- !
    ! Local Variables ! 
@@ -463,7 +546,11 @@
    real(r8), pointer, dimension(:,:) :: sh_cldliq
    real(r8), pointer, dimension(:,:) :: sh_cldice
 
+   real(r8), pointer, dimension(:,:) :: cmfmc2_sh            ! (pcols,pverp) Updraft mass flux by shallow convection [ kg/s/m2 ]
+
    logical                           :: lq(pcnst)
+
+   type(unicon_out_t) :: unicon_out
 
    ! ----------------------- !
    ! Main Computation Begins ! 
@@ -502,6 +589,8 @@
    if( convect_shallow_use_shfrc() ) then ! Park-Bretherton UW Shallow Convection Schemes
        call pbuf_get_field(pbuf, shfrc_idx,  shfrc  )
    endif
+
+   call pbuf_get_field(pbuf, cmfmc_sh_idx,  cmfmc2_sh)
 
    ! Initialization
 
@@ -641,12 +730,36 @@
       ! Convective fluxes of 'sl' and 'qt' in energy unit !
       ! ------------------------------------------------- !
 
-      cmfsl(:ncol,:pverp) = slflx(:ncol,:pverp)
-      cmflq(:ncol,:pverp) = qtflx(:ncol,:pverp) * latvap
+      cmfsl(:ncol,:) = slflx(:ncol,:)
+      cmflq(:ncol,:) = qtflx(:ncol,:) * latvap
+
+      call outfld( 'PRECSH' , precc  , pcols, lchnk )
+
+   case('UNICON')
+
+      icwmr = 0.0_r8
+
+      call unicon_cam_tend(ztodt, state, cam_in, sgh30, &
+                           pbuf, ptend_loc, unicon_out)
+
+      cmfmc2(:ncol,:) = unicon_out%cmfmc(:ncol,:)
+      qc2(:ncol,:)    = unicon_out%rqc(:ncol,:)
+      rliq2(:ncol)    = unicon_out%rliq(:ncol)
+      cnt2(:ncol)     = unicon_out%cnt(:ncol)
+      cnb2(:ncol)     = unicon_out%cnb(:ncol)
+
+      ! ------------------------------------------------- !
+      ! Convective fluxes of 'sl' and 'qt' in energy unit !
+      ! ------------------------------------------------- !
+
+      cmfsl(:ncol,:) = unicon_out%slflx(:ncol,:)
+      cmflq(:ncol,:) = unicon_out%qtflx(:ncol,:) * latvap
 
       call outfld( 'PRECSH' , precc  , pcols, lchnk )
 
    end select
+
+   cmfmc2_sh = cmfmc2
 
    ! --------------------------------------------------------!     
    ! Calculate fractional occurance of shallow convection    !

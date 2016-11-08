@@ -1,3 +1,4 @@
+#define __PIO_FILE__ "pionfwrite_mod.F90"
 !>
 !! @file 
 !! $Revision$
@@ -121,11 +122,11 @@ contains
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
-             if(Debug) print *,__FILE__,__LINE__
+             if(Debug) print *,__PIO_FILE__,__LINE__
              call MPI_ALLREDUCE(iobuf_size,max_iobuf_size, &
                   1,MPI_INTEGER,MPI_MAX,File%iosystem%IO_comm,mpierr)
              call CheckMPIReturn(subName, mpierr)
-             if(Debug) print *,__FILE__,__LINE__,iobuf_size
+             if(Debug) print *,__PIO_FILE__,__LINE__,iobuf_size
              if (File%iosystem%io_rank==0) then
                    call alloc_check(temp_iobuf,max_iobuf_size)
              else
@@ -147,7 +148,7 @@ contains
 
           temp_count(1:ndims)=int(count(1:ndims))
 
-          if(Debug) print *,__FILE__,__LINE__,ndims,temp_start(1:ndims),temp_count(1:ndims)
+          if(Debug) print *,__PIO_FILE__,__LINE__,ndims,temp_start(1:ndims),temp_count(1:ndims)
 
           ! Every i/o proc send data to root
 

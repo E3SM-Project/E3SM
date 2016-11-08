@@ -76,13 +76,15 @@ module CNStateType
      real(r8) , pointer :: rf_decomp_cascade_col       (:,:,:) ! col respired fraction in decomposition step (frac)
      real(r8) , pointer :: pathfrac_decomp_cascade_col (:,:,:) ! col what fraction of C leaving a given pool passes through a given transition (frac) 
      real(r8) , pointer :: nfixation_prof_col          (:,:)   ! col (1/m) profile for N fixation additions 
-     real(r8) , pointer :: ndep_prof_col               (:,:)   ! col (1/m) profile for N fixation additions 
+     real(r8) , pointer :: ndep_prof_col               (:,:)   ! col (1/m) profile for N fixation additions
+     real(r8) , pointer :: pdep_prof_col               (:,:)   ! col (1/m) profile for P deposition additions 
      real(r8) , pointer :: som_adv_coef_col            (:,:)   ! col SOM advective flux (m/s) 
      real(r8) , pointer :: som_diffus_coef_col         (:,:)   ! col SOM diffusivity due to bio/cryo-turbation (m2/s) 
 
      real(r8) , pointer :: tempavg_t2m_patch           (:)     ! patch temporary average 2m air temperature (K)
      real(r8) , pointer :: annavg_t2m_patch            (:)     ! patch annual average 2m air temperature (K)
      real(r8) , pointer :: annavg_t2m_col              (:)     ! col annual average of 2m air temperature, averaged from pft-level (K)
+     real(r8) , pointer :: scalaravg_col               (:)     ! column average scalar for decompostion (for ad_spinup)
      real(r8) , pointer :: annsum_counter_col          (:)     ! col seconds since last annual accumulator turnover
 
      ! Fire
@@ -135,9 +137,19 @@ module CNStateType
      real(r8), pointer :: tempmax_retransp_patch       (:)     ! patch temporary annual max of retranslocated P pool (gP/m2)
      real(r8), pointer :: annmax_retransp_patch        (:)     ! patch annual max of retranslocated P pool (gP/m2)
 
+     real(r8), pointer :: frootc_nfix_scalar_col       (:)     ! col scalar for nitrogen fixation
+     real(r8), pointer :: decomp_litpool_rcn_col       (:,:,:) ! cn ratios of the decomposition pools
 
+     integer           :: CropRestYear                         ! restart year from initial conditions file - increment as time elapses
 
-     integer           :: CropRestYear                        ! restart year from initial conditions file - increment as time elapses
+     real(r8), pointer :: fpg_nh4_vr_col               (:,:)   ! fraction of plant nh4 demand that is satisfied (no units) BGC mode
+     real(r8), pointer :: fpg_no3_vr_col               (:,:)   ! fraction of plant no3 demand that is satisfied (no units) BGC mode
+     real(r8), pointer :: fpg_vr_col                   (:,:)   ! fraction of plant N demand that is satisfied (no units) CN mode
+     real(r8), pointer :: fpg_p_vr_col                 (:,:)   ! fraction of plant p demand that is satisfied (no units) 
+     real(r8), pointer :: cn_scalar                    (:)     ! cn scaling factor for root n uptake kinetics (no units) 
+     real(r8), pointer :: cp_scalar                    (:)     ! cp scaling factor for root p uptake kinetics (no units)
+     real(r8), pointer :: np_scalar                    (:)     ! np scaling factor for root n/p uptake kinetics (no units)
+     real(r8), pointer :: cost_ben_scalar              (:)     ! cost benefit analysis scaling factor for root n uptake kinetics (no units)
 
    contains
 
@@ -196,7 +208,7 @@ contains
     allocate(this%vf_patch            (begp:endp))                   ; this%vf_patch            (:)   = 0.0_r8
     allocate(this%gddmaturity_patch   (begp:endp))                   ; this%gddmaturity_patch   (:)   = spval
     allocate(this%huileaf_patch       (begp:endp))                   ; this%huileaf_patch       (:)   = nan
-    allocate(this%huigrain_patch      (begp:endp))                   ; this%huigrain_patch      (:)   = nan
+    allocate(this%huigrain_patch      (begp:endp))                   ; this%huigrain_patch      (:)   = 0.0_r8
     allocate(this%aleafi_patch        (begp:endp))                   ; this%aleafi_patch        (:)   = nan
     allocate(this%astemi_patch        (begp:endp))                   ; this%astemi_patch        (:)   = nan
     allocate(this%aleaf_patch         (begp:endp))                   ; this%aleaf_patch         (:)   = nan
@@ -229,6 +241,7 @@ contains
     allocate(this%fpi_p_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_p_vr_col          (:,:) = nan
     allocate(this%fpi_p_col             (begc:endc))                   ; this%fpi_p_col             (:)   = nan
     allocate(this%fpg_p_col             (begc:endc))                   ; this%fpg_p_col             (:)   = nan
+    allocate(this%pdep_prof_col         (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
 
     allocate(this%rf_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); 
     this%rf_decomp_cascade_col(:,:,:) = nan
@@ -238,12 +251,14 @@ contains
 
     allocate(this%nfixation_prof_col  (begc:endc,1:nlevdecomp_full)) ; this%nfixation_prof_col  (:,:) = spval
     allocate(this%ndep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%ndep_prof_col       (:,:) = spval
+    allocate(this%pdep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
     allocate(this%som_adv_coef_col    (begc:endc,1:nlevdecomp_full)) ; this%som_adv_coef_col    (:,:) = spval
     allocate(this%som_diffus_coef_col (begc:endc,1:nlevdecomp_full)) ; this%som_diffus_coef_col (:,:) = spval
 
     allocate(this%tempavg_t2m_patch   (begp:endp))                   ; this%tempavg_t2m_patch   (:)   = nan
     allocate(this%annsum_counter_col  (begc:endc))                   ; this%annsum_counter_col  (:)   = nan
     allocate(this%annavg_t2m_col      (begc:endc))                   ; this%annavg_t2m_col      (:)   = nan
+    allocate(this%scalaravg_col       (begc:endc))                   ; this%scalaravg_col       (:)   = nan
     allocate(this%annavg_t2m_patch    (begp:endp))                   ; this%annavg_t2m_patch    (:)   = nan
 
     allocate(this%nfire_col           (begc:endc))                   ; this%nfire_col           (:)   = spval
@@ -262,7 +277,8 @@ contains
     allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = nan
     allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = nan
     allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = nan
-
+    allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = nan
+    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = nan
     this%CropRestYear = 0
 
     allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = nan
@@ -289,7 +305,7 @@ contains
     allocate(this%tempmax_retransn_patch      (begp:endp)) ;    this%tempmax_retransn_patch      (:) = nan
     allocate(this%annmax_retransn_patch       (begp:endp)) ;    this%annmax_retransn_patch       (:) = nan
     allocate(this%downreg_patch               (begp:endp)) ;    this%downreg_patch               (:) = nan
-    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = nan
+    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = nan    
 
 
     !! add phosphorus -X.YANG
@@ -297,6 +313,15 @@ contains
     allocate(this%tempmax_retransp_patch      (begp:endp)) ;    this%tempmax_retransp_patch      (:) = nan
     allocate(this%annmax_retransp_patch       (begp:endp)) ;    this%annmax_retransp_patch       (:) = nan
 
+    allocate(this%fpg_nh4_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_nh4_vr_col(:,:) = nan 
+    allocate(this%fpg_no3_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_no3_vr_col(:,:) = nan
+    allocate(this%fpg_vr_col                  (begc:endc,1:nlevdecomp_full)) ; this%fpg_vr_col    (:,:) = nan
+    allocate(this%fpg_p_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%fpg_p_vr_col  (:,:) = nan
+    allocate(this%cn_scalar                   (begp:endp))                   ; this%cn_scalar     (:) = 0.0
+    allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = 0.0
+    allocate(this%np_scalar                   (begp:endp))                   ; this%np_scalar     (:) = 0.0
+    allocate(this%cost_ben_scalar             (begp:endp))                   ; this%cost_ben_scalar(:) = 0.0
+    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -361,6 +386,11 @@ contains
          avgflag='A', long_name='profile for atmospheric N  deposition', &
          ptr_col=this%ndep_prof_col, default='inactive')
 
+    this%pdep_prof_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='PDEP_PROF', units='1/m',  type2d='levdcmp', &
+         avgflag='A', long_name='profile for atmospheric P  deposition', &
+         ptr_col=this%pdep_prof_col, default='inactive')
+
     this%som_adv_coef_col(begc:endc,:) = spval
     call hist_addfld_decomp (fname='SOM_ADV_COEF', units='m/s',  type2d='levdcmp', &
          avgflag='A', long_name='advection term for vertical SOM translocation', &
@@ -420,6 +450,11 @@ contains
     call hist_addfld1d (fname='CANNAVG_T2M', units='K', &
          avgflag='A', long_name='annual average of 2m air temperature', &
          ptr_col=this%annavg_t2m_col, default='inactive')
+
+    this%scalaravg_col(begc:endc) = spval
+    call hist_addfld1d(fname='SCALARAVG', units='fraction', &
+         avgflag='A', long_name='average of decomposition scalar', &
+         ptr_col=this%scalaravg_col)
 
     this%nfire_col(begc:endc) = spval
     call hist_addfld1d (fname='NFIRE',  units='counts/km2/sec', &
@@ -583,7 +618,15 @@ contains
          avgflag='A', long_name='annual max of retranslocated P pool', &
          ptr_patch=this%annmax_retransp_patch, default='inactive')
 
-
+    this%cn_scalar(begp:endp) = spval
+    call hist_addfld1d (fname='cn_scalar', units='', &
+       avgflag='A', long_name='N limitation factor', &
+       ptr_patch=this%cn_scalar, default='active')
+         
+    this%cp_scalar(begp:endp) = spval
+    call hist_addfld1d (fname='cp_scalar', units='', &
+       avgflag='A', long_name='P limitation factor', &
+       ptr_patch=this%cp_scalar, default='active')
 
   end subroutine InitHistory
 
@@ -675,17 +718,17 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-!    allocate(soilorder_rdin(bounds%begg:bounds%endg))
-!    call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
-!    if (.not. readvar) then
-!       call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-!    end if
+    allocate(soilorder_rdin(bounds%begg:bounds%endg))
+    !call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+    !if (.not. readvar) then
+    !   call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    !end if
     do c = bounds%begc, bounds%endc
-!       g = col%gridcell(c)
+       g = col%gridcell(c)
 !       this%isoilorder(c) = soilorder_rdin(g)
        this%isoilorder(c) = 12
     end do
-!    deallocate(soilorder_rdin)
+    deallocate(soilorder_rdin)
 
 
     ! --------------------------------------------------------------------
@@ -722,6 +765,7 @@ contains
        if (lun%ifspecial(l)) then
           this%annsum_counter_col (c) = spval
           this%annavg_t2m_col     (c) = spval
+          this%scalaravg_col      (c) = spval
           this%nfire_col          (c) = spval
           this%baf_crop_col       (c) = spval
           this%baf_peatf_col      (c) = spval
@@ -760,6 +804,7 @@ contains
           ! initialize the profiles for converting to vertically resolved carbon pools
           this%nfixation_prof_col(c,1:nlevdecomp_full)  = 0._r8 
           this%ndep_prof_col(c,1:nlevdecomp_full)       = 0._r8 
+          this%pdep_prof_col(c,1:nlevdecomp_full)       = 0._r8 
        end if
     end do
 
@@ -1091,6 +1136,11 @@ contains
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annavg_t2m_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double, &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag = 'interp', readvar=readvar, data=this%scalaravg_col)
 
     if (crop_prog) then
 

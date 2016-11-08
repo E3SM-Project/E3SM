@@ -333,6 +333,7 @@ my $flds_co2a     = ".false.";
 my $flds_co2b     = ".false.";
 my $flds_co2c     = ".false.";
 my $flds_co2_dmsa = ".false.";
+my $flds_bgc      = ".false.";
 if ($CCSM_BGC eq 'CO2A') {
     $flds_co2a = ".true.";
 } elsif ($CCSM_BGC eq 'CO2B') {
@@ -350,6 +351,7 @@ add_default($nl, 'flds_co2a',    'val'=>"$flds_co2a");
 add_default($nl, 'flds_co2b',    'val'=>"$flds_co2b");
 add_default($nl, 'flds_co2c',    'val'=>"$flds_co2c");
 add_default($nl, 'flds_co2_dmsa','val'=>"$flds_co2_dmsa");
+add_default($nl, 'flds_bgc',     'val'=>"$flds_bgc");
 add_default($nl, 'glc_nec',      'val'=>"$glc_nec");
     
 #############################################
@@ -396,6 +398,7 @@ add_default($nl, 'bfbflag', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'do_budgets','BUDGETS'=>"$xmlvars{'BUDGETS'}");
 
 add_default($nl, 'flux_diurnal');
+add_default($nl, 'gust_fac');
 add_default($nl, 'flux_albav');
 add_default($nl, 'flux_epbal');
 add_default($nl, 'info_debug');
@@ -705,11 +708,14 @@ add_default($nl, 'pio_typename');
 add_default($nl, 'pio_debug_level');
 add_default($nl, 'pio_blocksize');
 add_default($nl, 'pio_buffer_size_limit');
-#pw add_default($nl, 'pio_rearr_comm_type', 'PIO_REARR_COMM_TYPE'=>"$xmlvars{'PIO_REARR_COMM_TYPE'}");
-#pw add_default($nl, 'pio_rearr_comm_fcd', 'PIO_REARR_COMM_FCD'=>"$xmlvars{'PIO_REARR_COMM_FCD'}");
-#pw add_default($nl, 'pio_rearr_comm_max_pend_req', 'PIO_REARR_COMM_MAX_PEND_REQ'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ'}");
-#pw add_default($nl, 'pio_rearr_comm_enable_hs', 'PIO_REARR_COMM_ENABLE_HS'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS'}");
-#pw add_default($nl, 'pio_rearr_comm_enable_isend', 'PIO_REARR_COMM_ENABLE_ISEND'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND'}");
+add_default($nl, 'pio_rearr_comm_type', 'PIO_REARR_COMM_TYPE'=>"$xmlvars{'PIO_REARR_COMM_TYPE'}");
+add_default($nl, 'pio_rearr_comm_fcd', 'PIO_REARR_COMM_FCD'=>"$xmlvars{'PIO_REARR_COMM_FCD'}");
+add_default($nl, 'pio_rearr_comm_max_pend_req_comp2io', 'PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO'}");
+add_default($nl, 'pio_rearr_comm_enable_hs_comp2io', 'PIO_REARR_COMM_ENABLE_HS_COMP2IO'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS_COMP2IO'}");
+add_default($nl, 'pio_rearr_comm_enable_isend_comp2io', 'PIO_REARR_COMM_ENABLE_ISEND_COMP2IO'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND_COMP2IO'}");
+add_default($nl, 'pio_rearr_comm_max_pend_req_io2comp', 'PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP'}");
+add_default($nl, 'pio_rearr_comm_enable_hs_io2comp', 'PIO_REARR_COMM_ENABLE_HS_IO2COMP'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS_IO2COMP'}");
+add_default($nl, 'pio_rearr_comm_enable_isend_io2comp', 'PIO_REARR_COMM_ENABLE_ISEND_IO2COMP'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND_IO2COMP'}");
 
 # Note: pio_async_interface=.true. is not yet supported
 # If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99

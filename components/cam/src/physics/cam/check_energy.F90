@@ -1,4 +1,3 @@
-
 module check_energy
 
 !---------------------------------------------------------------------------------
@@ -16,8 +15,12 @@ module check_energy
 ! Author: Byron Boville  Oct 31, 2002
 !         
 ! Modifications:
-!   03.03.29  Boville  Add global energy check and fixer.        
-!
+!   2003-03  Boville  Add global energy check and fixer.        
+!   2016-08  Kai Zhang (kai.zhang@pnnl.gov) & Phil Rasch 
+!               1. Modifications to check_energy_chng (water conservation check part) for
+!                  MG2 (now includes prognostic rain and snow)    
+!               2. Better printout information for energy and water conservation check 
+!               3. Additional water conservation check utilities 
 !---------------------------------------------------------------------------------
 
   use shr_kind_mod,    only: r8 => shr_kind_r8
@@ -25,11 +28,12 @@ module check_energy
   use spmd_utils,      only: masterproc
   
   use phys_gmean,      only: gmean
-  use physconst,       only: gravit, latvap, latice
+  use physconst,       only: gravit, latvap, latice, cpair, cpairv
   use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_ptend_init
   use constituents,    only: cnst_get_ind, pcnst, cnst_name, cnst_get_type_byind
   use time_manager,    only: is_first_step
   use cam_logfile,     only: iulog
+  use cam_abortutils,  only: endrun 
 
   implicit none
   private
@@ -49,6 +53,13 @@ module check_energy
   public :: check_energy_fix       ! add global mean energy difference as a heating
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
+
+!!== KZ_WATCON
+  public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
+  public :: check_qflx              ! output qflx at certain locations for water conservation check  
+  public :: check_prect             ! output prect at certain locations for water conservation check  
+  public :: check_water             ! output water path at certain locations for water conservation check  
+!!== KZ_WATCON
 
 
 ! Private module data
@@ -164,7 +175,7 @@ end subroutine check_energy_get_integrals
 ! Initialize the energy conservation module
 ! 
 !-----------------------------------------------------------------------
-    use cam_history,       only: addfld, add_default, phys_decomp
+    use cam_history,       only: addfld, horiz_only, add_default
     use phys_control,      only: phys_getopts
 
     implicit none
@@ -178,10 +189,30 @@ end subroutine check_energy_get_integrals
                        history_budget_histfile_num_out = history_budget_histfile_num)
 
 ! register history variables
-    call addfld('TEINP   ', 'W/m2', 1,    'A', 'Total energy of physics input',    phys_decomp)
-    call addfld('TEOUT   ', 'W/m2', 1,    'A', 'Total energy of physics output',   phys_decomp)
-    call addfld('TEFIX   ', 'W/m2', 1,    'A', 'Total energy after fixer',         phys_decomp)
-    call addfld('DTCORE'  , 'K/s' , pver, 'A', 'T tendency due to dynamical core', phys_decomp)
+    call addfld('TEINP', horiz_only,    'A', 'W/m2', 'Total energy of physics input')
+    call addfld('TEOUT', horiz_only,    'A', 'W/m2', 'Total energy of physics output')
+    call addfld('TEFIX', horiz_only,    'A', 'W/m2', 'Total energy after fixer')
+    call addfld('EFIX',   horiz_only,  'A', 'W/m2', 'Effective sensible heat flux due to energy fixer')
+    call addfld('DTCORE', (/ 'lev' /), 'A', 'K/s' , 'T tendency due to dynamical core')
+
+    call addfld('BC01Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC01QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC01QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC01QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC01QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC01TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC02Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC02QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC02QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC02QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC02QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC02TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('AC01QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
+    call addfld('AC02QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
+    call addfld('BC01QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
+
 
     if (masterproc) then
        write (iulog,*) ' print_energy_errors is set', print_energy_errors
@@ -215,14 +246,42 @@ end subroutine check_energy_get_integrals
     real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
     real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
 
+    real(r8),allocatable :: cpairv_loc(:,:,:)
+
+    integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+!!== KZ_WATCON
+    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
+    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+    integer :: ixrain
+    integer :: ixsnow
+!!== KZ_WATCON
 !-----------------------------------------------------------------------
 
+    lchnk = state%lchnk
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!!== KZ_WATCON
+    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+!!== KZ_WATCON
+
+    ! cpairv_loc needs to be allocated to a size which matches state and ptend
+    ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
+    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
+
+    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpair
+    else
+       call endrun('check_energy_timestep_init: cpairv is not allowed to vary when subcolumns are turned on')
+    end if
 
 ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
@@ -230,13 +289,22 @@ end subroutine check_energy_get_integrals
     wv = 0._r8
     wl = 0._r8
     wi = 0._r8
+!!== KZ_WATCON
+    wr = 0._r8
+    ws = 0._r8
+!!== KZ_WATCON
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
           se(i) = se(i) + state%s(i,k         )*state%pdel(i,k)/gravit
+!!! cam6  se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
+!!! cam6    do i = 1, ncol
+!!! cam6       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+!!! cam6    end do
+
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
     if (ixcldliq > 1  .and.  ixcldice > 1) then
        do k = 1, pver
@@ -247,10 +315,25 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
+!!== KZ_WATCON
+    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+!!== KZ_WATCON
+
+
 ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
+!!== KZ_WATCON
        state%te_ini(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
-       state%tw_ini(i) = wv(i) + wl(i) + wi(i)
+!!TO_BE_FIXED     state%te_ini(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) ) 
+       state%tw_ini(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i) 
+!!== KZ_WATCON
 
        state%te_cur(i) = state%te_ini(i)
        state%tw_cur(i) = state%tw_ini(i)
@@ -267,6 +350,8 @@ end subroutine check_energy_get_integrals
        call pbuf_set_field(pbuf, teout_idx, state%te_ini, col_type=col_type)
     end if
 
+    deallocate(cpairv_loc)
+
   end subroutine check_energy_timestep_init
 
 !===============================================================================
@@ -278,6 +363,10 @@ end subroutine check_energy_get_integrals
 ! Check that the energy and water change matches the boundary fluxes
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
+
+!!== KZ_WATCON
+    use cam_history,       only: outfld
+!!== KZ_WATCON
 
     type(physics_state)    , intent(inout) :: state
     type(physics_tend )    , intent(inout) :: tend
@@ -301,11 +390,17 @@ end subroutine check_energy_get_integrals
     real(r8) :: te_dif(state%ncol)                 ! energy of input state - original energy
     real(r8) :: te_tnd(state%ncol)                 ! tendency from last process
     real(r8) :: te_rer(state%ncol)                 ! relative error in energy column
+!!== KZ_WATCON
+    real(r8) :: te_err(state%ncol)                 ! absolute error in energy column
+!!== KZ_WATCON
 
     real(r8) :: tw_xpd(state%ncol)                 ! expected value (w0 + dt*boundary_flux)
     real(r8) :: tw_dif(state%ncol)                 ! tw_inp - original water
     real(r8) :: tw_tnd(state%ncol)                 ! tendency from last process
     real(r8) :: tw_rer(state%ncol)                 ! relative error in water column
+!!== KZ_WATCON
+    real(r8) :: tw_err(state%ncol)                 ! absolute error in water column
+!!== KZ_WATCON
 
     real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
     real(r8) :: se(state%ncol)                     ! vertical integral of static energy
@@ -316,16 +411,42 @@ end subroutine check_energy_get_integrals
     real(r8) :: te(state%ncol)                     ! vertical integral of total energy
     real(r8) :: tw(state%ncol)                     ! vertical integral of total water
 
+    real(r8),allocatable :: cpairv_loc(:,:,:)
+
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+!!== KZ_WATCON
+    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
+    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+    integer :: ixrain
+    integer :: ixsnow
+!!== KZ_WATCON
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!!== KZ_WATCON
+    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+!!== KZ_WATCON
+
+    ! cpairv_loc needs to be allocated to a size which matches state and ptend
+    ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
+    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
+
+    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpair
+    else
+       call endrun('check_energy_chng: cpairv is not allowed to vary when subcolumns are turned on')
+    end if
 
     ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
@@ -333,13 +454,22 @@ end subroutine check_energy_get_integrals
     wv = 0._r8
     wl = 0._r8
     wi = 0._r8
+!!== KZ_WATCON
+    wr = 0._r8
+    ws = 0._r8
+!!== KZ_WATCON
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
           se(i) = se(i) + state%s(i,k         )*state%pdel(i,k)/gravit
+!!!cam6   se(i) = se(i) + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
+!!!cam6    do i = 1, ncol
+!!!cam6       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+!!!cam6    end do
+
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
     if (ixcldliq > 1  .and.  ixcldice > 1) then
        do k = 1, pver
@@ -350,10 +480,24 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
+!!== KZ_WATCON
+    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+!!== KZ_WATCON
+
     ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
        te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
-       tw(i) = wv(i) + wl(i) + wi(i)
+!!== KZ_WATCON
+!! TO_BE_FIXED   te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
+     tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
+!!== KZ_WATCON
     end do
 
     ! compute expected values and tendencies
@@ -374,9 +518,20 @@ end subroutine check_energy_get_integrals
        te_xpd(i) = state%te_cur(i) + te_tnd(i)*ztodt
        tw_xpd(i) = state%tw_cur(i) + tw_tnd(i)*ztodt
 
+!!== KZ_WATCON
+       ! absolute error, expected value - input state / previous state 
+       te_err(i) = te_xpd(i) - te(i)
+!!== KZ_WATCON
+
        ! relative error, expected value - input state / previous state 
        te_rer(i) = (te_xpd(i) - te(i)) / state%te_cur(i)
     end do
+
+!!== KZ_WATCON
+    ! absolute error for total water (allow for dry atmosphere)
+    tw_err = 0._r8
+    tw_err(:ncol) = tw_xpd(:ncol) - tw(:ncol)
+!!== KZ_WATCON
 
     ! relative error for total water (allow for dry atmosphere)
     tw_rer = 0._r8
@@ -385,25 +540,32 @@ end subroutine check_energy_get_integrals
     end where
 
     ! error checking
+    ! the relative error threshold for the water budget has been reduced to 1.e-10
+    ! to avoid messages generated by QNEG3 calls
+    ! PJR- change to identify if error in energy or water 
     if (print_energy_errors) then
-       if (any(abs(te_rer(1:ncol)) > 1.E-14_r8 .or. abs(tw_rer(1:ncol)) > 1.E-10_r8)) then
-          do i = 1, ncol
-             ! the relative error threshold for the water budget has been reduced to 1.e-10
-             ! to avoid messages generated by QNEG3 calls
-             ! PJR- change to identify if error in energy or water 
+       if (any(abs(te_rer(1:ncol)) > 1.E-14_r8 )) then
+          write(iulog,"(a,a,i8,i5)") "significant en_conservation errors from process, nstep, chunk ", &
+                name, nstep, lchnk
+          write(iulog,"(a5,2a10,6a15)") ' i', 'lat', 'lon', 'en', 'en_from_flux', 'diff', 'exptd diff', 'rerr', 'cum_diff'
+	  do i = 1,ncol
              if (abs(te_rer(i)) > 1.E-14_r8 ) then 
                 state%count = state%count + 1
-                write(iulog,*) "significant energy conservation error after ", name,        &
-                      " count", state%count, " nstep", nstep, "chunk", lchnk, "col", i
-                write(iulog,*) te(i),te_xpd(i),te_dif(i),tend%te_tnd(i)*ztodt,  &
-                      te_tnd(i)*ztodt,te_rer(i)
+                write(iulog,"(i5,2f10.2,6e15.7)") i, state%lat(i), state%lon(i), te(i),te_xpd(i),te_dif(i),  &
+                      te_tnd(i)*ztodt,te_rer(i), tend%te_tnd(i)*ztodt
              endif
+          end do
+       end if
+
+       if (any(abs(tw_rer(1:ncol)) > 1.E-10_r8)) then
+          write(iulog,"(a,a,i8,i5)") "significant w_conservation errors from process, nstep, chunk ", &
+               name, nstep, lchnk
+          write(iulog,"(a5,2a10,6a15)") ' i', 'lat', 'lon', 'tw', 'tw_from_flux', 'diff', 'exptd diff', 'rerr', 'cum_diff'
+          do i = 1, ncol
              if ( abs(tw_rer(i)) > 1.E-10_r8) then
                 state%count = state%count + 1
-                write(iulog,*) "significant water conservation error after ", name,        &
-                      " count", state%count, " nstep", nstep, "chunk", lchnk, "col", i
-                write(iulog,*) tw(i),tw_xpd(i),tw_dif(i),tend%tw_tnd(i)*ztodt,  &
-                      tw_tnd(i)*ztodt,tw_rer(i)
+                write(iulog,"(i5,2f10.2,6e15.7)") i, state%lat(i), state%lon(i),tw(i),tw_xpd(i),tw_dif(i), &
+                     tw_tnd(i)*ztodt, tw_rer(i), tend%tw_tnd(i)*ztodt
              end if
           end do
        end if
@@ -414,6 +576,8 @@ end subroutine check_energy_get_integrals
        state%te_cur(i) = te(i)
        state%tw_cur(i) = tw(i)
     end do
+
+    deallocate(cpairv_loc)
 
   end subroutine check_energy_chng
 
@@ -482,6 +646,55 @@ end subroutine check_energy_get_integrals
   end subroutine check_energy_gmean
 
 !===============================================================================
+
+subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
+
+!!...................................................................
+!! Calculate global mean of qflx for water conservation check 
+!! 
+!! Author: Kai Zhang 
+!!...................................................................
+
+    use camsrfexch,       only: cam_out_t, cam_in_t
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
+
+    ! Compute global mean qflx
+
+    type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
+    type(cam_in_t),                     dimension(begchunk:endchunk) :: cam_in
+    type(physics_buffer_desc),    pointer    :: pbuf2d(:,:)
+    type(physics_tend ), intent(in   ), dimension(begchunk:endchunk) :: tend
+
+    real(r8), intent(in) :: dtime        ! physics time step
+    integer , intent(in) :: nstep        ! current timestep number
+
+    integer :: ncol                      ! number of active columns
+    integer :: lchnk                     ! chunk index
+
+    real(r8) :: qflx(pcols,begchunk:endchunk)
+    real(r8) :: qflx_glob
+
+    qflx_glob = 0._r8 
+
+!DIR$ CONCURRENT
+    do lchnk = begchunk, endchunk
+       ncol = state(lchnk)%ncol
+       qflx(:ncol,lchnk) = cam_in(lchnk)%cflx(:ncol,1)
+    end do
+
+    call gmean(qflx, qflx_glob)
+
+    if (begchunk .le. endchunk) then
+       if (masterproc) then
+          write(iulog,'(1x,a12,1x,i8,4(1x,e25.17))') "nstep, qflx ", nstep, qflx_glob
+       end if
+    end if
+
+  end subroutine qflx_gmean
+!!== KZ_WATCON
+
+
+!===============================================================================
   subroutine check_energy_fix(state, ptend, nstep, eshflx)
 
 !-----------------------------------------------------------------------
@@ -542,16 +755,24 @@ end subroutine check_energy_get_integrals
     integer ncol                                   ! number of atmospheric columns
     integer  i,k,m                                 ! column, level,constituent indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ and tracer indices
+    integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
 
 !-----------------------------------------------------------------------
 
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!!== KZ_WATCON
+    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
+!!== KZ_WATCON
 
     do m = 1,pcnst
 
-       if (m.eq.1.or.m.eq.ixcldice.or.m.eq.ixcldliq) exit   ! dont process water substances
+!!== KZ_WATCON
+       if ( any(m == (/ 1, ixcldliq, ixcldice, &
+                           ixrain,   ixsnow    /)) ) exit   ! dont process water substances
+!!== KZ_WATCON
                                                             ! they are checked in check_energy
        if (cnst_get_type_byind(m).eq.'dry') then
           trpdel(:ncol,:) = state%pdeldry(:ncol,:)
@@ -592,9 +813,6 @@ end subroutine check_energy_get_integrals
 ! associated with a flux
 !-----------------------------------------------------------------------
 
-    use cam_abortutils, only: endrun 
-
-
     implicit none
 
 !------------------------------Arguments--------------------------------
@@ -621,6 +839,9 @@ end subroutine check_energy_get_integrals
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+!!== KZ_WATCON
+    integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
+!!== KZ_WATCON
     integer :: m                            ! tracer index
     character(len=8) :: tracname   ! tracername
 !-----------------------------------------------------------------------
@@ -630,10 +851,17 @@ end subroutine check_energy_get_integrals
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!!== KZ_WATCON
+    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
+!!== KZ_WATCON
 
     do m = 1,pcnst
-       
-       if (m.eq.1.or.m.eq.ixcldice.or.m.eq.ixcldliq) exit   ! dont process water substances
+
+!!== KZ_WATCON
+       if ( any(m == (/ 1, ixcldliq, ixcldice, &
+                           ixrain,   ixsnow    /)) ) exit   ! dont process water substances
+!!== KZ_WATCON
                                                             ! they are checked in check_energy
 
        tracname = cnst_name(m)
@@ -718,4 +946,189 @@ end subroutine check_energy_get_integrals
   end subroutine check_tracers_chng
 
 
+!!== KZ_WATCON
+  subroutine check_water(state, tend, name, nstep, ztodt)
+
+!!...................................................................
+!! Check water path at certain locations for water conservation check 
+!! 
+!! Water species include water vapor, droplet, ice, rain, and snow 
+!!
+!! Author: Kai Zhang 
+!!...................................................................
+
+!! Arguments 
+!!...................................................................
+    use cam_history,       only: outfld
+
+    type(physics_state)    , intent(in) :: state
+    type(physics_tend )    , intent(in) :: tend
+    character*(*),intent(in) :: name               ! parameterization name for fluxes
+    integer , intent(in   ) :: nstep               ! current timestep number
+    real(r8), intent(in   ) :: ztodt               ! 2 delta t (model time increment)
+
+!! Local 
+!!...................................................................
+
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
+    real(r8) :: tw(state%ncol)                     ! vertical integral of total water
+
+    integer lchnk                                  ! chunk identifier
+    integer ncol                                   ! number of atmospheric columns
+    integer  i,k                                   ! column, level indices
+    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
+    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+    integer :: ixrain
+    integer :: ixsnow
+!!...................................................................
+
+    lchnk = state%lchnk
+    ncol  = state%ncol
+    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+
+
+!! Compute vertical integrals of all water species (vapor, liquid, ice, rain, snow)
+!!...................................................................
+    wv = 0._r8
+    wl = 0._r8
+    wi = 0._r8
+    wr = 0._r8
+    ws = 0._r8
+
+    do k = 1, pver
+       do i = 1, ncol
+          wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
+       end do
+    end do
+
+    ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
+    if (ixcldliq > 1  .and.  ixcldice > 1) then
+       do k = 1, pver
+          do i = 1, ncol
+             wl(i) = wl(i) + state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
+             wi(i) = wi(i) + state%q(i,k,ixcldice)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+
+    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+
+!! Total water path
+!!...................................................................
+    do i = 1, ncol
+       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
+    end do
+
+    if(name.eq.'PHYBC01') then 
+       call outfld('BC01Q',           wv,pcols   ,lchnk   )
+       call outfld('BC01QL',          wl,pcols   ,lchnk   )
+       call outfld('BC01QI',          wi,pcols   ,lchnk   )
+       call outfld('BC01QR',          wr,pcols   ,lchnk   )
+       call outfld('BC01QS',          ws,pcols   ,lchnk   )
+       call outfld('BC01TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC02') then
+       call outfld('BC02Q',           wv,pcols   ,lchnk   )
+       call outfld('BC02QL',          wl,pcols   ,lchnk   )
+       call outfld('BC02QI',          wi,pcols   ,lchnk   )
+       call outfld('BC02QR',          wr,pcols   ,lchnk   )
+       call outfld('BC02QS',          ws,pcols   ,lchnk   )
+       call outfld('BC02TW',          tw,pcols   ,lchnk   )
+    end if
+
+  end subroutine check_water 
+
+
+
+
+  subroutine check_qflx(state, tend, name, nstep, ztodt, qflx)
+
+!!...................................................................
+!! Output qflx at certain locations for water conservation check 
+!!...................................................................
+
+    use cam_history,       only: outfld
+    
+    type(physics_state)    , intent(in) :: state
+    type(physics_tend )    , intent(in) :: tend
+    character*(*),intent(in) :: name               ! parameterization name for fluxes
+    integer , intent(in   ) :: nstep               ! current timestep number
+    real(r8), intent(in   ) :: ztodt               ! 2 delta t (model time increment)
+    real(r8), intent(in   ) :: qflx(:)             ! (pcols) - boundary flux of vapor (kg/m2/s)
+
+    integer lchnk                                  ! chunk identifier
+    integer ncol                                   ! number of atmospheric columns
+    
+!!...................................................................
+
+    lchnk = state%lchnk
+    ncol  = state%ncol
+    
+    if(name.eq.'PHYAC01') then
+       call outfld('AC01QFLX', qflx, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYAC02') then
+       call outfld('AC02QFLX', qflx, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC01') then
+       call outfld('BC01QFLX', qflx, pcols, lchnk)
+    end if
+
+  end subroutine check_qflx
+
+
+
+
+  subroutine check_prect(state, tend, name, nstep, ztodt, prect)
+
+!!...................................................................
+!! Output precipitation at certain locations for water conservation check 
+!!...................................................................
+    use cam_history,       only: outfld
+
+    type(physics_state)    , intent(in) :: state
+    type(physics_tend )    , intent(in) :: tend
+    character*(*),intent(in) :: name               ! parameterization name for fluxes
+    integer , intent(in   ) :: nstep               ! current timestep number
+    real(r8), intent(in   ) :: ztodt               ! 2 delta t (model time increment)
+    real(r8), intent(in   ) :: prect(:)            ! (pcols) - precipitation
+
+    integer lchnk                                  ! chunk identifier
+    integer ncol                                   ! number of atmospheric columns
+    integer  i,k                                   ! column, level indices
+
+!!...................................................................
+
+    lchnk = state%lchnk
+    ncol  = state%ncol
+
+    if(name.eq.'PHYBC01') then
+       call outfld('BC01PR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC02') then
+       call outfld('BC02PR', prect, pcols, lchnk)
+    end if
+
+  end subroutine check_prect
+!!== KZ_WATCON
+
+
 end module check_energy
+

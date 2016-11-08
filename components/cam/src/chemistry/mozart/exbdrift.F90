@@ -71,21 +71,21 @@
 ! Author: A. Maute Dec 2003  am 12/30/03    
 !-----------------------------------------------------------------------
 
-   use cam_history,  only: addfld, phys_decomp, add_default ! for history saves
+   use cam_history,  only: addfld, horiz_only, add_default ! for history saves
 
 !-----------------------------------------------------------------------
 ! Add mag field output to master field list:
 !-----------------------------------------------------------------------
-   call addfld('UE      ','m/s     ',1,'I', 'Zonal ExB drift',phys_decomp)
-   call addfld('VE      ','m/s     ',1,'I', 'Meridional ExB drift',phys_decomp)
-!  call addfld('WE      ','m/s     ',1,'I', 'Vertical ExB drift',phys_decomp)
-!  call addfld('MLT     ','hrs     ',1,'I', 'mag.local time',phys_decomp)
-!  call addfld('EF_EAST ','V/m     ',1,'I', 'eastward electric field',phys_decomp)
-!  call addfld('EF_WEST ','V/m     ',1,'I', 'northward electric field',phys_decomp)
-!  call addfld('EF_UP   ','V/m     ',1,'I', 'upward electric field',phys_decomp)
-!  call addfld('EF1_MAP ','V/m     ',1,'I', 'map. mag. eastward ef',phys_decomp)
-!  call addfld('EF2_MAP ','V/m     ',1,'I', 'map. mag. northward ef',phys_decomp)
-   call addfld('EPOTEN  ','V       ',1,'I', 'Electric Potential',phys_decomp)
+   call addfld('UE',horiz_only,'I','m/s', 'Zonal ExB drift')
+   call addfld('VE',horiz_only,'I','m/s', 'Meridional ExB drift')
+!  call addfld('WE      ','m/s     ',1,'I', 'Vertical ExB drift')
+!  call addfld('MLT     ','hrs     ',1,'I', 'mag.local time')
+!  call addfld('EF_EAST ','V/m     ',1,'I', 'eastward electric field')
+!  call addfld('EF_WEST ','V/m     ',1,'I', 'northward electric field')
+!  call addfld('EF_UP   ','V/m     ',1,'I', 'upward electric field')
+!  call addfld('EF1_MAP ','V/m     ',1,'I', 'map. mag. eastward ef')
+!  call addfld('EF2_MAP ','V/m     ',1,'I', 'map. mag. northward ef')
+   call addfld('EPOTEN',horiz_only,'I','V', 'Electric Potential')
 
 !-----------------------------------------------------------------------
 !  Write these fields to history by default:

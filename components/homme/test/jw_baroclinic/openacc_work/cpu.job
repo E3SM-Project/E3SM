@@ -1,7 +1,8 @@
 #!/bin/tcsh -f
 #PBS -A STF006
 #PBS -l nodes=3
-#PBS -l walltime=0:10:00
+#PBS -q batch
+#PBS -l walltime=0:45:00
 #PBS -N baroclinic
 #PBS -j oe
 
@@ -11,7 +12,7 @@
 
 #  set paths to source code, build directory and run directory
 set wdir   = /lustre/atlas1/stf006/scratch/imn/HOMME_ACME             # run directory
-set HOMME  = /ccs/home/imn/ACME/models/atm/homme                # HOMME svn checkout     
+set HOMME  = /ccs/home/imn/ACME/components/homme                # HOMME svn checkout     
 set input  = $HOMME/test/jw_baroclinic/openacc_work    # input files for test case
 set vdir   = $HOMME/test/vcoord            # vertical coordinate files
 set exedir = $HOMME/build/preqx
@@ -42,7 +43,7 @@ set exe    = preqx.cpu
   module rm cray-netcdf-hdf5parallel
   module rm cray-parallel-netcdf
     module load PrgEnv-pgi
-    module switch pgi pgi/15.10.lustre
+    module switch pgi pgi/15.9.lustre
     module switch cray-mpich cray-mpich/7.2.2
     module switch cray-libsci cray-libsci/13.0.4
     module load esmf/5.2.0rp2
@@ -62,6 +63,7 @@ setenv OMP_STACKSIZE 64M
 setenv MPICH_ENV_DISPLAY 1
 setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
+
 
 
 

@@ -7,11 +7,10 @@ setenv P4_GLOBMEMSIZE 500000000
 soft add +cmake-2.8.12
 
 #
-# Tried mvapich2 1.8.1, 1.9 and 2.0 and they
-# all failed an ERS test.  So mvapich2 is not supported.
+# Intel13.1 was the workhorse for ACME for a while so keep it around
 #
 #
-if ( $COMPILER == "intel" ) then
+if ( $COMPILER == "intel13" ) then
   soft add +intel-13.1
   soft add +netcdf-4.3.1-serial-intel
   soft add +mkl
@@ -36,10 +35,39 @@ if ( $COMPILER == "intel" ) then
   endif
 endif
 
-if ( $COMPILER == "pgi" ) then
+#
+# default intel compiler
+#
+if ( $COMPILER == "intel" ) then
+  soft add +intel-15.0
+  setenv NETCDFROOT /soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1
+  setenv PATH $NETCDFROOT/bin:$PATH
+  setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+  setenv NETCDF_INCLUDES $NETCDFROOT/include
+  setenv NETCDF_LIBS $NETCDFROOT/lib
+  if ( $MPILIB == "mpi-serial") then
+   setenv PNETCDFROOT ""
+  else if ( $MPILIB == "mvapich") then
+   soft add +mvapich2-2.2b-intel-15.0 #soft add +mvapich2-2.2b-intel-15.0-psm #BSINGH
+   soft add +pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0
+   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0
+  else
+   # default - mvapich+pnetcdf
+   soft add +mvapich2-2.2b-intel-15.0 #soft add +mvapich2-2.2b-intel-15.0-psm #BSINGH
+   soft add +pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0
+   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0
+  endif
+endif
+
+if ( $COMPILER == "pgi-13" ) then
   soft add +pgi-13.9
-  soft add +netcdf-4.3.1-serial-pgi
-  setenv NETCDFROOT /soft/netcdf/4.3.1-serial/pgi-13.9
+#  soft add +netcdf-4.3.1-serial-pgi
+  setenv NETCDFROOT /home/jacob/netcdf-4.3.3.1pg13.9
+  # Get newer netcdf
+  setenv PATH $NETCDFROOT/bin:$PATH
+  setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+  setenv NETCDF_INCLUDES $NETCDFROOT/include
+  setenv NETCDF_LIBS $NETCDFROOT/lib
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "openmpi") then
@@ -58,27 +86,91 @@ if ( $COMPILER == "pgi" ) then
   endif
 endif
 
-if ( $COMPILER == "gnu" ) then
+if ( $COMPILER == "pgi" ) then
+  soft add +pgi-15.10
+  setenv NETCDFROOT /soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/pgi-15.10
+  setenv PATH $NETCDFROOT/bin:$PATH
+  setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+  setenv NETCDF_INCLUDES $NETCDFROOT/include
+  setenv NETCDF_LIBS $NETCDFROOT/lib
+  if ( $MPILIB == "mpi-serial") then
+   setenv PNETCDFROOT ""
+  else if ( $MPILIB == "mvapich") then
+   soft add +mvapich2-2.2b-pgi-15.10
+   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/pgi-15.10/mvapich2-2.2b-pgi-15.10
+  else
+   # default - mvapich+pnetcdf
+   soft add +mvapich2-2.2b-pgi-15.10
+   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/pgi-15.10/mvapich2-2.2b-pgi-15.10
+  endif
+endif
+
+if ( $COMPILER == "gnu" || $COMPILER == "gcc-5.3" ) then
+
+  soft add +gcc-5.3.0 
+  #soft add +netcdf-4.4.0-gcc-5.3.0-serial
+  soft add +netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial
+  soft add +pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b
+
+  setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-xezev3j3kyay6obokfjvwfzqc2l6uwh5
+
+  if ( $MPILIB == "mpi-serial") then
+   setenv PNETCDFROOT ""
+  else if ( $MPILIB == "mvapich") then
+
+    soft add +mvapich2-2.2b-gcc-5.3.0
+    setenv PNETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/parallel-netcdf-1.6.1-ldvtzhyio26mpnjxmhdqhuc4dhnspvm4
+	#setenv PNETCDFROOT
+  else
+    # default - mvapich + pnetcdf
+	soft add +mvapich2-2.2b-gcc-5.3.0
+    setenv PNETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/parallel-netcdf-1.6.1-ldvtzhyio26mpnjxmhdqhuc4dhnspvm4
+	
+  endif
+endif
+
+
+if ( $COMPILER == "gcc-5.2" ) then
+  soft add +gcc-5.2
+  soft add +netcdf-4.3.3.1-gnu5.2-serial
+  setenv NETCDFROOT /soft/netcdf_serial/4.3.3.1/gnu-5.2
+  if ( $MPILIB == "mpi-serial") then
+   setenv PNETCDFROOT ""
+  else if ( $MPILIB == "mvapich") then
+    soft add +mvapich2-2.2b-gcc-5.2
+    setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
+  else
+    # default - mvapich + pnetcdf
+    soft add +mvapich2-2.2b-gcc-5.2
+    setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
+  endif
+endif
+
+if ( $COMPILER == "nag" ) then
+  soft add +nag-6.0
   soft add +gcc-4.7.2
-  soft add +netcdf-4.3.1-serial-gcc
-  setenv NETCDFROOT /soft/netcdf/4.3.1-serial/gcc-4.7.2
+#  soft add +netcdf-4.3.1-serial-nag
+  setenv NETCDFROOT /home/jacob/netcdf-4.3.3.1nag6
+  # Get newer netcdf
+  setenv PATH $NETCDFROOT/bin:$PATH
+  setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+  setenv NETCDF_INCLUDES $NETCDFROOT/include
+  setenv NETCDF_LIBS $NETCDFROOT/lib
   if ( $MPILIB == "openmpi") then
-    #soft add +openmpi-1.6.5-gnu-4.7.2-psm
-    echo "ERROR: OpenMPI+pnetcdf is currently not supported with gnu compilers"
-    echo "OpenMPI is currently supported only with pgi compilers"
+    echo "ERROR: OpenMPI+pnetcdf is currently not supported with nag compilers"
     exit 1
   endif
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mpich") then
-    soft add +mpich2-1.4.1-gcc-4.7.2
-    soft add +pnetcdf-1.5.0-mpich2-gcc-4.7.2
-    setenv PNETCDFROOT /soft/pnetcdf/1.5.0/gcc-4.7.2/mpich2-1.4.1
+    soft add +mpich3-3.1.4-nag-6.0
+    soft add +pnetcdf-1.6.1-mpich-3.1.4-nag-6.0
+    setenv PNETCDFROOT /home/robl/soft/pnetcf-trunk-mpich-3.1.4-nag-6.0
   else
     # default - mpich + pnetcdf
-    soft add +mpich2-1.4.1-gcc-4.7.2
-    soft add +pnetcdf-1.5.0-mpich2-gcc-4.7.2
-    setenv PNETCDFROOT /soft/pnetcdf/1.5.0/gcc-4.7.2/mpich2-1.4.1
+    soft add +mpich3-3.1.4-nag-6.0
+    soft add +pnetcdf-1.6.1-mpich-3.1.4-nag-6.0
+    setenv PNETCDFROOT /home/robl/soft/pnetcf-trunk-mpich-3.1.4-nag-6.0
   endif
 endif
 if ( $?PERL ) then

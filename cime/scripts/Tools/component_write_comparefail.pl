@@ -2,14 +2,13 @@
 use strict;
 
 if ($#ARGV == -1) {
-    die " ERROR component_write_comparefail: must specify a caseroot and testlog input arguments";
+    die " ERROR component_write_comparefail: must specify a caseroot";
 }
-my ($rundir, $testlog) = @ARGV;
+my $rundir = $ARGV[0];
 
-open(fhout, '>>', $testlog) or die "Could not open output testlog $testlog' $!";
+print "---summarizing more details of test failures if any: --- \n\n" ;
 
-print fhout "---summarizing more details of test failures if any: --- \n\n" ;
-
+my $rv = 0;
 my @cprnc_files = glob("$rundir/*cprnc.out");
 foreach my $file (@cprnc_files) {
 
@@ -17,15 +16,15 @@ foreach my $file (@cprnc_files) {
     my $nfilldiffs = `grep FILLDIFF $file | wc -l`;
 
     if (($ndiffs > 0) || ($nfilldiffs > 0)) {
-	print fhout "$file had the following fields that are NOT b4b  \n";
-	print fhout "\n";
+	print "$file had the following fields that are NOT b4b  \n\n";
+        $rv = 1;
     }
     
     if ($ndiffs > 0) {
 	open(fhin, "<$file") or die "Could not open file $file to read";
 	while (my $line = <fhin>) {
 	    if ($line =~ /RMS\s+(\S+)\s+(\S+)/) {
-		print fhout"  $line "; 
+		print "  $line ";
 	    }
 	}
 	close(fhin);
@@ -35,7 +34,7 @@ foreach my $file (@cprnc_files) {
 	open(fhin, "<$file") or die "Could not open file $file to read";
 	while (my $line = <fhin>) {
 	    if ($line =~ /FILLDIFF\s+(\S+)/) {
-		print fhout"  $line "; 
+		print "  $line ";
 	    }
 	}
 	close(fhin);
@@ -44,9 +43,7 @@ foreach my $file (@cprnc_files) {
 
 my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
 
-print fhout "\n---finished summarizing more details of test failures: ---- \n\n ";
-print fhout "test completed $sdate"; 
+print "\n---finished summarizing more details of test failures: ---- \n\n ";
+print "test completed $sdate\n"; 
 
-close (fhout);
-
-exit(0);
+exit($rv);

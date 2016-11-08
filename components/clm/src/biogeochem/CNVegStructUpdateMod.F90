@@ -41,6 +41,7 @@ contains
     use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
     use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
     use clm_time_manager , only : get_rad_step_size
+    use clm_varctl       , only : spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilp       ! number of column soil points in pft filter
@@ -183,14 +184,24 @@ contains
                if (use_cndv) then
                   if (fpcgrid(p) > 0._r8 .and. nind(p) > 0._r8) then
                      stocking = nind(p)/fpcgrid(p) !#ind/m2 nat veg area -> #ind/m2 pft area
-                     htop(p) = allom2(ivt(p)) * ( (24._r8 * deadstemc(p) / &
-                          (SHR_CONST_PI * stocking * dwood(ivt(p)) * taper))**(1._r8/3._r8) )**allom3(ivt(p)) ! lpj's htop w/ cn's stemdiam
+                     if (spinup_state >= 1) then 
+                       htop(p) = allom2(ivt(p)) * ( (24._r8 * deadstemc(p) * spinup_mortality_factor / &
+                            (SHR_CONST_PI * stocking * dwood(ivt(p)) * taper))**(1._r8/3._r8) )**allom3(ivt(p)) ! lpj's htop w/ cn's stemdiam
+                     else 
+                       htop(p) = allom2(ivt(p)) * ( (24._r8 * deadstemc(p) / &
+                            (SHR_CONST_PI * stocking * dwood(ivt(p)) * taper))**(1._r8/3._r8) )**allom3(ivt(p)) ! lpj's htop w/ cn's stemdiam
+                     end if
                   else
                      htop(p) = 0._r8
                   end if
                else
-                  htop(p) = ((3._r8 * deadstemc(p) * taper * taper)/ &
-                       (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
+                  if (spinup_state >= 1) then 
+                    htop(p) = ((3._r8 * deadstemc(p) * spinup_mortality_factor * taper * taper)/ &
+                         (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
+                  else
+                    htop(p) = ((3._r8 * deadstemc(p) * taper * taper)/ &
+                         (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
+                  end if
                endif
 
                ! Peter Thornton, 5/3/2004

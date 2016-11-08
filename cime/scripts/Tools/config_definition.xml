@@ -146,7 +146,7 @@
 
   <entry id="COMP_ROF" 
 	 type="char"
-	 valid_values="rtm,drof,srof,xrof" 
+	 valid_values="rtm,mosart,drof,srof,xrof" 
 	 value="rtm"  
 	 group="case_comp"
 	 sdesc="Name of river runoff component "
@@ -773,6 +773,42 @@
 	    ></entry>
      -->
 
+  <entry id="OCN2GLC_FMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="ocn2glc flux mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="OCN2GLC_FMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="ocn2glc flux mapping file decomp type"
+	    ></entry>
+     -->
+
+  <entry id="OCN2GLC_SMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="ocn2glc state mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="OCN2GLC_SMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="ocn2glc state mapping file decomp type"
+	    ></entry>
+     -->
+
   <entry id="ATM2LND_FMAPNAME" 
 	 type="char"
 	 valid_values="" 
@@ -917,6 +953,25 @@
 	    ></entry>
      -->
 
+  <entry id="GLC2OCN_FMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="glc2ocn flux mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="GLC2OCN_FMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="glc2ocn flux mapping file decomp type"
+	    ></entry>
+     -->
+
+
   <entry id="GLC2OCN_RMAPNAME" 
 	 type="char"
 	 valid_values="" 
@@ -932,6 +987,25 @@
 	    value="Y" 
 	    group="run_domain"
 	    sdesc="glc2ocn runoff mapping file decomp type"
+	    ></entry>
+     -->
+
+
+  <entry id="GLC2OCN_SMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="glc2ocn state mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="GLC2OCN_SMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="glc2ocn state mapping file decomp type"
 	    ></entry>
      -->
 
@@ -1289,6 +1363,14 @@
 	 sdesc="CAM dynamical core"
 	 ></entry>
 
+  <entry id="CAM_TARGET" 
+	 type="char"
+	 valid_values="preqx,preqx_acc" 
+	 value="preqx" 
+	 group="build_component_cam"
+	 sdesc="CAM-SE cmake target (only used with CAM_DYCORE == 'se')"
+	 ></entry>
+
   <entry id="CAM_NML_USE_CASE" 
 	 type="char"
 	 valid_values=""
@@ -1418,6 +1500,20 @@
 		This is an advanced flag and should only be used by expert users."
 	 ></entry> 
 
+  <entry id="CLM_USE_PETSC"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_component_clm"
+	 sdesc="TRUE implies CLM is built with support for the PETSc library"
+	 ldesc="
+                The Variably Saturated Flow Model (VSFM) solver in CLM uses the PETSc library.
+                In order to use the VSFM solver, CLM must be built with PETSc
+                support and linking to PETSc must occur when building the ACME executable.
+                This occurs if this variable is set to TRUE.
+                Note that is only available on a limited set of machines/compilers."
+	 ></entry>
+
   <!-- ======================================================================= -->
   <!-- VIC                                                                     -->
   <!-- ======================================================================= -->
@@ -1520,6 +1616,62 @@
 		you should use your own user-defined component sets via using create_newcase 
 		with a compset_file argument."
 	 ></entry>
+
+  <!-- ======================================================================= -->
+  <!-- MOSART                                                                  -->
+  <!-- ======================================================================= -->
+
+  <entry id="MOSART_MODE"
+         type="char"
+         valid_values="ACTIVE,NULL"
+         value="ACTIVE"
+         group="build_component_mosart"
+         sdesc="mode for mosart model, NULL means mosart is turned off"
+         ></entry>
+
+  <entry id="MOSART_FLOOD_MODE"
+         type="char"
+         valid_values="ACTIVE,NULL"
+         value="NULL"
+         group="build_component_mosart"
+         sdesc="mode for mosart flood feature, NULL means mosart flood is turned off"
+         ></entry>
+
+  <entry id="MOSART_BLDNML_OPTS"
+         type="char"
+         valid_values=""
+         value=""
+         group="run_component_mosart"
+         sdesc="MOSART build-namelist options"
+         ></entry>
+
+  <entry id="MOSART_NAMELIST_OPTS"
+         type="char"
+         valid_values=""
+         value=""
+         group="run_component_mosart"
+         sdesc="MOSART specific namelist settings"
+         ldesc="MOSART-specific namelist settings in the MOSART build-namelist.
+                MOSART_NAMELIST_OPTS is normally set as a compset variable
+                and in general should not be modified for supported compsets.
+                It is recommended that if you want to modify this value for your experiment,
+                you should use your own user-defined component sets via using create_newcase
+                with a compset_file argument."
+         ></entry>
+
+
+  <!-- ======================================================================= -->
+  <!-- MPASCICE                                                                -->
+  <!-- ======================================================================= -->
+
+  <entry id="MPASCICE_IC_MODE"
+	 type="char"
+	 valid_values="cold_start,spunup"
+	 value=""
+	 group="build_component_mpas-cice"
+	 sdesc="Option to describe the MPASCICE initial condition mode"
+	 ></entry>
+
 
 
   <!-- ======================================================================= -->
@@ -1917,6 +2069,17 @@
                 or for which the CIME scripts are not aware of the existence of Albany."
 	 ></entry>
 
+
+  <!-- ======================================================================= -->
+  <!-- MPASLI                                                                  -->
+  <!-- ======================================================================= -->
+  <entry id="GLC_SMB"
+	 type="logical"
+	 valid_values="true,false"
+	 value="true"
+	 group="run_component_mpasli"
+	 sdesc="true => have LND calculate surface mass balance"
+	 ></entry>
 
   <!-- ======================================================================= -->
   <!-- DATM                                                                    -->
@@ -2920,6 +3083,17 @@
 		The default is FALSE."
 	 ></entry> 
 
+  <entry id="USE_PETSC"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_def"
+	 sdesc="TRUE implies linking to the PETSc library - set automatically by XXX_USE_PETSC options (do not edit)"
+	 ldesc="
+		Flag to turn on linking to the PETSc library. Currently this is
+		used by CLM. This is currently only supported for certain machines."
+	 ></entry>
+
   <entry id="USE_TRILINOS"
 	 type="logical"
 	 valid_values="TRUE,FALSE"
@@ -3178,7 +3352,7 @@
   <entry id="DRV_THREADING" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
-	 value="FALSE" 
+	 value="TRUE"
 	 group="run_flags"
 	 sdesc="Turns on component varying thread control in the driver"
 	 ></entry>
@@ -3209,8 +3383,8 @@
 
   <entry id="TIMER_DETAIL" 
          type="integer"
-         valid_values="0,1,2"  
-         value="1" 
+         valid_values="0,1,2,3,4,5,6,7,8,9,10,11,12"
+         value="2" 
          group="run_flags"
          sdesc="timer output detail"
          ></entry>
@@ -3218,7 +3392,7 @@
   <entry id="TIMER_LEVEL" 
 	 type="integer"
 	 valid_values=""
-	 value="12" 
+	 value="20" 
 	 group="run_flags"
 	 sdesc="timer output depth"
 	 ></entry>
@@ -3389,7 +3563,7 @@
   <entry id="DOUT_S" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
-	 value="TRUE" 
+	 value="FALSE" 
 	 group="run_dout"
 	 sdesc="logical to turn on short term archiving"
 	 ldesc="
@@ -3678,6 +3852,16 @@
 
 	 ></entry>
 
+  <entry id="RESUBMIT_QUEUED"
+	 type="integer"
+	 valid_values=""
+	 value="0"
+	 group="run_rest"
+	 sdesc="Sends N number of jobs to the queue"
+     ldesc="Sends N number of jobs to the queue. This is independent on
+        SUBMIT. This actaully sets SUBMIT to 0"
+	 ></entry>
+
   <entry id="CHECK_TIMING" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
@@ -3786,28 +3970,54 @@
          sdesc="pio rearranger communication flow control direction"
          ></entry> 
 
-  <entry id="PIO_REARR_COMM_MAX_PEND_REQ"
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO"
          type="integer"
          valid_values="" 
-         value="64" 
+         value="0" 
          group="run_pio"
-         sdesc="pio rearranger communication max pending requests"
+         sdesc="pio rearranger communication max pending requests (comp2io) : 0 implies CIME internally calculates the value ( = max(64, 2 * PIO_NUMTASKS) ), -1 implies no bound on max pending requests"
          ></entry>
 
-  <entry id="PIO_REARR_COMM_ENABLE_HS"
+  <entry id="PIO_REARR_COMM_ENABLE_HS_COMP2IO"
          type="logical"
          valid_values="TRUE,FALSE"  
          value="TRUE" 
          group="run_pio"
-         sdesc="pio rearranger communiation options: TRUE implies enable handshake" 
+         sdesc="pio rearranger communiation options (comp2io): TRUE implies enable handshake" 
          ></entry> 
 
-  <entry id="PIO_REARR_COMM_ENABLE_ISEND"
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_COMP2IO"
          type="logical"
          valid_values="TRUE,FALSE"  
          value="FALSE" 
          group="run_pio"
-         sdesc="pio rearranger communiation options: TRUE implies enable isend" 
+         sdesc="pio rearranger communiation options (comp2io): TRUE implies enable isend" 
+         ></entry> 
+
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP"
+         type="integer"
+         valid_values="" 
+         value="64" 
+         group="run_pio"
+         sdesc="pio rearranger communication max pending requests (io2comp) : -1 implies no bound on max pending requests"
+         ></entry>
+
+  <!-- Handshaking is a very bad idea for large process counts and for  -->
+  <!-- io2comp (but important for comp2io) -->
+  <entry id="PIO_REARR_COMM_ENABLE_HS_IO2COMP"
+         type="logical"
+         valid_values="TRUE,FALSE"  
+         value="FALSE" 
+         group="run_pio"
+         sdesc="pio rearranger communiation options (io2comp): TRUE implies enable handshake" 
+         ></entry> 
+
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_IO2COMP"
+         type="logical"
+         valid_values="TRUE,FALSE"  
+         value="TRUE" 
+         group="run_pio"
+         sdesc="pio rearranger communiation options (io2comp): TRUE implies enable isend" 
          ></entry> 
 
   <entry id="OCN_PIO_STRIDE"

@@ -1,3 +1,4 @@
+
 module radiation
 
 !---------------------------------------------------------------------------------
@@ -323,7 +324,7 @@ end function radiation_nextsw_cday
 ! 
 !-----------------------------------------------------------------------
 
-    use cam_history,    only: addfld, add_default, phys_decomp
+    use cam_history,    only: addfld, horiz_only, add_default
     use physconst,      only: gravit, cpair, epsilo, stebol, &
                              pstd, mwdry, mwco2, mwo3
     
@@ -335,7 +336,7 @@ end function radiation_nextsw_cday
     use radiation_data, only: init_rad_data
     use phys_control,   only: phys_getopts
     use cospsimulator_intr, only: docosp, cospsimulator_intr_init
-
+    use time_manager, only: get_step_size
     integer :: nstep                       ! current timestep number
     logical :: history_amwg                ! output the variables used by the AMWG diag package
     logical :: history_vdiag               ! output the variables used by the AMWG variability diag package
@@ -343,6 +344,7 @@ end function radiation_nextsw_cday
                                            ! temperature, water vapor, cloud ice and cloud
                                            ! liquid budgets.
     integer :: history_budget_histfile_num ! output history file number for budget fields
+    integer :: dTime      ! integer timestep size
     !-----------------------------------------------------------------------
 
     call radconstants_init()
@@ -382,73 +384,71 @@ end function radiation_nextsw_cday
     end if
 
     ! Shortwave radiation
-    call addfld ('SOLIN   ','W/m2    ',1,    'A','Solar insolation',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('SOLL    ','W/m2    ',1,    'A','Solar downward near infrared direct  to surface',phys_decomp, &
+    call addfld ('SOLIN',horiz_only,    'A','W/m2','Solar insolation', sampling_seq='rad_lwsw')
+    call addfld ('SOLL',horiz_only,    'A','W/m2','Solar downward near infrared direct  to surface', &
                                                                                                           sampling_seq='rad_lwsw')
-    call addfld ('SOLS    ','W/m2    ',1,    'A','Solar downward visible direct  to surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('SOLLD   ','W/m2    ',1,    'A','Solar downward near infrared diffuse to surface',phys_decomp, &
+    call addfld ('SOLS',horiz_only,    'A','W/m2','Solar downward visible direct  to surface', sampling_seq='rad_lwsw')
+    call addfld ('SOLLD',horiz_only,    'A','W/m2','Solar downward near infrared diffuse to surface', &
                                                                                                           sampling_seq='rad_lwsw')
-    call addfld ('SOLSD   ','W/m2    ',1,    'A','Solar downward visible diffuse to surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('QRS     ','K/s     ',pver, 'A','Solar heating rate',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('QRSC    ','K/s     ',pver, 'A','Clearsky solar heating rate',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNS    ','W/m2    ',1,    'A','Net solar flux at surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNT    ','W/m2    ',1,    'A','Net solar flux at top of model',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNTOA  ','W/m2    ',1,    'A','Net solar flux at top of atmosphere',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSUTOA  ','W/m2    ',1,    'A','Upwelling solar flux at top of atmosphere',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNTOAC ','W/m2    ',1,    'A','Clearsky net solar flux at top of atmosphere',phys_decomp, &
+    call addfld ('SOLSD',horiz_only,    'A','W/m2','Solar downward visible diffuse to surface', sampling_seq='rad_lwsw')
+    call addfld ('QRS',(/ 'lev' /), 'A','K/s','Solar heating rate', sampling_seq='rad_lwsw')
+    call addfld ('QRSC',(/ 'lev' /), 'A','K/s','Clearsky solar heating rate', sampling_seq='rad_lwsw')
+    call addfld ('FSNS',horiz_only,    'A','W/m2','Net solar flux at surface', sampling_seq='rad_lwsw')
+    call addfld ('FSNT',horiz_only,    'A','W/m2','Net solar flux at top of model', sampling_seq='rad_lwsw')
+    call addfld ('FSNTOA',horiz_only,    'A','W/m2','Net solar flux at top of atmosphere', sampling_seq='rad_lwsw')
+    call addfld ('FSUTOA',horiz_only,    'A','W/m2','Upwelling solar flux at top of atmosphere', sampling_seq='rad_lwsw')
+    call addfld ('FSNTOAC',horiz_only,    'A','W/m2','Clearsky net solar flux at top of atmosphere', &
                                                                                                           sampling_seq='rad_lwsw')
-    call addfld ('FSDTOA  ','W/m2    ',1,    'A','Downwelling solar flux at top of atmosphere',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSN200  ','W/m2    ',1,    'A','Net shortwave flux at 200 mb',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSN200C ','W/m2    ',1,    'A','Clearsky net shortwave flux at 200 mb',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNTC   ','W/m2    ',1,    'A','Clearsky net solar flux at top of model',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNSC   ','W/m2    ',1,    'A','Clearsky net solar flux at surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSDSC   ','W/m2    ',1,    'A','Clearsky downwelling solar flux at surface',phys_decomp, &
+    call addfld ('FSDTOA',horiz_only,    'A','W/m2','Downwelling solar flux at top of atmosphere', sampling_seq='rad_lwsw')
+    call addfld ('FSN200',horiz_only,    'A','W/m2','Net shortwave flux at 200 mb', sampling_seq='rad_lwsw')
+    call addfld ('FSN200C',horiz_only,    'A','W/m2','Clearsky net shortwave flux at 200 mb', sampling_seq='rad_lwsw')
+    call addfld ('FSNTC',horiz_only,    'A','W/m2','Clearsky net solar flux at top of model', sampling_seq='rad_lwsw')
+    call addfld ('FSNSC',horiz_only,    'A','W/m2','Clearsky net solar flux at surface', sampling_seq='rad_lwsw')
+    call addfld ('FSDSC',horiz_only,    'A','W/m2','Clearsky downwelling solar flux at surface', &
                                                                                                         sampling_seq='rad_lwsw')
-    call addfld ('FSDS    ','W/m2    ',1,    'A','Downwelling solar flux at surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FUS     ','W/m2    ',pverp,'I','Shortwave upward flux',phys_decomp)
-    call addfld ('FDS     ','W/m2    ',pverp,'I','Shortwave downward flux',phys_decomp)
-    call addfld ('FUSC    ','W/m2    ',pverp,'I','Shortwave clear-sky upward flux',phys_decomp)
-    call addfld ('FDSC    ','W/m2    ',pverp,'I','Shortwave clear-sky downward flux',phys_decomp)
-    call addfld ('FSNIRTOA','W/m2    ',1,    'A','Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', &
-            phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNRTOAC','W/m2    ',1,    'A','Clearsky net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', &
-            phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FSNRTOAS','W/m2    ',1,    'A','Net near-infrared flux (>= 0.7 microns) at top of atmosphere',phys_decomp, &
+    call addfld ('FSDS',horiz_only,    'A','W/m2','Downwelling solar flux at surface', sampling_seq='rad_lwsw')
+    call addfld ('FUS',(/ 'ilev' /),'I','W/m2','Shortwave upward flux')
+    call addfld ('FDS',(/ 'ilev' /),'I','W/m2','Shortwave downward flux')
+    call addfld ('FUSC',(/ 'ilev' /),'I','W/m2','Shortwave clear-sky upward flux')
+    call addfld ('FDSC',(/ 'ilev' /),'I','W/m2','Shortwave clear-sky downward flux')
+    call addfld ('FSNIRTOA',horiz_only,    'A','W/m2','Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
+    call addfld ('FSNRTOAC',horiz_only,    'A','W/m2','Clearsky net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
+    call addfld ('FSNRTOAS',horiz_only,    'A','W/m2','Net near-infrared flux (>= 0.7 microns) at top of atmosphere', &
                                                                                                         sampling_seq='rad_lwsw')
-    call addfld ('SWCF    ','W/m2    ',1,    'A','Shortwave cloud forcing',phys_decomp, sampling_seq='rad_lwsw')
+    call addfld ('SWCF',horiz_only,    'A','W/m2','Shortwave cloud forcing', sampling_seq='rad_lwsw')
 
-    call addfld ('TOT_CLD_VISTAU    ','1',pver,    'A','Total gbx cloud visible sw optical depth',phys_decomp, &
+    call addfld ('TOT_CLD_VISTAU',(/ 'lev' /),    'A','1','Total gbx cloud visible sw optical depth', &
          sampling_seq='rad_lwsw',flag_xyfill=.true.)
-    call addfld ('TOT_ICLD_VISTAU   ','1',pver,    'A','Total in-cloud visible sw optical depth',phys_decomp, &
+    call addfld ('TOT_ICLD_VISTAU',(/ 'lev' /),    'A','1','Total in-cloud visible sw optical depth', &
          sampling_seq='rad_lwsw',flag_xyfill=.true.)
-    call addfld ('LIQ_ICLD_VISTAU   ','1',pver,    'A','Liquid in-cloud visible sw optical depth',phys_decomp, &
+    call addfld ('LIQ_ICLD_VISTAU',(/ 'lev' /),    'A','1','Liquid in-cloud visible sw optical depth', &
          sampling_seq='rad_lwsw',flag_xyfill=.true.)
-    call addfld ('ICE_ICLD_VISTAU   ','1',pver,    'A','Ice in-cloud visible sw optical depth',phys_decomp, &
+    call addfld ('ICE_ICLD_VISTAU',(/ 'lev' /),    'A','1','Ice in-cloud visible sw optical depth', &
          sampling_seq='rad_lwsw',flag_xyfill=.true.)
 
     ! Longwave radiation
-    call addfld ('QRL     ','K/s     ',pver, 'A','Longwave heating rate',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('QRLC    ','K/s     ',pver, 'A','Clearsky longwave heating rate',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLNS    ','W/m2    ',1,    'A','Net longwave flux at surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLDS    ','W/m2    ',1,    'A','Downwelling longwave flux at surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLNT    ','W/m2    ',1,    'A','Net longwave flux at top of model',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLUT    ','W/m2    ',1,    'A','Upwelling longwave flux at top of model',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLUTC   ','W/m2    ',1,    'A','Clearsky upwelling longwave flux at top of model',phys_decomp, &
+    call addfld ('QRL',(/ 'lev' /), 'A','K/s','Longwave heating rate', sampling_seq='rad_lwsw')
+    call addfld ('QRLC',(/ 'lev' /), 'A','K/s','Clearsky longwave heating rate', sampling_seq='rad_lwsw')
+    call addfld ('FLNS',horiz_only,    'A','W/m2','Net longwave flux at surface', sampling_seq='rad_lwsw')
+    call addfld ('FLDS',horiz_only,    'A','W/m2','Downwelling longwave flux at surface', sampling_seq='rad_lwsw')
+    call addfld ('FLNT',horiz_only,    'A','W/m2','Net longwave flux at top of model', sampling_seq='rad_lwsw')
+    call addfld ('FLUT',horiz_only,    'A','W/m2','Upwelling longwave flux at top of model', sampling_seq='rad_lwsw')
+    call addfld ('FLUTC',horiz_only,    'A','W/m2','Clearsky upwelling longwave flux at top of model', &
                                                                                                         sampling_seq='rad_lwsw')
-    call addfld ('FLNTC   ','W/m2    ',1,    'A','Clearsky net longwave flux at top of model',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLN200  ','W/m2    ',1,    'A','Net longwave flux at 200 mb',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLN200C ','W/m2    ',1,    'A','Clearsky net longwave flux at 200 mb',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLNSC   ','W/m2    ',1,    'A','Clearsky net longwave flux at surface',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLDSC   ','W/m2    ',1,    'A','Clearsky downwelling longwave flux at surface',phys_decomp, &
+    call addfld ('FLNTC',horiz_only,    'A','W/m2','Clearsky net longwave flux at top of model', sampling_seq='rad_lwsw')
+    call addfld ('FLN200',horiz_only,    'A','W/m2','Net longwave flux at 200 mb', sampling_seq='rad_lwsw')
+    call addfld ('FLN200C',horiz_only,    'A','W/m2','Clearsky net longwave flux at 200 mb', sampling_seq='rad_lwsw')
+    call addfld ('FLNSC',horiz_only,    'A','W/m2','Clearsky net longwave flux at surface', sampling_seq='rad_lwsw')
+    call addfld ('FLDSC',horiz_only,    'A','W/m2','Clearsky downwelling longwave flux at surface', &
                                                                                        sampling_seq='rad_lwsw')
-    call addfld ('LWCF    ','W/m2    ',1,    'A','Longwave cloud forcing',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FUL     ','W/m2    ',pverp,'I','Longwave upward flux',phys_decomp)
-    call addfld ('FDL     ','W/m2    ',pverp,'I','Longwave downward flux',phys_decomp)
-    call addfld ('FULC    ','W/m2    ',pverp,'I','Longwave clear-sky upward flux',phys_decomp)
-    call addfld ('FDLC    ','W/m2    ',pverp,'I','Longwave clear-sky downward flux',phys_decomp)
+    call addfld ('LWCF',horiz_only,    'A','W/m2','Longwave cloud forcing', sampling_seq='rad_lwsw')
+    call addfld ('FUL',(/ 'ilev' /),'I','W/m2','Longwave upward flux')
+    call addfld ('FDL',(/ 'ilev' /),'I','W/m2','Longwave downward flux')
+    call addfld ('FULC',(/ 'ilev' /),'I','W/m2','Longwave clear-sky upward flux')
+    call addfld ('FDLC',(/ 'ilev' /),'I','W/m2','Longwave clear-sky downward flux')
 
     ! Heating rate needed for d(theta)/dt computation
-    call addfld ('HR      ','K/s     ',pver, 'A','Heating rate needed for d(theta)/dt computation',phys_decomp)
+    call addfld ('HR',(/ 'lev' /), 'A','K/s','Heating rate needed for d(theta)/dt computation')
    
    ! determine default variables
     call phys_getopts(history_amwg_out   = history_amwg,   &

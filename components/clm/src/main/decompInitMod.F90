@@ -66,6 +66,8 @@ contains
     integer :: beg,end,lsize,gsize    ! used for gsmap init
     integer, pointer :: gindex(:)     ! global index for gsmap init
     integer, pointer :: clumpcnt(:)   ! clump index counter
+    integer, allocatable :: proc_ncell(:) ! number of cells assigned to a process
+    integer, allocatable :: proc_begg(:)  ! beginning cell index assigned to a process
     !------------------------------------------------------------------------------
 
     lns = lni * lnj
@@ -185,7 +187,12 @@ contains
 
     ! Assign gridcells to clumps (and thus pes) ---
 
-    allocate(lcid(lns))
+    allocate(lcid(lns), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_lnd(): allocation error for lcid'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
     lcid(:) = 0
     ng = 0
     do ln = 1,lns
@@ -207,30 +214,51 @@ contains
           if (iam == clumps(cid)%owner) then
              procinfo%ncells  = procinfo%ncells  + 1
           endif
-          if (iam >  clumps(cid)%owner) then
-             procinfo%begg = procinfo%begg + 1
-          endif
-          if (iam >= clumps(cid)%owner) then
-             procinfo%endg = procinfo%endg + 1
-          endif
 
           !--- give gridcell to cid ---
-          !--- increment the beg and end indices ---
           clumps(cid)%ncells  = clumps(cid)%ncells  + 1
-          do m = 1,nclumps
-             if ((clumps(m)%owner >  clumps(cid)%owner) .or. &
-                 (clumps(m)%owner == clumps(cid)%owner .and. m > cid)) then
-                clumps(m)%begg = clumps(m)%begg + 1
-             endif
-             
-             if ((clumps(m)%owner >  clumps(cid)%owner) .or. &
-                 (clumps(m)%owner == clumps(cid)%owner .and. m >= cid)) then
-                clumps(m)%endg = clumps(m)%endg + 1
-             endif
-          enddo
 
        end if
     enddo
+
+    ! calculate number of cells per process
+    allocate(proc_ncell(0:npes-1), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_lnd(): allocation error for proc_ncell'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    proc_ncell(:) = 0
+    do cid = 1,nclumps
+       proc_ncell(clumps(cid)%owner) = proc_ncell(clumps(cid)%owner) + clumps(cid)%ncells
+    enddo
+
+    ! determine offset (begg) for all processes,
+    ! and then procinfo%begg and procinfo%endg (for iam)
+    allocate(proc_begg(0:npes-1), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_lnd(): allocation error for proc_begg'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    proc_begg(0) = 1
+    do pid = 1,npes-1
+       proc_begg(pid) = proc_begg(pid-1) + proc_ncell(pid-1)
+    enddo
+    procinfo%begg = proc_begg(iam)
+    procinfo%endg = (procinfo%begg-1) + procinfo%ncells
+
+    ! determine offset for each clump assigned to each process
+    ! (re-using proc_begg as work space)
+    do cid = 1,nclumps
+      clumps(cid)%begg = proc_begg(clumps(cid)%owner)
+      proc_begg(clumps(cid)%owner) = proc_begg(clumps(cid)%owner) &
+                                   + clumps(cid)%ncells
+      clumps(cid)%endg = proc_begg(clumps(cid)%owner) - 1
+    enddo
+
+    ! free work space
+    deallocate(proc_ncell, proc_begg)
 
     ! Set ldecomp
 
@@ -251,14 +279,8 @@ contains
     ! clumpcnt is the start gdc index of each clump
 
     clumpcnt = 0
-    ag = 1
-    do pid = 0,npes-1
     do cid = 1,nclumps
-       if (clumps(cid)%owner == pid) then
-         clumpcnt(cid) = ag
-         ag = ag + clumps(cid)%ncells
-       endif
-    enddo
+       clumpcnt(cid) = clumps(cid)%begg
     enddo
 
     ! now go through gridcells one at a time and increment clumpcnt
@@ -340,6 +362,8 @@ contains
     integer :: ier                ! error code
     integer, allocatable :: allvecg(:,:)  ! temporary vector "global"
     integer, allocatable :: allvecl(:,:)  ! temporary vector "local"
+    integer, allocatable :: proc_nXXX(:) ! number of XXX assigned to a process
+    integer, allocatable :: proc_begX(:) ! beginning XXX index assigned to a process
     integer :: ntest
     character(len=32), parameter :: subname = 'decompInit_clumps'
     !------------------------------------------------------------------------------
@@ -405,32 +429,12 @@ contains
        numCohort = numCohort + icohorts       ! total number of cohorts
 
        !--- give gridcell to cid ---
-       !--- increment the beg and end indices ---
        clumps(cid)%nlunits  = clumps(cid)%nlunits  + ilunits  
        clumps(cid)%ncols    = clumps(cid)%ncols    + icols
        clumps(cid)%npfts    = clumps(cid)%npfts    + ipfts
        clumps(cid)%nCohorts = clumps(cid)%nCohorts + icohorts
 
-       do m = 1,nclumps
-          if ((clumps(m)%owner >  clumps(cid)%owner) .or. &
-              (clumps(m)%owner == clumps(cid)%owner .and. m > cid)) then
-             clumps(m)%begl = clumps(m)%begl + ilunits
-             clumps(m)%begc = clumps(m)%begc + icols
-             clumps(m)%begp = clumps(m)%begp + ipfts
-             clumps(m)%begCohort = clumps(m)%begCohort + icohorts
-          endif
-
-          if ((clumps(m)%owner >  clumps(cid)%owner) .or. &
-              (clumps(m)%owner == clumps(cid)%owner .and. m >= cid)) then
-             clumps(m)%endl = clumps(m)%endl + ilunits
-             clumps(m)%endc = clumps(m)%endc + icols
-             clumps(m)%endp = clumps(m)%endp + ipfts
-             clumps(m)%endCohort = clumps(m)%endCohort + icohorts
-          endif
-       enddo
-
        !--- give gridcell to the proc that owns the cid ---
-       !--- increment the beg and end indices ---
        if (iam == clumps(cid)%owner) then
           procinfo%nlunits  = procinfo%nlunits  + ilunits
           procinfo%ncols    = procinfo%ncols    + icols
@@ -438,20 +442,129 @@ contains
           procinfo%nCohorts = procinfo%nCohorts + icohorts
        endif
 
-       if (iam >  clumps(cid)%owner) then
-          procinfo%begl = procinfo%begl + ilunits
-          procinfo%begc = procinfo%begc + icols
-          procinfo%begp = procinfo%begp + ipfts
-          procinfo%begCohort = procinfo%begCohort + icohorts
-       endif
-
-       if (iam >= clumps(cid)%owner) then
-          procinfo%endl = procinfo%endl + ilunits
-          procinfo%endc = procinfo%endc + icols
-          procinfo%endp = procinfo%endp + ipfts
-          procinfo%endCohort = procinfo%endCohort + icohorts
-       endif
     enddo
+
+    ! determine offset for XXX (lunits/cols/pfts/cohorts) index
+    ! for each process
+
+    allocate(proc_nXXX(0:npes-1), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_clumps(): allocation error for proc_nXXX'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    allocate(proc_begX(0:npes-1), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_clumps(): allocation error for proc_begX'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    ! LUNITS:
+    ! calculate number of lunits per process
+    proc_nXXX(:) = 0
+    do cid = 1,nclumps
+       proc_nXXX(clumps(cid)%owner) = &
+        proc_nXXX(clumps(cid)%owner) + clumps(cid)%nlunits
+    enddo
+
+    ! determine offset (begl) for all processes,
+    ! and then procinfo%begl and procinfo%endl (for iam)
+    proc_begX(0) = 1
+    do pid = 1,npes-1
+       proc_begX(pid) = proc_begX(pid-1) + proc_nXXX(pid-1)
+    enddo
+    procinfo%begl = proc_begX(iam)
+    procinfo%endl = (procinfo%begl-1) + procinfo%nlunits
+
+    ! determine lunit offset for each clump assigned to each process
+    ! (re-using proc_begX as work space)
+    do cid = 1,nclumps
+      clumps(cid)%begl = proc_begX(clumps(cid)%owner)
+      proc_begX(clumps(cid)%owner) = proc_begX(clumps(cid)%owner) &
+                                   + clumps(cid)%nlunits
+      clumps(cid)%endl = proc_begX(clumps(cid)%owner) - 1
+    enddo
+
+    ! COLS:
+    ! calculate number of cols per process
+    proc_nXXX(:) = 0
+    do cid = 1,nclumps
+       proc_nXXX(clumps(cid)%owner) = &
+        proc_nXXX(clumps(cid)%owner) + clumps(cid)%ncols
+    enddo
+
+    ! determine offset (begc) for all processes,
+    ! and then procinfo%begc and procinfo%endc (for iam)
+    proc_begX(0) = 1
+    do pid = 1,npes-1
+       proc_begX(pid) = proc_begX(pid-1) + proc_nXXX(pid-1)
+    enddo
+    procinfo%begc = proc_begX(iam)
+    procinfo%endc = (procinfo%begc-1) + procinfo%ncols
+
+    ! determine col offset for each clump assigned to each process
+    ! (re-using proc_begX as work space)
+    do cid = 1,nclumps
+      clumps(cid)%begc = proc_begX(clumps(cid)%owner)
+      proc_begX(clumps(cid)%owner) = proc_begX(clumps(cid)%owner) &
+                                   + clumps(cid)%ncols
+      clumps(cid)%endc = proc_begX(clumps(cid)%owner) - 1
+    enddo
+
+    ! PFTS:
+    ! calculate number of pfts per process
+    proc_nXXX(:) = 0
+    do cid = 1,nclumps
+       proc_nXXX(clumps(cid)%owner) = &
+        proc_nXXX(clumps(cid)%owner) + clumps(cid)%npfts
+    enddo
+
+    ! determine offset (begp) for all processes,
+    ! and then procinfo%begp and procinfo%endp (for iam)
+    proc_begX(0) = 1
+    do pid = 1,npes-1
+       proc_begX(pid) = proc_begX(pid-1) + proc_nXXX(pid-1)
+    enddo
+    procinfo%begp = proc_begX(iam)
+    procinfo%endp = (procinfo%begp-1) + procinfo%npfts
+
+    ! determine col offset for each clump assigned to each process
+    ! (re-using proc_begX as work space)
+    do cid = 1,nclumps
+      clumps(cid)%begp = proc_begX(clumps(cid)%owner)
+      proc_begX(clumps(cid)%owner) = proc_begX(clumps(cid)%owner) &
+                                   + clumps(cid)%npfts
+      clumps(cid)%endp = proc_begX(clumps(cid)%owner) - 1
+    enddo
+
+    ! COHORTS:
+    ! calculate number of cohorts per process
+    proc_nXXX(:) = 0
+    do cid = 1,nclumps
+       proc_nXXX(clumps(cid)%owner) = &
+        proc_nXXX(clumps(cid)%owner) + clumps(cid)%nCohorts
+    enddo
+
+    ! determine offset (begCohort) for all processes,
+    ! and then procinfo%begCohort and procinfo%endCohort (for iam)
+    proc_begX(0) = 1
+    do pid = 1,npes-1
+       proc_begX(pid) = proc_begX(pid-1) + proc_nXXX(pid-1)
+    enddo
+    procinfo%begCohort = proc_begX(iam)
+    procinfo%endCohort = (procinfo%begCohort-1) + procinfo%nCohorts
+
+    ! determine col offset for each clump assigned to each process
+    ! (re-using proc_begX as work space)
+    do cid = 1,nclumps
+      clumps(cid)%begCohort = proc_begX(clumps(cid)%owner)
+      proc_begX(clumps(cid)%owner) = proc_begX(clumps(cid)%owner) &
+                                   + clumps(cid)%nCohorts
+      clumps(cid)%endCohort = proc_begX(clumps(cid)%owner) - 1
+    enddo
+
+    ! free work space
+    deallocate(proc_nXXX, proc_begX)
 
     do n = 1,nclumps
        if (clumps(n)%ncells   /= allvecg(n,1) .or. &
@@ -498,6 +611,7 @@ contains
     integer :: i,g,k,l,n,np       ! indices
     integer :: cid,pid            ! indices
     integer :: begg,endg          ! beg,end gridcells
+    integer :: begt,endt          ! beg,end topographic units
     integer :: begl,endl          ! beg,end landunits
     integer :: begc,endc          ! beg,end columns
     integer :: begp,endp          ! beg,end pfts
@@ -532,7 +646,7 @@ contains
 
     !init 
 
-    call get_proc_bounds(begg, endg, begl, endl, begc, endc, begp, endp, &
+    call get_proc_bounds(begg, endg, begt, endt, begl, endl, begc, endc, begp, endp, &
          begCohort, endCohort)
     call get_proc_global(ng=numg, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
 

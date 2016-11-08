@@ -58,6 +58,12 @@ module WaterfluxType
      real(r8), pointer :: qflx_ev_h2osfc_patch     (:)   ! patch evaporation heat flux from soil       (W/m**2) [+ to atm]
      real(r8), pointer :: qflx_ev_h2osfc_col       (:)   ! col evaporation heat flux from soil         (W/m**2) [+ to atm]
 
+     real(r8), pointer :: qflx_gross_evap_soil_col (:)   ! col gross infiltration from soil, this satisfies the relationship qflx_infl_col = qflx_gross_infl_soil_col-qflx_gross_evap_soil_col
+     real(r8), pointer :: qflx_gross_infl_soil_col (:)   ! col gross infiltration, before considering the evaporation
+     real(r8), pointer :: qflx_adv_col             (:,:) ! col advective flux across different soil layer interfaces [mm H2O/s] [+ downward]
+     real(r8), pointer :: qflx_rootsoi_col         (:,:) ! col root and soil water exchange [mm H2O/s] [+ into root]     
+    
+     real(r8), pointer :: dwb_col                  (:)   ! coll water mass change [+ increase] [mm H2O/s] 
      real(r8), pointer :: qflx_infl_col            (:)   ! col infiltration (mm H2O /s)
      real(r8), pointer :: qflx_surf_col            (:)   ! col surface runoff (mm H2O /s)
      real(r8), pointer :: qflx_drain_col           (:)   ! col sub-surface runoff (mm H2O /s)
@@ -81,6 +87,10 @@ module WaterfluxType
      real(r8), pointer :: qflx_glcice_col          (:)   ! col net flux of new glacial ice (growth - melt) (mm H2O/s), passed to GLC
      real(r8), pointer :: qflx_glcice_frz_col      (:)   ! col ice growth (positive definite) (mm H2O/s)
      real(r8), pointer :: qflx_glcice_melt_col     (:)   ! col ice melt (positive definite) (mm H2O/s)
+     real(r8), pointer :: qflx_drain_vr_col        (:,:) ! col liquid water losted as drainage (m /time step)
+     real(r8), pointer :: qflx_h2osfc2topsoi_col   (:)   ! col liquid water coming from surface standing water top soil (mm H2O/s)
+     real(r8), pointer :: qflx_snow2topsoi_col     (:)   ! col liquid water coming from residual snow to topsoil (mm H2O/s)
+
      real(r8), pointer :: snow_sources_col         (:)   ! col snow sources (mm H2O/s)
      real(r8), pointer :: snow_sinks_col           (:)   ! col snow sinks (mm H2O/s)
 
@@ -94,10 +104,21 @@ module WaterfluxType
      real(r8), pointer :: irrig_rate_patch         (:)   ! current irrigation rate [mm/s]
      integer , pointer :: n_irrig_steps_left_patch (:)   ! number of time steps for which we still need to irrigate today (if 0, ignore)
 
+     ! For VSFM
+     real(r8), pointer :: mflx_infl_col_1d         (:)   ! infiltration source in top soil control volume (kg H2O /s)
+     real(r8), pointer :: mflx_dew_col_1d          (:)   ! liquid+snow dew source in top soil control volume (kg H2O /s)
+     real(r8), pointer :: mflx_et_col_1d           (:)   ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
+     real(r8), pointer :: mflx_drain_col_1d        (:)   ! drainage from groundwater table (kg H2O /s)
+     real(r8), pointer :: mflx_drain_perched_col_1d(:)   ! drainage from perched water table (kg H2O /s)
+     real(r8), pointer :: mflx_snowlyr_col_1d      (:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+     real(r8), pointer :: mflx_sub_snow_col_1d     (:)   ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
+     real(r8), pointer :: mflx_snowlyr_col         (:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s). This is for restart
+     real(r8), pointer :: mflx_neg_snow_col_1d     (:)   ! mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
    contains
  
      procedure, public  :: Init
      procedure, public  :: Restart
+     procedure, public  :: Reset     
      procedure, private :: InitAllocate
      procedure, private :: InitHistory
      procedure, private :: InitCold
@@ -127,7 +148,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use clm_varpar     , only : nlevsno, nlevgrnd, nlevsoi
     !
     ! !ARGUMENTS:
     class(waterflux_type) :: this
@@ -137,6 +158,7 @@ contains
     integer :: begp, endp
     integer :: begc, endc
     integer :: begg, endg
+    integer :: ncells
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -176,6 +198,7 @@ contains
     allocate(this%qflx_evap_tot_patch      (begp:endp))              ; this%qflx_evap_tot_patch      (:)   = nan
     allocate(this%qflx_evap_grnd_patch     (begp:endp))              ; this%qflx_evap_grnd_patch     (:)   = nan
 
+    allocate(this%dwb_col                  (begc:endc))              ; this%dwb_col                  (:)   = nan
     allocate( this%qflx_ev_snow_patch      (begp:endp))              ; this%qflx_ev_snow_patch       (:)   = nan
     allocate( this%qflx_ev_snow_col        (begc:endc))              ; this%qflx_ev_snow_col         (:)   = nan
     allocate( this%qflx_ev_soil_patch      (begp:endp))              ; this%qflx_ev_soil_patch       (:)   = nan
@@ -183,6 +206,12 @@ contains
     allocate( this%qflx_ev_h2osfc_patch    (begp:endp))              ; this%qflx_ev_h2osfc_patch     (:)   = nan
     allocate( this%qflx_ev_h2osfc_col      (begc:endc))              ; this%qflx_ev_h2osfc_col       (:)   = nan
 
+    allocate(this%qflx_gross_evap_soil_col (begc:endc))              ; this%qflx_gross_evap_soil_col (:)   = nan
+    allocate(this%qflx_gross_infl_soil_col (begc:endc))              ; this%qflx_gross_infl_soil_col (:)   = nan
+    allocate(this%qflx_drain_vr_col        (begc:endc,1:nlevsoi))    ; this%qflx_drain_vr_col        (:,:) = nan
+    allocate(this%qflx_adv_col             (begc:endc,0:nlevsoi))    ; this%qflx_adv_col             (:,:) = nan
+    allocate(this%qflx_rootsoi_col         (begc:endc,1:nlevsoi))    ; this%qflx_rootsoi_col         (:,:) = nan
+    
     allocate(this%qflx_infl_col            (begc:endc))              ; this%qflx_infl_col            (:)   = nan
     allocate(this%qflx_surf_col            (begc:endc))              ; this%qflx_surf_col            (:)   = nan
     allocate(this%qflx_drain_col           (begc:endc))              ; this%qflx_drain_col           (:)   = nan
@@ -217,6 +246,22 @@ contains
     allocate(this%irrig_rate_patch         (begp:endp))              ; this%irrig_rate_patch         (:)   = nan
     allocate(this%n_irrig_steps_left_patch (begp:endp))              ; this%n_irrig_steps_left_patch (:)   = 0
 
+    allocate(this%qflx_snow2topsoi_col     (begc:endc))              ; this%qflx_snow2topsoi_col     (:)   = nan
+    allocate(this%qflx_h2osfc2topsoi_col   (begc:endc))              ; this%qflx_h2osfc2topsoi_col   (:)   = nan
+    
+    ncells = endc - begc + 1
+    allocate(this%mflx_infl_col_1d(            ncells))              ; this%mflx_infl_col_1d         (:)   = nan
+    allocate(this%mflx_dew_col_1d(             ncells))              ; this%mflx_dew_col_1d          (:)   = nan
+    allocate(this%mflx_snowlyr_col_1d(         ncells))              ; this%mflx_snowlyr_col_1d      (:)   = nan
+    allocate(this%mflx_sub_snow_col_1d(        ncells))              ; this%mflx_sub_snow_col_1d     (:)   = nan
+    allocate(this%mflx_snowlyr_col(         begc:endc))              ; this%mflx_snowlyr_col         (:)   = 0._r8
+    allocate(this%mflx_neg_snow_col_1d(        ncells))              ; this%mflx_neg_snow_col_1d     (:)   = nan
+
+    ncells = (endc - begc + 1)*nlevgrnd
+    allocate(this%mflx_et_col_1d(              ncells))              ; this%mflx_et_col_1d           (:)   = nan
+    allocate(this%mflx_drain_col_1d(           ncells))              ; this%mflx_drain_col_1d        (:)   = nan
+    allocate(this%mflx_drain_perched_col_1d(   ncells))              ; this%mflx_drain_perched_col_1d(:)  = nan
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -225,7 +270,7 @@ contains
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use clm_varpar     , only : nlevsno, crop_prog 
+    use clm_varpar     , only : nlevsno, crop_prog, nlevsoi 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -263,6 +308,11 @@ contains
     call hist_addfld1d (fname='QRGWL',  units='mm/s',  &
          avgflag='A', long_name='surface runoff at glaciers (liquid only), wetlands, lakes', &
          ptr_col=this%qflx_qrgwl_col, c2l_scale_type='urbanf')
+
+    this%dwb_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWB',  units='mm/s',  &
+         avgflag='A', long_name='net change in total water mass', &
+         ptr_col=this%dwb_col, c2l_scale_type='urbanf')
 
     this%qflx_drain_col(begc:endc) = spval
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
@@ -483,6 +533,7 @@ contains
     this%qflx_h2osfc_surf_col(bounds%begc:bounds%endc) = 0._r8
     this%qflx_snow_melt_col(bounds%begc:bounds%endc)   = 0._r8
 
+    this%dwb_col(bounds%begc:bounds%endc) = 0._r8
     ! needed for CNNLeaching 
     do c = bounds%begc, bounds%endc
        l = col%landunit(c)
@@ -593,6 +644,33 @@ contains
        this%irrig_rate_patch = 0.0_r8
     end if
 
-  end subroutine Restart
+    call restartvar(ncid=ncid, flag=flag, varname='MFLX_SNOW_LYR', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='mass flux due to disapperance of last snow layer', units='kg/s', &
+         interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr_col)
 
+end subroutine Restart
+
+  
+  subroutine Reset(this, bounds, numf, filter)
+    !
+    ! !DESCRIPTION:
+    ! Intitialize SNICAR variables for fresh snow column
+    !
+    ! !ARGUMENTS:
+    class(waterflux_type)              :: this
+    type(bounds_type)    , intent(in)  :: bounds
+    integer              , intent(in)  :: numf
+    integer              , intent(in)  :: filter(:)
+    !-----------------------------------------------------------------------
+    
+    integer :: fc, column
+    
+    do fc = 1, numf
+      column = filter(fc)
+      this%qflx_snow2topsoi_col     (column)   = 0._r8
+      this%qflx_h2osfc2topsoi_col   (column)   = 0._r8      
+    enddo  
+  end subroutine Reset    
+  
 end module WaterfluxType

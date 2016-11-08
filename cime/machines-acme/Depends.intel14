@@ -6,23 +6,23 @@
 #ecosys_mod.o: ecosys_mod.F90
 #	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -CU $<
 
-prim_advection_mod.o: prim_advection_mod.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O3  -no-prec-div  $<
 
-edge_mod.o: edge_mod.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
 
-derivative_mod.o: derivative_mod.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
+PERFOBJS=\
+prim_advection_mod_base.o \
+vertremap_mod_base.o \
+edge_mod_base.o \
+derivative_mod_base.o \
+bndry_mod_base.o \
+prim_advance_mod.o \
+uwshcu.o \
+wetdep.o
 
-bndry_mod.o: bndry_mod.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
-
-prim_advance_mod.o: prim_advance_mod.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
-
-uwshcu.o: uwshcu.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
-
-wetdep.o: wetdep.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
+ifeq ($(DEBUG),FALSE)
+  $(PERFOBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div $<
+  $(REDUCED_OPT_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O1 $<
+  $(REDUCED_PRECISION_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -fimf-precision=low -fp-model fast $<
+endif

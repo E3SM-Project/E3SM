@@ -19,8 +19,6 @@ module cam_control_mod
 
   logical :: indirect          ! True => include indirect radiative effects of sulfate aerosols
 
-  logical :: use_64bit_nc = .true.   ! true => use new 64-bit netCDF format for cam history files
-
 ! Earth's orbital characteristics
 !	
 ! Orbital information after processed by orbit_params
@@ -54,5 +52,38 @@ module cam_control_mod
       real(r8) :: snwedp     ! Snow equivalent depth factor
 
       integer :: magfield_fix_year = 1995
+
+contains
+
+subroutine cam_ctrl_set_physics_type(phys_package)
+  use cam_abortutils, only : endrun
+  use spmd_utils,     only: masterproc
+
+  ! Dummy argument
+  character(len=*), intent(in) :: phys_package
+  ! Local variable
+  character(len=*), parameter :: subname = 'cam_ctrl_set_physics_type'
+
+  adiabatic = trim(phys_package) == 'adiabatic'
+  ideal_phys = trim(phys_package) == 'held_suarez'
+  moist_physics = .not. (adiabatic .or. ideal_phys)
+  if (adiabatic .and. ideal_phys) then
+    call endrun (subname//': FATAL: Only one of ADIABATIC or HELD_SUAREZ can be .true.')
+  end if
+
+  if ((.not. moist_physics) .and. aqua_planet) then
+    call endrun (subname//': FATAL: AQUA_PLANET not compatible with dry physics package, ('//trim(phys_package)//')')
+  end if
+
+  if (masterproc) then
+    if (adiabatic) then
+      write(iulog,*) 'Run model ADIABATICALLY (i.e. no physics)'
+    end if
+    if (ideal_phys) then
+      write(iulog,*) 'Run model with Held-Suarez physics forcing'
+    end if
+  end if
+
+end subroutine cam_ctrl_set_physics_type
 
 end module cam_control_mod

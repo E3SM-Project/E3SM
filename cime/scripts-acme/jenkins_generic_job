@@ -11,11 +11,14 @@ import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
-import argparse, sys, os, shutil, glob, doctest
+import argparse, sys, os, shutil, glob, doctest, signal
 
 from acme_util import expect, warning, verbose_print
 
 SENTINEL_FILE = "ONGOING_TEST"
+
+# Don't know if this belongs here longterm
+MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -41,8 +44,9 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_test_suite = acme_util.get_machine_info()[1]
-    default_maintain_baselines = acme_util.get_machine_info()[7]
+    machine = acme_util.probe_machine_name()
+    default_test_suite = acme_util.get_machine_info("TESTS")
+    default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
 
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
@@ -62,10 +66,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-p", "--cdash-project", default=wait_for_tests.ACME_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
 
-    parser.add_argument("-n", "--namelists-only", action="store_true",
-                        help="Only compare/generate namelists. Useful for quick namelist-only operations")
-
-    parser.add_argument("-b", "--baseline-name", default=acme_util.get_current_branch(repo=acme_util.get_cime_root()),
+    parser.add_argument("-b", "--baseline-name", default=acme_util.get_current_branch(repo=acme_util.get_acme_root()),
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
     parser.add_argument("-t", "--test-suite", default=default_test_suite,
@@ -73,6 +74,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("--cdash-build-group", default=wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
                         help="The build group to be used to display results on the CDash dashboard.")
+
+    parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
+                        help="Number of tasks create_test should perform simultaneously. Default "
+                        "will be min(num_cores, num_tests).")
 
     args = parser.parse_args(args[1:])
 
@@ -85,40 +90,43 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use -p without -d")
 
-    return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.namelists_only, args.test_suite, args.cdash_build_group, args.baseline_compare
+    return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.parallel_jobs
 
 ###############################################################################
-def cleanup_queue(set_of_jobs_we_created, batch_system):
+def cleanup_queue(set_of_jobs_we_created):
 ###############################################################################
     """
     Delete all jobs left in the queue
     """
-    current_jobs = set(acme_util.get_my_queued_jobs(batch_system))
+    current_jobs = set(acme_util.get_my_queued_jobs())
     jobs_to_delete = set_of_jobs_we_created & current_jobs
 
-    for job_to_delete in jobs_to_delete:
-        warning("Found leftover job: %s" % job_to_delete)
-        del_cmd = "%s %s" % (acme_util.get_batch_system_info(batch_system)[1], job_to_delete)
-        stat = acme_util.run_cmd(del_cmd, verbose=True, ok_to_fail=True)[0]
+    if (jobs_to_delete):
+        warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
+        stat = acme_util.delete_jobs(jobs_to_delete)[0]
         if (stat != 0):
-            warning("FAILED to clean up leftover job: %s" % job_to_delete)
-        else:
-            warning("Deleted leftover job: %s" % job_to_delete)
+            warning("FAILED to clean up leftover jobs!")
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
                         arg_cdash_build_name, cdash_project,
-                        namelists_only, arg_test_suite,
-                        cdash_build_group, baseline_compare):
+                        arg_test_suite,
+                        cdash_build_group, baseline_compare,
+                        parallel_jobs):
 ###############################################################################
-    compiler, test_suite, use_batch, project, testroot, _, proxy, _ = \
-        acme_util.get_machine_info()
+    """
+    Return True if all tests passed
+    """
+    use_batch = acme_util.does_machine_have_batch()
+    compilers, test_suite, scratch_root, proxy = \
+        acme_util.get_machine_info(["COMPILERS", "TESTS", "CESMSCRATCHROOT", "PROXY"])
+    compiler = compilers[0]
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
-    casearea = os.path.join(testroot, "jenkins")
+    test_root = os.path.join(scratch_root, "jenkins")
 
     if (use_batch):
-        batch_system = acme_util.probe_batch_system()
-        expect(batch_system is not None, "Failed to probe batch system")
+        batch_system = acme_util.get_batch_system()
+        expect(batch_system is not None, "Bad XML. Batch machine has no batch_system configuration.")
 
     #
     # Env changes
@@ -128,20 +136,26 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         os.environ["http_proxy"] = proxy
 
     #
+    # Update submodules (Jenkins is struggling with this at the moment)
+    #
+
+    acme_util.run_cmd("git submodule update --init", from_dir=acme_util.get_acme_root())
+
+    #
     # Cleanup previous test leftovers. Code beyond here assumes that
-    # we have the testroot and casearea to ourselves. No other ACME testing
+    # we have the scratch_root and test_root to ourselves. No other ACME testing
     # should be happening for the current user. A sentinel file helps
     # enforce this.
     #
     # Very tiny race window here, not going to sweat it
     #
 
-    sentinel_path = os.path.join(testroot, SENTINEL_FILE)
+    sentinel_path = os.path.join(scratch_root, SENTINEL_FILE)
     expect(not os.path.isfile(sentinel_path),
            "Tests were already in progress, cannot start more!")
 
-    if (not os.path.isdir(testroot)):
-        os.makedirs(testroot)
+    if (not os.path.isdir(scratch_root)):
+        os.makedirs(scratch_root)
 
     open(sentinel_path, 'w').close()
 
@@ -162,11 +176,11 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
 
         # Remove the old build/run dirs
         test_id_root = "jenkins_%s" % baseline_name
-        for old_dir in glob.glob("%s/*%s*" % (testroot, test_id_root)):
+        for old_dir in glob.glob("%s/*%s*" % (scratch_root, test_id_root)):
             shutil.rmtree(old_dir)
 
         # Remove the old cases
-        for old_file in glob.glob("%s/*%s*" % (casearea, test_id_root)):
+        for old_file in glob.glob("%s/*%s*" % (test_root, test_id_root)):
             if (os.path.isdir(old_file)):
                 shutil.rmtree(old_file)
             else:
@@ -178,7 +192,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         #
 
         if (use_batch):
-            preexisting_queued_jobs = acme_util.get_my_queued_jobs(batch_system)
+            preexisting_queued_jobs = acme_util.get_my_queued_jobs()
 
         #
         # Set up create_test command and run it
@@ -190,22 +204,18 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         elif (baseline_compare == "yes"):
             baseline_args = "-c -b %s" % baseline_name
 
-        test_id = "%s_%s" % (test_id_root, acme_util.get_utc_timestamp())
-        create_test_cmd = "./create_test %s --test-root %s -p %s -t %s %s" % \
-                          (test_suite, casearea, project, test_id, baseline_args)
+        pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
 
-        if (namelists_only):
-            create_test_cmd += " -n"
+        test_id = "%s_%s" % (test_id_root, acme_util.get_utc_timestamp())
+        create_test_cmd = "./create_test %s --test-root %s -t %s %s %s" % \
+                          (test_suite, test_root, test_id, baseline_args, pjob_arg)
 
         if (not wait_for_tests.SIGNAL_RECEIVED):
             create_test_stat = acme_util.run_cmd(create_test_cmd, from_dir=acme_util.get_acme_scripts_root(),
                                                  verbose=True, arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
-            if (create_test_stat != 0):
-                warning("create_test FAILED!")
-
-        # TODO: the testing scripts should produce all PASS when only generating namelists
-        if (namelists_only and generate_baselines):
-            return True
+            # Create_test should have either passed, detected failing tests, or timed out
+            expect(create_test_stat in [0, acme_util.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
+                   "Create_test script FAILED with error code '%d'!" % create_test_stat)
 
         if (use_batch):
             # This is not fullproof. Any jobs that happened to be
@@ -213,8 +223,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
             # potentially deleted. This is still a big improvement over the
             # previous implementation which just assumed all queued jobs for this
             # user came from create_test.
-            # TODO: change this to probe casearea for jobs ids
-            our_jobs = set(acme_util.get_my_queued_jobs(batch_system)) - set(preexisting_queued_jobs)
+            # TODO: change this to probe test_root for jobs ids
+            our_jobs = set(acme_util.get_my_queued_jobs()) - set(preexisting_queued_jobs)
 
         #
         # Wait for tests
@@ -225,7 +235,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         else:
             cdash_build_name = None
 
-        tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*%s*/TestStatus" % (casearea, test_id)),
+        tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*%s*/TestStatus" % (test_root, test_id)),
                                                      not use_batch, # wait if using queue
                                                      False, # don't check throughput
                                                      False, # don't check memory
@@ -235,9 +245,9 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
                                                      cdash_build_group)
         if (not tests_passed and use_batch and wait_for_tests.SIGNAL_RECEIVED):
             # Cleanup
-            cleanup_queue(our_jobs, batch_system)
+            cleanup_queue(our_jobs)
 
-        return tests_passed and create_test_stat == 0
+        return tests_passed
     finally:
         expect(os.path.isfile(sentinel_path), "Missing sentinel file")
         os.remove(sentinel_path)
@@ -251,10 +261,11 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, test_suite, cdash_build_group, no_baseline_compare = \
+    generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, parallel_jobs = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, test_suite, cdash_build_group, no_baseline_compare) else 1)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, parallel_jobs)
+             else acme_util.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
 

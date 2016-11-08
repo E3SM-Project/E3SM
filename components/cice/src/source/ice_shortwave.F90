@@ -192,6 +192,14 @@
          exp_min              ! minimum exponential value
       logical :: tflag = .false.   ! timer flag
       character(len=1) :: tstr    ! timer string
+#ifdef MODAL_AER
+      !mgf++
+      real (kind=dbl_kind), dimension (3,10) :: kaer_bc_tab ! BC mass extinction cross section (m2/kg)
+      real (kind=dbl_kind), dimension (3,10) :: waer_bc_tab ! BC single scatter albedo (fraction)
+      real (kind=dbl_kind), dimension (3,10) :: gaer_bc_tab ! BC aerosol asymmetry parameter (cos(theta))
+      real (kind=dbl_kind), dimension (3,10,8) :: bcenh
+      !mgf--
+#endif
 
 !=======================================================================
 
@@ -2322,6 +2330,15 @@
          taer                   , & ! total aerosol extinction optical depth
          waer                   , & ! total aerosol single scatter albedo
          gaer                       ! total aerosol asymmetry parameter
+#ifdef MODAL_AER
+      !mgf++
+      integer(kind=int_kind) :: idx_bcint_icerds
+      integer(kind=int_kind) :: idx_bcint_nclrds
+      integer(kind=int_kind) :: idx_bcext_nclrds
+      real(kind=dbl_kind):: tmp_gs
+      real(kind=dbl_kind):: tmp1
+      !mgf--
+#endif
 
       ! snow grain radii (micro-meters) for table
       data rsnw_tab/ &
@@ -2713,11 +2730,87 @@
               g(k,ij)   = gs(ns)
               ! aerosol in snow
               nmbaer_actual = min(n_aero,nmbaer)
+
+#ifdef MODAL_AER
+              !mgf++
+              ! snow grain size (um)
+              tmp_gs = fr*rsnw(i,j,ksnow)
+                
+              ! get grain size index:
+              ! works for 25 < snw_rds < 1625 um:
+              if (tmp_gs < 125) then
+                 tmp1 = tmp_gs/50
+                 idx_bcint_icerds = nint(tmp1)
+              elseif (tmp_gs < 175) then
+                 idx_bcint_icerds = 2
+              else
+                 tmp1 = (tmp_gs/250)+2
+                 idx_bcint_icerds = nint(tmp1)
+              endif
+
+              ! Set index corresponding to BC effective radius.  Here,
+              ! asssume constant BC effective radius of 100nm
+              ! (corresponding to index 2)
+              idx_bcint_nclrds = 2
+              idx_bcext_nclrds = 2
+
+              ! check bounds:
+              if (idx_bcint_icerds < 1)  idx_bcint_icerds = 1
+              if (idx_bcint_icerds > 8)  idx_bcint_icerds = 8
+              if (idx_bcint_nclrds < 1)  idx_bcint_nclrds = 1
+              if (idx_bcint_nclrds > 10) idx_bcint_nclrds = 10
+              if (idx_bcext_nclrds < 1)  idx_bcext_nclrds = 1
+              if (idx_bcext_nclrds > 10) idx_bcext_nclrds = 10
+
+              ! print ice radius index:
+              !write(6,*) "MGFICE2: ice index= ", idx_bcint_icerds
+              !write(6,*) "MGFICE2: ext_cff_mss_bc = ", kaer_bc_tab(1,1), kaer_bc_tab(2,1), kaer_bc_tab(1,2), kaer_bc_tab(3,1),kaer_bc_tab(3,10) 
+              !write(6,*) "MGFICE2: ss_alb_bc = ", waer_bc_tab(1,1), waer_bc_tab(2,1), waer_bc_tab(1,2), waer_bc_tab(3,1), waer_bc_tab(3,10)
+              !write(6,*) "MGFICE2: asm_prm_bc = ", gaer_bc_tab(1,1), gaer_bc_tab(2,1), gaer_bc_tab(1,2), gaer_bc_tab(3,1), gaer_bc_tab(3,10)
+              !write(6,*) "MGFICE2: bcenh = ", bcenh(1,1,1), bcenh(1,2,1), bcenh(1,1,2), bcenh(2,1,1), bcenh(3,10,1), bcenh(3,1,8), bcenh(3,10,8)
+              !mgf--
+#endif
               if( k == 0 ) then  ! snow SSL
                 taer = c0
                 waer = c0
                 gaer = c0
                 do na=1,4*nmbaer_actual,4
+#ifdef MODAL_AER
+                   ! mgf++
+                   if (na==1) then
+                      !  interstitial BC
+                      taer = taer + &
+                           aero_mp(i,j,na)*kaer_bc_tab(ns,idx_bcext_nclrds)
+                      waer = waer + &
+                           aero_mp(i,j,na)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                           waer_bc_tab(ns,idx_bcext_nclrds)
+                      gaer = gaer + &
+                           aero_mp(i,j,na)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                           waer_bc_tab(ns,idx_bcext_nclrds)*gaer_bc_tab(ns,idx_bcext_nclrds)
+                   elseif (na==5) then
+                      ! within-ice BC
+                      taer = taer + &
+                           aero_mp(i,j,na)*kaer_bc_tab(ns,idx_bcint_nclrds)*bcenh(ns,idx_bcint_nclrds,idx_bcint_icerds)
+                      waer = waer + &
+                           aero_mp(i,j,na)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                           waer_bc_tab(ns,idx_bcint_nclrds)
+                      gaer = gaer + &
+                           aero_mp(i,j,na)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                           waer_bc_tab(ns,idx_bcint_nclrds)*gaer_bc_tab(ns,idx_bcint_nclrds)
+                      
+                   else
+                      ! other species (dust)
+                      taer = taer + &
+                           aero_mp(i,j,na)*kaer_tab(ns,(1+(na-1)/4))
+                      waer = waer + &
+                           aero_mp(i,j,na)*kaer_tab(ns,(1+(na-1)/4))* &
+                           waer_tab(ns,(1+(na-1)/4))
+                      gaer = gaer + &
+                           aero_mp(i,j,na)*kaer_tab(ns,(1+(na-1)/4))* &
+                           waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+                   endif
+                   !mgf--
+#else
                   taer = taer + &
                        aero_mp(i,j,na)*kaer_tab(ns,(1+(na-1)/4))
                   waer = waer + &
@@ -2726,6 +2819,8 @@
                   gaer = gaer + &
                        aero_mp(i,j,na)*kaer_tab(ns,(1+(na-1)/4))* &
                          waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+#endif
+
                 enddo       ! na
                 gaer = gaer/(waer+puny)
                 waer = waer/(taer+puny)
@@ -2734,6 +2829,43 @@
                 waer = c0
                 gaer = c0
                 do na=1,4*nmbaer_actual,4
+#ifdef MODAL_AER
+                   !mgf++
+                   if (na==1) then
+                      ! interstitial BC
+                      taer = taer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_bc_tab(ns,idx_bcext_nclrds)
+                      waer = waer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                           waer_bc_tab(ns,idx_bcext_nclrds)
+                      gaer = gaer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                           waer_bc_tab(ns,idx_bcext_nclrds)*gaer_bc_tab(ns,idx_bcext_nclrds)
+                   elseif (na==5) then
+                      ! within-ice BC
+                      taer = taer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_bc_tab(ns,idx_bcint_nclrds)*bcenh(ns,idx_bcint_nclrds,idx_bcint_icerds)
+                      waer = waer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                           waer_bc_tab(ns,idx_bcint_nclrds)
+                      gaer = gaer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                           waer_bc_tab(ns,idx_bcint_nclrds)*gaer_bc_tab(ns,idx_bcint_nclrds)
+                      
+                   else
+                      ! other species (dust)
+                      taer = taer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_tab(ns,(1+(na-1)/4))
+                      waer = waer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_tab(ns,(1+(na-1)/4))* &
+                           waer_tab(ns,(1+(na-1)/4))
+                      gaer = gaer + &
+                           (aero_mp(i,j,na+1)/rnslyr)*kaer_tab(ns,(1+(na-1)/4))* &
+                           waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+                   endif
+                   !mgf--
+
+#else
                   taer = taer + &
                        (aero_mp(i,j,na+1)/rnslyr)*kaer_tab(ns,(1+(na-1)/4))
                   waer = waer + &
@@ -2742,6 +2874,7 @@
                   gaer = gaer + &
                        (aero_mp(i,j,na+1)/rnslyr)*kaer_tab(ns,(1+(na-1)/4))* &
                          waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+#endif
                 enddo       ! na
                 gaer = gaer/(waer+puny)
                 waer = waer/(taer+puny)
@@ -2781,6 +2914,18 @@
           dz_ssl = min(dz_ssl, dz/c2)
           ! bare or snow-covered sea ice layers
           if( srftyp(i,j) <= 1 ) then
+#ifdef MODAL_AER
+             !mgf++ 
+             ! we are in sea-ice, so use largest snow grain size for BC optical property lookup
+             idx_bcint_icerds = 8
+             
+             ! Set index corresponding to BC effective radius.  Here,
+             ! asssume constant BC effective radius of 100nm
+             ! (corresponding to index 2)
+             idx_bcint_nclrds = 2
+             idx_bcext_nclrds = 2
+             !mgf--
+#endif
               ! ssl
               k = kii
                 tau(k,ij) = ki_ssl(ns)*dz_ssl
@@ -2822,6 +2967,41 @@
                   waer = c0
                   gaer = c0
                   do na=1,4*nmbaer_actual,4
+#ifdef MODAL_AER
+                     !mgf++
+                     if (na==1) then
+                        ! interstitial BC
+                        taer = taer + &
+                             aero_mp(i,j,na+2)*kaer_bc_tab(ns,idx_bcext_nclrds)
+                        waer = waer + &
+                             aero_mp(i,j,na+2)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                             waer_bc_tab(ns,idx_bcext_nclrds)
+                        gaer = gaer + &
+                             aero_mp(i,j,na+2)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                             waer_bc_tab(ns,idx_bcext_nclrds)*gaer_bc_tab(ns,idx_bcext_nclrds)
+                     elseif (na==5) then
+                        ! within-ice BC
+                        taer = taer + &
+                             aero_mp(i,j,na+2)*kaer_bc_tab(ns,idx_bcint_nclrds)*bcenh(ns,idx_bcint_nclrds,idx_bcint_icerds)
+                        waer = waer + &
+                             aero_mp(i,j,na+2)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                             waer_bc_tab(ns,idx_bcint_nclrds)
+                        gaer = gaer + &
+                             aero_mp(i,j,na+2)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                             waer_bc_tab(ns,idx_bcint_nclrds)*gaer_bc_tab(ns,idx_bcint_nclrds)
+                        
+                     else
+                        ! other species (dust)
+                        taer = taer + &
+                             aero_mp(i,j,na+2)*kaer_tab(ns,(1+(na-1)/4))
+                        waer = waer + &
+                             aero_mp(i,j,na+2)*kaer_tab(ns,(1+(na-1)/4))* &
+                             waer_tab(ns,(1+(na-1)/4))
+                        gaer = gaer + &
+                             aero_mp(i,j,na+2)*kaer_tab(ns,(1+(na-1)/4))* &
+                             waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+                     endif
+#else
                     taer = taer + &
                          aero_mp(i,j,na+2)*kaer_tab(ns,(1+(na-1)/4))
                     waer = waer + &
@@ -2830,6 +3010,7 @@
                     gaer = gaer + &
                          aero_mp(i,j,na+2)*kaer_tab(ns,(1+(na-1)/4))* &
                            waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+#endif
                   enddo       ! na
                   gaer = gaer/(waer+puny)
                   waer = waer/(taer+puny)
@@ -2838,6 +3019,43 @@
                   waer = c0
                   gaer = c0
                   do na=1,4*nmbaer_actual,4
+#ifdef MODAL_AER
+                     !mgf++
+                     if (na==1) then
+                        ! interstitial BC
+                        taer = taer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_bc_tab(ns,idx_bcext_nclrds)
+                        waer = waer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                             waer_bc_tab(ns,idx_bcext_nclrds)
+                        gaer = gaer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_bc_tab(ns,idx_bcext_nclrds)* &
+                             waer_bc_tab(ns,idx_bcext_nclrds)*gaer_bc_tab(ns,idx_bcext_nclrds)
+                     elseif (na==5) then
+                        ! within-ice BC
+                        taer = taer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_bc_tab(ns,idx_bcint_nclrds)*bcenh(ns,idx_bcint_nclrds,idx_bcint_icerds)
+                        waer = waer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                             waer_bc_tab(ns,idx_bcint_nclrds)
+                        gaer = gaer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_bc_tab(ns,idx_bcint_nclrds)* &
+                             waer_bc_tab(ns,idx_bcint_nclrds)*gaer_bc_tab(ns,idx_bcint_nclrds)
+                        
+                     else
+                        ! other species (dust)
+                        taer = taer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_tab(ns,(1+(na-1)/4))
+                        waer = waer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_tab(ns,(1+(na-1)/4))* &
+                             waer_tab(ns,(1+(na-1)/4))
+                        gaer = gaer + &
+                             (aero_mp(i,j,na+3)/rnilyr)*kaer_tab(ns,(1+(na-1)/4))* &
+                             waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+                     endif
+                     !mgf--
+                      
+#else
                     taer = taer + &
                          (aero_mp(i,j,na+3)/rnilyr)*kaer_tab(ns,(1+(na-1)/4))
                     waer = waer + &
@@ -2846,6 +3064,7 @@
                     gaer = gaer + &
                          (aero_mp(i,j,na+3)/rnilyr)*kaer_tab(ns,(1+(na-1)/4))* &
                            waer_tab(ns,(1+(na-1)/4))*gaer_tab(ns,(1+(na-1)/4))
+#endif
                   enddo       ! na
                   gaer = gaer/(waer+puny)
                   waer = waer/(taer+puny)

@@ -1,13 +1,15 @@
 # CMake initial cache file for Linux 64bit RHEL6/CENTOS6
-# tested with stock gcc/gfortran & openmpi 
+# tested with stock gcc/gfortran & openmpi
 #
 SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
 
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
-SET (NETCDF_DIR /projects/install/rhel6-x86_64/sems/tpl/netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7 CACHE FILEPATH "")
-SET (HDF5_DIR /projects/install/rhel6-x86_64/sems/tpl/hdf5/1.8.12/gcc/5.1.0/openmpi/1.8.7 CACHE FILEPATH "")
+SET (NETCDF_DIR $ENV{SEMS_NETCDF_ROOT} CACHE FILEPATH "")
+SET (PNETCDF_DIR $ENV{SEMS_NETCDF_ROOT} CACHE FILEPATH "")
+SET (HDF5_DIR $ENV{SEMS_HDF5_ROOT} CACHE FILEPATH "")
+SET (ZLIB_DIR $ENV{SEMS_ZLIB_ROOT} CACHE FILEPATH "")
 
 # hack until findnetcdf is updated to look for netcdf.mod
 # but this is ignored by cprnc

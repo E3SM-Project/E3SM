@@ -7,7 +7,7 @@
 
 #  set paths to source code, build directory and run directory
 set wdir   = /proj/imn/HOMME_ACME             # run directory
-set HOMME  = /home/imn/ACME/models/atm/homme                # HOMME svn checkout     
+set HOMME  = /home/imn/ACME/components/homme                # HOMME svn checkout     
 set input  = $HOMME/test/jw_baroclinic/openacc_work    # input files for test case
 set vdir   = $HOMME/test/vcoord            # vertical coordinate files
 set exedir = $HOMME/build/preqx
@@ -28,9 +28,9 @@ limit stacksize unlimited
 setenv MPSTKZ 64M
 setenv OMP_STACKSIZE 64M
 
-setenv CUDA_PROFILE 1
-setenv CUDA_PROFILE_LOG "cuda_profile_%p.log"
-setenv CUDA_PROFILE_CONFIG ./cuda_config
+#setenv CUDA_PROFILE 1
+#setenv CUDA_PROFILE_LOG "cuda_profile_%p.log"
+#setenv CUDA_PROFILE_CONFIG ./cuda_config
 
 #set i=0
 #mkdir -f /tmp/mps_$i

@@ -88,7 +88,7 @@ contains
     use mo_strato_sad,     only : strato_sad_inti
     use mo_sad,            only : sad_inti
     use mo_solarproton,    only : spe_init
-    use mo_solar_parms,    only : solar_parms_init, get_solar_parms
+    use mo_solar_parms,    only : solar_parms_init, solar_parms_get
     use euvac,             only : euvac_init, euvac_set_etf
     use mo_heatnirco2,     only : heatnirco2_init
     use mo_waccm_hrates,   only : init_hrates
@@ -143,7 +143,7 @@ contains
     real(r8)          ::   f107a
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
-    call gas_phase_chemdr_inti()
+    call gas_phase_chemdr_inti(chem_name)
 
     call init_mean_mass
     call init_mass_xforms
@@ -234,15 +234,13 @@ contains
     is_waccm = ((trim(chem_name) == 'waccm_mozart') .or. &
       (trim(chem_name) == 'waccm_mozart_mam3')) 
     
-    if (len_trim(solar_parms_file)>0) then
-       call solar_parms_init (solar_parms_file)
-    endif
+    call solar_parms_init ()
 
     if ((len_trim(solar_parms_file)>0) .and. (.not.trim(chem_name) == 'waccm_ghg') ) then       
        !-----------------------------------------------------------------------
        ! 	... initialize the solar parameters module
        !-----------------------------------------------------------------------
-       call get_solar_parms( f107_s = f107, f107a_s = f107a )
+       call solar_parms_get( f107_s = f107, f107a_s = f107a )
        if (masterproc) write(iulog,*) 'chemini: f107,f107a = ',f107,f107a
 
     endif

@@ -52,8 +52,8 @@ endif
 
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
 
-set cplprof = `ls -1t $CASEROOT/timing/ccsm_timing.$CASE* | head -1`
-set CPLPROF_GENCMP $cplprof
+set cplprof = `ls -1t $CASEROOT/timing/cesm_timing.$CASE* | head -1`
+set CPLPROF_GENCMP = $cplprof
 
 #======================================================================
 # do another run on 1 pe with mpiserial

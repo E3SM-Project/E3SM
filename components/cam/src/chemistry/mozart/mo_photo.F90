@@ -1595,7 +1595,7 @@ secant_in_bounds : &
   subroutine photo_timestep_init( calday )
     use time_manager,   only : is_end_curr_day
     use euvac,          only : euvac_set_etf
-    use mo_solar_parms, only : get_solar_parms
+    use mo_solar_parms, only : solar_parms_get
     use mo_jshort,      only : jshort_timestep_init
     use mo_jlong,       only : jlong_timestep_init
 
@@ -1619,7 +1619,7 @@ secant_in_bounds : &
 
     if (waccm) then
        if( is_end_curr_day() ) then
-          call get_solar_parms( f107_s = f107, f107a_s = f107a )
+          call solar_parms_get( f107_s = f107, f107a_s = f107a )
           call euvac_set_etf( f107, f107a )
        end if
     endif

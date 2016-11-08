@@ -17,11 +17,10 @@ module runtime_opts
 use shr_kind_mod,    only: r8 => shr_kind_r8, SHR_KIND_CL
 use spmd_utils,      only: masterproc
 use namelist_utils,  only: find_group_name
-use pmgrid,          only: plat, plev, plon
+use pmgrid,          only: plon
 use cam_instance,    only: inst_suffix
 use cam_history
 use cam_control_mod
-use cam_diagnostics, only: inithist_all
 use cam_logfile,     only: iulog
 use pspect
 use units
@@ -68,107 +67,6 @@ character(len=SHR_KIND_CL), private :: nlfilename = 'atm_in' ! Namelist filename
 !
 ! dtime = nnnn,        Model time step in seconds. Default is dycore dependent.
 ! 
-! fincl1 = 'field1', 'field2',...
-!                      List of fields to add to the primary history file.
-! fincl1lonlat = 'longitude by latitude','longitude by latitude',...
-!                      List of columns ('longitude_latitude') or contiguous 
-!                      columns ('longitude:longitude_latitude:latitude') at 
-!                      which the fincl1 fields will be output. Individual 
-!                      columns are specified as a string using a longitude
-!                      degree (greater or equal to 0.) followed by a single 
-!                      character (e)ast/(w)est identifer, an
-!                      underscore '_' , and a latitude degree followed by a 
-!                      single character (n)orth/(s)outh identifier.
-!                      example '10e_20n' would pick the model column closest
-!                      to 10 degrees east longitude by 20 degrees north 
-!                      latitude.  A group of contiguous columns can be 
-!                      specified by using lon lat ranges with their single
-!                      character east/west or north/south identifiers
-!                      example '10e:20e_15n:20n'.  Would outfield all 
-!                      fincl1 fields at the model columns which fall
-!                      with in the longitude range from 10 east to 20 east
-!                      and the latitude range from 15 north to 20 north
-!
-! fincl[2..6] = 'field1', 'field2',...
-!                      List of fields to add to the auxiliary history file.
-!
-! fincl2..6]lonlat = 'longitude by latitude','longitude by latitude',...
-!                      List of columns ('longitude_latitude') or contiguous 
-!                      columns ('longitude:longitude_latitude:latitude') at 
-!                      which the fincl[2..6] fields will be output. Individual 
-!                      columns are specified as a string using a longitude
-!                      degree (greater or equal to 0.) followed by a single 
-!                      character (e)ast/(w)est identifer, an
-!                      underscore '_' , and a latitude degree followed by a 
-!                      singel character (n)orth/(s)outh identifier.
-!                      example '10e_20n' would pick the model column closest
-!                      to 10 degrees east longitude by 20 degrees north 
-!                      latitude.  A group of contiguous columns can be 
-!                      specified by using lon lat ranges with their single
-!                      character east/west or north/south identifiers
-!                      example '10e:20e_15n:20n'.  Would outfield all 
-!                      fincl[2..6] fields at the model columns which fall
-!                      with in the longitude range from 10 east to 20 east
-!                      and the latitude range from 15 north to 20 north
-!
-! fexcl1 = 'field1','field2',... 
-!                      List of field names to exclude from default
-!                      primary history file (default fields on the 
-!                      Master Field List).
-! 
-! fexcl[2..6] = 'field1','field2',... 
-!                      List of field names to exclude from
-!                      auxiliary history files.
-! 
-! lcltod_start = nn,nn,nn,...
-!                      Array containing the starting time of day for local time history
-!                      averaging. Used in conjuction with lcltod_stop. If lcltod_stop
-!                      is less than lcltod_start, then the time range wraps around
-!                      24 hours. The start time is included in the interval. Time is
-!                      in seconds and defaults to 39600 (11:00 AM).
-!                      The first value applies to the primary hist. file,
-!                      the second to the first aux. hist. file, etc.
-! 
-! lcltod_stop = nn,nn,nn,...
-!                      Array containing the stopping time of day for local time history
-!                      averaging. Used in conjuction with lcltod_start. If lcltod_stop
-!                      is less than lcltod_start, then the time range wraps around
-!                      24 hours. The stop time is not included in the interval. Time is
-!                      in seconds and defaults to 0 (midnight).
-!                      The first value applies to the primary hist. file,
-!                      the second to the first aux. hist. file, etc.
-! 
-! lcltod_start = nn,nn,nn,...
-!                      Array containing the starting time of day for local time history
-!                      averaging. Used in conjuction with lcltod_stop. If lcltod_stop
-!                      is less than lcltod_start, then the time range wraps around
-!                      24 hours. The start time is included in the interval. Time is
-!                      in seconds and defaults to 39600 (11:00 AM).
-!                      The first value applies to the primary hist. file,
-!                      the second to the first aux. hist. file, etc.
-! 
-! lcltod_stop = nn,nn,nn,...
-!                      Array containing the stopping time of day for local time history
-!                      averaging. Used in conjuction with lcltod_start. If lcltod_stop
-!                      is less than lcltod_start, then the time range wraps around
-!                      24 hours. The stop time is not included in the interval. Time is
-!                      in seconds and defaults to 0 (midnight).
-!                      The first value applies to the primary hist. file,
-!                      the second to the first aux. hist. file, etc.
-! 
-! mfilt = nn,nn,nn     Array containing the maximum number of time 
-!                      samples per disk history file. Defaults to 5.
-!                      The first value applies to the primary hist. file,
-!                      the second to the first aux. hist. file, etc.
-! 
-! ncdata               Path and filename of initial condition dataset.
-! 
-! nhtfrq = nn,nn,nn,.. Output history frequency for each tape
-!
-!                      If = 0 : monthly average
-!                      If > 0 : output every nhtfrq time steps.
-!                      If < 0 : output every abs(nhtfrq) hours.
-! 
 ! nlvdry = nn,         Number of layers over which to do dry
 !                      adjustment. Defaults to 3.
 ! 
@@ -176,8 +74,6 @@ character(len=SHR_KIND_CL), private :: nlfilename = 'atm_in' ! Namelist filename
 !                      Full pathname required.
 character(len=256) :: cam_branch_file = ' '
 !
-! use_64bit_nc         True if new 64-bit netCDF formit, false otherwise (default false)
-! 
 
 !------------------------------------------------------------------
 ! The following 3 are specific to Rayleigh friction
@@ -188,9 +84,6 @@ character(len=256) :: cam_branch_file = ' '
 !------------------------------------------------------------------
 !
 !
-! hfilename_spec       Flexible filename specifier for history files
-!
-! 
 ! pertlim = n.n        Max size of perturbation to apply to initial
 !                      temperature field.
 !
@@ -225,25 +118,13 @@ integer :: phys_chnk_per_thd
 ! readtrace = .T.      If true, tracer initial conditions obtained from 
 !                      initial file. 
 !
-! inithist             Generate initial dataset as auxillary history file
-!                      can be set to '6-HOURLY', 'DAILY', 'MONTHLY', 'YEARLY' or 'NONE'. 
-!                      default: 'YEARLY'
-!
-! empty_htapes         true => no fields by default on history tapes
-!
 ! print_step_cost      true => print per timestep cost info
-!
-! avgflag_pertape      A, I, X, or M means avg, instantaneous, max or min for all fields on
-!                      that tape
 !
 !
 !   logical indirect     
 !                    ! true => include indirect radiative effects of
 !                    ! sulfate aerosols.  Default is false.
 !
-! inithist_all         .false.:  include only REQUIRED fields on IC file
-!                      .true. :  include required AND optional fields on IC file
-!                      default:  .false.
 !
 ! met_data_file        name of file that contains the offline meteorology data
 ! met_data_path        name of directory that contains the offline meteorology data
@@ -348,6 +229,8 @@ contains
    use microp_aero,         only: microp_aero_readnl
    use subcol,              only: subcol_readnl
    use cloud_fraction,      only: cldfrc_readnl
+   use cldfrc2m,            only: cldfrc2m_readnl
+   use unicon_cam,          only: unicon_cam_readnl
    use cldwat,              only: cldwat_readnl
    use zm_conv,             only: zmconv_readnl
    use hk_conv,             only: hkconv_readnl
@@ -360,6 +243,7 @@ contains
    use rad_constituents,    only: rad_cnst_readnl
    use radiation_data,      only: rad_data_readnl
    use modal_aer_opt,       only: modal_aer_opt_readnl
+   use clubb_intr,          only: clubb_readnl
    use chemistry,           only: chem_readnl
    use prescribed_volcaero, only: prescribed_volcaero_readnl
    use aerodep_flx,         only: aerodep_flx_readnl
@@ -372,6 +256,8 @@ contains
    use aircraft_emit,       only: aircraft_emit_readnl
    use cospsimulator_intr,  only: cospsimulator_intr_readnl
    use sat_hist,            only: sat_hist_readnl
+   ! Needed by sat_hist_readnl
+   use cam_history,         only: hfilename_spec, mfilt, fincl, nhtfrq, avgflag_pertape
    use vertical_diffusion,  only: vd_readnl
    use cam_history_support, only: fieldname_len, fieldname_lenp2
    use cam_diagnostics,     only: diag_readnl
@@ -394,7 +280,6 @@ contains
 !---------------------------Local variables-----------------------------
    character(len=*), parameter ::  subname = "read_namelist"
 ! 
-   character ctemp*8      ! Temporary character strings
    integer ntspdy         ! number of timesteps per day
    integer t              ! history tape index
    integer lastchar       ! index to last char of a char variable
@@ -404,34 +289,6 @@ contains
    integer f, i
    integer, parameter :: max_chars = 128
 
-   character(len=fieldname_lenp2) fincl1(pflds)
-   character(len=fieldname_lenp2) fincl2(pflds)
-   character(len=fieldname_lenp2) fincl3(pflds)
-   character(len=fieldname_lenp2) fincl4(pflds)
-   character(len=fieldname_lenp2) fincl5(pflds)
-   character(len=fieldname_lenp2) fincl6(pflds)
-
-   character(len=max_chars) fincl1lonlat(pflds)
-   character(len=max_chars) fincl2lonlat(pflds)
-   character(len=max_chars) fincl3lonlat(pflds)
-   character(len=max_chars) fincl4lonlat(pflds)
-   character(len=max_chars) fincl5lonlat(pflds)
-   character(len=max_chars) fincl6lonlat(pflds)
-
-   character(len=fieldname_len) fexcl1(pflds)
-   character(len=fieldname_len) fexcl2(pflds)
-   character(len=fieldname_len) fexcl3(pflds)
-   character(len=fieldname_len) fexcl4(pflds)
-   character(len=fieldname_len) fexcl5(pflds)
-   character(len=fieldname_len) fexcl6(pflds)
-
-
-   character(len=fieldname_lenp2) fwrtpr1(pflds)
-   character(len=fieldname_lenp2) fwrtpr2(pflds)
-   character(len=fieldname_lenp2) fwrtpr3(pflds)
-   character(len=fieldname_lenp2) fwrtpr4(pflds)
-   character(len=fieldname_lenp2) fwrtpr5(pflds)
-   character(len=fieldname_lenp2) fwrtpr6(pflds)
 
 !
 ! Define the cam_inparm namelist
@@ -439,16 +296,8 @@ contains
 !            it is not supported.  
 
   namelist /cam_inparm/ ncdata, bnd_topo, &
-                    cam_branch_file  ,ndens   ,nhtfrq  , &
-                    mfilt   ,absems_data, &
-                    lcltod_start, lcltod_stop, &
-                    fincl1  ,fincl2  ,fincl3  ,fincl4  ,fincl5  , &
-                    fincl1lonlat,fincl2lonlat,fincl3lonlat, &
-                    fincl4lonlat  ,fincl5lonlat  , fincl6lonlat , &
-                    collect_column_output, &
-                    fincl6  ,fexcl1  ,fexcl2  ,fexcl3  ,fexcl4  , &
-                    fexcl5  ,fexcl6  ,hfilename_spec, &
-                    fwrtpr1 ,fwrtpr2 ,fwrtpr3, fwrtpr4 ,fwrtpr5 ,fwrtpr6 , &
+                    cam_branch_file  , &
+                    absems_data, &
                     dtime, &
                     nlvdry,  &
                     pertlim ,&
@@ -457,12 +306,10 @@ contains
                     seed_clock ,&
                     readtrace, rayk0, raykrange, raytau0, &
                     tracers_flag, &
-                    inithist, indirect, &
-                    empty_htapes, use_64bit_nc, &
-                    print_step_cost, avgflag_pertape, &
+                    indirect, &
+                    print_step_cost,  &
                     phys_alltoall, phys_loadbalance, phys_twin_algorithm, &
-                    phys_chnk_per_thd, &
-                    inithist_all
+                    phys_chnk_per_thd
 
   ! physics buffer
   namelist /cam_inparm/ pbuf_global_allocate
@@ -525,33 +372,6 @@ contains
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
 
-   do f = 1, pflds
-      fincl1(f) = ' '         
-      fincl2(f) = ' '         
-      fincl3(f) = ' '         
-      fincl4(f) = ' '         
-      fincl5(f) = ' '         
-      fincl6(f) = ' '         
-      fincl1lonlat(f) = ' '
-      fincl2lonlat(f) = ' '
-      fincl3lonlat(f) = ' '
-      fincl4lonlat(f) = ' '
-      fincl5lonlat(f) = ' '
-      fincl6lonlat(f) = ' '
-      fexcl1(f) = ' '
-      fexcl2(f) = ' '
-      fexcl3(f) = ' '
-      fexcl4(f) = ' '
-      fexcl5(f) = ' '
-      fexcl6(f) = ' '
-      fwrtpr1(f) = ' '
-      fwrtpr2(f) = ' '
-      fwrtpr3(f) = ' '
-      fwrtpr4(f) = ' '
-      fwrtpr5(f) = ' '
-      fwrtpr6(f) = ' '
-   enddo
-
    ! Read in the cam_inparm namelist from input filename
 
    if (masterproc) then
@@ -585,100 +405,12 @@ contains
          write(iulog,*)'READ_NAMELIST: CASEID must not exceed ', len(caseid)-1, ' characters'
          call endrun
       end if
-
-      do f=1, pflds
-         fincl(f, 1) = fincl1(f)
-         fincl(f, 2) = fincl2(f)
-         fincl(f, 3) = fincl3(f)
-         fincl(f, 4) = fincl4(f)
-         fincl(f, 5) = fincl5(f)
-         fincl(f, 6) = fincl6(f)
-         
-         fincllonlat(f, 1) = fincl1lonlat(f)
-         fincllonlat(f, 2) = fincl2lonlat(f)
-         fincllonlat(f, 3) = fincl3lonlat(f)
-         fincllonlat(f, 4) = fincl4lonlat(f)
-         fincllonlat(f, 5) = fincl5lonlat(f)
-         fincllonlat(f, 6) = fincl6lonlat(f)
-         if(dycore_is('UNSTRUCTURED') ) then
-            if (any(fincllonlat(f,:) /= ' ')) then
-               call endrun('READ_NAMELIST: Column output is not supported &
-                    &in unstructured grids.')
-            end if
-         end if
-
-
-         fexcl(f, 1) = fexcl1(f)
-         fexcl(f, 2) = fexcl2(f)
-         fexcl(f, 3) = fexcl3(f)
-         fexcl(f, 4) = fexcl4(f)
-         fexcl(f, 5) = fexcl5(f)
-         fexcl(f, 6) = fexcl6(f)
-
-         fwrtpr(f, 1) = fwrtpr1(f)
-         fwrtpr(f, 2) = fwrtpr2(f)
-         fwrtpr(f, 3) = fwrtpr3(f)
-         fwrtpr(f, 4) = fwrtpr4(f)
-         fwrtpr(f, 5) = fwrtpr5(f)
-         fwrtpr(f, 6) = fwrtpr6(f)
-      enddo
    end if
 !
 ! Scatter namelist data to all processes
 #if ( defined SPMD )
    call distnl ( )
 #endif
-!
-! Auxiliary history files:
-! Store input auxf values in array aux (from common block /comhst/).
-!
-! If generate an initial conditions history file as an auxillary tape:
-!
-   ctemp = shr_string_toUpper(inithist) 
-   inithist = trim(ctemp)
-   if (inithist /= '6-HOURLY' .and. inithist /= 'DAILY' .and. &
-       inithist /= 'MONTHLY'  .and. inithist /= 'YEARLY' .and. &
-       inithist /= 'CAMIOP'   .and. inithist /= 'ENDOFRUN') then
-      inithist = 'NONE'
-   endif
-! 
-! History file write up times
-! Convert write freq. of hist files from hours to timesteps if necessary.
-! 
-   do t=1,ptapes
-      if (nhtfrq(t) < 0) then
-         nhtfrq(t) = nint((-nhtfrq(t)*3600._r8)/dtime)
-      end if
-   end do
-!
-! Initialize the filename specifier if not already set
-! This is the format for the history filenames:
-! %c= caseid, %t=tape no., %y=year, %m=month, %d=day, %s=second, %%=%
-! See the filenames module for more information
-!
-   do t = 1, ptapes
-      if ( len_trim(hfilename_spec(t)) == 0 )then
-         if ( nhtfrq(t) == 0 )then
-            hfilename_spec(t) = '%c.cam' // trim(inst_suffix) // '.h%t.%y-%m.nc'        ! Monthly files
-         else
-            hfilename_spec(t) = '%c.cam' // trim(inst_suffix) // '.h%t.%y-%m-%d-%s.nc'
-         end if
-      end if
-!
-! Only one time sample allowed per monthly average file
-! 
-      if (nhtfrq(t) == 0) mfilt(t) = 1
-   end do
-
-   ! Print per-tape averaging flags
-   if (masterproc) then
-      do t=1,ptapes
-         if (avgflag_pertape(t) /= ' ') then
-            write(iulog,*)'Unless overridden by namelist input on a per-field basis (FINCL),'
-            write(iulog,*)'All fields on history file ',t,' will have averaging flag ',avgflag_pertape(t)
-         end if
-      end do
-   end if
 
    ! restart write interval
    call restart_setopts( nsrest,            &
@@ -733,6 +465,7 @@ contains
    ! all processes receive the values.
 
    call spmd_utils_readnl(nlfilename)
+   call history_readnl(nlfilename, dtime)
    call physconst_readnl(nlfilename)
    call chem_surfvals_readnl(nlfilename)
    call phys_ctl_readnl(nlfilename)
@@ -743,8 +476,11 @@ contains
    call macrop_driver_readnl(nlfilename)
    call microp_driver_readnl(nlfilename)
    call microp_aero_readnl(nlfilename)
+   call clubb_readnl(nlfilename)
    call subcol_readnl(nlfilename)
    call cldfrc_readnl(nlfilename)
+   call cldfrc2m_readnl(nlfilename)
+   call unicon_cam_readnl(nlfilename)
    call zmconv_readnl(nlfilename)
    call cldwat_readnl(nlfilename)
    call hkconv_readnl(nlfilename)
@@ -803,27 +539,6 @@ contains
       write(iulog,*)'Run type flag (NSREST) 0=initial, 1=restart, 3=branch ',nsrest
 
       call restart_printopts()
-
-   end if
-!
-! History file info 
-!
-   if (masterproc) then
-      if (inithist == '6-HOURLY' ) then
-         write(iulog,*)'Initial conditions history files will be written 6-hourly.'
-      else if (inithist == 'DAILY' ) then
-         write(iulog,*)'Initial conditions history files will be written daily.'
-      else if (inithist == 'MONTHLY' ) then
-         write(iulog,*)'Initial conditions history files will be written monthly.'
-      else if (inithist == 'YEARLY' ) then
-         write(iulog,*)'Initial conditions history files will be written yearly.'
-      else if (inithist == 'CAMIOP' ) then
-         write(iulog,*)'Initial conditions history files will be written for IOP.'
-      else if (inithist == 'ENDOFRUN' ) then
-         write(iulog,*)'Initial conditions history files will be written at end of run.'
-      else
-         write(iulog,*)'Initial conditions history files will not be created'
-      end if
 
 !
 ! Write physics variables from namelist cam_inparm to std. output
@@ -894,11 +609,6 @@ subroutine distnl
 !-----------------------------------------------------------------------
 ! 
    call mpibcast (dtime,       1,mpiint,0,mpicom)
-   call mpibcast (ndens   ,ptapes,mpiint,0,mpicom)
-   call mpibcast (nhtfrq  ,ptapes,mpiint,0,mpicom)
-   call mpibcast (mfilt   ,ptapes,mpiint,0,mpicom)
-   call mpibcast (lcltod_start ,ptapes,mpiint,0,mpicom)
-   call mpibcast (lcltod_stop  ,ptapes,mpiint,0,mpicom)
    call mpibcast (nsrest  ,1,mpiint,0,mpicom)
    call mpibcast (nlvdry  ,1,mpiint,0,mpicom)
 
@@ -906,38 +616,24 @@ subroutine distnl
    call mpibcast (raykrange,1,mpir8,0,mpicom)
    call mpibcast (raytau0  ,1,mpir8,0,mpicom)
 
-   call mpibcast (collect_column_output,ptapes,mpilog,0,mpicom)
-
    call mpibcast (tracers_flag,1,mpilog,0,mpicom)
    call mpibcast (readtrace   ,1,mpilog,0,mpicom)
    call mpibcast (adiabatic   ,1,mpilog,0,mpicom)
    call mpibcast (ideal_phys  ,1,mpilog,0,mpicom)
    call mpibcast (aqua_planet ,1,mpilog,0,mpicom)
 
-   call mpibcast (empty_htapes,1,mpilog,0,mpicom)
-   call mpibcast (use_64bit_nc,1,mpilog,0,mpicom)
    call mpibcast (print_step_cost,1,mpilog,0,mpicom)
-   call mpibcast (inithist_all   ,1,mpilog,0,mpicom)
    call mpibcast (pertlim     ,1, mpir8 , 0, mpicom )
    call mpibcast (new_random  ,1, mpilog, 0, mpicom )
    call mpibcast (seed_custom ,1, mpiint, 0, mpicom )
    call mpibcast (seed_clock  ,1, mpilog, 0, mpicom )
 
    call mpibcast (caseid  ,len(caseid) ,mpichar,0,mpicom)
-   call mpibcast (avgflag_pertape, ptapes, mpichar,0,mpicom)
    call mpibcast (ctitle  ,len(ctitle),mpichar,0,mpicom)
    call mpibcast (ncdata  ,len(ncdata) ,mpichar,0,mpicom)
    call mpibcast (bnd_topo  ,len(bnd_topo) ,mpichar,0,mpicom)
    call mpibcast (absems_data,len(absems_data),mpichar,0,mpicom)
    call mpibcast (cam_branch_file  ,len(cam_branch_file) ,mpichar,0,mpicom)
-   call mpibcast (inithist,len(inithist)  ,mpichar,0,mpicom)
-   call mpibcast (hfilename_spec, len(hfilename_spec(1))*ptapes, mpichar, 0, mpicom)
-   call mpibcast (fincl   ,len(fincl (1,1))*pflds*ptapes,mpichar,0,mpicom)
-   call mpibcast (fexcl   ,len(fexcl (1,1))*pflds*ptapes,mpichar,0,mpicom)
-
-   call mpibcast (fincllonlat   ,len(fincllonlat (1,1))*pflds*ptapes,mpichar,0,mpicom)
-
-   call mpibcast (fwrtpr  ,len(fwrtpr(1,1))*pflds*ptapes,mpichar,0,mpicom)
 
    call mpibcast (indirect     , 1 ,mpilog, 0,mpicom)
 
@@ -978,25 +674,15 @@ subroutine preset
 ! Author: CCM Core Group
 ! 
 !-----------------------------------------------------------------------
-   use cam_history,  only: fincl, fexcl, fwrtpr, fincllonlat, collect_column_output
    use rgrid
 !-----------------------------------------------------------------------
    include 'netcdf.inc'
 !-----------------------------------------------------------------------
 !
-! Preset character history variables here because module initialization of character arrays
-! does not work on all machines
-! $$$ TBH:  is this still true?  12/14/03
-!
-   fincl(:,:)  = ' '
-   fincllonlat(:,:)  = ' '
-   fexcl(:,:)  = ' '
-   fwrtpr(:,:) = ' '
 !
 ! Flags
 !
    print_step_cost = .false.   ! print per timestep cost info
-   collect_column_output = .false.
 !
 ! rgrid: set default to full grid
 !

@@ -220,7 +220,7 @@
 !-----------------------------------------------------------------------
 
       use time_manager,   only : get_curr_calday, get_curr_date
-      use mo_solar_parms, only : get_solar_parms
+      use mo_solar_parms, only : solar_parms_get
       use mag_parms,      only : get_mag_parms
       use cam_control_mod, only: magfield_fix_year
       use spmd_utils,      only: masterproc
@@ -245,7 +245,7 @@
 !-----------------------------------------------------------------------
 ! get solar parms
 !-----------------------------------------------------------------------
-      call get_solar_parms( f107_s = f107d )
+      call solar_parms_get( f107_s = f107d )
 !-----------------------------------------------------------------------
 ! get mag parms
 !-----------------------------------------------------------------------

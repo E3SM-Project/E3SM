@@ -33,7 +33,7 @@
 #include "cosp_defs.h" 
 MODULE MOD_COSP_SIMULATOR
   USE MOD_COSP_CONSTANTS, ONLY: I_RADAR, I_LIDAR, I_ISCCP, I_MISR, I_MODIS, &
-                                I_RTTOV, I_STATS, tsim
+                                I_RTTOV, I_STATS !, tsim
   USE MOD_COSP_TYPES
   USE MOD_COSP_RADAR
   USE MOD_COSP_LIDAR
@@ -75,7 +75,11 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
   type(cosp_radarstats),intent(inout) :: stradar ! Summary statistics from radar simulator
   type(cosp_lidarstats),intent(inout) :: stlidar ! Summary statistics from lidar simulator
   ! Local variables
-  integer :: i,j,k,isim
+  ! Disable the use of timer, which causes runtime problem for pgi and pgi_acc
+  ! it can be renabled if deemed necessary, by uncommenting all related to isim
+  ! and tsim here and in cosp_constants.F90
+  ! integer :: i,j,k,isim
+  integer :: i,j,k
   logical :: inconsistent
   ! Timing variables
   integer :: t0,t1
@@ -95,68 +99,68 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
 
 
   !+++++++++ Radar model ++++++++++
-  isim = I_RADAR
+! isim = I_RADAR
   if (cfg%Lradar_sim) then
-    call system_clock(t0)
+!   call system_clock(t0)
     call cosp_radar(gbx,sgx,sghydro,sgradar)
-    call system_clock(t1)
-    tsim(isim) = tsim(isim) + (t1 -t0)
+!   call system_clock(t1)
+!   tsim(isim) = tsim(isim) + (t1 -t0)
   endif
 
   !+++++++++ Lidar model ++++++++++
-  isim = I_LIDAR
+! isim = I_LIDAR
   if (cfg%Llidar_sim) then
-    call system_clock(t0)
+!   call system_clock(t0)
     call cosp_lidar(gbx,sgx,sghydro,sglidar)
-    call system_clock(t1)
-    tsim(isim) = tsim(isim) + (t1 -t0)
+!   call system_clock(t1)
+!   tsim(isim) = tsim(isim) + (t1 -t0)
   endif
 
   !+++++++++ ISCCP simulator ++++++++++
-  isim = I_ISCCP
+! isim = I_ISCCP
   if (cfg%Lisccp_sim) then
-    call system_clock(t0)
+!   call system_clock(t0)
     call cosp_isccp_simulator(gbx,sgx,isccp)
-    call system_clock(t1)
-    tsim(isim) = tsim(isim) + (t1 -t0)
+!   call system_clock(t1)
+!   tsim(isim) = tsim(isim) + (t1 -t0)
   endif
 
   !+++++++++ MISR simulator ++++++++++
-  isim = I_MISR
+! isim = I_MISR
   if (cfg%Lmisr_sim) then
-    call system_clock(t0)
+!   call system_clock(t0)
     call cosp_misr_simulator(gbx,sgx,misr)
-    call system_clock(t1)
-    tsim(isim) = tsim(isim) + (t1 -t0)
+!   call system_clock(t1)
+!   tsim(isim) = tsim(isim) + (t1 -t0)
   endif
 
   !+++++++++ MODIS simulator ++++++++++
-  isim = I_MODIS
+! isim = I_MODIS
   if (cfg%Lmodis_sim) then
-    call system_clock(t0)
+!   call system_clock(t0)
     call cosp_modis_simulator(gbx,sgx,sghydro,isccp, modis)
-    call system_clock(t1)
-    tsim(isim) = tsim(isim) + (t1 -t0)
+!   call system_clock(t1)
+!   tsim(isim) = tsim(isim) + (t1 -t0)
   endif
 
   !+++++++++ RTTOV ++++++++++ 
-  isim = I_RTTOV
+! isim = I_RTTOV
 #ifdef RTTOV
   if (cfg%Lrttov_sim) then 
-    call system_clock(t0)
+!   call system_clock(t0)
     call cosp_rttov_simulator(gbx,rttov)
-    call system_clock(t1)
-    tsim(isim) = tsim(isim) + (t1 -t0)
+!   call system_clock(t1)
+!   tsim(isim) = tsim(isim) + (t1 -t0)
   endif
 #endif
 
   !+++++++++++ Summary statistics +++++++++++
-  isim = I_STATS
+! isim = I_STATS
   if (cfg%Lstats) then
-    call system_clock(t0)
+!   call system_clock(t0)
     call cosp_stats(gbx,sgx,cfg,sgradar,sglidar,vgrid,stradar,stlidar)
-    call system_clock(t1)
-    tsim(isim) = tsim(isim) + (t1 -t0)
+!   call system_clock(t1)
+!   tsim(isim) = tsim(isim) + (t1 -t0)
   endif
 
   !+++++++++++ Change of units after computation of statistics +++++++++++

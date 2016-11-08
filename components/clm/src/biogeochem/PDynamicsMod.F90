@@ -20,7 +20,7 @@ module PDynamicsMod
   use clm_varctl          , only : use_vertsoilc
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  
+  use CNNitrogenStateType , only : nitrogenstate_type 
 
   use CNStateType         , only : cnstate_type
   use WaterStateType      , only : waterstate_type
@@ -28,22 +28,59 @@ module PDynamicsMod
   use CropType            , only : crop_type
   use ColumnType          , only : col
   use PatchType           , only : pft
+  use EcophysConType      , only : ecophyscon
   !
   implicit none
   save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
+  public :: PDeposition
   public :: PWeathering
   public :: PAdsorption
   public :: PDesorption
   public :: POcclusion
   public :: PBiochemMin
   public :: PLeaching
+  public :: PBiochemMin_balance
 
   !-----------------------------------------------------------------------
 
 contains
+  !-----------------------------------------------------------------------
+  subroutine PDeposition( bounds, &
+       atm2lnd_vars, phosphorusflux_vars )
+    ! BY X. SHI
+    ! !DESCRIPTION:
+    ! On the radiation time step, update the phosphorus deposition rate
+    ! from atmospheric forcing. For now it is assumed that all the atmospheric
+    ! P deposition goes to the soil mineral P pool.
+    ! This could be updated later to divide the inputs between mineral P absorbed
+    ! directly into the canopy and mineral P entering the soil pool.
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds
+    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
+    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g,c                    ! indices
+    !-----------------------------------------------------------------------
+
+    associate(&
+         forc_pdep     =>  atm2lnd_vars%forc_pdep_grc           , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)                
+         pdep_to_sminp =>  phosphorusflux_vars%pdep_to_sminp_col   & ! Output: [real(r8) (:)]                                                    
+         )
+
+      ! Loop through columns
+      do c = bounds%begc, bounds%endc
+         g = col%gridcell(c)
+         pdep_to_sminp(c) = forc_pdep(g)
+      end do
+
+    end associate
+
+  end subroutine PDeposition
 
   !-----------------------------------------------------------------------
   subroutine PWeathering(num_soilc, filter_soilc, &
@@ -100,9 +137,9 @@ contains
             rr=-log(1._r8-r_weather_c)
             r_weather_c=1._r8-exp(-rr*dtd)
       
-      !      primp_to_labilep(c) = primp(c)*r_weather/dt
-            primp_to_labilep(c,j) = 0.005_r8/(365._r8*24._r8*3600._r8)
-!             primp_to_labilep(c,j) = 0._r8       
+            primp_to_labilep(c,j) = primp(c,j)*r_weather_c/dt
+      !     primp_to_labilep(c,j) = 0.005_r8/(365._r8*24._r8*3600._r8)
+      !     primp_to_labilep(c,j) = 0._r8       
          end do
       enddo
     end associate
@@ -547,6 +584,106 @@ contains
     end associate
 
   end subroutine PBiochemMin
+
+  !-----------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------
+  
+  subroutine PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+       cnstate_vars,nitrogenstate_vars, phosphorusstate_vars, phosphorusflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! created, Aug 2015 by Q. Zhu
+    ! update the phosphatase activity induced P release based on Wang 2007
+    !
+    ! !USES:
+    use pftvarcon              , only : noveg
+    use clm_varpar             , only : ndecomp_pools
+    
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)    :: bounds
+    integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
+    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    !
+    integer  :: c,fc,p,j,l
+    real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
+    real(r8) :: sop_profile(1:ndecomp_pools)
+    real(r8) :: sop_tot
+    !-----------------------------------------------------------------------
+
+    associate(                                                              &
+         froot_prof           => cnstate_vars%froot_prof_patch            , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+         biochem_pmin_vr      => phosphorusflux_vars%biochem_pmin_vr_col  , &
+         biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col ,&
+         npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
+         vmax_ptase_vr        => ecophyscon%vmax_ptase_vr                 , &
+         km_ptase             => ecophyscon%km_ptase                      , &
+         decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
+         lamda_ptase          => ecophyscon%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         cn_scalar             => cnstate_vars%cn_scalar               , &
+         cp_scalar             => cnstate_vars%cp_scalar                 &
+         )
+
+    ! set initial values for potential C and N fluxes
+    biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
+      
+    do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            biochem_pmin_vr(c,j) = 0.0_r8
+            do p = col%pfti(c), col%pftf(c)
+                if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+                    !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
+                    lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
+                    lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
+                    lamda_ptase = 15.0_r8
+                    biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
+                        vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * froot_prof(p,j) * pft%wtcol(p)
+                end if
+            enddo
+        enddo
+    enddo 
+    
+    do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            sop_tot = 0._r8
+            do l = 1,ndecomp_pools
+                sop_tot = sop_tot + decomp_ppools_vr_col(c,j,l)
+            end do
+            do l = 1,ndecomp_pools
+                if (sop_tot > 1e-12) then 
+                    sop_profile(l) = decomp_ppools_vr_col(c,j,l)/sop_tot
+                else
+                    sop_profile(l) = 0._r8
+                end if
+            end do
+            do l = 1,ndecomp_pools
+                biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l), decomp_ppools_vr_col(c,j,l)),0._r8)
+            end do
+        end do
+    end do
+
+    do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            biochem_pmin_vr(c,j)=0._r8
+            do l = 1, ndecomp_pools
+               biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
+                                          biochem_pmin_ppools_vr_col(c,j,l)
+            enddo
+        enddo
+    end do
+    
+    end associate
+
+  end subroutine PBiochemMin_balance
 
 end module PDynamicsMod
                

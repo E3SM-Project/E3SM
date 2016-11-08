@@ -49,7 +49,7 @@ module subcol
    use shr_kind_mod,    only: r8=>shr_kind_r8, r4=>shr_kind_r4, i4=>shr_kind_i4
    use physics_types,   only: physics_state, physics_tend, physics_ptend
    use ppgrid,          only: pcols, psubcols, pver, pverp
-   use cam_abortutils,      only: endrun
+   use cam_abortutils,  only: endrun
    use subcol_utils,    only: subcol_field_avg_shr, subcol_ptend_avg_shr, &
                               subcol_field_get_firstsubcol, subcol_ptend_get_firstsubcol, &
                               is_filter_set, is_weight_set
@@ -148,8 +148,8 @@ contains
       use subcol_utils, only: subcol_utils_init_restart
       use pio,          only: file_desc_t
 
-      type(file_desc_t),intent(in) :: File
-      integer ,intent(in)          :: hdimids(:)
+      type(file_desc_t),intent(inout) :: File
+      integer ,intent(in)             :: hdimids(:)
 
       call subcol_utils_init_restart(File, hdimids)
       ! Put scheme-specific calls here (in select statement)

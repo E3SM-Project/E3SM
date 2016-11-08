@@ -40,6 +40,10 @@ Number of unique latitude points in rectangular lat/lon grid.
 Number of aerosol tracers
 </entry>
 
+<entry id="bc_dep_to_snow_updates" valid_values="0,1" value="0">
+Switch to turn on updated treatment of BC deposition to ice and snow (Warning: additional configuration also needed): 0=off, 1=on.
+</entry>
+
 <entry id="ntasks" value="">
 Number of MPI tasks.  This is used to determine default grid
 decompositions.  Currently only used by CICE.

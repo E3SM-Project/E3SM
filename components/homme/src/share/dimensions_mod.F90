@@ -27,9 +27,9 @@ module dimensions_mod
 #endif
 #else
 #ifdef QSIZE_D
-  integer, parameter         :: qsize_d=50
+  integer, parameter         :: qsize_d=QSIZE_D
 #else
-  integer, parameter         :: qsize_d=50
+  integer, parameter         :: qsize_d=4
 #endif
   integer, parameter         :: ntrac_d=4          ! fvm tracers
 #endif
@@ -40,9 +40,8 @@ module dimensions_mod
   integer, parameter, public :: nvar = 3 ! FI # dependent variables 
 #endif
 
- 
   integer, parameter, public :: np = NP
-  integer, parameter, public :: nc  = NC
+  integer, parameter, public :: nc = NC
 
   integer         :: ntrac = 0
   integer         :: qsize = 0
@@ -59,21 +58,9 @@ module dimensions_mod
 
   !nhc determines width of halo exchanged with neighboring elements
   integer, parameter, public :: nhc = nhr+(nhe-1)+(ns-MOD(ns,2))/2
-
-  !  
-  ! constants for SPELT
-  !
-  integer, parameter, public :: nip=3     !number of interpolation values, works only for this
-  integer, parameter, public :: nipm=nip-1
-  integer, parameter, public :: nep=nipm*nc+1      ! number of points in an element  
-  
-  
-  integer, public :: npdg = 0  ! dg degree for hybrid cg/dg element  0=disabled 
-
   integer, parameter, public :: npsq = np*np
   integer, parameter, public :: nlev=PLEV
   integer, parameter, public :: nlevp=nlev+1
-
 
 !  params for a mesh 
 !  integer, public, parameter :: max_elements_attached_to_node = 7
@@ -85,7 +72,6 @@ module dimensions_mod
   integer, public  :: max_corner_elem               = 1 !max_elements_attached_to_node-3
   integer, public  :: max_neigh_edges               = 8 !4 + 4*max_corner_elem
 
-
   public :: qsize,qsize_d,ntrac_d,ntrac
 
   integer, public :: ne
@@ -95,8 +81,6 @@ module dimensions_mod
   integer, public :: nPhysProc                          ! This is the number of physics processors/ per dynamics processor
   integer, public :: nnodes,npart,nmpi_per_node
   integer, public :: GlobalUniqueCols
-
-
 
   public :: set_mesh_dimensions
 
@@ -112,9 +96,7 @@ contains
     max_corner_elem               = max_elements_attached_to_node-3
     max_neigh_edges               = 4 + 4*max_corner_elem
 
-
   end subroutine set_mesh_dimensions
-
 
 end module dimensions_mod
 

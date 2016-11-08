@@ -25,7 +25,6 @@
   !--------------------------------------------------------------------------------- !
 
   use diffusion_solver, only: vdiff_selector
-  use cam_history,      only: outfld, addfld, phys_decomp
   use cam_logfile,      only: iulog
   use ppgrid,           only: pver  
   use cam_abortutils,       only: endrun
@@ -89,7 +88,7 @@
   real(r8),         parameter :: wstar3factcrit =   0.5_r8      ! 1/wstar3factcrit is the maximally allowed enhancement of
                                                                 ! 'wstar3' due to entrainment.
 
-  real(r8),         parameter :: a2l            =   30._r8      ! Moist entrainment enhancement param (recommended range : 10~30 )
+  real(r8)                    :: a2l                            ! Moist entrainment enhancement param (recommended range : 10~30 )
   real(r8),         parameter :: a3l            =   0.8_r8      ! Approximation to a complicated thermodynamic parameters
 
   real(r8),         parameter :: jbumin         =   .001_r8     ! Minimum buoyancy jump at an entrainment jump, [m/s2]
@@ -181,13 +180,14 @@
   
   subroutine init_eddy_diff( kind, pver, gravx, cpairx, rairx, zvirx, & 
                              latvapx, laticex, ntop_eddy, nbot_eddy, vkx, &
-                             eddy_lbulk_max, eddy_leng_max, eddy_max_bot_pressure)
+                             eddy_lbulk_max, eddy_leng_max, eddy_max_bot_pressure, &
+                             eddy_moist_entrain_a2l)
     !---------------------------------------------------------------- ! 
     ! Purpose:                                                        !
     ! Initialize time independent constants/variables of PBL package. !
     !---------------------------------------------------------------- !
     use diffusion_solver, only: new_fieldlist_vdiff, vdiff_select
-    use cam_history,      only: outfld, addfld, phys_decomp
+    use cam_history,      only: addfld, horiz_only
     use ref_pres,         only: pref_mid
     
     ! --------- !
@@ -208,6 +208,7 @@
     real(r8), intent(in) :: eddy_leng_max  ! Maximum dissipation length scale
     real(r8), intent(in) :: eddy_max_bot_pressure  ! Bottom pressure level (hPa) at which namelist leng_max and lbulk_max
                                                    ! are applied
+    real(r8), intent(in) :: eddy_moist_entrain_a2l ! Moist entrainment enhancement param
 
     integer              :: k          ! Vertical loop index
 
@@ -232,6 +233,7 @@
     ntop_turb = ntop_eddy
     nbot_turb = nbot_eddy
     b123      = b1**(2._r8/3._r8)
+    a2l       = eddy_moist_entrain_a2l
     
     lbulk_max = eddy_lbulk_max
     do k = 1,pver
@@ -270,70 +272,72 @@
     ! Writing outputs for detailed analysis of UW moist turbulence scheme !
     ! ------------------------------------------------------------------- !
 
-    call addfld('UW_errorPBL',      'm2/s',    1,      'A',  'Error function of UW PBL',                              phys_decomp )
-    call addfld('UW_n2',            's-2',     pver,   'A',  'Buoyancy Frequency, LI',                                phys_decomp )
-    call addfld('UW_s2',            's-2',     pver,   'A',  'Shear Frequency, LI',                                   phys_decomp )
-    call addfld('UW_ri',            'no',      pver,   'A',  'Interface Richardson Number, I',                        phys_decomp )
-    call addfld('UW_sfuh',          'no',      pver,   'A',  'Upper-Half Saturation Fraction, L',                     phys_decomp )
-    call addfld('UW_sflh',          'no',      pver,   'A',  'Lower-Half Saturation Fraction, L',                     phys_decomp )
-    call addfld('UW_sfi',           'no',      pver+1, 'A',  'Interface Saturation Fraction, I',                      phys_decomp )
-    call addfld('UW_cldn',          'no',      pver,   'A',  'Cloud Fraction, L',                                     phys_decomp )
-    call addfld('UW_qrl',           'g*W/m2',  pver,   'A',  'LW cooling rate, L',                                    phys_decomp )
-    call addfld('UW_ql',            'kg/kg',   pver,   'A',  'ql(LWC), L',                                            phys_decomp )
-    call addfld('UW_chu',           'g*kg/J',  pver+1, 'A',  'Buoyancy Coefficient, chu, I',                          phys_decomp )
-    call addfld('UW_chs',           'g*kg/J',  pver+1, 'A',  'Buoyancy Coefficient, chs, I',                          phys_decomp )
-    call addfld('UW_cmu',           'g/kg/kg', pver+1, 'A',  'Buoyancy Coefficient, cmu, I',                          phys_decomp )
-    call addfld('UW_cms',           'g/kg/kg', pver+1, 'A',  'Buoyancy Coefficient, cms, I',                          phys_decomp )
-    call addfld('UW_tke',           'm2/s2',   pver+1, 'A',  'TKE, I',                                                phys_decomp )
-    call addfld('UW_wcap',          'm2/s2',   pver+1, 'A',  'Wcap, I',                                               phys_decomp )
-    call addfld('UW_bprod',         'm2/s3',   pver+1, 'A',  'Buoyancy production, I',                                phys_decomp )
-    call addfld('UW_sprod',         'm2/s3',   pver+1, 'A',  'Shear production, I',                                   phys_decomp )
-    call addfld('UW_kvh',           'm2/s',    pver+1, 'A',  'Eddy diffusivity of heat, I',                           phys_decomp )
-    call addfld('UW_kvm',           'm2/s',    pver+1, 'A',  'Eddy diffusivity of uv, I',                             phys_decomp )
-    call addfld('UW_pblh',          'm',       1,      'A',  'PBLH, 1',                                               phys_decomp )
-    call addfld('UW_pblhp',         'Pa',      1,      'A',  'PBLH pressure, 1',                                      phys_decomp )
-    call addfld('UW_tpert',         'K',       1,      'A',  'Convective T excess, 1',                                phys_decomp )
-    call addfld('UW_qpert',         'kg/kg',   1,      'A',  'Convective qt excess, I',                               phys_decomp )
-    call addfld('UW_wpert',         'm/s',     1,      'A',  'Convective W excess, I',                                phys_decomp )
-    call addfld('UW_ustar',         'm/s',     1,      'A',  'Surface Frictional Velocity, 1',                        phys_decomp )
-    call addfld('UW_tkes',          'm2/s2',   1,      'A',  'Surface TKE, 1',                                        phys_decomp )
-    call addfld('UW_minpblh',       'm',       1,      'A',  'Minimum PBLH, 1',                                       phys_decomp )
-    call addfld('UW_turbtype',      'no',      pver+1, 'A',  'Interface Turbulence Type, I',                          phys_decomp )
-    call addfld('UW_kbase_o',       'no',      ncvmax, 'A',  'Initial CL Base Exterbal Interface Index, CL',          phys_decomp )
-    call addfld('UW_ktop_o',        'no',      ncvmax, 'A',  'Initial Top Exterbal Interface Index, CL',              phys_decomp )
-    call addfld('UW_ncvfin_o',      '#',       1,      'A',  'Initial Total Number of CL regimes, CL',                phys_decomp )
-    call addfld('UW_kbase_mg',      'no',      ncvmax, 'A',  'kbase after merging, CL',                               phys_decomp )
-    call addfld('UW_ktop_mg',       'no',      ncvmax, 'A',  'ktop after merging, CL',                                phys_decomp )
-    call addfld('UW_ncvfin_mg',     '#',       1,      'A',  'ncvfin after merging, CL',                              phys_decomp )
-    call addfld('UW_kbase_f',       'no',      ncvmax, 'A',  'Final kbase with SRCL, CL',                             phys_decomp )
-    call addfld('UW_ktop_f',        'no',      ncvmax, 'A',  'Final ktop with SRCL, CL',                              phys_decomp )
-    call addfld('UW_ncvfin_f',      '#',       1,      'A',  'Final ncvfin with SRCL, CL',                            phys_decomp )
-    call addfld('UW_wet',           'm/s',     ncvmax, 'A',  'Entrainment rate at CL top, CL',                        phys_decomp )
-    call addfld('UW_web',           'm/s',     ncvmax, 'A',  'Entrainment rate at CL base, CL',                       phys_decomp )
-    call addfld('UW_jtbu',          'm/s2',    ncvmax, 'A',  'Buoyancy jump across CL top, CL',                       phys_decomp )
-    call addfld('UW_jbbu',          'm/s2',    ncvmax, 'A',  'Buoyancy jump across CL base, CL',                      phys_decomp )
-    call addfld('UW_evhc',          'no',      ncvmax, 'A',  'Evaporative enhancement factor, CL',                    phys_decomp )
-    call addfld('UW_jt2slv',        'J/kg',    ncvmax, 'A',  'slv jump for evhc, CL',                                 phys_decomp )
-    call addfld('UW_n2ht',          's-2',     ncvmax, 'A',  'n2 at just below CL top interface, CL',                 phys_decomp )
-    call addfld('UW_n2hb',          's-2',     ncvmax, 'A',  'n2 at just above CL base interface',                    phys_decomp )
-    call addfld('UW_lwp',           'kg/m2',   ncvmax, 'A',  'LWP in the CL top layer, CL',                           phys_decomp )
-    call addfld('UW_optdepth',      'no',      ncvmax, 'A',  'Optical depth of the CL top layer, CL',                 phys_decomp )
-    call addfld('UW_radfrac',       'no',      ncvmax, 'A',  'Fraction of radiative cooling confined in the CL top',  phys_decomp )
-    call addfld('UW_radf',          'm2/s3',   ncvmax, 'A',  'Buoyancy production at the CL top by radf, I',          phys_decomp )
-    call addfld('UW_wstar',         'm/s',     ncvmax, 'A',  'Convective velocity, Wstar, CL',                        phys_decomp )
-    call addfld('UW_wstar3fact',    'no',      ncvmax, 'A',  'Enhancement of wstar3 due to entrainment, CL',          phys_decomp )
-    call addfld('UW_ebrk',          'm2/s2',   ncvmax, 'A',  'CL-averaged TKE, CL',                                   phys_decomp )
-    call addfld('UW_wbrk',          'm2/s2',   ncvmax, 'A',  'CL-averaged W, CL',                                     phys_decomp )
-    call addfld('UW_lbrk',          'm',       ncvmax, 'A',  'CL internal thickness, CL',                             phys_decomp )
-    call addfld('UW_ricl',          'no',      ncvmax, 'A',  'CL-averaged Ri, CL',                                    phys_decomp )
-    call addfld('UW_ghcl',          'no',      ncvmax, 'A',  'CL-averaged gh, CL',                                    phys_decomp )
-    call addfld('UW_shcl',          'no',      ncvmax, 'A',  'CL-averaged sh, CL',                                    phys_decomp )
-    call addfld('UW_smcl',          'no',      ncvmax, 'A',  'CL-averaged sm, CL',                                    phys_decomp )
-    call addfld('UW_gh',            'no',      pver+1, 'A',  'gh at all interfaces, I',                               phys_decomp )
-    call addfld('UW_sh',            'no',      pver+1, 'A',  'sh at all interfaces, I',                               phys_decomp )
-    call addfld('UW_sm',            'no',      pver+1, 'A',  'sm at all interfaces, I',                               phys_decomp )
-    call addfld('UW_ria',           'no',      pver+1, 'A',  'ri at all interfaces, I',                               phys_decomp )
-    call addfld('UW_leng',          'm/s',     pver+1, 'A',  'Turbulence length scale, I',                            phys_decomp )
+    call addfld('UW_errorPBL',    horiz_only,      'A',      'm2/s',  'Error function of UW PBL' )
+    call addfld('UW_n2',     (/ 'lev' /),   'A',            's-2',  'Buoyancy Frequency, LI' )
+    call addfld('UW_s2',     (/ 'lev' /),   'A',            's-2',  'Shear Frequency, LI' )
+    call addfld('UW_ri',      (/ 'lev' /),   'A',            'no',  'Interface Richardson Number, I' )
+    call addfld('UW_sfuh',      (/ 'lev' /),   'A',          'no',  'Upper-Half Saturation Fraction, L' )
+    call addfld('UW_sflh',      (/ 'lev' /),   'A',          'no',  'Lower-Half Saturation Fraction, L' )
+    call addfld('UW_sfi',      (/ 'ilev' /), 'A',           'no',  'Interface Saturation Fraction, I' )
+    call addfld('UW_cldn',      (/ 'lev' /),   'A',          'no',  'Cloud Fraction, L' )
+    call addfld('UW_qrl',  (/ 'lev' /),   'A',           'g*W/m2',  'LW cooling rate, L' )
+    call addfld('UW_ql',   (/ 'lev' /),   'A',            'kg/kg',  'ql(LWC), L' )
+    call addfld('UW_chu',  (/ 'ilev' /), 'A',           'g*kg/J',  'Buoyancy Coefficient, chu, I' )
+    call addfld('UW_chs',  (/ 'ilev' /), 'A',           'g*kg/J',  'Buoyancy Coefficient, chs, I' )
+    call addfld('UW_cmu', (/ 'ilev' /), 'A',           'g/kg/kg',  'Buoyancy Coefficient, cmu, I' )
+    call addfld('UW_cms', (/ 'ilev' /), 'A',           'g/kg/kg',  'Buoyancy Coefficient, cms, I' )
+    call addfld('UW_tke',   (/ 'ilev' /), 'A',           'm2/s2',  'TKE, I' )
+    call addfld('UW_wcap',   (/ 'ilev' /), 'A',          'm2/s2',  'Wcap, I' )
+    call addfld('UW_bprod',   (/ 'ilev' /), 'A',         'm2/s3',  'Buoyancy production, I' )
+    call addfld('UW_sprod',   (/ 'ilev' /), 'A',         'm2/s3',  'Shear production, I' )
+    call addfld('UW_kvh',    (/ 'ilev' /), 'A',           'm2/s',  'Eddy diffusivity of heat, I' )
+    call addfld('UW_kvm',    (/ 'ilev' /), 'A',           'm2/s',  'Eddy diffusivity of uv, I' )
+    call addfld('UW_pblh',       horiz_only,      'A',          'm',  'PBLH, 1' )
+    call addfld('UW_pblhp',      horiz_only,      'A',         'Pa',  'PBLH pressure, 1' )
+    call addfld('UW_tpert',       horiz_only,      'A',         'K',  'Convective T excess, 1' )
+    call addfld('UW_qpert',   horiz_only,      'A',         'kg/kg',  'Convective qt excess, I' )
+    call addfld('UW_wpert',     horiz_only,      'A',         'm/s',  'Convective W excess, I' )
+    call addfld('UW_ustar',     horiz_only,      'A',         'm/s',  'Surface Frictional Velocity, 1' )
+    call addfld('UW_tkes',   horiz_only,      'A',          'm2/s2',  'Surface TKE, 1' )
+    call addfld('UW_minpblh',       horiz_only,      'A',       'm',  'Minimum PBLH, 1' )
+    call addfld('UW_turbtype',      (/ 'ilev' /), 'A',      'no',  'Interface Turbulence Type, I' )
+    call addfld('UW_kbase_o',      (/ 'lev' /), 'A',       'no',  'Initial CL Base Exterbal Interface Index, CL' )
+    call addfld('UW_ktop_o',      (/ 'lev' /), 'A',        'no',  'Initial Top Exterbal Interface Index, CL' )
+    call addfld('UW_ncvfin_o',       horiz_only,      'A',      '#',  'Initial Total Number of CL regimes, CL' )
+    call addfld('UW_kbase_mg',      (/ 'lev' /), 'A',      'no',  'kbase after merging, CL' )
+    call addfld('UW_ktop_mg',      (/ 'lev' /), 'A',       'no',  'ktop after merging, CL' )
+    call addfld('UW_ncvfin_mg',       horiz_only,      'A',     '#',  'ncvfin after merging, CL' )
+    call addfld('UW_kbase_f',      (/ 'lev' /), 'A',       'no',  'Final kbase with SRCL, CL' )
+    call addfld('UW_ktop_f',      (/ 'lev' /), 'A',        'no',  'Final ktop with SRCL, CL' )
+    call addfld('UW_ncvfin_f',       horiz_only,      'A',      '#',  'Final ncvfin with SRCL, CL' )
+    call addfld('UW_wet',     (/ 'lev' /), 'A',           'm/s',  'Entrainment rate at CL top, CL' )
+    call addfld('UW_web',     (/ 'lev' /), 'A',           'm/s',  'Entrainment rate at CL base, CL' )
+    call addfld('UW_jtbu',    (/ 'lev' /), 'A',          'm/s2',  'Buoyancy jump across CL top, CL' )
+    call addfld('UW_jbbu',    (/ 'lev' /), 'A',          'm/s2',  'Buoyancy jump across CL base, CL' )
+    call addfld('UW_evhc',      (/ 'lev' /), 'A',          'no',  'Evaporative enhancement factor, CL' )
+    call addfld('UW_jt2slv',    (/ 'lev' /), 'A',        'J/kg',  'slv jump for evhc, CL' )
+    call addfld('UW_n2ht',     (/ 'lev' /), 'A',          's-2',  'n2 at just below CL top interface, CL' )
+    call addfld('UW_n2hb',     (/ 'lev' /), 'A',          's-2',  'n2 at just above CL base interface' )
+    call addfld('UW_lwp',   (/ 'lev' /), 'A',           'kg/m2',  'LWP in the CL top layer, CL' )
+    call addfld('UW_optdepth',      (/ 'lev' /), 'A',      'no',  'Optical depth of the CL top layer, CL' )
+    call addfld('UW_radfrac',      (/ 'lev' /), 'A',       'no',  'Fraction of radiative cooling confined in the CL top' )
+    call addfld('UW_radf',   (/ 'lev' /), 'A',          'm2/s3',  'Buoyancy production at the CL top by radf, I' )
+    call addfld('UW_wstar',     (/ 'lev' /), 'A',         'm/s',  'Convective velocity, Wstar, CL' )
+    call addfld('UW_wstar3fact',      (/ 'lev' /), 'A',    'no',  'Enhancement of wstar3 due to entrainment, CL' )
+    call addfld('UW_ebrk',   (/ 'lev' /), 'A',          'm2/s2',  'CL-averaged TKE, CL' )
+    call addfld('UW_wbrk',   (/ 'lev' /), 'A',          'm2/s2',  'CL-averaged W, CL' )
+    call addfld('UW_lbrk',       (/ 'lev' /), 'A',          'm',  'CL internal thickness, CL' )
+    call addfld('UW_ricl',      (/ 'lev' /), 'A',          'no',  'CL-averaged Ri, CL' )
+    call addfld('UW_ghcl',      (/ 'lev' /), 'A',          'no',  'CL-averaged gh, CL' )
+    call addfld('UW_shcl',      (/ 'lev' /), 'A',          'no',  'CL-averaged sh, CL' )
+    call addfld('UW_smcl',      (/ 'lev' /), 'A',          'no',  'CL-averaged sm, CL' )
+    call addfld('UW_gh',      (/ 'ilev' /), 'A',            'no',  'gh at all interfaces, I' )
+    call addfld('UW_sh',      (/ 'ilev' /), 'A',            'no',  'sh at all interfaces, I' )
+    call addfld('UW_sm',      (/ 'ilev' /), 'A',            'no',  'sm at all interfaces, I' )
+    call addfld('UW_ria',      (/ 'ilev' /), 'A',           'no',  'ri at all interfaces, I' )
+    call addfld('UW_leng',     (/ 'ilev' /), 'A',          'm/s',  'Turbulence length scale, I' )
+    ! For sedimentation-entrainment feedback analysis
+    call addfld('UW_wsed',     (/ 'ilev' /), 'A',          'm/s',  'Sedimentation velocity at CL top, CL' )
 
   return
 
@@ -352,7 +356,7 @@
                                 cgh    , cgs    , tpert    , qpert   , wpert    , tke     , bprod , &
                                 sprod  , sfi    , kvinit   ,                                        &
                                 tauresx, tauresy, ksrftms  ,                                        &
-                                ipbl   , kpblh  , wstarPBL , turbtype, sm_aw )
+                                ipbl   , kpblh  , wstarPBL , tkes    , went     ,turbtype, sm_aw )
        
     !-------------------------------------------------------------------- ! 
     ! Purpose: Interface to compute eddy diffusivities.                   !
@@ -363,7 +367,7 @@
     !-------------------------------------------------------------------- !
 
     use diffusion_solver, only: compute_vdiff
-    use cam_history,      only: outfld, addfld, phys_decomp
+    use cam_history,      only: outfld
   ! use physics_types,    only: physics_state
     use phys_debug_util,  only: phys_debug_col
     use time_manager,     only: is_first_step, get_nstep
@@ -436,9 +440,11 @@
     real(r8), intent(out)   :: sm_aw(pcols,pver+1)       ! Normalized Galperin instability function for momentum [ no unit ]
                                                          ! This is 1 when neutral condition (Ri=0),
                                                          ! 4.964 for maximum unstable case, and 0 when Ri > Ricrit=0.19. 
-    real(r8), intent(out)   :: ipbl(pcols)               ! If 1, PBL is CL, while if 0, PBL is STL.
-    real(r8), intent(out)   :: kpblh(pcols)              ! Layer index containing PBL top within or at the base interface
+    integer(i4), intent(out) :: ipbl(pcols)              ! If 1, PBL is CL, while if 0, PBL is STL.
+    integer(i4), intent(out) :: kpblh(pcols)             ! Layer index containing PBL top within or at the base interface
     real(r8), intent(out)   :: wstarPBL(pcols)           ! Convective velocity within PBL [ m/s ]
+    real(r8), intent(out)   :: tkes(pcols)               ! TKE at surface interface [ m2/s2 ]
+    real(r8), intent(out)   :: went(pcols)               ! Entrainment rate at the PBL top interface [ m/s ]
 
     ! ---------------------- !
     ! Input-Output Variables !
@@ -507,7 +513,6 @@
     ! Variables for diagnostic output !
     ! ------------------------------- !
 
-    real(r8)                :: tkes(pcols)               ! TKE at surface interface [ m2/s2 ]
     real(r8)                :: kbase_o(pcols,ncvmax)     ! Original external base interface index of CL from 'exacol'
     real(r8)                :: ktop_o(pcols,ncvmax)      ! Original external top  interface index of CL from 'exacol'
     real(r8)                :: ncvfin_o(pcols)           ! Original number of CLs from 'exacol'
@@ -549,6 +554,8 @@
     real(r8)                :: lengi(pcols,pver+1)       ! Turbulence length scale at all interfaces [ m ]
     real(r8)                :: wcap(pcols,pver+1)        ! Normalized TKE at all interfaces [ m2/s2 ]
     real(r8)                :: rairi(pcols,pver+1)       ! interface gas constant needed for compute_vdiff
+    ! For sedimentation-entrainment feedback
+    real(r8)                :: wsed(pcols,ncvmax)        ! Sedimentation velocity at the top of each CL [ m/s ]
 
     ! ---------- !
     ! Initialize !
@@ -641,7 +648,7 @@
                      kvh       , kvm       , kvh_out   , kvm_out  ,          &
                      tpert     , qpert     , qrl       , kvf      , tke    , &
                      wstarent  , bprod     , sprod     , minpblh  , wpert  , &
-                     tkes      , turbtype  , sm_aw     ,                     & 
+                     tkes      , went      , turbtype  , sm_aw    ,          & 
                      kbase_o   , ktop_o    , ncvfin_o  ,                     &
                      kbase_mg  , ktop_mg   , ncvfin_mg ,                     &                  
                      kbase_f   , ktop_f    , ncvfin_f  ,                     &                  
@@ -652,7 +659,7 @@
                      ebrk      , wbrk      , lbrk      , ricl     , ghcl   , & 
                      shcl      , smcl      , ghi       , shi      , smi    , &
                      rii       , lengi     , wcap      , pblhp    , cldn   , &
-                     ipbl      , kpblh     , wsedl)
+                     ipbl      , kpblh     , wsedl     , wsed)
 
      ! Calculate errorPBL to check whether PBL produced convergent solutions or not.
 
@@ -767,7 +774,7 @@
   ! Compute 'wstar' within the PBL for use in the future convection scheme.
 
     do i = 1, ncol
-       if( ipbl(i) .eq. 1._r8 ) then 
+       if( ipbl(i) .eq. 1 ) then 
            wstarPBL(i) = max( 0._r8, wstar(i,1) )
        else
            wstarPBL(i) = 0._r8
@@ -856,6 +863,8 @@
     call outfld( 'UW_sm',          smi,        pcols,   lchnk )
     call outfld( 'UW_ria',         rii,        pcols,   lchnk )
     call outfld( 'UW_leng',        lengi,      pcols,   lchnk )
+
+    call outfld( 'UW_wsed',        wsed,       pcols,   lchnk )
 
     return
     
@@ -1365,7 +1374,7 @@
                         kvh_in       , kvm_in       , kvh         , kvm        ,                &
                         tpert        , qpert        , qrlin       , kvf        , tke          , & 
                         wstarent     , bprod        , sprod       , minpblh    , wpert        , &
-                        tkes         , turbtype     , sm_aw       ,                             &
+                        tkes         , went         , turbtype    , sm_aw      ,                &
                         kbase_o      , ktop_o       , ncvfin_o    ,                             & 
                         kbase_mg     , ktop_mg      , ncvfin_mg   ,                             & 
                         kbase_f      , ktop_f       , ncvfin_f    ,                             & 
@@ -1376,7 +1385,7 @@
                         shcl         , smcl         ,                                           &
                         gh_a         , sh_a         , sm_a        , ri_a       , leng         , & 
                         wcap         , pblhp        , cld         , ipbl       , kpblh        , &
-                        wsedl        )
+                        wsedl        , wsed_CL)
 
     !--------------------------------------------------------------------------------- !
     !                                                                                  !
@@ -1469,6 +1478,8 @@
     real(r8), intent(out) :: tpert(pcols)             ! Convective temperature excess [ K ]
     real(r8), intent(out) :: qpert(pcols)             ! Convective humidity excess [ kg/kg ]
     real(r8), intent(out) :: wpert(pcols)             ! Turbulent velocity excess [ m/s ]
+    real(r8), intent(out) :: tkes(pcols)              ! TKE at surface [ m2/s2 ] 
+    real(r8), intent(out) :: went(pcols)              ! Entrainment rate at the PBL top interface [ m/s ] 
     real(r8), intent(out) :: tke(pcols,pver+1)        ! Turbulent kinetic energy [ m2/s2 ], 'tkes' at surface, pver+1.
     real(r8), intent(out) :: bprod(pcols,pver+1)      ! Buoyancy production [ m2/s3 ],     'bflxs' at surface, pver+1.
     real(r8), intent(out) :: sprod(pcols,pver+1)      ! Shear production [ m2/s3 ], (ustar(i)**3)/(vk*z(i,pver))
@@ -1482,14 +1493,14 @@
                                                       ! 5. = Double entraining CL external interface 
     real(r8), intent(out) :: sm_aw(pcols,pver+1)      ! Galperin instability function of momentum for use in the microphysics
                                                       ! [ no unit ]
-    real(r8), intent(out) :: ipbl(pcols)              ! If 1, PBL is CL, while if 0, PBL is STL.
-    real(r8), intent(out) :: kpblh(pcols)             ! Layer index containing PBL within or at the base interface
+    integer(i4), intent(out) :: ipbl(pcols)           ! If 1, PBL is CL, while if 0, PBL is STL.
+    integer(i4), intent(out) :: kpblh(pcols)          ! Layer index containing PBL within or at the base interface
+    real(r8), intent(out) :: wsed_CL(pcols,ncvmax)    ! Sedimentation velocity at the top of each CL [ m/s ]
 
     ! --------------------------- !
     ! Diagnostic output variables !
     ! --------------------------- !
 
-    real(r8) :: tkes(pcols)                           ! TKE at surface [ m2/s2 ] 
     real(r8) :: kbase_o(pcols,ncvmax)                 ! Original external base interface index of CL just after 'exacol'
     real(r8) :: ktop_o(pcols,ncvmax)                  ! Original external top  interface index of CL just after 'exacol'
     real(r8) :: ncvfin_o(pcols)                       ! Original number of CLs just after 'exacol'
@@ -1696,6 +1707,7 @@
     !
 
     do i = 1, ncol
+       went(i)                  = 0._r8
        wet_CL(i,:ncvmax)        = 0._r8
        web_CL(i,:ncvmax)        = 0._r8
        jtbu_CL(i,:ncvmax)       = 0._r8
@@ -1722,8 +1734,9 @@
        sm_a(i,:pver+1)          = 0._r8
        ri_a(i,:pver+1)          = 0._r8
        sm_aw(i,:pver+1)         = 0._r8
-       ipbl(i)                  = 0._r8
-       kpblh(i)                 = real(pver,r8)
+       ipbl(i)                  = 0
+       kpblh(i)                 = pver
+       wsed_CL(i,:ncvmax)       = 0._r8
     end do  
 
     ! kvh and kvm are stored over timesteps in 'vertical_diffusion.F90' and 
@@ -2369,6 +2382,7 @@
           if( id_sedfact ) then
             ! wsed    = 7.8e5_r8*(ql(i,kt)/ncliq(i,kt))**(2._r8/3._r8)
               sedfact = exp(-ased*wsedl(i,kt)/(wstar3**(1._r8/3._r8)+1.e-6_r8))
+              wsed_CL(i,ncv) = wsedl(i,kt)
               if( choice_evhc .eq. 'orig' ) then
                   if (ql(i,kt).gt.qmin .and. ql(i,kt-1).lt.qmin) then
                       jt2slv = slv(i,max(kt-2,1)) - slv(i,kt)
@@ -2745,9 +2759,9 @@
                turbtype(i,pver+1) = 3 ! CL external base interface
            endif
 
-           ipbl(i)  = 1._r8
-           kpblh(i) = ktopbl(i) - 1._r8
-
+           ipbl(i)  = 1
+           kpblh(i) = max(ktopbl(i)-1, 1)
+           went(i)  = wet_CL(i,ncvsurf)
        end if ! End of the calculationf of te properties of surface-based CL.
 
        ! -------------------------------------------- !
@@ -2844,7 +2858,7 @@
            tpert(i) = max(shflx(i)*rrho(i)/cpair*fak/ustar(i),0._r8) ! CCM stable-layer forms
            qpert(i) = max(qflx(i)*rrho(i)*fak/ustar(i),0._r8)
 
-           ipbl(i)  = 0._r8
+           ipbl(i)  = 0
            kpblh(i) = ktopbl(i)
 
        end if

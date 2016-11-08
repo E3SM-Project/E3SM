@@ -2301,13 +2301,6 @@ contains
     integer,allocatable                :: backwardV(:), backwardP(:)
     integer                            :: i,ii
 
-    ii=Edge%tail_face
-
-    !map to correct location - for now all on same nbr side have same wgt, so take the first one
-    ii = Edge%tail%nbrs_ptr(ii)
-  
-    np0 = Edge%tail%nbrs_wgt(ii)
-
     sFace = Edge%tail_face
     dFace = Edge%head_face
     ! Do not reverse the indices

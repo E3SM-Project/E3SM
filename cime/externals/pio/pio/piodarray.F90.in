@@ -207,7 +207,7 @@ contains
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
 
-    if(debugasync .and. ios%ioproc) print *,__FILE__,__LINE__,iodesc%async_id
+    if(debugasync .and. ios%ioproc) print *,__PIO_FILE__,__LINE__,iodesc%async_id
 
     select case(File%iotype)
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
@@ -503,6 +503,7 @@ contains
     File%iosystem%comp_rank,' UseRearranger: ',UseRearranger,iodesc%glen, iodesc%iomap%start, len
 #ifdef TIMING
     call t_startf("pio_rearrange_write")
+    call t_startf("pre_pio_write_nf")
 #endif
     if(UseRearranger) then 
        if (IOproc) then 
@@ -638,6 +639,7 @@ contains
     endif
 
 #ifdef TIMING
+    call t_stopf("pre_pio_write_nf")
     call t_startf("pio_write_nf")
 #endif
     ierr = write_nf(File,IOBUF,varDesc,iodesc,start,count, request) 
@@ -648,11 +650,17 @@ contains
     call dealloc_check(count)
 
     if(IOPROC) then
+#ifdef TIMING
+       call t_startf("post_pio_write_nf")
+#endif
        if(file%iotype==pio_iotype_pnetcdf) then
           call add_data_to_buffer(File, IOBUF, request)
        else if(Userearranger) then
           deallocate(iobuf)
        end if
+#ifdef TIMING
+       call t_stopf("post_pio_write_nf")
+#endif
     end if
 
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
@@ -988,7 +996,7 @@ contains
           call alloc_check(IOBUF,0,'IOBUF')
        end if
     endif
-!    print *,__FILE__,__LINE__,ndims, fndims, start(1:fndims),count(1:fndims),vardesc%rec
+!    print *,__PIO_FILE__,__LINE__,ndims, fndims, start(1:fndims),count(1:fndims),vardesc%rec
 
 #ifdef TIMING
     call t_startf("pio_read_nf")
@@ -1249,7 +1257,13 @@ contains
     this_buffsize = size(iobuf)*c_sizeof(iobuf(1))
     file%buffsize=file%buffsize+this_buffsize
     total_buffsize = total_buffsize+this_buffsize
+#ifdef TIMING
+    call t_startf("allred_add_data_to_buf")
+#endif
     call MPI_ALLREDUCE(total_buffsize,maxbuffsize,1,MPI_INTEGER,MPI_MAX,file%iosystem%io_comm, mpierr)
+#ifdef TIMING
+    call t_stopf("allred_add_data_to_buf")
+#endif
 
     if(maxbuffsize > pio_buffer_size_limit) then
        call darray_write_complete(File)
@@ -1294,7 +1308,7 @@ contains
 #ifdef _PNETCDF
        ierr  = nfmpi_wait_all(file%fh, cnt-1, array_of_requests, status)
 #endif
-       if(DEBUG) print *,__FILE__,__LINE__,status, ierr, total_buffsize
+       if(DEBUG) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
 
        ptr=>file%data_list_top
        do while(associated(ptr))

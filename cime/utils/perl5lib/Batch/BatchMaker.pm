@@ -486,9 +486,17 @@ sub setQueue()
 	# specifiy the queue directly. 
 	if(@defaultqueue)
 	{
-        my $defelement = $defaultqueue[0];
-        $self->{'queue'} = $defelement->textContent();
-	}
+            my $defelement = $defaultqueue[0];
+            $self->{'queue'} = $defelement->textContent();
+
+            my $jobmin = $defelement->getAttribute('jobmin');
+            my $jobmax = $defelement->getAttribute('jobmax');
+            # if the fullsum is between the min and max # jobs, then use this queue.
+            if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
+            {
+                return;
+            }
+        }
 
 	# We may have a default queue at this point, but if there is a queue that our job's node count
 	# falls in between, then we should use that queue. 
@@ -496,10 +504,9 @@ sub setQueue()
 	foreach my $qelem(@qelems)
 	{
 		# get the minimum/maximum # nodes allowed for each queue.  
-		my $jobmin = undef;
-		my $jobmax = undef;
-		$jobmin = $qelem->getAttribute('jobmin');
-		$jobmax = $qelem->getAttribute('jobmax');
+
+		my $jobmin = $qelem->getAttribute('jobmin');
+		my $jobmax = $qelem->getAttribute('jobmax');
 
 		# if the fullsum is between the min and max # jobs, then use this queue.  
 		if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
@@ -893,8 +900,9 @@ sub setTaskInfo()
 
     $self->{'mppsize'}  = $taskmaker->sumTasks();
 
-    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $maxTasksPerNode > 0)
+    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $pes_per_node > 0)
     {
+        print "mppsize = $self->{mppsize} pes_per_node=$pes_per_node \n";
 	die("odd number of tasks to handle");
 #        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
 #        $mppnodes += 1;

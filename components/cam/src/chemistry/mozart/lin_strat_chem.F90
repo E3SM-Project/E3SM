@@ -45,7 +45,7 @@ contains
     use linoz_data,   only : linoz_data_init, has_linoz_data
     use ppgrid,       only : pver
     use mo_chem_utls, only : get_spc_ndx
-    use cam_history,  only : addfld, phys_decomp, add_default
+    use cam_history,  only : addfld, horiz_only, add_default
     use physics_buffer, only : physics_buffer_desc
 
     implicit none
@@ -78,12 +78,12 @@ contains
 
     ! define additional output
 
-    call addfld( 'LINOZ_DO3'    , '/s'     , pver, 'A', 'ozone vmr tendency by linearized ozone chemistry'  , phys_decomp )
-    call addfld( 'LINOZ_DO3_PSC', '/s'     , pver, 'A', 'ozone vmr loss by PSCs using Carille et al. (1990)', phys_decomp )
-    call addfld( 'LINOZ_SSO3'   , 'kg'     , pver, 'A', 'steady state ozone in LINOZ'                       , phys_decomp )
-    call addfld( 'LINOZ_O3COL'  , 'DU'     , pver, 'A', 'ozone column above'                                , phys_decomp )
-    call addfld( 'LINOZ_O3CLIM' , 'mol/mol', pver, 'A', 'climatology of ozone in LINOZ'                     , phys_decomp )
-    call addfld( 'LINOZ_SZA'    , 'degrees',    1, 'A', 'solar zenith angle in LINOZ'                       , phys_decomp )
+    call addfld( 'LINOZ_DO3'    , (/ 'lev' /), 'A', '/s'     , 'ozone vmr tendency by linearized ozone chemistry'   )
+    call addfld( 'LINOZ_DO3_PSC', (/ 'lev' /), 'A', '/s'     , 'ozone vmr loss by PSCs using Carille et al. (1990)' )
+    call addfld( 'LINOZ_SSO3'   , (/ 'lev' /), 'A', 'kg'     , 'steady state ozone in LINOZ'                        )
+    call addfld( 'LINOZ_O3COL'  , (/ 'lev' /), 'A', 'DU'     , 'ozone column above'                                 )
+    call addfld( 'LINOZ_O3CLIM' , (/ 'lev' /), 'A', 'mol/mol', 'climatology of ozone in LINOZ'                      )
+    call addfld( 'LINOZ_SZA'    ,    horiz_only, 'A', 'degrees', 'solar zenith angle in LINOZ'                        )
 
     call add_default( 'LINOZ_DO3'    , 1, ' ' )
     call add_default( 'LINOZ_DO3_PSC', 1, ' ' )

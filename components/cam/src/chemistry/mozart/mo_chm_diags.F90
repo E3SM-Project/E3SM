@@ -53,7 +53,7 @@ contains
     !	... initialize utility routine
     !--------------------------------------------------------------------
 
-    use cam_history,  only : addfld, phys_decomp, add_default
+    use cam_history,  only : addfld, horiz_only, add_default
     use constituents, only : cnst_get_ind, cnst_longname
     use dyn_grid,     only : get_dyn_grid_parm, get_horiz_grid_d
     use phys_control, only: phys_getopts
@@ -196,19 +196,18 @@ contains
 
     toth_species = (/ id_ch4, id_h2o, id_h2 /)
 
-    call addfld( 'NOX', 'mol/mol', pver, 'A', 'nox volume mixing ratio',  phys_decomp )
-    call addfld( 'NOY', 'mol/mol', pver, 'A', 'noy volume mixing ratio',  phys_decomp )
-    call addfld( 'BROX','mol/mol', pver, 'A', 'brox volume mixing ratio', phys_decomp )
-    call addfld( 'BROY','mol/mol', pver, 'A', 'total inorganic bromine (Br+BrO+HOBr+BrONO2+HBr+BrCl)', phys_decomp )
-    call addfld( 'CLOX','mol/mol', pver, 'A', 'clox volume mixing ratio', phys_decomp )
-    call addfld( 'CLOY','mol/mol', pver, 'A', 'total inorganic chlorine (Cl+ClO+2Cl2+2Cl2O2+OClO+HOCl+ClONO2+HCl+BrCl)', &
-	phys_decomp )
-    call addfld( 'TCLY','mol/mol', pver, 'A', 'total Cl volume mixing ratio', phys_decomp )
-    call addfld( 'TOTH','mol/mol', pver, 'A', 'total H2 volume mixing ratio', phys_decomp )
+    call addfld( 'NOX', (/ 'lev' /), 'A', 'mol/mol', 'nox volume mixing ratio' )
+    call addfld( 'NOY', (/ 'lev' /), 'A', 'mol/mol', 'noy volume mixing ratio' )
+    call addfld( 'BROX', (/ 'lev' /), 'A','mol/mol', 'brox volume mixing ratio' )
+    call addfld( 'BROY', (/ 'lev' /), 'A','mol/mol', 'total inorganic bromine (Br+BrO+HOBr+BrONO2+HBr+BrCl)' )
+    call addfld( 'CLOX', (/ 'lev' /), 'A','mol/mol', 'clox volume mixing ratio' )
+    call addfld( 'CLOY', (/ 'lev' /), 'A','mol/mol', 'total inorganic chlorine (Cl+ClO+2Cl2+2Cl2O2+OClO+HOCl+ClONO2+HCl+BrCl)' )
+    call addfld( 'TCLY', (/ 'lev' /), 'A','mol/mol', 'total Cl volume mixing ratio' )
+    call addfld( 'TOTH', (/ 'lev' /), 'A','mol/mol', 'total H2 volume mixing ratio' )
 
-    call addfld( 'NOY_mmr', 'kg/kg', pver, 'A', 'NOy mass mixing ratio', phys_decomp )
-    call addfld( 'SOX_mmr', 'kg/kg', pver, 'A', 'SOx mass mixing ratio', phys_decomp )
-    call addfld( 'NHX_mmr', 'kg/kg', pver, 'A', 'NHx mass mixing ratio', phys_decomp )
+    call addfld( 'NOY_mmr', (/ 'lev' /), 'A', 'kg/kg', 'NOy mass mixing ratio' )
+    call addfld( 'SOX_mmr', (/ 'lev' /), 'A', 'kg/kg', 'SOx mass mixing ratio' )
+    call addfld( 'NHX_mmr', (/ 'lev' /), 'A', 'kg/kg', 'NHx mass mixing ratio' )
 
     do j = 1,NJEUV
        write( jchar, '(I2)' ) j
@@ -221,22 +220,22 @@ contains
     has_jno   = rid_jno>0
 
     if ( has_jeuvs ) then
-       call addfld( 'PION_EUV','/cm^3/s', pver, 'I', 'total euv ionization rate', phys_decomp )
-       call addfld( 'PEUV1',   '/cm^3/s', pver, 'I', '(j1+j2+j3)*o', phys_decomp )
-       call addfld( 'PEUV1e',  '/cm^3/s', pver, 'I', '(j14+j15+j16)*o', phys_decomp )
-       call addfld( 'PEUV2',   '/cm^3/s', pver, 'I', 'j4*n', phys_decomp )
-       call addfld( 'PEUV3',   '/cm^3/s', pver, 'I', '(j5+j7+j8+j9)*o2', phys_decomp )
-       call addfld( 'PEUV3e',  '/cm^3/s', pver, 'I', '(j17+j19+j20+j21)*o2', phys_decomp )
-       call addfld( 'PEUV4',   '/cm^3/s', pver, 'I', '(j10+j11)*n2', phys_decomp )
-       call addfld( 'PEUV4e',  '/cm^3/s', pver, 'I', '(j22+j23)*n2', phys_decomp )
-       call addfld( 'PEUVN2D', '/cm^3/s', pver, 'I', '(j11+j13)*n2', phys_decomp )
-       call addfld( 'PEUVN2De','/cm^3/s', pver, 'I', '(j23+j25)*n2', phys_decomp )
+       call addfld( 'PION_EUV', (/ 'lev' /), 'I','/cm^3/s', 'total euv ionization rate' )
+       call addfld( 'PEUV1', (/ 'lev' /), 'I',   '/cm^3/s', '(j1+j2+j3)*o' )
+       call addfld( 'PEUV1e', (/ 'lev' /), 'I',  '/cm^3/s', '(j14+j15+j16)*o' )
+       call addfld( 'PEUV2', (/ 'lev' /), 'I',   '/cm^3/s', 'j4*n' )
+       call addfld( 'PEUV3', (/ 'lev' /), 'I',   '/cm^3/s', '(j5+j7+j8+j9)*o2' )
+       call addfld( 'PEUV3e', (/ 'lev' /), 'I',  '/cm^3/s', '(j17+j19+j20+j21)*o2' )
+       call addfld( 'PEUV4', (/ 'lev' /), 'I',   '/cm^3/s', '(j10+j11)*n2' )
+       call addfld( 'PEUV4e', (/ 'lev' /), 'I',  '/cm^3/s', '(j22+j23)*n2' )
+       call addfld( 'PEUVN2D', (/ 'lev' /), 'I', '/cm^3/s', '(j11+j13)*n2' )
+       call addfld( 'PEUVN2De', (/ 'lev' /), 'I','/cm^3/s', '(j23+j25)*n2' )
     endif
     if ( has_jno ) then
-       call addfld( 'PJNO', '/cm^3/s', pver, 'I', 'jno*no', phys_decomp )
+       call addfld( 'PJNO', (/ 'lev' /), 'I', '/cm^3/s', 'jno*no' )
     endif
     if ( has_jno_i ) then
-       call addfld( 'PJNO_I', '/cm^3/s', pver, 'I', 'jno_i*no', phys_decomp )
+       call addfld( 'PJNO_I', (/ 'lev' /), 'I', '/cm^3/s', 'jno_i*no' )
     endif
 
     do m = 1,gas_pcnst
@@ -256,15 +255,15 @@ contains
        depflx_name(m) = 'DF_'//trim(spc_name)
        dtchem_name(m) = 'D'//trim(spc_name)//'CHM'
 
-       call addfld( depvel_name(m), 'cm/s ',   1,    'A', 'deposition velocity ', phys_decomp )
-       call addfld( depflx_name(m), 'kg/m2/s', 1,    'A', 'dry deposition flux ', phys_decomp )
-       call addfld( dtchem_name(m), 'kg/s ',   pver, 'A', 'net tendency from chem', phys_decomp )
+       call addfld( depvel_name(m),   horiz_only,    'A', 'cm/s', 'deposition velocity ' )
+       call addfld( depflx_name(m), horiz_only,    'A', 'kg/m2/s', 'dry deposition flux ' )
+       call addfld( dtchem_name(m),   (/ 'lev' /), 'A', 'kg/s', 'net tendency from chem' )
 
        wetdep_name(m) = 'WD_'//trim(spc_name)
        wtrate_name(m) = 'WDR_'//trim(spc_name)
 
-       call addfld( wetdep_name(m), 'kg/s ',   1,    'A', spc_name//' wet deposition', phys_decomp )
-       call addfld( wtrate_name(m),   '/s ',   pver, 'A', spc_name//' wet deposition rate', phys_decomp )
+       call addfld( wetdep_name(m),   horiz_only,    'A', 'kg/s', spc_name//' wet deposition' )
+       call addfld( wtrate_name(m),   (/ 'lev' /), 'A',   '/s', spc_name//' wet deposition rate' )
        
        if (spc_name(1:3) == 'num') then
           unit_basename = ' 1'
@@ -273,11 +272,11 @@ contains
        endif
 
        if ( any( aer_species == m ) ) then
-          call addfld( spc_name, unit_basename//'/kg ',   pver, 'A', trim(attr)//' concentration', phys_decomp)
-          call addfld( trim(spc_name)//'_SRF', unit_basename//'/kg', 1, 'A', trim(attr)//" in bottom layer", phys_decomp)    
+          call addfld( spc_name,   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' concentration')
+          call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', unit_basename//'/kg', trim(attr)//" in bottom layer")    
        else
-          call addfld( spc_name, 'mol/mol ', pver, 'A', trim(attr)//' concentration', phys_decomp)
-          call addfld( trim(spc_name)//'_SRF', 'mol/mol ', 1, 'A', trim(attr)//" in bottom layer", phys_decomp)
+          call addfld( spc_name, (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' concentration')
+          call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', 'mol/mol', trim(attr)//" in bottom layer")
        endif
 
        if ((m /= id_cly) .and. (m /= id_bry)) then
@@ -292,17 +291,17 @@ contains
 
     enddo
 
-    call addfld( 'MASS', 'kg', pver, 'A', 'mass of grid box', phys_decomp )
-    call addfld( 'AREA', 'm2', 1,    'A', 'area of grid box', phys_decomp )
+    call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
+    call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
 
-    call addfld( 'WD_NOY', 'kg/s', 1, 'A', 'NOy wet deposition', phys_decomp )
-    call addfld( 'DF_NOY', 'kg/m2/s', 1, 'I', 'NOy dry deposition flux ', phys_decomp )
+    call addfld( 'WD_NOY', horiz_only, 'A', 'kg/s', 'NOy wet deposition' )
+    call addfld( 'DF_NOY', horiz_only, 'I', 'kg/m2/s', 'NOy dry deposition flux ' )
 
-    call addfld( 'WD_SOX', 'kg/s', 1, 'A', 'SOx wet deposition', phys_decomp )
-    call addfld( 'DF_SOX', 'kg/m2/s', 1, 'I', 'SOx dry deposition flux ', phys_decomp )
+    call addfld( 'WD_SOX', horiz_only, 'A', 'kg/s', 'SOx wet deposition' )
+    call addfld( 'DF_SOX', horiz_only, 'I', 'kg/m2/s', 'SOx dry deposition flux ' )
 
-    call addfld( 'WD_NHX', 'kg/s', 1, 'A', 'NHx wet deposition', phys_decomp )
-    call addfld( 'DF_NHX', 'kg/m2/s', 1, 'I', 'NHx dry deposition flux ', phys_decomp )
+    call addfld( 'WD_NHX', horiz_only, 'A', 'kg/s', 'NHx wet deposition' )
+    call addfld( 'DF_NHX', horiz_only, 'I', 'kg/m2/s', 'NHx dry deposition flux ' )
 
   end subroutine chm_diags_inti
 

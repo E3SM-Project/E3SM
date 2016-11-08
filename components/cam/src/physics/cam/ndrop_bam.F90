@@ -1,3 +1,4 @@
+
 module ndrop_bam
 
 !---------------------------------------------------------------------------------
@@ -17,7 +18,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_props
 use shr_spfn_mod,     only: erf => shr_spfn_erf, &
                             erfc => shr_spfn_erfc
 use wv_saturation,    only: qsat
-use cam_history,      only: addfld, add_default, phys_decomp, outfld 
+use cam_history,      only: addfld, add_default, outfld 
 use cam_logfile,      only: iulog
 use cam_abortutils,       only: endrun
 use ref_pres,         only: top_lev=>trop_cloud_top_lev
@@ -107,7 +108,7 @@ subroutine ndrop_bam_init
       if (trim(aername(iaer)) == 'SULFATE') idxsul   = iaer
 
       ! aerosol number concentration
-      call addfld(trim(aername(iaer))//'_m3', 'm-3', pver, 'A', 'aerosol number concentration', phys_decomp)
+      call addfld(trim(aername(iaer))//'_m3', (/ 'lev' /), 'A', 'm-3', 'aerosol number concentration')
 
    end do
 
@@ -124,12 +125,12 @@ subroutine ndrop_bam_init
       end if
    end if
 
-   call addfld ('CCN1    ','#/cm3   ',pver, 'A','CCN concentration at S=0.02%',phys_decomp)
-   call addfld ('CCN2    ','#/cm3   ',pver, 'A','CCN concentration at S=0.05%',phys_decomp)
-   call addfld ('CCN3    ','#/cm3   ',pver, 'A','CCN concentration at S=0.1%',phys_decomp)
-   call addfld ('CCN4    ','#/cm3   ',pver, 'A','CCN concentration at S=0.2%',phys_decomp)
-   call addfld ('CCN5    ','#/cm3   ',pver, 'A','CCN concentration at S=0.5%',phys_decomp)
-   call addfld ('CCN6    ','#/cm3   ',pver, 'A','CCN concentration at S=1.0%',phys_decomp)
+   call addfld ('CCN1',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.02%')
+   call addfld ('CCN2',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.05%')
+   call addfld ('CCN3',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.1%')
+   call addfld ('CCN4',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.2%')
+   call addfld ('CCN5',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.5%')
+   call addfld ('CCN6',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=1.0%')
 
    call add_default('CCN3', 1, ' ')
 

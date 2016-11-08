@@ -5,13 +5,13 @@ topology      = "cube"
 test_case     = "jw_baroclinic"
 ne            = 6
 qsize = 1
-tracer_advection_formulation=1
-nmax          = 2160
+nmax          = 864   
 statefreq     = 60
-restartfreq = 2160
+restartfreq =   864   
 restartfile   = "./R0001"
 runtype       = 0
-tstep         = 360
+tstep         = 900 
+tstep_type    = 5
 integration   = "explicit"
 smooth        = 0.0000
 energy_fixer  = 0
@@ -25,20 +25,8 @@ u_perturb      = 1
 initial_total_mass = 0
 limiter_option = 8
 /
-&solver_nl
-precon_method = "identity"
-maxits        = 50
-tol           = 1.e-7
-/
 &filter_nl
-filter_type   = "taylor"
-transfer_type = "bv"
 filter_freq   = 0
-filter_mu     = 0.25D0
-p_bv          = 12.0D0
-s_bv          = .666666666666666666D0
-wght_fm       = 0.10D0
-kcut_fm       = 2
 /
 &vert_nl
 vform         = "ccm"

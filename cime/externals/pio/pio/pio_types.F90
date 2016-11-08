@@ -3,8 +3,8 @@
 !! @file 
 !! @brief Derived datatypes and constants for PIO
 !! 
-!! $Revision$
-!! $LastChangedDate$
+!! $Revision: 943 $
+!! $LastChangedDate: 2014-02-14 10:20:17 -0600 (Fri, 14 Feb 2014) $
 !<
 module pio_types
     use pio_kinds
@@ -34,6 +34,81 @@ module pio_types
         integer(i4) :: length
     end type
 
+!>
+!! @defgroup PIO_rearr_method PIO_rearr_method
+!! @public 
+!! @brief The three choices to control rearrangement are:
+!! @details
+!!  - PIO_rearr_none : Do not use any form of rearrangement
+!!  - PIO_rearr_box : Use a PIO internal box rearrangement
+!>
+    integer(i4), public, parameter :: PIO_rearr_none = 0
+    integer(i4), public, parameter :: PIO_rearr_box =  1
+
+!>
+!! @defgroup PIO_rearr_comm_t PIO_rearr_comm_t
+!! @public 
+!! @brief The two choices for rearranger communication
+!! @details
+!!  - PIO_rearr_comm_p2p : Point to point
+!!  - PIO_rearr_comm_coll : Collective
+!>
+    enum, bind(c)
+      enumerator :: PIO_rearr_comm_p2p = 0
+      enumerator :: PIO_rearr_comm_coll
+    end enum
+
+!>
+!! @defgroup PIO_rearr_comm_dir PIO_rearr_comm_dir
+!! @public 
+!! @brief The four choices for rearranger communication direction
+!! @details
+!!  - PIO_rearr_comm_fc_2d_enable : COMM procs to IO procs and vice versa
+!!  - PIO_rearr_comm_fc_1d_comp2io: COMM procs to IO procs only
+!!  - PIO_rearr_comm_fc_1d_io2comp: IO procs to COMM procs only
+!!  - PIO_rearr_comm_fc_2d_disable: Disable flow control
+!>
+    enum, bind(c)
+      enumerator :: PIO_rearr_comm_fc_2d_enable = 0
+      enumerator :: PIO_rearr_comm_fc_1d_comp2io
+      enumerator :: PIO_rearr_comm_fc_1d_io2comp
+      enumerator :: PIO_rearr_comm_fc_2d_disable
+    end enum
+
+!>
+!! @defgroup PIO_rearr_comm_fc_options PIO_rearr_comm_fc_options
+!! @brief Type that defines the PIO rearranger options
+!! @details
+!!  - enable_hs : Enable handshake (true/false) 
+!!  - enable_isend : Enable Isends (true/false)
+!!  - max_pend_req : Maximum pending requests (To indicated unlimited
+!!                    number of requests use PIO_REARR_COMM_UNLIMITED_PEND_REQ)
+!>
+    type, public :: PIO_rearr_comm_fc_opt_t
+      logical :: enable_hs            ! Enable handshake?
+      logical :: enable_isend         ! Enable isends?
+      integer :: max_pend_req         ! Maximum pending requests
+    end type PIO_rearr_comm_fc_opt_t
+
+    integer, public, parameter :: PIO_REARR_COMM_UNLIMITED_PEND_REQ = -1
+!>
+!! @defgroup PIO_rearr_options PIO_rearr_options
+!! @brief Type that defines the PIO rearranger options
+!! @details
+!!  - comm_type : @copydoc PIO_rearr_comm_t
+!!  - fcd : @copydoc PIO_rearr_comm_dir
+!!  - comm_fc_opts : @copydoc PIO_rearr_comm_fc_options
+!>
+    type, public :: PIO_rearr_opt_t
+      integer                         :: comm_type
+      integer                         :: fcd       ! Flow control direction
+      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts_comp2io
+      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts_io2comp
+    end type PIO_rearr_opt_t
+
+    public :: PIO_rearr_comm_p2p, PIO_rearr_comm_coll,&
+              PIO_rearr_comm_fc_2d_enable, PIO_rearr_comm_fc_1d_comp2io,&
+              PIO_rearr_comm_fc_1d_io2comp, PIO_rearr_comm_fc_2d_disable
 
     !------------------------------------
     !  a file descriptor data structure
@@ -79,6 +154,8 @@ module pio_types
         logical(log_kind)        :: async_interface=.false.    ! .true. if using the async interface model
         integer(i4)              :: rearr         ! type of rearranger
                                                   ! e.g. rearr_{none,box}
+        !integer(i4), dimension(IOSYS_REARR_OPT_MAX) :: rearr_opts ! Rearranger options - see PIO_rearr_opt_t for details
+        type(PIO_rearr_opt_t)   :: rearr_opts       ! Rearranger options
 	integer(i4)              :: error_handling ! how pio handles errors
         integer(i4),pointer      :: ioranks(:) => null()         ! the computational ranks for the IO tasks
 
@@ -242,16 +319,6 @@ module pio_types
         iotype_netcdf  = PIO_iotype_netcdf
 
 
-!>
-!! @defgroup PIO_rearr_method PIO_rearr_method
-!! @public 
-!! @brief The three choices to control rearrangement are:
-!! @details
-!!  - PIO_rearr_none : Do not use any form of rearrangement
-!!  - PIO_rearr_box : Use a PIO internal box rearrangement
-!>
-    integer(i4), public, parameter :: PIO_rearr_none = 0
-    integer(i4), public, parameter :: PIO_rearr_box =  1
 
 !> 
 !! @public

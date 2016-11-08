@@ -7,11 +7,18 @@
 !
 !
 module prim_advance_mod
-  use edgetype_mod, only : EdgeDescriptor_t, EdgeBuffer_t
-  use kinds, only : real_kind, iulog
-  use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
-  use parallel_mod, only : abortmp, parallel_t, iam
-  use control_mod, only : se_prescribed_wind_2d
+
+  use control_mod,    only: qsplit,rsplit
+  use derivative_mod, only: derivative_t, vorticity, divergence, gradient, gradient_wk
+  use dimensions_mod, only: np, nlev, nlevp, nvar, nc, nelemd
+  use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
+  use element_mod,    only: element_t
+  use hybrid_mod,     only: hybrid_t
+  use hybvcoord_mod,  only: hvcoord_t
+  use kinds,          only: real_kind, iulog
+  use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
+  use parallel_mod,   only: abortmp, parallel_t, iam
+  use time_mod,       only: timelevel_t
 
   implicit none
   private
@@ -35,8 +42,6 @@ contains
 
   subroutine prim_advance_init(par, elem,integration)
     use edge_mod, only : initEdgeBuffer
-    use element_mod, only : element_t
-    use dimensions_mod, only : nlev, nelemd
     use control_mod, only : qsplit,rsplit
     implicit none
     
@@ -80,67 +85,111 @@ contains
 
   end subroutine prim_advance_init
 
+#ifndef CAM
+  !_____________________________________________________________________
+  subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
 
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,&
-       dt, tl,  nets, nete, compute_diagnostics)
-    use bndry_mod, only : bndry_exchangev
-    use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
-    use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
-    use dimensions_mod, only : np, nlev, nlevp, nvar, nc, nelemd
-!    use prim_state_mod, only : prim_printstate
-    use edge_mod, only : edgevpack, edgevunpack, initEdgeBuffer
-    use edgetype_mod, only : EdgeBuffer_t
-    use element_mod, only : element_t
-    use hybvcoord_mod, only : hvcoord_t
-    use hybrid_mod, only : hybrid_t
-    use reduction_mod, only : reductionbuffer_ordered_1d_t
-    use time_mod, only : TimeLevel_t,  timelevel_qdp, tevolve
-    use diffusion_mod, only :  prim_diffusion
+    use test_mod,  only: set_test_prescribed_wind
+    use asp_tests, only: asp_advection_vertical
+
+    type (element_t),      intent(inout), target  :: elem(:)
+    type (derivative_t),   intent(in)             :: deriv
+    type (hvcoord_t),      intent(inout)          :: hv
+    type (hybrid_t),       intent(in)             :: hybrid
+    real (kind=real_kind), intent(in)             :: dt
+    type (TimeLevel_t)   , intent(in)             :: tl
+    integer              , intent(in)             :: nets
+    integer              , intent(in)             :: nete
+    real (kind=real_kind), intent(in)             :: eta_ave_w
+
+    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
+    real(kind=real_kind)  :: time
+
+    integer :: ie,k,n0,np1
+
+    time  = tl%nstep*dt
+    n0    = tl%n0
+    np1   = tl%np1
+
+    call set_test_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete)
+
+    do ie = nets,nete
+      ! asp2008 tests:
+      ! call asp_advection_vertical(time,hv,elem(ie)%state%ps_v(:,:,n0),eta_dot_dpdn)
+      ! accumulate mean fluxes for advection
+      !   if (rsplit==0) then
+      !      elem(ie)%derived%eta_dot_dpdn(:,:,:) = &
+      !           elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
+      !   else
+      !      ! lagrangian case.  mean vertical velocity = 0. compute dp3d on floating levels
+      !      elem(ie)%derived%eta_dot_dpdn(:,:,:) = 0
+      !     do k=1,nlev
+      !         elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%state%dp3d(:,:,k,n0) + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
+      !      enddo
+      !   end if
+
+      ! get mean horizontal flux (rho*vel) for tracer advection
+      do k=1,nlev
+         if (rsplit==0) then
+            dp(:,:) =(hv%hyai(k+1)-hv%hyai(k))*hv%ps0 + (hv%hybi(k+1)-hv%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
+         else
+            dp(:,:) = elem(ie)%state%dp3d(:,:,k,n0)
+         end if
+         elem(ie)%derived%vn0(:,:,1,k)=elem(ie)%derived%vn0(:,:,1,k) + eta_ave_w*elem(ie)%state%v(:,:,1,k,n0)*dp(:,:)
+         elem(ie)%derived%vn0(:,:,2,k)=elem(ie)%derived%vn0(:,:,2,k) + eta_ave_w*elem(ie)%state%v(:,:,2,k,n0)*dp(:,:)
+      enddo
+   end do
+
+  end subroutine
+#endif
+
+  !_____________________________________________________________________
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
+
+    use bndry_mod,      only: bndry_exchangev
+    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
+    use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
+    use edgetype_mod,   only: EdgeBuffer_t
+    use reduction_mod,  only: reductionbuffer_ordered_1d_t
+    use time_mod,       only: timelevel_qdp, tevolve
+    use diffusion_mod,  only: prim_diffusion
+
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
 #endif
 
-#ifndef CAM
-    use asp_tests, only : asp_advection_vertical
+#ifdef CAM
+    use control_mod,    only: prescribed_vertwind
 #else
-    use control_mod, only : prescribed_vertwind
+    use asp_tests,      only: asp_advection_vertical
 #endif
 
     implicit none
 
-    type (element_t), intent(inout), target   :: elem(:)
-    type (derivative_t), intent(in)   :: deriv
-    type (hvcoord_t)                  :: hvcoord
+    type (element_t),      intent(inout), target :: elem(:)
+    type (derivative_t),   intent(in)            :: deriv
+    type (hvcoord_t)                             :: hvcoord
+    type (hybrid_t),       intent(in)            :: hybrid
+    real (kind=real_kind), intent(in)            :: dt
+    type (TimeLevel_t)   , intent(in)            :: tl
+    integer              , intent(in)            :: nets
+    integer              , intent(in)            :: nete
+    logical,               intent(in)            :: compute_diagnostics
 
-    type (hybrid_t)    , intent(in):: hybrid
-
-    real (kind=real_kind), intent(in) :: dt
-    type (TimeLevel_t)   , intent(in) :: tl
-    integer              , intent(in) :: nets
-    integer              , intent(in) :: nete
-    logical, intent(in)               :: compute_diagnostics
-
-    ! =================
-    ! Local
-    ! =================
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) ::  eta_dot_dpdn(np,np,nlevp)
-    real (kind=real_kind) ::  dp(np,np)
     real (kind=real_kind) ::  tempdp3d(np,np)
     real (kind=real_kind) ::  tempmass(nc,nc)
     real (kind=real_kind) ::  tempflux(nc,nc,4)
-    real (kind=real_kind) ::  deta
+    !real (kind=real_kind) ::  dn
+
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx
 
 #ifdef TRILINOS
     real (c_double) ,allocatable, dimension(:) :: xstate(:)
 
-!    type (element_t) :: pc_elem(size(elem))
-!    type (element_t) :: jac_elem(size(elem))
-
-! state_object is a derived data type passed thru noxinit as a pointer
+    ! state_object is a derived data type passed thru noxinit as a pointer
     type(derived_type) ,target         :: state_object
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
@@ -156,178 +205,115 @@ contains
   interface
 
    subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container,ierr) &
-!   subroutine noxsolve(vectorSize,vector,v_container) &
      bind(C,name='noxsolve')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-      type(c_ptr)                   :: j_container  !analytic jacobian ptr
-      integer(c_int)                :: ierr         !error flag
+     use ,intrinsic :: iso_c_binding
+       integer(c_int)                :: vectorSize
+       real(c_double)  ,dimension(*) :: vector
+       type(c_ptr)                   :: v_container
+       type(c_ptr)                   :: p_container  !precon ptr
+       type(c_ptr)                   :: j_container  !analytic jacobian ptr
+       integer(c_int)                :: ierr         !error flag
     end subroutine noxsolve
 
   end interface
-
 #endif
 
-!JMD    call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
-    call t_adj_detailf(+1)
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
 
-    ! timelevel to use for accessing Qdp() to compute virtual temperature
+    ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
+
     qn0 = -1    ! -1 = disabled (assume dry dynamics)
     if ( moisture /= "dry") then
        call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
     endif
 
+    ! get time integration method for this timestep
 
-! integration = "explicit"
-!
-!   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
-!                    typically requires qsplit=4 or 5
-!   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
-!                    typically requires qsplit=4 or 5
-!   tstep_type=2  RK2-SSP 3 stage (as used by tracers)           CFL=.58
-!                    optimal in terms of SSP CFL, but not        CFLSSP=2
-!                    optimal in terms of CFL
-!                    typically requires qsplit=3
-!                    but if windspeed > 340m/s, could use this
-!                    with qsplit=1
-!   tstep_type=3  classic RK3                                    CFL=1.73 (sqrt(3))
-!
-!   tstep_type=4  Kinnmark&Gray RK4 4 stage                      CFL=sqrt(8)=2.8
-!                 should we replace by standard RK4 (CFL=sqrt(8))?
-!                 (K&G 1st order method has CFL=3)
-!   tstep_type=5  Kinnmark&Gray RK3 5 stage 3rd order            CFL=3.87  (sqrt(15))
-!                 From Paul Ullrich.  3rd order for nonlinear terms also
-!                 K&G method is only 3rd order for linear
-!                 optimal: for windspeeds ~120m/s,gravity: 340m/2
-!                 run with qsplit=1
-!                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!
-! integration = "full_imp"
-!
-!   tstep_type=1  Backward Euler or BDF2 implicit dynamics
-!
-
-! default weights for computing mean dynamics fluxes
-    eta_ave_w = 1d0/qsplit
+    method    = tstep_type  ! set default integration method
+    eta_ave_w = 1d0/qsplit  ! set default vertical flux weight
 
     if(tstep_type==0)then
-       method=0                ! pure leapfrog
-       if (nstep==0) method=1  ! but use RK2 on first step
+      ! 0: use leapfrog, but RK2 on first step
+      if (nstep==0) method=1
+
     else if (tstep_type==1) then
-       method=0                           ! LF
-       qsplit_stage = mod(nstep,qsplit)
-       if (qsplit_stage==0) method=1      ! RK2 on first of qsplit steps
-       ! RK2 + LF scheme has tricky weights:
-       eta_ave_w=ur_weights(qsplit_stage+1)
-    else
-       method = tstep_type                ! other RK variants
+      ! 1: use leapfrog, but RK2 on first qsplit stage
+      method = 0
+      qsplit_stage = mod(nstep,qsplit)    ! get qsplit stage
+      if (qsplit_stage==0) method=1       ! use RK2 on first stage
+      eta_ave_w=ur_weights(qsplit_stage+1)! RK2 + LF scheme has tricky weights
     endif
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    ! fix dynamical variables, skip dynamics
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    if (1==prescribed_wind .and. .not.se_prescribed_wind_2d) then
-       time=tl%nstep*dt
-       do ie=nets,nete
-
-#ifdef CAM
-          
-          if (prescribed_vertwind==1) then
-
-             eta_dot_dpdn(:,:,1) = 0.0d0
-             eta_dot_dpdn(:,:,nlev+1) = 0.0d0
-
-             do k = 2,nlev
-                dp(:,:) =&
-                     (hvcoord%hyam(k) - hvcoord%hyam(k-1))*hvcoord%ps0 + &
-                     (hvcoord%hybm(k) - hvcoord%hybm(k-1))*elem(ie)%state%ps_v(:,:,tl%n0)
-                deta = hvcoord%etam(k)-hvcoord%etam(k-1)
-                eta_dot_dpdn(:,:,k) = dp(:,:)*elem(ie)%derived%etadot_prescribed(:,:,k)/deta
-             end do
-
-          endif
-
-#else
-          ! assume most fields are constant in time
-          elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,n0)
-          elem(ie)%state%lnps(:,:,np1) = elem(ie)%state%lnps(:,:,n0)
-          elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,n0)
-          elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,n0)
-          elem(ie)%derived%div = 0
-	  !get eta_dot_dpdn at n0, ps_v is not used or calculated in this routine
-          call asp_advection_vertical(time,hvcoord,elem(ie)%state%ps_v(:,:,n0),&
-              eta_dot_dpdn)
-#endif
-          ! accumulate mean fluxes for advection
-          if (rsplit==0) then
-             elem(ie)%derived%eta_dot_dpdn(:,:,:) = &
-                  elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
-          else
-             ! lagrangian case.  mean vertical velocity = 0
-             ! compute dp3d on floating levels
-             elem(ie)%derived%eta_dot_dpdn(:,:,:) = 0
-
-             do k=1,nlev
-                elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%state%dp3d(:,:,k,n0)  &
-                     + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
-             enddo
-
-          end if
-          ! subcycling code uses a mean flux to advect tracers
-#if (defined COLUMN_OPENMP)
-          !$omp parallel do private(k,dp)
-#endif
-          do k=1,nlev
-             if (rsplit==0) then
-                dp(:,:) =&
-                     ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                     ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0) 
-             else
-                dp(:,:) = elem(ie)%state%dp3d(:,:,k,tl%n0)
-             end if
-
-             elem(ie)%derived%vn0(:,:,1,k)=elem(ie)%derived%vn0(:,:,1,k)+&
-                  eta_ave_w*elem(ie)%state%v(:,:,1,k,n0)*dp(:,:)
-             elem(ie)%derived%vn0(:,:,2,k)=elem(ie)%derived%vn0(:,:,2,k)+&
-                  eta_ave_w*elem(ie)%state%v(:,:,2,k,n0)*dp(:,:)
-          enddo
-       end do
+#ifndef CAM
+    ! if "prescribed wind" set dynamics explicitly and skip time-integration
+    if (prescribed_wind ==1 ) then
+       call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
        call t_stopf('prim_advance_exp')
-       call t_adj_detailf(-1)
        return
     endif
+#endif
 
+    ! integration = "explicit"
+    !
+    !   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
+    !                    typically requires qsplit=4 or 5
+    !   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
+    !                    typically requires qsplit=4 or 5
+    !   tstep_type=2  RK2-SSP 3 stage (as used by tracers)           CFL=.58
+    !                    optimal in terms of SSP CFL, but not        CFLSSP=2
+    !                    optimal in terms of CFL
+    !                    typically requires qsplit=3
+    !                    but if windspeed > 340m/s, could use this
+    !                    with qsplit=1
+    !   tstep_type=3  classic RK3                                    CFL=1.73 (sqrt(3))
+    !
+    !   tstep_type=4  Kinnmark&Gray RK4 4 stage                      CFL=sqrt(8)=2.8
+    !                 should we replace by standard RK4 (CFL=sqrt(8))?
+    !                 (K&G 1st order method has CFL=3)
+    !   tstep_type=5  Kinnmark&Gray RK3 5 stage 3rd order            CFL=3.87  (sqrt(15))
+    !                 From Paul Ullrich.  3rd order for nonlinear terms also
+    !                 K&G method is only 3rd order for linear
+    !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
+    !                 run with qsplit=1
+    !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
+    !
+    ! integration = "full_imp"
+    !
+    !   tstep_type=1  Backward Euler or BDF2 implicit dynamics
+    !
 
     ! ==================================
     ! Take timestep
     ! ==================================
+
     dt_vis = dt
     if (method==0) then
        ! regular LF step
        dt2 = 2*dt
+       call t_startf("LF_timestep")
        call compute_and_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w)
+       call t_stopf("LF_timestep")
        dt_vis = dt2  ! dt to use for time-split dissipation
     else if (method==1) then
        ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
+       call t_startf("RK2_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("RK2_timestep")
     else if (method==2) then
        ! RK2-SSP 3 stage.  matches tracer scheme. optimal SSP CFL, but
        ! not optimal for regular CFL
        ! u1 = u0 + dt/2 RHS(u0)
+       call t_startf("RK2-SSP3_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/3)
        ! u2 = u1 + dt/2 RHS(u1)
@@ -350,9 +336,11 @@ contains
                   + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
           endif
        enddo
+       call t_stopf("RK2-SSP3_timestep")
     else if (method==3) then
        ! classic RK3  CFL=sqrt(3)
        ! u1 = u0 + dt/3 RHS(u0)
+       call t_startf("RK3_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! u2 = u0 + dt/2 RHS(u1)
@@ -361,10 +349,12 @@ contains
        ! u3 = u0 + dt RHS(u2)
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("RK3_timestep")
     else if (method==4) then
        ! KG 4th order 4 stage:   CFL=sqrt(8)
        ! low storage version of classic RK4
        ! u1 = u0 + dt/4 RHS(u0)
+       call t_startf("RK4_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! u2 = u0 + dt/3 RHS(u1)
@@ -376,11 +366,13 @@ contains
        ! u4 = u0 + dt RHS(u3)
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("RK4_timestep")
     else if (method==5) then
 #if 0
        ! KG 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! but nonlinearly only 2nd order
        ! u1 = u0 + dt/5 RHS(u0)
+       call t_startf("KG3-5stage_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! u2 = u0 + dt/5 RHS(u1)
@@ -395,9 +387,11 @@ contains
        ! u5 = u0 + dt RHS(u4)
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("KG3-5stage_timestep")
 #else
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
+       call t_startf("U3-5stage_timestep")
 
        !
        ! phl: rhs: t=t
@@ -450,6 +444,7 @@ contains
             deriv,nets,nete,.false.,3*eta_ave_w/4)
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
+       call t_stopf("U3-5stage_timestep")
 #endif
 
     else if ((method==11).or.(method==12)) then
@@ -460,6 +455,7 @@ contains
 !      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
 
 #ifdef TRILINOS
+      call t_startf("JFNK_imp_timestep")
       lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
       allocate(xstate(lenx))
       xstate(:) = 0d0
@@ -584,6 +580,7 @@ contains
 			  end do
 		  end do
 	  end do
+      call t_stopf("JFNK_imp_timestep")
 #endif
 
     else
@@ -639,7 +636,7 @@ contains
     tevolve=tevolve+dt
 
     call t_stopf('prim_advance_exp')
-    call t_adj_detailf(-1)
+!pw call t_adj_detailf(-1)
     end subroutine prim_advance_exp
 
 
@@ -649,17 +646,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        use cg_mod, only : cg_t, cg_create
        use control_mod, only : filter_freq,debug_level, precon_method
        use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
-       use dimensions_mod, only : np, nlev, nlevp
        use edge_mod, only : edgevpack, edgevunpack, initEdgeBuffer
        use edgetype_mod, only : EdgeBuffer_t
-       use element_mod, only : element_t
        use filter_mod, only : filter_t, preq_filter
-       use hybvcoord_mod, only : hvcoord_t
        use hybrid_mod, only : hybrid_t
        use prim_si_ref_mod, only : ref_state_t, set_vert_struct_mat
        use reduction_mod, only : reductionbuffer_ordered_1d_t
        use solver_mod, only : pcg_solver, blkjac_t, blkjac_init
-       use time_mod, only : TimeLevel_t
        use prim_si_mod, only : preq_vertadv, preq_omegap, preq_pressure
        use diffusion_mod, only :  prim_diffusion
        use physical_constants, only : kappa, rrearth, rgas, cp, rwater_vapor
@@ -784,7 +777,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        integer              :: i,j,k,l,ie,kptr
 
 !JMD       call t_barrierf('sync_prim_advance_si', hybrid%par%comm)
-       call t_adj_detailf(+1)
+!pw    call t_adj_detailf(+1)
        call t_startf('prim_advance_si')
 
        nm1   = tl%nm1
@@ -887,7 +880,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           rpdel = 1.0_real_kind/pdel
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vco)
+!$omp parallel do private(k,i,j,v1,v2)
 #endif
           do k=1,nlev
              do j=1,np
@@ -931,9 +924,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
           do k=1,nlev-1
              do j=1,np
                 do i=1,np
@@ -1092,7 +1082,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 
+       call t_startf('pasi_bexchV1')
        call bndry_exchangeV(cg%hybrid,edge2)
+       call t_stopf('pasi_bexchV1')
 
        do ie = nets, nete
 
@@ -1105,7 +1097,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here.
-!$omp parallel do private(k,i,j,gVscript,deriv)
+!$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
              do j=1,np
@@ -1184,7 +1176,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! boundary exchange C
        ! ==================================
 
+       call t_startf('pasi_bexchV2')
        call bndry_exchangeV(cg%hybrid,edge1)
+       call t_stopf('pasi_bexchV2')
 
        do ie=nets,nete
 
@@ -1294,7 +1288,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 
+       call t_startf('pasi_bexchV3')
        call bndry_exchangeV(cg%hybrid,edge1)
+       call t_stopf('pasi_bexchV3')
 
        do ie = nets, nete
 
@@ -1427,7 +1423,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! boundary exchange v at time level n+1
        ! ======================================
 
+       call t_startf('pasi_bexchV4')
        call bndry_exchangeV(cg%hybrid,edge3p1)
+       call t_stopf('pasi_bexchV4')
 
 !KGEN START(prim_advance_si_bug1)
        do ie=nets,nete
@@ -1491,7 +1489,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        call prim_diffusion(elem, nets,nete,np1,deriv,dt2,cg%hybrid)
        call t_stopf('prim_advance_si')
-       call t_adj_detailf(-1)
+!pw    call t_adj_detailf(-1)
 #endif
   end subroutine prim_advance_si
 
@@ -1514,7 +1512,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   logical :: filter_ps = .false.
   if (integration == "explicit") filter_ps = .true.
 
-  call t_adj_detailf(+1)
+!pw  call t_adj_detailf(+1)
   call t_startf('preq_robert')
   do ie=nets,nete
      if (filter_ps) then
@@ -1534,7 +1532,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   end do
   call t_stopf('preq_robert')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine preq_robert3
 
@@ -1542,19 +1540,19 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
-  use dimensions_mod, only : np, nc, nlev, qsize, ntrac
-  use element_mod, only : element_t
-  use hybvcoord_mod, only : hvcoord_t
-  use control_mod, only : moisture, tracer_grid_type
-  use control_mod, only : TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
+
+  use dimensions_mod, only: np, nc, nlev, qsize, ntrac
+  use control_mod,    only: moisture, tracer_grid_type
+  use control_mod,    only: TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
   use physical_constants, only: Cp
   use fvm_control_volume_mod, only : fvm_struct, n0_fvm
+
   implicit none
-  type (element_t)     , intent(inout) :: elem(:)
-  type(fvm_struct)     , intent(inout) :: fvm(:)
-  real (kind=real_kind), intent(in) :: dt_q
-  type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: np1,nets,nete,np1_qdp
+  type (element_t),       intent(inout) :: elem(:)
+  type(fvm_struct),       intent(inout) :: fvm(:)
+  real (kind=real_kind),  intent(in)    :: dt_q
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
   ! local
   integer :: i,j,k,ie,q
@@ -1659,9 +1657,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      enddo
 #endif
 
-
-
-
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,dp)
@@ -1678,36 +1673,33 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         enddo
      enddo
 
-     elem(ie)%state%T(:,:,:,np1) = elem(ie)%state%T(:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+     elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,np1)   + dt_q*elem(ie)%derived%FT(:,:,:,1)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+
   enddo
   end subroutine applyCAMforcing
 
 
 
   subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
-  use dimensions_mod, only : np, nlev, qsize
-  use element_mod, only : element_t
-  use hybvcoord_mod, only : hvcoord_t
+
+  use dimensions_mod, only: np, nlev, qsize
+  use element_mod,    only: element_t
+  use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
-  type (element_t)     , intent(inout) :: elem(:)
-  real (kind=real_kind), intent(in) :: dt_q
-  type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: np1,nets,nete
+  type (element_t)     ,  intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_q
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
 
-  ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
   logical :: wet
 
   do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1) = elem(ie)%state%T(:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt_q*elem(ie)%derived%FT(:,:,:,1)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
   enddo
   end subroutine applyCAMforcing_dynamics
 
@@ -1725,7 +1717,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   use dimensions_mod, only : np, np, nlev
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis
-  use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
@@ -1734,7 +1725,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk
   use physical_constants, only: Cp
-!  use time_mod, only : TimeLevel_t
   implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
@@ -1742,7 +1732,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   type (EdgeBuffer_t)  , intent(inout) :: edge3
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
-!  type (TimeLevel_t)   , intent(in) :: tl
 
   real (kind=real_kind) :: dt2
   integer :: nets,nete
@@ -1771,7 +1760,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-  call t_adj_detailf(+1)
+!pw   call t_adj_detailf(+1)
   call t_startf('advance_hypervis')
 
 
@@ -1786,7 +1775,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_p,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -1809,7 +1798,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
+        call t_startf('ah_bexchV1')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ah_bexchV1')
 
         do ie=nets,nete
 
@@ -1875,11 +1866,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               enddo
 #endif
            endif
-           nu_scale=1
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
+              nu_scale=1
               ! advace in time.
               ! note: DSS commutes with time stepping, so we can time advance and then DSS.
               ! note: weak operators alreayd have mass matrix "included"
@@ -1933,8 +1924,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,pstens(:,:,ie),1,kptr,ie)
         enddo
 
-
+        call t_startf('ah_bexchV2')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ah_bexchV2')
 
         do ie=nets,nete
 
@@ -1994,7 +1986,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis
 
@@ -2013,7 +2005,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   use dimensions_mod, only : np, np, nlev, nc, ntrac, max_corner_elem
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
-  use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
@@ -2024,7 +2015,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use viscosity_mod, only : biharmonic_wk_dp3d
   use physical_constants, only: Cp
   use derivative_mod, only : subcell_Laplace_fluxes
-!  use time_mod, only : TimeLevel_t
   implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
@@ -2032,7 +2022,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   type (EdgeBuffer_t)  , intent(inout) :: edge3
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
-!  type (TimeLevel_t)   , intent(in) :: tl
 
   real (kind=real_kind) :: dt2
   integer :: nets,nete
@@ -2069,7 +2058,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-  call t_adj_detailf(+1) 
+!pw   call t_adj_detailf(+1) 
   call t_startf('advance_hypervis_dp')
 
 
@@ -2084,7 +2073,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_t,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_t,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -2107,7 +2096,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
+        call t_startf('ahdp_bexchV1')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahdp_bexchV1')
 
         do ie=nets,nete
 
@@ -2163,7 +2154,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                    eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
            endif
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,dpdn,dpdn0,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp)
+!$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp,laplace_fluxes)
 #endif
            do k=1,nlev
               ! advace in time.
@@ -2225,8 +2216,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
         enddo
 
-
+        call t_startf('ahdp_bexchV2')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahdp_bexchV2')
 
         do ie=nets,nete
 
@@ -2319,7 +2311,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_dp')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_dp
 
@@ -2340,7 +2332,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   use dimensions_mod, only : np, np, nlev
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis
-  use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
@@ -2349,7 +2340,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk
   use physical_constants, only: Cp
-!  use time_mod, only : TimeLevel_t
   implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
@@ -2357,7 +2347,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   type (EdgeBuffer_t)  , intent(inout) :: edge3
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
-!  type (TimeLevel_t)   , intent(in) :: tl
 
   real (kind=real_kind) :: dt2
   integer :: nets,nete
@@ -2385,7 +2374,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
-  call t_adj_detailf(+1)
+!pw   call t_adj_detailf(+1)
   call t_startf('advance_hypervis_lf')
 
 ! for non-leapfrog,nt=n0=nmt
@@ -2406,7 +2395,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_p,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -2429,7 +2418,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
+        call t_startf('ahlf_bexchV1')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahlf_bexchV1')
 
         do ie=nets,nete
 
@@ -2527,8 +2518,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,pstens(:,:,ie),1,kptr,ie)
         enddo
 
-
+        call t_startf('ahlf_bexchV2')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahlf_bexchV2')
 
         do ie=nets,nete
 
@@ -2599,7 +2591,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_lf')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_lf
 
@@ -2638,7 +2630,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ! ===================================
   use kinds, only : real_kind
   use dimensions_mod, only : np, nc, nlev, ntrac, max_corner_elem
-  use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
@@ -2712,7 +2703,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 !JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
 
-  call t_adj_detailf(+1)
+!pw call t_adj_detailf(+1)
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
      !ps => elem(ie)%state%ps_v(:,:,n0)
@@ -2902,9 +2893,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! for reference: at mid layers we have:
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
-#if (defined COLUMN_OPENMP)
-        !$omp parallel do private(k)
-#endif
         do k=1,nlev-1
            eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
         end do
@@ -2943,7 +2931,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
+!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2,u_m_umet,v_m_vmet,t_m_tmet)
 #endif
      vertloop: do k=1,nlev
         do j=1,np
@@ -2998,49 +2986,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               !
               ! phl: add forcing term to T
               !
-
-#if ( defined CAM )
-              
-              if (se_prescribed_wind_2d) then
-                 vtens1(i,j,k) = 0.D0
-                 vtens2(i,j,k) = 0.D0
-                 ttens(i,j,k) = 0.D0
-              else
-                 if(se_met_nudge_u.gt.0.D0)then
-                    u_m_umet = v1 - &
-                         elem(ie)%derived%u_met(i,j,k) - &
-                         se_met_tevolve*tevolve*elem(ie)%derived%dudt_met(i,j,k)
-                    v_m_vmet = v2 - &
-                         elem(ie)%derived%v_met(i,j,k) - &
-                         se_met_tevolve*tevolve*elem(ie)%derived%dvdt_met(i,j,k)
-
-                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_u*u_m_umet * elem(ie)%derived%nudge_factor(i,j,k)
-
-                    elem(ie)%derived%Utnd(i+(j-1)*np,k) = elem(ie)%derived%Utnd(i+(j-1)*np,k) &
-                         + se_met_nudge_u*u_m_umet * elem(ie)%derived%nudge_factor(i,j,k)
-
-                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_u*v_m_vmet * elem(ie)%derived%nudge_factor(i,j,k)
-
-                    elem(ie)%derived%Vtnd(i+(j-1)*np,k) = elem(ie)%derived%Vtnd(i+(j-1)*np,k) &
-                         + se_met_nudge_u*v_m_vmet * elem(ie)%derived%nudge_factor(i,j,k)
-
-                 endif
-
-                 if(se_met_nudge_p.gt.0.D0)then
-                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,1,k)  * elem(ie)%derived%nudge_factor(i,j,k)
-                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,2,k)  * elem(ie)%derived%nudge_factor(i,j,k)
-                 endif
-
-                 if(se_met_nudge_t.gt.0.D0)then
-                    t_m_tmet = elem(ie)%state%T(i,j,k,n0) - &
-                         elem(ie)%derived%T_met(i,j,k) - &
-                         se_met_tevolve*tevolve*elem(ie)%derived%dTdt_met(i,j,k)
-                    ttens(i,j,k)  = ttens(i,j,k) - se_met_nudge_t*t_m_tmet * elem(ie)%derived%nudge_factor(i,j,k)
-                    elem(ie)%derived%Ttnd(i+(j-1)*np,k) = elem(ie)%derived%Ttnd(i+(j-1)*np,k) &
-                         + se_met_nudge_t*t_m_tmet * elem(ie)%derived%nudge_factor(i,j,k)
-                 endif
-              endif
-#endif
 
            end do
         end do
@@ -3210,7 +3155,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      if (dt2<0) then
         ! calling program just wanted DSS'd RHS, skip time advance
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,tempflux)
 #endif
         do k=1,nlev
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*vtens1(:,:,k)
@@ -3229,7 +3174,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,tempflux)
 #endif
         do k=1,nlev
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
@@ -3277,7 +3222,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     ! Insert communications here: for shared memory, just a single
   ! sync is required
   ! =============================================================
+
+  call t_startf('caar_bexchV')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('caar_bexchV')
+
   do ie=nets,nete
      ! ===========================================================
      ! Unpack the edges for vgrad_T and v tendencies...
@@ -3359,7 +3308,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
   call t_stopf('compute_and_apply_rhs')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine compute_and_apply_rhs
 
@@ -3463,7 +3412,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      pstens(:,:,ie)=minval(phis(:,:,ie))
      call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
   enddo
+
+  call t_startf('smooth_phis_bexchV1')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('smooth_phis_bexchV1')
+
   do ie=nets,nete
      call edgeVunpackMin(edge3p1, pstens(:,:,ie), 1, 0, ie)
      pmin(ie)=minval(pstens(:,:,ie))
@@ -3472,7 +3425,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      pstens(:,:,ie)=maxval(phis(:,:,ie))
      call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
   enddo
+
+  call t_startf('smooth_phis_bexchV2')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('smooth_phis_bexchV2')
+
   do ie=nets,nete
      call edgeVunpackMax(edge3p1, pstens(:,:,ie), 1, 0, ie)
      pmax(ie)=maxval(pstens(:,:,ie))
@@ -3505,7 +3462,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=use_var_coef)
            call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
         enddo
+
+        call t_startf('smooth_phis_bexchV3')
         call bndry_exchangeV(hybrid,edge3p1)
+        call t_stopf('smooth_phis_bexchV3')
+
         do ie=nets,nete
            call edgeVunpack(edge3p1, pstens(:,:,ie), 1, 0, ie)
            pstens(:,:,ie)=pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
@@ -3559,7 +3520,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         call edgeVpack(edge3p1,phis(:,:,ie),1,0,ie)
 
      enddo
+
+     call t_startf('smooth_phis_bexchV4')
      call bndry_exchangeV(hybrid,edge3p1)
+     call t_stopf('smooth_phis_bexchV4')
+
      do ie=nets,nete
         call edgeVunpack(edge3p1, phis(:,:,ie), 1, 0, ie)
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%rspheremp(:,:)
@@ -3573,6 +3538,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine smooth_phis
 
   subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
+
     use fvm_reconstruction_mod, only: reconstruction
     use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
@@ -3583,21 +3549,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use time_mod, only : TimeLevel_t
     use fvm_control_volume_mod, only : fvm_struct
-    use spelt_mod, only : spelt_struct
 
-
-    type (element_t) , intent(inout)        :: elem(:)
-
-#if defined(_SPELT)
-      type(spelt_struct), intent(inout) :: fvm(:)
-#else
-      type(fvm_struct), intent(inout) :: fvm(:)
-#endif
-    type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
-
-    integer, intent(in)                     :: nets  ! starting thread element number (private)
-    integer, intent(in)                     :: nete  ! ending thread element number   (private)
-    integer, intent(in)                     :: np1
+    type(element_t) , intent(inout) :: elem(:)
+    type(fvm_struct), intent(inout) :: fvm(:)
+    type(hybrid_t),   intent(in)    :: hybrid ! distributed parallel structure (shared)
+    integer,          intent(in)    :: nets   ! starting thread element number (private)
+    integer,          intent(in)    :: nete   ! ending thread element number   (private)
+    integer,          intent(in)    :: np1
     integer :: ie, k
 
     real (kind=real_kind)             :: xp,yp, tmpval, dt_q
@@ -3659,7 +3617,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%spheremp(:,:)
      call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,np1),1,0,ie)
   enddo
+
+  call t_startf('overwr_SEdens_bexchV')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('overwr_SEdens_bexchV')
+
   do ie=nets,nete
      call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, 0, ie)
      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%rspheremp(:,:)

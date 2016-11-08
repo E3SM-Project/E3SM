@@ -44,11 +44,13 @@ my $USE_ESMF_LIB;
 my $MPILIB;
 my $SMP_VALUE;
 my $NINST_BUILD;
+my $CLM_USE_PETSC;
 my $CISM_USE_TRILINOS;
 my $MPASLI_USE_ALBANY;
 my $SHAREDPATH;
 my $CLM_CONFIG_OPTS;
 my $CAM_CONFIG_OPTS;
+my $PIO_CONFIG_OPTS;
 my $sysmod;
 
 # Stash the build log paths here..
@@ -100,10 +102,12 @@ sub main {
     $DEBUG		= `./xmlquery  DEBUG		-value `;
     $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
     $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
+    $CLM_USE_PETSC = `./xmlquery  CLM_USE_PETSC -value`; 
     $CISM_USE_TRILINOS  = `./xmlquery  CISM_USE_TRILINOS -value`; 
     $MPASLI_USE_ALBANY  = `./xmlquery  MPASLI_USE_ALBANY -value`;
     $CLM_CONFIG_OPTS    = `./xmlquery  CLM_CONFIG_OPTS   -value`;
     $CAM_CONFIG_OPTS    = `./xmlquery  CAM_CONFIG_OPTS   -value`;
+    $PIO_CONFIG_OPTS    = `./xmlquery  PIO_CONFIG_OPTS   -value`;
 
     my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
     my $MACH		= `./xmlquery  MACH		-value `;
@@ -136,6 +140,7 @@ sub main {
     $ENV{COMP_ROF}		= $COMP_ROF		;	
     $ENV{CLM_CONFIG_OPTS}       = $CLM_CONFIG_OPTS      ;
     $ENV{CAM_CONFIG_OPTS}       = $CAM_CONFIG_OPTS      ;
+    $ENV{PIO_CONFIG_OPTS}       = $PIO_CONFIG_OPTS      ;
     
     $ENV{OCN_SUBMODEL}        = `./xmlquery  OCN_SUBMODEL	 -value `;
     $ENV{PROFILE_PAPI_ENABLE} = `./xmlquery  PROFILE_PAPI_ENABLE -value `;
@@ -144,6 +149,18 @@ sub main {
     my $lid  =  "`date +%y%m%d-%H%M%S`";
     $ENV{LID}  =  $lid;
 #pw--
+
+    # Set the overall USE_PETSC variable to TRUE if any of the
+    # XXX_USE_PETSC variables are TRUE.
+    # For now, there is just the one CLM_USE_PETSC variable, but in
+    # the future there may be others -- so USE_PETSC will be true if
+    # ANY of those are true.
+
+    my $use_petsc = 'FALSE';
+    if ($CLM_USE_PETSC eq 'TRUE') {$use_petsc = 'TRUE'};
+    my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_PETSC -val ${use_petsc}";
+    $ENV{USE_PETSC} = ${use_petsc};
+    $ENV{CLM_USE_PETSC} = $CLM_USE_PETSC;
 
     # Set the overall USE_TRILINOS variable to TRUE if any of the 
     # XXX_USE_TRILINOS variables are TRUE. 
@@ -357,6 +374,16 @@ sub buildChecks()
 
     $ENV{'NINST_VALUE'} = $inststr;
 	
+    # set the overall USE_PETSC variable to TRUE if any of the XXX_USE_PETSC variables are TRUE.
+    # For now, there is just the one CLM_USE_PETSC variable, but in the future, there may be others,
+    # so USE_PETSC should be  true if ANY of those are true.
+
+    $ENV{'use_petsc'} = 'FALSE';
+    if ( (defined $CLM_USE_PETSC) && ($CLM_USE_PETSC eq 'TRUE')) {$ENV{'use_petsc'} = "TRUE";}
+
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_PETSC -val $ENV{'use_petsc'}";
+    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+
     # set the overall USE_TRILINOS variable to TRUE if any of the XXX_USE_TRILINOS variables are TRUE. 
     # For now, there is just the one CISM_USE_TRILINOS variable, but in the future, there may be others, 
     # so USE_TRILINOS should be  true if ANY of those are true.
@@ -513,6 +540,8 @@ sub buildModel()
 		   rof => $COMP_ROF);
     my $model;
 
+    my $prev_smp = $ENV{'SMP'};
+
     foreach $model(@modelsbuildorder) {
 
 	my $comp = $models{$model};
@@ -520,6 +549,15 @@ sub buildModel()
 	my $objdir = "";
 	my $libdir = ""; 
 	my $bldroot = "";
+
+        chdir "$CASEROOT";
+        my $comp_uc = 'NTHRDS_'.uc $model;
+        my $NTHRDS   = `./xmlquery $comp_uc -value `;
+        if ($NTHRDS > 1 or $ENV{'BUILD_THREADED'} eq 'TRUE') {
+          $ENV{'SMP'} = 'TRUE';
+        } else {
+          $ENV{'SMP'} = 'FALSE';
+        }
 
 	if ("$comp" eq "clm") {
 
@@ -577,6 +615,8 @@ sub buildModel()
 	    copy($mod, $INCROOT);
 	}
     }
+
+    $ENV{'SMP'} = $prev_smp;
 
     my $file_build = "$EXEROOT/cesm.bldlog.$LID";
     my $now = localtime;

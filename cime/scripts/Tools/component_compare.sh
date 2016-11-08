@@ -23,9 +23,6 @@
 # generation completes (but first you will need to copy the cpl.hi.nc
 # files in each baseline directory to cpl.h.nc).
 # 
-# Exit status will generally be 0 (even for test failure), but will be
-# non-zero for incorrect usage.
-#
 # cprnc should be in your path, but if it isn't, the script tries to
 # find cprnc in its yellowstone location
 #
@@ -288,17 +285,17 @@ if [[ $baseline_exists -eq 0 && $test_exists -eq 0 ]]; then
     status="BFAIL_NA"
     info="neither baseline nor test history file exists"
     print_result $status "$info"
-    exit 0
+    exit 2
 elif [[ $baseline_exists -eq 0 && $test_exists -eq 1 ]]; then
     status="BFAIL"
     info="baseline history file does not exist"
     print_result $status "$info"
-    exit 0
+    exit 2
 elif [[ $baseline_exists -eq 1 && $test_exists -eq 0 ]]; then
     status="FAIL"
     info="no history file in test case"
     print_result $status "$info"
-    exit 0
+    exit 2
 fi
 
 # Note: at this point, we know that there is both a baseline history
@@ -315,24 +312,12 @@ fi
 curdir=`pwd`
 cd $test_dir
 
-$cprnc_exe $test_dir/$test_hist $baseline_dir/$baseline_hist > ${test_hist}.cprnc.out
-diff_test=`grep "diff_test" ${test_dir}/${test_hist}.cprnc.out | grep IDENTICAL | wc -l`
+cprnc_output=$($cprnc_exe $test_dir/$test_hist $baseline_dir/$baseline_hist | tee ${test_hist}.cprnc.out 2> /dev/null )
 
-status="FAIL"
-if [ $diff_test -gt 0 ]; then
-    status="PASS"
+if [[ $cprnc_output == *IDENTICAL* ]]; then
+    print_result PASS "$info"
+    exit 0
 else
-    diff_test=`grep -a "diff_test" ${test_dir}/${test_hist}.cprnc.out | grep IDENTICAL | wc -l`
-    if [ $diff_test -gt 0 ]; then
-	status="PASS"
-    fi
+    print_result FAIL "$info"
+    exit 3
 fi
-
-cd $curdir
-
-print_result $status "$info"
-
-exit 0
-
-
-

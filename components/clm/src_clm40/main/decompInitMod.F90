@@ -74,7 +74,7 @@ contains
     integer :: cid,pid                ! indices
     integer :: n,m,ng                 ! indices
     integer :: ier                    ! error code
-    integer :: beg,end,lsize,gsize    ! used for gsmap init
+    integer :: beg,end,lsze,gsize    ! used for gsmap init
     integer, pointer :: gindex(:)     ! global index for gsmap init
     integer, pointer :: clumpcnt(:)   ! clump index counter
     integer, parameter :: dbug=1      ! 0 = min, 1=normal, 2=much, 3=max
@@ -303,9 +303,9 @@ contains
     do n = beg,end
        gindex(n) = ldecomp%gdc2glo(n)
     enddo
-    lsize = end-beg+1
+    lsze = end-beg+1
     gsize = lni * lnj
-    call mct_gsMap_init(gsMap_lnd_gdc2glo, gindex, mpicom, comp_id, lsize, gsize)
+    call mct_gsMap_init(gsMap_lnd_gdc2glo, gindex, mpicom, comp_id, lsze, gsize)
     deallocate(gindex)
 
     ! Diagnostic output
@@ -367,7 +367,7 @@ contains
     integer :: ier                ! error code
     integer :: npmin,npmax,npint  ! do loop values for printing
     integer :: clmin,clmax        ! do loop values for printing
-    integer :: lsize,gsize        ! used for gsmap init
+    integer :: lsze,gsize        ! used for gsmap init
     integer :: ng                 ! number of gridcells in gsmap
     integer :: beg,end,num        ! temporaries
     integer :: val1, val2         ! temporaries
@@ -595,9 +595,9 @@ contains
           write(iulog,*) 'decompInit_glcp error size ',i,beg,end
           call endrun()
        endif
-       lsize = end-beg+1
+       lsze = end-beg+1
        gsize = num
-       call mct_gsMap_init(gsMap, gindex, mpicom, comp_id, lsize, gsize)
+       call mct_gsMap_init(gsMap, gindex, mpicom, comp_id, lsze, gsize)
 
        if (dbug > 1) then
           !--- test gsmap ---

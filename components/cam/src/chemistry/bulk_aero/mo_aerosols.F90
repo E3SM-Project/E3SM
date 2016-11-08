@@ -36,7 +36,7 @@ contains
   subroutine aerosols_inti()
 
     use mo_chem_utls, only : get_spc_ndx
-    use cam_history,  only : addfld, phys_decomp
+    use cam_history,  only : addfld
     use spmd_utils,   only : masterproc
 
     implicit none
@@ -99,8 +99,8 @@ contains
     nu_i(2)  = 4
     z_i (2)  = 0.5_r8
 
-    call addfld ('TSO4_VMR', 'mol/mol',pver, 'A','total sulfate in mo_aerosols',phys_decomp)
-    call addfld ('THNO3_VMR','mol/mol',pver, 'A','total nitric acid in mo_aerosols',phys_decomp)
+    call addfld ('TSO4_VMR',(/ 'lev' /), 'A', 'mol/mol','total sulfate in mo_aerosols')
+    call addfld ('THNO3_VMR',(/ 'lev' /), 'A','mol/mol','total nitric acid in mo_aerosols')
 
     return
   end subroutine aerosols_inti

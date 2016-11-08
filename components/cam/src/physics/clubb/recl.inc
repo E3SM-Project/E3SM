@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id: recl.inc 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: recl.inc 6938 2014-06-09 21:29:40Z bmg2@uwm.edu $
 ! Description:
 !   Preprocessing rules for determining how large an unformatted 
 !   data record is when using Fortran write.  This does not affect
@@ -17,7 +17,7 @@
 !-------------------------------------------------------------------------------
 #if defined GFDL  /* F_RECL should be 4 for the GFDL SCM-CLUBB */
 #  define F_RECL 4
-#elif defined __INTEL_COMPILER && __INTEL_COMPILER >= 800 /* Versions of Intel fortran > 8.0_core_rknd */
+#elif defined __INTEL_COMPILER && __INTEL_COMPILER >= 800 /* Versions of Intel fortran > 8.0 */
 #  define F_RECL 1
 #elif defined(__alpha) /* Assume 4 byte word on Alpha processors */
 #  define F_RECL 1

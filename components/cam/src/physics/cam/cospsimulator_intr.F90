@@ -1,3 +1,4 @@
+
 module cospsimulator_intr
 !----------------------------------------------------------------------------------------------------------------------
 !Purpose: CAM interface to
@@ -39,11 +40,10 @@ module cospsimulator_intr
    use shr_kind_mod,    only: r8 => shr_kind_r8
    use spmd_utils,      only: masterproc
    use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk 
-   use cam_history,     only: addfld, add_default, phys_decomp, outfld
-   use cam_history_support,     only: max_fieldname_len 
+   use cam_history,     only: addfld, horiz_only, add_default, outfld
+   use cam_history_support,     only: max_fieldname_len, max_chars
    use perf_mod,        only: t_startf, t_stopf
    use cam_abortutils,  only: endrun
-   use cam_pio_utils,   only: max_chars
    use phys_control,    only: cam_physpkg_is
    use cam_logfile,     only: iulog !!+COSP1.4
 
@@ -55,6 +55,7 @@ module cospsimulator_intr
 
    public :: &
         cospsimulator_intr_readnl,    &
+        cospsimulator_intr_register, &
         cospsimulator_intr_init,    &
         cospsimulator_intr_run
 
@@ -783,15 +784,76 @@ end subroutine cospsimulator_intr_readnl
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
 
+subroutine cospsimulator_intr_register
+   use cam_history_support, only: add_hist_coord
+
+   ! register non-standard variable dimensions
+   if (lisccp_sim) then
+      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
+           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
+      call add_hist_coord('cosp_tau', ntau_cosp,                              &
+           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
+           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (llidar_sim) then
+      call add_hist_coord('cosp_ht', nht_cosp,                                &
+           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
+           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
+      call add_hist_coord('cosp_sr', nsr_cosp,                                &
+           'COSP Mean Scattering Ratio for lidar simulator CFAD output', '1', &
+           srmid_cosp, bounds_name='cosp_sr_bnds', bounds=srlim_cosp)
+      call add_hist_coord('cosp_sza', nsza_cosp, 'COSP Parasol SZA',          &
+           'degrees', sza_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (lradar_sim) then
+      call add_hist_coord('cosp_ht', nht_cosp,                                &
+           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
+           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
+      call add_hist_coord('cosp_dbze', ndbze_cosp,                            &
+           'COSP Mean dBZe for radar simulator CFAD output', 'dBZ',           &
+           dbzemid_cosp, bounds_name='cosp_dbze_bnds', bounds=dbzelim_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (lmisr_sim) then
+      call add_hist_coord('cosp_htmisr', nhtmisr_cosp, 'COSP MISR height',    &
+           'km', htmisrmid_cosp,                                              &
+           bounds_name='cosp_htmisr_bnds', bounds=htmisrlim_cosp)
+      call add_hist_coord('cosp_tau', ntau_cosp,                              &
+           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
+           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
+      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
+           values=scol_cosp)
+   end if
+
+   if (lmodis_sim) then
+      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
+           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
+      call add_hist_coord('cosp_tau_modis', ntau_cosp_modis,                  &
+           'COSP Mean MODIS optical depth', '1', taumid_cosp_modis,    &
+           bounds_name='cosp_tau_modis_bnds', bounds=taulim_cosp_modis)
+   end if
+
+end subroutine cospsimulator_intr_register
+
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+
 subroutine cospsimulator_intr_init
 
-   use cam_history,         only: addfld, add_default, phys_decomp
+   use cam_history,         only: addfld, horiz_only, add_default
 #ifdef SPMD
    use mpishorthand,        only : mpir8, mpiint, mpicom
 #endif
    use netcdf,              only : nf90_open, nf90_inq_varid, nf90_get_var, nf90_close, nf90_nowrite
    use error_messages,      only : handle_ncerr, alloc_err
-   use cam_history_support, only: add_hist_coord
    
    use physics_buffer,  only: pbuf_get_index
 #ifdef USE_COSP
@@ -802,6 +864,7 @@ subroutine cospsimulator_intr_init
    integer ncid,latid,lonid,did,hrid,minid,secid, istat
    !------------------------------------------------------------------------------
 
+#ifdef COSP_ATRAIN
 if (cosp_sample_atrain) then
 
 !!!! READ IN ATRAIN ORBIT DATA FROM INPUT FILE FOR SUB-SAMPLING
@@ -850,6 +913,8 @@ if (cosp_sample_atrain) then
 
 endif
 
+#endif
+
 ! ADDFLD ADD_DEFAULT CALLS FOR COSP OUTPUTS
 ! notes on addfld/add_default/outfld calls:  
 ! 1) Dimensions of cosp output should be:  
@@ -880,47 +945,37 @@ endif
 
 !!! ISCCP OUTPUTS
    if (lisccp_sim) then
-      ! register non-standard variable dimensions
-      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
-           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
-      call add_hist_coord('cosp_tau', ntau_cosp,                              &
-           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
-           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       !! addfld calls for all
       !*cfMon,cfDa* clisccp2 (time,tau,plev,profile), CFMIP wants 7 p bins, 7 tau bins
-      call addfld('FISCCP1_COSP','percent   ',nprs_cosp*ntau_cosp,'A', &
-                   'Grid-box fraction covered by each ISCCP D level cloud type',phys_decomp,&
-                   flag_xyfill=.true., mdimnames=(/'cosp_tau','cosp_prs'/), fill_value=R_UNDEF)
+      call addfld('FISCCP1_COSP',(/'cosp_tau','cosp_prs'/),'A','percent', &
+                   'Grid-box fraction covered by each ISCCP D level cloud type',&
+                   flag_xyfill=.true., fill_value=R_UNDEF)
 
       !*cfMon,cfDa* tclisccp (time,profile), CFMIP wants "gridbox mean cloud cover from ISCCP"
-      call addfld('CLDTOT_ISCCP','percent', 1,'A', &
-                   'Total Cloud Fraction Calculated by the ISCCP Simulator ',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDTOT_ISCCP', horiz_only,'A','percent', &
+                   'Total Cloud Fraction Calculated by the ISCCP Simulator ',flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfMon,cfDa* albisccp (time,profile)
       !!! Per CFMIP request - weight by ISCCP Total Cloud Fraction (divide by CLDTOT_ISSCP in history file to get weighted average)
-      call addfld('MEANCLDALB_ISCCP','1',1,'A','Mean cloud albedo*CLDTOT_ISCCP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('MEANCLDALB_ISCCP',horiz_only,'A','1','Mean cloud albedo*CLDTOT_ISCCP',flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfMon,cfDa* ctpisccp (time,profile)
       !!! Per CFMIP request - weight by ISCCP Total Cloud Fraction (divide by CLDTOT_ISSCP in history file to get weighted average)     
-      call addfld('MEANPTOP_ISCCP','Pa',1,'A','Mean cloud top pressure*CLDTOT_ISCCP',phys_decomp,flag_xyfill=.true., &
+      call addfld('MEANPTOP_ISCCP',horiz_only,'A','Pa','Mean cloud top pressure*CLDTOT_ISCCP',flag_xyfill=.true., &
                   fill_value=R_UNDEF)
       ! tauisccp (time,profile)
       !!! For averaging, weight by ISCCP Total Cloud Fraction (divide by CLDTOT_ISSCP in history file to get weighted average)
-      call addfld ('MEANTAU_ISCCP','1',1,'A','Mean optical thickness*CLDTOT_ISCCP',phys_decomp,flag_xyfill=.true., &
+      call addfld ('MEANTAU_ISCCP',horiz_only,'A','1','Mean optical thickness*CLDTOT_ISCCP',flag_xyfill=.true., &
                    fill_value=R_UNDEF)
       ! meantbisccp (time,profile), at 10.5 um
-      call addfld ('MEANTB_ISCCP','K       ',1,'A','Mean Infrared Tb from ISCCP simulator',phys_decomp,flag_xyfill=.true., &
+      call addfld ('MEANTB_ISCCP',horiz_only,'A','K','Mean Infrared Tb from ISCCP simulator',flag_xyfill=.true., &
                    fill_value=R_UNDEF)
       ! meantbclrisccp (time,profile)
-      call addfld ('MEANTBCLR_ISCCP','K       ',1,'A','Mean Clear-sky Infrared Tb from ISCCP simulator',&
-        phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('MEANTBCLR_ISCCP',horiz_only,'A','K','Mean Clear-sky Infrared Tb from ISCCP simulator',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! boxtauisccp (time,column,profile)
-      call addfld ('TAU_ISCCP','1',nscol_cosp,'I','Optical Depth in each Subcolumn',&
-        phys_decomp,flag_xyfill=.true.,mdimnames=(/'cosp_scol'/), fill_value=R_UNDEF)
+      call addfld ('TAU_ISCCP',(/'cosp_scol'/),'I','1','Optical Depth in each Subcolumn',flag_xyfill=.true., fill_value=R_UNDEF)
       ! boxptopisccp (time,column,profile)
-      call addfld ('CLDPTOP_ISCCP','Pa',nscol_cosp,'I','Cloud Top Pressure in each Subcolumn',&
-        phys_decomp,flag_xyfill=.true.,mdimnames=(/'cosp_scol'/), fill_value=R_UNDEF)
+      call addfld ('CLDPTOP_ISCCP',(/'cosp_scol'/),'I','Pa','Cloud Top Pressure in each Subcolumn',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
 
       !!! add_default calls for CFMIP experiments or else all fields are added to history file except those with sub-column dimension
       if (cosp_cfmip_mon.or.cosp_cfmip_da) then
@@ -951,100 +1006,86 @@ endif
 
 !!! LIDAR SIMULATOR OUTPUTS
    if (llidar_sim) then
-      call add_hist_coord('cosp_ht', nht_cosp,                                &
-           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
-           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
-      call add_hist_coord('cosp_sr', nsr_cosp,                                &
-           'COSP Mean Scattering Ratio for lidar simulator CFAD output', '1', &
-           srmid_cosp, bounds_name='cosp_sr_bnds', bounds=srlim_cosp)
-      call add_hist_coord('cosp_sza', nsza_cosp, 'COSP Parasol SZA',          &
-           'degrees', sza_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       !! addfld calls for all
       !*cfMon,cfOff,cfDa,cf3hr* cllcalipso (time,profile)
-      call addfld('CLDLOW_CAL','percent',1,'A','Lidar Low-level Cloud Fraction',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDLOW_CAL',horiz_only,'A','percent','Lidar Low-level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfMon,cfOff,cfDa,cf3hr* clmcalipso (time,profile)
-      call addfld('CLDMED_CAL','percent',1,'A','Lidar Mid-level Cloud Fraction',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDMED_CAL',horiz_only,'A','percent','Lidar Mid-level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfMon,cfOff,cfDa,cf3hr* clhcalipso (time,profile)
-      call addfld('CLDHGH_CAL','percent',1,'A','Lidar High-level Cloud Fraction',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDHGH_CAL',horiz_only,'A','percent','Lidar High-level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfMon,cfOff,cfDa,cf3hr* cltcalipso (time,profile)
-      call addfld('CLDTOT_CAL','percent',1,'A','Lidar Total Cloud Fraction',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDTOT_CAL',horiz_only,'A','percent','Lidar Total Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfMon,cfOff,cfDa,cf3hr* clcalipso (time,height,profile)
-      call addfld('CLD_CAL','percent',nht_cosp,'A','Lidar Cloud Fraction (532 nm)',&
-                   phys_decomp, flag_xyfill=.true., mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL',(/'cosp_ht'/),'A','percent','Lidar Cloud Fraction (532 nm)', flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfMon,cfOff,cfDa,cf3hr* parasol_refl (time,sza,profile)
-      call addfld ('RFL_PARASOL','fraction',nsza_cosp,'A','PARASOL-like mono-directional reflectance ',&
-                   phys_decomp,flag_xyfill=.true.,mdimnames=(/'cosp_sza'/), fill_value=R_UNDEF)
+      call addfld ('RFL_PARASOL',(/'cosp_sza'/),'A','fraction','PARASOL-like mono-directional reflectance ',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       !*cfOff,cf3hr* cfad_lidarsr532 (time,height,scat_ratio,profile), %11%, default is 40 vert levs, 15 SR  bins
-      call addfld('CFAD_SR532_CAL','fraction',nht_cosp*nsr_cosp,'A',&
-                   'Lidar Scattering Ratio CFAD (532 nm)',phys_decomp,&
-                   flag_xyfill=.true., mdimnames=(/'cosp_sr','cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CFAD_SR532_CAL',(/'cosp_sr','cosp_ht'/),'A','fraction',&
+                   'Lidar Scattering Ratio CFAD (532 nm)',&
+                   flag_xyfill=.true., fill_value=R_UNDEF)
       ! beta_mol532 (time,height_mlev,profile)
-      call addfld ('MOL532_CAL','m-1sr-1',nhtml_cosp,'A','Lidar Molecular Backscatter (532 nm) ',&
-                      phys_decomp,flag_xyfill=.true.,mdimnames=(/'lev'/), fill_value=R_UNDEF)
+      call addfld ('MOL532_CAL',(/'lev'/),'A','m-1sr-1','Lidar Molecular Backscatter (532 nm) ',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! atb532 (time,height_mlev,column,profile)
-      call addfld ('ATB532_CAL','no_unit_log10(x)',nhtml_cosp*nscol_cosp,'I', &
-                      'Lidar Attenuated Total Backscatter (532 nm) in each Subcolumn',phys_decomp, &
-                      flag_xyfill=.true.,mdimnames=(/'cosp_scol','lev      '/), fill_value=R_UNDEF)
+      call addfld ('ATB532_CAL',(/'cosp_scol','lev      '/),'I','no_unit_log10(x)', &
+                      'Lidar Attenuated Total Backscatter (532 nm) in each Subcolumn', &
+                      flag_xyfill=.true., fill_value=R_UNDEF)
       ! lclcalipsoliq (time,alt40,loc) !!+cosp1.4
-      call addfld('CLD_CAL_LIQ','percent', nht_cosp, 'A', 'Lidar Liquid Cloud Fraction', &
-      	   	       phys_decomp, flag_xyfill=.true., mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL_LIQ', (/'cosp_ht'/), 'A','percent', 'Lidar Liquid Cloud Fraction', flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lclcalipsoice (time,alt40,loc)
-      call addfld('CLD_CAL_ICE','percent', nht_cosp, 'A', 'Lidar Ice Cloud Fraction', &
-      	   	       phys_decomp, flag_xyfill=.true.,  mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL_ICE', (/'cosp_ht'/), 'A','percent', 'Lidar Ice Cloud Fraction', flag_xyfill=.true., fill_value=R_UNDEF)
       ! lclcalipsoun (time,alt40,loc)
-      call addfld('CLD_CAL_UN','percent', nht_cosp,'A', 'Lidar Undefined-Phase Cloud Fraction', &
-                       phys_decomp, flag_xyfill=.true.,  mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL_UN', (/'cosp_ht'/),'A','percent', 'Lidar Undefined-Phase Cloud Fraction', flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lclcalipsotmp (time,alt40,loc)
-      call addfld('CLD_CAL_TMP','percent', nht_cosp, 'A', 'NOT SURE WHAT THIS IS Cloud Fraction', &
-                       phys_decomp, flag_xyfill=.true.,  mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL_TMP', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction', flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! lclcalipsotmpliq (time,alt40,loc)
-      call addfld('CLD_CAL_TMPLIQ','percent', nht_cosp, 'A', 'NOT SURE WHAT THIS IS Cloud Fraction', &
-                       phys_decomp, flag_xyfill=.true.,  mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL_TMPLIQ', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction', flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lclcalipsotmpice (time,alt40,loc)
-      call addfld('CLD_CAL_TMPICE','percent', nht_cosp, 'A', 'NOT SURE WHAT THIS IS Cloud Fraction', &
-                       phys_decomp, flag_xyfill=.true.,  mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL_TMPICE', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction', flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lclcalipsotmpun (time,alt40,loc)
-      call addfld('CLD_CAL_TMPUN','percent', nht_cosp, 'A', 'NOT SURE WHAT THIS IS Cloud Fraction', &
-                       phys_decomp, flag_xyfill=.true.,  mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld('CLD_CAL_TMPUN', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction', flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lcltcalipsoice (time,loc)
-      call addfld('CLDTOT_CAL_ICE','percent',1,'A','Lidar Total Ice Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDTOT_CAL_ICE',horiz_only,'A','percent','Lidar Total Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! lcltcalipsoliq (time,loc)
-      call addfld('CLDTOT_CAL_LIQ','percent',1,'A','Lidar Total Liquid Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDTOT_CAL_LIQ',horiz_only,'A','percent','Lidar Total Liquid Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lcltcalipsoun (time,loc)
-      call addfld('CLDTOT_CAL_UN','percent',1,'A','Lidar Total Undefined-Phase Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDTOT_CAL_UN',horiz_only,'A','percent','Lidar Total Undefined-Phase Cloud Fraction',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! lclhcalipsoice (time,loc)
-      call addfld('CLDHGH_CAL_ICE','percent',1,'A','Lidar High-level Ice Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDHGH_CAL_ICE',horiz_only,'A','percent','Lidar High-level Ice Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lclhcalipsoliq (time,loc)
-      call addfld('CLDHGH_CAL_LIQ','percent',1,'A','Lidar High-level Liquid Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDHGH_CAL_LIQ',horiz_only,'A','percent','Lidar High-level Liquid Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lclhcalipsoun (time,loc)
-      call addfld('CLDHGH_CAL_UN','percent',1,'A','Lidar High-level Undefined-Phase Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDHGH_CAL_UN',horiz_only,'A','percent','Lidar High-level Undefined-Phase Cloud Fraction',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! lclmcalipsoice (time,loc)
-      call addfld('CLDMED_CAL_ICE','percent',1,'A','Lidar Mid-level Ice Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDMED_CAL_ICE',horiz_only,'A','percent','Lidar Mid-level Ice Cloud Fraction',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! lclmcalipsoliq (time,loc)
-      call addfld('CLDMED_CAL_LIQ','percent',1,'A','Lidar Mid-level Liquid Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDMED_CAL_LIQ',horiz_only,'A','percent','Lidar Mid-level Liquid Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lclmcalipsoun (time,loc)
-      call addfld('CLDMED_CAL_UN','percent',1,'A','Lidar Mid-level Undefined-Phase Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDMED_CAL_UN',horiz_only,'A','percent','Lidar Mid-level Undefined-Phase Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lcllcalipsoice (time,loc)
-      call addfld('CLDLOW_CAL_ICE','percent',1,'A','Lidar Low-level Ice Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDLOW_CAL_ICE',horiz_only,'A','percent','Lidar Low-level Ice Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lcllcalipsoliq (time,loc)
-      call addfld('CLDLOW_CAL_LIQ','percent',1,'A','Lidar Low-level Liquid Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDLOW_CAL_LIQ',horiz_only,'A','percent','Lidar Low-level Liquid Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! lcllcalipsoun (time,loc) !+cosp1.4
-      call addfld('CLDLOW_CAL_UN','percent',1,'A','Lidar Low-level Undefined-Phase Cloud Fraction', &
-                       phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld('CLDLOW_CAL_UN',horiz_only,'A','percent','Lidar Low-level Undefined-Phase Cloud Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
 
       !!! add_default calls for CFMIP experiments or else all fields are added to history file except those with sub-column dimension/experimental variables
       if (cosp_cfmip_mon .or. cosp_cfmip_off .or. cosp_cfmip_da .or. cosp_cfmip_3hr) then
@@ -1111,34 +1152,25 @@ endif
 
 !!! RADAR SIMULATOR OUTPUTS
    if (lradar_sim) then
-      call add_hist_coord('cosp_ht', nht_cosp,                                &
-           'COSP Mean Height for lidar and radar simulator outputs', 'm',     &
-           htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp)
-      call add_hist_coord('cosp_dbze', ndbze_cosp,                            &
-           'COSP Mean dBZe for radar simulator CFAD output', 'dBZ',           &
-           dbzemid_cosp, bounds_name='cosp_dbze_bnds', bounds=dbzelim_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       !!! addfld calls
       !*cfOff,cf3hr* cfad_dbze94 (time,height,dbze,profile), default is 40 vert levs, 15 dBZ bins 
-      call addfld('CFAD_DBZE94_CS','fraction',nht_cosp*ndbze_cosp,'A',&
-                   'Radar Reflectivity Factor CFAD (94 GHz)',phys_decomp,&
-                   flag_xyfill=.true., mdimnames=(/'cosp_dbze','cosp_ht  '/), fill_value=R_UNDEF)
+      call addfld('CFAD_DBZE94_CS',(/'cosp_dbze','cosp_ht  '/),'A','fraction',&
+                   'Radar Reflectivity Factor CFAD (94 GHz)',&
+                   flag_xyfill=.true., fill_value=R_UNDEF)
       !*cfOff,cf3hr* clcalipso2 (time,height,profile)
-      call addfld ('CLD_CAL_NOTCS','percent',nht_cosp,'A','Cloud occurrence seen by CALIPSO but not CloudSat ',&
-                   phys_decomp,flag_xyfill=.true.,mdimnames=(/'cosp_ht'/), fill_value=R_UNDEF)
+      call addfld ('CLD_CAL_NOTCS',(/'cosp_ht'/),'A','percent','Cloud occurrence seen by CALIPSO but not CloudSat ' &
+      ,flag_xyfill=.true., fill_value=R_UNDEF)
       ! cltlidarradar (time,profile)
-      call addfld ('CLDTOT_CALCS','percent',1,'A',' Lidar and Radar Total Cloud Fraction ',phys_decomp,flag_xyfill=.true., &
+      call addfld ('CLDTOT_CALCS',horiz_only,'A','percent',' Lidar and Radar Total Cloud Fraction ',flag_xyfill=.true., &
                    fill_value=R_UNDEF)
-      call addfld ('CLDTOT_CS','percent',1,'A',' Radar total cloud amount ',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('CLDTOT_CS2','percent',1,'A',' Radar total cloud amount without the data for the first kilometer above surface '&
-                   ,phys_decomp, flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLDTOT_CS',horiz_only,'A','percent',' Radar total cloud amount ',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLDTOT_CS2',horiz_only,'A','percent', &
+      ' Radar total cloud amount without the data for the first kilometer above surface ', flag_xyfill=.true., fill_value=R_UNDEF)
       ! dbze94 (time,height_mlev,column,profile),! height_mlevel = height when vgrid_in = .true. (default)
-      call addfld ('DBZE_CS','dBZe    ',nhtml_cosp*nscol_cosp,'I',' Radar dBZe (94 GHz) in each Subcolumn',phys_decomp,&
-                      flag_xyfill=.true.,mdimnames=(/'cosp_scol','lev      '/), fill_value=R_UNDEF)
+      call addfld ('DBZE_CS',(/'cosp_scol','lev      '/),'I','dBZe',' Radar dBZe (94 GHz) in each Subcolumn',&
+                      flag_xyfill=.true., fill_value=R_UNDEF)
 
-      !!! add_default calls for CFMIP experiments or else all fields are added to history file except those with sub-column dimension
+      !!! add_default calls for CFMIP experiments or else all fields are added to history file except those with subcolumn dimension
        if (cosp_cfmip_off.or.cosp_cfmip_3hr) then
           if (cosp_cfmip_3hr) then
               call add_default ('CFAD_DBZE94_CS',3,' ')
@@ -1160,85 +1192,61 @@ endif
 
 !!! MISR SIMULATOR OUTPUTS
    if (lmisr_sim) then
-      call add_hist_coord('cosp_htmisr', nhtmisr_cosp, 'COSP MISR height',    &
-           'km', htmisrmid_cosp,                                              &
-           bounds_name='cosp_htmisr_bnds', bounds=htmisrlim_cosp)
-      call add_hist_coord('cosp_tau', ntau_cosp,                              &
-           'COSP Mean ISCCP optical depth', '1', taumid_cosp,          &
-           bounds_name='cosp_tau_bnds', bounds=taulim_cosp)
-      call add_hist_coord('cosp_scol', nscol_cosp, 'COSP subcolumn',          &
-           values=scol_cosp)
-
       ! clMISR (time,tau,CTH_height_bin,profile)
-      call addfld ('CLD_MISR','percent',nhtmisr_cosp*ntau_cosp,'A','Cloud Fraction from MISR Simulator',&
-                   phys_decomp,flag_xyfill=.true.,mdimnames=(/'cosp_tau   ','cosp_htmisr'/), fill_value=R_UNDEF)
+      call addfld ('CLD_MISR',(/'cosp_tau   ','cosp_htmisr'/),'A','percent','Cloud Fraction from MISR Simulator',&
+      flag_xyfill=.true., fill_value=R_UNDEF)
       !! add all misr outputs to the history file specified by the CAM namelist variable cosp_histfile_num
       call add_default ('CLD_MISR',cosp_histfile_num,' ')
    end if
 
 !!! MODIS OUTPUT
    if (lmodis_sim) then
-
-      call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
-           'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
-      call add_hist_coord('cosp_tau_modis', ntau_cosp_modis,                  &
-           'COSP Mean MODIS optical depth', '1', taumid_cosp_modis,    &
-           bounds_name='cosp_tau_modis_bnds', bounds=taulim_cosp_modis)
-
       ! float cltmodis ( time, loc )
-      call addfld ('CLTMODIS','%',1,'A','MODIS Total Cloud Fraction',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLTMODIS',horiz_only,'A','%','MODIS Total Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float clwmodis ( time, loc )
-      call addfld ('CLWMODIS','%',1,'A','MODIS Liquid Cloud Fraction',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLWMODIS',horiz_only,'A','%','MODIS Liquid Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float climodis ( time, loc )
-      call addfld ('CLIMODIS','%',1,'A','MODIS Ice Cloud Fraction',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLIMODIS',horiz_only,'A','%','MODIS Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float clhmodis ( time, loc )
-      call addfld ('CLHMODIS','%',1,'A','MODIS High Level Cloud Fraction',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLHMODIS',horiz_only,'A','%','MODIS High Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float clmmodis ( time, loc )
-      call addfld ('CLMMODIS','%',1,'A','MODIS Mid Level Cloud Fraction',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLMMODIS',horiz_only,'A','%','MODIS Mid Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float cllmodis ( time, loc )
-      call addfld ('CLLMODIS','%',1,'A','MODIS Low Level Cloud Fraction',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLLMODIS',horiz_only,'A','%','MODIS Low Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float tautmodis ( time, loc )
-      call addfld ('TAUTMODIS','1',1,'A','MODIS Total Cloud Optical Thickness*CLTMODIS',& 
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('TAUTMODIS',horiz_only,'A','1','MODIS Total Cloud Optical Thickness*CLTMODIS',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! float tauwmodis ( time, loc )
-      call addfld ('TAUWMODIS','1',1,'A','MODIS Liquid Cloud Optical Thickness*CLWMODIS',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('TAUWMODIS',horiz_only,'A','1','MODIS Liquid Cloud Optical Thickness*CLWMODIS',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! float tauimodis ( time, loc )
-      call addfld ('TAUIMODIS','1',1,'A','MODIS Ice Cloud Optical Thickness*CLIMODIS',& 
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('TAUIMODIS',horiz_only,'A','1','MODIS Ice Cloud Optical Thickness*CLIMODIS',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! float tautlogmodis ( time, loc )
-      call addfld ('TAUTLOGMODIS','1',1,'A','MODIS Total Cloud Optical Thickness (Log10 Mean)*CLTMODIS',&  
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('TAUTLOGMODIS',horiz_only,'A','1','MODIS Total Cloud Optical Thickness (Log10 Mean)*CLTMODIS',&
+      flag_xyfill=.true., fill_value=R_UNDEF)
       ! float tauwlogmodis ( time, loc )
-      call addfld ('TAUWLOGMODIS','1',1,'A','MODIS Liquid Cloud Optical Thickness (Log10 Mean)*CLWMODIS',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('TAUWLOGMODIS',horiz_only,'A','1','MODIS Liquid Cloud Optical Thickness (Log10 Mean)*CLWMODIS',&
+      flag_xyfill=.true., fill_value=R_UNDEF)
       ! float tauilogmodis ( time, loc )
-      call addfld ('TAUILOGMODIS','1',1,'A','MODIS Ice Cloud Optical Thickness (Log10 Mean)*CLIMODIS',&  
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('TAUILOGMODIS',horiz_only,'A','1','MODIS Ice Cloud Optical Thickness (Log10 Mean)*CLIMODIS',&
+      flag_xyfill=.true., fill_value=R_UNDEF)
       ! float reffclwmodis ( time, loc )
-      call addfld ('REFFCLWMODIS','m',1,'A','MODIS Liquid Cloud Particle Size*CLWMODIS',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFFCLWMODIS',horiz_only,'A','m','MODIS Liquid Cloud Particle Size*CLWMODIS',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! float reffclimodis ( time, loc )
-      call addfld ('REFFCLIMODIS','m',1,'A','MODIS Ice Cloud Particle Size*CLIMODIS',& 
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFFCLIMODIS',horiz_only,'A','m','MODIS Ice Cloud Particle Size*CLIMODIS',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
       ! float pctmodis ( time, loc )
-      call addfld ('PCTMODIS','Pa',1,'A','MODIS Cloud Top Pressure*CLTMODIS',&       
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('PCTMODIS',horiz_only,'A','Pa','MODIS Cloud Top Pressure*CLTMODIS',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float lwpmodis ( time, loc )
-      call addfld ('LWPMODIS','kg m-2',1,'A','MODIS Cloud Liquid Water Path*CLWMODIS',&
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('LWPMODIS',horiz_only,'A','kg m-2','MODIS Cloud Liquid Water Path*CLWMODIS',flag_xyfill=.true.,&
+       fill_value=R_UNDEF)
       ! float iwpmodis ( time, loc )
-      call addfld ('IWPMODIS','kg m-2',1,'A','MODIS Cloud Ice Water Path*CLIMODIS',&   
-                   phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('IWPMODIS',horiz_only,'A','kg m-2','MODIS Cloud Ice Water Path*CLIMODIS',flag_xyfill=.true., fill_value=R_UNDEF)
       ! float clmodis ( time, plev, tau, loc )
-      call addfld ('CLMODIS','%',nprs_cosp*ntau_cosp_modis,'A','MODIS Cloud Area Fraction',&
-                   phys_decomp,flag_xyfill=.true., mdimnames=(/'cosp_tau_modis','cosp_prs      '/), fill_value=R_UNDEF)
+      call addfld ('CLMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',flag_xyfill=.true., &
+      fill_value=R_UNDEF)
 
       !! add MODIS output to history file specified by the CAM namelist variable cosp_histfile_num
       call add_default ('CLTMODIS',cosp_histfile_num,' ')
@@ -1264,8 +1272,8 @@ endif
 !!! SUB-COLUMN OUTPUT
    if (lfrac_out) then
       ! frac_out (time,height_mlev,column,profile)
-      call addfld ('SCOPS_OUT','0=nocld,1=strcld,2=cnvcld',nhtml_cosp*nscol_cosp,'I','SCOPS Subcolumn output',&
-                   phys_decomp,flag_xyfill=.true.,mdimnames=(/'cosp_scol','lev      '/), fill_value=R_UNDEF)
+      call addfld ('SCOPS_OUT',(/'cosp_scol','lev      '/),'I','0=nocld,1=strcld,2=cnvcld','SCOPS Subcolumn output',&
+      flag_xyfill=.true., fill_value=R_UNDEF)
       !! add scops ouptut to history file specified by the CAM namelist variable cosp_histfile_num
       call add_default ('SCOPS_OUT',cosp_histfile_num,' ')
       ! save sub-column outputs from ISCCP if ISCCP is run
@@ -1289,44 +1297,44 @@ endif
 !! all of the inputs are saved on the cam history file.  This is good de-bugging functionality we should maintain.
 
    if (cosp_histfile_aux) then
-      call addfld ('PS_COSP','Pa',1,'I','PS_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('TS_COSP','K',1,'I','TS_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('P_COSP','Pa',pver,'I','P_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('PH_COSP','Pa',pver,'I','PH_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('ZLEV_COSP','m',pver,'I','ZLEV_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('ZLEV_HALF_COSP','m',pver,'I','ZLEV_HALF_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('T_COSP','K',pver,'I','T_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('RH_COSP','percent',pver,'I','RH_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('Q_COSP','kg/kg',pver,'I','Q_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('CONCLD_COSP','1',pver,'I','CONCLD_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('CLD_COSP','1',pver,'I','CLD_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('O3_COSP','kg/kg',pver,'I','O3_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('U_COSP','m/s',1,'I','U_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)  
-      call addfld ('V_COSP','m/s',1,'I','V_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)  
-      call addfld ('LSCLIQ_COSP','kg/kg',pver,'I','LSCLIQ_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('LSCICE_COSP','kg/kg',pver,'I','LSCICE_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('CVCLIQ_COSP','kg/kg',pver,'I','CVCLIQ_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('CVCICE_COSP','kg/kg',pver,'I','CVCICE_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('RAIN_LS_COSP','kg/m2/s',pver,'I','RAIN_LS_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('SNOW_LS_COSP','kg/m2/s',pver,'I','SNOW_LS_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('GRPL_LS_COSP','kg/m2/s',pver,'I','GRPL_LS_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('RAIN_CV_COSP','kg/m2/s',pver,'I','RAIN_CV_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('SNOW_CV_COSP','kg/m2/s',pver,'I','SNOW_CV_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_1','m',pver,'I','REFF_COSP_1',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_2','m',pver,'I','REFF_COSP_2',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_3','m',pver,'I','REFF_COSP_3',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_4','m',pver,'I','REFF_COSP_4',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_5','m',pver,'I','REFF_COSP_5',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_6','m',pver,'I','REFF_COSP_6',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_7','m',pver,'I','REFF_COSP_7',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_8','m',pver,'I','REFF_COSP_8',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('REFF_COSP_9','m',pver,'I','REFF_COSP_9',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('DTAU_S_COSP','1',pver,'I','DTAU_S_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('DTAU_C_COSP','1',pver,'I','DTAU_C_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('DEM_S_COSP','1',pver,'I','DEM_S_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('DEM_C_COSP','1',pver,'I','DEM_C_COSP',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('DTAU_S_COSP_SNOW','1',pver,'I','DTAU_S_COSP_SNOW',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
-      call addfld ('DEM_S_COSP_SNOW','1',pver,'I','DEM_S_COSP_SNOW',phys_decomp,flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('PS_COSP',horiz_only,'I','Pa','PS_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('TS_COSP',horiz_only,'I','K','TS_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('P_COSP',(/ 'lev' /),'I','Pa','P_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('PH_COSP',(/ 'lev' /),'I','Pa','PH_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('ZLEV_COSP',(/ 'lev' /),'I','m','ZLEV_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('ZLEV_HALF_COSP',(/ 'lev' /),'I','m','ZLEV_HALF_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('T_COSP',(/ 'lev' /),'I','K','T_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('RH_COSP',(/ 'lev' /),'I','percent','RH_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('Q_COSP',(/ 'lev' /),'I','kg/kg','Q_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CONCLD_COSP',(/ 'lev' /),'I','1','CONCLD_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CLD_COSP',(/ 'lev' /),'I','1','CLD_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('O3_COSP',(/ 'lev' /),'I','kg/kg','O3_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('U_COSP',horiz_only,'I','m/s','U_COSP',flag_xyfill=.true., fill_value=R_UNDEF)  
+      call addfld ('V_COSP',horiz_only,'I','m/s','V_COSP',flag_xyfill=.true., fill_value=R_UNDEF)  
+      call addfld ('LSCLIQ_COSP',(/ 'lev' /),'I','kg/kg','LSCLIQ_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('LSCICE_COSP',(/ 'lev' /),'I','kg/kg','LSCICE_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CVCLIQ_COSP',(/ 'lev' /),'I','kg/kg','CVCLIQ_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('CVCICE_COSP',(/ 'lev' /),'I','kg/kg','CVCICE_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('RAIN_LS_COSP',(/ 'lev' /),'I','kg/m2/s','RAIN_LS_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('SNOW_LS_COSP',(/ 'lev' /),'I','kg/m2/s','SNOW_LS_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('GRPL_LS_COSP',(/ 'lev' /),'I','kg/m2/s','GRPL_LS_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('RAIN_CV_COSP',(/ 'lev' /),'I','kg/m2/s','RAIN_CV_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('SNOW_CV_COSP',(/ 'lev' /),'I','kg/m2/s','SNOW_CV_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_1',(/ 'lev' /),'I','m','REFF_COSP_1',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_2',(/ 'lev' /),'I','m','REFF_COSP_2',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_3',(/ 'lev' /),'I','m','REFF_COSP_3',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_4',(/ 'lev' /),'I','m','REFF_COSP_4',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_5',(/ 'lev' /),'I','m','REFF_COSP_5',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_6',(/ 'lev' /),'I','m','REFF_COSP_6',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_7',(/ 'lev' /),'I','m','REFF_COSP_7',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_8',(/ 'lev' /),'I','m','REFF_COSP_8',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('REFF_COSP_9',(/ 'lev' /),'I','m','REFF_COSP_9',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('DTAU_S_COSP',(/ 'lev' /),'I','1','DTAU_S_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('DTAU_C_COSP',(/ 'lev' /),'I','1','DTAU_C_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('DEM_S_COSP',(/ 'lev' /),'I','1','DEM_S_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('DEM_C_COSP',(/ 'lev' /),'I','1','DEM_C_COSP',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('DTAU_S_COSP_SNOW',(/ 'lev' /),'I','1','DTAU_S_COSP_SNOW',flag_xyfill=.true., fill_value=R_UNDEF)
+      call addfld ('DEM_S_COSP_SNOW',(/ 'lev' /),'I','1','DEM_S_COSP_SNOW',flag_xyfill=.true., fill_value=R_UNDEF)
 
       call add_default ('PS_COSP',cosp_histfile_aux_num,' ')
       call add_default ('TS_COSP',cosp_histfile_aux_num,' ')
@@ -1932,27 +1940,27 @@ if (first_run_cosp(lchnk)) then
 
    if (lradar_sim) then
      do i=1,nf_radar
-        run_radar(i,1:pcols)=hist_fld_col_active(fname_radar(i),lchnk)
+        run_radar(i,1:pcols)=hist_fld_col_active(fname_radar(i),lchnk,pcols)
      end do
    end if
    if (llidar_sim) then
      do i=1,nf_lidar
-        run_lidar(i,1:pcols)=hist_fld_col_active(fname_lidar(i),lchnk)
+        run_lidar(i,1:pcols)=hist_fld_col_active(fname_lidar(i),lchnk,pcols)
      end do
    end if
    if (lisccp_sim) then
      do i=1,nf_isccp
-        run_isccp(i,1:pcols)=hist_fld_col_active(fname_isccp(i),lchnk)
+        run_isccp(i,1:pcols)=hist_fld_col_active(fname_isccp(i),lchnk,pcols)
      end do
    end if
    if (lmisr_sim) then
      do i=1,nf_misr
-        run_misr(i,1:pcols)=hist_fld_col_active(fname_misr(i),lchnk)
+        run_misr(i,1:pcols)=hist_fld_col_active(fname_misr(i),lchnk,pcols)
      end do
    end if
    if (lmodis_sim) then
      do i=1,nf_modis
-        run_modis(i,1:pcols)=hist_fld_col_active(fname_modis(i),lchnk)
+        run_modis(i,1:pcols)=hist_fld_col_active(fname_modis(i),lchnk,pcols)
      end do
    end if
 
@@ -2557,6 +2565,7 @@ if (cosp_runall) then
    ! Make sure that you get cloud information from deep, shallow, and stratiform physics packages.
 
    !print *, 'Allocating memory for gridbox type...'
+   call t_startf("construct_cosp_gridbox1")
    call construct_cosp_gridbox(time, &                          ! 1 double precision = real(r8) X
                                 time_bnds, &                    ! 1 double precision = real(r8)
                                 radar_freq, &                   ! 2 real(r8) X
@@ -2593,6 +2602,7 @@ if (cosp_runall) then
                                 n2o(1,1),&                      ! 33 real(r8) X
                                 co,&                            ! 34 real(r8) X
                                 gbx)                            ! OUT
+   call t_stopf("construct_cosp_gridbox1")
     
    !print *, 'Populating input structure for COSP...'
    ! Note: GBX expects vertical ordering to be from SURFACE(1) to the TOP(nlev), while
@@ -3070,6 +3080,7 @@ end do
 !  POPULATE COSP INPUT VARIABLE ("gbx") FROM CAM VARIABLES for sunlit columns
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    !print *, 'Allocating memory for gridbox type for isccp sub-columns only...'
+   call t_startf("construct_cosp_gridbox2")
    call construct_cosp_gridbox(time, &                          ! 1 double precision = real(r8) X
                                 time_bnds, &                    ! 1 double precision = real(r8)
                                 radar_freq, &                   ! 2 real(r8) X
@@ -3106,6 +3117,7 @@ end do
                                 n2o(1,1),&                      ! 33 real(r8) X
                                 co,&                            ! 34 real(r8) X
                                 gbx)                            ! OUT
+   call t_stopf("construct_cosp_gridbox2")
     
    !print *, 'Populating input structure for COSP running on day columns only...'
    !! be very explicit about gbx structure sizes.
@@ -3462,6 +3474,7 @@ cfg%Lclmodis= .false.
 ! Subsetting using an orbital curtain for radar and lidar simulators
 ! Note: This is a very basic implementation and should be checked with other groups.
 
+#ifdef COSP_ATRAIN
 if (cosp_sample_atrain) then
 
 ! Subsetting using the orbit data file.
@@ -3653,6 +3666,21 @@ else  !! not atrain sampling,
     end do
 
 end if ! if atrain sampling
+#else
+    !!! assign indices for compression (note: code for day/nite from radsw.F90)
+    Natrain = 0
+    Nno = 0
+    do i = 1, ncol
+       !! figure out if columns meets run_cosp criterion 
+        if (run_cosp(i,lchnk)) then
+          Natrain = Natrain + 1
+          IdxAtrain(Natrain) = i
+       else
+          Nno = Nno + 1
+          IdxNo(Nno) = i
+       end if
+    end do
+#endif
 
 Npoints = Natrain
 
@@ -3752,6 +3780,7 @@ if (((.not.cosp_sample_atrain) .and. Natrain .gt. 0) .or. ((cosp_sample_atrain) 
 !  POPULATE COSP INPUT VARIABLE ("gbx") FROM CAM VARIABLES for atrain columns
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    !print *, 'Allocating memory for gridbox type for atrain sub-columns only...'
+   call t_startf("construct_cosp_gridbox3")
    call construct_cosp_gridbox(time, &                          ! 1 double precision = real(r8) X
                                 time_bnds, &                    ! 1 double precision = real(r8)
                                 radar_freq, &                   ! 2 real(r8) X
@@ -3788,6 +3817,7 @@ if (((.not.cosp_sample_atrain) .and. Natrain .gt. 0) .or. ((cosp_sample_atrain) 
                                 n2o(1,1),&                      ! 33 real(r8) X
                                 co,&                            ! 34 real(r8) X
                                 gbx)                            ! OUT
+   call t_stopf("construct_cosp_gridbox3")
     
    !print *, 'Populating input structure for COSP for running lidar/radar simulators only...'
    !! be very explicit about gbx structure sizes.

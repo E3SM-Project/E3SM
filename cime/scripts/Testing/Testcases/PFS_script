@@ -47,7 +47,7 @@ endif
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-echo "this test just measures performance - so there are no PASS/FAIL metrics
+echo "this test just measures performance - so there are no PASS/FAIL metrics"
 
 
 

@@ -11,7 +11,7 @@
    use physics_types,   only: physics_state, physics_ptend, physics_tend, physics_tend_alloc, physics_state_alloc
    use ppgrid,          only: pcols, psubcols, pver
    use constituents,    only: pcnst
-   use cam_abortutils,      only: endrun
+   use cam_abortutils,  only: endrun
    use pio,             only: var_desc_t
 
    implicit none
@@ -110,6 +110,7 @@
    end interface
 
    type(var_desc_t) :: nsubcol_desc, weight2d_desc, filter2d_desc
+   integer          :: subcol_dimid = -1 ! subcol dimension for restart
 
    integer :: ret_nan_int
    real(r8):: ret_nan_double
@@ -158,7 +159,6 @@ contains
    !-----------------------------------------------------------------------
  
       character(len=*), optional, intent(in) :: subcol_scheme_init ! Name of subcolumn generator
-      integer :: ierr
 
       call subcol_allocate_internal()
 
@@ -361,7 +361,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -478,7 +477,7 @@ contains
       !
       ! Local variables
       !
-      integer :: i, j, k, m, ngrdcol, indx
+      integer :: ngrdcol
 
       if (.not. allocated(state_sc%lat)) then
          call endrun('subcol_state_copy: user must allocate state_sc prior to calling this routine')
@@ -601,7 +600,7 @@ contains
       type(physics_state), intent(in)    :: state
       type(physics_state), intent(inout) :: state_sc        ! subcolumn state
 
-      integer :: i, j, indx, isize
+      integer :: isize
       integer :: nsubcol(pcols)
 
       call subcol_get_nsubcol(state%lchnk, nsubcol)
@@ -1094,7 +1093,6 @@ contains
       logical, intent(in) :: usefilter
       logical, intent(in) :: useweight
 
-      integer :: icnt
       integer :: nsubcol(pcols)
 
       call subcol_get_nsubcol(lchnk, nsubcol)
@@ -1156,57 +1154,131 @@ contains
 
    subroutine subcol_utils_init_restart(File, hdimids)
 
-     use pio,    only: file_desc_t, pio_def_var, pio_int, pio_double
-     type(file_desc_t),intent(in) :: File
-     integer ,intent(in)          :: hdimids(:)
+     use pio,           only: file_desc_t, pio_int, pio_double
+     use cam_pio_utils, only: cam_pio_def_dim, cam_pio_def_var
 
-     integer :: ierr
+     ! Dummy arguments
+     type(file_desc_t), intent(inout) :: File
+     integer,           intent(in)    :: hdimids(:)
 
-     ierr = pio_def_var(File, 'NSUBCOL2D', pio_int, hdimids, nsubcol_desc)
-! storing filter and weight data even if not being filled by subcolumn generator
-     ierr = pio_def_var(File, 'FILTER2D', pio_int, hdimids, filter2d_desc)
-     ierr = pio_def_var(File, 'WEIGHT2D', pio_double, hdimids, weight2d_desc)
+     ! Local variable
+     integer, allocatable          :: adimids(:)
+
+     call cam_pio_def_var(File, 'NSUBCOL2D', pio_int, hdimids, nsubcol_desc)
+     ! Storing filter and weight data even if not being filled by the current
+     !     subcolumn generator. While these are 2-D arrays, they don't match
+     !     the grid so we will have to recast them as 3-D
+
+     ! We will need a dimid for the subcol dimension
+     call cam_pio_def_dim(File, 'psubcols', psubcols, subcol_dimid,           &
+          existOK=.true.)
+     allocate(adimids(size(hdimids,1) + 1))
+     adimids(1:size(hdimids)) = hdimids(:)
+     adimids(size(hdimids) + 1) = subcol_dimid
+
+     call cam_pio_def_var(File, 'FILTER2D', pio_int,    adimids, filter2d_desc)
+     call cam_pio_def_var(File, 'WEIGHT2D', pio_double, adimids, weight2d_desc)
 
    end subroutine subcol_utils_init_restart
 
    subroutine subcol_utils_write_restart(File)
-     use pio,             only: file_desc_t, pio_write_darray
-     use cam_pio_utils,   only: get_phys_decomp
-     use pio,             only: io_desc_t
+     use cam_grid_support, only: cam_grid_write_dist_array
+     use cam_grid_support, only: cam_grid_id, cam_grid_dimensions
+     use ppgrid,           only: begchunk, endchunk
+     use pio,              only: file_desc_t
 
-
+     ! Dummy argument
      type(file_desc_t), intent(inout) :: File
 
-     integer :: ierr
-     type(io_desc_t), pointer           :: iodesc => null()
+     ! Local variables
+     integer                          :: c
+     integer                          :: adimlens(3)
+     integer                          :: fdimlens(3)
+     integer                          :: frank
+     integer                          :: grid_id
+     integer,  allocatable            :: unpacked_i(:,:,:)
+     real(r8), allocatable            :: unpacked_r(:,:,:)
+     character(len=*), parameter      :: subname = 'SUBCOL_UTILS_WRITE_RESTART'
 
-     call get_phys_decomp(iodesc, 1, 1, 1, nsubcol_desc%type)
-     call pio_write_darray(File, nsubcol_desc, iodesc, nsubcol2d, ierr)
+     ! File dimensions
+     grid_id = cam_grid_id('physgrid')
+     call cam_grid_dimensions(grid_id, fdimlens(1:2), frank)
 
-     call get_phys_decomp(iodesc, 1, 1, 1, filter2d_desc%type)
-     call pio_write_darray(File, filter2d_desc, iodesc, filter2d, ierr)
+     ! Write nsubcol2d
+     adimlens(1) = size(nsubcol2d, 1)
+     adimlens(2) = endchunk - begchunk + 1
+     call cam_grid_write_dist_array(File, grid_id, adimlens(1:2),             &
+             fdimlens(1:frank), nsubcol2d, nsubcol_desc)
 
-     call get_phys_decomp(iodesc, 1, 1, 1, weight2d_desc%type)
-     call pio_write_darray(File, weight2d_desc, iodesc, weight2d, ierr)
+     ! filter2d and weight2d are 3-D variables
+     fdimlens(frank + 1) = psubcols
+     frank = frank + 1
+
+     ! Write filter2d
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(filter2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for FILTER2D")
+     end if
+     ! Unpack filter2d for proper output
+     allocate(unpacked_i(pcols, psubcols, begchunk:endchunk))
+     do c = begchunk, endchunk
+       call subcol_unpack(c, filter2d(:,c), unpacked_i(:,:,c), 0)
+     end do
+     call cam_grid_write_dist_array(File, grid_id, adimlens,                  &
+             fdimlens(1:frank), unpacked_i, filter2d_desc)
+     deallocate(unpacked_i)
+
+     ! Write weight2d
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(weight2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for WEIGHT2D")
+     end if
+     ! Unpack weight2d for proper output
+     allocate(unpacked_r(pcols, psubcols, begchunk:endchunk))
+     do c = begchunk, endchunk
+       call subcol_unpack(c, weight2d(:,c), unpacked_r(:,:,c), 0.0_r8)
+     end do
+     call cam_grid_write_dist_array(File, grid_id, adimlens,                  &
+             fdimlens(1:frank), unpacked_r, weight2d_desc)
+     deallocate(unpacked_r)
 
    end subroutine subcol_utils_write_restart
 
    subroutine subcol_utils_read_restart(File)
-     use pio,           only: file_desc_t, pio_read_darray, pio_inq_varid, pio_int, pio_double
-     use cam_pio_utils, only: get_phys_decomp
-     use ppgrid,        only: begchunk, endchunk
-     use pio,           only: io_desc_t
+     use pio,              only: file_desc_t, pio_inq_varid
+     use cam_pio_utils,    only: cam_pio_handle_error
+     use cam_grid_support, only: cam_grid_id, cam_grid_read_dist_array
+     use cam_grid_support, only: cam_grid_dimensions
+     use ppgrid,           only: begchunk, endchunk
 
+     ! Dummy argument
      type(file_desc_t), intent(inout) :: File
 
-     integer                  :: ierr, isize, c
-     type(io_desc_t), pointer :: iodesc => null()
+     integer                          :: ierr, c
+     integer                          :: adimlens(3)
+     integer                          :: fdimlens(3)
+     integer                          :: grid_id
+     integer                          :: frank
+     integer,  allocatable            :: unpacked_i(:,:,:)
+     real(r8), allocatable            :: unpacked_r(:,:,:)
+     character(len=*), parameter      :: subname = 'SUBCOL_UTILS_READ_RESTART'
 
      call subcol_allocate_internal()
 
+     ! Array dimensions
+     adimlens(1) = size(nsubcol2d, 1)
+     adimlens(2) = endchunk - begchunk + 1
+     ! File dimensions
+     grid_id = cam_grid_id('physgrid')
+     call cam_grid_dimensions(grid_id, fdimlens(1:2), frank)
      ierr = pio_inq_varid(File, 'NSUBCOL2D', nsubcol_desc)
-     call get_phys_decomp(iodesc, 1, 1, 1, pio_int)
-     call pio_read_darray(File, nsubcol_desc, iodesc, nsubcol2d, ierr)
+     call cam_pio_handle_error(ierr, trim(subname)//': NSUBCOL2D not found')
+     call cam_grid_read_dist_array(File, grid_id, adimlens(1:2),              &
+          fdimlens(1:frank), nsubcol2d, nsubcol_desc)
 
      ! We need to update indcol2d so set nsubcol2d to itself
      do c = begchunk, endchunk
@@ -1214,12 +1286,42 @@ contains
      end do
 
      ierr = pio_inq_varid(File, 'FILTER2D', filter2d_desc)
-     call get_phys_decomp(iodesc, 1, 1, 1, pio_int)
-     call pio_read_darray(File, filter2d_desc, iodesc, filter2d, ierr)
+     call cam_pio_handle_error(ierr, trim(subname)//': FILTER2D not found')
+     ! Array dimensions
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(filter2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for FILTER2D")
+     end if
+     allocate(unpacked_i(pcols, psubcols, begchunk:endchunk))
+     ! File dimensions (good for both filter2d and weight2d)
+     frank = frank + 1
+     fdimlens(frank) = psubcols
+     call cam_grid_read_dist_array(File, grid_id, adimlens,                   &
+          fdimlens(1:frank), unpacked_i, filter2d_desc)
+     ! Pack filter2d for proper output
+     do c = begchunk, endchunk
+       call subcol_pack(c, unpacked_i(:,:,c), filter2d(:,c))
+     end do
+     deallocate(unpacked_i)
 
      ierr = pio_inq_varid(File, 'WEIGHT2D', weight2d_desc)
-     call get_phys_decomp(iodesc, 1, 1, 1, pio_double)
-     call pio_read_darray(File, weight2d_desc, iodesc, weight2d, ierr)
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(weight2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for WEIGHT2D")
+     end if
+     allocate(unpacked_r(pcols, psubcols, begchunk:endchunk))
+     call cam_pio_handle_error(ierr, trim(subname)//': WEIGHT2D not found')
+     call cam_grid_read_dist_array(File, grid_id, adimlens,                   &
+          fdimlens(1:frank), unpacked_r, weight2d_desc)
+     ! Pack weight2d for proper output
+     do c = begchunk, endchunk
+       call subcol_pack(c, unpacked_r(:,:,c), weight2d(:,c))
+     end do
+     deallocate(unpacked_r)
 
    end subroutine subcol_utils_read_restart
 

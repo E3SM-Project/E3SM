@@ -64,7 +64,7 @@
 
       use time_manager, only : is_first_step
       use ref_pres,     only : pref_mid_norm
-      use cam_history,  only : addfld, phys_decomp
+      use cam_history,  only : addfld
       use physics_buffer, only : physics_buffer_desc, pbuf_set_field
 
       implicit none
@@ -98,14 +98,14 @@
          call pbuf_set_field(pbuf2d, h2so4_r_g_ndx,  1.0_r8)
       endif
 
-      call addfld( 'H2SO4M_C',  'ug/m3 ',   pver, 'I', 'chemical sulfate aerosol mass',  phys_decomp )
+      call addfld( 'H2SO4M_C',   (/ 'lev' /), 'I',  'ug/m3', 'chemical sulfate aerosol mass' )
 
       if ( rad_feedback ) then
-         call addfld( 'SAD_SULFR', 'cm2/cm3 ', pver, 'I', 'radiative sulfate aerosol SAD',  phys_decomp )
-         call addfld( 'RAD_SULFR', 'cm ',      pver, 'I', 'radiative sad sulfate',          phys_decomp )
-         call addfld( 'H2SO4MMR',  'kg/kg',    pver, 'I', 'radiative sulfate aerosol mmr',  phys_decomp )
-         call addfld( 'H2SO4M_R',  'ug/m3 ',   pver, 'I', 'radiative sulfate aerosol mass', phys_decomp )
-         call addfld( 'VOLC_RAD_GEOM', 'm',    pver, 'I', 'geometric mean radius of wet aerosol', phys_decomp)
+         call addfld( 'SAD_SULFR', (/ 'lev' /), 'I', 'cm2/cm3', 'radiative sulfate aerosol SAD' )
+         call addfld( 'RAD_SULFR',      (/ 'lev' /), 'I', 'cm', 'radiative sad sulfate' )
+         call addfld( 'H2SO4MMR',    (/ 'lev' /), 'I',  'kg/kg', 'radiative sulfate aerosol mmr' )
+         call addfld( 'H2SO4M_R',   (/ 'lev' /), 'I',  'ug/m3', 'radiative sulfate aerosol mass' )
+         call addfld( 'VOLC_RAD_GEOM',    (/ 'lev' /), 'I', 'm', 'geometric mean radius of wet aerosol')
       endif
 
       end subroutine sad_inti
@@ -498,7 +498,7 @@ sts_nat_sad : &
       use physconst,   only : avogad,boltz,mwdry
       use cam_history, only : outfld
       use physics_buffer, only : physics_buffer_desc, pbuf_get_field
-      use cam_pio_utils, only : fillvalue
+      use cam_history_support, only : fillvalue
 
       implicit none
 

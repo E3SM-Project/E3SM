@@ -1,0 +1,287 @@
+#! /usr/bin/env perl
+use strict;
+use Cwd;
+
+if ($#ARGV == -1) {
+    die " ERROR mpasli buildnml: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CIMEROOT            = `./xmlquery  CIMEROOT            -value`;
+my $CASEROOT		= `./xmlquery  CASEROOT			-value`;
+my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
+my $SRCROOT		= `./xmlquery  SRCROOT			-value`;
+my $OBJROOT		    = `./xmlquery  OBJROOT			-value`;
+my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value`;
+my $DIN_LOC_ROOT    = `./xmlquery  DIN_LOC_ROOT     -value`;
+my $GLC_GRID		= `./xmlquery  GLC_GRID			-value`;
+my $NTASKS_GLC		= `./xmlquery  NTASKS_GLC		-value`;
+#my $NINST_GLC		= `./xmlquery  NINST_GLC		-value`;
+my $NINST_GLC = 1; # Change if you want multiple instances... though this isn't coded yet.
+my $RUNDIR		    = `./xmlquery  RUNDIR			-value`;
+my $STREAM_NAME     = 'streams.landice';
+my $MPASLI_USE_ALBANY = `./xmlquery MPASLI_USE_ALBANY -value`;
+my $ALBANY_INPUT_NAME     = 'albany_input.xml';
+
+my @dirs = ("$CIMEROOT/utils/perl5lib");
+unshift @INC, @dirs;
+require Config::SetupTools;
+my $sysmod;
+
+
+if (! -d "$CASEBUILD/mpasliconf" ) {
+    $sysmod = "mkdir $CASEBUILD/mpasliconf";
+    system($sysmod) == 0 or die "ERROR mpasli buildnml: $sysmod failed: $?\n";
+}
+
+#--------------------------------------------------------------------
+# Determine date stamp, from grid names
+#--------------------------------------------------------------------
+
+my $grid_date = '';
+my $grid_prefix = '';
+my $decomp_prefix = '';
+
+if ( $GLC_GRID eq 'mpas.gis20km' ) {
+	$grid_date .= '150922';
+	$grid_prefix .= 'gis20km';
+	$decomp_prefix .= 'mpasli.graph.info.';
+} elsif ( $GLC_GRID eq 'mpas.ais20km' ) {
+	$grid_date .= '150910';
+	$grid_prefix .= 'ais20km';
+	$decomp_prefix .= 'mpasli.graph.info.';
+} else {
+        die "ERROR: mpasli buildnml encountered unknown GLC_GRID: $GLC_GRID /n";
+}
+
+chdir "$CASEBUILD/mpasliconf";
+
+#--------------------------------------------------------------------
+# Generate input data file
+#--------------------------------------------------------------------
+
+open(my $input_list, "+>", "$CASEBUILD/mpasli.input_data_list");
+print $input_list "mesh = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$grid_prefix.$grid_date.nc\n";
+#print $input_list "full_graph = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$decomp_prefix$grid_date\n";
+print $input_list "graph$NTASKS_GLC = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$decomp_prefix$grid_date.part.$NTASKS_GLC\n";
+close($input_list);
+
+#--------------------------------------------------------------------
+# Invoke mpas build-namelist - output will go in $CASEBUILD/mpasliconf
+#--------------------------------------------------------------------
+
+my $inst_string;
+my $inst_counter = 1;
+while ($inst_counter <= $NINST_GLC) {
+
+    # -----------------------------------------------------
+    # determine instance string 
+    # -----------------------------------------------------
+
+    $inst_string = "";       
+    if ($NINST_GLC > 1) {
+		$inst_string = `printf _%04d $inst_counter`;
+
+		# If multi-instance case does not have restart file, use single-case restart
+		# for each instance
+		if ( (! -e "$RUNDIR/rpointer.glc${inst_string}") && (-e "$RUNDIR/rpointer.glc") ) {
+				$sysmod = "cp -v $RUNDIR/rpointer.glc $RUNDIR/rpointer.glc${inst_string}";
+				system($sysmod) == 0 or die "ERROR mpasli buildnml: $sysmod failed: $?\n";
+		}
+    }
+
+    # -----------------------------------------------------
+    # create mpasliconf/cesm_namelist
+    # -----------------------------------------------------
+
+    SetupTools::create_namelist_infile("$CASEROOT", 
+				       "$CASEROOT/user_nl_mpasli${inst_string}", 
+				       "$CASEBUILD/mpasliconf/cesm_namelist"); 
+
+    # -----------------------------------------------------
+    # call build-namelist- output will go in $CASEBUILD/mpasliconf/mpasli_in
+    # -----------------------------------------------------
+
+    #$sysmod = "$SRCROOT/components/mpasli/bld/build-namelist";
+    #$sysmod = "$sysmod -infile $CASEBUILD/mpasliconf/cesm_namelist";
+    #$sysmod = "$sysmod -inputdata $CASEBUILD/mpasli.input_data_list";
+    #$sysmod = "$sysmod -rundir $RUNDIR";
+    #$sysmod = "$sysmod -caseroot $CASEROOT";
+    #$sysmod = "$sysmod -cimeroot $CIMEROOT";
+    #$sysmod = "$sysmod -inst_string \"$inst_string\"";
+    #$sysmod = "$sysmod -namelist \"\&cice $CICE_NAMELIST_OPTS\/\" ";
+    #$sysmod = "$sysmod -config config_cache.xml";
+
+    $sysmod =  "$SRCROOT/components/mpasli/bld/build-namelist";
+	$sysmod .= " -infile $CASEBUILD/mpasliconf/cesm_namelist";
+	$sysmod .= " -caseroot $CASEROOT";
+	$sysmod .= " -casebuild $CASEBUILD";
+	$sysmod .= " -cimeroot $CIMEROOT";
+	$sysmod .= " -inst_string '$inst_string'";
+	$sysmod .= " -date_stamp '$grid_date'";
+	$sysmod .= " -glc_grid '$GLC_GRID'";
+
+    system($sysmod) == 0 or die "ERROR mpasli buildnml: $sysmod failed: $?\n";
+
+    # -----------------------------------------------------
+    # Copy resolved namelist to $RUNDIR
+    # -----------------------------------------------------
+
+    my $default_in_filename = "mpasli_in";
+    my $in_filename = "${default_in_filename}${inst_string}";
+    if ( -d ${RUNDIR} ) {
+	$sysmod = "cp $CASEBUILD/mpasliconf/mpasli_in ${RUNDIR}/$in_filename";
+	system($sysmod) == 0 or die "ERROR mpasli buildnml: $sysmod failed: $?\n";
+    }
+
+    # -----------------------------------------------------
+    # increment instance counter
+    # -----------------------------------------------------
+
+    $inst_counter = $inst_counter + 1;
+}
+
+# Write streams file if there isn't one in SourceMods
+
+if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
+	$sysmod = "cp $CASEROOT/SourceMods/src.mpasli/$STREAM_NAME $RUNDIR/$STREAM_NAME";
+	system($sysmod) == 0 or die "ERROR mpasli buildnml: $sysmod fails: $?\n";
+} else {
+	open(my $stream_file, "+>", "$RUNDIR/$STREAM_NAME");
+
+	print $stream_file "	<streams>\n";
+	print $stream_file "\n";
+	print $stream_file "	<immutable_stream name=" . '"basicmesh"' . "\n";
+	print $stream_file "					  type=" . '"none"' . "\n";
+	print $stream_file "					  filename_template=" . '"not-to-be-used.nc"' . "\n";
+	print $stream_file "	/>\n";
+	print $stream_file "\n";
+	print $stream_file "	<immutable_stream name=" . '"input"' . "\n";
+	print $stream_file "					  type=" . '"input"' . "\n";
+	print $stream_file "                      filename_template=" . '"' 
+			. "$DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$grid_prefix.$grid_date.nc" 
+			. '"' . "\n";
+	print $stream_file "					  input_interval=" . '"initial_only"' . "/>\n";
+	print $stream_file "\n";
+	print $stream_file "	<!--\n";
+	print $stream_file "	The restart stream is actually controlled via the coupler.\n";
+	print $stream_file "	Changing output_interval here will not have any affect on\n";
+	print $stream_file "	the frequency restart files are written.\n";
+	print $stream_file "\n";
+	print $stream_file "	Changing the output_interval could cause loss of data.\n";
+	print $stream_file "\n";
+	print $stream_file "	The output_interval is set to 1 second to ensure each restart frame has a\n";
+	print $stream_file "	unique file.\n";
+	print $stream_file "	-->\n";
+	print $stream_file "	<immutable_stream name=" . '"restart"' . "\n";
+	print $stream_file "					  type=" . '"input;output"' . "\n";
+	print $stream_file "					  filename_template=" . '"rst.mpasli.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "					  filename_interval=" . '"output_interval"' . "\n";
+	print $stream_file "					  reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "					  clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "					  input_interval=" . '"initial_only"' . "\n";
+	print $stream_file "					  output_interval=" . '"00-00-00_00:00:01"' . "/>\n";
+	print $stream_file "\n";
+	print $stream_file "	<!--\n";
+	print $stream_file "	output is the main history output stream. You can add auxiliary streams to\n";
+	print $stream_file "	this stream to include more fields.\n";
+	print $stream_file "	-->\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"output"' . "\n";
+	print $stream_file "			type=" . '"output"' . "\n";
+	print $stream_file "			filename_template=" . '"hist.mpasli.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "			filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
+	print $stream_file "			reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "			clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "			output_interval=" . '"0001-00-00_00:00:00"' . ">\n";
+        # Note: if output_interval is less than dt, then multiples of that interval will be checked.
+        # There is some performance hit for making this too small.  For now making it 1 day.
+	print $stream_file "\n";
+	print $stream_file "    <stream name=" . '"basicmesh"' . "/>\n";
+	print $stream_file "    <var name=" . '"xtime"' . "/>\n";
+	print $stream_file "    <var name=" . '"layerCenterSigma"' . "/>\n";
+	print $stream_file "    <var name=" . '"layerInterfaceSigma"' . "/>\n";
+	print $stream_file "    <var name=" . '"thickness"' . "/>\n";
+	print $stream_file "    <var name=" . '"lowerSurface"' . "/>\n";
+	print $stream_file "    <var name=" . '"upperSurface"' . "/>\n";
+	print $stream_file "    <var name=" . '"cellMask"' . "/>\n";
+	print $stream_file "    <var name=" . '"edgeMask"' . "/>\n";
+#	print $stream_file "    <var name=" . '"vertexMask"' . "/>\n";
+#	print $stream_file "    <var name=" . '"normalVelocity"' . "/>\n";
+	print $stream_file "    <var name=" . '"uReconstructX"' . "/>\n";
+	print $stream_file "    <var name=" . '"uReconstructY"' . "/>\n";
+	print $stream_file "    <var name=" . '"surfaceSpeed"' . "/>\n";
+	print $stream_file "    <var name=" . '"basalSpeed"' . "/>\n";
+	print $stream_file "    <var name=" . '"sfcMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"basalMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"calvingThickness"' . "/>\n";
+	print $stream_file "    <var name=" . '"restoreThickness"' . "/>\n";
+	print $stream_file "    <var name=" . '"deltat"' . "/>\n";
+	print $stream_file "    <var name=" . '"daysSinceStart"' . "/>\n";
+	print $stream_file "    <var name=" . '"simulationStartTime"' . "/>\n";
+	print $stream_file "    <var name=" . '"allowableDtACFL"' . "/>\n";
+	print $stream_file "    <var name=" . '"allowableDtDCFL"' . "/>\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+        print $stream_file "<!--\n";
+	print $stream_file "Streams between this line and the auxiliary stream line below are analysis member streams.\n";
+	print $stream_file "They can be used to perform online analysis of the simulation and control the output of\n";
+	print $stream_file "the analysis data.\n";
+	print $stream_file "-->\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"globalStatsOutput"' . "\n";
+	print $stream_file "        type=" . '"output"' . "\n";
+	print $stream_file "        filename_template=" . '"am.mpasli.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "        filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
+	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "        packages=" . '"globalStatsAMPKG"' . "\n";
+	print $stream_file "        output_interval=" . '"0000_01:00:00"' . ">\n";
+	print $stream_file "\n";
+	print $stream_file "    <var name=" . '"daysSinceStart"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalIceVolume"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalIceArea"' . "/>\n";
+	print $stream_file "    <var name=" . '"floatingIceVolume"' . "/>\n";
+	print $stream_file "    <var name=" . '"floatingIceArea"' . "/>\n";
+	print $stream_file "    <var name=" . '"groundedIceVolume"' . "/>\n";
+	print $stream_file "    <var name=" . '"groundedIceArea"' . "/>\n";
+	print $stream_file "    <var name=" . '"iceThicknessMin"' . "/>\n";
+	print $stream_file "    <var name=" . '"iceThicknessMax"' . "/>\n";
+	print $stream_file "    <var name=" . '"iceThicknessMean"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalSfcMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalBasalMassBal"' . "/>\n";
+	print $stream_file "    <var name=" . '"totalCalvingFlux"' . "/>\n";
+	print $stream_file "    <var name=" . '"xtime"' . "/>\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<!--\n";
+	print $stream_file "All streams below this line are auxiliary streams. They are provided as\n";
+	print $stream_file "groupings of fields that one might be interested in. You can either enable the\n";
+	print $stream_file "stream to write a file for the fileds, or add the stream to another stream that\n";
+	print $stream_file "will already be written.  \n";
+	print $stream_file "-->\n";
+	print $stream_file "\n";
+	print $stream_file "</streams>\n";
+
+
+}
+
+
+
+if ( $MPASLI_USE_ALBANY eq "TRUE" ) {
+   print "Setting up albany_input.xml file for use with MPASLI.\n";
+   # Write albany_input.xml file if there isn't one in SourceMods
+   if ( -e "$CASEROOT/SourceMods/src.mpasli/$ALBANY_INPUT_NAME" ) {
+       $sysmod = "cp $CASEROOT/SourceMods/src.mpasli/$ALBANY_INPUT_NAME $RUNDIR/$ALBANY_INPUT_NAME";
+       system($sysmod) == 0 or die "ERROR mpasli buildnml: $sysmod fails: $?\n";
+   } else {
+       $sysmod =  "$SRCROOT/components/mpasli/bld/build-namelist";
+       $sysmod = "cp $SRCROOT/components/mpasli/bld/namelist_files/$ALBANY_INPUT_NAME $RUNDIR/$ALBANY_INPUT_NAME";
+       system($sysmod) == 0 or die "ERROR mpasli buildnml: $sysmod fails: $?\n";
+   }
+}
+
+
+exit (0);
+

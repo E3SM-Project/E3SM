@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """
-Wait for a queued ACME test to finish by watching the TestStatus file.
-If the test passes, 0 is returned, otherwise a non-zero error code
-is returned.
+Wait for a queued set of ACME tests to finish by watching the
+TestStatus files.  If all tests pass, 0 is returned, otherwise a
+non-zero error code is returned.
 
 The easiest way to test this script is to keep a set of create_test
 results laying around somewhere so you don't have to wait for tests
@@ -84,7 +84,9 @@ def _main_func(description):
     test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group) else 1)
+    sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs,
+                                                cdash_build_name, cdash_project, cdash_build_group)
+             else acme_util.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
 

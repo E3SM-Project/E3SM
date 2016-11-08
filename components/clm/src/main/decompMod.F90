@@ -48,6 +48,7 @@ module decompMod
 
   integer,public :: nclumps     ! total number of clumps across all processors
   integer,public :: numg        ! total number of gridcells on all procs
+  integer,public :: numt        ! total number of topographic units on all procs
   integer,public :: numl        ! total number of landunits on all procs
   integer,public :: numc        ! total number of columns on all procs
   integer,public :: nump        ! total number of pfts on all procs
@@ -55,6 +56,7 @@ module decompMod
 
   type bounds_type
      integer :: begg, endg       ! beginning and ending gridcell index
+     integer :: begt, endt       ! beginning and ending topographic unit index
      integer :: begl, endl       ! beginning and ending landunit index
      integer :: begc, endc       ! beginning and ending column index
      integer :: begp, endp       ! beginning and ending pft index
@@ -70,11 +72,13 @@ module decompMod
      integer :: nclumps          ! number of clumps for processor_type iam
      integer,pointer :: cid(:)   ! clump indices
      integer :: ncells           ! number of gridcells in proc
+     integer :: ntopounits       ! number of topographic units in proc
      integer :: nlunits          ! number of landunits in proc
      integer :: ncols            ! number of columns in proc
      integer :: npfts            ! number of pfts in proc
      integer :: nCohorts          ! number of cohorts in proc
      integer :: begg, endg       ! beginning and ending gridcell index
+     integer :: begt, endt       ! beginning and ending topographic unit index
      integer :: begl, endl       ! beginning and ending landunit index
      integer :: begc, endc       ! beginning and ending column index
      integer :: begp, endp       ! beginning and ending pft index
@@ -87,11 +91,13 @@ module decompMod
   type clump_type
      integer :: owner            ! process id owning clump
      integer :: ncells           ! number of gridcells in clump
+     integer :: ntopounits       ! number of topographic units in clump
      integer :: nlunits          ! number of landunits in clump
      integer :: ncols            ! number of columns in clump
      integer :: npfts            ! number of pfts in clump
-     integer :: nCohorts          ! number of cohorts in proc
+     integer :: nCohorts          ! number of cohorts in clump
      integer :: begg, endg       ! beginning and ending gridcell index
+     integer :: begt, endt       ! beginning and ending topographic unit index
      integer :: begl, endl       ! beginning and ending landunit index
      integer :: begc, endc       ! beginning and ending column index
      integer :: begp, endp       ! beginning and ending pft index
@@ -156,6 +162,8 @@ contains
      bounds%endc = clumps(cid)%endc
      bounds%begl = clumps(cid)%begl
      bounds%endl = clumps(cid)%endl
+     bounds%begt = clumps(cid)%begt
+     bounds%endt = clumps(cid)%endt
      bounds%begg = clumps(cid)%begg
      bounds%endg = clumps(cid)%endg
      bounds%begCohort = clumps(cid)%begCohort
@@ -225,6 +233,8 @@ contains
      bounds%endc = procinfo%endc
      bounds%begl = procinfo%begl
      bounds%endl = procinfo%endl
+     bounds%begt = procinfo%begt
+     bounds%endt = procinfo%endt
      bounds%begg = procinfo%begg
      bounds%endg = procinfo%endg
      bounds%begCohort = procinfo%begCohort
@@ -236,12 +246,13 @@ contains
    end subroutine get_proc_bounds_new
 
    !------------------------------------------------------------------------------
-   subroutine get_proc_bounds_old (begg, endg, begl, endl, begc, endc, begp, endp, &
+   subroutine get_proc_bounds_old (begg, endg, begt, endt, begl, endl, begc, endc, begp, endp, &
         begCohort, endCohort)
 
      integer, optional, intent(out) :: begp, endp  ! proc beg and end pft indices
      integer, optional, intent(out) :: begc, endc  ! proc beg and end column indices
      integer, optional, intent(out) :: begl, endl  ! proc beg and end landunit indices
+     integer, optional, intent(out) :: begt, endt  ! proc beg and end topographic unit indices
      integer, optional, intent(out) :: begg, endg  ! proc beg and end gridcell indices
      integer, optional, intent(out) :: begCohort, endCohort  ! cohort beg and end gridcell indices
      !------------------------------------------------------------------------------
@@ -252,6 +263,8 @@ contains
      if (present(endc)) endc = procinfo%endc
      if (present(begl)) begl = procinfo%begl
      if (present(endl)) endl = procinfo%endl
+     if (present(begt)) begt = procinfo%begt
+     if (present(endt)) endt = procinfo%endt
      if (present(begg)) begg = procinfo%begg
      if (present(endg)) endg = procinfo%endg
      if (present(begCohort)) begCohort = procinfo%begCohort
@@ -259,14 +272,15 @@ contains
    end subroutine get_proc_bounds_old
 
    !------------------------------------------------------------------------------
-   subroutine get_proc_total(pid, ncells, nlunits, ncols, npfts, nCohorts)
+   subroutine get_proc_total(pid, ncells, ntopounits, nlunits, ncols, npfts, nCohorts)
      !
      ! !DESCRIPTION:
-     ! Count up gridcells, landunits, columns, and pfts on process.
+     ! Count up gridcells, topographic units, landunits, columns, and pfts on process.
      !
      ! !ARGUMENTS:
      integer, intent(in)  :: pid     ! proc id
      integer, intent(out) :: ncells  ! total number of gridcells on the processor
+     integer, intent(out) :: ntopounits  ! total number of topographic units on the processor
      integer, intent(out) :: nlunits ! total number of landunits on the processor
      integer, intent(out) :: ncols   ! total number of columns on the processor
      integer, intent(out) :: npfts   ! total number of pfts on the processor
@@ -276,14 +290,16 @@ contains
      integer :: cid       ! clump index
      !------------------------------------------------------------------------------
 
-     npfts   = 0
-     nlunits = 0
-     ncols   = 0
-     ncells  = 0
      nCohorts = 0
+     npfts   = 0
+     ncols   = 0
+     nlunits = 0
+     ntopounits = 0
+     ncells  = 0
      do cid = 1,nclumps
         if (clumps(cid)%owner == pid) then
            ncells  = ncells  + clumps(cid)%ncells
+           ntopounits = ntopounits + clumps(cid)%ntopounits
            nlunits = nlunits + clumps(cid)%nlunits
            ncols   = ncols   + clumps(cid)%ncols
            npfts   = npfts   + clumps(cid)%npfts
@@ -293,13 +309,14 @@ contains
    end subroutine get_proc_total
 
    !------------------------------------------------------------------------------
-   subroutine get_proc_global(ng, nl, nc, np, nCohorts)
+   subroutine get_proc_global(ng, nt, nl, nc, np, nCohorts)
      !
      ! !DESCRIPTION:
      ! Return number of gridcells, landunits, columns, and pfts across all processes.
      !
      ! !ARGUMENTS:
      integer, optional, intent(out) :: ng        ! total number of gridcells across all processors
+     integer, optional, intent(out) :: nt        ! total number of gridcells across all processors
      integer, optional, intent(out) :: nl        ! total number of landunits across all processors
      integer, optional, intent(out) :: nc        ! total number of columns across all processors
      integer, optional, intent(out) :: np        ! total number of pfts across all processors
@@ -309,6 +326,7 @@ contains
      if (present(np)) np             = nump
      if (present(nc)) nc             = numc
      if (present(nl)) nl             = numl
+     if (present(nt)) nt             = numt
      if (present(ng)) ng             = numg
      if (present(nCohorts)) nCohorts = numCohort
 

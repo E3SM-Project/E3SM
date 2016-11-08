@@ -123,7 +123,6 @@ contains
     ! 
     !-----------------------------------------------------------------------
     use physics_buffer, only : physics_buffer_desc
-    use cam_history,    only : addfld, add_default, phys_decomp
     use aero_model,     only : aero_model_init
     use constituents,   only: pcnst
 
@@ -153,7 +152,6 @@ contains
 
   subroutine chem_timestep_tend( state, ptend, cam_in, cam_out, dt, pbuf, fh2o, fsds )
     use physics_buffer,           only: physics_buffer_desc
-    use cam_history,      only: outfld
     use camsrfexch,       only: cam_in_t, cam_out_t
     !-----------------------------------------------------------------------
     !

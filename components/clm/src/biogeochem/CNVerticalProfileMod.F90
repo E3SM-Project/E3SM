@@ -53,7 +53,7 @@ contains
     ! !USES:
     use clm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use clm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
-    use clm_varctl  , only : use_vertsoilc, iulog
+    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:
@@ -81,6 +81,7 @@ contains
     real(r8) :: stem_prof_sum
     real(r8) :: ndep_prof_sum
     real(r8) :: nfixation_prof_sum
+    real(r8) :: pdep_prof_sum
     real(r8) :: delta = 1.e-10
     character(len=32) :: subname = 'decomp_vertprofiles'
     !-----------------------------------------------------------------------
@@ -91,7 +92,8 @@ contains
          altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer   (:)   ]  frost table depth (m)                              
          
          nfixation_prof       => cnstate_vars%nfixation_prof_col           , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
-         ndep_prof            => cnstate_vars%ndep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
+         ndep_prof            => cnstate_vars%ndep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions
+         pdep_prof            => cnstate_vars%pdep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for P depostition additions          
          
          leaf_prof            => cnstate_vars%leaf_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof           => cnstate_vars%froot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
@@ -119,11 +121,12 @@ contains
          stem_prof(begp:endp, :)      = 0._r8
          nfixation_prof(begc:endc, :) = 0._r8
          ndep_prof(begc:endc, :)      = 0._r8
+         pdep_prof(begc:endc, :)      = 0._r8
 
          cinput_rootfr(begp:endp, :)     = 0._r8
          col_cinput_rootfr(begc:endc, :) = 0._r8
 
-         if ( exponential_rooting_profile ) then
+         if ( exponential_rooting_profile .and. .not. use_dynroot ) then
             if ( .not. pftspecific_rootingprofile ) then
                ! define rooting profile from exponential parameters
                do j = 1, nlevdecomp
@@ -218,10 +221,12 @@ contains
                do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                   nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
                   ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                  pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
                end do
             else
                nfixation_prof(c,1) = 1./dzsoi_decomp(1)
                ndep_prof(c,1) = 1./dzsoi_decomp(1)
+               pdep_prof(c,1) = 1./dzsoi_decomp(1) 
             endif
          end do
 
@@ -234,6 +239,7 @@ contains
          stem_prof(begp:endp, :) = 1._r8
          nfixation_prof(begc:endc, :) = 1._r8
          ndep_prof(begc:endc, :) = 1._r8
+         pdep_prof(begc:endc, :) = 1._r8
 
       end if
 
@@ -243,16 +249,19 @@ contains
          c = filter_soilc(fc)
          ndep_prof_sum = 0.
          nfixation_prof_sum = 0.
+         pdep_prof_sum = 0.
          do j = 1, nlevdecomp
             ndep_prof_sum = ndep_prof_sum + ndep_prof(c,j) *  dzsoi_decomp(j)
             nfixation_prof_sum = nfixation_prof_sum + nfixation_prof(c,j) *  dzsoi_decomp(j)
+            pdep_prof_sum = pdep_prof_sum + pdep_prof(c,j) *  dzsoi_decomp(j)
          end do
-         if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) ) then
-            write(iulog, *) 'profile sums: ', ndep_prof_sum, nfixation_prof_sum
+         if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) .or. ( abs(pdep_prof_sum - 1._r8) > delta )  ) then
+            write(iulog, *) 'profile sums: ', ndep_prof_sum, nfixation_prof_sum, pdep_prof_sum
             write(iulog, *) 'c: ', c
             write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)
             write(iulog, *) 'nfixation_prof: ', nfixation_prof(c,:)
             write(iulog, *) 'ndep_prof: ', ndep_prof(c,:)
+            write(iulog, *) 'pdep_prof: ', pdep_prof(c,:)
             write(iulog, *) 'cinput_rootfr: ', cinput_rootfr(c,:)
             write(iulog, *) 'dzsoi_decomp: ', dzsoi_decomp(:)
             write(iulog, *) 'surface_prof: ', surface_prof(:)

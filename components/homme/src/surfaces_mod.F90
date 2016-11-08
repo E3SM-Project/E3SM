@@ -1909,6 +1909,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
                    stop 'bad value of nvert'
                 endif
                 if (.not. corner) then
+                   print *,'non-corner node with only 3 verticies'
                    print *,'ie,i,j,nvert,corner=',ie,i,j,nvert,corner
                    print *,cvlist(ie)%vert(1,i,j)%x
                    print *,cvlist(ie)%vert(2,i,j)%x
@@ -1921,6 +1922,27 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
                    !enddo
                    stop 'ERROR: corner point should have nvert=3'
                 endif
+                ! nvert=3.  we are at a cube corner.  One of the control volume
+                ! nodes from the 'missing' corner element should be all zeros:
+                if (cvlist(ie)%vert(1,i,j)%x==0) then
+                   ! ok
+                else if (cvlist(ie)%vert(2,i,j)%x==0) then
+                   ! ok
+                else if (cvlist(ie)%vert(3,i,j)%x==0) then
+                   ! ok
+                else if (cvlist(ie)%vert(4,i,j)%x==0) then
+                   ! ok
+                else
+                   print *,'cube corner node with 4 neighbors'
+                   print *,'ie,i,j,nvert,corner=',ie,i,j,nvert,corner
+                   print *,cvlist(ie)%vert(1,i,j)%x
+                   print *,cvlist(ie)%vert(2,i,j)%x
+                   print *,cvlist(ie)%vert(3,i,j)%x
+                   print *,cvlist(ie)%vert(4,i,j)%x
+                   stop 'control volume at cube corner should be a triangle'
+                endif
+                
+
              endif
           enddo
        enddo

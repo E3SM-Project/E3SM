@@ -4,33 +4,26 @@
 # Melinv specific settings
 #===============================================================================
 
+source /usr/share/Modules/init/csh
+source /projects/sems/modulefiles/utils/sems-modules-init.csh
+
 if ( $?LD_LIBRARY_PATH) then
     setenv LD_LIBRARY_PATH /usr/lib64:/usr/lib:$LD_LIBRARY_PATH
 else
     setenv LD_LIBRARY_PATH /usr/lib64:/usr/lib
 endif
 
-# gcc-4.7.4
-setenv PATH /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/base/bin:$PATH
-setenv LD_LIBRARY_PATH /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/base/lib:$LD_LIBRARY_PATH
-setenv LD_LIBRARY_PATH /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/base/lib64:$LD_LIBRARY_PATH
-setenv LD_LIBRARY_PATH /usr/lib64/gfortran/modules:$LD_LIBRARY_PATH
-
-# openmpi
-setenv PATH /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7/bin:$PATH
-setenv LD_LIBRARY_PATH /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7/lib:$LD_LIBRARY_PATH
-setenv MPI_BIN /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7/bin
-setenv MPI_SYSCONFIG /etc/compat-openmpi-x86_64
-setenv MPI_FORTRAN_MOD_DIR /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7/lib
-setenv MPI_INCLUDE /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7/include
-setenv MPI_LIB /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7/lib
-setenv MPI_MAN /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7/share/man
-setenv MPI_HOME /projects/install/rhel6-x86_64/sems/compiler/gcc/5.1.0/openmpi/1.8.7
+module purge
+module load sems-env
+module load sems-python/2.7.9
+module load sems-gcc/4.8.4
+module load sems-openmpi/1.8.7
+module load sems-cmake
+module load sems-netcdf/4.3.2/parallel
+module load sems-zlib
 
 # Get newer netcdf
-setenv NETCDFROOT /projects/install/rhel6-x86_64/sems/tpl/netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7
-setenv PATH $NETCDFROOT/bin:$PATH
-setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+setenv NETCDFROOT $SEMS_NETCDF_ROOT
 setenv NETCDF_INCLUDES $NETCDFROOT/include
 setenv NETCDF_LIBS $NETCDFROOT/lib
 

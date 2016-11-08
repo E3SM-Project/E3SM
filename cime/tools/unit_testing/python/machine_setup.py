@@ -209,6 +209,8 @@ class MachineCompilerSettings(object):
         self.add_path("HDF5", macros_printer)
         # MPI location if it exists.
         self.add_path("MPI", macros_printer) 
+        # PETSc location if it exists.
+        self.add_path("PETSC", macros_printer)
        # TRILINOS location if it exists.
         self.add_path("TRILINOS", macros_printer)
         # ALBANY location if it exists.

@@ -189,7 +189,7 @@
       use chem_mods,    only : adv_mass
       use ref_pres,     only : pref_mid
       use mo_chem_utls, only : get_spc_ndx
-      use cam_history,  only : addfld, phys_decomp
+      use cam_history,  only : addfld
 
       implicit none
 
@@ -309,7 +309,7 @@
         write(iulog,"(' ')")
 #endif
 
-        call addfld( 'QSUM', '/s ', pver, 'I', 'total ion production', phys_decomp )
+        call addfld( 'QSUM', (/ 'lev' /), 'I', '/s', 'total ion production' )
 
       end subroutine aurora_inti
 

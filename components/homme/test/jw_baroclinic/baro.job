@@ -4,12 +4,6 @@
 #  Jablownowski and Williamson baroclinic instability test case
 #  with a user specified number of tracers.
 #
-#  The goal is to configure HOMME to be identical to how it is used 
-#  in CAM.   We propose two configuations:
-#
-#  CAM5, with 30 levels and 25 tracers
-#  CAM6, with 60 levels and 50 tracers
-#  
 #  This script contains configurations for ne16, ne30, ne60, ne120, ne240
 #  The remap timestep and viscosity coefficients are scaled with resolution
 #  all other subcycling parameters are set to mimic that
@@ -17,26 +11,24 @@
 #  of the different components should be similar. (but for lower resolutions
 #  this will not be the most efficient choices)
 #
-#  TODO:  add option to use other tracer advection options
-#
 #
 #SBATCH --job-name baro
-#SBATCH --account=FY139209
-#SBATCH -N 8
-#SBATCH --time=1:00:00
+#SBATCH --account=FY150001
+#SBATCH -N 20
+#SBATCH --time=0:30:00
 #
 #  set paths to source code, build directory and run directory
 #
 set wdir =  ~/scratch1/preqx             # run directory
-set HOMME = ~/codes/homme                # HOMME svn checkout     
+set HOMME = ~/codes/acme-dev/components/homme                # HOMME svn checkout     
 set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
-#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
-set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 setenv CRAY_CUDA_PROXY 1
 
 
@@ -49,7 +41,7 @@ setenv OMP_NUM_THREADS 1
 
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
-    @ NCPU *= 8
+    @ NCPU *= 16
     @ NCPU /= $OMP_NUM_THREADS
 endif
 if ( ${?PBS_NUM_NODES} ) then  # titan, other PBS based systems?
@@ -61,6 +53,7 @@ endif
 
 
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
+#set mpirun = "mpirun --ntasks-per-node=36 -np $NCPU"
 set mpirun = "mpirun -np $NCPU"
 #set mpirun = "mpirun -loadbalance -np $NCPU"
 #set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
@@ -73,23 +66,25 @@ set u_perturb = 1
 set rotate = 0
 
                   # number of elemnets:  6*ne*ne
-set ne = 16       # horizontal resolution   16,30,60,120,240
-set nlev=26       # vertical resolution
-set qsize = 4     # number of passive tracers
+set ne = 30        # horizontal resolution   4,16,30,60,120,240
+set qsize = 4     # use 4 tracers for testing
+
+# CAM4
+#set nlev=26       # vertical resolution
+#set qsize = 4     # number of passive tracers
 
 # simulate CAM5:
 #set nlev=30
 #set qsize=25
 
-# simulate future DOE version:
-# NOTE: HOMME includes vertical coordinate files for 26, 30, 60, 64, 96 levels
-#set nlev=60
-#set qsize=30
+# simulate ACME v1
+# NE=120, nlev=72, qsize=35
+set nlev=72
+#set qsize=35
 
  set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
 #set namelist = jw_baroclinic_eulerian.nl
                
-
 
 #
 #  BUILD PREQX
@@ -98,18 +93,14 @@ mkdir -p $bld
 cd $bld
 set exe = $bld/src/preqx/preqx
 set build = 1  # set to 1 to force build
-set conf = 0   # set to 1 to force configure
-
-if ( ! -f CMakeCache.txt) set conf = 1   # no cmake files.  force configure
-if ( $conf == 1 ) then
+# rm $bld/CMakeCache.txt    # remove this file to force re-configure
+if (! -f CMakeCache.txt) then
    rm -rf CMakeFiles CMakeCache.txt src
    #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
    echo "running CMAKE to configure the model"
 
    cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
-   -DBUILD_HOMME_SWDGX=FALSE                     \
    -DBUILD_HOMME_SWEQX=FALSE                     \
-   -DBUILD_HOMME_PRIMDGX=FALSE                   \
    -DPREQX_USE_ENERGY=TRUE  $HOMME
 
    make -j4 clean
@@ -130,12 +121,15 @@ set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
 set run = $wdir/$name
 set mesh_file = /dev/null
 set hypervis_scaling = 0
+set hypervis_subcycle=3
 
 if ( $ne == 0 ) then
     # CAM defaults
-    set mesh_file="$HOME/work/notes/squadgen/multiscale/wpacific_v2.g"
+    set mesh_file="/ascldap/users/mataylo/codes/mapping/grids/wpacific_v2.g"
+    #set mesh_file="/ascldap/users/mataylo/codes/mapping/grids/mountain_10_x8.g"
     set tstep=75
     set hypervis_scaling = 3.2  
+    set hypervis_subcycle=4
     set nu = 8.0e-8
 endif
 
@@ -201,6 +195,11 @@ if ( $nlev == 60 ) then
    set vfile_int     = "./aspL60_int.ascii"
    cp $vdir/aspL60_*.ascii $run
 endif
+if ( $nlev == 72 ) then
+   set vfile_mid     = "./acme-72m.ascii"
+   set vfile_int     = "./acme-72i.ascii"
+   cp $vdir/acme-72?.ascii $run
+endif
 
 
 #  create a new namelist from original ne16 template:
@@ -213,6 +212,7 @@ sed s/nu_q=.\*/nu_q=$nu/ | \
 sed s/NThreads.\*/NThreads=$OMP_NUM_THREADS/ | \
 sed s/statefreq.\*/statefreq=$sfreq/ |\
 sed s/hypervis_scaling.\*/hypervis_scaling=$hypervis_scaling/ |\
+sed s/hypervis_subcycle.\*/hypervis_subcycle=$hypervis_subcycle/ |\
 sed s/u_perturb.\*/"u_perturb = $u_perturb"/   |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/  |\
 sed s:mesh_file.\*:mesh_file="'$mesh_file'": | \

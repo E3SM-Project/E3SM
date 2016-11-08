@@ -11,7 +11,7 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_id
 use wv_saturation,    only: qsat_water
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_props, rad_cnst_get_mode_num
-use cam_history,      only: addfld, add_default, phys_decomp, outfld
+use cam_history,      only: addfld, add_default, outfld
 use cam_logfile,      only: iulog
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
@@ -82,12 +82,12 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
 
    do m = 1, nmodes
       write(trnum, '(i3.3)') m
-      call addfld('dgnd_a'//trnum(2:3), 'm', pver, 'A', &
-         'dry dgnum, interstitial, mode '//trnum(2:3), phys_decomp)
-      call addfld('dgnw_a'//trnum(2:3), 'm', pver, 'A', &
-         'wet dgnum, interstitial, mode '//trnum(2:3), phys_decomp)
-      call addfld('wat_a'//trnum(3:3), 'm', pver, 'A', &
-         'aerosol water, interstitial, mode '//trnum(2:3), phys_decomp)
+      call addfld('dgnd_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
+         'dry dgnum, interstitial, mode '//trnum(2:3))
+      call addfld('dgnw_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
+         'wet dgnum, interstitial, mode '//trnum(2:3))
+      call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
+         'aerosol water, interstitial, mode '//trnum(2:3))
       
       ! determine default variables
       call phys_getopts(history_aerosol_out = history_aerosol)

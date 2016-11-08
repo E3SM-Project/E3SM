@@ -6,6 +6,7 @@
 #include "zoltan_cppinterface.hpp"
 
 #if HAVE_TRILINOS
+#if TRILINOS_HAVE_ZOLTAN2
 //#include <Zoltan2_XpetraCrsGraphAdapter.hpp>
 #include <Zoltan2_XpetraCrsGraphAdapter.hpp>
 #include <Zoltan2_XpetraMultiVectorAdapter.hpp>
@@ -165,17 +166,12 @@ void zoltan_partition_problem(
 
   }
 
-  zoltan2_parameters.set("mj_keep_part_boxes", "0");
+  zoltan2_parameters.set("mj_keep_part_boxes", false);
   zoltan2_parameters.set("mj_recursion_depth", "3");
-  zoltan2_parameters.set("remap_parts", "yes");
+  zoltan2_parameters.set("remap_parts", true);
 
 
   RCP<xcrsGraph_problem_t> homme_partition_problem (new xcrsGraph_problem_t(ia.getRawPtr(),&zoltan2_parameters,tcomm));
-  //if (tcomm->getRank() == 0)
-  //  std::cout << "calling solve" << std::endl;
-
-
-  //std::cout << " tcomm->getRank():" << tcomm->getRank() << " numMyElements:" << numMyElements << std::endl;
 
 
 
@@ -185,19 +181,10 @@ void zoltan_partition_problem(
   int *parts =  (int *)homme_partition_problem->getSolution().getPartListView();
   std::vector<int> tmp_result_parts(numGlobalCoords, 0);
 
-  /*for (int i = 0; i < numMyElements; ++i){
-    parts[i] += 1;
-  }
-  */
   for (zlno_t lclRow = 0; lclRow < numMyElements; ++lclRow) {
     const zgno_t gblRow = map->getGlobalElement (lclRow);
     tmp_result_parts[gblRow] = parts[lclRow] + 1;
   }
-
-  //tcomm->gatherAll (sizeof(int) * numMyElements, (const char *)parts, sizeof(int) * numGlobalCoords, (char *)result_parts) ;
-  //tcomm->gather (sizeof(int) * numMyElements, (const char *)parts, sizeof(int) * numGlobalCoords, (char *)result_parts, 0);
-  //tcomm->broadcast (0, sizeof(int) * numGlobalCoords, (char *)result_parts);
-  //tcomm->reduceAll(Teuchos::REDUCE_SUM, sizeof(int) * numGlobalCoords, (char *)&(tmp_result_parts[0]), (char *)result_parts);
 
   Teuchos::reduceAll<int, int>(
       *(tcomm),
@@ -206,19 +193,24 @@ void zoltan_partition_problem(
       &(tmp_result_parts[0]),
       result_parts);
 
-  if (tcomm->getRank() == 0){
-
-    homme_partition_problem->printMetrics(std::cout);
-    homme_partition_problem->printGraphMetrics(std::cout);
-
-    /*
-    for (int i = 0; i < numGlobalCoords; ++i){
-      std::cout << "i:" << i << " p:" << result_parts[i] << std::endl;
-    }
-    */
-
-  }
 }
+
+#else //TRILINOS_HAVE_ZOLTAN2
+void zoltan_partition_problem(
+    int *nelem,
+    int *xadj,
+    int *adjncy,
+    int *adjwgt,
+    int *vwgt,
+    int *nparts,
+    MPI_Comm comm,
+    double *xcoord,
+    double *ycoord,
+    double *zcoord,
+    int *result_parts){
+  std::cerr << "Trilinos is not compiled with Zoltan2!!" << std::endl;
+}
+#endif
 #else //HAVE_TRILINOS
 void zoltan_partition_problem(
     int *nelem,

@@ -153,7 +153,7 @@ sub submitJobs()
 {
 	my $self = shift;
 	my $sta_ok = shift;
-	my $depjobid = undef;
+	my $depjobid = shift;
 	
 	my %depqueue = %{$self->{dependencyqueue}};
 	my $lastjobseqnum = (sort {$b <=> $a } keys %depqueue)[0];
@@ -163,7 +163,7 @@ sub submitJobs()
 		{
 			my $islastjob = 0;
 			$islastjob = 1 if ($jobnum == $lastjobseqnum);
-			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
+            $depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
 		}
 	}
 }
@@ -183,7 +183,9 @@ sub submitSingleJob()
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
+
     $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
+
 	if(! defined $submitargs && length($submitargs) <= 0)
 	{
 	    $submitargs = '' ;
@@ -282,29 +284,51 @@ sub doResubmit()
 #==============================================================================
 sub dependencyCheck()
 {
-	my $self = shift;
-	my $sta_ok;
-	my %config = %{$self->{'caseconfig'}};
-	# we always want to run the CESM test or run again..
-	if(-e "$config{'CASE'}.test")
-	{
-		my $jobname = "$config{'CASE'}.test";
-		$self->addDependentJob($jobname);
+    my $self = shift;
+    my $sta_ok;
+    my %config = %{$self->{'caseconfig'}};
+    # we always want to run the CESM test or run again..
+    if(-e "$config{'CASE'}.test")
+    {
+        my $jobname = "$config{'CASE'}.test";
+        $self->addDependentJob($jobname);
         return;
-	}
-	else
-	{
-		my $jobname = "$config{'CASE'}.run";
-		$self->addDependentJob($jobname);
-	}
-	
-	# do we add the short-term archiver to the dependency queue? 
-	if($config{'DOUT_S'} eq 'TRUE')
-	{
-		my $jobname = "$config{'CASE'}.st_archive";
-		$self->addDependentJob($jobname);
-	}
-	
+    }
+    else
+    {
+        my $submit = $config{'RESUBMIT'};
+        my $resubmit_queued = 1;
+        if (defined $config{'RESUBMIT_QUEUED'}) {
+            $resubmit_queued = $config{'RESUBMIT_QUEUED'};
+        }
+
+        if ($resubmit_queued < 0) {
+            die "error: RESUBMIT_QUEUED, if set, should be >= 0";
+        }
+
+        my $queuedJobs = 1 > $resubmit_queued ? 1 : $resubmit_queued;
+
+        if ($queuedJobs >= 2 && $submit > 0) {
+            print "warning: RESUBMIT_QUEUED is >= 2 which sets RESUBMIT to 0";
+            my $newresubmit= 0;
+            `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
+        }
+
+        while ($queuedJobs > 0) {
+
+            my $jobname = "$config{'CASE'}.run";
+            $self->addDependentJob($jobname);
+
+            # do we add the short-term archiver to the dependency queue?
+            if($config{'DOUT_S'} eq 'TRUE')
+            {
+                my $jobname = "$config{'CASE'}.st_archive";
+                $self->addDependentJob($jobname);
+            }
+
+            $queuedJobs-=1;
+        }
+    }
 }
 
 #==============================================================================

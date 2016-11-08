@@ -20,6 +20,9 @@
 <stream_year_first_ndep phys="clm5_0" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_ndep>
 <stream_year_last_ndep  phys="clm5_0" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_ndep>
 
+<stream_year_first_pdep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2000</stream_year_last_pdep>
+
 <stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_popdens>
 

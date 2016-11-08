@@ -1,3 +1,4 @@
+
 module ndrop
 
 !---------------------------------------------------------------------------------
@@ -25,7 +26,7 @@ use shr_spfn_mod,     only: erf => shr_spfn_erf
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr, &
                             rad_cnst_get_aer_props, rad_cnst_get_mode_props,                &
                             rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx
-use cam_history,      only: addfld, add_default, phys_decomp, fieldname_len, outfld
+use cam_history,      only: addfld, horiz_only, add_default, fieldname_len, outfld
 use cam_abortutils,       only: endrun
 use cam_logfile,      only: iulog
 
@@ -236,10 +237,10 @@ subroutine ndrop_init
 
             ! Add tendency fields to the history only when prognostic MAM is enabled.
             long_name = trim(tmpname) // ' dropmixnuc mixnuc column tendency'
-            call addfld(fieldname(mm), unit, 1, 'A', long_name, phys_decomp)
+            call addfld(fieldname(mm), horiz_only, 'A', unit, long_name)
 
             long_name = trim(tmpname_cw) // ' dropmixnuc mixnuc column tendency'
-            call addfld(fieldname_cw(mm), unit, 1, 'A', long_name, phys_decomp)
+            call addfld(fieldname_cw(mm), horiz_only, 'A', unit, long_name)
 
             if (history_aerosol) then
                call add_default(fieldname(mm), 1, ' ')
@@ -253,19 +254,19 @@ subroutine ndrop_init
       end do
    end do
 
-   call addfld('CCN1    ','#/cm3   ',pver, 'A','CCN concentration at S=0.02%',phys_decomp)
-   call addfld('CCN2    ','#/cm3   ',pver, 'A','CCN concentration at S=0.05%',phys_decomp)
-   call addfld('CCN3    ','#/cm3   ',pver, 'A','CCN concentration at S=0.1%',phys_decomp)
-   call addfld('CCN4    ','#/cm3   ',pver, 'A','CCN concentration at S=0.2%',phys_decomp)
-   call addfld('CCN5    ','#/cm3   ',pver, 'A','CCN concentration at S=0.5%',phys_decomp)
-   call addfld('CCN6    ','#/cm3   ',pver, 'A','CCN concentration at S=1.0%',phys_decomp)
+   call addfld('CCN1',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.02%')
+   call addfld('CCN2',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.05%')
+   call addfld('CCN3',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.1%')
+   call addfld('CCN4',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.2%')
+   call addfld('CCN5',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.5%')
+   call addfld('CCN6',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=1.0%')
 
 
-   call addfld('WTKE     ', 'm/s     ', pver, 'A', 'Standard deviation of updraft velocity', phys_decomp)
-   call addfld('NDROPMIX ', '#/kg/s  ', pver, 'A', 'Droplet number mixing',                  phys_decomp)
-   call addfld('NDROPSRC ', '#/kg/s  ', pver, 'A', 'Droplet number source',                  phys_decomp)
-   call addfld('NDROPSNK ', '#/kg/s  ', pver, 'A', 'Droplet number loss by microphysics',    phys_decomp)
-   call addfld('NDROPCOL ', '#/m2    ', 1,    'A', 'Column droplet number',                  phys_decomp)
+   call addfld('WTKE', (/ 'lev' /), 'A', 'm/s', 'Standard deviation of updraft velocity')
+   call addfld('NDROPMIX', (/ 'lev' /), 'A', '#/kg/s', 'Droplet number mixing')
+   call addfld('NDROPSRC', (/ 'lev' /), 'A', '#/kg/s', 'Droplet number source')
+   call addfld('NDROPSNK', (/ 'lev' /), 'A', '#/kg/s', 'Droplet number loss by microphysics')
+   call addfld('NDROPCOL', horiz_only,    'A', '#/m2', 'Column droplet number')
 
    ! set the add_default fields  
    if (history_amwg) then
@@ -295,7 +296,7 @@ end subroutine ndrop_init
 
 subroutine dropmixnuc( &
    state, ptend, dtmicro, pbuf, wsub, &
-   cldn, cldo, tendnd)
+   cldn, cldo, tendnd, factnum)
 
    ! vertical diffusion and nucleation of cloud droplets
    ! assume cloud presence controlled by cloud fraction
@@ -315,7 +316,7 @@ subroutine dropmixnuc( &
 
    ! output arguments
    real(r8), intent(out) :: tendnd(pcols,pver) ! change in droplet number concentration (#/kg/s)
-
+   real(r8), intent(out) :: factnum(:,:,:)     ! activation fraction for aerosol number
    !--------------------Local storage-------------------------------------
 
    integer  :: lchnk               ! chunk identifier
@@ -485,7 +486,8 @@ subroutine dropmixnuc( &
       end do
    end do
 
-   wtke = 0._r8
+   factnum = 0._r8
+   wtke    = 0._r8
 
    if (prog_modal_aero) then
       ! aerosol tendencies
@@ -645,6 +647,8 @@ subroutine dropmixnuc( &
                vaerosol, hygro, fn, fm, fluxn,                      &
                fluxm,flux_fullact(k))
 
+            factnum(i,k,:) = fn
+
             dumc = (cldn_tmp - cldo_tmp)
             do m = 1, ntot_amode
                mm = mam_idx(m,0)
@@ -733,6 +737,8 @@ subroutine dropmixnuc( &
                   temp(i,k), cs(i,k), naermod, ntot_amode, &
                   vaerosol, hygro, fn, fm, fluxn,                      &
                   fluxm, flux_fullact(k))
+
+               factnum(i,k,:) = fn
 
                if (k < pver) then
                   dumc = cldn(i,k) - cldn(i,kp1)
@@ -1052,7 +1058,7 @@ subroutine dropmixnuc( &
                ptend%q(i,:,lptr) = 0.0_r8
                ptend%q(i,top_lev:pver,lptr) = raertend(top_lev:pver)           ! set tendencies for interstitial aerosol
                qqcw(mm)%fld(i,:) = 0.0_r8
-               qqcw(mm)%fld(i,top_lev:pver) = raercol_cw(top_lev:pver,mm,nnew) ! update cloud-borne aerosol
+               qqcw(mm)%fld(i,top_lev:pver) = max(raercol_cw(top_lev:pver,mm,nnew),0.0_r8) ! update cloud-borne aerosol; HW: ensure non-negative
             end do
          end do
 
@@ -1196,25 +1202,25 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
 
    !      input
 
-   real(r8) :: wbar          ! grid cell mean vertical velocity (m/s)
-   real(r8) :: sigw          ! subgrid standard deviation of vertical vel (m/s)
-   real(r8) :: wdiab         ! diabatic vertical velocity (0 if adiabatic)
-   real(r8) :: wminf         ! minimum updraft velocity for integration (m/s)
-   real(r8) :: wmaxf         ! maximum updraft velocity for integration (m/s)
-   real(r8) :: tair          ! air temperature (K)
-   real(r8) :: rhoair        ! air density (kg/m3)
-   real(r8) :: na(:)      ! aerosol number concentration (/m3)
-   integer  :: nmode      ! number of aerosol modes
-   real(r8) :: volume(:)  ! aerosol volume concentration (m3/m3)
-   real(r8) :: hygro(:)   ! hygroscopicity of aerosol mode
+   real(r8), intent(in) :: wbar          ! grid cell mean vertical velocity (m/s)
+   real(r8), intent(in) :: sigw          ! subgrid standard deviation of vertical vel (m/s)
+   real(r8), intent(in) :: wdiab         ! diabatic vertical velocity (0 if adiabatic)
+   real(r8), intent(in) :: wminf         ! minimum updraft velocity for integration (m/s)
+   real(r8), intent(in) :: wmaxf         ! maximum updraft velocity for integration (m/s)
+   real(r8), intent(in) :: tair          ! air temperature (K)
+   real(r8), intent(in) :: rhoair        ! air density (kg/m3)
+   real(r8), intent(in) :: na(:)      ! aerosol number concentration (/m3)
+   integer,  intent(in) :: nmode      ! number of aerosol modes
+   real(r8), intent(in) :: volume(:)  ! aerosol volume concentration (m3/m3)
+   real(r8), intent(in) :: hygro(:)   ! hygroscopicity of aerosol mode
 
    !      output
 
-   real(r8) :: fn(:)      ! number fraction of aerosols activated
-   real(r8) :: fm(:)      ! mass fraction of aerosols activated
-   real(r8) :: fluxn(:)   ! flux of activated aerosol number fraction into cloud (cm/s)
-   real(r8) :: fluxm(:)   ! flux of activated aerosol mass fraction into cloud (cm/s)
-   real(r8) :: flux_fullact   ! flux of activated aerosol fraction assuming 100% activation (cm/s)
+   real(r8), intent(out) :: fn(:)      ! number fraction of aerosols activated
+   real(r8), intent(out) :: fm(:)      ! mass fraction of aerosols activated
+   real(r8), intent(out) :: fluxn(:)   ! flux of activated aerosol number fraction into cloud (cm/s)
+   real(r8), intent(out) :: fluxm(:)   ! flux of activated aerosol mass fraction into cloud (cm/s)
+   real(r8), intent(out) :: flux_fullact   ! flux of activated aerosol fraction assuming 100% activation (cm/s)
    !    rce-comment
    !    used for consistency check -- this should match (ekd(k)*zs(k))
    !    also, fluxm/flux_fullact gives fraction of aerosol mass flux
@@ -1582,11 +1588,11 @@ subroutine maxsat(zeta,eta,nmode,smc,smax)
    !      Abdul-Razzak and Ghan, A parameterization of aerosol activation.
    !      2. Multiple aerosol types. J. Geophys. Res., 105, 6837-6844.
 
-   integer  :: nmode ! number of modes
-   real(r8) :: smc(nmode) ! critical supersaturation for number mode radius
-   real(r8) :: zeta(nmode)
-   real(r8) :: eta(nmode)
-   real(r8) :: smax ! maximum supersaturation
+   integer,  intent(in)  :: nmode ! number of modes
+   real(r8), intent(in)  :: smc(nmode) ! critical supersaturation for number mode radius
+   real(r8), intent(in)  :: zeta(nmode)
+   real(r8), intent(in)  :: eta(nmode)
+   real(r8), intent(out) :: smax ! maximum supersaturation
    integer  :: m  ! mode index
    real(r8) :: sum, g1, g2, g1sqrt, g2sqrt
 

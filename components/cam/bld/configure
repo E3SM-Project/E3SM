@@ -121,9 +121,14 @@ OPTIONS
                         [ waccm_mozart | waccmx_mozart | waccm_mozart_sulfur | waccm_mozart_mam3 | waccm_sc | 
 			  waccm_sc_mam3 | waccm_tsmlt | waccm_tsmlt_mam3 | waccm_tsmlt_sulfur |
                           trop_mozart | trop_mozart_mam3 | trop_mozart_soa | trop_strat_soa | trop_ghg | trop_bam |
-                          trop_mam3 | trop_mam4 | trop_mam7 | super_fast_llnl | super_fast_llnl_mam3 |
+                          trop_mam3 | trop_mam4 | trop_mam4_resus | trop_mam4_resus_soag | trop_mam4_mom | 
+			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
+                          linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
+			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
                           trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
+     -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
+                        options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection) 
      -co2_cycle         This option is meant to be used with the -ccsm_seq option.  It modifies the
                         CAM configuration by increasing the number of advected constituents by 4.
      -comp_intf         Specify the component interfaces [mct | esmf] (default: mct).
@@ -151,6 +156,7 @@ OPTIONS
      -psubcols <n>      Maximum number of sub-columns in a run - set to 1 if not using sub-columns (default)
      -rad <name>        Specify the radiation package [rrtmg | camrt]
      -res <name>        Specify horizontal grid.  ***DEPRECATED***  Use the -hgrid option.
+     -unicon            Switch to turn on the UNICON scheme. Default: off.
      -usr_mech_infile   Path and file name of the user supplied chemistry mechanism file.
      -waccm_phys        Switch enables the use of WACCM physics in any chemistry configuration.
                         The user does not need to set this if one of the waccm chemistry options
@@ -201,7 +207,7 @@ OPTIONS
   Options for surface components used in standalone CAM mode:
 
      -ice <name>        Build CAM with sea ice model [cice | sice | none ]. Default: cice.
-     -ocn <name>        Build CAM with ocean model [docn | dom | socn | aquaplanet | pop]. Default: docn.
+     -ocn <name>        Build CAM with ocean model [docn | dom | socn | aquaplanet | pop | mpas-o]. Default: docn.
      -lnd <name>        Build CAM with land model [clm | slnd | none]. Default: clm.
      -rof <name>        Build CAM with runoff model [rtm | srof | none]. Default: rtm.
 
@@ -216,6 +222,8 @@ OPTIONS
                         Makefile defaults.
      -cosp              Enable the COSP simulator.
      -debug             Switch to turn on building CAM with debugging compiler options.
+     -bc_dep_to_snow_updates  Switch on new treatment of BC/dust deposition to ice/snoe
+     -rain_evap_to_coarse_aero   Switch to turn on BC, POM and SOA in the MAM3 and MAM4 coarse mode (mam mode 3)
      -defaults <file>   Specify a configuration file which will be used to supply defaults instead of
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
                         configuration parameters only.  Parameters relating to the build which
@@ -315,8 +323,11 @@ GetOptions(
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
     "debug"                     => \$opts{'debug'},
+    "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
+    "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
     "defaults=s"                => \$opts{'defaults'},
     "dyn=s"                     => \$opts{'dyn'},
+    "dyn_target=s"              => \$opts{'dyn_target'},
     "edit_chem_mech"            => \$opts{'edit_chem_mech'},
     "waccm_phys"                => \$opts{'waccm_phys'},
     "offline_dyn"               => \$opts{'offline_dyn'},
@@ -366,6 +377,7 @@ GetOptions(
     "spmd!"                     => \$opts{'spmd'},
     "target_os=s"               => \$opts{'target_os'},
     "test"                      => \$opts{'test'},
+    "unicon"                    => \$opts{'unicon'},
     "usr_mech_infile=s"         => \$opts{'usr_mech_infile'},
     "usr_src=s"                 => \$opts{'usr_src'},
     "v|verbose"                 => \$opts{'verbose'},
@@ -821,6 +833,21 @@ if (defined $opts{'waccmx'}) {
 }
 my $waccmx = $cfg_ref->get('waccmx');
 
+# Use new treatment of BC/dust deposition to ice/snow?
+my $bc_dep_to_snow_updates_opt = (defined $opts{'bc_dep_to_snow_updates'}) ? 1 : 0;
+$cfg_ref->set('bc_dep_to_snow_updates', $bc_dep_to_snow_updates_opt);
+my $bc_dep_to_snow_updates = $bc_dep_to_snow_updates_opt ? 1:0;
+
+if ($print>=2) { print "Is bc_dep_to_snow_updates active (0-NO; 1-YES)?: $bc_dep_to_snow_updates$eol"; }
+
+# Use "rain_evap_to_coarse_aero" in MAM3 or MAM4? [BSINGH -  For extra coarse mode species for BC, POM and SOA]
+my $rain_evap_to_coarse_aero_opt = (defined $opts{'rain_evap_to_coarse_aero'}) ? 1 : 0;
+$cfg_ref->set('rain_evap_to_coarse_aero', $rain_evap_to_coarse_aero_opt);
+my $rain_evap_to_coarse_aero = $rain_evap_to_coarse_aero_opt ? 1:0;
+
+if ($print>=2) { print "Is rain_evap_to_coarse_aero active (0-NO; 1-YES)?: $rain_evap_to_coarse_aero$eol"; }
+
+
 #-----------------------------------------------------------------------------------------------
 
 # Prognostic species package(s)
@@ -859,8 +886,15 @@ if ($co2_cycle and $print>=2) { print "co2_cycle option: ON$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Micro-physics package
 
-# Set default
-my $microphys_pkg = 'mg2';
+# The default for the current physics package is:
+my $microphys_pkg = 'mg1';
+
+#Set the default microphysics package for CLUBB to mg2
+if (defined $opts{'clubb_sgs'}) {
+    $microphys_pkg = 'mg2';
+}
+
+# But if the physics package is adiabatic, ideal, cam3, cam4, change the default
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $microphys_pkg = 'rk';
 }
@@ -924,6 +958,20 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
+# Break apart CLUBB options into separate fields
+
+if (defined $opts{'clubb_opts'}) {
+     my @clubb_temp_opts = split /,/, $opts{'clubb_opts'};
+     foreach (@clubb_temp_opts) {     
+        $cfg_ref->set("$_", '1');
+     }
+}
+my $clubb_do_deep = $cfg_ref->get('clubb_do_deep');
+my $clubb_do_adv = $cfg_ref->get('clubb_do_adv');
+if ($print>=2) { print "clubb_do_deep=',$clubb_do_deep,$eol"; }
+if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Macro-physics package
 
 # Set default
@@ -971,6 +1019,27 @@ EOF
 $cfg_ref->set('pbl', $pbl_pkg);
 
 if ($print>=2) { print "Using $pbl_pkg PBL scheme.$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# UNICON
+
+if (defined $opts{'unicon'}) {
+    $cfg_ref->set('unicon', $opts{'unicon'});
+}
+my $unicon = $cfg_ref->get('unicon');
+
+# consistency checks...
+
+# UNICON assumes park macrophysics, uw pbl, and mg microphysics
+if ($unicon and
+    ($macrophys_pkg ne 'park' or $pbl_pkg ne 'uw' or $microphys_pkg !~ m/^mg/) ) {
+    die <<"EOF";
+**    ERROR: UNICON assumes macrophys='park', pbl='uw', microphys='mg*'.  Current values are:
+**    macrophys: $macrophys_pkg, pbl: $pbl_pkg, microphys: $microphys_pkg.
+EOF
+}
+
+if ($unicon and $print>=2) { print "Using UNICON scheme.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Radiation package
@@ -1260,6 +1329,13 @@ my $chem_nadv = 0;
 my $chem_cppdefs = '';
 my $chem_src_dir = '';
 
+if (($rain_evap_to_coarse_aero == 1) && ($chem_pkg eq 'trop_mam4')) {
+    $chem_pkg = 'trop_mam4_resus'
+}
+if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg eq 'trop_mam4_mom')) {
+    $chem_pkg = 'trop_mam4_resus_mom'
+}
+
 if (!$prog_species) {
   $chem_src_dir = "$cam_root/components/cam/src/chemistry/pp_$chem_pkg";
   $cfg_ref->set('chem_src_dir', $chem_src_dir);
@@ -1295,10 +1371,22 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 }
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
-} elsif ($chem_pkg =~ '_mam4') {
+} elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+} elsif ($chem_pkg =~ '_mam4' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
+} elsif ($chem_pkg =~ '_mam9') {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_9MODE ';
+}
+
+if ($bc_dep_to_snow_updates == 1) {
+    $chem_cppdefs = "$chem_cppdefs  -DMODAL_AER"
+}
+
+if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
+    $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 
 my $carma_nadv = 0;
@@ -1403,8 +1491,12 @@ else {
             $nadv += 8;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }
-	
-	
+
+	if ($clubb_do_adv) {
+	    $nadv += 9;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+	}
+
         # co2_cycle
         if ($co2_cycle) {
             $nadv += 4;
@@ -1419,6 +1511,12 @@ else {
         if ($carma_nadv > 0) {
             $nadv += $carma_nadv;
             if ($print>=2) { print "Advected constituents added by CARMA model $carma_pkg: $carma_nadv$eol"; }
+        }
+
+        # UNICON tracers
+        if ($unicon) {
+            $nadv += 5;
+            if ($print>=2) { print "Advected constituents added by UNICON: 5$eol"; }
         }
 
     }
@@ -1930,6 +2028,9 @@ if ($clubb_sgs == 1) {
     $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
 }
 
+# UNICON
+if ($unicon) { $cfg_cppdefs .= ' -DUSE_UNICON'; }
+
 # GPTL Timing library
 # The GPTL configure script in timing/gptl/suggestions may help
 # if modifications are needed here.
@@ -1937,6 +2038,10 @@ $cfg_cppdefs .= ' -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY -DHAVE_COMM_F2
 unless ($target_os eq 'aix' or $target_os =~ 'bg' or $target_os eq 'darwin') { 
     $cfg_cppdefs .= ' -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC';
 }
+if ($clubb_do_deep == 1) {
+  $cfg_cppdefs .= ' -DCLUBBND_CAM';
+}
+
 #-----------------------------------------------------------------------------------------------
 # External libraries ###########################################################################
 #-----------------------------------------------------------------------------------------------
@@ -2674,7 +2779,13 @@ sub write_filepath
 
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
-	print $fh "$camsrcdir/homme/src/share\n";
+	    print $fh "$camsrcdir/homme/src/share\n";
+      if ($opts{'dyn_target'} eq 'preqx') {
+	      print $fh "$camsrcdir/homme/src/preqx\n";
+      } 
+      elsif($opts{'dyn_target'} eq 'preqx_acc') {
+	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
+      }
     }
 
     # Parallelization utilies

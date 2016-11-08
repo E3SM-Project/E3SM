@@ -16,15 +16,10 @@ find_library(NetcdfF_LIBRARY
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_library(Pnetcdf_LIBRARY
-             NAMES libpnetcdf.a pnetcdf
-             HINTS ${PNETCDF_DIR}/lib
-             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
-
 find_path(Netcdf_NC_CONFIG_BIN
           NAMES nc-config
           HINTS ${Netcdf_INCLUDE_DIR}/../bin
-          NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+          NO_CMAKE_SYSTEM_PATH)
 
 find_file(NETCDF4_PAR_H netcdf_par.h
           HINTS ${Netcdf_INCLUDE_DIR}
@@ -41,20 +36,30 @@ endif()
 # Store libraries in Netcdf_LIBRARIES
 set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY})
 
-if(NOT Pnetcdf_LIBRARY)
-  set(HAS_PNETCDF "no")
-  MESSAGE("NETCDF built without Pnetcdf")
-else()
-  set(HAS_PNETCDF "yes")
-  MESSAGE("NETCDF built with Pnetcdf")
-  set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY} ${Pnetcdf_LIBRARY})
-  set(Netcdf_INCLUDE_DIR ${Netcdf_INCLUDE_DIR} ${PNETCDF_DIR}/include)
-endif()
-
 IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
 
   # Probe nc-config to determine dependencies of Netcdf
   MESSAGE(STATUS "nc-config found at ${Netcdf_NC_CONFIG_BIN}")
+
+  # use nc-config --has-pnetcdf to determine if Netcdf depends on pnetcdf
+  EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-pnetcdf
+    RESULT_VARIABLE NCCONFIG_RESULT
+    OUTPUT_VARIABLE NCCONFIG_OUTPUT
+    ERROR_VARIABLE NCCONFIG_ERROR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  IF (${NCCONFIG_ERROR})
+    MESSAGE(WARNING "${Netcdf_NC_CONFIG_BIN}/nc-config --has-pnetcdf produced an error. Assuming no pnetcdf")
+    SET (NETCDF_REQUIRE_PNETCDF FALSE)
+  ELSE ()
+    IF (${NCCONFIG_OUTPUT} STREQUAL yes)
+      SET (NETCDF_REQUIRE_PNETCDF TRUE)
+      MESSAGE(STATUS "nc-config: Netcdf depends upon Pnetcdf")
+    ELSE ()
+      SET (NETCDF_REQUIRE_PNETCDF FALSE)
+      MESSAGE(STATUS "nc-config: Netcdf does not depend upon Pnetcdf")
+    ENDIF ()
+  ENDIF ()
 
   # use nc-confg --has-nc4 to determine if Netcdf depends upon HDF5
   EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4
@@ -64,7 +69,8 @@ IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   IF (${NCCONFIG_ERROR})
-    MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4 produced an error")
+    MESSAGE(WARNING "${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4 produced an error. Assuming hdf5")
+    SET (NETCDF_REQUIRE_HDF5 TRUE)
   ELSE ()
     IF (${NCCONFIG_OUTPUT} STREQUAL yes)
       SET (NETCDF_REQUIRE_HDF5 TRUE)
@@ -83,7 +89,8 @@ IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   IF (${NCCONFIG_ERROR})
-    MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap produced an error")
+    MESSAGE(WARNING "${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap produced an error. Assuming curl.")
+    SET (NETCDF_REQUIRE_CURL TRUE)
   ELSE ()
     IF (${NCCONFIG_OUTPUT} STREQUAL yes)
       SET (NETCDF_REQUIRE_CURL TRUE)
@@ -102,6 +109,15 @@ ENDIF ()
 
 IF (${NETCDF_REQUIRE_CURL})
 
+  find_path(CURL_INCLUDE_DIR
+            curl.h
+            PATHS ${CURL_DIR}
+            PATH_SUFFIXES include/curl
+            NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+  find_library(CURL_LIBRARY
+               NAMES libcurl.a
+               HINTS ${CURL_DIR}/lib
+               NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
   # For some reasone CURL uses CURL_ROOT rather than CURL_DIR
   #   - change the variable for consistency
   SET(CURL_ROOT ${CURL_DIR})
@@ -110,10 +126,35 @@ IF (${NETCDF_REQUIRE_CURL})
   IF (${CURL_FOUND})
     MESSAGE(STATUS "Found CURL: ${CURL_LIBRARY}")
     set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${CURL_LIBRARY})
+    set(Netcdf_INCLUDE_DIR ${Netcdf_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
   ELSE ()
     MESSAGE(FATAL_ERROR "CURL Not found")
   ENDIF ()
 ENDIF ()
+
+IF (${NETCDF_REQUIRE_PNETCDF})
+
+  find_library(Pnetcdf_LIBRARY
+               NAMES libpnetcdf.a pnetcdf
+               HINTS ${PNETCDF_DIR} ${NETCDF_DIR}
+               PATH_SUFFIXES lib
+               NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+  find_path(Pnetcdf_INCLUDE_DIR
+            pnetcdf.h
+            PATHS ${PNETCDF_DIR} ${NETCDF_DIR}
+            PATH_SUFFIXES include
+            NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+  IF (${Pnetcdf_LIBRARY} STREQUAL "Pnetcdf_LIBRARY-NOTFOUND" OR ${Pnetcdf_INCLUDE_DIR} STREQUAL "Pnetcdf_INCLUDE_DIR-NOTFOUND")
+    MESSAGE(FATAL_ERROR "Pnetcdf not found, set PNETCDF_DIR to appropriate installation or install Pnetcdf alongside Netcdf")
+  ELSE ()
+    MESSAGE(STATUS "Found Pnetcdf: ${Pnetcdf_LIBRARY}")
+    set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${Pnetcdf_LIBRARY})
+    set(Netcdf_INCLUDE_DIR ${Netcdf_INCLUDE_DIR} ${Pnetcdf_INCLUDE_DIR})
+  ENDIF()
+
+ENDIF()
 
 IF (${NETCDF_REQUIRE_HDF5})
 
@@ -138,10 +179,8 @@ IF (${NETCDF_REQUIRE_HDF5})
 
 
     if(${HDF5_LIBRARY} STREQUAL "HDF5_LIBRARY-NOTFOUND" OR ${HDF5hl_LIBRARY} STREQUAL "HDF5hl_LIBRARY-NOTFOUND")
-      set(HDF5_FOUND OFF)
       MESSAGE(FATAL_ERROR "HDF5 not found, set HDF5_DIR to appropriate installation")
     else()
-      set(HDF5_FOUND ON)
       MESSAGE(STATUS "Found HDF5: ${HDF5hl_LIBRARY} ${HDF5_LIBRARY}")
       set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${HDF5hl_LIBRARY} ${HDF5_LIBRARY})
     endif()
@@ -151,7 +190,7 @@ IF (${NETCDF_REQUIRE_HDF5})
 
     if(${HDF5_FOUND})
       MESSAGE(STATUS "Adding hdf5 libraries ")
-    set(NETCDF_C_LIBRARY ${NETCDF_C_LIBRARY} ${HDF5_LIBRARIES})
+      set(NETCDF_C_LIBRARY ${NETCDF_C_LIBRARY} ${HDF5_LIBRARIES})
     endif()
   endif()
 

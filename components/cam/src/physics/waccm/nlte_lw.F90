@@ -1,3 +1,4 @@
+
 module nlte_lw
 
 !
@@ -59,7 +60,7 @@ contains
 !------------------------------------------------------------------------
     use constituents, only: cnst_mw, cnst_get_ind
     use physconst,    only: mwco2
-    use cam_history,  only: add_default, addfld, phys_decomp
+    use cam_history,  only: add_default, addfld
     use mo_waccm_hrates,  only: has_hrates
     use physics_buffer, only : physics_buffer_desc
 
@@ -115,7 +116,7 @@ contains
        write(iulog,*) 'NLTE data ozone merge range is ', nbot_mlt+1, ntop_cam-1
        write(iulog,*) 'NLTE data ozone merge weights are ', wt_o3_mrg(nbot_mlt+1 : ntop_cam-1)
 
-       call addfld ('O3MRG    ','mol/mol',plev, 'A','merged (eUV+CAM) O3 vmr',phys_decomp)
+       call addfld ('O3MRG',(/ 'lev' /), 'A','mol/mol','merged (eUV+CAM) O3 vmr')
 
     end if
 
@@ -167,8 +168,8 @@ contains
     end if
 
 ! add to masterfield list
-    call addfld ('QRLNLTE  ','K/s     ',plev, 'A','Non-LTE LW heating (includes QNO)',phys_decomp)
-    call addfld ('QNO      ','K/s     ',plev, 'A','NO cooling',phys_decomp)
+    call addfld ('QRLNLTE',(/ 'lev' /), 'A','K/s','Non-LTE LW heating (includes QNO)')
+    call addfld ('QNO',(/ 'lev' /), 'A','K/s','NO cooling')
 
 ! add output to default output for primary history tapes
     call add_default ('QRLNLTE', 1, ' ')

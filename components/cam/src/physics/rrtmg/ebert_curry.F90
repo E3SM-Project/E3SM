@@ -1,3 +1,4 @@
+
 module ebert_curry
 
 !------------------------------------------------------------------------------------------------
@@ -60,7 +61,7 @@ contains
 
 subroutine ec_rad_props_init()
 
-   use cam_history, only: addfld, phys_decomp
+   use cam_history, only: addfld
    use netcdf
    use spmd_utils,     only: masterproc
    use ioFileMod,      only: getfil

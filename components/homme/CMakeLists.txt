@@ -56,25 +56,19 @@ ENDIF ()
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
-OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" OFF)
-OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" OFF)
+OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-# Primitive equations FEM with separate tracer routines
-OPTION(BUILD_PREQX_SPELT "Primitive euqations with SPELT tracers" OFF)
-
 # Cristoph's "standalone" executables
 OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
-OPTION(BUILD_HOMME_SPELT  "Standalone SPELT tracers" OFF)
 
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
-  #SET (HOMME_USE_CXX TRUE)
+  SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_TRILINOS TRUE)
 ELSE ()
-  #SET(HOMME_USE_CXX FALSE)
-  #SET(HOMME_USE_TRILINOS FALSE)
+  SET(HOMME_USE_CXX FALSE)
 ENDIF ()
 
 IF (${HOMME_USE_TRILINOS}) 
@@ -105,29 +99,39 @@ IF (${ENABLE_PERSISTENT_MPI})
   SET(MPI_PERSISTENT TRUE)
 ENDIF ()
 
-OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
-MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
-
-IF(${HOMME_FIND_BLASLAPACK})
-  FIND_PACKAGE(BLAS REQUIRED)
-  FIND_PACKAGE(LAPACK REQUIRED)
+OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
+MESSAGE(STATUS "HOMME_USE_MKL=${HOMME_USE_MKL}")
+IF(${HOMME_USE_MKL})
+  MESSAGE(STATUS "For Edison/Cori at NERSC, MKL included with Intel compiler")
 ELSE()
-  SET(HOMME_FIND_BLASLAPACK FALSE)
-  # Build the blas and lapack provided with homme
-  ADD_SUBDIRECTORY(libs/blas)
-  ADD_SUBDIRECTORY(libs/lapack)
+  OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
+  MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
+
+  IF(${HOMME_FIND_BLASLAPACK})
+    FIND_PACKAGE(BLAS REQUIRED)
+    FIND_PACKAGE(LAPACK REQUIRED)
+  ELSE()
+    SET(HOMME_FIND_BLASLAPACK FALSE)
+    # Build the blas and lapack provided with homme
+    ADD_SUBDIRECTORY(libs/blas)
+    ADD_SUBDIRECTORY(libs/lapack)
+  ENDIF()
 ENDIF()
 
 IF (${HOMME_USE_TRILINOS})
   MESSAGE(STATUS "This configuration of requires Trilinos")
   FIND_PACKAGE(Trilinos REQUIRED)
   SET(HAVE_TRILINOS TRUE)
+  IF("${Trilinos_PACKAGE_LIST}"  MATCHES ".*Zoltan2*.")
+    MESSAGE(STATUS "Trilinos is compiled with Zoltan2 Trilinos_PACKAGE_LIST:${Trilinos_PACKAGE_LIST}")
+    MESSAGE(STATUS "ENABLING ZOLTAN2")
+    SET(TRILINOS_HAVE_ZOLTAN2 TRUE)
+  ENDIF ()
   add_definitions(${Trilinos_CXX_COMPILER_FLAGS})
   include_directories(${Trilinos_TPL_INCLUDE_DIRS})
   include_directories(${Trilinos_INCLUDE_DIRS})
   link_directories(${Trilinos_LIBRARY_DIRS})
   link_directories(${Trilinos_TPL_LIBRARY_DIRS})
-
 ENDIF ()
 
 # Print the compiler flags to be used
@@ -181,6 +185,7 @@ ADD_SUBDIRECTORY(utils/cprnc)
 
 ADD_SUBDIRECTORY(utils/timing)
 
+SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(src/sweqx)
 ENDIF()
@@ -189,20 +194,12 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(src/preqx)
 ENDIF()
 
-IF(${BUILD_HOMME_SWDGX})
-  ADD_SUBDIRECTORY(src/swdgx)
-ENDIF()
-
-IF(${BUILD_HOMME_PRIMDGX})
-  ADD_SUBDIRECTORY(src/primdgx)
+IF(${BUILD_HOMME_PREQX_ACC})
+  ADD_SUBDIRECTORY(src/preqx_acc)
 ENDIF()
 
 IF(${BUILD_HOMME_FVM})
   ADD_SUBDIRECTORY(src/fvm)
-ENDIF()
-
-IF(${BUILD_HOMME_SPELT})
-  ADD_SUBDIRECTORY(src/spelt)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})
@@ -220,3 +217,5 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
+
+ADD_SUBDIRECTORY(dcmip_tests)

@@ -12,6 +12,7 @@ module lnd2atmMod
   use clm_varpar           , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
+  use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
   use subgridAveMod        , only : p2g, c2g 
@@ -262,7 +263,7 @@ contains
 
 
     ! ch4 flux
-    if (use_lch4) then
+    if (use_lch4 .and. (.not. is_active_betr_bgc)) then
        call c2g( bounds,     &
             ch4_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_ch4_grc      (bounds%begg:bounds%endg), &
@@ -280,6 +281,31 @@ contains
     do g = bounds%begg, bounds%endg
        lnd2atm_vars%qflx_rofliq_grc(g) = lnd2atm_vars%qflx_rofliq_grc(g) - waterflux_vars%qflx_liq_dynbal_grc(g)
     enddo
+
+    call c2g( bounds, &
+         waterflux_vars%qflx_surf_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_rofliq_qsur_grc   (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    call c2g( bounds, &
+         waterflux_vars%qflx_h2osfc_surf_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_rofliq_qsurp_grc  (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    call c2g( bounds, &
+         waterflux_vars%qflx_drain_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_rofliq_qsub_grc   (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    call c2g( bounds, &
+         waterflux_vars%qflx_drain_perched_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_rofliq_qsubp_grc  (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    call c2g( bounds, &
+         waterflux_vars%qflx_qrgwl_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_rofliq_qgwl_grc   (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     call c2g( bounds, &
          waterflux_vars%qflx_snwcp_ice_col(bounds%begc:bounds%endc),  &

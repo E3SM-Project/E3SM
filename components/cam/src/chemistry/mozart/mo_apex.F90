@@ -25,7 +25,7 @@ module mo_apex
    use shr_kind_mod,    only: r8 => shr_kind_r8
    use ppgrid,          only: pcols, begchunk, endchunk          ! physics grid
    use phys_grid,       only: get_lat_p, get_lon_p, get_ncols_p
-   use cam_history,     only: addfld, phys_decomp, add_default   ! for history saves
+   use cam_history,     only: addfld, horiz_only, add_default   ! for history saves
    use cam_abortutils,      only: endrun
    use cam_control_mod, only: magfield_fix_year
    use cam_logfile,     only: iulog
@@ -291,22 +291,22 @@ column_loop : &
 !------------------------------------------------------------------------------
 ! Add mag field output to master field list:
 !------------------------------------------------------------------------------
-  call addfld('ALATM   ','RADIANS ',1,'I',&
-    'Magnetic latitude at each geographic coordinate',phys_decomp)
-  call addfld('ALONM   ','RADIANS ',1,'I',&
-    'Magnetic longitude at each geographic coordinate',phys_decomp)
+  call addfld('ALATM',horiz_only,'I','RADIANS',&
+    'Magnetic latitude at each geographic coordinate')
+  call addfld('ALONM',horiz_only,'I','RADIANS',&
+    'Magnetic longitude at each geographic coordinate')
 ! call addfld('ALATM   ','RADIANS ',1,'A',&
-!   'Magnetic latitude at each geographic coordinate',phys_decomp)
+!   'Magnetic latitude at each geographic coordinate')
 ! call addfld('ALONM   ','RADIANS ',1,'A',&
-!   'Magnetic longitude at each geographic coordinate',phys_decomp)
+!   'Magnetic longitude at each geographic coordinate')
 ! call addfld('BNORTH  ','GAUSS',1,'I',&
-!   'Northward component of magnetic field',phys_decomp)
+!   'Northward component of magnetic field')
 ! call addfld('BEAST   ','GAUSS',1,'I',&
-!   'Eastward component of magnetic field',phys_decomp)
+!   'Eastward component of magnetic field')
 ! call addfld('BDOWN   ','GAUSS',1,'I',&
-!   'Downward component of magnetic field',phys_decomp)
+!   'Downward component of magnetic field')
 ! call addfld('BMAG    ','GAUSS',1,'I',&
-!   'Magnetic field magnitude',phys_decomp)
+!   'Magnetic field magnitude')
 
 !------------------------------------------------------------------------------
 ! Write these fields to history by default:

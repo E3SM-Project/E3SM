@@ -12,7 +12,7 @@
         use cam_logfile,  only: iulog
 
         use tracer_data,  only : trfld,trfile,MAXTRCRS
-        use cam_history,  only : addfld, phys_decomp
+        use cam_history,  only : addfld, horiz_only
 
         implicit none
 
@@ -72,7 +72,7 @@
                  ubc_from_tgcm(vid) = .true.
                  map(ii) = vid
                  ubc_name(ii) = trim(specifier(i))//'_tgcm'
-                 call addfld( ubc_name(ii), 'kg/kg', 1, 'I', 'upper boundary mmr', phys_decomp )
+                 call addfld( ubc_name(ii), horiz_only, 'I', 'kg/kg', 'upper boundary mmr' )
               end if
            end if
         enddo

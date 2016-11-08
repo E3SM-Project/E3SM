@@ -476,9 +476,9 @@
       call compute_tracers (nx_block,     ny_block,   &
                             icells,   indxi,   indxj, &
                             ntrcr,    trcr_depend,    &
-                            atrcr(:,:), aice(:,:),    &
-                            vice (:,:),   vsno(:,:),  &
-                            trcr(:,:,:))
+                            atrcr, aice,    &
+                            vice,   vsno,  &
+                            trcr)
 
       deallocate (atrcr)
 

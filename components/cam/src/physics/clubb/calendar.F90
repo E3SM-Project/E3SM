@@ -1,4 +1,6 @@
-!$Id: calendar.F90 5421 2011-09-28 20:40:18Z connork@uwm.edu $
+!-----------------------------------------------------------------------
+!$Id: calendar.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
+!===============================================================================
 module calendar
 
   implicit none
@@ -13,8 +15,8 @@ module calendar
 
   ! 3 Letter Month Abbreviations
   character(len=3), dimension(12), public, parameter :: & 
-    month = (/'JAN','FEB','MAR','APR','MAY','JUN', & 
-              'JUL','AUG','SEP','OCT','NOV','DEC'/)
+    month_names = (/'JAN','FEB','MAR','APR','MAY','JUN', & 
+                    'JUL','AUG','SEP','OCT','NOV','DEC'/)
 
   ! Number of days per month (Jan..Dec) for a non leap year
   integer, public, dimension(12), parameter :: & 
@@ -75,9 +77,9 @@ module calendar
 
     ! Output Variable(s)
     integer, intent(out)::  & 
-    day,     & ! Gregorian calender day for given Month       [dd]
-    month,   & ! Gregorian calender month for given Year      [mm]
-    year       ! Gregorian calender year                      [yyyy]
+      day,     & ! Gregorian calender day for given Month       [dd]
+      month,   & ! Gregorian calender month for given Year      [mm]
+      year       ! Gregorian calender year                      [yyyy]
 
     ! Local Variables
     integer :: i, j, k, n, l
@@ -140,6 +142,8 @@ module calendar
 !   Computes the current Gregorian date from a previous date and
 !   the seconds that have transpired since that date.
 !
+! References:
+!   None
 !----------------------------------------------------------------------------
     use clubb_precision, only: & 
       time_precision  ! Variable(s)
@@ -187,14 +191,14 @@ module calendar
 
     ! Determine the amount of days that have passed since start date
     days_since_start =  & 
-          floor( seconds_since_previous_date / sec_per_day )
+          floor( seconds_since_previous_date / real(sec_per_day,kind=time_precision) )
 
     ! Set days_since_1jan4713 to the present Julian date
     days_since_1jan4713bc = days_since_1jan4713bc + days_since_start
 
     ! Set Present time to be seconds since the Julian date
     seconds_since_current_date = seconds_since_previous_date &
-      - ( real( days_since_start, kind=time_precision ) * sec_per_day )
+      - ( real( days_since_start, kind=time_precision ) * real(sec_per_day,kind=time_precision) )
 
     call julian2gregorian_date & 
            ( days_since_1jan4713bc, & 
@@ -216,8 +220,10 @@ module calendar
 
     implicit none
 
-    ! Input Variable(s)
+    ! External
+    intrinsic :: sum
 
+    ! Input Variable(s)
     integer, intent(in) :: & 
      day,             & ! Day of the Month      [dd]
      month,           & ! Month of the Year     [mm]
@@ -226,21 +232,18 @@ module calendar
     ! ---- Begin Code ----
 
     ! Add the days from the previous months
-    gregorian2julian_day = day + sum(days_per_month(1:month-1))
-!        do j = 1, month-1, 1
-!          julian_day = julian_day + days_per_month(j)
-!        end do
+    gregorian2julian_day = day + sum( days_per_month(1:month-1) )
 
     ! Kluge for a leap year
     ! If the date were 29 Feb 2000 this would not increment julian_day
     ! However 01 March 2000 would need the 1 day bump
-    if ( leap_year(year) .and. month > 2 ) then
+    if ( leap_year( year ) .and. month > 2 ) then
       gregorian2julian_day = gregorian2julian_day + 1
     end if
 
     if ( ( leap_year( year ) .and. gregorian2julian_day > 366 ) .or. & 
          ( .not. leap_year( year ) .and. gregorian2julian_day > 365 ) ) then
-      stop "Problem with Julian day conversion."
+      stop "Problem with Julian day conversion in gregorian2julian_day."
     end if
 
     return

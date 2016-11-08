@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_ICE">
+    <type>char</type>
+    <valid_values>cice</valid_values>
+    <default_value>cice</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of sea-ice component</desc>
+  </entry>
+
+  <entry id="CICE_MODE">
+    <type>char</type>
+    <valid_values>prognostic,prescribed</valid_values>
+    <default_value>prognostic</default_value>
+    <values>
+      <value compset="CICE_">prognostic</value>
+      <value compset="CICE%PRES_">prescribed</value>
+    </values>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>Option to the CICE configure utility for the -mode argument (default is prognostic)</desc>
+  </entry>
+
+  <entry id="CICE_CONFIG_OPTS">
+    <type>char</type>
+    <default_value></default_value>
+    <values>
+      <value compset="_CLM45%[^_]*BC">-bc_dep_to_snow_updates</value>
+    </values>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>CICE configure options, see CICE configure utility for details.
+      Provides option(s) for the CLM configure utility.
+      CICE_CONFIG_OPTS are normally set as compset variables (e.g., -ntr_aero 3)
+      and in general should not be modified for supported compsets.
+      It is recommended that if you want to modify this value for your experiment,
+      you should use your own user-defined component sets via using create_newcase
+      with a compset_file argument.
+      This is an advanced flag and should only be used by expert users.
+    </desc>
+  </entry>
+
+  <entry id="CICE_NAMELIST_OPTS">
+    <type>char</type>
+    <default_value></default_value>
+    <values>
+      <value compset="_CAM5">cam5=.true.</value>
+    </values>
+    <group>run_component_cice</group>
+    <file>env_run.xml</file>
+    <desc>CICE specific namelist settings for -namelist option</desc>
+  </entry>
+
+  <entry id="CICE_AUTO_DECOMP">
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>true</default_value>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>This is for experts only - if CICE_AUTO_DECOMP is set to false, then
+      can manually set the values of CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS,
+      CICE_DECOMPTYPE, and CICE_DECOMPSETTING".</desc>
+  </entry>
+
+  <entry id="CICE_BLCKX">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>Size of cice block in first horiz dimension
+      (DO NOT EDIT if CICE_AUTO_DECOMP is true).
+      This is for experts only - automatically set if CICE_AUTO_DECOMP
+      is true to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
+  </entry>
+
+  <entry id="CICE_BLCKY">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>Size of cice block in second horiz dimension
+      (DO NOT EDIT if CICE_AUTO_DECOMP is true).
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
+  </entry>
+
+  <entry id="CICE_MXBLCKS">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>Max number of cice blocks per processor (do not edit if CICE_AUTO_DECOMP is true)
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
+  </entry>
+
+  <entry id="CICE_DECOMPTYPE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>cice block distribution type (do not edit if CICE_AUTO_DECOMP is true)
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
+  </entry>
+
+  <entry id="CICE_DECOMPSETTING">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>cice decomp setting for decomp type (do not edit if CICE_AUTO_DECOMP is true)
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
+  </entry>
+
+  <entry id="CICE_CPPDEFS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>build_component_cice</group>
+    <file>env_build.xml</file>
+    <desc>CICE cpp definitions (setup automatically - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="ICE_PE_CHANGE_REQUIRES_REBUILD">
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>true</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>This component requires a clean build if the pelayout changes, if this variable is
+          not defined for a component it is assumed false
+    </desc>
+  </entry>
+
+  <description>
+    <desc compset="_CICE%PRES_">prescribed cice:</desc>
+    <desc compset="_CICE_">prognostic cice:</desc>
+  </description>
+
+  <help>
+    =========================================
+    CICE naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>

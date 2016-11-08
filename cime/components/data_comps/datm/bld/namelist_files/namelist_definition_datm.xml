@@ -12,7 +12,7 @@
 type="char*256"  
 category="datm_setting"
 group="datm_env_settings" 
-valid_values="CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CPLHIST3HrWx,CORE2_NYF,CORE2_IAF,COPYALL_NPS_v1,COPYALL_CORE2_v1,WW3">
+valid_values="CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CPLHIST3HrWx,CORE2_NYF,CORE2_IAF,COPYALL_NPS_v1,COPYALL_CORE2_v1,WW3,NLDAS">
 Data Model mode to process forcing data
 </entry>
 

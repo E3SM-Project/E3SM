@@ -297,10 +297,8 @@ contains
       type (T_FVDYCORE_GRID), intent(in) :: grid
 
 
-    character(len=256) :: filen
-    integer            :: im, jm, km, jfirst, jlast, kfirst, klast 
+    integer            :: im, km, jfirst, jlast, kfirst, klast 
     integer            :: ng_d, ng_s
-    integer            :: ierr
 
     im        = grid%im
     km        = grid%km
@@ -368,22 +366,22 @@ contains
 
  subroutine metdata_phys_init
    use infnan,      only : nan, assignment(=)
-   use cam_history, only : addfld,dyn_decomp,phys_decomp
+   use cam_history, only : addfld, horiz_only
 
-   call addfld ('MET_RLX ','     ',pver, 'A','Meteorology relax function',dyn_decomp)
-   call addfld ('MET_TAUX','        ',1, 'A','Meteorology taux',phys_decomp)
-   call addfld ('MET_TAUY','        ',1, 'A','Meteorology tauy',phys_decomp)
-   call addfld ('MET_SHFX','        ',1, 'A','Meteorology shflx',phys_decomp)
-   call addfld ('MET_QFLX','        ',1, 'A','Meteorology qflx',phys_decomp)
-   call addfld ('MET_PS','          ',1, 'A','Meteorology PS',dyn_decomp)
-   call addfld ('MET_T','        ',pver, 'A','Meteorology T',phys_decomp)
-   call addfld ('MET_U','        ',pver, 'A','Meteorology U',dyn_decomp)
-   call addfld ('MET_V','        ',pver, 'A','Meteorology V',dyn_decomp)
-   call addfld ('MET_SNOWH','    ',1,    'A','Meteorology snow height',phys_decomp)
+   call addfld ('MET_RLX',(/ 'lev' /), 'A','     ','Meteorology relax function',gridname='fv_centers')
+   call addfld ('MET_TAUX',horiz_only, 'A','        ','Meteorology taux', gridname='physgrid')
+   call addfld ('MET_TAUY',horiz_only, 'A','        ','Meteorology tauy', gridname='physgrid')
+   call addfld ('MET_SHFX',horiz_only, 'A','        ','Meteorology shflx', gridname='physgrid')
+   call addfld ('MET_QFLX',horiz_only, 'A','        ','Meteorology qflx', gridname='physgrid')
+   call addfld ('MET_PS',horiz_only, 'A','          ','Meteorology PS',gridname='fv_centers')
+   call addfld ('MET_T',(/ 'lev' /), 'A','        ','Meteorology T', gridname='physgrid')
+   call addfld ('MET_U',(/ 'lev' /), 'A','        ','Meteorology U',gridname='fv_centers')
+   call addfld ('MET_V',(/ 'lev' /), 'A','        ','Meteorology V',gridname='fv_centers')
+   call addfld ('MET_SNOWH',horiz_only,    'A','    ','Meteorology snow height', gridname='physgrid')
 
-   call addfld ('MET_TS','K',1, 'A','Meteorology TS',phys_decomp)
-   call addfld ('MET_OCNFRC','fraction',1, 'A','Ocean frac derived from met TS',phys_decomp)
-   call addfld ('MET_ICEFRC','fraction',1, 'A','Sea ice frac derived from met TS',phys_decomp)
+   call addfld ('MET_TS',horiz_only, 'A','K','Meteorology TS', gridname='physgrid')
+   call addfld ('MET_OCNFRC',horiz_only, 'A','fraction','Ocean frac derived from met TS', gridname='physgrid')
+   call addfld ('MET_ICEFRC',horiz_only, 'A','fraction','Sea ice frac derived from met TS', gridname='physgrid')
 
 ! allocate chunked arrays   
 
@@ -1245,13 +1243,13 @@ contains
     call find_times( recnos, fids, datatimemn, datatimepn, next_mod_time )
 
     call infld(varname, fids(1), 'lon', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
-         wrk_xy, readvar, grid_map='DYN', timelevel=recnos(1))
+         wrk_xy, readvar, gridname='fv_centers', timelevel=recnos(1))
 
     ! transpose xy -> yz decomposition
     call transpose_xy2yz_2d( wrk_xy, met_psi_next(nm)%data, grid )
 
     call infld(varname, fids(2), 'lon', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
-         wrk_xy, readvar, grid_map='DYN', timelevel=recnos(2))
+         wrk_xy, readvar, gridname='fv_centers', timelevel=recnos(2))
 
     ! transpose xy -> yz decomposition
     call transpose_xy2yz_2d( wrk_xy, met_psi_next(np)%data, grid )
@@ -1332,6 +1330,8 @@ contains
 !------------------------------------------------------------------------
   subroutine read_next_metdata(grid)
     use ncdio_atm,          only: infld
+    use cam_grid_support,   only: cam_grid_check, cam_grid_id
+    use cam_grid_support,   only: cam_grid_get_dim_names
 
     implicit none
 
@@ -1340,6 +1340,7 @@ contains
     type(file_desc_t) :: fids(2)
 
     character(len=8) :: Uname, Vname, Tname, Qname, psname
+    character(len=8) :: dim1name, dim2name
     integer :: im, jm, km
     logical :: readvar
     integer :: ifirstxy, ilastxy, jfirstxy, jlastxy
@@ -1348,6 +1349,7 @@ contains
     real(r8), allocatable :: tmp_data(:,:,:)
     integer :: elev1,blev1, elev2,blev2
     integer :: elev3,blev3, elev4,blev4
+    integer :: grid_id  ! grid ID for data mapping
 
     call t_startf('MET__read_next_metdata')
 
@@ -1425,19 +1427,26 @@ contains
     allocate(wrk2_xy(ifirstxy:ilastxy, jfirstxy:jlastxy))
     allocate(wrk3_xy(ifirstxy:ilastxy, jfirstxy:jlastxy, 1:max(km,num_met_levels)))
 
+    ! physgrid intput for FV is probably always lon/lat but let's be pedantic
+    grid_id = cam_grid_id('physgrid')
+    if (.not. cam_grid_check(grid_id)) then
+       call endrun('read_next_metdata: Internal error, no "physgrid" grid')
+    end if
+    call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
+
     do i=1,2
 
        met_ti(i)%data = 0._r8
 
-       call infld(Tname, fids(i), 'lon', 'lev', 'lat',  1, pcols, 1,num_met_levels , &
-            begchunk, endchunk, tmp_data, readvar, grid_map='PHYS',timelevel=recnos(i))
+       call infld(Tname, fids(i), dim1name, 'lev', dim2name,  1, pcols, 1,num_met_levels , &
+            begchunk, endchunk, tmp_data, readvar, gridname='physgrid',timelevel=recnos(i))
 
        met_ti(i)%data(:,blev1:elev1,:) = tmp_data(:, blev2:elev2, :)
 
        met_qi(i)%data = 0._r8
 
-       call infld(Qname, fids(i), 'lon', 'lev', 'lat',  1, pcols, 1,num_met_levels, &
-            begchunk, endchunk, tmp_data, readvar, grid_map='PHYS',timelevel=recnos(i))
+       call infld(Qname, fids(i), dim1name, 'lev', dim2name,  1, pcols, 1,num_met_levels, &
+            begchunk, endchunk, tmp_data, readvar, gridname='physgrid',timelevel=recnos(i))
 
        met_qi(i)%data(:,blev1:elev1,:) = tmp_data(:, blev2:elev2, :)
 
@@ -1445,16 +1454,16 @@ contains
 
           wrk3_xy = 0._r8
           met_usi(i)%data(:,:,:) = 0._r8
-          call infld(Uname, fids(i), 'lon', 'lev', 'slat',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
-               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, grid_map='DYN',timelevel=recnos(i))
+          call infld(Uname, fids(i), 'lon', 'slat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
+               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, gridname='fv_u_stagger',timelevel=recnos(i))
 
           ! transpose xy -> yz decomposition
           call transpose_xy2yz_3d( wrk3_xy(:,:,blev3:elev3), met_usi(i)%data(:,:,:), grid )
 
           wrk3_xy = 0._r8
           met_vsi(i)%data(:,:,:) = 0._r8
-          call infld(Vname, fids(i), 'slon', 'lev', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
-               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, grid_map='DYN',timelevel=recnos(i))
+          call infld(Vname, fids(i), 'slon', 'lat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
+               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, gridname='fv_v_stagger',timelevel=recnos(i))
 
           ! transpose xy -> yz decomposition
           call transpose_xy2yz_3d( wrk3_xy(:,:,blev3:elev3), met_vsi(i)%data(:,:,:), grid )
@@ -1465,16 +1474,16 @@ contains
 
           wrk3_xy = 0._r8
           met_ui(i)%data = 0._r8
-          call infld(Uname, fids(i), 'lon', 'lev', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
-               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, grid_map='DYN',timelevel=recnos(i))
+          call infld(Uname, fids(i), 'lon', 'lat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
+               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, gridname='fv_centers',timelevel=recnos(i))
 
           ! transpose xy -> yz decomposition
           call transpose_xy2yz_3d( wrk3_xy(:,:,blev3:elev3), met_ui(i)%data(:,:,:), grid )
 
           wrk3_xy = 0._r8
           met_vi(i)%data = 0._r8
-          call infld(Vname, fids(i), 'lon', 'lev', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
-               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, grid_map='DYN',timelevel=recnos(i))
+          call infld(Vname, fids(i), 'lon', 'lat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
+               1,num_met_levels, wrk3_xy(:,:,blev4:elev4), readvar, gridname='fv_centers',timelevel=recnos(i))
 
           ! transpose xy -> yz decomposition
           call transpose_xy2yz_3d( wrk3_xy(:,:,blev3:elev3), met_vi(i)%data(:,:,:), grid )
@@ -1482,7 +1491,7 @@ contains
        endif ! met_cell_wall_winds
 
        call infld(PSname, fids(i), 'lon', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, &
-            wrk2_xy, readvar, grid_map='DYN', timelevel=recnos(i))
+            wrk2_xy, readvar, gridname='fv_centers', timelevel=recnos(i))
 
        ! transpose xy -> yz decomposition
         call transpose_xy2yz_2d( wrk2_xy, met_psi_curr(i)%data, grid )
@@ -1515,20 +1524,20 @@ contains
     do i=1,2
 
        call infld(met_shflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
-            met_shflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+            met_shflxi(i)%data, readvar, gridname='physgrid',timelevel=recnos(i))
        call infld(met_qflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
-            met_qflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+            met_qflxi(i)%data, readvar, gridname='physgrid',timelevel=recnos(i))
        call infld('TAUX', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
-            met_tauxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+            met_tauxi(i)%data, readvar, gridname='physgrid',timelevel=recnos(i))
        call infld('TAUY', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
-            met_tauyi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+            met_tauyi(i)%data, readvar, gridname='physgrid',timelevel=recnos(i))
        if ( .not.met_srf_feedback ) then
           call infld('SNOWH', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
-               met_snowhi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+               met_snowhi(i)%data, readvar, gridname='physgrid',timelevel=recnos(i))
        endif
        if (has_ts) then
           call infld('TS', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
-               met_tsi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+               met_tsi(i)%data, readvar, gridname='physgrid',timelevel=recnos(i))
        endif
     enddo
   end subroutine read_phys_srf_flds

@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 # cesm_prerun with performance data archiving: 
 #  ./cesm_prerun.perf_archive with the following argument keyword/value pairs, in any order
 #   -machine <system name>
@@ -69,18 +69,22 @@ if (-e $run_dir/cesm_prerun_done) then
 endif
 
 if ($app_jobid == 'unknown') then
-  if (($machine == 'edison') || ($machine == 'titan')) then
+  if ($machine == 'titan') then
 
     set app_jobid = $PBS_JOBID
+
+  else if (($machine == 'edison') || ($machine == 'corip1')) then
+
+    set app_jobid = $SLURM_JOB_ID
 
   else if ($machine == 'mira') then
 
     set app_jobid = $COBALT_JOBID
 
-  endif  
+  endif
 endif
 
-if (($machine == 'edison') || ($machine == 'titan')) then
+if ($machine == 'titan') then
 
   set string = `qstat -f $app_jobid | grep ctime`
   echo "job $app_jobid created: $string" >>& $caseroot/CaseStatus
@@ -92,6 +96,17 @@ if (($machine == 'edison') || ($machine == 'titan')) then
   echo "job $app_jobid eligible to run: $string" >>& $caseroot/CaseStatus
 
   set string = `qstat -f $app_jobid | grep start_time`
+  echo "job $app_jobid started: $string" >>& $caseroot/CaseStatus
+
+else if (($machine == 'edison') || ($machine == 'corip1')) then
+
+  set string = `sqs -f $app_jobid | grep SubmitTime | sed 's/ *\(SubmitTime=\S*\) *\(EligibleTime=\S*\) */\1/' `
+  echo "job $app_jobid submitted: $string" >>& $caseroot/CaseStatus
+
+  set string = `sqs -f $app_jobid | grep SubmitTime | sed 's/ *\(SubmitTime=\S*\) *\(EligibleTime=\S*\) */\2/' `
+  echo "job $app_jobid eligible: $string" >>& $caseroot/CaseStatus
+
+  set string = `sqs -f $app_jobid | grep StartTime | sed 's/ *\(StartTime=\S*\) *\(EndTime=\S*\) */\1/' `
   echo "job $app_jobid started: $string" >>& $caseroot/CaseStatus
 
 else if ($machine == 'mira') then
@@ -148,14 +163,25 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
       qstat -lf $app_jobid > qstatf_jobid.$lid
       chmod a+r *
       gzip qstatf.$lid qstatf_jobid.$lid
-    else if ($machine == 'edison') then
-      xtprocadmin > xtprocadmin.$lid
-      qstat -f > qstatf.$lid
-      qstat -f $app_jobid > qstatf_jobid.$lid
-      xtnodestat > xtnodestat.$lid
-      showq > showq.$lid
+    else if ($machine == 'corip1') then
+      sqs -f > sqsf.$lid
+      sqs -w -a > sqsw.$lid
+      sqs -f $app_jobid > sqsf_jobid.$lid
+#     ssh cmom01 xtdb2proc -f $save_timing_dir/performance_archive/$user/$case/$lid/xtdb2proc.$lid
+      squeue > squeue.$lid
       chmod a+r *
-      gzip xtprocadmin.$lid qstatf.$lid qstatf_jobid.$lid xtnodestat.$lid showq.$lid
+      gzip sqsf.$lid sqsw.$lid sqsf_jobid.$lid squeue.$lid
+#     gzip xtdb2proc.$lid
+    else if ($machine == 'edison') then
+#     xtprocadmin > xtprocadmin.$lid
+      sqs -f > sqsf.$lid
+      sqs -w -a > sqsw.$lid
+      sqs -f $app_jobid > sqsf_jobid.$lid
+#     xtnodestat > xtnodestat.$lid
+      squeue > squeue.$lid
+      chmod a+r *
+      gzip sqsf.$lid sqsw.$lid sqsf_jobid.$lid squeue.$lid
+#     gzip xtprocadmin.$lid xtnodestat.$lid
     else if ($machine == 'titan') then
       xtdb2proc -f xtdb2proc.$lid
       qstat -f > qstatf.$lid

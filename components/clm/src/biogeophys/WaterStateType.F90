@@ -32,14 +32,18 @@ module WaterstateType
      real(r8), pointer :: int_snow_col           (:)   ! col integrated snowfall (mm H2O)
      real(r8), pointer :: snow_layer_unity_col   (:,:) ! value 1 for each snow layer, used for history diagnostics
      real(r8), pointer :: bw_col                 (:,:) ! col partial density of water in the snow pack (ice + liquid) [kg/m3] 
+     real(r8), pointer :: finundated_col         (:)   ! fraction of column that is inundated, this is for bgc caclulation in betr
 
+     real(r8), pointer :: smp_l_col              (:,:) ! col liquid phase soil matric potential, mm
      real(r8), pointer :: h2osno_col             (:)   ! col snow water (mm H2O)
      real(r8), pointer :: h2osno_old_col         (:)   ! col snow mass for previous time step (kg/m2) (new)
      real(r8), pointer :: h2osoi_liq_col         (:,:) ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
      real(r8), pointer :: h2osoi_ice_col         (:,:) ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
      real(r8), pointer :: h2osoi_liqice_10cm_col (:)   ! col liquid water + ice lens in top 10cm of soil (kg/m2)
-     real(r8), pointer :: h2osoi_vol_col         (:,:) ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)  
+     real(r8), pointer :: h2osoi_vol_col         (:,:) ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+     real(r8), pointer :: air_vol_col            (:,:) ! col air filled porosity     
      real(r8), pointer :: h2osoi_liqvol_col      (:,:) ! col volumetric liquid water content (v/v)
+     real(r8), pointer :: h2osoi_icevol_col      (:,:) ! col volumetric ice content (v/v)     
      real(r8), pointer :: h2ocan_patch           (:)   ! patch canopy water (mm H2O)
      real(r8), pointer :: h2ocan_col             (:)   ! col canopy water (mm H2O)
      real(r8), pointer :: h2osfc_col             (:)   ! col surface water (mm H2O)
@@ -86,6 +90,14 @@ module WaterstateType
      real(r8), pointer :: errh2o_patch           (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
+
+     ! For VSFM
+     real(r8), pointer :: vsfm_fliq_col_1d       (:)   ! fraction of liquid saturation for VSFM [-]
+     real(r8), pointer :: vsfm_sat_col_1d        (:)   ! liquid saturation from VSFM [-]
+     real(r8), pointer :: vsfm_mass_col_1d       (:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
+     real(r8), pointer :: vsfm_smpl_col_1d       (:)   ! 1D soil matrix potential liquid from VSFM [m]
+     real(r8), pointer :: vsfm_soilp_col_1d      (:)   ! 1D soil liquid pressure from VSFM [Pa]
+     real(r8), pointer :: soilp_col              (:,:) ! col soil pressure (Pa)
 
    contains
 
@@ -144,6 +156,7 @@ contains
     integer :: begc, endc
     integer :: begl, endl
     integer :: begg, endg
+    integer :: ncells
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -160,12 +173,18 @@ contains
     allocate(this%int_snow_col           (begc:endc))                     ; this%int_snow_col           (:)   = nan   
     allocate(this%snow_layer_unity_col   (begc:endc,-nlevsno+1:0))        ; this%snow_layer_unity_col   (:,:) = nan
     allocate(this%bw_col                 (begc:endc,-nlevsno+1:0))        ; this%bw_col                 (:,:) = nan   
+    allocate(this%smp_l_col              (begc:endc,-nlevsno+1:nlevgrnd)) ; this%smp_l_col              (:,:) = nan
+    allocate(this%finundated_col         (begc:endc))                     ; this%finundated_col         (:)   = nan
 
     allocate(this%h2osno_col             (begc:endc))                     ; this%h2osno_col             (:)   = nan   
     allocate(this%h2osno_old_col         (begc:endc))                     ; this%h2osno_old_col         (:)   = nan   
-    allocate(this%h2osoi_liqice_10cm_col (begc:endc))                     ; this%h2osoi_liqice_10cm_col (:)   = nan   
+    allocate(this%h2osoi_liqice_10cm_col (begc:endc))                     ; this%h2osoi_liqice_10cm_col (:)   = nan
+    
     allocate(this%h2osoi_vol_col         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol_col         (:,:) = nan
+    allocate(this%air_vol_col            (begc:endc, 1:nlevgrnd))         ; this%air_vol_col            (:,:) = nan
     allocate(this%h2osoi_liqvol_col      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol_col      (:,:) = nan
+    allocate(this%h2osoi_icevol_col      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_icevol_col      (:,:) = nan    
+    
     allocate(this%h2osoi_ice_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col         (:,:) = nan
     allocate(this%h2osoi_liq_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col         (:,:) = nan
     allocate(this%h2ocan_patch           (begp:endp))                     ; this%h2ocan_patch           (:)   = nan  
@@ -211,6 +230,14 @@ contains
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan
+
+    ncells = (endc - begc + 1)*nlevgrnd
+    allocate(this%vsfm_fliq_col_1d(          ncells))                     ; this%vsfm_fliq_col_1d       (:)   = nan
+    allocate(this%vsfm_sat_col_1d(           ncells))                     ; this%vsfm_sat_col_1d        (:)   = nan
+    allocate(this%vsfm_mass_col_1d(          ncells))                     ; this%vsfm_mass_col_1d       (:)   = nan
+    allocate(this%vsfm_smpl_col_1d(          ncells))                     ; this%vsfm_smpl_col_1d       (:)   = nan
+    allocate(this%vsfm_soilp_col_1d(         ncells))                     ; this%vsfm_soilp_col_1d      (:)   = nan
+    allocate(this%soilp_col              (begc:endc,1:nlevgrnd))          ; this%soilp_col              (:,:) = 0._r8
 
   end subroutine InitAllocate
 
@@ -796,6 +823,11 @@ contains
          dim1name='pft', &
          long_name='canopy water', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2ocan_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &
+         dim1name='column', dim2name='levgrnd', switchdim=.true., &
+         long_name='soil pressure ', units='Pa', &
+         interpinic_flag='interp', readvar=readvar, data=this%soilp_col)
 
     ! Determine volumetric soil water (for read only)
     if (flag == 'read' ) then

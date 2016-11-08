@@ -327,17 +327,19 @@ createAllRunScripts() {
     ############################################################
     if [ "${CREATE_BASELINE}" == false ] ; then 
       mkdir -p ${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}
-      echo "cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/"
-      cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/
+
+#      MT: why do this? it will trash the run scripts that were created by the baseline code?
+#      echo "cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/"
+#      cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/
 
       ############################################################
-      # Now set up the cprnc diffing
+      # Now set up the cprnc diffing against baslines
       ############################################################
       # load the cprnc files for this run
       FILES="${NC_OUTPUT_FILES}"
 
       if [ -z "${FILES}" ] ; then
-          echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+          echo "Test ${TEST_NAME} doesn't specify any baseline comparison tests"
       fi
 
       # for files in movies
@@ -349,19 +351,8 @@ createAllRunScripts() {
         # new result
         newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/$file
 
-        #if [ ! -f "${newFile}" ] ; then
-        #  echo "Error: The result file ${newFile} does not exist. Exiting" 
-        #  exit -1
-        #fi
-
         # result in the repo
         repoFile=${HOMME_BASELINE_DIR}/${TEST_NAME}/movies/${baseFilename}
-
-        #if [ ! -f "${newFile}" ] ; then
-        #  echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
-        #  exit 0
-        #fi
-
 
         diffStdout=${TEST_NAME}.${baseFilename}.out
         diffStderr=${TEST_NAME}.${baseFilename}.err
@@ -372,6 +363,43 @@ createAllRunScripts() {
         #echo "  $cmd"
         serExecLine $thisRunScript "$cmd"
         echo "" >> $thisRunScript # blank line
+      done
+
+
+
+      ############################################################
+      # Now set up the cprnc diffing against REF solutions
+      # these could be internally generated, or included in the repo
+      ############################################################
+      # load the cprnc files for this run
+      REFFILES=( ${NC_OUTPUT_REF} )
+      FILES="${NC_OUTPUT_CHECKREF}"
+
+      if [ -z "${FILES}" ] ; then
+          echo "Test ${TEST_NAME} doesn't specify any reference file tests"
+      fi
+
+      # for files in movies
+      COUNT=0
+      for file in $FILES 
+      do
+        refname=${REFFILES[$COUNT]}
+        echo "ref = ${refname}"
+        echo "file = ${file}"
+        baseFilename=`basename $file`
+
+        # new result
+        newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/${file}
+        refFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/${refname}
+
+        diffStdout=${TEST_NAME}.ref.${baseFilename}.out
+        diffStderr=${TEST_NAME}.ref.${baseFilename}.err
+
+        echo "# Running cprnc to difference ${baseFilename} against reference " >> $thisRunScript
+        cmd="${CPRNC_BINARY} ${newFile} ${refFile} > $diffStdout 2> $diffStderr"
+        serExecLine $thisRunScript "$cmd"
+        echo "" >> $thisRunScript # blank line
+        let COUNT+=1
       done
 
     fi
@@ -452,16 +480,22 @@ execLine() {
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+    elif [ "${MPI_EXEC}" = "runjob" ]; then
+      echo "runjob -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} --block \$COBALT_PARTNAME --verbose=INFO : $EXEC $OPT" >> $RUN_SCRIPT
+    elif [ "${MPI_EXEC}" = "aprun" ] ; then
+      if [[ $4 == *"_OMP"* ]]; then
+        echo "aprun -n ${NUM_MPI_PROCS} -d ${OMP_NUMBER_THREADS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+      else
+        echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+      fi
     else
       echo "${MPI_EXEC} -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
     fi
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
-
     elif [ "$HOMME_Submission_Type" = pbs ]; then
-      echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
-
+        echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
     else
       echo "mpiexec -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
 
@@ -477,6 +511,8 @@ serExecLine() {
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "$EXEC" >> $RUN_SCRIPT
+    elif [ "${MPI_EXEC}" = "runjob" ]; then
+      echo "runjob -n 1 ${MPI_OPTIONS} --block \$COBALT_PARTNAME --verbose=INFO : $EXEC" >> $RUN_SCRIPT
     else
       echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
     fi
@@ -508,7 +544,7 @@ diffCprnc() {
   FILES="${NC_OUTPUT_FILES}"
 
   if [ -z "${FILES}" ] ; then
-      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+      echo "Test ${TEST_NAME}: no netcdf output files. Skipping baseline compare"
   fi
 
   # for files in movies
@@ -607,58 +643,65 @@ diffCprncOutput() {
   done
 }
 
-moveBaseline() {
 
-  source ${HOMME_TESTING_DIR}/test_list.sh
 
-  for subNum in $(seq 1 ${NUM_TEST_FILES})
+
+diffCprncRef() {
+  # source the test.sh file to get the names of the NC_OUTPUT_FILES
+  source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
+  if [ -z "${TESTCASE_REF_TOL}" ]; then
+    tol=0.0E0
+  else
+     tol=${TESTCASE_REF_TOL}
+  fi
+
+  # NC_OUTPUT_FILES is defined in the .sh file
+  FILES="${NC_OUTPUT_CHECKREF}"
+
+  if [ -z "${FILES}" ] ; then
+      echo Test ${TEST_NAME}: no netcdf CHECKREF output files, skipping CHECKREF test.
+  fi
+
+  # for files in movies
+  for file in $FILES 
   do
+    echo "file = ${file}"
+    cprncOutputFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.ref.`basename $file`.out"
+    cprncErrorFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.ref.`basename $file`.err"
 
-    subFile=TEST_FILE_${subNum}
-    subFile=${!subFile}
-
-    subDirName=`dirname ${subFile}`
-    subBaseName=`basename ${subDirName}`
-
-    baselineDir=${HOMME_BASELINE_DIR}/$subBaseName
-    mkdir -p $baselineDir
-
-    # source the test.sh file to get the name of the NC_OUTPUT_FILES
-    source ${subFile}
-
-    # NC_OUTPUT_FILES is defined in the .sh file
-    FILES="${NC_OUTPUT_FILES}"
-
-    if [ -z "${FILES}" ] ; then
-      : # pass for now
-      #echo "Test ${subBaseName} doesn't have Netcdf output files"
+    # ensure that cprncOutputFile exists
+    if [ ! -f "${cprncOutputFile}" ]; then
+      echo "Error: cprnc output file ${cprncOutputFile} not found. Exiting."
+      exit -12
     fi
 
-    # for files in movies
-    for file in $FILES 
-    do
-      #echo "file = ${file}"
-      baseFilename=`basename $file`
+    # Parse the output file to determine if they were identical
+    DIFF_RESULT=`grep -e 'diff_test' ${cprncOutputFile} | awk '{ print $8 }'`
 
-      # new result
-      newFile=${subDirName}/movies/$file
-      newFileBasename=`basename $newFile`
-
-      if [ ! -f "${newFile}" ] ; then
-        echo "ERROR: The result file ${newFile} does not exist exiting" 
-        exit -17
+    if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
+      echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
+      # Delete the output file to remove clutter
+    else
+      echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
+      echo  Checking RMS differences with tol = $tol 
+      echo "CPRNC returned the following RMS differences"
+      if grep RMS ${cprncOutputFile} ; then
+        RMSnormalized=`grep RMS ${cprncOutputFile} | awk '{print $5}' -`
+        for rmserror in $RMSnormalized 
+        do
+           check=`awk "BEGIN{ print ( $rmserror <= $tol ) }"`
+           if [ $check == "1" ]; then
+              echo $rmserror '<='  $tol  OK
+           else
+              echo $rmserror '> '  $tol  ERROR: TOL EXCEEDED
+              exit -14
+           fi  
+        done     
+      else
+         echo "Error: No RMS differences found"
+         exit -13
       fi
-
-      # Make the directory to store the netcdf files
-      cmd="mkdir -p $baselineDir/movies"
-      #echo $cmd
-      $cmd
-      # Move the netcdf files
-      cmd="mv $newFile $baselineDir/movies/$newFileBasename"
-      #echo "$cmd"
-      $cmd
-      
-    done
+    fi
   done
 }
 

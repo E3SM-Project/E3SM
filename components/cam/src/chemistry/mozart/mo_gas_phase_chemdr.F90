@@ -11,6 +11,7 @@ module mo_gas_phase_chemdr
   use spmd_utils,       only : iam
   use phys_control,     only : phys_getopts
   use carma_flags_mod,  only : carma_do_hetchem
+  use cam_logfile,      only : iulog
 
   implicit none
   save
@@ -26,18 +27,20 @@ module mo_gas_phase_chemdr
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
+  integer :: inv_ndx_cnst_o3, inv_ndx_m
 
   character(len=fieldname_len),dimension(rxntot-phtcnt) :: rxn_names
   character(len=fieldname_len),dimension(phtcnt)        :: pht_names
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
+
 contains
 
-  subroutine gas_phase_chemdr_inti()
+  subroutine gas_phase_chemdr_inti(chem_name)
 
     use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx, get_rxt_ndx
-    use cam_history,       only : addfld,phys_decomp
+    use cam_history,       only : addfld, horiz_only
     use cam_abortutils,        only : endrun
     use cam_history,       only : add_default
     use mo_chm_diags,      only : chm_diags_inti
@@ -48,6 +51,8 @@ contains
     use rad_constituents,  only : rad_cnst_get_info
 
     implicit none
+
+    character(len=*), intent(in) :: chem_name
 
     character(len=3)  :: string
     integer           :: n, m
@@ -74,16 +79,16 @@ contains
     do m = 1,extcnt
        WRITE(UNIT=string, FMT='(I2.2)') m
        extfrc_name(m) = 'extfrc_'// trim(string)
-       call addfld( extfrc_name(m), ' ', pver, 'I', 'ext frcing', phys_decomp )
+       call addfld( extfrc_name(m), (/ 'lev' /), 'I', ' ', 'ext frcing' )
        !call add_default( extfrc_name(m), 3, ' ' )
     end do
 
     do n = 1,rxt_tag_cnt
        tag_names(n) = trim(rxt_tag_lst(n))
        if (n<=phtcnt) then
-          call addfld( tag_names(n), '/s ', pver, 'I', 'photolysis rate', phys_decomp )
+          call addfld( tag_names(n), (/ 'lev' /), 'I', '/s', 'photolysis rate' )
        else
-          call addfld( tag_names(n), '/cm3/s ', pver, 'I', 'reaction rate', phys_decomp )
+          call addfld( tag_names(n), (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
        endif
        !call add_default( tag_names(n), 1, ' ' )
     enddo
@@ -91,47 +96,47 @@ contains
     do n = 1,phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        pht_names(n) = 'J_' // trim(string)
-       call addfld( pht_names(n), '/s ', pver, 'I', 'photolysis rate', phys_decomp )
+       call addfld( pht_names(n), (/ 'lev' /), 'I', '/s', 'photolysis rate' )
        !call add_default( pht_names(n), 3, ' ' )
     enddo
 
     do n = 1,rxntot-phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        rxn_names(n) = 'R_' // trim(string)
-       call addfld( rxn_names(n), '/cm3/s ', pver, 'I', 'reaction rate', phys_decomp )
+       call addfld( rxn_names(n), (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
        !call add_default( rxn_names(n), 1, ' ' )
     enddo
 
-    call addfld( 'DTCBS',   ' ',  1, 'I','photolysis diagnostic black carbon OD', phys_decomp )
-    call addfld( 'DTOCS',   ' ',  1, 'I','photolysis diagnostic organic carbon OD', phys_decomp )
-    call addfld( 'DTSO4',   ' ',  1, 'I','photolysis diagnostic SO4 OD', phys_decomp )
-    call addfld( 'DTSOA',   ' ',  1, 'I','photolysis diagnostic SOA OD', phys_decomp )
-    call addfld( 'DTANT',   ' ',  1, 'I','photolysis diagnostic NH4SO4 OD', phys_decomp )
-    call addfld( 'DTSAL',   ' ',  1, 'I','photolysis diagnostic salt OD', phys_decomp )
-    call addfld( 'DTDUST',  ' ',  1, 'I','photolysis diagnostic dust OD', phys_decomp )
-    call addfld( 'DTTOTAL', ' ',  1, 'I','photolysis diagnostic total aerosol OD', phys_decomp )   
-    call addfld( 'FRACDAY', ' ',  1, 'I','photolysis diagnostic fraction of day', phys_decomp )
+    call addfld( 'DTCBS',  horiz_only, 'I',   ' ','photolysis diagnostic black carbon OD' )
+    call addfld( 'DTOCS',  horiz_only, 'I',   ' ','photolysis diagnostic organic carbon OD' )
+    call addfld( 'DTSO4',  horiz_only, 'I',   ' ','photolysis diagnostic SO4 OD' )
+    call addfld( 'DTSOA',  horiz_only, 'I',   ' ','photolysis diagnostic SOA OD' )
+    call addfld( 'DTANT',  horiz_only, 'I',   ' ','photolysis diagnostic NH4SO4 OD' )
+    call addfld( 'DTSAL',  horiz_only, 'I',   ' ','photolysis diagnostic salt OD' )
+    call addfld( 'DTDUST',  horiz_only, 'I',  ' ','photolysis diagnostic dust OD' )
+    call addfld( 'DTTOTAL',  horiz_only, 'I', ' ','photolysis diagnostic total aerosol OD' )   
+    call addfld( 'FRACDAY',  horiz_only, 'I', ' ','photolysis diagnostic fraction of day' )
 
-    call addfld( 'QDSAD', '/s ', pver, 'I', 'water vapor sad delta', phys_decomp )
-    call addfld( 'SAD', 'cm2/cm3 ', pver, 'I', 'sulfate aerosol SAD', phys_decomp )
-    call addfld( 'SAD_SULFC', 'cm2/cm3 ', pver, 'I', 'chemical sulfate aerosol SAD', phys_decomp )
-    call addfld( 'SAD_SAGE', 'cm2/cm3 ', pver, 'I', 'SAGE sulfate aerosol SAD', phys_decomp )
-    call addfld( 'SAD_LNAT', 'cm2/cm3 ', pver, 'I', 'large-mode NAT aerosol SAD', phys_decomp )
-    call addfld( 'SAD_ICE', 'cm2/cm3 ', pver, 'I', 'water-ice aerosol SAD', phys_decomp )
-    call addfld( 'RAD_SULFC', 'cm ', pver, 'I', 'chemical sad sulfate', phys_decomp )
-    call addfld( 'RAD_LNAT', 'cm ', pver, 'I', 'large nat radius', phys_decomp )
-    call addfld( 'RAD_ICE', 'cm ', pver, 'I', 'sad ice', phys_decomp )
-    call addfld( 'SAD_TROP', 'cm2/cm3 ', pver, 'I', 'tropospheric aerosol SAD', phys_decomp )
-    call addfld( 'HNO3_STS', 'mol/mol', pver, 'I', 'STS condensed HNO3', phys_decomp )
-    call addfld( 'HNO3_NAT', 'mol/mol', pver, 'I', 'NAT condensed HNO3', phys_decomp )
-    call addfld( 'QDSETT', '/s ', pver, 'I', 'water vapor settling delta', phys_decomp )
-    call addfld( 'QDCHEM', '/s ', pver, 'I', 'water vapor chemistry delta', phys_decomp )
-    call addfld( 'HNO3_GAS', 'mol/mol', pver, 'I', 'gas-phase hno3', phys_decomp )
-    call addfld( 'H2O_GAS', 'mol/mol', pver, 'I', 'gas-phase h2o', phys_decomp )
+    call addfld( 'QDSAD', (/ 'lev' /), 'I', '/s', 'water vapor sad delta' )
+    call addfld( 'SAD', (/ 'lev' /), 'I', 'cm2/cm3', 'sulfate aerosol SAD' )
+    call addfld( 'SAD_SULFC', (/ 'lev' /), 'I', 'cm2/cm3', 'chemical sulfate aerosol SAD' )
+    call addfld( 'SAD_SAGE', (/ 'lev' /), 'I', 'cm2/cm3', 'SAGE sulfate aerosol SAD' )
+    call addfld( 'SAD_LNAT', (/ 'lev' /), 'I', 'cm2/cm3', 'large-mode NAT aerosol SAD' )
+    call addfld( 'SAD_ICE', (/ 'lev' /), 'I', 'cm2/cm3', 'water-ice aerosol SAD' )
+    call addfld( 'RAD_SULFC', (/ 'lev' /), 'I', 'cm', 'chemical sad sulfate' )
+    call addfld( 'RAD_LNAT', (/ 'lev' /), 'I', 'cm', 'large nat radius' )
+    call addfld( 'RAD_ICE', (/ 'lev' /), 'I', 'cm', 'sad ice' )
+    call addfld( 'SAD_TROP', (/ 'lev' /), 'I', 'cm2/cm3', 'tropospheric aerosol SAD' )
+    call addfld( 'HNO3_STS', (/ 'lev' /), 'I', 'mol/mol', 'STS condensed HNO3' )
+    call addfld( 'HNO3_NAT', (/ 'lev' /), 'I', 'mol/mol', 'NAT condensed HNO3' )
+    call addfld( 'QDSETT', (/ 'lev' /), 'I', '/s', 'water vapor settling delta' )
+    call addfld( 'QDCHEM', (/ 'lev' /), 'I', '/s', 'water vapor chemistry delta' )
+    call addfld( 'HNO3_GAS', (/ 'lev' /), 'I', 'mol/mol', 'gas-phase hno3' )
+    call addfld( 'H2O_GAS', (/ 'lev' /), 'I', 'mol/mol', 'gas-phase h2o' )
     if (het1_ndx>0) then
-       call addfld( 'het1_total', '/s', pver, 'I', 'total N2O5 + H2O het rate constant', phys_decomp )
+       call addfld( 'het1_total', (/ 'lev' /), 'I', '/s', 'total N2O5 + H2O het rate constant' )
     endif
-    call addfld( 'SZA', 'degrees', 1, 'I', 'solar zenith angle', phys_decomp )
+    call addfld( 'SZA', horiz_only, 'I', 'degrees', 'solar zenith angle' )
 
     call chm_diags_inti()
     call rate_diags_init()
@@ -147,6 +152,20 @@ contains
 
     if (carma_do_hetchem) ndx_sadsulf= pbuf_get_index('SADSULF')
     
+!-----------------------------------------------------------------------
+! get fixed oxidant (troposphere) index for Linoz_MAM
+!-----------------------------------------------------------------------
+   
+     inv_ndx_cnst_o3 = get_inv_ndx( 'cnst_O3' ) ! prescribed O3 oxidant field
+     inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
+     
+     if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom'.or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
+       if ( inv_ndx_cnst_o3 < 1 ) then
+          call endrun('ERROR: chem_name = '//trim(chem_name)//' requies cnst_O3 fixed oxidant field. Use cnst_O3:O3 in namelist tracer_cnst_specifier')
+       end if
+     end if
+
+
   end subroutine gas_phase_chemdr_inti
 
 
@@ -360,6 +379,8 @@ contains
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
 
+    call t_startf('chemdr_init')
+
     ! initialize to NaN to hopefully catch user defined rxts that go unset
     reaction_rates(:,:,:) = nan
 
@@ -458,6 +479,21 @@ contains
     strato_sad(:,:) = 0.0_r8
     sad_sage(:,:) = 0.0_r8
     call strato_sad_set( pmid, sad_sage, ncol, lchnk)
+
+    !-----------------------------------------------------------------------      
+    !        ... set tropospheric ozone for Linoz_MAM  (pjc, 2015)
+    !-----------------------------------------------------------------------
+    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) then
+!     write(iulog,*) 'Set tropospheric ozone for linoz_mam: inv_ndx_cnst_o3 =',inv_ndx_cnst_o3
+      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
+         do i = 1, ncol
+            if( k > troplev(i) ) then
+              vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_cnst_o3) / invariants(i,k,inv_ndx_m)   ! O3 and cnst_o3
+            endif
+         end do
+      end do
+    end if
+
 
     if (carma_do_hetchem) then 
     !-----------------------------------------------------------------------      
@@ -698,7 +734,8 @@ contains
        call outfld( tag_names(i), reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
     enddo
 
-    if ( has_linoz_data ) then
+    if ( has_linoz_data .and. .not. &
+       (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) ) then
        ltrop_sol(:ncol) = troplev(:ncol)
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
@@ -713,20 +750,24 @@ contains
 
     vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
+    call t_stopf('chemdr_init')
+
     !=======================================================================
     !        ... Call the class solution algorithms
     !=======================================================================
     !-----------------------------------------------------------------------
     !	... Solve for "Explicit" species
     !-----------------------------------------------------------------------
+    call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
+    call t_stopf('exp_sol')
 
     !-----------------------------------------------------------------------
     !	... Solve for "Implicit" species
     !-----------------------------------------------------------------------
     if ( has_strato_chem ) wrk(:,:) = vmr(:,:,h2o_ndx)
-    call t_startf('imp_sol')
     !
+    call t_startf('imp_sol')
     call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
                   invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) )
     call t_stopf('imp_sol')
@@ -748,11 +789,13 @@ contains
 ! Aerosol processes ...
 !
 
-    call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, reaction_rates, &
+    call t_startf('aero_model_gasaerexch')
+    call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
                                 vmr0, vmr, pbuf )
+    call t_stopf('aero_model_gasaerexch')
 
     if ( has_strato_chem ) then 
 
@@ -857,6 +900,7 @@ contains
     wind_speed(:ncol) = sqrt( ufld(:ncol,pver)*ufld(:ncol,pver) + vfld(:ncol,pver)*vfld(:ncol,pver) )
     prect(:ncol) = precc(:ncol) + precl(:ncol)
 
+    call t_startf('drydep')
     if ( drydep_method == DD_XLND ) then
        soilw = -99
        call drydep( ocnfrac, icefrac, ncdate, ts, ps,  &
@@ -877,6 +921,7 @@ contains
             depvel, sflx, mmr, pmid(:,pver), &
             tvs, ncol, icefrac, ocnfrac, lchnk )
     endif
+    call t_stopf('drydep')
 
     drydepflx(:,:) = 0._r8
     do m = 1,pcnst
@@ -887,11 +932,13 @@ contains
        endif
     end do
 
+    call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
                     reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
                     mmr_tend(:ncol,:,:), pdel(:ncol,:), pbuf  )
 
     call rate_diags_calc( reaction_rates(:,:,:), vmr(:,:,:), invariants(:,:,indexm), ncol, lchnk )
+    call t_stopf('chemdr_diags')
 
   end subroutine gas_phase_chemdr
 
