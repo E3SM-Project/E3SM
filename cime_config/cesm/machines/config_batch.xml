@@ -258,9 +258,6 @@
     <queues>
       <queue default="true" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
     </queues>
-    <submit_args>
-      <arg flag="-l " name="select=$TOTALPES"/>
-    </submit_args>
   </batch_system>
 
 

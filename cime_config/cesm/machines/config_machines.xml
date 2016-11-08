@@ -902,10 +902,13 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>72</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>36</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
+      <arguments>
+	<arg name="labelstdout">-p "%g:"</arg>
+      </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
