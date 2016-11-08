@@ -48,6 +48,9 @@
 
  ierr = 0
 
+ write(0,*) '----- Setting up package variables -----'
+ write(0,*)
+
 !--- initialization of all packages for parameterizations of cloud microphysics:
 
  call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
@@ -83,10 +86,9 @@
     mp_wsm6_in = .true.
  endif
 
- write(0,*) '--- microp_scheme           = ', trim(config_microp_scheme)
- write(0,*) '--- mp_kessler_in           = ', mp_kessler_in
- write(0,*) '--- mp_thompson_in          = ', mp_thompson_in
- write(0,*) '--- mp_wsm6_in              = ', mp_wsm6_in
+ write(0,*) '    mp_kessler_in           = ', mp_kessler_in
+ write(0,*) '    mp_thompson_in          = ', mp_thompson_in
+ write(0,*) '    mp_wsm6_in              = ', mp_wsm6_in
 
 !--- initialization of all packages for parameterizations of convection:
 
@@ -124,10 +126,9 @@
     cu_tiedtke_in = .true.
  endif
 
- write(0,*) '--- convection_scheme       = ', trim(config_convection_scheme)
- write(0,*) '--- cu_grell_freitas_in     = ', cu_grell_freitas_in
- write(0,*) '--- cu_kain_fritsch_in      = ', cu_kain_fritsch_in
- write(0,*) '--- cu_tiedtke_in           = ', cu_tiedtke_in
+ write(0,*) '    cu_grell_freitas_in     = ', cu_grell_freitas_in
+ write(0,*) '    cu_kain_fritsch_in      = ', cu_kain_fritsch_in
+ write(0,*) '    cu_tiedtke_in           = ', cu_tiedtke_in
 
 !--- initialization of all packages for parameterizations of surface layer and planetary boundary layer:
 
@@ -157,9 +158,8 @@
     bl_ysu_in = .true.
  endif
 
- write(0,*) '--- pbl_scheme              = ', trim(config_pbl_scheme)
- write(0,*) '--- bl_mynn_in              = ', bl_mynn_in
- write(0,*) '--- bl_ysu_in               = ', bl_ysu_in
+ write(0,*) '    bl_mynn_in              = ', bl_mynn_in
+ write(0,*) '    bl_ysu_in               = ', bl_ysu_in
  write(0,*)
 
  end function atmphys_setup_packages

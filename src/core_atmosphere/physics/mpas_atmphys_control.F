@@ -105,6 +105,9 @@
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
  call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
+ write(0,*)
+ write(0,*) '----- Setting up physics suite '''//trim(config_physics_suite)//''' -----'
+
  !
  !setup schemes according to the selected physics suite:
  !
@@ -297,13 +300,13 @@
  write(0,*) ' '
  write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
  write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
- write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
  write(0,*) '    config_pbl_scheme          = ', trim(config_pbl_scheme)
  write(0,*) '    config_gwdo_scheme         = ', trim(config_gwdo_scheme)
  write(0,*) '    config_radt_cld_scheme     = ', trim(config_radt_cld_scheme)
  write(0,*) '    config_radt_lw_scheme      = ', trim(config_radt_lw_scheme)
  write(0,*) '    config_radt_sw_scheme      = ', trim(config_radt_sw_scheme)
  write(0,*) '    config_sfclayer_scheme     = ', trim(config_sfclayer_scheme)
+ write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
  write(0,*)
 
  end subroutine physics_namelist_check
