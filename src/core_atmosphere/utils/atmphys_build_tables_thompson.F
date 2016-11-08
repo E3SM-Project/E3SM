@@ -27,6 +27,7 @@
 
 !local variables:
  logical, parameter:: l_mp_tables = .false.
+ integer:: istatus
 
 !-----------------------------------------------------------------------------------------------------------------
 
@@ -36,8 +37,12 @@
 !--- building look-up table for rain collecting graupel:
  write(0,*)
  write(0,*) '--- building MP_THOMPSON_QRacrQG_DATA.DBL'
+ open(unit=11,file='MP_THOMPSON_QRacrQG_DATA.DBL',form='unformatted',status='new',iostat=istatus)
+ if (istatus /= 0) then
+    call print_parallel_mesg('MP_THOMPSON_QRacrQG_DATA.DBL')
+    return
+ end if
  call qr_acr_qg
- open(unit=11,file='MP_THOMPSON_QRacrQG_DATA.DBL',form='unformatted')
  write(11) tcg_racg
  write(11) tmr_racg
  write(11) tcr_gacr
@@ -49,8 +54,12 @@
 !--- building look-up table for rain collecting snow:
  write(0,*)
  write(0,*) '--- building MP_THOMPSON_QRacrQS_DATA.DBL'
+ open(unit=11,file='MP_THOMPSON_QRacrQS_DATA.DBL',form='unformatted',status='new',iostat=istatus)
+ if (istatus /= 0) then
+    call print_parallel_mesg('MP_THOMPSON_QRacrQS_DATA.DBL')
+    return
+ end if
  call qr_acr_qs
- open(unit=11,file='MP_THOMPSON_QRacrQS_DATA.DBL',form='unformatted',status='new')
  write(11)tcs_racs1
  write(11)tmr_racs1
  write(11)tcs_racs2
@@ -68,8 +77,12 @@
 !--- building look-up table for freezing of cloud droplets:
  write(0,*)
  write(0,*) '--- building MP_THOMPSON_freezeH2O_DATA.DBL'
+ open(unit=11,file='MP_THOMPSON_freezeH2O_DATA.DBL',form='unformatted',status='new',iostat=istatus)
+ if (istatus /= 0) then
+    call print_parallel_mesg('MP_THOMPSON_freezeH2O_DATA.DBL')
+    return
+ end if
  call freezeH2O
- open(unit=11,file='MP_THOMPSON_freezeH2O_DATA.DBL',form='unformatted')
  write(11) tpi_qrfz
  write(11) tni_qrfz
  write(11) tpg_qrfz
@@ -81,8 +94,12 @@
 !--- building look-up table for autoconversion of cloud ice to snow:
  write(0,*)
  write(0,*) '--- building MP_THOMPSON_QIautQS_DATA.DBL'
+ open(unit=11,file='MP_THOMPSON_QIautQS_DATA.DBL',form='unformatted',status='new',iostat=istatus)
+ if (istatus /= 0) then
+    call print_parallel_mesg('MP_THOMPSON_QIautQS_DATA.DBL')
+    return
+ end if
  call qi_aut_qs
- open(unit=11,file='MP_THOMPSON_QIautQS_DATA.DBL',form='unformatted')
  write(11) tpi_ide
  write(11) tps_iaus
  write(11) tni_iaus
@@ -106,6 +123,22 @@
  write(0,*) '*******************************************************************************'
 
  end subroutine build_tables_thompson
+
+
+!=================================================================================================================
+ subroutine print_parallel_mesg(filename)
+!=================================================================================================================
+
+ character(len=*), intent(in) :: filename
+
+ write(0,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+ write(0,*) '! Error encountered while trying to create new file '//trim(filename)
+ write(0,*) '! '
+ write(0,*) '! Please ensure that this file does not exist before running ''build_tables'','
+ write(0,*) '! and ensure that ''build_tables'' is *NOT* run in parallel.'
+ write(0,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+
+ end subroutine print_parallel_mesg
 
 !=================================================================================================================
  end module atmphys_build_tables_thompson 
