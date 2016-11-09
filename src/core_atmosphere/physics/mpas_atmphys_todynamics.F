@@ -579,6 +579,9 @@
            case('cu_tiedtke')
               if (rk_step == 1 .and. dynamics_substep == 1) then
                  call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+                 
+                 tend_u_phys(1:nVertLevels,1:nEdges) = tend_u_phys(1:nVertLevels,1:nEdges) &
+                                                     + rucuten_Edge(1:nVertLevels,1:nEdges)
               end if
               do i = 1, nEdgesSolve
               do k  = 1, nVertLevels
@@ -749,6 +752,9 @@
            case('cu_tiedtke','cu_ntiedtke')
               if (rk_step == 1 .and. dynamics_substep == 1) then
                  call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+                 
+                 tend_u_phys(1:nVertLevels,1:nEdges) = tend_u_phys(1:nVertLevels,1:nEdges) &
+                                                     + rucuten_Edge(1:nVertLevels,1:nEdges)
               end if
               do i = 1, nEdgesSolve
               do k  = 1, nVertLevels

@@ -578,6 +578,143 @@ module pv_diagnostics
      
    end subroutine floodFill_strato
    
+   subroutine floodFill_tropo(mesh, diag, pvuVal)
+      !Searching down each column from TOA to find 2pvu surface is buggy with stratospheric wave breaking,
+      !since will find 2 pvu at a higher level than "tropopause". This looks to be worse as mesh gets finer and vertical vorticity jumps.
+      !Note that stratospheric blobs may persist for long times w/ slow mixing downstream of mountains or deep convection.
+      !A few quicker fixes (make sure <2pvu for a number of layers; search down from 10PVU instead of TOA) are hacky and not robust.
+      
+      !Two flood fill options are to:
+      ! (1) flood fill stratosphere (>2pvu) from stratosphere seeds near model top. Strong surface PV anomalies can connect to 2pvu, 
+      !     and the resulting "flood-filled 2 pvu" can have sizeable areas that are just at the surface while there is clearly a tropopause above (e.g., in a cross-section).
+      !     To address large surface blobs, take the flood fill mask and try to go up from the surface to 10 pvu w/in column. If can, all stratosphere. Else, disconnect "surface blob".
+      ! (2) flood fill troposphere (<2pvu) from troposphere seeds near surface.
+      !Somewhat paradoxically, the bottom of the stratosphere is lower than the top of the troposphere.
+      
+      !The "output" is iLev_DT, which is the vertical index for the level >= pvuVal. If >nVertLevels, pvuVal above column. If <2, pvuVal below column.
+      !Communication between blocks during the flood fill may be needed to treat some edge cases appropriately.
+
+      use mpas_pool_routines, only : mpas_pool_get_dimension, mpas_pool_get_array
+     
+      implicit none
+      
+      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(inout) :: diag
+      real(kind=RKIND), intent(in) :: pvuVal
+      
+      integer :: iCell, k, nChanged, iNbr, iCellNbr, levInd
+      integer, pointer :: nCells, nVertLevels
+      integer, dimension(:), pointer :: nEdgesOnCell, iLev_DT
+      integer, dimension(:,:), pointer :: cellsOnCell
+      
+      real(kind=RKIND) :: sgnHemi, sgn
+      real(kind=RKIND),dimension(:),pointer:: latCell
+      real(kind=RKIND), dimension(:,:), pointer :: ertel_pv
+      
+      integer, dimension(:,:), allocatable :: candInTropo, inTropo !whether in troposphere
+      
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'latCell', latCell)
+
+      call mpas_pool_get_array(diag, 'ertel_pv', ertel_pv)
+      !call mpas_pool_get_array(diag, 'iLev_DT_trop', iLev_DT)
+      call mpas_pool_get_array(diag, 'iLev_DT', iLev_DT)
+      
+      allocate(candInTropo(nVertLevels, nCells+1))
+      allocate(inTropo(nVertLevels, nCells+1))
+      candInTropo(:,:) = 0
+      inTropo(:,:) = 0
+      !store whether each level above DT to avoid repeating logic. we'll use cand as a isVisited marker further below.
+      do iCell=1,nCells
+         sgnHemi = sign(1.0_RKIND, latCell(iCell)) !at the equator, sign(0)=0
+         if (sgnHemi .EQ. 0.0) sgnHemi = 1.0_RKIND
+         do k=1,nVertLevels
+            sgn = ertel_pv(k,iCell)*sgnHemi-pvuVal
+            if (sgn .LT. 0) candInTropo(k,iCell) = 1
+         end do
+      end do
+      
+      !seed flood fill with near surface that's below DT (can have surface above 2pvu from pv anoms).
+      !Note that this would be wrong if low PV "stratospheric" blobs are right above the surface
+      nChanged = 0
+      levInd = min(nVertLevels, 3)
+      do iCell=1,nCells
+         do k=1,levInd
+            if (candInTropo(k,iCell) .GT. 0) then
+               inTropo(k,iCell) = 1
+               candInTropo(k,iCell) = 0
+               nChanged = nChanged+1
+            end if
+         end do
+      end do
+      
+      !flood fill from the given seeds. since I don't know enough fortran,
+      !we'll just brute force a continuing loop rather than queue.
+      do while(nChanged .GT. 0)
+        nChanged = 0
+        do iCell=1,nCells
+          do k=1,nVertLevels
+             !update if candidate and neighbor in troposphere
+             if (candInTropo(k,iCell) .GT. 0) then
+                !nbr below
+                if (k .GT. 1) then
+                  if (inTropo(k-1,iCell) .GT. 0) then
+                    inTropo(k,iCell) = 1
+                    candInTropo(k,iCell) = 0
+                    nChanged = nChanged+1
+                    cycle
+                  end if
+                end if
+                
+                !side nbrs
+                do iNbr = 1, nEdgesOnCell(iCell)
+                  iCellNbr = cellsOnCell(iNbr,iCell)
+                  if (inTropo(k,iCellNbr) .GT. 0) then
+                    inTropo(k,iCell) = 1
+                    candInTropo(k,iCell) = 0
+                    nChanged = nChanged+1
+                    cycle
+                  end if
+                end do
+                
+                !nbr above
+                if (k .LT. nVertLevels) then
+                  if (inTropo(k+1,iCell) .GT. 0) then
+                    inTropo(k,iCell) = 1
+                    candInTropo(k,iCell) = 0
+                    nChanged = nChanged+1
+                    cycle
+                  end if
+                end if
+                
+             end if !candIn
+          end do !levels
+        end do !cells
+        !here's where a communication would be needed for edge cases !!! 
+      end do !while
+      
+      !Fill iLev_DT with the lowest level above the tropopause (If DT above column, iLev>nVertLevels. If DT below column, iLev=0.
+      do iCell=1,nCells
+        nChanged = 0
+        do k=nVertLevels,1,-1
+          if (inTropo(k,iCell) .GT. 0) then
+            nChanged = 1
+            exit
+          end if
+        end do !k
+        
+        if (nChanged .GT. 0) then !found troposphere's highest level
+          iLev_DT(iCell) = k+1 !level above troposphere (>nVertLevels if whole column below 2pvu; e.g., tropics)
+        else !whole column above DT (e.g., arctic pv tower)
+          iLev_DT(iCell) = 0
+        end if
+      end do !iCell
+     
+   end subroutine floodFill_tropo
+   
    subroutine interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
       !compute various fields on 2pvu surface using calculated PVU field
       !potential temperature, uZonal, uMeridional, vertical vorticity
@@ -1142,7 +1279,8 @@ module pv_diagnostics
       pvuVal = 2.0_RKIND
       missingVal = -99999.0_RKIND
       stratoPV = 10.0_RKIND
-      call floodFill_strato(mesh, diag, pvuVal, stratoPV)
+      !call floodFill_strato(mesh, diag, pvuVal, stratoPV)
+      call floodFill_tropo(mesh,diag,pvuVal)
       call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
    
    end subroutine atm_compute_pv_diagnostics
