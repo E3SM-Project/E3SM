@@ -4,27 +4,19 @@
 
 module held_suarez_mod
 #ifdef _PRIM
-  ! ------------------------------
-  use kinds, only  : real_kind
-  ! ------------------------------
-  use physical_constants, only : p0, kappa,g, dd_pi
-  ! ------------------------------
-  use element_mod, only : element_t
-  ! ------------------------------
-  use time_mod, only : secpday
-  ! ------------------------------
-  use coordinate_systems_mod, only : spherical_polar_t
-  ! ------------------------------
-  use hybvcoord_mod, only : hvcoord_t
-  ! ------------------------------
-  use time_mod,       only : TimeLevel_t
-  ! ------------------------------
-  use dimensions_mod, only : nlev,np,qsize
-  ! ------------------------------
-  use physics_mod, only : Prim_Condense
-  ! ------------------------------
-  use control_mod, only : tstep_type
-  ! ------------------------------
+
+  use control_mod,            only: tstep_type
+  use coordinate_systems_mod, only: spherical_polar_t
+  use dimensions_mod,         only: nlev,np,qsize
+  use element_mod,            only: element_t
+  use hybrid_mod,             only: hybrid_t
+  use hybvcoord_mod,          only: hvcoord_t
+  use kinds,                  only: real_kind, iulog
+  use physical_constants,     only: p0, kappa,g, dd_pi
+  use physics_mod,            only: prim_condense
+  use time_mod,               only: secpday
+  use time_mod,               only: timelevel_t
+
 implicit none
 private
 
@@ -38,7 +30,6 @@ private
   public :: hs_v_forcing
   public :: hs_T_forcing
   public :: hs0_init_state
-
   public :: hs_forcing
 
 contains
@@ -55,7 +46,6 @@ contains
     real (kind=real_kind), dimension(np,np) :: psfrc 
     integer                                 :: nm1,nfrc,n0
     integer                                 :: i,j,k,q
-
 
     nm1   = tl%nm1  ! always store Forcing tendencies in tl%nm1
 
@@ -288,12 +278,14 @@ contains
       
   end function hs_T_forcing
 
-  subroutine hs0_init_state(elem, hvcoord,nets,nete,Tinit)
-    type(element_t), intent(inout) :: elem(:)
-    type (hvcoord_t), intent(in) :: hvcoord
-    integer, intent(in)   :: nets
-    integer, intent(in)   :: nete
-    real (kind=real_kind), intent(in) :: Tinit
+  subroutine hs0_init_state(elem, hybrid, hvcoord,nets,nete,Tinit)
+
+    type(element_t),        intent(inout) :: elem(:)
+    type(hybrid_t),         intent(in)    :: hybrid                   ! hybrid parallel structure
+    type (hvcoord_t),       intent(in)    :: hvcoord
+    integer,                intent(in)    :: nets
+    integer,                intent(in)    :: nete
+    real (kind=real_kind),  intent(in)    :: Tinit
 
     ! Local variables
     
@@ -302,6 +294,8 @@ contains
     integer :: n0 
     integer :: np1
     real (kind=real_kind) :: lat_mtn,lon_mtn,r_mtn,h_mtn,rsq,lat,lon
+
+    if (hybrid%masterthread) write(iulog,*) 'initializing Held-Suarez primitive equations test'
 
     nm1= 1
     n0 = 2

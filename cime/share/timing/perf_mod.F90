@@ -19,7 +19,8 @@ module perf_mod
    use perf_utils
 #else
    use shr_sys_mod,       only: shr_sys_abort
-   use shr_kind_mod,      only: shr_kind_cl, shr_kind_r8, shr_kind_i8
+   use shr_kind_mod,      only: SHR_KIND_CS, SHR_KIND_CM, SHR_KIND_CX, &
+                                SHR_KIND_R8, SHR_KIND_I8
    use shr_mpi_mod,       only: shr_mpi_barrier, shr_mpi_bcast
    use shr_file_mod,      only: shr_file_getUnit, shr_file_freeUnit
    use namelist_utils,    only: find_group_name
@@ -42,6 +43,8 @@ module perf_mod
    public t_profile_onf
    public t_barrier_onf
    public t_single_filef
+   public t_set_prefixf
+   public t_unset_prefixf
    public t_stampf
    public t_startf
    public t_stopf
@@ -134,6 +137,22 @@ module perf_mod
    logical, parameter :: def_perf_ovhd_measurement = .false.     ! default
    logical, private   :: perf_ovhd_measurement = def_perf_ovhd_measurement
                          ! measure overhead of profiling directly
+
+   logical, parameter :: def_perf_add_detail = .false.         ! default
+   logical, private   :: perf_add_detail = def_perf_add_detail
+                         ! flag indicating whether to prefix the 
+                         ! timer name with the current detail level.
+                         ! This requires that even t_startf/t_stopf 
+                         ! calls do not cross detail level changes
+
+   character(len=SHR_KIND_CS), private :: event_prefix
+                         ! current prefix for all event names.
+                         ! Default defined to be blank via 
+                         ! prefix_len_def
+   integer, parameter :: prefix_len_def = 0                    ! default
+   integer, private   :: prefix_len = prefix_len_def
+                         ! For convenience, contains len_trim of 
+                         ! event_prefix, if set.
 
 #ifdef HAVE_MPI
    integer, parameter :: def_perf_timer = GPTLmpiwtime         ! default
@@ -233,7 +252,8 @@ contains
                                perf_single_file_out, &
                                perf_global_stats_out, &
                                perf_papi_enable_out, &
-                               perf_ovhd_measurement_out )
+                               perf_ovhd_measurement_out, &
+                               perf_add_detail_out )
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 ! Author: P. Worley 
@@ -261,6 +281,8 @@ contains
    logical, intent(out), optional :: perf_papi_enable_out
    ! measure overhead of profiling directly
    logical, intent(out), optional :: perf_ovhd_measurement_out
+   ! prefix timer name with current detail level 
+   logical, intent(out), optional :: perf_add_detail_out
 !-----------------------------------------------------------------------
    if ( present(timing_disable_out) ) then
       timing_disable_out = def_timing_disable
@@ -295,6 +317,9 @@ contains
    if ( present(perf_ovhd_measurement_out) ) then
       perf_ovhd_measurement_out = def_perf_ovhd_measurement
    endif
+   if ( present(perf_add_detail_out) ) then
+      perf_add_detail_out = def_perf_add_detail
+   endif
 !
    return
    end subroutine perf_defaultopts
@@ -313,7 +338,8 @@ contains
                            perf_single_file_in, &
                            perf_global_stats_in, &
                            perf_papi_enable_in, &
-                           perf_ovhd_measurement_in )
+                           perf_ovhd_measurement_in, &
+                           perf_add_detail_in )
 !----------------------------------------------------------------------- 
 ! Purpose: Set runtime options
 ! Author: P. Worley 
@@ -346,6 +372,8 @@ contains
    logical, intent(in), optional :: perf_papi_enable_in
    ! measure overhead of profiling directly
    logical, intent(in), optional :: perf_ovhd_measurement_in
+   ! prefix timer name with current detail level
+   logical, intent(in), optional :: perf_add_detail_in
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -413,19 +441,23 @@ contains
       if ( present(perf_ovhd_measurement_in) ) then
          perf_ovhd_measurement = perf_ovhd_measurement_in
       endif
+      if ( present(perf_add_detail_in) ) then
+         perf_add_detail = perf_add_detail_in
+      endif
 !
       if (mastertask .and. LogPrint) then
-         write(p_logunit,*) '(t_initf) Using profile_disable=', timing_disable, &             
-                            ' profile_timer=', perf_timer
-         write(p_logunit,*) '(t_initf)  profile_depth_limit=', timer_depth_limit, &    
-                            ' profile_detail_limit=', timing_detail_limit
-         write(p_logunit,*) '(t_initf)  profile_barrier=', timing_barrier, &
-                            ' profile_outpe_num=', perf_outpe_num
-         write(p_logunit,*) '(t_initf)  profile_outpe_stride=', perf_outpe_stride , &
-                            ' profile_single_file=', perf_single_file
-         write(p_logunit,*) '(t_initf)  profile_global_stats=', perf_global_stats , &
-                            ' profile_papi_enable=', perf_papi_enable 
-         write(p_logunit,*) '(t_initf)  profile_ovhd_measurement=', perf_ovhd_measurement
+         write(p_logunit,*) '(t_initf) Using profile_disable=         ', timing_disable
+         write(p_logunit,*) '(t_initf)       profile_timer=           ', perf_timer
+         write(p_logunit,*) '(t_initf)       profile_depth_limit=     ', timer_depth_limit
+         write(p_logunit,*) '(t_initf)       profile_detail_limit=    ', timing_detail_limit
+         write(p_logunit,*) '(t_initf)       profile_barrier=         ', timing_barrier
+         write(p_logunit,*) '(t_initf)       profile_outpe_num=       ', perf_outpe_num
+         write(p_logunit,*) '(t_initf)       profile_outpe_stride=    ', perf_outpe_stride
+         write(p_logunit,*) '(t_initf)       profile_single_file=     ', perf_single_file
+         write(p_logunit,*) '(t_initf)       profile_global_stats=    ', perf_global_stats
+         write(p_logunit,*) '(t_initf)       profile_ovhd_measurement=', perf_ovhd_measurement
+         write(p_logunit,*) '(t_initf)       profile_add_detail=      ', perf_add_detail
+         write(p_logunit,*) '(t_initf)       profile_papi_enable=     ', perf_papi_enable 
       endif                                                                               
 !
 #ifdef DEBUG
@@ -551,8 +583,7 @@ contains
 !-----------------------------------------------------------------------
 
    if ((.not. timing_initialized) .or. &
-       (timing_disable_depth > 0) .or. &
-       (cur_timing_detail > timing_detail_limit)) then
+       (timing_disable_depth > 0)) then
       t_profile_onf = .false.
    else
       t_profile_onf = .true.
@@ -585,6 +616,68 @@ contains
    t_single_filef = perf_single_file
 
    end function t_single_filef
+!
+!========================================================================
+!
+   subroutine t_set_prefixf(prefix_string)
+!----------------------------------------------------------------------- 
+! Purpose: Set prefix for subsequent time event names. 
+!          Ignored in threaded regions.
+! Author: P. Worley 
+!-----------------------------------------------------------------------
+!---------------------------Input arguments-----------------------------
+!
+   ! performance timer event name prefix
+   character(len=*), intent(in) :: prefix_string
+!
+!---------------------------Local workspace-----------------------------
+!
+   integer i                              ! loop index
+!
+!---------------------------Externals-----------------------------------
+!
+#if ( defined _OPENMP )
+   logical omp_in_parallel
+   external omp_in_parallel
+#endif
+!
+!-----------------------------------------------------------------------
+!
+#if ( defined _OPENMP )
+   if (omp_in_parallel()) return
+#endif
+
+   prefix_len = min(SHR_KIND_CS,len_trim(prefix_string))
+   if (prefix_len > 0) then
+     event_prefix(1:prefix_len) = prefix_string(1:prefix_len)
+   endif
+
+   end subroutine t_set_prefixf
+!
+!========================================================================
+!
+   subroutine t_unset_prefixf()
+!----------------------------------------------------------------------- 
+! Purpose: Unset prefix for subsequent time event names.
+!          Ignored in threaded regions.
+! Author: P. Worley 
+!
+!---------------------------Externals-----------------------------------
+!
+#if ( defined _OPENMP )
+   logical omp_in_parallel
+   external omp_in_parallel
+#endif
+!
+!-----------------------------------------------------------------------
+!
+#if ( defined _OPENMP )
+   if (omp_in_parallel()) return
+#endif
+
+   prefix_len = 0
+
+   end subroutine t_unset_prefixf
 !
 !========================================================================
 !
@@ -637,17 +730,42 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
+   integer  str_length, i                 ! support for adding prefix
+   character(len=2) cdetail               ! char variable for detail 
 !
 !-----------------------------------------------------------------------
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
 
+   if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
+
+      write(cdetail,'(i2.2)') cur_timing_detail
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len-3,len_trim(event))
+         ierr = GPTLstart( &
+            cdetail//"_"//event_prefix(1:prefix_len)//event(1:str_length))
+      else
+         str_length = min(SHR_KIND_CM-3,len_trim(event))
+         ierr = GPTLstart(cdetail//"_"//event(1:str_length))
+      endif
+
+   else
+
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len,len_trim(event))
+         ierr = GPTLstart(event_prefix(1:prefix_len)//event(1:str_length))
+      else
+         ierr = GPTLstart(trim(event))
+      endif
+
 !pw   if ( present (handle) ) then
 !pw      ierr = GPTLstart_handle(event, handle)
 !pw   else
-      ierr = GPTLstart(event)
+!pw      ierr = GPTLstart(event)
 !pw   endif
+
+   endif
 
    return
    end subroutine t_startf
@@ -672,17 +790,42 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
+   integer  str_length, i, plen           ! support for adding prefix
+   character(len=2) cdetail               ! char variable for detail 
 !
 !-----------------------------------------------------------------------
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
 
+   if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
+
+      write(cdetail,'(i2.2)') cur_timing_detail
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len-3,len_trim(event))
+         ierr = GPTLstop( &
+           cdetail//"_"//event_prefix(1:prefix_len)//event(1:str_length))
+      else
+         str_length = min(SHR_KIND_CM-3,len_trim(event))
+         ierr = GPTLstop(cdetail//"_"//event(1:str_length))
+      endif
+
+   else
+
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len,len_trim(event))
+         ierr = GPTLstop(event_prefix(1:prefix_len)//event(1:str_length))
+     else
+         ierr = GPTLstop(trim(event))
+     endif
+
 !pw   if ( present (handle) ) then
 !pw      ierr = GPTLstop_handle(event, handle)
 !pw   else
-      ierr = GPTLstop(event)
+!pw      ierr = GPTLstop(event)
 !pw   endif
+
+   endif
 
    return
    end subroutine t_stopf
@@ -829,29 +972,26 @@ contains
 !
 !-----------------------------------------------------------------------
 !
+   if (timing_barrier) then
+
 #if ( defined _OPENMP )
-   if (omp_in_parallel()) return
+      if (omp_in_parallel()) return
 #endif
-   if ((timing_initialized) .and. &
-       (timing_disable_depth .eq. 0) .and. &
-       (cur_timing_detail .le. timing_detail_limit)) then
+      if (.not. timing_initialized) return
+      if (timing_disable_depth > 0) return
 
-      if (timing_barrier) then
+      if ( present (event) ) then
+         call t_startf(event)
+      endif
 
-         if ( present (event) ) then
-            ierr = GPTLstart(event)
-         endif
+      if ( present (mpicom) ) then
+         call shr_mpi_barrier(mpicom, 'T_BARRIERF: bad mpi communicator')
+      else
+         call shr_mpi_barrier(MPI_COMM_WORLD, 'T_BARRIERF: bad mpi communicator')
+      endif
 
-         if ( present (mpicom) ) then
-            call shr_mpi_barrier(mpicom, 'T_BARRIERF: bad mpi communicator')
-         else
-            call shr_mpi_barrier(MPI_COMM_WORLD, 'T_BARRIERF: bad mpi communicator')
-         endif
-
-         if ( present (event) ) then
-            ierr = GPTLstop(event)
-         endif
-
+      if ( present (event) ) then
+         call t_stopf(event)
       endif
 
    endif
@@ -1186,12 +1326,14 @@ contains
    integer profile_timer
    logical profile_papi_enable
    logical profile_ovhd_measurement
+   logical profile_add_detail
    namelist /prof_inparm/ profile_disable, profile_barrier, &
                           profile_single_file, profile_global_stats, &
                           profile_depth_limit, &
                           profile_detail_limit, profile_outpe_num, &
                           profile_outpe_stride, profile_timer, &
-                          profile_papi_enable, profile_ovhd_measurement
+                          profile_papi_enable, profile_ovhd_measurement, &
+                          profile_add_detail
 
    character(len=16) papi_ctr1_str
    character(len=16) papi_ctr2_str
@@ -1245,7 +1387,8 @@ contains
                           perf_single_file_out=profile_single_file, &
                           perf_global_stats_out=profile_global_stats, &
                           perf_papi_enable_out=profile_papi_enable, &
-                          perf_ovhd_measurement_out=profile_ovhd_measurement )
+                          perf_ovhd_measurement_out=profile_ovhd_measurement, &
+                          perf_add_detail_out=profile_add_detail )
     if ( MasterTask2 ) then
 
        ! Read in the prof_inparm namelist from NLFilename if it exists
@@ -1285,6 +1428,7 @@ contains
        call shr_mpi_bcast( profile_global_stats, MPICom )
        call shr_mpi_bcast( profile_papi_enable,  MPICom )
        call shr_mpi_bcast( profile_ovhd_measurement, MPICom )
+       call shr_mpi_bcast( profile_add_detail,   MPICom )
        call shr_mpi_bcast( profile_depth_limit,  MPICom )
        call shr_mpi_bcast( profile_detail_limit, MPICom )
        call shr_mpi_bcast( profile_outpe_num,    MPICom )
@@ -1302,7 +1446,8 @@ contains
                           perf_single_file_in=profile_single_file, &
                           perf_global_stats_in=profile_global_stats, &
                           perf_papi_enable_in=profile_papi_enable, &
-                          perf_ovhd_measurement_in=profile_ovhd_measurement )
+                          perf_ovhd_measurement_in=profile_ovhd_measurement, &
+                          perf_add_detail_in=profile_add_detail )
 
     ! Set PAPI defaults, then override with user-specified input
     if (perf_papi_enable) then

@@ -197,7 +197,8 @@ contains
           errh2o                  =>    waterstate_vars%errh2o_col              , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)       
           errh2osno               =>    waterstate_vars%errh2osno_col           , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
           endwb                   =>    waterstate_vars%endwb_col               , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
-
+          
+          dwb                     =>    waterflux_vars%dwb_col                  , & ! Output: [real(r8) (:)   ]  change of water mass within the time step [kg/m2/s]
           qflx_rain_grnd_col      =>    waterflux_vars%qflx_rain_grnd_col       , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
           qflx_snow_grnd_col      =>    waterflux_vars%qflx_snow_grnd_col       , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
           qflx_evap_soi           =>    waterflux_vars%qflx_evap_soi_col        , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
@@ -299,10 +300,11 @@ contains
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
                   - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)) * dtime
-
+             dwb(c) = (endwb(c)-begwb(c))/dtime
           else
 
              errh2o(c) = 0.0_r8
+             dwb(c)    = 0.0_r8
 
           end if
 

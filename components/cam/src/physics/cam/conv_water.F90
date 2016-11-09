@@ -1,4 +1,5 @@
-  module conv_water
+
+module conv_water
 
    ! --------------------------------------------------------------------- ! 
    ! Purpose:                                                              !
@@ -76,7 +77,7 @@
 
    
    use physics_buffer, only : pbuf_get_index
-   use cam_history,    only : phys_decomp, addfld
+   use cam_history,    only :  addfld
 
    use constituents,  only: cnst_get_ind
 
@@ -94,10 +95,10 @@
    rei_idx      = pbuf_get_index('REI')
 
    ! Convective cloud water variables.
-   call addfld ('ICIMRCU  ', 'kg/kg   ', pver, 'A', 'Convection in-cloud ice mixing ratio '                   ,phys_decomp)
-   call addfld ('ICLMRCU  ', 'kg/kg   ', pver, 'A', 'Convection in-cloud liquid mixing ratio '                ,phys_decomp)
-   call addfld ('ICIMRTOT ', 'kg/kg   ', pver, 'A', 'Total in-cloud ice mixing ratio '                        ,phys_decomp)
-   call addfld ('ICLMRTOT ', 'kg/kg   ', pver, 'A', 'Total in-cloud liquid mixing ratio '                     ,phys_decomp)
+   call addfld ('ICIMRCU', (/ 'lev' /), 'A', 'kg/kg', 'Convection in-cloud ice mixing ratio '                   )
+   call addfld ('ICLMRCU', (/ 'lev' /), 'A', 'kg/kg', 'Convection in-cloud liquid mixing ratio '                )
+   call addfld ('ICIMRTOT', (/ 'lev' /), 'A', 'kg/kg', 'Total in-cloud ice mixing ratio '                        )
+   call addfld ('ICLMRTOT', (/ 'lev' /), 'A', 'kg/kg', 'Total in-cloud liquid mixing ratio '                     )
 
    end subroutine conv_water_init
 

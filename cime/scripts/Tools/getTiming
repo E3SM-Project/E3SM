@@ -100,7 +100,7 @@ sub gettiming2 {
     my($nprocs,$ncount);
     &gettime2('CPL:CLOCK_ADVANCE ',$nprocs, $ncount, \@fin);
 
-    if ($nprocs <= 1) {die "WARNING getTiming2: 1 nprocs - running in mpiserial mode so no additional timing to be reported , exiting \n"};
+#    if ($nprocs <= 1) {die "WARNING getTiming2: 1 nprocs - running in mpiserial mode so no additional timing to be reported , exiting \n"};
     
     my $nsteps = $ncount / $nprocs;
     my $adays = $nsteps * $tlen / $xml{ATM_NCPL};

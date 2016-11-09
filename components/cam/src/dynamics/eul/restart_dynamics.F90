@@ -2,7 +2,7 @@ module restart_dynamics
 
   use shr_kind_mod,    only: r8 => shr_kind_r8
   use pio, only : var_desc_t, file_desc_t, pio_double, pio_unlimited, pio_def_var, &
-	          pio_def_dim, io_desc_t, pio_offset, pio_put_var, pio_write_darray, &
+	          pio_def_dim, io_desc_t, pio_offset_kind, pio_put_var, pio_write_darray, &
                   pio_setdebuglevel, pio_setframe, pio_initdecomp, pio_freedecomp, &
                   pio_read_darray, pio_inq_varid, pio_get_var
   use prognostics,     only:  u3, v3, t3, q3, &
@@ -227,7 +227,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
 
     do i=1,restartvarcnt
     
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
        if(timelevels>1) then
           if(ndims==3) then
              ierr = PIO_Def_Var(File, name, pio_double, alldims2d, vdesc)
@@ -280,7 +280,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
     integer :: ndcur, nscur
     real(r8) :: time, dtime, mold(1)
     integer :: i, s3d(1), s2d(1), ct
-    integer(kind=pio_offset) :: t
+    integer(kind=pio_offset_kind) :: t
     type(io_desc_t) :: iodesc4d, iodesc3d, iodesc2d
     integer, pointer :: ldof(:)
     integer :: ndims, timelevels
@@ -319,7 +319,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
        ierr = pio_put_var(File,timedesc%varid, (/int(t)/), time)
     end do
     do i=1,restartvarcnt
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
        if(timelevels==1) then
           if(ndims==2) then
              call pio_write_darray(File, vdesc, iodesc2d, transfer(restartvars(i)%v2d(:,:), mold), ierr)
@@ -354,7 +354,8 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
     return
   end subroutine write_restart_dynamics
 
-  subroutine get_restart_var(i,name, timelevels, ndims, vdesc)
+  subroutine get_restart_var(File, i,name, timelevels, ndims, vdesc)
+    type(file_desc_t), intent(in) :: File     ! PIO file handle
     integer, intent(in) :: i
     character(len=namlen), intent(out) :: name
     integer, intent(out) :: ndims, timelevels
@@ -367,7 +368,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
        allocate(restartvars(i)%vdesc)
     end if
     vdesc => restartvars(i)%vdesc
-    call pio_setframe(vdesc, int(-1,pio_offset))
+    call pio_setframe(File, vdesc, int(-1,pio_offset_kind))
 
   end subroutine get_restart_var
 
@@ -405,7 +406,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
     !
     integer :: dims3d(3), dims2d(2), dims4d(4)
     integer :: ierr, ct
-    integer(kind=pio_offset) :: t
+    integer(kind=pio_offset_kind) :: t
     character(len=namlen) :: name
     integer :: ndims, timelevels, i, s2d, s3d, s4d
     type(var_desc_t), pointer :: vdesc
@@ -461,7 +462,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
     call init_iop_fields()
 #endif
     do i=1,restartvarcnt
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
 
 
        ierr = PIO_Inq_varid(File, name, vdesc)

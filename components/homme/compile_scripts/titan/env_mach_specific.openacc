@@ -32,7 +32,7 @@
   module rm cray-parallel-netcdf
     module load PrgEnv-pgi
 #   module switch pgi pgi/14.2.0
-    module switch pgi pgi/15.10.lustre
+    module switch pgi pgi/15.9.home
     module switch cray-mpich cray-mpich/7.2.2
     module switch cray-libsci cray-libsci/13.0.4
     module load esmf/5.2.0rp2

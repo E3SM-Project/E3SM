@@ -159,7 +159,7 @@ end subroutine prescribed_volcaero_readnl
   subroutine prescribed_volcaero_init()
 
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld, horiz_only
     use ppgrid,      only : pver
     use error_messages, only: handle_err
     use ppgrid,         only: pcols, pver, begchunk, endchunk
@@ -189,10 +189,10 @@ end subroutine prescribed_volcaero_readnl
                        rmv_file, cycle_yr, fixed_ymd, fixed_tod, data_type)
 
 
-    call addfld(volcaero_name,'kg/kg', pver, 'I', 'prescribed volcanic aerosol dry mass mixing ratio', phys_decomp )
-    call addfld(volcrad_name,'m', pver, 'I', 'volcanic aerosol geometric-mean radius', phys_decomp )
-    call addfld(volcmass_name,'kg/m^2', pver, 'I', 'volcanic aerosol vertical mass path in layer', phys_decomp )
-    call addfld(volcmass_column_name,'kg/m^2', 1, 'I', 'volcanic aerosol column mass', phys_decomp )
+    call addfld(volcaero_name, (/ 'lev' /), 'I','kg/kg', 'prescribed volcanic aerosol dry mass mixing ratio' )
+    call addfld(volcrad_name, (/ 'lev' /), 'I','m', 'volcanic aerosol geometric-mean radius' )
+    call addfld(volcmass_name, (/ 'lev' /), 'I','kg/m^2', 'volcanic aerosol vertical mass path in layer' )
+    call addfld(volcmass_column_name, horiz_only, 'I','kg/m^2', 'volcanic aerosol column mass' )
 
     radius_ndx = pbuf_get_index(volcrad_name, errcode)
 

@@ -6,115 +6,41 @@ import sys, socket, re, os, time
 
 _VERBOSE = False
 
-MACHINE_NODENAMES = [
-    ("redsky", re.compile(r"redsky-login")),
-    ("skybridge", re.compile(r"skybridge-login")),
-    ("melvin", re.compile(r"melvin")),
-    ("edison", re.compile(r"edison")),
-    ("blues", re.compile(r"blogin")),
-    ("titan", re.compile(r"titan")),
-    ("mira", re.compile(r"mira")),
-    ("cetus", re.compile(r"cetus")),
-]
+_MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
+# TODO -> This info should be derived from config_batch.xml
 BATCH_INFO = \
 {
     "slurm" : (
-        "squeue -o '%i' -h -u",
+        "squeue -o '%i' -h -u USER",
         "scancel"
     ),
     "pbs" : (
-        "qselect -u",
+        "qselect -u USER",
+        "qdel"
+    ),
+    "cobalt" : (
+        "qstat -u USER | tail -n+3 | awk '{print $1}'",
         "qdel"
     ),
 }
 
-# TODO: Get these values from ACME XML files instead of duplicating here.
-
-# machine -> defaults (0 compiler, 1 test_suite, 2 use_batch, 3 project, 4 scratch area, 5 baseline_root, 6 proxy, 7 maintain_baselines)
-MACHINE_INFO = {
-    "redsky"    : (
-        "intel",
-        "acme_integration",
-        True,
-        "fy150001",
-        "/gscratch/<USER>/acme_scratch",
-        "/projects/ccsm/ccsm_baselines",
-        "wwwproxy.sandia.gov:80",
-        True,
-    ),
-    "skybridge" : (
-        "intel",
-        "acme_integration",
-        True,
-        "fy150001",
-        "/gscratch/<USER>/acme_scratch/skybridge",
-        "/projects/ccsm/ccsm_baselines",
-        "wwwproxy.sandia.gov:80",
-        True,
-    ),
-    "melvin"    : (
-        "gnu",
-        "acme_developer",
-        False,
-        "ignore",
-        "/home/<USER>/acme/scratch",
-        "/home/jgfouca/acme/baselines",
-        "sonproxy.sandia.gov:80",
-        True,
-    ),
-    "edison"    : (
-        "intel",
-        "acme_developer",
-        True,
-        "acme",
-        "/scratch1/scratchdirs/<USER>/acme_scratch",
-        "/project/projectdirs/acme/baselines",
-        None,
-        False,
-    ),
-    "blues"    : (
-        "pgi",
-        "acme_developer",
-        True,
-        "ACME",
-        "/lcrc/project/ACME/<USER>/acme_scratch",
-        "/lcrc/group/earthscience/acme_baselines",
-        None,
-        False,
-    ),
-    "titan"    : (
-        "pgi",
-        "acme_developer",
-        True,
-        "cli115",
-        "/lustre/atlas/scratch/<USER>/<PROJECT>",
-        "/lustre/atlas1/cli900/world-shared/cesm/acme/baselines",
-        None,
-        False,
-    ),
-    "mira"     : (
-        "ibm",
-        "acme_developer",
-        True,
-        "HiRes_EarthSys",
-        "/projects/<PROJECT>/<USER>",
-        "/projects/ccsm/ccsm_baselines",
-        None,
-        False,
-    ),
-    "cetus"     : (
-        "ibm",
-        "acme_developer",
-        True,
-        "HiRes_EarthSys",
-        "/projects/<PROJECT>/<USER>",
-        "/projects/ccsm/ccsm_baselines",
-        None,
-        False,
-    ),
+# Don't know if this belongs here longterm
+# machine -> default project for nightly process
+_MACHINE_PROJECTS = {
+    "redsky"    : "fy150001",
+    "skybridge" : "fy150001",
+    "edison"    : "acme",
+    "corip1"    : "acme",
+    "blues"     : "ACME",
+    "titan"     : "cli115",
+    "mira"      : "HiRes_EarthSys_2",
+    "cetus"     : "HiRes_EarthSys_2",
 }
+
+# Return this error code if the scripts worked but tests failed
+TESTS_FAILED_ERR_CODE = 100
 
 ###############################################################################
 def expect(condition, error_msg):
@@ -235,13 +161,17 @@ def normalize_case_id(case_id):
 
     >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
     'ERT.ne16_g37.B1850C5.skybridge_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod')
+    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
     >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.G.20151121')
     'ERT.ne16_g37.B1850C5.skybridge_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod.G.20151121')
+    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
     """
     sep_count = case_id.count(".")
-    expect(sep_count in [3, 5],
-           "Case needs to be in form: TESTCASE.GRID.COMPSET.PLATFORM  or  TESTCASE.GRID.COMPSET.PLATFORM.GC.TESTID")
-    if (sep_count == 5):
+    expect(sep_count >= 3 and sep_count <= 6,
+           "Case '%s' needs to be in form: TESTCASE.GRID.COMPSET.PLATFORM  or  TESTCASE.GRID.COMPSET.PLATFORM.GC.TESTID" % case_id)
+    if (sep_count in [5, 6]):
         return ".".join(case_id.split(".")[:-2])
     else:
         return case_id
@@ -261,13 +191,13 @@ def parse_test_name(test_name):
     ['ERS', ['D', 'P1'], 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
-    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test/mods')
+    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
     """
     rv = [None] * 6
     num_dots = test_name.count(".")
     expect(num_dots >= 2 and num_dots <= 4,
-           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]")
+           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
@@ -283,6 +213,9 @@ def parse_test_name(test_name):
         rv[4:5] = rv[4].split("_")
         rv.pop()
 
+    if (rv[-1] is not None):
+        rv[-1] = rv[-1].replace("-", "/")
+
     return rv
 
 ###############################################################################
@@ -296,11 +229,11 @@ def get_full_test_name(test, machine, compiler, testmod=None):
     'ERS.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16.JGF.melvin_gnu.mods", "melvin", "gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods'
-    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods")
-    'ERS.ne16_fe16.JGF.melvin_gnu.mods'
+    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods/test")
+    'ERS.ne16_fe16.JGF.melvin_gnu.mods-test'
     """
     if (test.count(".") == 2):
-        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod)
+        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
     else:
         _, _, _, _, test_machine, test_compiler, test_testmod = parse_test_name(test)
         expect(machine == test_machine,
@@ -308,7 +241,7 @@ def get_full_test_name(test, machine, compiler, testmod=None):
         expect(compiler == test_compiler,
                "Found testname/compiler mismatch, test is '%s', your current compiler is '%s'" % (test, compiler))
         if (test_testmod is None):
-            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod)
+            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
         else:
             return test
 
@@ -322,11 +255,15 @@ def probe_machine_name():
     >>> probe_machine_name() is not None
     True
     """
-    hostname = socket.gethostname().split(".")[0]
+    hostname = socket.getfqdn()
 
-    for machine_name, machine_re in MACHINE_NODENAMES:
-        if (machine_re.match(hostname) is not None):
-            return machine_name
+    machines = get_machines()
+    for machine in machines:
+        regex_str = get_machine_info("NODENAME_REGEX", machine=machine)
+        if (regex_str):
+            regex = re.compile(regex_str)
+            if (regex.match(hostname)):
+                return machine
 
     return None
 
@@ -348,9 +285,8 @@ def get_current_branch(repo=None):
             branch = branch.replace("origin/", "", 1)
         return branch
     else:
-        stat, output, errput = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
+        stat, output, _ = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
         if (stat != 0):
-            warning("Couldn't get current git branch, error: '%s'" % errput)
             return None
         else:
             return output.replace("refs/heads/", "")
@@ -389,7 +325,7 @@ def get_acme_scripts_location_within_acme():
     """
     From within ACME, return subdirectory where ACME scripts live.
     """
-    os.path.join(get_cime_location_within_acme(), get_acme_scripts_location_within_cime())
+    return os.path.join(get_cime_location_within_acme(), get_acme_scripts_location_within_cime())
 
 ###############################################################################
 def get_cime_root():
@@ -506,72 +442,194 @@ def find_proc_id(proc_name=None,
     return list(rv)
 
 ###############################################################################
-def probe_batch_system():
+def get_batch_system(machine=None):
 ###############################################################################
-    import distutils.spawn
-    for batch_system, cmds in BATCH_INFO.iteritems():
-        exe = cmds[0].split()[0]
-        exe_path = distutils.spawn.find_executable(exe)
-        if (exe_path is not None):
-            return batch_system
-
-    return None
+    return get_machine_info("BATCH_SYSTEM", machine=machine)
 
 ###############################################################################
-def get_my_queued_jobs(batch_system=None):
+def get_my_queued_jobs():
 ###############################################################################
     """
     Return a list of job ids for the current user
     """
     import getpass
-    if (batch_system is None):
-        batch_system = probe_batch_system()
+    batch_system = get_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
 
-    list_cmd = "%s %s" % (BATCH_INFO[batch_system][0], getpass.getuser())
+    list_cmd = BATCH_INFO[batch_system][0].replace("USER", getpass.getuser())
     return run_cmd(list_cmd).split()
 
 ###############################################################################
-def get_batch_system_info(batch_system=None):
+def delete_jobs(jobs):
 ###############################################################################
     """
-    Return information on batch system. If no arg provided, probe for batch
-    system.
+    Return a list of job ids for the current user.
 
-    Info returned as tuple (SUBMIT CMD, DELETE CMD)
+    Returns (status, output, errput)
     """
-    if (batch_system is None):
-        batch_system = probe_batch_system()
+    batch_system = get_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
-    expect(batch_system in BATCH_INFO, "No info for batch system '%s'" % batch_system)
 
-    return BATCH_INFO[batch_system]
+    del_cmd = "%s %s" % (BATCH_INFO[batch_system][1], " ".join(jobs))
+    return run_cmd(del_cmd, ok_to_fail=True, verbose=True)
 
 ###############################################################################
-def get_machine_info(machine=None, user=None, project=None, raw=False):
+def parse_config_machines():
+###############################################################################
+    """
+    """
+    global _MACHINE_INFO
+    if (_MACHINE_INFO is None):
+        _MACHINE_INFO = {}
+        import xml.etree.ElementTree as ET
+        config_machines_xml = os.path.join(get_cime_root(), "machines-acme", "config_machines.xml")
+        tree = ET.parse(config_machines_xml)
+        root = tree.getroot()
+        expect(root.tag == "config_machines",
+               "The given XML file is not a valid list of machine configurations.")
+
+        # Each child of this root is a machine entry.
+        for machine in root:
+            if (machine.tag == "machine"):
+                expect("MACH" in machine.attrib, "Invalid machine entry found for machine '%s'" % machine)
+                mach_name = machine.attrib["MACH"]
+                expect(mach_name not in _MACHINE_INFO, "Duplicate machine entry '%s'" % mach_name)
+                data = {}
+                for item in machine:
+                    item_data = "" if item.text is None else item.text.strip()
+                    if (item.tag in ["COMPILERS", "MPILIBS"]):
+                        item_data = [strip_item.strip() for strip_item in item_data.split(",")]
+                    elif(item.tag == "batch_system"):
+                        item_data = item.attrib["type"]
+
+                    data[item.tag.upper()] = item_data
+
+                _MACHINE_INFO[mach_name] = data
+            else:
+                warning("Ignoring unrecognized tag: '%s'" % machine.tag)
+
+###############################################################################
+def get_machine_info(items, machine=None, user=None, project=None, case=None, raw=False):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
 
+    If only asked for one thing, will just return the value. If asked for multiple
+    things, will return list.
+
     Info returned as tuple:
     (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
+
+    >>> parse_config_machines()
+
+    >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
+    ['skybridge-login', 'acme_integration']
+
+    >>> get_machine_info("CESMSCRATCHROOT", machine="melvin", user="jenkins")
+    '/home/jenkins/acme/scratch'
+
+    >>> get_machine_info("EXEROOT", machine="melvin", user="jenkins", case="Foo")
+    '/home/jenkins/acme/scratch/Foo/bld'
     """
+    parse_config_machines()
+
     import getpass
     user = getpass.getuser() if user is None else user
 
     if (machine is None):
         machine = probe_machine_name()
-    expect(machine is not None, "Failed to probe machine")
-    expect(machine in MACHINE_INFO, "No info for machine '%s'" % machine)
+    expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
+    expect(machine in _MACHINE_INFO, "No info for machine '%s'" % machine)
 
-    machine_info_copy = list(MACHINE_INFO[machine])
-    machine_info_copy[3] = project if project is not None else machine_info_copy[3]
-    project = machine_info_copy[3]
+    if (isinstance(items, str)):
+        items = [items]
 
+    rv = []
     if (raw):
-        return machine_info_copy
+        for item in items:
+            rv.append(_MACHINE_INFO[machine][item])
     else:
-        return [item.replace("<USER>", user).replace("<PROJECT>", project) if type(item) is str else item for item in machine_info_copy]
+        reference_re = re.compile(r'\$(\w+)')
+        env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
+        for item in items:
+            item_data = _MACHINE_INFO[machine][item] if item in _MACHINE_INFO[machine] else None
+            if (isinstance(item_data, str)):
+                for m in env_ref_re.finditer(item_data):
+                    env_var = m.groups()[0]
+                    expect(env_var in os.environ,
+                           "Field '%s' for machine '%s' refers to undefined env var '%s'" % (item, machine, env_var))
+                    item_data = item_data.replace(m.group(), os.environ[env_var])
+
+                for m in reference_re.finditer(item_data):
+                    ref = m.groups()[0]
+                    if (ref in _MACHINE_INFO[machine]):
+                        item_data = item_data.replace(m.group(), get_machine_info(ref, machine=machine, user=user, project=project))
+
+                item_data = item_data.replace("$USER", user)
+                # Need extra logic to handle case where user string was brought in from env ($HOME)
+                if (user != getpass.getuser()):
+                    item_data = item_data.replace(getpass.getuser(), user, 1)
+
+                if ("$PROJECT" in item_data):
+                    project = get_machine_project(machine=machine) if project is None else project
+                    expect(project is not None, "Cannot evaluate '%s' without project information" % item)
+                    item_data = item_data.replace("$PROJECT", project)
+
+                # $CASE is another special case, it can only be provided by user
+                # TODO: It actually comes from one of the env xml files
+                if ("$CASE" in item_data):
+                    expect(case is not None, "Data for '%s' required case information but none provided" % item)
+                    item_data = item_data.replace("$CASE", case)
+
+            rv.append(item_data)
+
+    if (len(rv) == 1):
+        return rv[0]
+    else:
+        return rv
+
+###############################################################################
+def get_machines():
+###############################################################################
+    """
+    Return all machines defined by the config_machines.xml
+    """
+    parse_config_machines()
+    return _MACHINE_INFO.keys()
+
+###############################################################################
+def get_machine_project(machine=None):
+###############################################################################
+    """
+    Return default project account to use on this machine
+
+    >>> get_machine_project("skybridge")
+    'fy150001'
+    """
+    if ("PROJECT" in os.environ):
+        return os.environ["PROJECT"]
+
+    if (machine is None):
+        machine = probe_machine_name()
+
+    if (machine in _MACHINE_PROJECTS):
+        return _MACHINE_PROJECTS[machine]
+    else:
+        return None
+
+###############################################################################
+def does_machine_have_batch(machine=None):
+###############################################################################
+    """
+    Return if this machine has a batch system
+
+    >>> does_machine_have_batch("melvin")
+    False
+    >>> does_machine_have_batch("skybridge")
+    True
+    """
+    batch_system = get_machine_info("BATCH_SYSTEM", machine=machine)
+    return not (batch_system is None or batch_system == "none")
 
 ###############################################################################
 def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):

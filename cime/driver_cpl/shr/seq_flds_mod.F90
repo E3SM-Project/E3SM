@@ -327,10 +327,11 @@ module seq_flds_mod
      logical :: flds_co2b 
      logical :: flds_co2c 
      logical :: flds_co2_dmsa 
+     logical :: flds_bgc 
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
-          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec
+          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_bgc, glc_nec
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -357,6 +358,7 @@ module seq_flds_mod
         flds_co2b = .false.
         flds_co2c = .false.
         flds_co2_dmsa = .false.
+        flds_bgc  = .false.
         glc_nec   = 0
 
         unitn = shr_file_getUnit()
@@ -378,6 +380,7 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2b    , mpicom)
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
+     call shr_mpi_bcast(flds_bgc     , mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
      call glc_elevclass_init(glc_nec)
      
@@ -594,6 +597,7 @@ module seq_flds_mod
 
      ! pressure at the lowest model level (Pa)
      call seq_flds_add(a2x_states,"Sa_pbot")
+     call seq_flds_add(x2o_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
      longname = 'Pressure at the lowest model level'
@@ -1297,13 +1301,40 @@ module seq_flds_mod
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Ocean freeze (q>0) or melt (q<0) potential
+     ! Sea ice basal pressure
+     call seq_flds_add(i2x_states,"Si_bpress")
+     call seq_flds_add(x2o_states,"Si_bpress")
+     longname = 'Sea ice basal pressure'
+     stdname  = 'cice_basal_pressure'
+     units    = 'Pa'
+     attname  = 'Si_bpress'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Ocean melt and freeze potential -- ONLY used by data models
      call seq_flds_add(o2x_fluxes,"Fioo_q")
      call seq_flds_add(x2i_fluxes,"Fioo_q")
-     longname = 'Ocean freeze (q>0) or melt (q<0) potential'
+     longname = 'Ocean melt and freeze potential'
      stdname  = 'surface_snow_and_ice_melt_heat_flux'
      units    = 'W m-2'
      attname  = 'Fioo_q'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Ocean melt (q<0) potential
+     call seq_flds_add(o2x_fluxes,"Fioo_meltp")
+     call seq_flds_add(x2i_fluxes,"Fioo_meltp")
+     longname = 'Ocean melt (q<0) potential'
+     stdname  = 'surface_snow_and_ice_melt_heat_flux'
+     units    = 'W m-2'
+     attname  = 'Fioo_meltp'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Ocean frazil production
+     call seq_flds_add(o2x_fluxes,"Fioo_frazil")
+     call seq_flds_add(x2i_fluxes,"Fioo_frazil")
+     longname = 'Ocean frazil production'
+     stdname  = 'ocean_frazil_ice_production'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fioo_frazil'
      call metadata_set(attname, longname, stdname, units)
 
      ! Heat flux from melting
@@ -1312,7 +1343,7 @@ module seq_flds_mod
      longname = 'Heat flux from melting'
      stdname  = 'surface_snow_melt_heat_flux'
      units    = 'W m-2'
-     attname  = 'Faxa_melth'
+     attname  = 'Fioi_melth'
      call metadata_set(attname, longname, stdname, units)
 
      ! Water flux from melting
@@ -1321,7 +1352,7 @@ module seq_flds_mod
      longname = 'Water flux due to melting'
      stdname  = 'surface_snow_melt_flux'
      units    = 'kg m-2 s-1'
-     attname  = 'Faxa_meltw'
+     attname  = 'Fioi_meltw'
      call metadata_set(attname, longname, stdname, units)
 
      ! Salt flux
@@ -1330,7 +1361,7 @@ module seq_flds_mod
      longname = 'Salt flux'
      stdname  = 'virtual_salt_flux_into_sea_water'
      units    = 'kg m-2 s-1'
-     attname  = 'Faxa_salt'
+     attname  = 'Fioi_salt'
      call metadata_set(attname, longname, stdname, units)
 
      ! Sea surface temperature
@@ -1401,17 +1432,437 @@ module seq_flds_mod
      attname  = 'So_fswpen'
      call metadata_set(attname, longname, stdname, units)
 
+     !------------------------------
+     ! ice<->ocn only exchange - BGC
+     !------------------------------
+     if (flds_bgc) then
+
+        ! Ocean algae concentration 1 - diatoms?
+        call seq_flds_add(o2x_states,"So_algae1")
+        call seq_flds_add(x2i_states,"So_algae1")
+        longname = 'Ocean algae concentration 1 - diatoms'
+        stdname  = 'ocean_algae_conc_1'
+        units    = 'mmol C m-3'
+        attname  = 'So_algae1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean algae concentration 2 - flagellates?
+        call seq_flds_add(o2x_states,"So_algae2")
+        call seq_flds_add(x2i_states,"So_algae2")
+        longname = 'Ocean algae concentration 2 - flagellates'
+        stdname  = 'ocean_algae_conc_2'
+        units    = 'mmol C m-3'
+        attname  = 'So_algae2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean algae concentration 3 - phaeocyctis?
+        call seq_flds_add(o2x_states,"So_algae3")
+        call seq_flds_add(x2i_states,"So_algae3")
+        longname = 'Ocean algae concentration 3 - phaeocyctis'
+        stdname  = 'ocean_algae_conc_3'
+        units    = 'mmol C m-3'
+        attname  = 'So_algae3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dissolved organic carbon concentration 1 - saccharides?
+        call seq_flds_add(o2x_states,"So_doc1")
+        call seq_flds_add(x2i_states,"So_doc1")
+        longname = 'Ocean dissolved organic carbon concentration 1 - saccharides'
+        stdname  = 'ocean_dissolved_organic_carbon_conc_1'
+        units    = 'mmol C m-3'
+        attname  = 'So_doc1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dissolved organic carbon concentration 2 - lipids?
+        call seq_flds_add(o2x_states,"So_doc2")
+        call seq_flds_add(x2i_states,"So_doc2")
+        longname = 'Ocean dissolved organic carbon concentration 2 - lipids'
+        stdname  = 'ocean_dissolved_organic_carbon_conc_2'
+        units    = 'mmol C m-3'
+        attname  = 'So_doc2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dissolved organic carbon concentration 3 - tbd?
+        call seq_flds_add(o2x_states,"So_doc3")
+        call seq_flds_add(x2i_states,"So_doc3")
+        longname = 'Ocean dissolved organic carbon concentration 3 - tbd'
+        stdname  = 'ocean_dissolved_organic_carbon_conc_3'
+        units    = 'mmol C m-3'
+        attname  = 'So_doc3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dissolved inorganic carbon concentration 1
+        call seq_flds_add(o2x_states,"So_dic1")
+        call seq_flds_add(x2i_states,"So_dic1")
+        longname = 'Ocean dissolved inorganic carbon concentration 1'
+        stdname  = 'ocean_dissolved_inorganic_carbon_conc_1'
+        units    = 'mmol C m-3'
+        attname  = 'So_dic1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dissolved organic nitrogen concentration 1
+        call seq_flds_add(o2x_states,"So_don1")
+        call seq_flds_add(x2i_states,"So_don1")
+        longname = 'Ocean dissolved organic nitrogen concentration 1'
+        stdname  = 'ocean_dissolved_organic_nitrogen_conc_1'
+        units    = 'mmol N m-3'
+        attname  = 'So_don1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean nitrate concentration
+        call seq_flds_add(o2x_states,"So_no3")
+        call seq_flds_add(x2i_states,"So_no3")
+        longname = 'Ocean nitrate concentration'
+        stdname  = 'ocean_nitrate_conc'
+        units    = 'mmol N m-3'
+        attname  = 'So_no3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean silicate concentration
+        call seq_flds_add(o2x_states,"So_sio3")
+        call seq_flds_add(x2i_states,"So_sio3")
+        longname = 'Ocean silicate concentration'
+        stdname  = 'ocean_silicate_conc'
+        units    = 'mmol Si m-3'
+        attname  = 'So_sio3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean ammonium concentration
+        call seq_flds_add(o2x_states,"So_nh4")
+        call seq_flds_add(x2i_states,"So_nh4")
+        longname = 'Ocean ammonium concentration'
+        stdname  = 'ocean_ammonium_conc'
+        units    = 'mmol N m-3'
+        attname  = 'So_nh4'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dimethyl sulfide (DMS) concentration
+        call seq_flds_add(o2x_states,"So_dms")
+        call seq_flds_add(x2i_states,"So_dms")
+        longname = 'Ocean dimethyl sulfide concentration'
+        stdname  = 'ocean_dimethyl_sulfide_conc'
+        units    = 'mmol S m-3'
+        attname  = 'So_dms'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dimethylsulphonio-propionate (DMSP) concentration
+        call seq_flds_add(o2x_states,"So_dmsp")
+        call seq_flds_add(x2i_states,"So_dmsp")
+        longname = 'Ocean dimethylsulphonio-propionate concentration'
+        stdname  = 'ocean_dimethylsulphoniopropionate_conc'
+        units    = 'mmol S m-3'
+        attname  = 'So_dmsp'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean DOCr concentration
+        call seq_flds_add(o2x_states,"So_docr")
+        call seq_flds_add(x2i_states,"So_docr")
+        longname = 'Ocean DOCr concentration'
+        stdname  = 'ocean_DOCr_conc'
+        units    = 'mmol C m-3'
+        attname  = 'So_docr'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean particulate iron concentration 1
+        call seq_flds_add(o2x_states,"So_fep1")
+        call seq_flds_add(x2i_states,"So_fep1")
+        longname = 'Ocean particulate iron concentration 1'
+        stdname  = 'ocean_particulate_iron_conc_1'
+        units    = 'umol Fe m-3'
+        attname  = 'So_fep1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean particulate iron concentration 2
+        call seq_flds_add(o2x_states,"So_fep2")
+        call seq_flds_add(x2i_states,"So_fep2")
+        longname = 'Ocean particulate iron concentration 2'
+        stdname  = 'ocean_particulate_iron_conc_2'
+        units    = 'umol Fe m-3'
+        attname  = 'So_fep2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dissolved iron concentration 1
+        call seq_flds_add(o2x_states,"So_fed1")
+        call seq_flds_add(x2i_states,"So_fed1")
+        longname = 'Ocean dissolved iron concentration 1'
+        stdname  = 'ocean_dissolved_iron_conc_1'
+        units    = 'umol Fe m-3'
+        attname  = 'So_fed1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean dissolved iron concentration 2
+        call seq_flds_add(o2x_states,"So_fed2")
+        call seq_flds_add(x2i_states,"So_fed2")
+        longname = 'Ocean dissolved iron concentration 2'
+        stdname  = 'ocean_dissolved_iron_conc_2'
+        units    = 'umol Fe m-3'
+        attname  = 'So_fed2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean z-aerosol concentration 1
+        call seq_flds_add(o2x_states,"So_zaer1")
+        call seq_flds_add(x2i_states,"So_zaer1")
+        longname = 'Ocean z-aerosol concentration 1'
+        stdname  = 'ocean_z_aerosol_conc_1'
+        units    = 'kg m-3'
+        attname  = 'So_zaer1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean z-aerosol concentration 2
+        call seq_flds_add(o2x_states,"So_zaer2")
+        call seq_flds_add(x2i_states,"So_zaer2")
+        longname = 'Ocean z-aerosol concentration 2'
+        stdname  = 'ocean_z_aerosol_conc_2'
+        units    = 'kg m-3'
+        attname  = 'So_zaer2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean z-aerosol concentration 3
+        call seq_flds_add(o2x_states,"So_zaer3")
+        call seq_flds_add(x2i_states,"So_zaer3")
+        longname = 'Ocean z-aerosol concentration 3'
+        stdname  = 'ocean_z_aerosol_conc_3'
+        units    = 'kg m-3'
+        attname  = 'So_zaer3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean z-aerosol concentration 4
+        call seq_flds_add(o2x_states,"So_zaer4")
+        call seq_flds_add(x2i_states,"So_zaer4")
+        longname = 'Ocean z-aerosol concentration 4'
+        stdname  = 'ocean_z_aerosol_conc_4'
+        units    = 'kg m-3'
+        attname  = 'So_zaer4'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean z-aerosol concentration 5
+        call seq_flds_add(o2x_states,"So_zaer5")
+        call seq_flds_add(x2i_states,"So_zaer5")
+        longname = 'Ocean z-aerosol concentration 5'
+        stdname  = 'ocean_z_aerosol_conc_5'
+        units    = 'kg m-3'
+        attname  = 'So_zaer5'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Ocean z-aerosol concentration 6
+        call seq_flds_add(o2x_states,"So_zaer6")
+        call seq_flds_add(x2i_states,"So_zaer6")
+        longname = 'Ocean z-aerosol concentration 6'
+        stdname  = 'ocean_z_aerosol_conc_6'
+        units    = 'kg m-3'
+        attname  = 'So_zaer6'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice algae flux 1 - diatoms?
+        call seq_flds_add(i2x_fluxes,"Fioi_algae1")
+        call seq_flds_add(x2o_fluxes,"Fioi_algae1")
+        longname = 'Sea ice algae flux 1 - diatoms'
+        stdname  = 'seaice_algae_flux_1'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_algae1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice algae flux 2 - flagellates?
+        call seq_flds_add(i2x_fluxes,"Fioi_algae2")
+        call seq_flds_add(x2o_fluxes,"Fioi_algae2")
+        longname = 'Sea ice algae flux 2 - flagellates'
+        stdname  = 'seaice_algae_flux_2'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_algae2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice algae flux 3 - phaeocyctis?
+        call seq_flds_add(i2x_fluxes,"Fioi_algae3")
+        call seq_flds_add(x2o_fluxes,"Fioi_algae3")
+        longname = 'Sea ice algae flux 3 - phaeocyctis'
+        stdname  = '_algae_flux_3'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_algae3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dissolved organic carbon flux 1 - saccharides?
+        call seq_flds_add(i2x_fluxes,"Fioi_doc1")
+        call seq_flds_add(x2o_fluxes,"Fioi_doc1")
+        longname = 'Sea ice dissolved organic carbon flux 1 - saccharides'
+        stdname  = 'seaice_dissolved_organic_carbon_flux_1'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_doc1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dissolved organic carbon flux 2 - lipids?
+        call seq_flds_add(i2x_fluxes,"Fioi_doc2")
+        call seq_flds_add(x2o_fluxes,"Fioi_doc2")
+        longname = 'Sea ice dissolved organic carbon flux 2 - lipids'
+        stdname  = 'seaice_dissolved_organic_carbon_flux_2'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_doc2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dissolved organic carbon flux 3 - tbd?
+        call seq_flds_add(i2x_fluxes,"Fioi_doc3")
+        call seq_flds_add(x2o_fluxes,"Fioi_doc3")
+        longname = 'Sea ice dissolved organic carbon flux 3 - tbd'
+        stdname  = 'seaice_dissolved_organic_carbon_flux_3'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_doc3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dissolved inorganic carbon flux 1
+        call seq_flds_add(i2x_fluxes,"Fioi_dic1")
+        call seq_flds_add(x2o_fluxes,"Fioi_dic1")
+        longname = 'Sea ice dissolved inorganic carbon flux 1'
+        stdname  = 'seaice_dissolved_inorganic_carbon_flux_1'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_dic1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dissolved organic nitrogen flux 1
+        call seq_flds_add(i2x_fluxes,"Fioi_don1")
+        call seq_flds_add(x2o_fluxes,"Fioi_don1")
+        longname = 'Sea ice dissolved organic nitrogen flux 1'
+        stdname  = 'seaice_dissolved_organic_nitrogen_flux_1'
+        units    = 'mmol N m-2 s-1'
+        attname  = 'Fioi_don1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice nitrate flux
+        call seq_flds_add(i2x_fluxes,"Fioi_no3")
+        call seq_flds_add(x2o_fluxes,"Fioi_no3")
+        longname = 'Sea ice nitrate flux'
+        stdname  = 'seaice_nitrate_flux'
+        units    = 'mmol N m-2 s-1'
+        attname  = 'Fioi_no3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice silicate flux
+        call seq_flds_add(i2x_fluxes,"Fioi_sio3")
+        call seq_flds_add(x2o_fluxes,"Fioi_sio3")
+        longname = 'Sea ice silicate flux'
+        stdname  = 'seaice_silicate_flux'
+        units    = 'mmol Si m-2 s-1'
+        attname  = 'Fioi_sio3'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice ammonium flux
+        call seq_flds_add(i2x_fluxes,"Fioi_nh4")
+        call seq_flds_add(x2o_fluxes,"Fioi_nh4")
+        longname = 'Sea ice ammonium flux'
+        stdname  = 'seaice_ammonium_flux'
+        units    = 'mmol N m-2 s-1'
+        attname  = 'Fioi_nh4'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dimethyl sulfide (DMS) flux
+        call seq_flds_add(i2x_fluxes,"Fioi_dms")
+        call seq_flds_add(x2o_fluxes,"Fioi_dms")
+        longname = 'Sea ice dimethyl sulfide flux'
+        stdname  = 'seaice_dimethyl_sulfide_flux'
+        units    = 'mmol S m-2 s-1'
+        attname  = 'Fioi_dms'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice DMSPp flux
+        call seq_flds_add(i2x_fluxes,"Fioi_dmspp")
+        call seq_flds_add(x2o_fluxes,"Fioi_dmspp")
+        longname = 'Sea ice DSMPp flux'
+        stdname  = 'seaice_DSMPp_flux'
+        units    = 'mmol S m-2 s-1'
+        attname  = 'Fioi_dmspp'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice DMSPd flux
+        call seq_flds_add(i2x_fluxes,"Fioi_dmspd")
+        call seq_flds_add(x2o_fluxes,"Fioi_dmspd")
+        longname = 'Sea ice DSMPd flux'
+        stdname  = 'seaice_DSMPd_flux'
+        units    = 'mmol S m-2 s-1'
+        attname  = 'Fioi_dmspd'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice DOCr flux
+        call seq_flds_add(i2x_fluxes,"Fioi_docr")
+        call seq_flds_add(x2o_fluxes,"Fioi_docr")
+        longname = 'Sea ice DOCr flux'
+        stdname  = 'seaice_DOCr_flux'
+        units    = 'mmol C m-2 s-1'
+        attname  = 'Fioi_docr'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice particulate iron flux 1
+        call seq_flds_add(i2x_fluxes,"Fioi_fep1")
+        call seq_flds_add(x2o_fluxes,"Fioi_fep1")
+        longname = 'Sea ice particulate iron flux 1'
+        stdname  = 'seaice_particulate_iron_flux_1'
+        units    = 'umol Fe m-2 s-1'
+        attname  = 'Fioi_fep1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice particulate iron flux 2
+        call seq_flds_add(i2x_fluxes,"Fioi_fep2")
+        call seq_flds_add(x2o_fluxes,"Fioi_fep2")
+        longname = 'Sea ice particulate iron flux 2'
+        stdname  = 'seaice_particulate_iron_flux_2'
+        units    = 'umol Fe m-2 s-1'
+        attname  = 'Fioi_fep2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dissolved iron flux 1
+        call seq_flds_add(i2x_fluxes,"Fioi_fed1")
+        call seq_flds_add(x2o_fluxes,"Fioi_fed1")
+        longname = 'Sea ice dissolved iron flux 1'
+        stdname  = 'seaice_dissolved_iron_flux_1'
+        units    = 'umol Fe m-2 s-1'
+        attname  = 'Fioi_fed1'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice dissolved iron flux 2
+        call seq_flds_add(i2x_fluxes,"Fioi_fed2")
+        call seq_flds_add(x2o_fluxes,"Fioi_fed2")
+        longname = 'Sea ice dissolved iron flux 2'
+        stdname  = 'seaice_dissolved_iron_flux_2'
+        units    = 'umol Fe m-2 s-1'
+        attname  = 'Fioi_fed2'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Sea ice iron dust
+        call seq_flds_add(i2x_fluxes,"Fioi_dust1")
+        call seq_flds_add(x2o_fluxes,"Fioi_dust1")
+        longname = 'Sea ice iron dust 1'
+        stdname  = 'seaice_iron_dust_1'
+        units    = 'kg m-2 s-1'
+        attname  = 'Fioi_dust1'
+        call metadata_set(attname, longname, stdname, units)
+
+     endif
+
+
      !-----------------------------
      ! lnd->rof exchange
      ! TODO: put in attributes below
      !-----------------------------
 
-     call seq_flds_add(l2x_fluxes,'Flrl_rofl')
-     call seq_flds_add(x2r_fluxes,'Flrl_rofl')
-     longname = 'Water flux from land (liquid)'
-     stdname  = 'water_flux_into_runoff'
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsur')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsur')
+     longname = 'Water flux from land (liquid surface)'
+     stdname  = 'water_flux_into_runoff_surface'
      units    = 'kg m-2 s-1'
-     attname  = 'Flrl_rofl'
+     attname  = 'Flrl_rofsur'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofgwl')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofgwl')
+     longname = 'Water flux from land (liquid glacier, wetland, and lake)'
+     stdname  = 'water_flux_into_runoff_from_gwl'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofgwl'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsub')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsub')
+     longname = 'Water flux from land (liquid subsurface)'
+     stdname  = 'water_flux_into_runoff_subsurface'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofsub'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(l2x_fluxes,'Flrl_rofi')
@@ -1466,10 +1917,18 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Flrr_volr')
      call seq_flds_add(x2l_fluxes,'Flrr_volr')
-     longname = 'River channel water volume'
+     longname = 'River channel total water volume'
      stdname  = 'rtm_volr'
      units    = 'm'
      attname  = 'Flrr_volr'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(r2x_fluxes,'Flrr_volrmch')
+     call seq_flds_add(x2l_fluxes,'Flrr_volrmch')
+     longname = 'River channel main channel water volume'
+     stdname  = 'rtm_volrmch'
+     units    = 'm'
+     attname  = 'Flrr_volrmch'
      call metadata_set(attname, longname, stdname, units)
 
      !-----------------------------

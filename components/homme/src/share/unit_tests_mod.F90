@@ -431,7 +431,8 @@ contains
 
       do i=1,intervals
       do j=1,intervals
-        t = ABS(test(i,j)-values(i,j))/MAX(ABS(test(i,j)),ABS(values(i,j)))
+!        t = ABS(test(i,j)-values(i,j))/MAX(ABS(test(i,j)),ABS(values(i,j)))
+        t = ABS(test(i,j)-values(i,j))/MAX(ABS(MAXVAL(test(:,:))),ABS(MAXVAL(values(:,:))))
         if (.0000001<t) then
           print *,__FILE__,__LINE__,ie,i,j,test(i,j),values(i,j),t
           success = .false.

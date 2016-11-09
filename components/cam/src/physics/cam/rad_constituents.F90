@@ -1,3 +1,4 @@
+
 module rad_constituents
 
 !------------------------------------------------------------------------------------------------
@@ -19,7 +20,7 @@ use constituents,   only: cnst_name, cnst_get_ind
 use radconstants,   only: gasnamelength, nradgas, rad_gas_index, ot_length
 use phys_prop,      only: physprop_accum_unique_files, physprop_init, &
                           physprop_get_id, physprop_get
-use cam_history,    only: addfld, fieldname_len, phys_decomp, add_default, outfld
+use cam_history,    only: addfld, horiz_only, fieldname_len, add_default, outfld
 use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
 
 
@@ -37,6 +38,8 @@ public :: &
    rad_cnst_readnl,             &! read namelist values and parse
    rad_cnst_init,               &! find optics files and all constituents
    rad_cnst_get_info,           &! return info about climate/diagnostic lists
+   rad_cnst_get_mode_idx,       &! return mode index of specified mode type
+   rad_cnst_get_spec_idx,       &! return specie index of specified specie type
    rad_cnst_get_gas,            &! return pointer to mmr for gasses
    rad_cnst_get_aer_mmr,        &! return pointer to mmr for aerosols
    rad_cnst_get_mam_mmr_idx,    &! get constituent index of mam specie mmr (climate list only)
@@ -56,7 +59,7 @@ logical,            public :: oldcldoptics = .false.
 ! Private module data
 
 ! max number of strings in mode definitions
-integer, parameter :: n_mode_str = 60
+integer, parameter :: n_mode_str = 100    ! max number of strings in mode definitions
 
 ! max number of externally mixed entities in the climate/diag lists
 integer, parameter :: n_rad_cnst = N_RAD_CNST
@@ -203,6 +206,28 @@ end interface
 logical :: verbose = .true.
 character(len=1), parameter :: nl = achar(10)
 
+#if ( defined MODAL_AERO_9MODE )
+integer, parameter :: num_mode_types = 10
+integer, parameter :: num_spec_types = 11
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   ', &
+   'accum_marine  ', 'aitken_marine ' /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-poly   ', 'm-prot   ', 'm-lip    ' /)
+#elif ( defined MODAL_AERO_4MODE_MOM )
+integer, parameter :: num_mode_types = 8
+integer, parameter :: num_spec_types = 9
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic' /)
+#else
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 8
 character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
@@ -211,6 +236,7 @@ character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
 character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     '/)
+#endif
 
 
 !==============================================================================
@@ -759,6 +785,102 @@ end subroutine rad_cnst_get_info_by_spectype
 
 !================================================================================================
 
+function rad_cnst_get_mode_idx(list_idx, mode_type) result(mode_idx)
+
+   ! Return mode index of the specified type in the specified climate/diagnostics list.
+   ! Return -1 if not found.
+
+   ! Arguments
+   integer,           intent(in)  :: list_idx    ! index of the climate or a diagnostic list
+   character(len=*),  intent(in)  :: mode_type   ! mode type
+
+   ! Return value
+   integer                        :: mode_idx    ! mode index
+
+   ! Local variables
+   type(modelist_t), pointer :: m_list
+
+   integer  :: i, nmodes, m_idx
+
+   character(len=*), parameter :: subname = 'rad_cnst_get_mode_idx'
+   !-----------------------------------------------------------------------------
+
+   ! if mode type not found return -1
+   mode_idx = -1
+
+   ! specified mode list
+   m_list => ma_list(list_idx)
+
+   ! number of modes in specified list
+   nmodes = m_list%nmodes
+
+   ! loop through modes in specified climate/diagnostic list
+   do i = 1, nmodes
+
+      ! get index of the mode in the definition object
+      m_idx = m_list%idx(i)
+
+      ! look in mode definition object (modes) for the mode types
+      if (trim(modes%types(m_idx)) == trim(mode_type)) then
+         mode_idx = i
+         exit
+      end if
+   end do
+
+end function rad_cnst_get_mode_idx
+
+!================================================================================================
+
+function rad_cnst_get_spec_idx(list_idx, mode_idx, spec_type) result(spec_idx)
+
+   ! Return specie index of the specified type in the specified mode of the specified
+   ! climate/diagnostics list.  Return -1 if not found.
+
+   ! Arguments
+   integer,           intent(in)  :: list_idx    ! index of the climate or a diagnostic list
+   integer,           intent(in)  :: mode_idx    ! mode index
+   character(len=*),  intent(in)  :: spec_type   ! specie type
+
+   ! Return value
+   integer                        :: spec_idx    ! specie index
+
+   ! Local variables
+   type(modelist_t),       pointer :: m_list
+   type(mode_component_t), pointer :: mode_comps
+
+   integer  :: i, m_idx, nspec
+
+   character(len=*), parameter :: subname = 'rad_cnst_get_spec_idx'
+   !-----------------------------------------------------------------------------
+
+   ! if specie type not found return -1
+   spec_idx = -1
+
+   ! modes in specified list
+   m_list => ma_list(list_idx)
+
+   ! get index of the specified mode in the definition object
+   m_idx = m_list%idx(mode_idx)
+
+   ! object containing the components of the mode
+   mode_comps => modes%comps(m_idx)
+
+   ! number of species in specified mode
+   nspec = mode_comps%nspec
+
+   ! loop through species in specified mode
+   do i = 1, nspec
+
+      ! look in mode definition object (modes) for the mode types
+      if (trim(mode_comps%type(i)) == trim(spec_type)) then
+         spec_idx = i
+         exit
+      end if
+   end do
+
+end function rad_cnst_get_spec_idx
+!================================================================================================
+
 subroutine rad_cnst_get_call_list(call_list)
 
    ! Return info about which climate/diagnostic calculations are requested
@@ -1158,12 +1280,12 @@ subroutine rad_gas_diag_init(glist)
       name = 'm_' // trim(glist%gas(i)%camname) // trim(suffix)
       glist%gas(i)%mass_name = name
       long_name = trim(glist%gas(i)%camname)//' mass per layer'//long_name_description
-      call addfld(trim(name), 'kg/m^2', pver, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), (/ 'lev' /), 'A', 'kg/m^2', trim(long_name))
 
       ! construct names for column burden diagnostics
       name = 'cb_' // trim(glist%gas(i)%camname) // trim(suffix)
       long_name = trim(glist%gas(i)%camname)//' column burden'//long_name_description
-      call addfld(trim(name), 'kg/m^2', 1, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), horiz_only, 'A', 'kg/m^2', trim(long_name))
 
       ! error check for name length
       if (len_trim(name) > fieldname_len) then
@@ -1210,12 +1332,12 @@ subroutine rad_aer_diag_init(alist)
       name = 'm_' // trim(alist%aer(i)%camname) // trim(suffix)
       alist%aer(i)%mass_name = name
       long_name = trim(alist%aer(i)%camname)//' mass per layer'//long_name_description
-      call addfld(trim(name), 'kg/m^2', pver, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), (/ 'lev' /), 'A', 'kg/m^2', trim(long_name))
 
       ! construct names for column burden diagnostic fields
       name = 'cb_' // trim(alist%aer(i)%camname) // trim(suffix)
       long_name = trim(alist%aer(i)%camname)//' column burden'//long_name_description
-      call addfld(trim(name), 'kg/m^2', 1, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), horiz_only, 'A', 'kg/m^2', trim(long_name))
 
       ! error check for name length
       if (len_trim(name) > fieldname_len) then

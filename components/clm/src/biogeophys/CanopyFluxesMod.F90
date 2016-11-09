@@ -45,6 +45,8 @@ module CanopyFluxesMod
   use ColumnType            , only : col                
   use PatchType             , only : pft                
   use EDtypesMod            , only : site, numpft_ed
+  use PhosphorusStateType   , only : phosphorusstate_type
+  use CNNitrogenStateType   , only : nitrogenstate_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -69,7 +71,7 @@ contains
        atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars, &
        frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
        temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-       EDbio_vars, soil_water_retention_curve) 
+       EDbio_vars, soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars) 
     !
     ! !DESCRIPTION:
     ! 1. Calculates the leaf temperature:
@@ -100,7 +102,7 @@ contains
     !
     ! !USES:
     use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
-    use clm_time_manager   , only : get_step_size, get_prev_date
+    use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
     use clm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
     use clm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
     use clm_varcon         , only : isecspday, degpsec
@@ -110,6 +112,7 @@ contains
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+    use SurfaceResistanceMod, only : getlblcef
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds 
@@ -130,6 +133,9 @@ contains
     type(photosyns_type)      , intent(inout) :: photosyns_vars
     type(EDbio_type)          , intent(inout) :: EDbio_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
+    type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
+    type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
+    
     !
     ! !LOCAL VARIABLES:
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
@@ -341,6 +347,7 @@ contains
 
          sabv                 => solarabs_vars%sabv_patch                  , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by vegetation (W/m**2)                       
 
+         lbl_rsc_h2o          => canopystate_vars%lbl_rsc_h2o_patch        , & ! Output: [real(r8) (:)   ] laminar boundary layer resistance for h2o
          frac_veg_nosno       => canopystate_vars%frac_veg_nosno_patch     , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          elai                 => canopystate_vars%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow                        
          esai                 => canopystate_vars%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow                        
@@ -456,6 +463,7 @@ contains
             cf_bare  = forc_pbot(c)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare
+            lbl_rsc_h2o(p)=0._r8
             do j = 1, nlevgrnd
                rootr(p,j)  = 0._r8
                rresis(p,j) = 0._r8
@@ -746,6 +754,7 @@ contains
             ! Bulk boundary layer resistance of leaves
 
             uaf(p) = um(p)*sqrt( 1._r8/(ram1(p)*um(p)) )
+
             cf  = 0.01_r8/(sqrt(uaf(p))*sqrt(dleaf(pft%itype(p))))
             rb(p)  = 1._r8/(cf*uaf(p))
             rb1(p) = rb(p)
@@ -840,11 +849,10 @@ contains
             call t_stopf('edpsn')
 
          else ! not use_ed
-
             call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                 canopystate_vars, photosyns_vars, phase='sun')
+                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sun')
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp, &
@@ -868,7 +876,7 @@ contains
             call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                 canopystate_vars, photosyns_vars, phase='sha')
+                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sha')
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp,  &
@@ -1084,6 +1092,11 @@ contains
 
          end do   ! end of filtered pft loop
 
+         do f = 1, fn
+           p = filterp(f)
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+         enddo
+            
          ! Test for convergence
 
          itlef = itlef+1

@@ -27,7 +27,6 @@ add_default($nl, 'config_test_case_diag_type');
 #################################
 
 add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-cice/${ICE_GRID}/mpas-cice.graph.info.${date_stamp}.part.'");
-add_default($nl, 'config_block_decomp_file_prefix');
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
@@ -38,10 +37,27 @@ add_default($nl, 'config_proc_decomp_file_prefix');
 
 if ($CONTINUE_RUN eq 'TRUE') {
         add_default($nl, 'config_do_restart', 'val'=>".true.");
+        add_default($nl, 'config_do_restart_hbrine', 'val'=>".true.");
+        add_default($nl, 'config_do_restart_zsalinity', 'val'=>".true.");
+        add_default($nl, 'config_do_restart_bgc', 'val'=>".true.");
 } else {
         add_default($nl, 'config_do_restart', 'val'=>".false.");
+        add_default($nl, 'config_do_restart_hbrine', 'val'=>".false.");
+        add_default($nl, 'config_do_restart_zsalinity', 'val'=>".false.");
+        add_default($nl, 'config_do_restart_bgc', 'val'=>".false.");
 }
 add_default($nl, 'config_restart_timestamp_name');
+add_default($nl, 'config_do_restart_hbrine');
+add_default($nl, 'config_do_restart_zsalinity');
+add_default($nl, 'config_do_restart_bgc');
+
+##############################
+# Namelist group: dimensions #
+##############################
+
+add_default($nl, 'config_nCategories');
+add_default($nl, 'config_nIceLayers');
+add_default($nl, 'config_nSnowLayers');
 
 ##############################
 # Namelist group: initialize #
@@ -56,6 +72,7 @@ add_default($nl, 'config_initial_latitude_south');
 add_default($nl, 'config_initial_velocity_type');
 add_default($nl, 'config_initial_uvelocity');
 add_default($nl, 'config_initial_vvelocity');
+add_default($nl, 'config_calculate_coriolis');
 
 ################################
 # Namelist group: use_sections #
@@ -87,6 +104,7 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
+add_default($nl, 'config_use_test_ice_shelf');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -99,20 +117,20 @@ add_default($nl, 'config_elastic_subcycle_number');
 add_default($nl, 'config_stress_divergence_scheme');
 add_default($nl, 'config_variational_basis');
 add_default($nl, 'config_revised_evp');
+add_default($nl, 'config_use_air_stress');
+add_default($nl, 'config_use_ocean_stress');
+add_default($nl, 'config_use_surface_tilt');
+add_default($nl, 'config_geostrophic_surface_tilt');
 
 #############################
 # Namelist group: advection #
 #############################
 
-add_default($nl, 'config_convert_volume_to_thickness');
-add_default($nl, 'config_limit_ice_concentration');
-add_default($nl, 'config_conservation_check');
-add_default($nl, 'config_clean_tracers');
-add_default($nl, 'config_vert_tracer_adv');
-add_default($nl, 'config_vert_tracer_adv_order');
-add_default($nl, 'config_horiz_tracer_adv_order');
-add_default($nl, 'config_coef_3rd_order');
+add_default($nl, 'config_advection_type');
 add_default($nl, 'config_monotonic');
+add_default($nl, 'config_conservation_check');
+add_default($nl, 'config_monotonicity_check');
+add_default($nl, 'config_recover_tracer_means_check');
 
 ##################################
 # Namelist group: column_package #
@@ -120,6 +138,7 @@ add_default($nl, 'config_monotonic');
 
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
+add_default($nl, 'config_use_column_biogeochemistry');
 add_default($nl, 'config_use_column_itd_thermodynamics');
 add_default($nl, 'config_use_column_ridging');
 
@@ -130,12 +149,157 @@ add_default($nl, 'config_use_column_ridging');
 add_default($nl, 'config_use_ice_age');
 add_default($nl, 'config_use_first_year_ice');
 add_default($nl, 'config_use_level_ice');
-add_default($nl, 'config_use_meltponds');
 add_default($nl, 'config_use_cesm_meltponds');
 add_default($nl, 'config_use_level_meltponds');
 add_default($nl, 'config_use_topo_meltponds');
 add_default($nl, 'config_use_aerosols');
+
+###################################
+# Namelist group: biogeochemistry #
+###################################
+
 add_default($nl, 'config_use_brine');
+add_default($nl, 'config_use_vertical_zsalinity');
+add_default($nl, 'config_use_vertical_biochemistry');
+add_default($nl, 'config_use_shortwave_bioabsorption');
+add_default($nl, 'config_use_vertical_tracers');
+add_default($nl, 'config_use_skeletal_biochemistry');
+add_default($nl, 'config_use_nitrate');
+add_default($nl, 'config_use_carbon');
+add_default($nl, 'config_use_chlorophyll');
+add_default($nl, 'config_use_ammonium');
+add_default($nl, 'config_use_silicate');
+add_default($nl, 'config_use_DMS');
+add_default($nl, 'config_use_nonreactive');
+add_default($nl, 'config_use_humics');
+add_default($nl, 'config_use_DON');
+add_default($nl, 'config_use_iron');
+add_default($nl, 'config_use_modal_aerosols');
+add_default($nl, 'config_use_zaerosols');
+add_default($nl, 'config_skeletal_bgc_flux_type');
+add_default($nl, 'config_scale_initial_vertical_bgc');
+add_default($nl, 'config_biogrid_bottom_molecular_sublayer');
+add_default($nl, 'config_biogrid_top_molecular_sublayer');
+add_default($nl, 'config_bio_gravity_drainage_length_scale');
+add_default($nl, 'config_zsalinity_molecular_sublayer');
+add_default($nl, 'config_zsalinity_gravity_drainage_scale');
+add_default($nl, 'config_snow_porosity_at_ice_surface');
+add_default($nl, 'config_new_ice_fraction_biotracer');
+add_default($nl, 'config_fraction_biotracer_in_frazil');
+add_default($nl, 'config_ratio_Si_to_N_diatoms');
+add_default($nl, 'config_ratio_Si_to_N_small_plankton');
+add_default($nl, 'config_ratio_Si_to_N_phaeocystis');
+add_default($nl, 'config_ratio_S_to_N_diatoms');
+add_default($nl, 'config_ratio_S_to_N_small_plankton');
+add_default($nl, 'config_ratio_S_to_N_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_C_diatoms');
+add_default($nl, 'config_ratio_Fe_to_C_small_plankton');
+add_default($nl, 'config_ratio_Fe_to_C_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_N_diatoms');
+add_default($nl, 'config_ratio_Fe_to_N_small_plankton');
+add_default($nl, 'config_ratio_Fe_to_N_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_DON');
+add_default($nl, 'config_ratio_Fe_to_DOC_saccharids');
+add_default($nl, 'config_ratio_Fe_to_DOC_lipids');
+add_default($nl, 'config_respiration_fraction_of_growth');
+add_default($nl, 'config_rapid_mobile_to_stationary_time');
+add_default($nl, 'config_long_mobile_to_stationary_time');
+add_default($nl, 'config_algal_maximum_velocity');
+add_default($nl, 'config_ratio_Fe_to_dust');
+add_default($nl, 'config_solubility_of_Fe_in_dust');
+add_default($nl, 'config_chla_absorptivity_of_diatoms');
+add_default($nl, 'config_chla_absorptivity_of_small_plankton');
+add_default($nl, 'config_chla_absorptivity_of_phaeocystis');
+add_default($nl, 'config_light_attenuation_diatoms');
+add_default($nl, 'config_light_attenuation_small_plankton');
+add_default($nl, 'config_light_attenuation_phaeocystis');
+add_default($nl, 'config_light_inhibition_diatoms');
+add_default($nl, 'config_light_inhibition_small_plankton');
+add_default($nl, 'config_light_inhibition_phaeocystis');
+add_default($nl, 'config_maximum_growth_rate_diatoms');
+add_default($nl, 'config_maximum_growth_rate_small_plankton');
+add_default($nl, 'config_maximum_growth_rate_phaeocystis');
+add_default($nl, 'config_temperature_growth_diatoms');
+add_default($nl, 'config_temperature_growth_small_plankton');
+add_default($nl, 'config_temperature_growth_phaeocystis');
+add_default($nl, 'config_grazed_fraction_diatoms');
+add_default($nl, 'config_grazed_fraction_small_plankton');
+add_default($nl, 'config_grazed_fraction_phaeocystis');
+add_default($nl, 'config_mortality_diatoms');
+add_default($nl, 'config_mortality_small_plankton');
+add_default($nl, 'config_mortality_phaeocystis');
+add_default($nl, 'config_temperature_mortality_diatoms');
+add_default($nl, 'config_temperature_mortality_small_plankton');
+add_default($nl, 'config_temperature_mortality_phaeocystis');
+add_default($nl, 'config_exudation_diatoms');
+add_default($nl, 'config_exudation_small_plankton');
+add_default($nl, 'config_exudation_phaeocystis');
+add_default($nl, 'config_nitrate_saturation_diatoms');
+add_default($nl, 'config_nitrate_saturation_small_plankton');
+add_default($nl, 'config_nitrate_saturation_phaeocystis');
+add_default($nl, 'config_ammonium_saturation_diatoms');
+add_default($nl, 'config_ammonium_saturation_small_plankton');
+add_default($nl, 'config_ammonium_saturation_phaeocystis');
+add_default($nl, 'config_silicate_saturation_diatoms');
+add_default($nl, 'config_silicate_saturation_small_plankton');
+add_default($nl, 'config_silicate_saturation_phaeocystis');
+add_default($nl, 'config_iron_saturation_diatoms');
+add_default($nl, 'config_iron_saturation_small_plankton');
+add_default($nl, 'config_iron_saturation_phaeocystis');
+add_default($nl, 'config_fraction_spilled_to_DON');
+add_default($nl, 'config_degredation_of_DON');
+add_default($nl, 'config_fraction_DON_ammonium');
+add_default($nl, 'config_fraction_loss_to_saccharids');
+add_default($nl, 'config_fraction_loss_to_lipids');
+add_default($nl, 'config_fraction_exudation_to_saccharids');
+add_default($nl, 'config_fraction_exudation_to_lipids');
+add_default($nl, 'config_remineralization_saccharids');
+add_default($nl, 'config_remineralization_lipids');
+add_default($nl, 'config_maximum_brine_temperature');
+add_default($nl, 'config_salinity_dependence_of_growth');
+add_default($nl, 'config_minimum_optical_depth');
+add_default($nl, 'config_slopped_grazing_fraction');
+add_default($nl, 'config_excreted_fraction');
+add_default($nl, 'config_fraction_mortality_to_ammonium');
+add_default($nl, 'config_fraction_iron_remineralized');
+add_default($nl, 'config_nitrification_rate');
+add_default($nl, 'config_desorption_loss_particulate_iron');
+add_default($nl, 'config_maximum_loss_fraction');
+add_default($nl, 'config_maximum_ratio_iron_to_saccharids');
+add_default($nl, 'config_respiration_loss_to_DMSPd');
+add_default($nl, 'config_DMSP_to_DMS_conversion_fraction');
+add_default($nl, 'config_DMSP_to_DMS_conversion_time');
+add_default($nl, 'config_DMS_oxidation_time');
+add_default($nl, 'config_mobility_type_diatoms');
+add_default($nl, 'config_mobility_type_small_plankton');
+add_default($nl, 'config_mobility_type_phaeocystis');
+add_default($nl, 'config_mobility_type_nitrate');
+add_default($nl, 'config_mobility_type_ammonium');
+add_default($nl, 'config_mobility_type_silicate');
+add_default($nl, 'config_mobility_type_DMSPp');
+add_default($nl, 'config_mobility_type_DMSPd');
+add_default($nl, 'config_mobility_type_humics');
+add_default($nl, 'config_mobility_type_saccharids');
+add_default($nl, 'config_mobility_type_lipids');
+add_default($nl, 'config_mobility_type_proteins');
+add_default($nl, 'config_mobility_type_dissolved_iron');
+add_default($nl, 'config_mobility_type_particulate_iron');
+add_default($nl, 'config_mobility_type_black_carbon1');
+add_default($nl, 'config_mobility_type_black_carbon2');
+add_default($nl, 'config_mobility_type_dust1');
+add_default($nl, 'config_mobility_type_dust2');
+add_default($nl, 'config_mobility_type_dust3');
+add_default($nl, 'config_mobility_type_dust4');
+add_default($nl, 'config_ratio_C_to_N_diatoms');
+add_default($nl, 'config_ratio_C_to_N_small_plankton');
+add_default($nl, 'config_ratio_C_to_N_phaeocystis');
+add_default($nl, 'config_ratio_chla_to_N_diatoms');
+add_default($nl, 'config_ratio_chla_to_N_small_plankton');
+add_default($nl, 'config_ratio_chla_to_N_phaeocystis');
+add_default($nl, 'config_scales_absorption_diatoms');
+add_default($nl, 'config_scales_absorption_small_plankton');
+add_default($nl, 'config_scales_absorption_phaeocystis');
+add_default($nl, 'config_ratio_C_to_N_proteins');
 
 #############################
 # Namelist group: shortwave #
@@ -217,4 +381,215 @@ add_default($nl, 'config_use_ocean_mixed_layer');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
+
+###############################
+# Namelist group: diagnostics #
+###############################
+
+add_default($nl, 'config_check_state');
+
+##########################################
+# Namelist group: AM_highFrequencyOutput #
+##########################################
+
+add_default($nl, 'config_AM_highFrequencyOutput_enable');
+add_default($nl, 'config_AM_highFrequencyOutput_compute_interval');
+add_default($nl, 'config_AM_highFrequencyOutput_output_stream');
+add_default($nl, 'config_AM_highFrequencyOutput_compute_on_startup');
+add_default($nl, 'config_AM_highFrequencyOutput_write_on_startup');
+
+###################################
+# Namelist group: AM_temperatures #
+###################################
+
+add_default($nl, 'config_AM_temperatures_enable');
+add_default($nl, 'config_AM_temperatures_compute_interval');
+add_default($nl, 'config_AM_temperatures_output_stream');
+add_default($nl, 'config_AM_temperatures_compute_on_startup');
+add_default($nl, 'config_AM_temperatures_write_on_startup');
+
+#########################################
+# Namelist group: AM_regionalStatistics #
+#########################################
+
+add_default($nl, 'config_AM_regionalStatistics_enable');
+add_default($nl, 'config_AM_regionalStatistics_compute_interval');
+add_default($nl, 'config_AM_regionalStatistics_output_stream');
+add_default($nl, 'config_AM_regionalStatistics_compute_on_startup');
+add_default($nl, 'config_AM_regionalStatistics_write_on_startup');
+add_default($nl, 'config_AM_regionalStatistics_ice_extent_limit');
+
+#########################################
+# Namelist group: AM_ridgingDiagnostics #
+#########################################
+
+add_default($nl, 'config_AM_ridgingDiagnostics_enable');
+add_default($nl, 'config_AM_ridgingDiagnostics_compute_interval');
+add_default($nl, 'config_AM_ridgingDiagnostics_output_stream');
+add_default($nl, 'config_AM_ridgingDiagnostics_compute_on_startup');
+add_default($nl, 'config_AM_ridgingDiagnostics_write_on_startup');
+
+########################################
+# Namelist group: AM_conservationCheck #
+########################################
+
+add_default($nl, 'config_AM_conservationCheck_enable');
+add_default($nl, 'config_AM_conservationCheck_compute_interval');
+add_default($nl, 'config_AM_conservationCheck_output_stream');
+add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
+
+##########################################
+# Namelist group: AM_geographicalVectors #
+##########################################
+
+add_default($nl, 'config_AM_geographicalVectors_enable');
+add_default($nl, 'config_AM_geographicalVectors_compute_interval');
+add_default($nl, 'config_AM_geographicalVectors_output_stream');
+add_default($nl, 'config_AM_geographicalVectors_compute_on_startup');
+add_default($nl, 'config_AM_geographicalVectors_write_on_startup');
+
+##################################
+# Namelist group: AM_loadBalance #
+##################################
+
+add_default($nl, 'config_AM_loadBalance_enable');
+add_default($nl, 'config_AM_loadBalance_compute_interval');
+add_default($nl, 'config_AM_loadBalance_output_stream');
+add_default($nl, 'config_AM_loadBalance_compute_on_startup');
+add_default($nl, 'config_AM_loadBalance_write_on_startup');
+add_default($nl, 'config_AM_loadBalance_nProcs');
+
+#########################################
+# Namelist group: AM_maximumIcePresence #
+#########################################
+
+add_default($nl, 'config_AM_maximumIcePresence_enable');
+add_default($nl, 'config_AM_maximumIcePresence_compute_interval');
+add_default($nl, 'config_AM_maximumIcePresence_output_stream');
+add_default($nl, 'config_AM_maximumIcePresence_compute_on_startup');
+add_default($nl, 'config_AM_maximumIcePresence_write_on_startup');
+add_default($nl, 'config_AM_maximumIcePresence_start_time');
+
+####################################
+# Namelist group: AM_miscellaneous #
+####################################
+
+add_default($nl, 'config_AM_miscellaneous_enable');
+add_default($nl, 'config_AM_miscellaneous_compute_interval');
+add_default($nl, 'config_AM_miscellaneous_output_stream');
+add_default($nl, 'config_AM_miscellaneous_compute_on_startup');
+add_default($nl, 'config_AM_miscellaneous_write_on_startup');
+
+####################################
+# Namelist group: AM_areaVariables #
+####################################
+
+add_default($nl, 'config_AM_areaVariables_enable');
+add_default($nl, 'config_AM_areaVariables_compute_interval');
+add_default($nl, 'config_AM_areaVariables_output_stream');
+add_default($nl, 'config_AM_areaVariables_compute_on_startup');
+add_default($nl, 'config_AM_areaVariables_write_on_startup');
+
+######################################
+# Namelist group: AM_pondDiagnostics #
+######################################
+
+add_default($nl, 'config_AM_pondDiagnostics_enable');
+add_default($nl, 'config_AM_pondDiagnostics_compute_interval');
+add_default($nl, 'config_AM_pondDiagnostics_output_stream');
+add_default($nl, 'config_AM_pondDiagnostics_compute_on_startup');
+add_default($nl, 'config_AM_pondDiagnostics_write_on_startup');
+
+#####################################
+# Namelist group: AM_unitConversion #
+#####################################
+
+add_default($nl, 'config_AM_unitConversion_enable');
+add_default($nl, 'config_AM_unitConversion_compute_interval');
+add_default($nl, 'config_AM_unitConversion_output_stream');
+add_default($nl, 'config_AM_unitConversion_compute_on_startup');
+add_default($nl, 'config_AM_unitConversion_write_on_startup');
+
+#####################################
+# Namelist group: AM_pointwiseStats #
+#####################################
+
+add_default($nl, 'config_AM_pointwiseStats_enable');
+add_default($nl, 'config_AM_pointwiseStats_compute_interval');
+add_default($nl, 'config_AM_pointwiseStats_output_stream');
+add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
+add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
+
+#################################
+# Namelist group: AM_iceShelves #
+#################################
+
+add_default($nl, 'config_AM_iceShelves_enable');
+add_default($nl, 'config_AM_iceShelves_compute_interval');
+add_default($nl, 'config_AM_iceShelves_output_stream');
+add_default($nl, 'config_AM_iceShelves_compute_on_startup');
+add_default($nl, 'config_AM_iceShelves_write_on_startup');
+
+#################################
+# Namelist group: AM_icePresent #
+#################################
+
+add_default($nl, 'config_AM_icePresent_enable');
+add_default($nl, 'config_AM_icePresent_compute_interval');
+add_default($nl, 'config_AM_icePresent_output_stream');
+add_default($nl, 'config_AM_icePresent_compute_on_startup');
+add_default($nl, 'config_AM_icePresent_write_on_startup');
+
+###########################################
+# Namelist group: AM_timeSeriesStatsDaily #
+###########################################
+
+add_default($nl, 'config_AM_timeSeriesStatsDaily_enable');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_add_mesh');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_operation');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_reset_intervals');
+
+#############################################
+# Namelist group: AM_timeSeriesStatsMonthly #
+#############################################
+
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_enable');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_add_mesh');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_operation');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_reset_intervals');
+
+#################################################
+# Namelist group: AM_timeSeriesStatsClimatology #
+#################################################
+
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_enable');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_add_mesh');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_operation');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
 

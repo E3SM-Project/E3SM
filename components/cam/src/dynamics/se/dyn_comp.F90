@@ -6,6 +6,7 @@ Module dyn_comp
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t
   use hybrid_mod, only : hybrid_t
+  use thread_mod, only: nthreads, vthreads, omp_get_max_threads, omp_get_thread_num
   use perf_mod, only: t_startf, t_stopf
   use cam_logfile, only : iulog
   use time_manager, only: is_first_step
@@ -84,17 +85,15 @@ CONTAINS
 
     use pmgrid,              only: dyndecomp_set
     use dyn_grid,            only: dyn_grid_init, fvm, elem, get_dyn_grid_parm,&
-                                   set_horiz_grid_cnt_d
+                                   set_horiz_grid_cnt_d, define_cam_grids
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
-    use interpolate_mod,     only: interpolate_analysis
     use native_mapping,      only: create_native_mapping_files, native_mapping_readnl
     use time_manager,        only: get_nstep, dtime
 
     use dimensions_mod,   only: globaluniquecols, nelem, nelemd, nelemdmax
     use prim_driver_mod,  only: prim_init1
-    use thread_mod,       only: nthreads
     use parallel_mod,     only: par, initmp
     use namelist_mod,     only: readnl
     use control_mod,      only: runtype, qsplit, rsplit
@@ -102,6 +101,7 @@ CONTAINS
     use phys_control,     only: use_gw_front
     use physics_buffer,   only: pbuf_add_field, dtype_r8
     use ppgrid,           only: pcols, pver
+    use cam_abortutils,   only : endrun
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -109,11 +109,7 @@ CONTAINS
     type (dyn_import_t), intent(OUT) :: dyn_in
     type (dyn_export_t), intent(OUT) :: dyn_out
 
-#ifdef _OPENMP    
-    integer omp_get_num_threads
-#endif
     integer :: neltmp(3)
-    logical :: nellogtmp(7)
     integer :: npes_se
 
     !----------------------------------------------------------------------
@@ -150,20 +146,26 @@ CONTAINS
 
 #ifdef _OPENMP    
 !   Set by driver
-!$omp parallel
-    nthreads = omp_get_num_threads()
-!$omp end parallel
+    nthreads = omp_get_max_threads()
     if(par%masterproc) then
        write(iulog,*) " "
        write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
        write(iulog,*) " "
     endif
 #ifdef COLUMN_OPENMP
+    call omp_set_nested(.true.)
+    if (vthreads > nthreads .or. vthreads < 1) &
+         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
+    nthreads = nthreads / vthreads
     if(par%masterproc) then
        write(iulog,*) " "
-       write(iulog,*) "dyn_init1: using OpenMP within element instead of across elements"
+       write(iulog,*) "dyn_init1: using OpenMP across and within elements"
+       write(iulog,*) "dyn_init1: nthreads=",nthreads,"vthreads=",vthreads
        write(iulog,*) " "
     endif
+#else
+    if (vthreads>1) &
+         call endrun('Error: vthreads>1 requires -DCOLUMN_OPENMP')
 #endif
 #else
     nthreads = 1
@@ -183,34 +185,27 @@ CONTAINS
     
        call set_horiz_grid_cnt_d(GlobalUniqueCols)
 
-
        neltmp(1) = nelemdmax
        neltmp(2) = nelem
        neltmp(3) = get_dyn_grid_parm('plon')
-       nellogtmp(1:7) = interpolate_analysis(1:7)
     else
        nelemd = 0
        neltmp(1) = 0
        neltmp(2) = 0
        neltmp(3) = 0
-       nellogtmp(1:7) = .true.
     endif
 
     dyndecomp_set = .true.
-
-
 
     if (par%nprocs .lt. npes_cam) then
 ! Broadcast quantities to auxiliary processes
 #ifdef SPMD
        call mpibcast(neltmp, 3, mpi_integer, 0, mpicom)
-       call mpibcast(nellogtmp, 7, mpi_logical, 0, mpicom)
 #endif
        if (iam .ge. par%nprocs) then
           nelemdmax = neltmp(1)
           nelem     = neltmp(2)
           call set_horiz_grid_cnt_d(neltmp(3))
-          interpolate_analysis(1:7) = nellogtmp(1:7)
        endif
     endif
 
@@ -239,8 +234,9 @@ CONTAINS
        TimeLevel%nstep = get_nstep()*se_nsplit*qsplit*rsplit
     endif
 
-    ! initial SE (subcycled) nstep
-    TimeLevel%nstep0 = 0
+    ! Define the CAM grids (this has to be after dycore spinup).
+    ! Physics-grid will be defined later by phys_grid_init
+    call define_cam_grids()
 
   end subroutine dyn_init1
 
@@ -254,7 +250,6 @@ CONTAINS
     use parallel_mod,     only: par
     use time_mod,         only: time_at
     use control_mod,      only: moisture, runtype
-    use thread_mod,       only: nthreads, omp_get_thread_num
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use nctopo_util_mod,  only: nctopo_util_driver
@@ -285,7 +280,12 @@ CONTAINS
     if(iam < par%nprocs) then
 
 #ifdef HORIZ_OPENMP
-       !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+       if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
+                                   "max_threads=",omp_get_max_threads()
+       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+#endif
+#ifdef COLUMN_OPENMP
+       call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
@@ -369,7 +369,6 @@ CONTAINS
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run, prim_run_subcycle
     use dimensions_mod,   only : nlev
-    use thread_mod,       only: omp_get_thread_num, nthreads
     use time_mod,         only: tstep
     use hybrid_mod,       only: hybrid_create
 !    use perf_mod, only : t_startf, t_stopf
@@ -388,7 +387,13 @@ CONTAINS
     !
     if(iam < par%nprocs) then
 #ifdef HORIZ_OPENMP
-       !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+       !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
+       !                            "max_threads=",omp_get_max_threads()
+       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+#endif
+#ifdef COLUMN_OPENMP
+       ! nested threads
+       call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
@@ -397,8 +402,10 @@ CONTAINS
 
        do n=1,se_nsplit
           ! forward-in-time RK, with subcycling
+          call t_startf("prim_run_sybcycle")
           call prim_run_subcycle(dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
                tstep, TimeLevel, hvcoord, n)
+          call t_stopf("prim_run_sybcycle")
        end do
 
 

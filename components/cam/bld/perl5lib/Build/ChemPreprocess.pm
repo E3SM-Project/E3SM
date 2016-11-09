@@ -110,9 +110,12 @@ sub chem_preprocess
 	my $proc_exe_path ;
 	if ( -e "$chem_preprocessor/$chem_proc_exe" ) {
 	    $proc_exe_path = "$chem_preprocessor/$chem_proc_exe" ;
+	} elsif( -e "$chem_preprocessor/bin/$chem_proc_exe" ) {
+	    $proc_exe_path = "$chem_preprocessor/bin/$chem_proc_exe" ;
 	} else {
 	    $proc_exe_path = "$chem_proc_bld/$chem_proc_exe" ;
 	}
+
 	if (! -e $proc_exe_path) {
 	    my $gmake = 'gmake';
 	    build_chem_preproc($gmake,$chem_preprocessor ,$chem_proc_bld,$chem_proc_exe,$fc_type);

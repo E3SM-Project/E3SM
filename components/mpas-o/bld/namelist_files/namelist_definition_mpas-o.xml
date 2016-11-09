@@ -228,7 +228,7 @@ Default: Defined in namelist_defaults.xml
 	category="init_setup" group="init_setup">
 Name of vertical grid to use in configuration generation
 
-Valid values: 'uniform', ...
+Valid values: 'uniform', '60layerPHC', '42layerWOCE', '100layerACMEv1', '1dCVTgenerator', ...
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -256,6 +256,17 @@ Default: Defined in namelist_defaults.xml
 Seed thickness of the first layer for the 1D CVT vertical grid generator.
 
 Valid values: Any positive non-zero integer.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- init_ssh_and_landIcePressure -->
+
+<entry id="config_iterative_init_variable" type="char*1024"
+	category="init_ssh_and_landIcePressure" group="init_ssh_and_landIcePressure">
+Which variable, ssh or landIcePressure, is computed from the other.  If landIcePressure is to be computed, 'landIcePressure_from_top_density' indicates that the top density (rather than the mean density displaced by land ice) should be used to compute the landIcePressure.
+
+Valid values: 'ssh', 'landIcePressure_from_top_density' or 'landIcePressure'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -310,14 +321,6 @@ Default: Defined in namelist_defaults.xml
 Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$.
 
 Valid values: any positive real value, but typically 2-4.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_set_restingThickness_to_IC" type="logical"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-If true, set restingThickness to be the same as layerThickness upon start-up. This only occurs when config_do_restart is false, i.e. on an initial run.
-
-Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -404,14 +407,6 @@ Default: Defined in namelist_defaults.xml
 Determines the minimum fraction of a cell altering the initial conditions can create. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run.
 
 Valid values: Any real between 0 and 1.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_check_ssh_consistency" type="logical"
-	category="partial_bottom_cells" group="partial_bottom_cells">
-Enables a check to determine if the SSH is within 2m of the surface.  See equation for $\zeta_i$.
-
-Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -504,6 +499,14 @@ Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_mom_del4_div_factor" type="real"
+	category="hmix_del4" group="hmix_del4">
+The divergence portion of the del4 operator is scaled by this factor.
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_tracer_del4" type="real"
 	category="hmix_del4" group="hmix_del4">
 Coefficient for horizontal biharmonic operator on tracers.
@@ -555,6 +558,38 @@ Default: Defined in namelist_defaults.xml
 If true, the standard GM for the tracer advection and mixing is turned on. This includes the redi portion which is captured in hmix.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_Redi_surface_layer_tapering" type="logical"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_surface_layer_tapering_extent" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Vertical component of Redi mixing limited in top config_Redi_surface_layer_tapering_extent*boundaryLayerDepth
+
+Valid values: Any positive real value, typically between 1 and 2.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_Redi_bottom_layer_tapering" type="logical"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+If true, the Redi K33 vertical mixing is limited in bottom boundary layer.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_bottom_layer_tapering_depth" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Vertical component of Redi mixing limited in bottom config_Redi_surface_layer_tapering_depth
+
+Valid values: Any positive real value, typically between 100 and 500 m.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1054,11 +1089,27 @@ Valid values: Any positive real value, but typically should be between 1 and 20 
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="configure_cvmix_kpp_minimum_OBL_under_sea_ice" type="real"
+	category="cvmix" group="cvmix">
+The minimum allowable boundary layer depth with sea-ice is present
+
+Valid values: Any positive real value, but typically should be between 1 and 20 meters
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_kpp_stop_OBL_search" type="real"
 	category="cvmix" group="cvmix">
 The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber
 
 Valid values: Any positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_kpp_use_enhanced_diff" type="logical"
+	category="cvmix" group="cvmix">
+Flag for use of enhanced diffusion at boundary layer base as in Large et al (1994)
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1089,33 +1140,127 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_frazil_ice_formation" type="logical"
+<entry id="config_flux_attenuation_coefficient_runoff" type="real"
 	category="forcing" group="forcing">
-Logical flag that determines if the formation of frazil ice is allowed.
+The length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$.
 
-Valid values: .true. or .false.
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_sw_absorption_type" type="char*1024"
-	category="forcing" group="forcing">
-Name of shortwave absorption type used in simulation.
 
-Valid values: 'jerlov'
+<!-- shortwaveRadiation -->
+
+<entry id="config_sw_absorption_type" type="char*1024"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Name of shortwave absorption type used in simulation. 
+
+Valid values: 'jerlov' or 'ohlmann00' or 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_jerlov_water_type" type="integer"
-	category="forcing" group="forcing">
+	category="shortwaveRadiation" group="shortwaveRadiation">
 Integer value defining the water type used in Jerlov short wave absorption.
 
 Valid values: Integer values between 1 and 5
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_fixed_jerlov_weights" type="logical"
-	category="forcing" group="forcing">
-Logical value determining if the weights for Jerlov absorption are based off of reference depths (.true.), or the layerThickness variable (.false.).
+<entry id="config_surface_buoyancy_depth" type="real"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Depth over which to apply penetrating SW to sfcBuoyancyFlux
+
+Valid values: Real Values greater than zero less than bottomDepth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_restart_file" type="char*1024"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Filename for the restart timestamp in the forcing file
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- frazil_ice -->
+
+<entry id="config_use_frazil_ice_formation" type="logical"
+	category="frazil_ice" group="frazil_ice">
+Controls if fluxes related to frazil ice process are computed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_heat_of_fusion" type="real"
+	category="frazil_ice" group="frazil_ice">
+Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_ice_density" type="real"
+	category="frazil_ice" group="frazil_ice">
+Assumed density of frazil. NOTE: test and make consistent with ACME.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_fractional_thickness_limit" type="real"
+	category="frazil_ice" group="frazil_ice">
+maximum fraction of layer thickness than can be used or created at an instant by frazil.
+
+Valid values: Any positive real number between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_specific_heat_sea_water" type="real"
+	category="frazil_ice" group="frazil_ice">
+Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with ACME.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_maximum_depth" type="real"
+	category="frazil_ice" group="frazil_ice">
+maximum depth for the formation of frazil
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_sea_ice_reference_salinity" type="real"
+	category="frazil_ice" group="frazil_ice">
+assumed salinity of frazil ice in the open ocean.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_land_ice_reference_salinity" type="real"
+	category="frazil_ice" group="frazil_ice">
+assumed salinity of frazil ice under land ice.
+
+Valid values: Any non-negative real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_maximum_freezing_temperature" type="real"
+	category="frazil_ice" group="frazil_ice">
+Maximum freezing temperature for the creation of frazil
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_use_surface_pressure" type="logical"
+	category="frazil_ice" group="frazil_ice">
+Flag that controls if frazil formation will exert a surface pressure as it is formed.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -1124,19 +1269,11 @@ Default: Defined in namelist_defaults.xml
 
 <!-- land_ice_fluxes -->
 
-<entry id="config_use_land_ice_fluxes" type="logical"
+<entry id="config_land_ice_flux_mode" type="char*1024"
 	category="land_ice_fluxes" group="land_ice_fluxes">
-Controls if land-ice fluxes are computed under ice shelves.
+Selects the mode in which land-ice fluxes are computed.
 
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_compute_land_ice_fluxes_in_ocean" type="logical"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-Controls if land-ice fluxes are computed in MPAS-O (as opposed to in the coupler).
-
-Valid values: .true. or .false.
+Valid values: 'off','pressure_only','standalone','coupled'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1177,30 +1314,6 @@ Default: Defined in namelist_defaults.xml
 The for horizontal neighbors used to horizontally smooth boundary layer T and S.
 
 Valid values: Most likely a value between 0 (no smoothing) and 1 (neighbors get same weight as this cell).
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_flux_Tf0" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The constant term in the linearization of the freezing temperature.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_flux_dTf_dS" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The salinity coefficient in the linearization of the freezing temperature.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_flux_dTf_dp" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The pressure coefficient in the linearization of the freezing temperature.
-
-Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1355,6 +1468,46 @@ Valid values: Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_freezing_temperature_coeff_0" type="real"
+	category="eos" group="eos">
+The freezing temperature at zero pressure.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_coeff_S" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to salinity in the freezing temperature.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_coeff_p" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to the (limited) pressure in the freezing temperature.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_coeff_pS" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to salinity times pressure in the freezing temperature.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freezing_temperature_reference_pressure" type="real"
+	category="eos" group="eos">
+The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0.
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- eos_linear -->
 
@@ -1433,11 +1586,11 @@ Valid values: any positive integer, but typically 1, 2, or 3
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_n_btr_subcycles" type="integer"
+<entry id="config_btr_dt" type="char*1024"
 	category="split_explicit_ts" group="split_explicit_ts">
-number of barotropic subcycles in stage 2
+Timestep to use for the barotropic mode in the split explicit time integrator
 
-Valid values: any positive integer, typically between 10 and 100
+Valid values: Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1562,6 +1715,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_check_zlevel_consistency" type="logical"
 	category="debug" group="debug">
 Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_check_ssh_consistency" type="logical"
+	category="debug" group="debug">
+Enables a run-time check to determine if the SSH is within 2m of the surface.  See equation for $\zeta_i$.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -1752,6 +1913,105 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- constrain_Haney_number -->
+
+<entry id="config_use_rx1_constraint" type="logical"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+Initialize using Haney number constraint under ice shelves
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_outer_iter_count" type="integer"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid.
+
+Valid values: any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_inner_iter_count" type="integer"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+The number of iterations used to constrain rx1 in each layer.
+
+Valid values: any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_init_inner_weight" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+The weight by which layer thicknesses are altered at the beginning of inner iteration. This weight linearly increases to 1.0 by the final iteration.
+
+Valid values: a positive value less than or equal to 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_max" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid
+
+Valid values: any positive value, typically greater than or equal to 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_horiz_smooth_weight" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+Relative weight of horizontal neighbors compared to this cell when smoothing vertical stretching
+
+Valid values: A non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_vert_smooth_weight" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+Relative weight of vertical neighbors compared to this cell when smoothing vertical stretching
+
+Valid values: A non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_slope_weight" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+Weight used to nudge level interfaces toward being flat (thus decreasing the Haney number)
+
+Valid values: A non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_zstar_weight" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+Weight used to nudge vertical stretching toward z-star during each outer iteration
+
+Valid values: A non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_horiz_smooth_open_ocean_cells" type="integer"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean.
+
+Valid values: any non-negative integer, 0 indiates no buffer region.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_min_levels" type="integer"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+The minimum number of layers in the ocean column in the smoothed region.
+
+Valid values: a positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rx1_min_layer_thickness" type="real"
+	category="constrain_Haney_number" group="constrain_Haney_number">
+The minimum layer thickness in the smoothed region.
+
+Valid values: an positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- baroclinic_channel -->
 
 <entry id="config_baroclinic_channel_vert_levels" type="integer"
@@ -1853,19 +2113,27 @@ Valid values: Any positive real value greater than 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_lock_exchange_south_temp" type="real"
+<entry id="config_lock_exchange_cold_temperature" type="real"
 	category="lock_exchange" group="lock_exchange">
-Temperature of water in the southern half of the domain.
+Temperature of water in the cold half of the domain.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_lock_exchange_north_temp" type="real"
+<entry id="config_lock_exchange_warm_temperature" type="real"
 	category="lock_exchange" group="lock_exchange">
-Temperature of water in the northern half of the domain.
+Temperature of water in the warm half of the domain.
 
 Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_lock_exchange_direction" type="char*1024"
+	category="lock_exchange" group="lock_exchange">
+If y, warm/cold changes in the y-direction.  If z, warm/cold changes in z-direction.
+
+Valid values: 'x', 'y','z''
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1879,7 +2147,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_lock_exchange_layer_type" type="char*1024"
 	category="lock_exchange" group="lock_exchange">
-Logical flag that controls how the initial conditions should be generated.
+Vertical grid type
 
 Valid values: 'z-level', 'isopycnal'
 Default: Defined in namelist_defaults.xml
@@ -2182,6 +2450,30 @@ Valid values: Dim name from input files.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_global_ocean_tracer_ndepth_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of vertical levels in tracer initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_depth_conversion_factor" type="real"
+	category="global_ocean" group="global_ocean">
+Conversion factor for tracer initial condition depth levels. Should convert units on input depth levels to meters.
+
+Valid values: Any positive real value greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_tracer_vert_levels" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of vertical levels in tracer initial condition file.  Set to -1 to read from file with config_global_ocean_tracer_ndepth_dimname
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_global_ocean_temperature_varname" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Name of the variable containing temperature in temperature initial condition file.
@@ -2222,6 +2514,14 @@ Valid values: Variable name from input file.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_global_ocean_tracer_depth_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing depth coordinates for tracer values in temperature initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_global_ocean_tracer_method" type="char*1024"
 	category="global_ocean" group="global_ocean">
 Method to interpolate tracer data to MPAS mesh.
@@ -2235,6 +2535,86 @@ Default: Defined in namelist_defaults.xml
 Number of smoothing iterations on temperature and salinity.
 
 Valid values: Any positive integer value greater or equal to 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_swData_file" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the file containing shortwaveData (chlA, zenith Angle, clear sky radiation)
+
+Valid values: path/to/swData/file.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_swData_nlat_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of latitude lines in swData initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_swData_nlon_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of longitude lines in swData initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_swData_lat_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing latitude coordinates for swData values in swData initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_swData_lon_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing longitude coordinates for swData values in swData initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_swData_latlon_degrees" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if the Lat/Lon fields for swData should be converted to radians. True means input is degrees, false means input is radians.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_swData_method" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Method to interpolate shortwave data to MPAS mesh.
+
+Valid values: bilinear_interpolation, nearest_neighbor
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_chlorophyll_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing chlorophyll in sw Data initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_zenithAngle_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing zenith angle in swData initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_clearSky_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing clear sky radiation in clear sky radiation initial condition file.
+
+Valid values: Variable name from input file.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2310,11 +2690,131 @@ Valid values: Variable name from input file.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_global_ocean_topography_has_ocean_frac" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if topograhy file contains a field for the fraction of each cell that contains ocean (vs. land or grounded ice).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_topography_ocean_frac_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Variable name for the ocean mask in the topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_topography_method" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Method to interpolate topography data to MPAS mesh.
+
+Valid values: bilinear_interpolation, nearest_neighbor
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_global_ocean_smooth_topography" type="logical"
 	category="global_ocean" group="global_ocean">
 Logical flag that controls if topograhy should be smoothed after being interpolated.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_deepen_critical_passages" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if critical passages are deepened to a minimum depth.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_depress_by_land_ice" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if sea surface pressure and layer thicknesses should be altered by an overlying ice sheet/shelf.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_file" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Path to the land ice topography initial condition file.
+
+Valid values: path/to/land_ice_topography/file.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_nlat_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Dimension name for the latitude in the land ice topography file.
+
+Valid values: Dimension name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_nlon_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Dimension name for the longitude in the land ice topography file.
+
+Valid values: Dimension name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_latlon_degrees" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if the Lat/Lon fields for land ice topography should be converted to radians. True means input is degrees, false means input is radians.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_lat_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Variable name for the latitude in the land ice topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_lon_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Variable name for the longitude in the land ice topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_thickness_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Variable name for the land ice thickness in the land ice topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_draft_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Variable name for the land ice draft in the land ice topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_ice_frac_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Variable name for the land ice fraction in the land ice topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_land_ice_topo_grounded_frac_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Variable name for the grounded land ice fraction in the land ice topography file.
+
+Valid values: Variable name from input file.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2403,6 +2903,118 @@ Default: Defined in namelist_defaults.xml
 Factor to convert input windstress to N m^{-1}
 
 Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_file" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of file containing global values of ecosys variables
+
+Valid values: ecosys.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_forcing_file" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of file containing global values of ecosys forcing fields
+
+Valid values: ecosys_forcing.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_nlat_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of latitude lines in ecosys initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_nlon_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of longitude lines in ecosys initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_ndepth_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines number of vertical levels in ecosys initial condition files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_depth_conversion_factor" type="real"
+	category="global_ocean" group="global_ocean">
+Conversion factor for ecosys initial condition depth levels. Should convert units on input depth levels to meters.
+
+Valid values: Any positive real value greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_vert_levels" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of vertical levels in ecosys initial condition file.  Set to -1 to read from file with config_global_ocean_ecosys_ndepth_dimname
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_lat_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing latitude coordinates for ecosys values in ecosys initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_lon_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing longitude coordinates for ecosys values in ecosys initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_depth_varname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the variable containing depth coordinates for ecosys values in ecosys initial condition file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_latlon_degrees" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if the Lat/Lon fields for ecosys should be converted to radians. True means input is degrees, false means input is radians.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_method" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Method to interpolate shortwave data to MPAS mesh.
+
+Valid values: bilinear_interpolation, nearest_neighbor
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_ecosys_forcing_time_dimname" type="char*1024"
+	category="global_ocean" group="global_ocean">
+Name of the dimension that determines the times in ecosys forcing files.
+
+Valid values: Dim name from input files.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_smooth_ecosys_iterations" type="integer"
+	category="global_ocean" group="global_ocean">
+Number of smoothing iterations on ecosystem variables.
+
+Valid values: Any positive integer value greater or equal to 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3400,6 +4012,720 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- ziso -->
+
+<entry id="config_ziso_vert_levels" type="integer"
+	category="ziso" group="ziso">
+Number of vertical levels in ziso. Typical value is 100.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_add_easterly_wind_stress_ASF" type="logical"
+	category="ziso" group="ziso">
+Logical flag to determine if an easterly windstress is added
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_wind_transition_position" type="real"
+	category="ziso" group="ziso">
+meridional position where windstress switches to easterly
+
+Valid values: Any positive real number, less than config_ziso_meridional_extent
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_antarctic_shelf_front_width" type="real"
+	category="ziso" group="ziso">
+meridional extent over which the easterly wind stress is applied
+
+Valid values: any positive real number less than the meridional domain extent
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_wind_stress_shelf_front_max" type="real"
+	category="ziso" group="ziso">
+Maximum zonal windstress value in the shelf front region, following Stewart et al. 2013
+
+Valid values: Any real number less than 0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_use_slopping_bathymetry" type="logical"
+	category="ziso" group="ziso">
+Logical flag that determines if sloping bathymetery is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_meridional_extent" type="real"
+	category="ziso" group="ziso">
+Meridional extent of the domain ($L$).
+
+Valid values: Any real number larger than zero.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_zonal_extent" type="real"
+	category="ziso" group="ziso">
+Zonal extent of the domain ($W$).
+
+Valid values: Any real number larger than zero.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_bottom_depth" type="real"
+	category="ziso" group="ziso">
+Depth of the domain ($H$).
+
+Valid values: Any real number larger than zero.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_shelf_depth" type="real"
+	category="ziso" group="ziso">
+Shelf depth in the domain ($H_s$).
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_slope_half_width" type="real"
+	category="ziso" group="ziso">
+Shelf half width ($W_s$).
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_slope_center_position" type="real"
+	category="ziso" group="ziso">
+Slope center posiiton ($Y_s$).
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_reference_coriolis" type="real"
+	category="ziso" group="ziso">
+Reference coriolis parameter $f_0$. Note $f = f_0 + \beta * y$.
+
+Valid values: Any real number larger.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_coriolis_gradient" type="real"
+	category="ziso" group="ziso">
+Meridional gradient of coriolis parameter $\beta$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_wind_stress_max" type="real"
+	category="ziso" group="ziso">
+Maximum zonal windstress value in $\tau(y) = \tau_0 \exp\left[-\left(\frac{y-L/2}{L/2}\right)^2\right]\cos\left(\frac{\pi}{2}\frac{y-L/2}{L/2}right)$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_mean_restoring_temp" type="real"
+	category="ziso" group="ziso">
+Mean restoring temperature $T_m$ in $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_restoring_temp_dev_ta" type="real"
+	category="ziso" group="ziso">
+Temperature deviation $T_a$ in surface temp. $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_restoring_temp_dev_tb" type="real"
+	category="ziso" group="ziso">
+Linear temperature deviation $T_b$ in surface temp. $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_restoring_temp_tau" type="real"
+	category="ziso" group="ziso">
+Time scale for interior restoring of temperature.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_restoring_temp_piston_vel" type="real"
+	category="ziso" group="ziso">
+Restoring piston velocity for surface temperature.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_restoring_temp_ze" type="real"
+	category="ziso" group="ziso">
+Vertical $e-$folding scale in $T_s$ for northern wall: $T_s \exp(z/z_e)$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_restoring_sponge_l" type="real"
+	category="ziso" group="ziso">
+E-folding distance parameter for the sponge vertical temperature profile.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_initial_temp_t1" type="real"
+	category="ziso" group="ziso">
+Initial temperature profile constant $T_1$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_initial_temp_t2" type="real"
+	category="ziso" group="ziso">
+Initial temperature profile constant $T_2$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_initial_temp_h1" type="real"
+	category="ziso" group="ziso">
+Initial temperature profile constant $h_1$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_initial_temp_mt" type="real"
+	category="ziso" group="ziso">
+Initial temperature profile constant $m_T$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_frazil_enable" type="logical"
+	category="ziso" group="ziso">
+A logical to overload (and largely overwrite) this test case to evaluate frazil. In almost all uses of this test case, this configure option should be false.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ziso_frazil_temperature_anomaly" type="real"
+	category="ziso" group="ziso">
+Temperature anomaly to produce frazil
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- sub_ice_shelf_2D -->
+
+<entry id="config_sub_ice_shelf_2D_vert_levels" type="integer"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Number of vertical levels in sub_ice_shelf_2D. Typical value is 22.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_bottom_depth" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Depth of the bottom of the ocean for the this test case.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_cavity_thickness" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Vertical thickness of ocean sub-ice cavity.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_slope_height" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Vertical thickness of fixed slope.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_edge_width" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Horizontal width of angled part of the ice.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_y1" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+cavity edge in y
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_y2" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+shelf edge in y
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_temperature" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Temperature of the surface in the northern half of the domain.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_surface_salinity" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Salinity of the water in the entire domain.
+
+Valid values: Any real number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sub_ice_shelf_2D_bottom_salinity" type="real"
+	category="sub_ice_shelf_2D" group="sub_ice_shelf_2D">
+Salinity of the water in the entire domain.
+
+Valid values: Any real number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- periodic_planar -->
+
+<entry id="config_periodic_planar_vert_levels" type="integer"
+	category="periodic_planar" group="periodic_planar">
+Number of vertical levels in periodic_planar. Typical value is 1.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_periodic_planar_bottom_depth" type="real"
+	category="periodic_planar" group="periodic_planar">
+Bottom depth.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_periodic_planar_velocity_strength" type="real"
+	category="periodic_planar" group="periodic_planar">
+Strenght of velocity field.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- ecosys_column -->
+
+<entry id="config_ecosys_column_vert_levels" type="integer"
+	category="ecosys_column" group="ecosys_column">
+Number of vertical levels in ecosys column unit test case.
+
+Valid values: 100
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosys_column_vertical_grid" type="char*1024"
+	category="ecosys_column" group="ecosys_column">
+prescription of setting the vertical resolution of the test case
+
+Valid values: '100layerACMEv1'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosys_column_TS_filename" type="char*1024"
+	category="ecosys_column" group="ecosys_column">
+Name of file containing column values of temperature and salinity
+
+Valid values: path/PTandS.mpas100levs.singleColumn.forMPASO.renamed.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosys_column_ecosys_filename" type="char*1024"
+	category="ecosys_column" group="ecosys_column">
+Name of file containing column values of ecosys variables
+
+Valid values: path/ecoIC+phaeo.mpas100levs.singleColumn.forMPASO.renamed.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosys_column_bottom_depth" type="real"
+	category="ecosys_column" group="ecosys_column">
+Depth of the bottom of the ocean for the ecosys column unit test case.
+
+Valid values: 6000.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- sea_mount -->
+
+<entry id="config_sea_mount_vert_levels" type="integer"
+	category="sea_mount" group="sea_mount">
+Number of vertical levels in sea mount test case.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_layer_type" type="char*1024"
+	category="sea_mount" group="sea_mount">
+Logical flag that controls the vertical coordinate initializaton
+
+Valid values: 'z-level', 'sigma'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_stratification_type" type="char*1024"
+	category="sea_mount" group="sea_mount">
+Logical flag that controls how the vertical profile of tracers.  See Beckmann and Haidvogel 1993 eqn 15-16.
+
+Valid values: 'linear', 'exponential'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_coef_linear" type="real"
+	category="sea_mount" group="sea_mount">
+Density coefficient for linear vertical stratification
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_coef_exp" type="real"
+	category="sea_mount" group="sea_mount">
+Density coefficient for exponential vertical stratification
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_gradient_linear" type="real"
+	category="sea_mount" group="sea_mount">
+Density gradient for linear vertical stratification, \Delta_z \rho in Beckmann Haidvogel eqn 15
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_gradient_exp" type="real"
+	category="sea_mount" group="sea_mount">
+Density gradient for exponential vertical stratification, \Delta_z \rho in Beckmann Haidvogel eqn 16
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_depth_linear" type="real"
+	category="sea_mount" group="sea_mount">
+Density reference depth for linear vertical stratification
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_depth_exp" type="real"
+	category="sea_mount" group="sea_mount">
+Density reference depth for exponential vertical stratification
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_ref" type="real"
+	category="sea_mount" group="sea_mount">
+Density reference for eos to initialize temperature
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_Tref" type="real"
+	category="sea_mount" group="sea_mount">
+Reference temperature for eos to initialize temperature
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_density_alpha" type="real"
+	category="sea_mount" group="sea_mount">
+Linear thermal expansion coefficient to initialize temperature
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_bottom_depth" type="real"
+	category="sea_mount" group="sea_mount">
+Depth of the bottom of the ocean for the sea mount test case.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_height" type="real"
+	category="sea_mount" group="sea_mount">
+Height of sea mount, $H_0$
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_radius" type="real"
+	category="sea_mount" group="sea_mount">
+Radius of sea mount
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_width" type="real"
+	category="sea_mount" group="sea_mount">
+Width parameter of sea mount, $L$.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_salinity" type="real"
+	category="sea_mount" group="sea_mount">
+Salinity of the water in the entire domain.
+
+Valid values: Any real number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_mount_coriolis_parameter" type="real"
+	category="sea_mount" group="sea_mount">
+Coriolis parameter for entrie domain.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- isomip -->
+
+<entry id="config_isomip_vert_levels" type="integer"
+	category="isomip" group="isomip">
+Number of vertical levels in test case.
+
+Valid values: Any integer greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_vertical_level_distribution" type="char*1024"
+	category="isomip" group="isomip">
+The distribution of vertical levels, either constant (all equal thickness) or boundary layer (decreasing toward top and bottom).
+
+Valid values: 'constant', 'boundary_layer'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_bottom_depth" type="real"
+	category="isomip" group="isomip">
+Depth of the ocean in the test case.
+
+Valid values: Any negative real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_temperature" type="real"
+	category="isomip" group="isomip">
+Temperature of the ocean for isomip initial conditions.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_salinity" type="real"
+	category="isomip" group="isomip">
+Salinity of the ocean for isomip initial conditions.
+
+Valid values: Any real number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_restoring_temperature" type="real"
+	category="isomip" group="isomip">
+Temperature for surface restoring.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_temperature_piston_velocity" type="real"
+	category="isomip" group="isomip">
+Piston velocity for surface restoring of temperature
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_restoring_salinity" type="real"
+	category="isomip" group="isomip">
+Salinity for surface restoring.
+
+Valid values: Any real number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_salinity_piston_velocity" type="real"
+	category="isomip" group="isomip">
+Piston velocity for surface restoring of salinity
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_coriolis_parameter" type="real"
+	category="isomip" group="isomip">
+Coriolis parameter for entrie domain.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_southern_boundary" type="real"
+	category="isomip" group="isomip">
+The y location of the southern boundary.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_northern_boundary" type="real"
+	category="isomip" group="isomip">
+The y location of the northern boundary.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_western_boundary" type="real"
+	category="isomip" group="isomip">
+The x location of the western boundary.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_eastern_boundary" type="real"
+	category="isomip" group="isomip">
+The x location of the eastern boundary.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_y1" type="real"
+	category="isomip" group="isomip">
+The first y value in the piecewise linear ice draft.
+
+Valid values: Any real number, between -90 and 90 on spherical meshes.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_z1" type="real"
+	category="isomip" group="isomip">
+The first z value in the piecewise linear ice draft.
+
+Valid values: Any non-positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_ice_fraction1" type="real"
+	category="isomip" group="isomip">
+The first ice fraction value in the piecewise linear fit.
+
+Valid values: A real number between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_y2" type="real"
+	category="isomip" group="isomip">
+The second y value in the piecewise linear ice draft.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_z2" type="real"
+	category="isomip" group="isomip">
+The second z value in the piecewise linear.
+
+Valid values: Any non-positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_ice_fraction2" type="real"
+	category="isomip" group="isomip">
+The second ice fraction value in the piecewise linear fit.
+
+Valid values: A real number between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_y3" type="real"
+	category="isomip" group="isomip">
+The third y value in the piecewise linear ice draft.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_z3" type="real"
+	category="isomip" group="isomip">
+The third z value in the piecewise linear.
+
+Valid values: Any non-positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_ice_fraction3" type="real"
+	category="isomip" group="isomip">
+The third ice fraction value in the piecewise linear fit.
+
+Valid values: A real number between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- tracer_forcing_activeTracers -->
 
 <entry id="config_use_activeTracers" type="logical"
@@ -3518,6 +4844,231 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- tracer_forcing_ecosysTracers -->
+
+<entry id="config_use_ecosysTracers" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, the 'ecosysGRP' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_surface_restoring" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, surface restoring source is applied to tracers in 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_interior_restoring" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, interior restoring source is applied to tracers in 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_exponential_decay" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, exponential decay source is applied to tracers in 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, idealAge forcing source is applied to tracers in 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, transit time distribution forcing source is applied to tracers in 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_surface_value" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, surface value is computed for 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, couple ecosys fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- tracer_forcing_DMSTracers -->
+
+<entry id="config_use_DMSTracers" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, the 'DMSGRP' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'DMSGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_surface_restoring" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, surface restoring source is applied to tracers in 'DMSGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_interior_restoring" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, interior restoring source is applied to tracers in 'DMSGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_exponential_decay" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, exponential decay source is applied to tracers in 'DMSGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, idealAge forcing source is applied to tracers in 'DMSGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, transit time distribution forcing source is applied to tracers in 'DMSGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_surface_value" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, surface value is computed for 'DMSGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_DMSTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_DMSTracers" group="tracer_forcing_DMSTracers">
+if true, couple DMS fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- tracer_forcing_MacroMoleculesTracers -->
+
+<entry id="config_use_MacroMoleculesTracers" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, the 'MacroMoleculesGRP' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_surface_restoring" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, surface restoring source is applied to tracers in 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_interior_restoring" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, interior restoring source is applied to tracers in 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_exponential_decay" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, exponential decay source is applied to tracers in 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, idealAge forcing source is applied to tracers in 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, transit time distribution forcing source is applied to tracers in 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_surface_value" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, surface value is computed for 'MacroMoleculesGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_MacroMoleculesTracers_sea_ice_coupling" type="logical"
+	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
+if true, couple MacroMolecules fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- AM_globalStats -->
 
 <entry id="config_AM_globalStats_enable" type="logical"
@@ -3568,7 +5119,7 @@ Valid values: any valid directory name
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_globalStats_stream_name" type="char*1024"
+<entry id="config_AM_globalStats_output_stream" type="char*1024"
 	category="AM_globalStats" group="AM_globalStats">
 Name of the stream that the globalStats analysis member should get information from.
 
@@ -3611,7 +5162,7 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_surfaceAreaWeightedAverages_stream_name" type="char*1024"
+<entry id="config_AM_surfaceAreaWeightedAverages_output_stream" type="char*1024"
 	category="AM_surfaceAreaWeightedAverages" group="AM_surfaceAreaWeightedAverages">
 Name of the stream the surface area weighted averages analysis member should be tied to.
 
@@ -3638,7 +5189,7 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_waterMassCensus_stream_name" type="char*1024"
+<entry id="config_AM_waterMassCensus_output_stream" type="char*1024"
 	category="AM_waterMassCensus" group="AM_waterMassCensus">
 Name of the stream the water mass census analysis member should be tied to.
 
@@ -3729,7 +5280,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_layerVolumeWeightedAverage_stream_name" type="char*1024"
+<entry id="config_AM_layerVolumeWeightedAverage_output_stream" type="char*1024"
 	category="AM_layerVolumeWeightedAverage" group="AM_layerVolumeWeightedAverage">
 Name of the string that should be tied to the layer volume weighted average analysis member
 
@@ -3772,7 +5323,7 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_zonalMean_stream_name" type="char*1024"
+<entry id="config_AM_zonalMean_output_stream" type="char*1024"
 	category="AM_zonalMean" group="AM_zonalMean">
 Name of stream the zonal mean analysis member should be tied to.
 
@@ -3839,7 +5390,7 @@ Valid values: Any time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_okuboWeiss_stream_name" type="char*1024"
+<entry id="config_AM_okuboWeiss_output_stream" type="char*1024"
 	category="AM_okuboWeiss" group="AM_okuboWeiss">
 Name of stream the okubo weiss analysis member should be tied to
 
@@ -3938,7 +5489,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_meridionalHeatTransport_stream_name" type="char*1024"
+<entry id="config_AM_meridionalHeatTransport_output_stream" type="char*1024"
 	category="AM_meridionalHeatTransport" group="AM_meridionalHeatTransport">
 Name of the stream that the meridional heat transport analysis member should be tied to.
 
@@ -4005,7 +5556,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_testComputeInterval_stream_name" type="char*1024"
+<entry id="config_AM_testComputeInterval_output_stream" type="char*1024"
 	category="AM_testComputeInterval" group="AM_testComputeInterval">
 Name of the stream that should be tied to the test_compute_interval analysis member
 
@@ -4032,7 +5583,7 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_highFrequencyOutput_stream_name" type="char*1024"
+<entry id="config_AM_highFrequencyOutput_output_stream" type="char*1024"
 	category="AM_highFrequencyOutput" group="AM_highFrequencyOutput">
 Name of the stream that the highFrequencyOutput analysis member should be tied to.
 
@@ -4075,9 +5626,17 @@ Valid values: 'dt' because filtering should be performed at each time step.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeFilters_stream_name" type="char*1024"
+<entry id="config_AM_timeFilters_output_stream" type="char*1024"
 	category="AM_timeFilters" group="AM_timeFilters">
 Name of the stream that the timeFilters analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeFilters_restart_stream" type="char*1024"
+	category="AM_timeFilters" group="AM_timeFilters">
+Name of the stream that the timeFilters analysis member should use to perform restarts.
 
 Valid values: Any existing stream name or 'none'
 Default: Defined in namelist_defaults.xml
@@ -4099,14 +5658,6 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeFilters_do_restart" type="logical"
-	category="AM_timeFilters" group="AM_timeFilters">
-Logical flag determining if an analysis member restart occurs on start-up.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_AM_timeFilters_initialize_filters" type="logical"
 	category="AM_timeFilters" group="AM_timeFilters">
 Logical flag determining if filters should be initialized on start-up.
@@ -4120,6 +5671,121 @@ Default: Defined in namelist_defaults.xml
 Cutoff time scale $\tau$ for high and low pass filtering (default is 90 days).
 
 Valid values: Any time stamp in 'DD_hh:mm:ss' format. Items can be removed from the left if they are unused.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeFilters_compute_cell_centered_values" type="logical"
+	category="AM_timeFilters" group="AM_timeFilters">
+Logical flag determining if cell centered values should be computed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_lagrPartTrack -->
+
+<entry id="config_AM_lagrPartTrack_enable" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, ocean analysis member lagrPartTrack is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_compute_interval" type="char*1024"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: 'DDDD_HH:MM:SS', 'output', 'dt'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_compute_on_startup" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_output_stream" type="char*1024"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Name of the stream that the lagrPartTrack analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_restart_stream" type="char*1024"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Name of the stream that the lagrPartTrack analysis member should use to perform restarts.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_input_stream" type="char*1024"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Name of the stream that the lagrPartTrack analysis member should read only in a non-restart run.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_write_on_startup" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_filter_number" type="integer"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Number of times to apply filtering operation.
+
+Valid values: 0, 1, 2, ...
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_reset_criteria" type="char*1024"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Specify whether particles should not be reset ('none'), be reset on a timer for each particle ('particle_time'), be reset on config_AM_lagrPartTrack_reset_time_globally value ('global_time'), be reset based on regions ('region'), or be reset for all conditions ('all').
+
+Valid values: 'none','particle_time','global_time', 'region','all'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_reset_global_timestamp" type="char*1024"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Specify reset global timestamp interval.
+
+Valid values: timestamps of form 0000_00:00:00
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_region_stream" type="char*1024"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Name of the stream that has region arrays resetOutsideRegionMaskValue1 and resetInsideRegionMaskValue1 for region-based particle resets.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_reset_if_outside_region" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Specify whether particles should be reset when they leave the resetOutsideRegionMaskValue1 mask.
+
+Valid values: .false. or .true.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_reset_if_inside_region" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+Specify whether particles should be reset when they enter the resetInsideRegionMaskValue1 mask.
+
+Valid values: .false. or .true.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -4142,9 +5808,17 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_eliassenPalm_stream_name" type="char*1024"
+<entry id="config_AM_eliassenPalm_output_stream" type="char*1024"
 	category="AM_eliassenPalm" group="AM_eliassenPalm">
 Name of the stream that the eliassenPalm analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_eliassenPalm_restart_stream" type="char*1024"
+	category="AM_eliassenPalm" group="AM_eliassenPalm">
+Name of the stream that the eliassenPalm analysis member will use to performing restarts.
 
 Valid values: Any existing stream name or 'none'
 Default: Defined in namelist_defaults.xml
@@ -4161,14 +5835,6 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_AM_eliassenPalm_write_on_startup" type="logical"
 	category="AM_eliassenPalm" group="AM_eliassenPalm">
 Logical flag determining if an analysis member write occurs on start-up.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_eliassenPalm_do_restart" type="logical"
-	category="AM_eliassenPalm" group="AM_eliassenPalm">
-If true, all EPfT fields are initialized using a restart file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -4225,7 +5891,7 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_mixedLayerDepths_stream_name" type="char*1024"
+<entry id="config_AM_mixedLayerDepths_output_stream" type="char*1024"
 	category="AM_mixedLayerDepths" group="AM_mixedLayerDepths">
 Name of the stream that the temPlate analysis member should be tied to.
 
@@ -4326,6 +5992,544 @@ Default: Defined in namelist_defaults.xml
 flag specifying which interpolation method to use in computations
 
 Valid values: 1=linear or 2=quadratic or 3=cubic
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_regionalStats -->
+
+<entry id="config_AM_regionalStats_enable" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+If true, ocean analysis member regional stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_compute_on_startup" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_write_on_startup" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_compute_interval" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Interval that determines frequency of computation for the regional stats analysis member.
+
+Valid values: Any valid time stamp, 'output_interval', or 'dt'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_output_stream" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Name of stream the regional stats analysis member will operate on that contains the list of input fields (and will be modified to contain the output stats fields).
+
+Valid values: An existing output stream that will be read for input fields. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_restart_stream" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as input_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_input_stream" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as restart_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_operation" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An operation describing the statistic to apply to all variables in the output stream.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_region_type" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+The reduced dimension of the region masks that will be used during the regional stats operation. Needs to be the last dimension, and the same dimension as all of the reduced fields, weight fields, and masks.
+
+Valid values: The mask reduction dimension, where it can be 'cell' or 'vertex'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_region_group" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+The name of the group of region masks that will be used to subset the mesh during the regional stats operation.
+
+Valid values: a valid name in the region group names
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_1d_weighting_function" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An operation applied to every element in a region WITHOUT a vertical dimension, with a 1D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_2d_weighting_function" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An operation applied to every element in a region WITH a vertical dimension, with a 2D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_1d_weighting_field" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+A 1D real field used in conjunction with the 1D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if 1D weighting function is 'id', otherwise any valid 1D real field with the same horizontal dimensions as the region masks
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_2d_weighting_field" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+A 2D real field used in conjunction with the 2D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if weighting function is 'id', otherwise any valid 2D real field with the same horizontal dimensions as the region masks and the vertical mask (requires that there is a vertical mask and vertical dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_vertical_mask" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An additional 2D vertical integer mask field, which is used in conjunction with the regional masks. Used in cases when an input field has a second dimension that matches the vertical mask dimension.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise any integer 2D field with the configured second vertical dimension
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_vertical_dimension" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+The second dimension to be used for additional vertical mask.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise the name of the second dimension in the vertical mask field (where the first has to be the element dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStats -->
+
+<entry id="config_AM_timeSeriesStats_enable" type="logical"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+If true, ocean analysis member time series stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_compute_on_startup" type="logical"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_write_on_startup" type="logical"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_compute_interval" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+Interval that determines frequency of computation for the time series stats analysis member.
+
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_output_stream" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+Name of stream the time series stats analysis member will operate on.
+
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_restart_stream" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the time series stats.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_operation" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_reference_times" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
+
+Valid values: A list of absolute times or 'initial_time's, separated by ;.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_pointwiseStats -->
+
+<entry id="config_AM_pointwiseStats_enable" type="logical"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+If true, ocean analysis member pointwiseStats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_compute_interval" type="char*1024"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_output_stream" type="char*1024"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Name of the stream that the pointwiseStats analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_compute_on_startup" type="logical"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_write_on_startup" type="logical"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_debugDiagnostics -->
+
+<entry id="config_AM_debugDiagnostics_enable" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+If true, ocean analysis member debugDiagnostics is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_compute_interval" type="char*1024"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_output_stream" type="char*1024"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Name of the stream that the debugDiagnostics analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_compute_on_startup" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_write_on_startup" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_check_state" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Logical flag determining if state checking happens when the debug diagnostics AM is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_rpnCalculator -->
+
+<entry id="config_AM_rpnCalculator_enable" type="logical"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+If true, ocean analysis member RPN calculator is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_compute_on_startup" type="logical"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_write_on_startup" type="logical"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_compute_interval" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Interval that determines frequency of computation for the RPN calculator analysis member.
+
+Valid values: Any valid time stamp, 'output_interval', or 'dt'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_stream" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of stream the RPN calculator analysis member put output fields.
+
+Valid values: 'none' or the name of an output stream
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_a" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'a' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_b" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'b' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_c" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'c' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_d" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'd' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_e" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'e' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_f" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'f' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_g" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'g' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_h" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'h' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_1" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none' or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_2" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none' or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_3" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none' or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_4" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_1" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 1.
+
+Valid values: a valid MPAS field output name if expression 1 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_2" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 2.
+
+Valid values: a valid MPAS field output name if expression 2 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_3" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 3.
+
+Valid values: a valid MPAS field output name if expression 3 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_4" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 4.
+
+Valid values: a valid MPAS field output name if expression 4 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_transectTransport -->
+
+<entry id="config_AM_transectTransport_enable" type="logical"
+	category="AM_transectTransport" group="AM_transectTransport">
+If true, ocean analysis member transectTransport is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_compute_interval" type="char*1024"
+	category="AM_transectTransport" group="AM_transectTransport">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_output_stream" type="char*1024"
+	category="AM_transectTransport" group="AM_transectTransport">
+Name of the stream that the transectTransport analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_compute_on_startup" type="logical"
+	category="AM_transectTransport" group="AM_transectTransport">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_write_on_startup" type="logical"
+	category="AM_transectTransport" group="AM_transectTransport">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

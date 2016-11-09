@@ -5,7 +5,7 @@ module atm_import_export
 
 contains
 
-  subroutine atm_import( x2a, cam_in )
+  subroutine atm_import( x2a, cam_in, restart_init )
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -24,6 +24,7 @@ contains
     !
     real(r8)      , intent(in)    :: x2a(:,:)
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
+    logical, optional, intent(in) :: restart_init
     !
     ! Local variables
     !		
@@ -34,7 +35,12 @@ contains
     integer, target    :: spc_ndx(ndst)
     integer, pointer   :: dst_a5_ndx, dst_a7_ndx
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
+    logical :: overwrite_flds
     !-----------------------------------------------------------------------
+    overwrite_flds = .true.
+    ! don't overwrite fields if invoked during the initialization phase 
+    ! of a 'continue' or 'branch' run type with data from .rs file
+    if (present(restart_init)) overwrite_flds = .not. restart_init
 
     ! ccsm sign convention is that fluxes are positive downward
 
@@ -43,15 +49,27 @@ contains
        ncols = get_ncols_p(c) 
 
        ! initialize constituent surface fluxes to zero
-       cam_in(c)%cflx(:,:) = 0._r8 
+       ! NOTE:overwrite_flds is .FALSE. for the first restart
+       ! time step making cflx(:,1)=0.0 for the first restart time step.
+       ! cflx(:,1) should not be zeroed out, start the second index of cflx from 2.
+       cam_in(c)%cflx(:,2:) = 0._r8 
                                                
        do i =1,ncols                                                               
-          cam_in(c)%wsx(i)       = -x2a(index_x2a_Faxx_taux,ig)     
-          cam_in(c)%wsy(i)       = -x2a(index_x2a_Faxx_tauy,ig)     
-          cam_in(c)%lhf(i)       = -x2a(index_x2a_Faxx_lat, ig)     
-          cam_in(c)%shf(i)       = -x2a(index_x2a_Faxx_sen, ig)     
+          if (overwrite_flds) then
+             ! Prior to this change, "overwrite_flds" was always .true. therefore wsx and wsy were always updated.
+             ! Now, overwrite_flds is .false. for the first time step of the restart run. Move wsx and wsy out of 
+             ! this if-condition so that they are still updated everytime irrespective of the value of overwrite_flds.
+
+             ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction 
+             ! occurs at the restart time step
+             ! Modified by Wuyin Lin
+             cam_in(c)%shf(i)    = -x2a(index_x2a_Faxx_sen, ig)     
+             cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)                
+             cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)     
+          endif
+          cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)     
+          cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)     
           cam_in(c)%lwup(i)      = -x2a(index_x2a_Faxx_lwup,ig)    
-          cam_in(c)%cflx(i,1)    = -x2a(index_x2a_Faxx_evap,ig)                
           cam_in(c)%asdir(i)     =  x2a(index_x2a_Sx_avsdr, ig)  
           cam_in(c)%aldir(i)     =  x2a(index_x2a_Sx_anidr, ig)  
           cam_in(c)%asdif(i)     =  x2a(index_x2a_Sx_avsdf, ig)  
@@ -115,7 +133,7 @@ contains
     ! Get total co2 flux from components,
     ! Note - co2_transport determines if cam_in(c)%cflx(i,c_i(1:4)) is allocated
 
-    if (co2_transport()) then
+    if (co2_transport().and.overwrite_flds) then
 
        ! Interpolate in time for flux data read in
        if (co2_readFlux_ocn) then

@@ -22,7 +22,12 @@ module CNNDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col                
-  use PatchType           , only : pft                
+  use PatchType           , only : pft
+  use EcophysConType      , only : ecophyscon
+  use CNCarbonStateType   , only : carbonstate_type
+  use TemperatureType     , only : temperature_type
+  use PhosphorusStateType , only : phosphorusstate_type
+  
   !
   implicit none
   save
@@ -36,6 +41,8 @@ module CNNDynamicsMod
   public :: CNNFert
   public :: CNSoyfix
   public :: readCNNDynamicsParams
+  public :: CNNFixation_balance
+  
   !
   ! !PRIVATE DATA:
   type, private :: CNNDynamicsParamsType
@@ -141,7 +148,7 @@ contains
   end subroutine CNNDeposition
 
   !-----------------------------------------------------------------------
-  subroutine CNNFixation(num_soilc, filter_soilc, &
+  subroutine CNNFixation(num_soilc, filter_soilc, waterflux_vars, &
        carbonflux_vars, nitrogenflux_vars)
     !
     ! !DESCRIPTION:
@@ -157,6 +164,7 @@ contains
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(waterflux_type)     , intent(in)    :: waterflux_vars    
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars 
     !
@@ -164,39 +172,54 @@ contains
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
     real(r8) :: dayspyr               ! days per year
+    real(r8) :: secspyr              ! seconds per yr
+    logical  :: do_et_bnf = .false.
     !-----------------------------------------------------------------------
 
     associate(& 
          cannsum_npp    => carbonflux_vars%annsum_npp_col      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
          col_lag_npp    => carbonflux_vars%lag_npp_col         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production           
 
+         qflx_tran_veg  => waterflux_vars%qflx_tran_veg_col    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
+         
+         qflx_evap_veg  => waterflux_vars%qflx_evap_veg_col    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
          nfix_to_sminn  => nitrogenflux_vars%nfix_to_sminn_col   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
       dayspyr = get_days_per_year()
 
-      if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
-         ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
-         ! Loop through columns
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)         
-
-            if (col_lag_npp(c) /= spval) then
-               ! need to put npp in units of gC/m^2/year here first
-               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
-               nfix_to_sminn(c) = max(0._r8,t)
-            else
-               nfix_to_sminn(c) = 0._r8
-            endif
-         end do
+      if (do_et_bnf) then
+         secspyr = dayspyr * 86400._r8
+         do fc = 1, num_soilc
+            c =filter_soilc(fc)
+            !use the cleveland equation
+            t = 0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr
+            nfix_to_sminn(c) = max(0._r8, t)
+         enddo
       else
-         ! use annual-mean values for NPP-NFIX relation
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-
-            t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
-            nfix_to_sminn(c) = max(0._r8,t)
-         end do
+         if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+            ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
+            ! Loop through columns
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)         
+               
+               if (col_lag_npp(c) /= spval) then
+                  ! need to put npp in units of gC/m^2/year here first
+                  t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
+                  nfix_to_sminn(c) = max(0._r8,t)
+               else
+                  nfix_to_sminn(c) = 0._r8
+               endif
+            end do
+         else
+            ! use annual-mean values for NPP-NFIX relation
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               
+               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
+               nfix_to_sminn(c) = max(0._r8,t)
+            end do
+         endif
       endif
 
     end associate
@@ -586,4 +609,83 @@ contains
 
   end subroutine CNSoyfix
 
+  !-----------------------------------------------------------------------
+  subroutine CNNFixation_balance(num_soilc, filter_soilc,cnstate_vars, carbonflux_vars, &
+             nitrogenstate_vars, nitrogenflux_vars, temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! created, Aug 2015 by Q. Zhu
+    ! On the radiation time step, update the nitrogen fixation rate
+    ! as a function of (1) root NP status, (2) fraction of root that is nodulated, (3) carbon cost of root nitrogen uptake
+    ! N2 fixation is based on Fisher 2010 GBC doi:10.1029/2009GB003621; Wang 2007 GBC doi:10.1029/2006GB002797; and Grand 2012 ecosys model
+    !
+    ! !USES:
+    use clm_time_manager , only : get_days_per_year, get_step_size
+    use shr_sys_mod      , only : shr_sys_flush
+    use clm_varcon       , only : secspday, spval
+    use pftvarcon        , only : noveg
+        
+    !
+    ! !ARGUMENTS:
+    integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(cnstate_type)      , intent(inout) :: cnstate_vars
+    type(carbonflux_type)   , intent(inout) :: carbonflux_vars
+    type(nitrogenstate_type), intent(in)    :: nitrogenstate_vars
+    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
+    type(temperature_type)  , intent(inout) :: temperature_vars
+    type(waterstate_type)   , intent(in)    :: waterstate_vars
+    type(carbonstate_type)  , intent(inout) :: carbonstate_vars
+    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c,fc,p                     ! indices
+    real(r8) :: r_fix                      ! carbon cost of N2 fixation, gC/gN
+    real(r8) :: r_nup                      ! carbon cost of root N uptake, gC/gN
+    real(r8) :: f_nodule                   ! empirical, fraction of root that is nodulated
+    real(r8) :: N2_aq                      ! aqueous N2 bulk concentration gN/m3 soil
+    real(r8) :: km_n2                      ! MM parameter for N2 fixation
+    !-----------------------------------------------------------------------
+
+    associate(& 
+         ivt                   => pft%itype                            , & ! input:  [integer  (:) ]  pft vegetation type  
+         cn_scalar             => cnstate_vars%cn_scalar               , &
+         cp_scalar             => cnstate_vars%cp_scalar               , &
+         vmax_nfix             => ecophyscon%vmax_nfix                 , &
+         km_nfix               => ecophyscon%km_nfix                   , &
+         frootc                => carbonstate_vars%frootc_patch        , &
+         nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
+         pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
+         benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
+         t_soi10cm_col         => temperature_vars%t_soi10cm_col       , &
+         h2osoi_vol            => waterstate_vars%h2osoi_vol_col      &
+         )
+
+      do fc=1,num_soilc
+          c = filter_soilc(fc)
+          nfix_to_sminn(c) = 0.0_r8
+          do p = col%pfti(c), col%pftf(c)
+              if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+                  ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
+                  r_fix = -6.25*(exp(-3.62 + 0.27*t_soi10cm_col(c)*(1-0.5*t_soi10cm_col(c)/25.15))-2) 
+                  ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
+                  r_nup = benefit_pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-20_r8)
+                  ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
+                  f_nodule = 1 - min(1.0_r8,r_fix / r_nup )
+                  ! np limitation factor of n2 fixation (not considered now)
+                  ! calculate aqueous N2 concentration and bulk aqueous N2 concentration
+                  ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e-3L/m3 * water content m3/m3 at 10 cm
+                  N2_aq = 0.78 * 6.1e-4 *28 /1e-3 * h2osoi_vol(c,4)
+                  km_n2 = 5 ! calibrated value
+                  ! calculate n2 fixation rate for each pft and add it to column total
+                  nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix * frootc(p) * cn_scalar(p) *f_nodule * &
+                     N2_aq/ (N2_aq + km_n2) * pft%wtcol(p)
+              end if
+          end do
+      end do
+      
+    end associate
+
+  end subroutine CNNFixation_balance
+  
 end module CNNDynamicsMod

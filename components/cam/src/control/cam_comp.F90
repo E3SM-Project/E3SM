@@ -92,7 +92,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 #endif
 !   use shr_orb_mod,      only: shr_orb_params
    use camsrfexch,       only: hub2atm_alloc, atm2hub_alloc
-   use cam_history,      only: addfld, add_default, phys_decomp, intht, init_masterlinkedlist
+   use cam_history,      only: intht, init_masterlinkedlist
    use history_scam,     only: scm_intht
    use scamMod,          only: single_column
    use cam_pio_utils,    only: init_pio_subsystem
@@ -164,9 +164,11 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    else
 
-      call cam_read_restart ( cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName=filein )
+      call cam_read_restart ( cam_in, cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName=filein )
 
-      call hub2atm_alloc( cam_in )
+     ! Commented out the hub2atm_alloc call as it overwrite cam_in, which is undesirable. The fields in cam_in are necessary for getting BFB restarts
+	 ! There are no side effects of commenting out this call as this call allocates cam_in and cam_in allocation has already been done in cam_init
+     !call hub2atm_alloc( cam_in )
 #if (defined BFB_CAM_SCAM_IOP)
       call initialize_iop_history()
 #endif
@@ -187,7 +189,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
       log_print = .false.
    end if
 
-   call stepon_init( gw, etamid, dyn_in, dyn_out ) ! dyn_out necessary?
+   call stepon_init( dyn_in, dyn_out ) ! dyn_out necessary?
 
    if (single_column) call scm_intht()
    call intht()
@@ -324,7 +326,7 @@ subroutine cam_run3( cam_out )
    !
    call t_barrierf ('sync_stepon_run3', mpicom)
    call t_startf ('stepon_run3')
-   call stepon_run3( dtime, etamid, cam_out, phys_state, dyn_in, dyn_out )
+   call stepon_run3( dtime, cam_out, phys_state, dyn_in, dyn_out )
 
    call t_stopf  ('stepon_run3')
 
@@ -389,10 +391,10 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
    if (rstwr) then
       call t_startf ('cam_write_restart')
       if (present(yr_spec).and.present(mon_spec).and.present(day_spec).and.present(sec_spec)) then
-         call cam_write_restart( cam_out, dyn_out, pbuf2d, &
+         call cam_write_restart( cam_in, cam_out, dyn_out, pbuf2d, &
               yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
       else
-         call cam_write_restart( cam_out, dyn_out, pbuf2d )
+         call cam_write_restart( cam_in, cam_out, dyn_out, pbuf2d )
       end if
       call t_stopf  ('cam_write_restart')
    end if

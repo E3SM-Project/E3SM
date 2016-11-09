@@ -24,7 +24,16 @@ module  PhotosynthesisMod
   use SolarAbsorbedType   , only : solarabs_type
   use SurfaceAlbedoType   , only : surfalb_type
   use PhotosynthesisType  , only : photosyns_type
-  use PatchType           , only : pft                
+  use PatchType           , only : pft
+  use CNAllocationMod     , only : nu_com_leaf_physiology
+  use PhosphorusStateType , only : phosphorusstate_type
+  use CNNitrogenStateType , only : nitrogenstate_type
+  use clm_varctl          , only : cnallocate_carbon_only
+  use clm_varctl          , only : cnallocate_carbonnitrogen_only
+  use clm_varctl          , only : cnallocate_carbonphosphorus_only
+  use clm_varctl          , only : iulog
+  use pftvarcon           , only : noveg
+    
   !
   implicit none
   save
@@ -50,7 +59,7 @@ contains
   subroutine Photosynthesis ( bounds, fn, filterp, &
        esat_tv, eair, oair, cair, rb, btran, &
        dayl_factor, atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-       canopystate_vars, photosyns_vars, phase)
+       canopystate_vars, photosyns_vars, nitrogenstate_vars,phosphorusstate_vars, phase)
     !
     ! !DESCRIPTION:
     ! Leaf photosynthesis and stomatal conductance calculation as described by
@@ -79,7 +88,10 @@ contains
     type(solarabs_type)    , intent(in)    :: solarabs_vars
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(photosyns_type)   , intent(inout) :: photosyns_vars
+    type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
+    type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
     character(len=*)       , intent(in)    :: phase                          ! 'sun' or 'sha'
+    
     !
     ! !LOCAL VARIABLES:
     !
@@ -191,7 +203,11 @@ contains
     real(r8) , pointer :: rs_z        (:,:)     
     real(r8) , pointer :: ci_z        (:,:)     
     real(r8) , pointer :: alphapsnsun (:)  
-    real(r8) , pointer :: alphapsnsha (:) 
+    real(r8) , pointer :: alphapsnsha (:)
+    
+    real(r8) :: lpc(bounds%begp:bounds%endp)   ! leaf P concentration (gP leaf/m^2)
+    real(r8) :: sum_nscaler              
+    real(r8) :: total_lai
     !------------------------------------------------------------------------------
 
     ! Temperature and soil water response functions
@@ -210,41 +226,50 @@ contains
     SHR_ASSERT_ALL((ubound(btran)       == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(dayl_factor) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
 
-    associate(                                                 & 
-         c3psn      => ecophyscon%c3psn                      , & ! Input:  [real(r8) (:)   ]  photosynthetic pathway: 0. = c4, 1. = c3                              
-         leafcn     => ecophyscon%leafcn                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                                                      
-         flnr       => ecophyscon%flnr                       , & ! Input:  [real(r8) (:)   ]  fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)       
-         fnitr      => ecophyscon%fnitr                      , & ! Input:  [real(r8) (:)   ]  foliage nitrogen limitation factor (-)                                
-         slatop     => ecophyscon%slatop                     , & ! Input:  [real(r8) (:)   ]  specific leaf area at top of canopy, projected area basis [m^2/gC]    
+    associate(                                                       & 
+         c3psn         => ecophyscon%c3psn                         , & ! Input:  [real(r8) (:)   ]  photosynthetic pathway: 0. = c4, 1. = c3                              
+         leafcn        => ecophyscon%leafcn                        , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                                                      
+         flnr          => ecophyscon%flnr                          , & ! Input:  [real(r8) (:)   ]  fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)       
+         fnitr         => ecophyscon%fnitr                         , & ! Input:  [real(r8) (:)   ]  foliage nitrogen limitation factor (-)                                
+         slatop        => ecophyscon%slatop                        , & ! Input:  [real(r8) (:)   ]  specific leaf area at top of canopy, projected area basis [m^2/gC]    
 
-         forc_pbot  => atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
+         forc_pbot     => atm2lnd_vars%forc_pbot_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
 
-         t_veg      => temperature_vars%t_veg_patch          , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
-         t10        => temperature_vars%t_a10_patch          , & ! Input:  [real(r8) (:)   ]  10-day running mean of the 2 m temperature (K)                        
-         tgcm       => temperature_vars%thm_patch            , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)                     
+         t_veg         => temperature_vars%t_veg_patch             , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
+         t10           => temperature_vars%t_a10_patch             , & ! Input:  [real(r8) (:)   ]  10-day running mean of the 2 m temperature (K)                        
+         tgcm          => temperature_vars%thm_patch               , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)                     
 
-         nrad       => surfalb_vars%nrad_patch               , & ! Input:  [integer  (:)   ]  pft number of canopy layers, above snow for radiative transfer  
-         tlai_z     => surfalb_vars%tlai_z_patch             , & ! Input:  [real(r8) (:,:) ]  pft total leaf area index for canopy layer                              
+         nrad          => surfalb_vars%nrad_patch                  , & ! Input:  [integer  (:)   ]  pft number of canopy layers, above snow for radiative transfer  
+         tlai_z        => surfalb_vars%tlai_z_patch                , & ! Input:  [real(r8) (:,:) ]  pft total leaf area index for canopy layer                              
 
-         c3flag     => photosyns_vars%c3flag_patch           , & ! Output: [logical  (:)   ]  true if C3 and false if C4                                             
-         ac         => photosyns_vars%ac_patch               , & ! Output: [real(r8) (:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)              
-         aj         => photosyns_vars%aj_patch               , & ! Output: [real(r8) (:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)                 
-         ap         => photosyns_vars%ap_patch               , & ! Output: [real(r8) (:,:) ]  product-limited (C3) or CO2-limited (C4) gross photosynthesis (umol CO2/m**2/s)
-         ag         => photosyns_vars%ag_patch               , & ! Output: [real(r8) (:,:) ]  co-limited gross leaf photosynthesis (umol CO2/m**2/s)              
-         an         => photosyns_vars%an_patch               , & ! Output: [real(r8) (:,:) ]  net leaf photosynthesis (umol CO2/m**2/s)                           
-         gb_mol     => photosyns_vars%gb_mol_patch           , & ! Output: [real(r8) (:)   ]  leaf boundary layer conductance (umol H2O/m**2/s)                     
-         gs_mol     => photosyns_vars%gs_mol_patch           , & ! Output: [real(r8) (:,:) ]  leaf stomatal conductance (umol H2O/m**2/s)                         
-         vcmax_z    => photosyns_vars%vcmax_z_patch          , & ! Output: [real(r8) (:,:) ]  maximum rate of carboxylation (umol co2/m**2/s)                     
-         cp         => photosyns_vars%cp_patch               , & ! Output: [real(r8) (:)   ]  CO2 compensation point (Pa)                                           
-         kc         => photosyns_vars%kc_patch               , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for CO2 (Pa)                                
-         ko         => photosyns_vars%ko_patch               , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for O2 (Pa)                                 
-         qe         => photosyns_vars%qe_patch               , & ! Output: [real(r8) (:)   ]  quantum efficiency, used only for C4 (mol CO2 / mol photons)          
-         tpu_z      => photosyns_vars%tpu_z_patch            , & ! Output: [real(r8) (:,:) ]  triose phosphate utilization rate (umol CO2/m**2/s)                 
-         kp_z       => photosyns_vars%kp_z_patch             , & ! Output: [real(r8) (:,:) ]  initial slope of CO2 response curve (C4 plants)                     
-         theta_cj   => photosyns_vars%theta_cj_patch         , & ! Output: [real(r8) (:)   ]  empirical curvature parameter for ac, aj photosynthesis co-limitation 
-         bbb        => photosyns_vars%bbb_patch              , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)                 
-         mbb        => photosyns_vars%mbb_patch              , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
-         rh_leaf    => photosyns_vars%rh_leaf_patch            & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)                   
+         c3flag        => photosyns_vars%c3flag_patch              , & ! Output: [logical  (:)   ]  true if C3 and false if C4                                             
+         ac            => photosyns_vars%ac_patch                  , & ! Output: [real(r8) (:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)              
+         aj            => photosyns_vars%aj_patch                  , & ! Output: [real(r8) (:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)                 
+         ap            => photosyns_vars%ap_patch                  , & ! Output: [real(r8) (:,:) ]  product-limited (C3) or CO2-limited (C4) gross photosynthesis (umol CO2/m**2/s)
+         ag            => photosyns_vars%ag_patch                  , & ! Output: [real(r8) (:,:) ]  co-limited gross leaf photosynthesis (umol CO2/m**2/s)              
+         an            => photosyns_vars%an_patch                  , & ! Output: [real(r8) (:,:) ]  net leaf photosynthesis (umol CO2/m**2/s)                           
+         gb_mol        => photosyns_vars%gb_mol_patch              , & ! Output: [real(r8) (:)   ]  leaf boundary layer conductance (umol H2O/m**2/s)                     
+         gs_mol        => photosyns_vars%gs_mol_patch              , & ! Output: [real(r8) (:,:) ]  leaf stomatal conductance (umol H2O/m**2/s)                         
+         vcmax_z       => photosyns_vars%vcmax_z_patch             , & ! Output: [real(r8) (:,:) ]  maximum rate of carboxylation (umol co2/m**2/s)                     
+         cp            => photosyns_vars%cp_patch                  , & ! Output: [real(r8) (:)   ]  CO2 compensation point (Pa)                                           
+         kc            => photosyns_vars%kc_patch                  , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for CO2 (Pa)                                
+         ko            => photosyns_vars%ko_patch                  , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for O2 (Pa)                                 
+         qe            => photosyns_vars%qe_patch                  , & ! Output: [real(r8) (:)   ]  quantum efficiency, used only for C4 (mol CO2 / mol photons)          
+         tpu_z         => photosyns_vars%tpu_z_patch               , & ! Output: [real(r8) (:,:) ]  triose phosphate utilization rate (umol CO2/m**2/s)                 
+         kp_z          => photosyns_vars%kp_z_patch                , & ! Output: [real(r8) (:,:) ]  initial slope of CO2 response curve (C4 plants)                     
+         theta_cj      => photosyns_vars%theta_cj_patch            , & ! Output: [real(r8) (:)   ]  empirical curvature parameter for ac, aj photosynthesis co-limitation 
+         bbb           => photosyns_vars%bbb_patch                 , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)                 
+         mbb           => photosyns_vars%mbb_patch                 , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
+         rh_leaf       => photosyns_vars%rh_leaf_patch             , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)                   
+         
+         leafn         => nitrogenstate_vars%leafn_patch           , &
+         leafn_storage => nitrogenstate_vars%leafn_storage_patch   , &
+         leafn_xfer    => nitrogenstate_vars%leafn_xfer_patch      , &
+         leafp         => phosphorusstate_vars%leafp_patch         , &
+         leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
+         leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &
+         i_vcmax       => ecophyscon%i_vc                          , &
+         s_vcmax       => ecophyscon%s_vc                            &
          )
       
       if (phase == 'sun') then
@@ -284,37 +309,6 @@ contains
       ! Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       !==============================================================================!
 
-      ! vcmax25 parameters, from CN
-
-      fnr = 7.16_r8
-      act25 = 3.6_r8   !umol/mgRubisco/min
-      ! Convert rubisco activity units from umol/mgRubisco/min -> umol/gRubisco/s
-      act25 = act25 * 1000.0_r8 / 60.0_r8
-
-      ! Activation energy, from:
-      ! Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
-      ! Bernacchi et al (2003) Plant, Cell and Environment 26:1419-1430
-      ! except TPU from: Harley et al (1992) Plant, Cell and Environment 15:271-282
-
-      kcha    = 79430._r8
-      koha    = 36380._r8
-      cpha    = 37830._r8
-      vcmaxha = 72000._r8
-      jmaxha  = 50000._r8
-      tpuha   = 72000._r8
-      lmrha   = 46390._r8
-
-      ! High temperature deactivation, from:
-      ! Leuning (2002) Plant, Cell and Environment 25:1205-1210
-      ! The factor "c" scales the deactivation to a value of 1.0 at 25C
-
-      vcmaxhd = 200000._r8
-      jmaxhd  = 200000._r8
-      tpuhd   = 200000._r8
-      lmrhd   = 150650._r8
-      lmrse   = 490._r8
-      lmrc    = fth25 (lmrhd, lmrse)
-
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
 
       fnps = 0.15_r8
@@ -324,6 +318,39 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = pft%column(p)
+
+         ! vcmax25 parameters, from CN
+
+         fnr   = ecophyscon%fnr(pft%itype(p))   !7.16_r8
+         act25 = ecophyscon%act25(pft%itype(p)) !3.6_r8   !umol/mgRubisco/min
+         ! Convert rubisco activity units from umol/mgRubisco/min ->
+         ! umol/gRubisco/s
+         act25 = act25 * 1000.0_r8 / 60.0_r8
+
+         ! Activation energy, from:
+         ! Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
+         !  Bernacchi et al (2003) Plant, Cell and Environment 26:1419-1430
+         ! except TPU from: Harley et al (1992) Plant, Cell and Environment
+         ! 15:271-282
+
+         kcha    = ecophyscon%kcha(pft%itype(p)) !79430._r8
+         koha    = ecophyscon%koha(pft%itype(p)) !36380._r8
+         cpha    = ecophyscon%cpha(pft%itype(p)) !37830._r8
+         vcmaxha = ecophyscon%vcmaxha(pft%itype(p)) !72000._r8
+         jmaxha  = ecophyscon%jmaxha(pft%itype(p)) !50000._r8
+         tpuha   = ecophyscon%tpuha(pft%itype(p))  !72000._r8
+         lmrha   = ecophyscon%lmrha(pft%itype(p))  !46390._r8
+
+         ! High temperature deactivation, from:
+         ! Leuning (2002) Plant, Cell and Environment 25:1205-1210
+         ! The factor "c" scales the deactivation to a value of 1.0 at 25C
+
+         vcmaxhd = ecophyscon%vcmaxhd(pft%itype(p)) !200000._r8
+         jmaxhd  = ecophyscon%jmaxhd(pft%itype(p))  !200000._r8
+         tpuhd   = ecophyscon%tpuhd(pft%itype(p))   !200000._r8
+         lmrhd   = ecophyscon%lmrhd(pft%itype(p))   !150650._r8
+         lmrse   = ecophyscon%lmrse(pft%itype(p))   !490._r8
+         lmrc    = fth25 (lmrhd, lmrse)
 
          ! C3 or C4 photosynthesis logical variable
 
@@ -336,15 +363,15 @@ contains
          ! C3 and C4 dependent parameters
 
          if (c3flag(p)) then
-            qe(p) = 0._r8
-            theta_cj(p) = 0.98_r8
-            bbbopt(p) = 10000._r8
-            mbbopt(p) = 9._r8
+            qe(p)       = ecophyscon%qe(pft%itype(p))       !0._r8
+            theta_cj(p) = ecophyscon%theta_cj(pft%itype(p)) !0.98_r8
+            bbbopt(p)   = ecophyscon%bbbopt(pft%itype(p))   !10000._r8
+            mbbopt(p)   = ecophyscon%mbbopt(pft%itype(p))   !9._r8
          else
-            qe(p) = 0.05_r8
-            theta_cj(p) = 0.80_r8
-            bbbopt(p) = 40000._r8
-            mbbopt(p) = 4._r8
+            qe(p)       = ecophyscon%qe(pft%itype(p))       !0.05_r8
+            theta_cj(p) = ecophyscon%theta_cj(pft%itype(p)) !0.80_r8
+            bbbopt(p)   = ecophyscon%bbbopt(pft%itype(p))   !40000._r8
+            mbbopt(p)   = ecophyscon%mbbopt(pft%itype(p))   !4._r8
          end if
 
          ! Soil water stress applied to Ball-Berry parameters
@@ -376,27 +403,133 @@ contains
       ! Multi-layer parameters scaled by leaf nitrogen profile.
       ! Loop through each canopy layer to calculate nitrogen profile using
       ! cumulative lai at the midpoint of the layer
-
+      
       do f = 1, fn
          p = filterp(f)
+         if ( .not. nu_com_leaf_physiology) then
+            ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
+            lnc(p) = 1._r8 / (slatop(pft%itype(p)) * leafcn(pft%itype(p)))
 
-         ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
+            ! vcmax25 at canopy top, as in CN but using lnc at top of the canopy
+            vcmax25top = lnc(p) * flnr(pft%itype(p)) * fnr * act25 * dayl_factor(p)
+            if (.not. use_cn) then
+               vcmax25top = vcmax25top * fnitr(pft%itype(p))
+            else
+               if ( CNAllocate_Carbon_only() ) vcmax25top = vcmax25top * fnitr(pft%itype(p))
+            end if
 
-         lnc(p) = 1._r8 / (slatop(pft%itype(p)) * leafcn(pft%itype(p)))
+            ! Parameters derived from vcmax25top. Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
+            ! used jmax25 = 1.97 vcmax25, from Wullschleger (1993) Journal of Experimental Botany 44:907-920.
+            jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
-         ! vcmax25 at canopy top, as in CN but using lnc at top of the canopy
-
-         vcmax25top = lnc(p) * flnr(pft%itype(p)) * fnr * act25 * dayl_factor(p)
-         if (.not. use_cn) then
-            vcmax25top = vcmax25top * fnitr(pft%itype(p))
          else
-            if ( CNAllocate_Carbon_only() ) vcmax25top = vcmax25top * fnitr(pft%itype(p))
+         
+            ! leaf level nutrient control on photosynthesis rate added by Q. Zhu Aug 2015
+            
+            if ( CNAllocate_Carbon_only() .or. cnallocate_carbonphosphorus_only()) then
+
+               lnc(p) = 1._r8 / (slatop(pft%itype(p)) * leafcn(pft%itype(p)))
+               vcmax25top = lnc(p) * flnr(pft%itype(p)) * fnr * act25 * dayl_factor(p)
+               vcmax25top = vcmax25top * fnitr(pft%itype(p))
+               jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
+
+            else if ( cnallocate_carbonnitrogen_only() ) then ! only N control, from Kattge 2009 Global Change Biology 15 (4), 976-991
+
+               ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
+               sum_nscaler = 0.0_r8                                                       
+               laican      = 0.0_r8
+               total_lai   = 0.0_r8                                                      
+
+               do iv = 1, nrad(p)
+                  if (iv == 1) then
+                     laican = 0.5_r8 * tlai_z(p,iv)
+                  else
+                     laican = laican + 0.5_r8 * (tlai_z(p,iv-1)+tlai_z(p,iv))
+                  end if
+                  total_lai = total_lai + tlai_z(p,iv)
+                  ! Scale for leaf nitrogen profile. If multi-layer code, use explicit
+                  ! profile. If sun/shade big leaf code, use canopy integrated factor.
+                  if (nlevcan == 1) then                                               
+                     nscaler = 1.0_r8                                                  
+                  else if (nlevcan > 1) then                                           
+                     nscaler = exp(-kn(p) * laican)                                    
+                  end if
+                  sum_nscaler = sum_nscaler + nscaler                                  
+               end do
+
+               if (total_lai > 0.0_r8 .and. sum_nscaler > 0.0_r8) then
+                  ! dividing by LAI to convert total leaf nitrogen
+                  ! from m2 ground to m2 leaf; dividing by sum_nscaler to
+                  ! convert total leaf N to leaf N at canopy top
+                  lnc(p) = leafn(p) / (total_lai * sum_nscaler)
+                  lnc(p) = min(max(lnc(p),0.0_r8),3.0_r8) ! based on TRY database, doi: 10.1002/ece3.1173
+               else                                                                    
+                  lnc(p) = 0.0_r8                                                      
+               end if
+
+               vcmax25top = (i_vcmax(pft%itype(p)) + s_vcmax(pft%itype(p)) * lnc(p)) * dayl_factor(p) 
+               jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
+
+            else
+
+               ! nu_com_leaf_physiology is true, vcmax25, jmax25 is derived from leafn, leafp concentration
+               ! Anthony Walker 2014 DOI: 10.1002/ece3.1173
+
+               if (pft%active(p) .and. (pft%itype(p) .ne. noveg)) then
+                  ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
+                  sum_nscaler = 0.0_r8                                                       
+                  laican      = 0.0_r8
+                  total_lai   = 0.0_r8                                                      
+
+                  do iv = 1, nrad(p)
+                     if (iv == 1) then
+                        laican = 0.5_r8 * tlai_z(p,iv)
+                     else
+                        laican = laican + 0.5_r8 * (tlai_z(p,iv-1)+tlai_z(p,iv))
+                     end if
+                     total_lai = total_lai + tlai_z(p,iv)
+                     ! Scale for leaf nitrogen profile. If multi-layer code, use explicit
+                     ! profile. If sun/shade big leaf code, use canopy integrated factor.
+                     if (nlevcan == 1) then                                               
+                        nscaler = 1.0_r8                                                  
+                     else if (nlevcan > 1) then                                           
+                        nscaler = exp(-kn(p) * laican)                                    
+                     end if
+                     sum_nscaler = sum_nscaler + nscaler                                  
+                  end do
+
+                  if (total_lai > 0.0_r8 .and. sum_nscaler > 0.0_r8) then
+                     ! dividing by LAI to convert total leaf nitrogen
+                     ! from m2 ground to m2 leaf; dividing by sum_nscaler to
+                     ! convert total leaf N to leaf N at canopy top
+                     lnc(p) = leafn(p) / (total_lai * sum_nscaler)
+                     lpc(p) = leafp(p) / (total_lai * sum_nscaler)
+                     lnc(p) = min(max(lnc(p),0.0_r8),3.0_r8) ! based on TRY database, doi: 10.1002/ece3.1173
+                     lpc(p) = min(max(lpc(p),0.0_r8),0.5_r8) ! based on TRY database, doi: 10.1002/ece3.1173
+                  else
+                     lnc(p) = 0.0_r8
+                     lpc(p) = 0.0_r8
+                  end if
+
+                  if (lnc(p) >= 0.1_r8 .and. lnc(p) <=3.0_r8 .and. lpc(p) >= 0.05_r8 .and. lpc(p) <= 0.5_r8) then
+                     vcmax25top = exp(3.946_r8 + 0.921_r8*log(lnc(p)) + 0.121_r8*log(lpc(p)) + 0.282_r8*log(lnc(p))*log(lpc(p))) * dayl_factor(p)
+                     jmax25top = exp(1.246_r8 + 0.886_r8*log(vcmax25top) + 0.089_r8*log(lpc(p))) * dayl_factor(p)
+                  else if (lnc(p) < 0.1_r8 .or. lpc(p) < 0.05_r8) then
+                     vcmax25top = 10.0_r8
+                     jmax25top  = 10.0_r8
+                  else
+                     vcmax25top = 150.0_r8
+                     jmax25top  = 250.0_r8
+                  end if
+
+               else
+                  lnc(p)     = 0.0_r8
+                  vcmax25top = 0.0_r8
+                  jmax25top  = 0.0_r8
+               end if
+            end if
          end if
-
-         ! Parameters derived from vcmax25top. Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
-         ! used jmax25 = 1.97 vcmax25, from Wullschleger (1993) Journal of Experimental Botany 44:907-920.
-
-         jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
+                 
          tpu25top  = 0.167_r8 * vcmax25top
          kp25top   = 20000._r8 * vcmax25top
 
@@ -461,6 +594,7 @@ contains
 
             if (nlevcan == 1) then
                nscaler = vcmaxcint(p)
+               if (nu_com_leaf_physiology) nscaler = 1
             else if (nlevcan > 1) then
                nscaler = exp(-kn(p) * laican)
             end if

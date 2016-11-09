@@ -1,3 +1,4 @@
+
 module tidal_diag 
 
   !---------------------------------------------------------------------------------
@@ -29,32 +30,32 @@ contains
     ! Purpose: create fourier coefficient history file variables
     !-----------------------------------------------------------------------
 
-    use cam_history,        only: addfld, phys_decomp
+    use cam_history,        only: addfld, horiz_only
 
-    call addfld ('T_24_COS','K       ',pver, 'A','Temperature 24hr. cos coeff.',phys_decomp)
-    call addfld ('T_24_SIN','K       ',pver, 'A','Temperature 24hr. sin coeff.',phys_decomp)
-    call addfld ('T_12_COS','K       ',pver, 'A','Temperature 12hr. cos coeff.',phys_decomp)
-    call addfld ('T_12_SIN','K       ',pver, 'A','Temperature 12hr. sin coeff.',phys_decomp)
+    call addfld ('T_24_COS',(/ 'lev' /), 'A','K','Temperature 24hr. cos coeff.')
+    call addfld ('T_24_SIN',(/ 'lev' /), 'A','K','Temperature 24hr. sin coeff.')
+    call addfld ('T_12_COS',(/ 'lev' /), 'A','K','Temperature 12hr. cos coeff.')
+    call addfld ('T_12_SIN',(/ 'lev' /), 'A','K','Temperature 12hr. sin coeff.')
 
-    call addfld ('U_24_COS','m/s     ',pver, 'A','Zonal wind 24hr. cos coeff.',phys_decomp)
-    call addfld ('U_24_SIN','m/s     ',pver, 'A','Zonal wind 24hr. sin coeff.',phys_decomp)
-    call addfld ('U_12_COS','m/s     ',pver, 'A','Zonal wind 12hr. cos coeff.',phys_decomp)
-    call addfld ('U_12_SIN','m/s     ',pver, 'A','Zonal wind 12hr. sin coeff.',phys_decomp)
+    call addfld ('U_24_COS',(/ 'lev' /), 'A','m/s','Zonal wind 24hr. cos coeff.')
+    call addfld ('U_24_SIN',(/ 'lev' /), 'A','m/s','Zonal wind 24hr. sin coeff.')
+    call addfld ('U_12_COS',(/ 'lev' /), 'A','m/s','Zonal wind 12hr. cos coeff.')
+    call addfld ('U_12_SIN',(/ 'lev' /), 'A','m/s','Zonal wind 12hr. sin coeff.')
 
-    call addfld ('V_24_COS','m/s     ',pver, 'A','Meridional wind 24hr. cos coeff.',phys_decomp)
-    call addfld ('V_24_SIN','m/s     ',pver, 'A','Meridional wind 24hr. sin coeff.',phys_decomp)
-    call addfld ('V_12_COS','m/s     ',pver, 'A','Meridional wind 12hr. cos coeff.',phys_decomp)
-    call addfld ('V_12_SIN','m/s     ',pver, 'A','Meridional wind 12hr. sin coeff.',phys_decomp)
+    call addfld ('V_24_COS',(/ 'lev' /), 'A','m/s','Meridional wind 24hr. cos coeff.')
+    call addfld ('V_24_SIN',(/ 'lev' /), 'A','m/s','Meridional wind 24hr. sin coeff.')
+    call addfld ('V_12_COS',(/ 'lev' /), 'A','m/s','Meridional wind 12hr. cos coeff.')
+    call addfld ('V_12_SIN',(/ 'lev' /), 'A','m/s','Meridional wind 12hr. sin coeff.')
 
-    call addfld ('PS_24_COS','Pa     ',1,    'A','surface pressure 24hr. cos coeff.',phys_decomp)
-    call addfld ('PS_24_SIN','Pa     ',1,    'A','surface pressure 24hr. sin coeff.',phys_decomp)
-    call addfld ('PS_12_COS','Pa     ',1,    'A','surface pressure 12hr. cos coeff.',phys_decomp)
-    call addfld ('PS_12_SIN','Pa     ',1,    'A','surface pressure 12hr. sin coeff.',phys_decomp)
+    call addfld ('PS_24_COS',horiz_only,    'A','Pa','surface pressure 24hr. cos coeff.')
+    call addfld ('PS_24_SIN',horiz_only,    'A','Pa','surface pressure 24hr. sin coeff.')
+    call addfld ('PS_12_COS',horiz_only,    'A','Pa','surface pressure 12hr. cos coeff.')
+    call addfld ('PS_12_SIN',horiz_only,    'A','Pa','surface pressure 12hr. sin coeff.')
 
-    call addfld ('OMEGA_24_COS','Pa/s',pver, 'A','vertical pressure velocity 24hr. cos coeff.',phys_decomp)
-    call addfld ('OMEGA_24_SIN','Pa/s',pver, 'A','vertical pressure velocity 24hr. sin coeff.',phys_decomp)
-    call addfld ('OMEGA_12_COS','Pa/s',pver, 'A','vertical pressure velocity 12hr. cos coeff.',phys_decomp)
-    call addfld ('OMEGA_12_SIN','Pa/s',pver, 'A','vertical pressure velocity 12hr. sin coeff.',phys_decomp)
+    call addfld ('OMEGA_24_COS',(/ 'lev' /), 'A','Pa/s','vertical pressure velocity 24hr. cos coeff.')
+    call addfld ('OMEGA_24_SIN',(/ 'lev' /), 'A','Pa/s','vertical pressure velocity 24hr. sin coeff.')
+    call addfld ('OMEGA_12_COS',(/ 'lev' /), 'A','Pa/s','vertical pressure velocity 12hr. cos coeff.')
+    call addfld ('OMEGA_12_SIN',(/ 'lev' /), 'A','Pa/s','vertical pressure velocity 12hr. sin coeff.')
 
     return
 

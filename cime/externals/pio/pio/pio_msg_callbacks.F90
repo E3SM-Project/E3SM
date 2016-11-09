@@ -242,7 +242,7 @@ subroutine writedarray_handler(iosystem)
   call mpi_bcast(fillv, 1, mpi_integer , iosystem%compmaster, iosystem%intercomm, ierr)
 
   file=> lookupfile(fh)
-  if(debugasync) print *,__FILE__,__LINE__,v%varid,iod_id
+  if(debugasync) print *,__PIO_FILE__,__LINE__,v%varid,iod_id
   iodesc => lookupiodesc(iod_id)
 #ifndef _MPISERIAL
   select case(type)
@@ -296,7 +296,7 @@ subroutine readdarray_handler(iosystem)
   real(r4) :: areal(1)
   real(r8) :: adouble(1)
 
-  if(debugasync) print *,__FILE__,__LINE__
+  if(debugasync) print *,__PIO_FILE__,__LINE__
   
   call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   call mpi_bcast(v%varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
@@ -306,7 +306,7 @@ subroutine readdarray_handler(iosystem)
 
   file=> lookupfile(fh)
 
-  if(debugasync) print *,__FILE__,__LINE__,iod_id, type
+  if(debugasync) print *,__PIO_FILE__,__LINE__,iod_id, type
 
   iodesc => lookupiodesc(iod_id)
 #ifndef _MPISERIAL

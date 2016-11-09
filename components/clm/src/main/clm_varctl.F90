@@ -17,6 +17,7 @@ module clm_varctl
   public :: cnallocate_carbonnitrogen_only
   public :: cnallocate_carbonphosphorus_only_set
   public :: cnallocate_carbonphosphorus_only
+  public :: get_carbontag ! get the tag for carbon simulations  
   !
   private
   save
@@ -97,7 +98,6 @@ module clm_varctl
   character(len=fname_len), public :: nrevsn     = ' '        ! restart data file name for branch run
   character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
   character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
-
  !! X. YANG  : add soil order dependent parameter file
   character(len=fname_len), public :: fsoilordercon    = ' '  ! ASCII data file with soil order dependent  constants
 
@@ -150,6 +150,8 @@ module clm_varctl
   ! State of the model for the accelerated decomposition (AD) spinup. 
   ! 0 (default) = normal model; 1 = AD SPINUP
   integer, public :: spinup_state = 0 
+  integer, public :: nyears_ad_carbon_only = 0
+  real(r8), public :: spinup_mortality_factor = 1._r8
 
   ! true => anoxia is applied to heterotrophic respiration also considered in CH4 model
   ! default value reset in controlMod
@@ -191,10 +193,21 @@ module clm_varctl
   logical, public :: use_ed_spit_fire = .false.  ! true => use spitfire model
 
   !----------------------------------------------------------
+  !  BeTR switches
+  !----------------------------------------------------------
+  logical, public :: use_betr = .false.          ! true=> use BeTR
+
+  !----------------------------------------------------------
   ! lai streams switch for Sat. Phenology
   !----------------------------------------------------------
 
   logical, public :: use_lai_streams = .false. ! true => use lai streams in SatellitePhenologyMod.F90
+
+  !----------------------------------------------------------
+  ! dynamic root switch
+  !----------------------------------------------------------
+
+  logical, public :: use_dynroot = .false. ! true => use dynamic root module
 
   !----------------------------------------------------------
   ! glacier_mec control variables: default values (may be overwritten by namelist)
@@ -284,12 +297,23 @@ module clm_varctl
   logical, public :: use_noio            = .false.
 
   !----------------------------------------------------------
+  ! VSFM switches
+  !----------------------------------------------------------
+  logical          , public :: use_vsfm                    = .false.
+  character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
+  logical          , public :: vsfm_use_dynamic_linesearch = .false.
+
+  !----------------------------------------------------------
   ! To retrieve namelist
   !----------------------------------------------------------
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
   !
   logical, private :: clmvarctl_isset = .false.
  !-----------------------------------------------------------------------
+ 
+ !-----------------------------------------------------------------------
+ ! nutrient competition (nu_com), default is relative demand approach (RD)
+ character(len=15), public :: nu_com = 'RD'
 
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
@@ -304,6 +328,14 @@ module clm_varctl
   logical, public :: pf_frzmode   = .false.                 ! switch for 'freezing' mode availablity in PF-thmode (will be updated in interface)
   logical, public :: pf_cmode     = .false.                 ! switch for 'C' mode coupling (will be updated in interface)
   logical, public :: initth_pf2clm= .false.                 ! switch for initializing CLM TH states from pflotran
+
+  ! cpl_bypass
+   character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode
+   character(len=fname_len), public :: metdata_bypass = ' '    ! met data directory for CPL_BYPASS mode (site, qian, cru_ncep)
+   character(len=fname_len), public :: metdata_biases = ' '    ! met biases files for CPL_BYPASS mode
+   character(len=fname_len), public :: co2_file       = ' '    ! co2 file for CPL_BYPASS mode
+   character(len=fname_len), public :: aero_file      = ' '    ! aerosol deposition file for CPL_BYPASS mode
+
 
 contains
 
@@ -357,7 +389,6 @@ contains
     cnallocate_carbon_only = carbon_only
   end function CNAllocate_Carbon_only
 
-
   ! Set module carbonnitrogen_only flag
   subroutine cnallocate_carbonnitrogen_only_set(carbonnitrogen_only_in)
     logical, intent(in) :: carbonnitrogen_only_in
@@ -381,6 +412,19 @@ contains
     cnallocate_carbonphosphorus_only = carbonphosphorus_only
   end function CNAllocate_CarbonPhosphorus_only
 
-
-
+  function get_carbontag(carbon_type)result(ctag)
+    implicit none
+    character(len=*) :: carbon_type
+     
+    character(len=3) :: ctag
+  
+    if(carbon_type=='c12')then
+       ctag = 'C'
+    elseif(carbon_type=='c13')then
+       ctag = 'C13'
+    elseif(carbon_type=='c14')then
+       ctag = 'C14'
+    endif
+  end function get_carbontag
+  
 end module clm_varctl

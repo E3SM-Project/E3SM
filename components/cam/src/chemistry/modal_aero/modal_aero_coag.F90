@@ -11,6 +11,7 @@
 
 ! !USES:
    use shr_kind_mod,    only:  r8 => shr_kind_r8
+   use cam_logfile,     only:  iulog
    use chem_mods,       only:  gas_pcnst
    use modal_aero_data, only:  maxd_aspectype
 
@@ -19,12 +20,12 @@
   save
 
 ! !PUBLIC MEMBER FUNCTIONS:
-  public modal_aero_coag_sub, modal_aero_coag_init
+  public :: modal_aero_coag_sub, modal_aero_coag_init, getcoags_wrapper_f
 
 ! !PUBLIC DATA MEMBERS:
   integer, parameter :: pcnstxx = gas_pcnst
 
-#if ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE )
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
   integer, parameter, public :: pair_option_acoag = 3
 #elif ( defined MODAL_AERO_3MODE )
   integer, parameter, public :: pair_option_acoag = 1
@@ -86,7 +87,7 @@
    use modal_aero_gasaerexch, only:  n_so4_monolayers_pcage, &
                                      soa_equivso4_factor
 
-   use cam_abortutils,       only: endrun
+   use cam_abortutils,   only: endrun
    use cam_history,      only: outfld, fieldname_len
    use chem_mods,        only: adv_mass
    use constituents,     only: pcnst, cnst_name
@@ -209,7 +210,7 @@
 	dotend(:) = .false.
 	dqdt(1:ncol,:,:) = 0.0_r8
 
-	lunout = 6
+	lunout = iulog
 
 
 !
@@ -760,7 +761,7 @@ main_ipair2: do ipair = 1, npair_acoag
 		modefrm_pcage, nspecfrm_pcage, lspecfrm_pcage, lspectoo_pcage
 
 	use cam_abortutils,      only: endrun
-	use cam_history,     only: addfld, add_default, fieldname_len, phys_decomp
+	use cam_history,     only: addfld, horiz_only, add_default, fieldname_len
 	use constituents,    only: pcnst, cnst_name
 	use spmd_utils,      only: masterproc
         use phys_control,    only: phys_getopts
@@ -785,7 +786,7 @@ main_ipair2: do ipair = 1, npair_acoag
     
         call phys_getopts( history_aerosol_out        = history_aerosol   )
 
-	lunout = 6
+	lunout = iulog
 !
 !   define "from mode" and "to mode" for each coagulation pairing
 !	currently just a2-->a1 coagulation
@@ -815,9 +816,9 @@ main_ipair2: do ipair = 1, npair_acoag
 	    modetoo_acoag(3) = modeptr_pcarbon
 	    modetooeff_acoag(3) = modeptr_accum
 	    if (modefrm_pcage <= 0) then
-		write(*,*) '*** modal_aero_coag_init error'
-		write(*,*) '    pair_option_acoag, modefrm_pcage mismatch'
-		write(*,*) '    pair_option_acoag, modefrm_pcage =', &
+		write(iulog,*) '*** modal_aero_coag_init error'
+		write(iulog,*) '    pair_option_acoag, modefrm_pcage mismatch'
+		write(iulog,*) '    pair_option_acoag, modefrm_pcage =', &
 		    pair_option_acoag, modefrm_pcage
 		call endrun( 'modal_aero_coag_init error' )
 	    end if
@@ -838,9 +839,9 @@ aa_ipair: do ipair = 1, npair_acoag
 	if ( (mfrm < 1) .or. (mfrm > ntot_amode) .or.   &
 	     (mtoo < 1) .or. (mtoo > ntot_amode) .or.   &
 	     (mtef < 1) .or. (mtef > ntot_amode) ) then
-	    write(*,*) '*** modal_aero_coag_init error'
-	    write(*,*) '    ipair, ntot_amode =', ipair, ntot_amode
-	    write(*,*) '    mfrm, mtoo, mtef  =', mfrm, mtoo, mtef
+	    write(iulog,*) '*** modal_aero_coag_init error'
+	    write(iulog,*) '    ipair, ntot_amode =', ipair, ntot_amode
+	    write(iulog,*) '    mfrm, mtoo, mtef  =', mfrm, mtoo, mtef
 	    call endrun( 'modal_aero_coag_init error' )
 	end if
 
@@ -979,13 +980,15 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
 	    end do
 	    fieldname = trim(tmpname) // '_sfcoag1'
 	    long_name = trim(tmpname) // ' modal_aero coagulation column tendency'
-	    call addfld( fieldname, unit, 1, 'A', long_name, phys_decomp )
+	    call addfld( fieldname, horiz_only, 'A', unit, long_name )
             if ( history_aerosol ) then 
                call add_default( fieldname, 1, ' ' )
 	    endif
-	    if ( masterproc ) write(*,'(3(a,2x))') &
+	    if ( masterproc ) write(iulog,'(3(a,2x))') &
 		'modal_aero_coag_init addfld', fieldname, unit
 	end do ! l = ...
+	if ( masterproc ) write(iulog,'(a)') &
+		'modal_aero_coag_init ALL DONE'
 
 
 	return

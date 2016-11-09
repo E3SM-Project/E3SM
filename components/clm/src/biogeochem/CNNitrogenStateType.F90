@@ -21,6 +21,8 @@ module CNNitrogenStateType
   use ColumnType             , only : col                
   use PatchType              , only : pft
   use clm_varctl             , only : use_pflotran, pf_cmode
+  use clm_varctl             , only : nu_com
+               
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -87,7 +89,8 @@ module CNNitrogenStateType
      real(r8), pointer :: totsomn_1m_col               (:)     ! col (gN/m2) total soil organic matter nitrogen to 1 meter
      real(r8), pointer :: totecosysn_col               (:)     ! col (gN/m2) total ecosystem nitrogen, incl veg 
      real(r8), pointer :: totcoln_col                  (:)     ! col (gN/m2) total column nitrogen, incl veg
-
+     real(r8), pointer :: totabgn_col                  (:)     ! col (gN/m2)
+     real(r8), pointer :: totblgn_col                  (:)     ! col (gN/m2) total below ground nitrogen
      ! patch averaged to column variables 
      real(r8), pointer :: totvegn_col                  (:)     ! col (gN/m2) total vegetation nitrogen (p2c)
      real(r8), pointer :: totpftn_col                  (:)     ! col (gN/m2) total pft-level nitrogen (p2c)
@@ -100,9 +103,89 @@ module CNNitrogenStateType
      real(r8), pointer :: endnb_col                    (:)     ! col nitrogen mass, end of time step (gN/m**2)
      real(r8), pointer :: errnb_col                    (:)     ! colnitrogen balance error for the timestep (gN/m**2)
 
+
      ! for newly-added coupled codes with pflotran (it should be included in total 'sminn' defined above when doing summation)
      real(r8), pointer :: smin_nh4sorb_vr_col          (:,:)   ! col (gN/m3) vertically-resolved soil mineral NH4 absorbed
      real(r8), pointer :: smin_nh4sorb_col             (:)     ! col (gN/m2) soil mineral NH4 pool absorbed
+
+     real(r8), pointer :: plant_nbuffer_col            (:)     ! col plant nitrogen buffer, (gN/m2), used to exchange info with betr 
+
+     real(r8), pointer :: actual_leafcn                (:)     ! dynamic leaf cn ratio
+     real(r8), pointer :: actual_frootcn               (:)     ! dynamic fine root cn ratio
+     real(r8), pointer :: actual_livewdcn              (:)     ! dynamic live wood cn ratio
+     real(r8), pointer :: actual_deadwdcn              (:)     ! dynamic dead wood cn ratio
+     real(r8), pointer :: actual_graincn               (:)     ! dynamic grain cn ratio
+     
+     real(r8), pointer :: totpftn_beg_col              (:)
+     real(r8), pointer :: cwdn_beg_col                 (:)
+     real(r8), pointer :: totlitn_beg_col              (:)
+     real(r8), pointer :: totsomn_beg_col              (:)
+     real(r8), pointer :: sminn_beg_col                (:)
+     real(r8), pointer :: smin_no3_beg_col             (:)
+     real(r8), pointer :: smin_nh4_beg_col             (:)
+     real(r8), pointer :: totprodn_beg_col             (:)
+     real(r8), pointer :: seedn_beg_col                (:)
+     real(r8), pointer :: ntrunc_beg_col               (:)
+
+     
+     real(r8), pointer :: totpftn_end_col              (:)
+     real(r8), pointer :: cwdn_end_col                 (:)
+     real(r8), pointer :: totlitn_end_col              (:)
+     real(r8), pointer :: totsomn_end_col              (:)
+     real(r8), pointer :: sminn_end_col                (:)
+     real(r8), pointer :: smin_no3_end_col             (:)
+     real(r8), pointer :: smin_nh4_end_col             (:)
+     real(r8), pointer :: totprodn_end_col             (:)
+     real(r8), pointer :: seedn_end_col                (:)
+     real(r8), pointer :: ntrunc_end_col               (:)
+
+     ! for dynamic C/N/P allocation cost-benefit analysis
+     real(r8), pointer :: npimbalance_patch                         (:)
+     real(r8), pointer :: pnup_pfrootc_patch                        (:)
+     real(r8), pointer :: ppup_pfrootc_patch                        (:)
+     real(r8), pointer :: ptlai_pleafc_patch                        (:)
+     
+     real(r8), pointer :: ppsnsun_ptlai_patch                       (:)
+     real(r8), pointer :: ppsnsun_pleafn_patch                      (:)
+     real(r8), pointer :: ppsnsun_pleafp_patch                      (:)
+     
+     real(r8), pointer :: plmrsun_ptlai_patch                       (:)
+     real(r8), pointer :: plmrsun_pleafn_patch                      (:)
+     real(r8), pointer :: plaisun_ptlai_patch                       (:)
+     
+     real(r8), pointer :: ppsnsha_ptlai_patch                       (:)
+     real(r8), pointer :: ppsnsha_pleafn_patch                      (:)
+     real(r8), pointer :: ppsnsha_pleafp_patch                      (:)
+     
+     real(r8), pointer :: plmrsha_ptlai_patch                       (:)
+     real(r8), pointer :: plmrsha_pleafn_patch                      (:)
+     real(r8), pointer :: plaisha_ptlai_patch                       (:)
+     
+     real(r8), pointer :: benefit_pgpp_pleafc_patch                 (:)     ! partial gpp / partial leaf carbon (used by symbiotic n2 fixation and dynamic allocation)
+     real(r8), pointer :: benefit_pgpp_pleafn_patch                 (:)     ! partial gpp / partial leaf nitrogen (used by phosphatase activity and dynamic allocation)
+     real(r8), pointer :: benefit_pgpp_pleafp_patch                 (:)     ! partial gpp / partial leaf phosphorus (used by phosphatase activity and dynamic allocation)
+     real(r8), pointer :: cost_pgpp_pfrootc_patch                   (:)     ! partial gpp /  partial fine root carbon (used by dynamic allocation)
+     real(r8), pointer :: cost_plmr_pleafc_patch                    (:)     ! partial maintenance respiration /  partial leaf carbon (used by dynamic allocation)
+     real(r8), pointer :: cost_plmr_pleafn_patch                    (:)     ! partial maintenance respiration /  partial leaf nitrogen (used by dynamic allocation)
+     
+     real(r8), pointer :: ppsn_ptlai_z                              (:,:)
+     real(r8), pointer :: ppsn_pleafn_z                             (:,:)
+     real(r8), pointer :: ppsn_pleafp_z                             (:,:)
+     
+     real(r8), pointer :: ppsn_ptlai_z_vcmax                        (:,:)
+     real(r8), pointer :: ppsn_pleafn_z_vcmax                       (:,:)
+     real(r8), pointer :: ppsn_pleafp_z_vcmax                       (:,:)
+     
+     real(r8), pointer :: ppsn_ptlai_z_jmax                         (:,:)
+     real(r8), pointer :: ppsn_pleafn_z_jmax                        (:,:)
+     real(r8), pointer :: ppsn_pleafp_z_jmax                        (:,:)
+     
+     real(r8), pointer :: ppsn_ptlai_z_tpu                          (:,:)
+     real(r8), pointer :: ppsn_pleafn_z_tpu                         (:,:)
+     real(r8), pointer :: ppsn_pleafp_z_tpu                         (:,:)
+    
+     real(r8), pointer :: plmr_ptlai_z                              (:,:)
+     real(r8), pointer :: plmr_pleafn_z                             (:,:)
 
    contains
 
@@ -111,7 +194,8 @@ module CNNitrogenStateType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , private :: InitAllocate
+     procedure , public  :: nbuffer_update
+     procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
 
@@ -122,13 +206,15 @@ contains
 
   !------------------------------------------------------------------------
   subroutine Init(this, bounds,                           &
-       leafc_patch, leafc_storage_patch, deadstemc_patch, &
-       decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
+       leafc_patch, leafc_storage_patch, frootc_patch, frootc_storage_patch, &
+       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
 
     class(nitrogenstate_type)         :: this
     type(bounds_type) , intent(in)    :: bounds  
     real(r8)          , intent(in)    :: leafc_patch          (bounds%begp:)
     real(r8)          , intent(in)    :: leafc_storage_patch  (bounds%begp:)
+    real(r8)          , intent(in)    :: frootc_patch         (bounds%begp:)
+    real(r8)          , intent(in)    :: frootc_storage_patch (bounds%begp:)
     real(r8)          , intent(in)    :: deadstemc_patch      (bounds%begp:)
     real(r8)          , intent(in)    :: decomp_cpools_vr_col (bounds%begc:, 1:, 1:)
     real(r8)          , intent(in)    :: decomp_cpools_col    (bounds%begc:, 1:)
@@ -138,7 +224,8 @@ contains
 
     call this%InitHistory (bounds)
 
-    call this%InitCold ( bounds, leafc_patch, leafc_storage_patch, deadstemc_patch, &
+    call this%InitCold ( bounds, leafc_patch, leafc_storage_patch, &
+         frootc_patch, frootc_storage_patch, deadstemc_patch, &
          decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
 
   end subroutine Init
@@ -211,7 +298,8 @@ contains
     allocate(this%decomp_npools_1m_col     (begc:endc,1:ndecomp_pools))   ; this%decomp_npools_1m_col     (:,:) = nan
     allocate(this%totpftn_col              (begc:endc))                   ; this%totpftn_col              (:)   = nan
     allocate(this%totvegn_col              (begc:endc))                   ; this%totvegn_col              (:)   = nan
-
+    allocate(this%totabgn_col              (begc:endc))                   ; this%totabgn_col              (:)   = nan
+    allocate(this%totblgn_col              (begc:endc))                   ; this%totblgn_col              (:)   = nan
     allocate(this%decomp_npools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools));
     this%decomp_npools_vr_col(:,:,:)= nan
 
@@ -221,10 +309,77 @@ contains
     allocate(this%endnb_col   (begc:endc));     this%endnb_col   (:) =nan
     allocate(this%errnb_patch (begp:endp));     this%errnb_patch (:) =nan
     allocate(this%errnb_col   (begc:endc));     this%errnb_col   (:) =nan 
+    
+    allocate(this%actual_leafcn       (begp:endp))   ; this%actual_leafcn       (:) = nan
+    allocate(this%actual_frootcn      (begp:endp))   ; this%actual_frootcn      (:) = nan
+    allocate(this%actual_livewdcn     (begp:endp))   ; this%actual_livewdcn     (:) = nan
+    allocate(this%actual_deadwdcn     (begp:endp))   ; this%actual_deadwdcn     (:) = nan
+    allocate(this%actual_graincn      (begp:endp))   ; this%actual_graincn      (:) = nan
 
-    ! pflotran
+    allocate(this%totpftn_beg_col     (begc:endc))   ; this%totpftn_beg_col     (:) = nan
+    allocate(this%cwdn_beg_col        (begc:endc))   ; this%cwdn_beg_col        (:) = nan
+    allocate(this%totlitn_beg_col     (begc:endc))   ; this%totlitn_beg_col     (:) = nan
+    allocate(this%totsomn_beg_col     (begc:endc))   ; this%totsomn_beg_col     (:) = nan
+    allocate(this%sminn_beg_col       (begc:endc))   ; this%sminn_beg_col       (:) = nan
+    allocate(this%smin_no3_beg_col    (begc:endc))   ; this%smin_no3_beg_col    (:) = nan
+    allocate(this%smin_nh4_beg_col    (begc:endc))   ; this%smin_nh4_beg_col    (:) = nan
+    allocate(this%totprodn_beg_col    (begc:endc))   ; this%totprodn_beg_col    (:) = nan
+    allocate(this%seedn_beg_col       (begc:endc))   ; this%seedn_beg_col       (:) = nan
+    allocate(this%ntrunc_beg_col      (begc:endc))   ; this%ntrunc_beg_col      (:) = nan
+    
+    allocate(this%totpftn_end_col     (begc:endc))   ; this%totpftn_end_col     (:) = nan
+    allocate(this%cwdn_end_col        (begc:endc))   ; this%cwdn_end_col        (:) = nan
+    allocate(this%totlitn_end_col     (begc:endc))   ; this%totlitn_end_col     (:) = nan
+    allocate(this%totsomn_end_col     (begc:endc))   ; this%totsomn_end_col     (:) = nan
+    allocate(this%sminn_end_col       (begc:endc))   ; this%sminn_end_col       (:) = nan
+    allocate(this%smin_no3_end_col    (begc:endc))   ; this%smin_no3_end_col    (:) = nan
+    allocate(this%smin_nh4_end_col    (begc:endc))   ; this%smin_nh4_end_col    (:) = nan
+    allocate(this%totprodn_end_col    (begc:endc))   ; this%totprodn_end_col    (:) = nan
+    allocate(this%seedn_end_col       (begc:endc))   ; this%seedn_end_col       (:) = nan
+    allocate(this%ntrunc_end_col      (begc:endc))   ; this%ntrunc_end_col      (:) = nan
+
+    ! for dynamic C/N/P allocation
+    allocate(this%npimbalance_patch           (begp:endp)) ;             this%npimbalance_patch           (:) = 0.0_r8 ! initialize to zero for Phosphatase module
+    allocate(this%pnup_pfrootc_patch          (begp:endp)) ;             this%pnup_pfrootc_patch          (:) = 0.0_r8 ! initialize to zero for N2 Fixation module
+    allocate(this%ppup_pfrootc_patch          (begp:endp)) ;             this%ppup_pfrootc_patch          (:) = nan
+    allocate(this%ptlai_pleafc_patch          (begp:endp)) ;             this%ptlai_pleafc_patch          (:) = nan
+    allocate(this%ppsnsun_ptlai_patch         (begp:endp)) ;             this%ppsnsun_ptlai_patch         (:) = nan
+    allocate(this%ppsnsun_pleafn_patch        (begp:endp)) ;             this%ppsnsun_pleafn_patch        (:) = nan
+    allocate(this%ppsnsun_pleafp_patch        (begp:endp)) ;             this%ppsnsun_pleafp_patch        (:) = nan
+    allocate(this%plmrsun_ptlai_patch         (begp:endp)) ;             this%plmrsun_ptlai_patch         (:) = nan
+    allocate(this%plmrsun_pleafn_patch        (begp:endp)) ;             this%plmrsun_pleafn_patch        (:) = nan
+    allocate(this%plaisun_ptlai_patch         (begp:endp)) ;             this%plaisun_ptlai_patch         (:) = nan
+    allocate(this%ppsnsha_ptlai_patch         (begp:endp)) ;             this%ppsnsha_ptlai_patch         (:) = nan
+    allocate(this%ppsnsha_pleafn_patch        (begp:endp)) ;             this%ppsnsha_pleafn_patch        (:) = nan
+    allocate(this%ppsnsha_pleafp_patch        (begp:endp)) ;             this%ppsnsha_pleafp_patch        (:) = nan
+    allocate(this%plmrsha_ptlai_patch         (begp:endp)) ;             this%plmrsha_ptlai_patch         (:) = nan
+    allocate(this%plmrsha_pleafn_patch        (begp:endp)) ;             this%plmrsha_pleafn_patch        (:) = nan
+    allocate(this%plaisha_ptlai_patch         (begp:endp)) ;             this%plaisha_ptlai_patch         (:) = nan
+    allocate(this%benefit_pgpp_pleafc_patch   (begp:endp)) ;             this%benefit_pgpp_pleafc_patch   (:) = 0.0_r8 ! initialize to zero for N2 Fixation module
+    allocate(this%benefit_pgpp_pleafn_patch   (begp:endp)) ;             this%benefit_pgpp_pleafn_patch   (:) = nan
+    allocate(this%benefit_pgpp_pleafp_patch   (begp:endp)) ;             this%benefit_pgpp_pleafp_patch   (:) = nan
+    allocate(this%cost_pgpp_pfrootc_patch     (begp:endp)) ;             this%cost_pgpp_pfrootc_patch     (:) = nan
+    allocate(this%cost_plmr_pleafc_patch      (begp:endp)) ;             this%cost_plmr_pleafc_patch      (:) = nan
+    allocate(this%cost_plmr_pleafn_patch      (begp:endp)) ;             this%cost_plmr_pleafn_patch      (:) = nan
+    allocate(this%ppsn_ptlai_z                (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z                (:,:) = nan
+    allocate(this%ppsn_pleafn_z               (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z               (:,:) = nan
+    allocate(this%ppsn_pleafp_z               (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z               (:,:) = nan
+    allocate(this%ppsn_ptlai_z_vcmax          (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z_vcmax          (:,:) = nan
+    allocate(this%ppsn_pleafn_z_vcmax         (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z_vcmax         (:,:) = nan
+    allocate(this%ppsn_pleafp_z_vcmax         (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z_vcmax         (:,:) = nan
+    allocate(this%ppsn_ptlai_z_jmax           (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z_jmax           (:,:) = nan
+    allocate(this%ppsn_pleafn_z_jmax          (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z_jmax          (:,:) = nan
+    allocate(this%ppsn_pleafp_z_jmax          (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z_jmax          (:,:) = nan
+    allocate(this%ppsn_ptlai_z_tpu            (begp:endp,1:nlevcan)) ;   this%ppsn_ptlai_z_tpu            (:,:) = nan
+    allocate(this%ppsn_pleafn_z_tpu           (begp:endp,1:nlevcan)) ;   this%ppsn_pleafn_z_tpu           (:,:) = nan
+    allocate(this%ppsn_pleafp_z_tpu           (begp:endp,1:nlevcan)) ;   this%ppsn_pleafp_z_tpu           (:,:) = nan
+    allocate(this%plmr_ptlai_z                (begp:endp,1:nlevcan)) ;   this%plmr_ptlai_z                (:,:) = nan
+    allocate(this%plmr_pleafn_z               (begp:endp,1:nlevcan)) ;   this%plmr_pleafn_z               (:,:) = nan
+
     allocate(this%smin_nh4sorb_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%smin_nh4sorb_vr_col      (:,:) = nan
     allocate(this%smin_nh4sorb_col         (begc:endc))                   ; this%smin_nh4sorb_col         (:)   = nan
+
+    allocate(this%plant_nbuffer_col(begc:endc));this%plant_nbuffer_col(:) = nan
 
   end subroutine InitAllocate
 
@@ -269,7 +424,7 @@ contains
        this%grainn_patch(begp:endp) = spval
        call hist_addfld1d (fname='GRAINN', units='gN/m^2', &
             avgflag='A', long_name='grain N', &
-            ptr_patch=this%grainn_patch)
+            ptr_patch=this%grainn_patch, default='inactive')
     end if
 
     this%leafn_patch(begp:endp) = spval
@@ -375,7 +530,7 @@ contains
     this%ntrunc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_NTRUNC', units='gN/m^2', &
          avgflag='A', long_name='pft-level sink for N truncation', &
-         ptr_patch=this%ntrunc_patch)
+         ptr_patch=this%ntrunc_patch, default='inactive')
 
     this%dispvegn_patch(begp:endp) = spval
     call hist_addfld1d (fname='DISPVEGN', units='gN/m^2', &
@@ -397,6 +552,22 @@ contains
          avgflag='A', long_name='total PFT-level nitrogen', &
          ptr_patch=this%totpftn_patch)
 
+    call hist_addfld1d (fname='actual_leafcn', units='gC/gN', &
+         avgflag='A', long_name='flexible leafCN', &
+         ptr_patch=this%actual_leafcn)
+    call hist_addfld1d (fname='actual_frootcn', units='gC/gN', &
+         avgflag='A', long_name='flexible frootCN', &
+         ptr_patch=this%actual_frootcn)
+    call hist_addfld1d (fname='actual_livewdcn', units='gC/gN', &
+         avgflag='A', long_name='flexible livewdCN', &
+         ptr_patch=this%actual_livewdcn)
+    call hist_addfld1d (fname='actual_deadwdcn', units='gC/gN', &
+         avgflag='A', long_name='flexible deadwdCN', &
+         ptr_patch=this%actual_deadwdcn)
+    call hist_addfld1d (fname='actual_graincn', units='gC/gN', &
+         avgflag='A', long_name='flexible grainCN', &
+         ptr_patch=this%actual_graincn)
+         
     !-------------------------------
     ! N state variables - native to column
     !-------------------------------
@@ -444,18 +615,23 @@ contains
        this%totlitn_1m_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTLITN_1m', units='gN/m^2', &
             avgflag='A', long_name='total litter N to 1 meter', &
-            ptr_col=this%totlitn_1m_col)
+            ptr_col=this%totlitn_1m_col, default='inactive')
 
        this%totsomn_1m_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTSOMN_1m', units='gN/m^2', &
             avgflag='A', long_name='total soil organic matter N to 1 meter', &
-            ptr_col=this%totsomn_1m_col)
+            ptr_col=this%totsomn_1m_col, default='inactive')
     endif
 
+    this%plant_nbuffer_col(begc:endc) = spval
+    call hist_addfld1d (fname='PLANTN_BUFFER', units='gN/m^2', &
+            avgflag='A', long_name='plant nitrogen stored as buffer', &
+            ptr_col=this%plant_nbuffer_col)
+    
     this%ntrunc_col(begc:endc) = spval
     call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
          avgflag='A', long_name='column-level sink for N truncation', &
-         ptr_col=this%ntrunc_col)
+         ptr_col=this%ntrunc_col, default='inactive')
 
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
@@ -533,34 +709,34 @@ contains
     this%seedn_col(begc:endc) = spval
     call hist_addfld1d (fname='SEEDN', units='gN/m^2', &
          avgflag='A', long_name='pool for seeding new PFTs ', &
-         ptr_col=this%seedn_col)
+         ptr_col=this%seedn_col, default='inactive')
 
     this%prod10n_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD10N', units='gN/m^2', &
          avgflag='A', long_name='10-yr wood product N', &
-         ptr_col=this%prod10n_col)
+         ptr_col=this%prod10n_col, default='inactive')
 
     this%prod100n_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD100N', units='gN/m^2', &
          avgflag='A', long_name='100-yr wood product N', &
-         ptr_col=this%prod100n_col)
+         ptr_col=this%prod100n_col, default='inactive')
 
     this%prod1n_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD1N', units='gN/m^2', &
          avgflag='A', long_name='1-yr crop product N', &
-         ptr_col=this%prod1n_col)
+         ptr_col=this%prod1n_col, default='inactive')
 
     this%totprodn_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTPRODN', units='gN/m^2', &
          avgflag='A', long_name='total wood product N', &
-         ptr_col=this%totprodn_col)
+         ptr_col=this%totprodn_col, default='inactive')
 
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds, &
-       leafc_patch, leafc_storage_patch, deadstemc_patch, &
-       decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
+       leafc_patch, leafc_storage_patch, frootc_patch, frootc_storage_patch, &
+       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
     !
     ! !DESCRIPTION:
     ! Initializes time varying variables used only in coupled carbon-nitrogen mode (CN):
@@ -575,6 +751,8 @@ contains
     type(bounds_type) , intent(in) :: bounds  
     real(r8)          , intent(in) :: leafc_patch(bounds%begp:)
     real(r8)          , intent(in) :: leafc_storage_patch(bounds%begp:)
+    real(r8)          , intent(in) :: frootc_patch(bounds%begp:)
+    real(r8)          , intent(in) :: frootc_storage_patch(bounds%begp:)
     real(r8)          , intent(in) :: deadstemc_patch(bounds%begp:)
     real(r8)          , intent(in) :: decomp_cpools_vr_col(bounds%begc:,:,:)
     real(r8)          , intent(in) :: decomp_cpools_col(bounds%begc:,:)
@@ -590,6 +768,8 @@ contains
 
     SHR_ASSERT_ALL((ubound(leafc_patch)          == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(leafc_storage_patch)  == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(frootc_patch)         == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(frootc_storage_patch) == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(deadstemc_patch)      == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(decomp_cpools_col)    == (/bounds%endc,ndecomp_pools/)),                 errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(decomp_cpools_1m_col) == (/bounds%endc,ndecomp_pools/)),                 errMsg(__FILE__, __LINE__))
@@ -620,12 +800,11 @@ contains
     !-------------------------------------------
     ! initialize pft-level variables
     !-------------------------------------------
-
+    
     do p = bounds%begp,bounds%endp
 
        l = pft%landunit(p)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
-
+       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then       
           if (pft%itype(p) == noveg) then
              this%leafn_patch(p) = 0._r8
              this%leafn_storage_patch(p) = 0._r8
@@ -655,6 +834,15 @@ contains
           else
              this%deadstemn_patch(p) = 0._r8
           end if
+          
+          if (nu_com .ne. 'RD') then
+              ! ECA competition calculate root NP uptake as a function of fine root biomass
+              ! better to initialize root CNP pools with a non-zero value
+              if (pft%itype(p) .ne. noveg) then
+                 this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft%itype(p))
+                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft%itype(p))
+              end if
+          end if
 
           this%deadstemn_storage_patch(p)  = 0._r8
           this%deadstemn_xfer_patch(p)     = 0._r8
@@ -670,8 +858,15 @@ contains
           this%dispvegn_patch(p)           = 0._r8
           this%storvegn_patch(p)           = 0._r8
           this%totvegn_patch(p)            = 0._r8
-          this%totpftn_patch(p)            = 0._r8
+          this%totpftn_patch(p)            = 0._r8          
        end if
+
+       this%actual_leafcn(p)       = ecophyscon%leafcn(pft%itype(p))
+       this%actual_frootcn(p)      = ecophyscon%frootcn(pft%itype(p))
+       this%actual_livewdcn(p)     = ecophyscon%livewdcn(pft%itype(p))
+       this%actual_deadwdcn(p)     = ecophyscon%deadwdcn(pft%itype(p))
+       this%actual_graincn(p)      = ecophyscon%graincn(pft%itype(p))
+       
     end do
 
     !-------------------------------------------
@@ -705,7 +900,6 @@ contains
              this%decomp_npools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
              this%decomp_npools_1m_col(c,k) = decomp_cpools_1m_col(c,k) / decomp_cascade_con%initial_cn_ratio(k)
           end do
-
           if (use_nitrif_denitrif) then
              do j = 1, nlevdecomp_full
                 this%smin_nh4_vr_col(c,j) = 0._r8
@@ -730,6 +924,7 @@ contains
           this%prod10n_col(c)       = 0._r8
           this%prod100n_col(c)      = 0._r8
           this%totprodn_col(c)      = 0._r8
+          this%plant_nbuffer_col(c) = 1._r8
        end if
     end do
 
@@ -755,7 +950,8 @@ contains
   end subroutine InitCold
 
   !-----------------------------------------------------------------------
-  subroutine Restart ( this,  bounds, ncid, flag )
+
+  subroutine Restart ( this,  bounds, ncid, flag, cnstate_vars )
     !
     ! !DESCRIPTION: 
     ! Read/write CN restart data for carbon state
@@ -763,6 +959,8 @@ contains
     ! !USES:
     use shr_infnan_mod      , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use clm_time_manager    , only : is_restart, get_nstep
+    use clm_varctl          , only : spinup_mortality_factor
+    use CNStateType         , only : cnstate_type
     use restUtilMod
     use ncdio_pio
     !
@@ -770,6 +968,7 @@ contains
     class (nitrogenstate_type) :: this
     type(bounds_type)          , intent(in)    :: bounds 
     type(file_desc_t)          , intent(inout) :: ncid   
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
     character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
     !
     ! !LOCAL VARIABLES:
@@ -778,7 +977,7 @@ contains
     integer            :: idata
     logical            :: exit_spinup = .false.
     logical            :: enter_spinup = .false.
-    real(r8)           :: m          ! multiplier for the exit_spinup code
+    real(r8)           :: m, m_veg          ! multiplier for the exit_spinup code
     real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname    ! temporary
@@ -891,7 +1090,23 @@ contains
             dim1name='pft',    long_name='grain N transfer', units='gN/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_xfer_patch)
     end if
-
+    
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_leafcn', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible leafCN', units='gC/gN', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_leafcn)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_frootcn', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible frootCN', units='gC/gN', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_frootcn)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_livewdcn', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible livewdCN', units='gC/gN', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_livewdcn)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_deadwdcn', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible deadwdCN', units='gC/gN', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_deadwdcn)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_graincn', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible grainCN', units='gC/gN', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_graincn)
+       
     !--------------------------------
     ! column nitrogen state variables
     !--------------------------------
@@ -1023,6 +1238,10 @@ contains
        end do
     end do
 
+    call restartvar(ncid=ncid, flag=flag, varname='plant_nbuffer', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_nbuffer_col)
+         
     call restartvar(ncid=ncid, flag=flag, varname='totcoln', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%totcoln_col) 
@@ -1142,16 +1361,27 @@ contains
                errMsg(__FILE__, __LINE__))
        endif
        do k = 1, ndecomp_pools
-          if ( exit_spinup ) then
-             m = decomp_cascade_con%spinup_factor(k)
-          else if ( enter_spinup ) then
-             m = 1. / decomp_cascade_con%spinup_factor(k)
-          end if
           do c = bounds%begc, bounds%endc
              do j = 1, nlevdecomp
-                this%decomp_npools_vr_col(c,j,k) = this%decomp_npools_vr_col(c,j,k) * m
+	       if ( exit_spinup ) then
+		 m = decomp_cascade_con%spinup_factor(k)
+                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
+               else if ( enter_spinup ) then 
+                 m = 1. / decomp_cascade_con%spinup_factor(k)
+		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
+               end if 
+               this%decomp_npools_vr_col(c,j,k) = this%decomp_npools_vr_col(c,j,k) * m
              end do
           end do
+       end do
+       do i = bounds%begp, bounds%endp
+         if (exit_spinup) then
+            m_veg = spinup_mortality_factor
+         else if (enter_spinup) then
+            m_veg = 1._r8 / spinup_mortality_factor
+         end if
+         this%deadstemn_patch(i)  = this%deadstemn_patch(i) * m_veg
+         this%deadcrootn_patch(i) = this%deadcrootn_patch(i) * m_veg
        end do
     end if
 
@@ -1207,6 +1437,11 @@ contains
        this%storvegn_patch(i)           = value_patch
        this%totvegn_patch(i)            = value_patch
        this%totpftn_patch(i)            = value_patch
+       
+       this%actual_leafcn(i)            = value_patch
+       this%actual_frootcn(i)           = value_patch
+       this%actual_livewdcn(i)          = value_patch
+       this%actual_deadwdcn(i)          = value_patch
     end do
 
     if ( crop_prog )then
@@ -1214,7 +1449,8 @@ contains
           i = filter_patch(fi)
           this%grainn_patch(i)          = value_patch
           this%grainn_storage_patch(i)  = value_patch
-          this%grainn_xfer_patch(i)     = value_patch   
+          this%grainn_xfer_patch(i)     = value_patch 
+          this%actual_graincn(i)        = value_patch
        end do
     end if
 
@@ -1227,7 +1463,6 @@ contains
        if (use_nitrif_denitrif) then
           this%smin_no3_col(i) = value_column
           this%smin_nh4_col(i) = value_column
-
           if(use_pflotran .and. pf_cmode) then
              this%smin_nh4sorb_col(i) = value_column
           end if
@@ -1248,7 +1483,6 @@ contains
           if (use_nitrif_denitrif) then
              this%smin_no3_vr_col(i,j) = value_column
              this%smin_nh4_vr_col(i,j) = value_column
-
              if(use_pflotran .and. pf_cmode) then
                this%smin_nh4sorb_vr_col(i,j) = value_column
              end if
@@ -1388,7 +1622,6 @@ contains
          c = filter_soilc(fc)
          this%smin_no3_col(c) = 0._r8
          this%smin_nh4_col(c) = 0._r8
-
          if(use_pflotran .and. pf_cmode) then
             this%smin_nh4sorb_col(c) = 0._r8
          end if
@@ -1403,7 +1636,6 @@ contains
             this%smin_nh4_col(c) = &
                  this%smin_nh4_col(c) + &
                  this%smin_nh4_vr_col(c,j) * dzsoi_decomp(j)
-
             if(use_pflotran .and. pf_cmode) then
                this%smin_nh4sorb_col(c) = &
                  this%smin_nh4sorb_col(c) + &
@@ -1599,9 +1831,53 @@ contains
            this%sminn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c)
+           this%ntrunc_col(c) + &
+           this%plant_nbuffer_col(c)
+           
+      this%totabgn_col (c) =  &
+           this%totpftn_col(c) + &
+           this%totprodn_col(c) + &
+           this%seedn_col(c) + &
+           this%ntrunc_col(c) + &
+           this%plant_nbuffer_col(c)
+
+      this%totblgn_col(c) = &
+           this%cwdn_col(c) + &
+           this%totlitn_col(c) + &
+           this%totsomn_col(c) + &
+           this%sminn_col(c) 
+           
    end do
 
  end subroutine Summary
+ 
+  !-----------------------------------------------------------------------
+ 
+  subroutine nbuffer_update(this, bounds, num_soilc, filter_soilc,  &
+      plant_minn_active_yield_flx_col, plant_minn_passive_yield_flx_col)
+
+    use clm_time_manager         , only : get_step_size        
+    ! !ARGUMENTS:
+    class (nitrogenstate_type) :: this
+    type(bounds_type) , intent(in) :: bounds  
+    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+    
+    real(r8)          , intent(in) :: plant_minn_active_yield_flx_col(bounds%begc:bounds%endc)
+    real(r8)          , intent(in) :: plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc)
+    integer :: fc, c
+    real(r8) :: dtime
+  
+    dtime =  get_step_size()
+  
+    
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
+      this%plant_nbuffer_col(c) = this%plant_nbuffer_col(c)           + &
+                                  (plant_minn_active_yield_flx_col(c) + &
+                                   plant_minn_passive_yield_flx_col(c))*dtime
+    enddo
+      
+  end subroutine nbuffer_update      
 
 end module CNNitrogenStateType

@@ -47,6 +47,8 @@ $bldcmd .= '"';
 
 if ( $MACH eq "edison" ) {
 	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=sandybridge"';
+} elsif ( $MACH eq "titan" ) {
+	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=istanbul"';
 }
 
 # Check for Albany build

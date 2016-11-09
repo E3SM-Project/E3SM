@@ -4,6 +4,7 @@ partmethod    = 0
 topology      = "cube"
 test_case     = "swtc6"
 ne            = 2
+cubed_sphere_map = 2
 ndays         = 1
 statefreq     = 1440
 restartfreq   = -100
@@ -35,9 +36,11 @@ wght_fm       = 0.10D0
 /
 &analysis_nl
 output_timeunits = 2
-output_frequency = 6
-output_varnames1 = 'u', 'v', 'ps'
+output_frequency = 12
+output_varnames1 = 'u', 'v', 'geop'
 interp_type      = 0          ! native high order
 output_type      = 'netcdf'
 io_stride        = 8
+interp_nlat = 48
+interp_nlon = 96
 /

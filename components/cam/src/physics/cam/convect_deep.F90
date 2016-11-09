@@ -1,4 +1,5 @@
 
+
 module convect_deep
 !---------------------------------------------------------------------------------
 ! Purpose:
@@ -14,6 +15,7 @@ module convect_deep
    use shr_kind_mod, only: r8=>shr_kind_r8
    use ppgrid,       only: pver, pcols, pverp
    use cam_logfile,  only: iulog
+   use perf_mod,     only: t_startf, t_stopf
 
    implicit none
 
@@ -116,7 +118,7 @@ subroutine convect_deep_init(pref_edge)
 ! Purpose:  declare output fields, initialize variables needed by convection
 !----------------------------------------
 
-  use cam_history,   only: phys_decomp, addfld                          
+  use cam_history,   only:  addfld                          
   use pmgrid,        only: plevp
   use spmd_utils,    only: masterproc
   use zm_conv_intr,  only: zm_conv_init
@@ -131,9 +133,13 @@ subroutine convect_deep_init(pref_edge)
   select case ( deep_scheme )
   case('off') !     ==> no deep convection
      if (masterproc) write(iulog,*)'convect_deep: no deep convection selected'
+  case('CLUBB_SGS')
+     if (masterproc) write(iulog,*)'convect_deep: CLUBB_SGS selected'
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      if (masterproc) write(iulog,*)'convect_deep initializing Zhang-McFarlane convection'
      call zm_conv_init(pref_edge)
+  case('UNICON')
+     if (masterproc) write(iulog,*)'convect_deep: deep convection done by UNICON'
   case default
      if (masterproc) write(iulog,*)'WARNING: convect_deep: no deep convection scheme. May fail.'
   end select
@@ -146,7 +152,7 @@ subroutine convect_deep_init(pref_edge)
   pblh_idx   = pbuf_get_index('pblh')
   tpert_idx  = pbuf_get_index('tpert')
 
-  call addfld ('ICWMRDP  ', 'kg/kg   ', pver, 'A', 'Deep Convection in-cloud water mixing ratio '            ,phys_decomp)
+  call addfld ('ICWMRDP', (/ 'lev' /), 'A', 'kg/kg', 'Deep Convection in-cloud water mixing ratio '            )
 
 end subroutine convect_deep_init
 !=========================================================================================
@@ -225,18 +231,19 @@ subroutine convect_deep_tend( &
    real(r8), pointer :: pblh(:)                ! Planetary boundary layer height
    real(r8), pointer :: tpert(:)               ! Thermal temperature excess 
 
-  real(r8) zero(pcols, pver)
-
-  integer i, k
-
+   ! Temperature tendency from deep convection (pbuf pointer).
    real(r8), pointer, dimension(:,:) :: ttend_dp
+
+   real(r8) zero(pcols, pver)
+
+   integer i, k
 
    call pbuf_get_field(pbuf, cldtop_idx,  jctop )
    call pbuf_get_field(pbuf, cldbot_idx,  jcbot )
    call pbuf_get_field(pbuf, icwmrdp_idx, ql    )
 
   select case ( deep_scheme )
-  case('off') !    0 ==> no deep convection
+  case('off', 'CLUBB_SGS', 'UNICON') !    0 ==> no deep convection
     zero = 0     
     mcon = 0
     dlf = 0
@@ -273,6 +280,7 @@ subroutine convect_deep_tend( &
      call pbuf_get_field(pbuf, pblh_idx,  pblh)
      call pbuf_get_field(pbuf, tpert_idx, tpert)
 
+     call t_startf('zm_conv_tend')
      call zm_conv_tend( pblh    ,mcon    ,cme     , &
           tpert   ,dlf     ,pflx    ,zdu      , &
           rliq    , &
@@ -280,6 +288,7 @@ subroutine convect_deep_tend( &
           jctop, jcbot , &
           state   ,ptend   ,landfrac, pbuf, mu, eu, &
           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)
+     call t_stopf('zm_conv_tend')
 
 
   end select
@@ -301,7 +310,7 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
      du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class)
 
 
-   use physics_types, only: physics_state, physics_ptend
+   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
    
    use physics_buffer,  only: physics_buffer_desc
    use constituents, only: pcnst
@@ -341,6 +350,8 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    if ( deep_scheme .eq. 'ZM' ) then  !    1 ==> Zhang-McFarlane (default)
       call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
      du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
+   else
+      call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
    end if
 
 

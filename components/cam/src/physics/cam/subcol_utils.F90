@@ -15,7 +15,7 @@
    use physics_types,   only: physics_state, physics_ptend, physics_tend, physics_tend_alloc, physics_state_alloc
    use ppgrid,          only: pcols, psubcols, pver
    use constituents,    only: pcnst
-   use cam_abortutils,      only: endrun
+   use cam_abortutils,  only: endrun
    use pio,             only: var_desc_t
 
    implicit none
@@ -310,6 +310,7 @@
    end interface
 
    type(var_desc_t) :: nsubcol_desc, weight2d_desc, filter2d_desc
+   integer          :: subcol_dimid = -1 ! subcol dimension for restart
 
    integer :: ret_nan_int
    real(r8):: ret_nan_double
@@ -319,10 +320,10 @@
    real(r8):: fillval_double
    real(r4):: fillval_real
 
-# 122 "subcol_utils.F90.in"
+# 123 "subcol_utils.F90.in"
 contains
 
-# 124 "subcol_utils.F90.in"
+# 125 "subcol_utils.F90.in"
    subroutine subcol_allocate_internal()
       use ppgrid,         only: begchunk, endchunk
    !-----------------------------------------------------------------------
@@ -352,17 +353,16 @@ contains
       allocate(weight2d(pcols*psubcols, begchunk:endchunk))
       weight2d = 0._r8
 
-# 153 "subcol_utils.F90.in"
+# 154 "subcol_utils.F90.in"
     end subroutine subcol_allocate_internal
 
-# 155 "subcol_utils.F90.in"
+# 156 "subcol_utils.F90.in"
    subroutine subcol_utils_init(subcol_scheme_init)
    !-----------------------------------------------------------------------
    ! Initialize the nsubcol module variable
    !-----------------------------------------------------------------------
  
       character(len=*), optional, intent(in) :: subcol_scheme_init ! Name of subcolumn generator
-      integer :: ierr
 
       call subcol_allocate_internal()
 
@@ -593,7 +593,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -623,7 +622,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_1dint
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -640,7 +639,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -670,7 +668,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_2dint
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -687,7 +685,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -717,7 +714,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_3dint
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -734,7 +731,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -764,7 +760,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_4dint
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -781,7 +777,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -811,7 +806,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_5dint
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -828,7 +823,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -858,7 +852,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_1ddouble
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -875,7 +869,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -905,7 +898,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_2ddouble
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -922,7 +915,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -952,7 +944,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_3ddouble
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -969,7 +961,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -999,7 +990,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_4ddouble
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -1016,7 +1007,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -1046,7 +1036,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_5ddouble
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -1063,7 +1053,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -1093,7 +1082,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_1dreal
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -1110,7 +1099,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -1140,7 +1128,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_2dreal
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -1157,7 +1145,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -1187,7 +1174,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_3dreal
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -1204,7 +1191,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -1234,7 +1220,7 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_4dreal
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5
@@ -1251,7 +1237,6 @@ contains
       ! Local Variables
       integer                           :: ncol
       integer                           :: indcol(pcols*psubcols)
-      integer :: i, indx, j
 
       if (size(field,dim=1) .ne. pcols) then
          call endrun('subcol_field_copy error: only fields with first dimension pcols may use this routine')
@@ -1281,12 +1266,12 @@ contains
       field_sc(:ncol,:,:,:,:) = field(indcol(:ncol),:,:,:,:)
 #endif
 
-# 394 "subcol_utils.F90.in"
+# 393 "subcol_utils.F90.in"
    end subroutine subcol_field_copy_5dreal
 
    ! TYPE double
    ! DIMS 1,2,3
-# 398 "subcol_utils.F90.in"
+# 397 "subcol_utils.F90.in"
    subroutine subcol_state_field_copy_1ddouble (field, state, field_sc)
    !-----------------------------------------------------------------------
    ! Copy a state field dimensioned with pcols to one with pcols*psubcols and fill appropriately
@@ -1335,11 +1320,11 @@ contains
       field_sc(:state%ncol,:,:) = field(indcol(:state%ncol),:,:)
 #endif
 
-# 446 "subcol_utils.F90.in"
+# 445 "subcol_utils.F90.in"
    end subroutine subcol_state_field_copy_1ddouble
    ! TYPE double
    ! DIMS 1,2,3
-# 398 "subcol_utils.F90.in"
+# 397 "subcol_utils.F90.in"
    subroutine subcol_state_field_copy_2ddouble (field, state, field_sc)
    !-----------------------------------------------------------------------
    ! Copy a state field dimensioned with pcols to one with pcols*psubcols and fill appropriately
@@ -1388,11 +1373,11 @@ contains
       field_sc(:state%ncol,:,:) = field(indcol(:state%ncol),:,:)
 #endif
 
-# 446 "subcol_utils.F90.in"
+# 445 "subcol_utils.F90.in"
    end subroutine subcol_state_field_copy_2ddouble
    ! TYPE double
    ! DIMS 1,2,3
-# 398 "subcol_utils.F90.in"
+# 397 "subcol_utils.F90.in"
    subroutine subcol_state_field_copy_3ddouble (field, state, field_sc)
    !-----------------------------------------------------------------------
    ! Copy a state field dimensioned with pcols to one with pcols*psubcols and fill appropriately
@@ -1441,10 +1426,10 @@ contains
       field_sc(:state%ncol,:,:) = field(indcol(:state%ncol),:,:)
 #endif
 
-# 446 "subcol_utils.F90.in"
+# 445 "subcol_utils.F90.in"
    end subroutine subcol_state_field_copy_3ddouble
 
-# 448 "subcol_utils.F90.in"
+# 447 "subcol_utils.F90.in"
    subroutine subcol_tend_copy(tend, state_sc, tend_sc)
    !-----------------------------------------------------------------------
    ! Copy all of tend to subcolumns in tend_sc, allocating tend_sc if necessary
@@ -1466,10 +1451,10 @@ contains
       call subcol_state_field_copy(tend%te_tnd,     state_sc, tend_sc%te_tnd)
       call subcol_state_field_copy(tend%tw_tnd,     state_sc, tend_sc%tw_tnd)
 
-# 469 "subcol_utils.F90.in"
+# 468 "subcol_utils.F90.in"
    end subroutine subcol_tend_copy
 
-# 471 "subcol_utils.F90.in"
+# 470 "subcol_utils.F90.in"
    subroutine subcol_state_copy(state, state_sc)
    !-----------------------------------------------------------------------
    ! Copy all of state to subcolumns in state_sc, allocating state_sc if necessary
@@ -1480,7 +1465,7 @@ contains
       !
       ! Local variables
       !
-      integer :: i, j, k, m, ngrdcol, indx
+      integer :: ngrdcol
 
       if (.not. allocated(state_sc%lat)) then
          call endrun('subcol_state_copy: user must allocate state_sc prior to calling this routine')
@@ -1521,10 +1506,10 @@ contains
       call subcol_state_field_copy(state%lnpintdry, state_sc, state_sc%lnpintdry)
       call subcol_state_field_copy(state%q,         state_sc, state_sc%q)
 
-# 522 "subcol_utils.F90.in"
+# 521 "subcol_utils.F90.in"
    end subroutine subcol_state_copy
 
-# 524 "subcol_utils.F90.in"
+# 523 "subcol_utils.F90.in"
    subroutine subcol_set_subcols(state, tend, nsubcol, state_sc, tend_sc)
    !-----------------------------------------------------------------------
    ! Propogate nsubcol information to common areas such as state, tend,
@@ -1539,11 +1524,11 @@ contains
       call subcol_set_nsubcol(state%lchnk, state%ngrdcol, nsubcol)
       call subcol_state_copy(state, state_sc)
       call subcol_tend_copy(tend, state_sc, tend_sc)
-# 538 "subcol_utils.F90.in"
+# 537 "subcol_utils.F90.in"
    end subroutine subcol_set_subcols
 
 
-# 541 "subcol_utils.F90.in"
+# 540 "subcol_utils.F90.in"
    subroutine subcol_ptend_copy(ptend, state, ptend_cp)
    !-----------------------------------------------------------------------
    ! Copy a physics_ptend object into one which has subcolumns
@@ -1598,10 +1583,10 @@ contains
          ptend_cp%cflx_top(:ncol,:)  = ptend%cflx_top(indcol(:ncol),:)
       end if
 
-# 595 "subcol_utils.F90.in"
+# 594 "subcol_utils.F90.in"
    end subroutine subcol_ptend_copy
   
-# 597 "subcol_utils.F90.in"
+# 596 "subcol_utils.F90.in"
    subroutine subcol_state_hdrinit(state, state_sc)
    !-----------------------------------------------------------------------
    ! Initialize the subcolumn state header variables
@@ -1609,7 +1594,7 @@ contains
       type(physics_state), intent(in)    :: state
       type(physics_state), intent(inout) :: state_sc        ! subcolumn state
 
-      integer :: i, j, indx, isize
+      integer :: isize
       integer :: nsubcol(pcols)
 
       call subcol_get_nsubcol(state%lchnk, nsubcol)
@@ -1628,12 +1613,12 @@ contains
       ! Set the number of set subcolumns to the total count
       state_sc%ncol       = subcol_get_ncol(state%lchnk)
 
-# 623 "subcol_utils.F90.in"
+# 622 "subcol_utils.F90.in"
    end subroutine subcol_state_hdrinit
 
    ! TYPE int,double,real
    ! DIMS 1,2
-# 627 "subcol_utils.F90.in"
+# 626 "subcol_utils.F90.in"
    subroutine subcol_field_avg_shr_1dint(field_sc, ngrdcol, lchnk, field,  usefilter, useweight)
    !-----------------------------------------------------------------------
    ! This is the high level subcol field averaging routine which 
@@ -1686,11 +1671,11 @@ contains
            indx = indx + nsubcol
          end if
       end do
-# 679 "subcol_utils.F90.in"
+# 678 "subcol_utils.F90.in"
    end subroutine subcol_field_avg_shr_1dint
    ! TYPE int,double,real
    ! DIMS 1,2
-# 627 "subcol_utils.F90.in"
+# 626 "subcol_utils.F90.in"
    subroutine subcol_field_avg_shr_2dint(field_sc, ngrdcol, lchnk, field,  usefilter, useweight)
    !-----------------------------------------------------------------------
    ! This is the high level subcol field averaging routine which 
@@ -1743,11 +1728,11 @@ contains
            indx = indx + nsubcol
          end if
       end do
-# 679 "subcol_utils.F90.in"
+# 678 "subcol_utils.F90.in"
    end subroutine subcol_field_avg_shr_2dint
    ! TYPE int,double,real
    ! DIMS 1,2
-# 627 "subcol_utils.F90.in"
+# 626 "subcol_utils.F90.in"
    subroutine subcol_field_avg_shr_1ddouble(field_sc, ngrdcol, lchnk, field,  usefilter, useweight)
    !-----------------------------------------------------------------------
    ! This is the high level subcol field averaging routine which 
@@ -1800,11 +1785,11 @@ contains
            indx = indx + nsubcol
          end if
       end do
-# 679 "subcol_utils.F90.in"
+# 678 "subcol_utils.F90.in"
    end subroutine subcol_field_avg_shr_1ddouble
    ! TYPE int,double,real
    ! DIMS 1,2
-# 627 "subcol_utils.F90.in"
+# 626 "subcol_utils.F90.in"
    subroutine subcol_field_avg_shr_2ddouble(field_sc, ngrdcol, lchnk, field,  usefilter, useweight)
    !-----------------------------------------------------------------------
    ! This is the high level subcol field averaging routine which 
@@ -1857,11 +1842,11 @@ contains
            indx = indx + nsubcol
          end if
       end do
-# 679 "subcol_utils.F90.in"
+# 678 "subcol_utils.F90.in"
    end subroutine subcol_field_avg_shr_2ddouble
    ! TYPE int,double,real
    ! DIMS 1,2
-# 627 "subcol_utils.F90.in"
+# 626 "subcol_utils.F90.in"
    subroutine subcol_field_avg_shr_1dreal(field_sc, ngrdcol, lchnk, field,  usefilter, useweight)
    !-----------------------------------------------------------------------
    ! This is the high level subcol field averaging routine which 
@@ -1914,11 +1899,11 @@ contains
            indx = indx + nsubcol
          end if
       end do
-# 679 "subcol_utils.F90.in"
+# 678 "subcol_utils.F90.in"
    end subroutine subcol_field_avg_shr_1dreal
    ! TYPE int,double,real
    ! DIMS 1,2
-# 627 "subcol_utils.F90.in"
+# 626 "subcol_utils.F90.in"
    subroutine subcol_field_avg_shr_2dreal(field_sc, ngrdcol, lchnk, field,  usefilter, useweight)
    !-----------------------------------------------------------------------
    ! This is the high level subcol field averaging routine which 
@@ -1971,13 +1956,13 @@ contains
            indx = indx + nsubcol
          end if
       end do
-# 679 "subcol_utils.F90.in"
+# 678 "subcol_utils.F90.in"
    end subroutine subcol_field_avg_shr_2dreal
 
 
    ! TYPE int,double,real
    ! DIMS 1,2
-# 684 "subcol_utils.F90.in"
+# 683 "subcol_utils.F90.in"
    subroutine subcol_field_get_firstsubcol_1dint(field_sc, docheck, ngrdcol, lchnk, field)
    !-----------------------------------------------------------------------
    ! Retrieve the first subcolumn from a field dimensioned pcols*psubcols 
@@ -2028,11 +2013,11 @@ contains
             indx = indx + nsubcol
          end if
       end do
-# 734 "subcol_utils.F90.in"
+# 733 "subcol_utils.F90.in"
    end subroutine subcol_field_get_firstsubcol_1dint
    ! TYPE int,double,real
    ! DIMS 1,2
-# 684 "subcol_utils.F90.in"
+# 683 "subcol_utils.F90.in"
    subroutine subcol_field_get_firstsubcol_2dint(field_sc, docheck, ngrdcol, lchnk, field)
    !-----------------------------------------------------------------------
    ! Retrieve the first subcolumn from a field dimensioned pcols*psubcols 
@@ -2083,11 +2068,11 @@ contains
             indx = indx + nsubcol
          end if
       end do
-# 734 "subcol_utils.F90.in"
+# 733 "subcol_utils.F90.in"
    end subroutine subcol_field_get_firstsubcol_2dint
    ! TYPE int,double,real
    ! DIMS 1,2
-# 684 "subcol_utils.F90.in"
+# 683 "subcol_utils.F90.in"
    subroutine subcol_field_get_firstsubcol_1ddouble(field_sc, docheck, ngrdcol, lchnk, field)
    !-----------------------------------------------------------------------
    ! Retrieve the first subcolumn from a field dimensioned pcols*psubcols 
@@ -2138,11 +2123,11 @@ contains
             indx = indx + nsubcol
          end if
       end do
-# 734 "subcol_utils.F90.in"
+# 733 "subcol_utils.F90.in"
    end subroutine subcol_field_get_firstsubcol_1ddouble
    ! TYPE int,double,real
    ! DIMS 1,2
-# 684 "subcol_utils.F90.in"
+# 683 "subcol_utils.F90.in"
    subroutine subcol_field_get_firstsubcol_2ddouble(field_sc, docheck, ngrdcol, lchnk, field)
    !-----------------------------------------------------------------------
    ! Retrieve the first subcolumn from a field dimensioned pcols*psubcols 
@@ -2193,11 +2178,11 @@ contains
             indx = indx + nsubcol
          end if
       end do
-# 734 "subcol_utils.F90.in"
+# 733 "subcol_utils.F90.in"
    end subroutine subcol_field_get_firstsubcol_2ddouble
    ! TYPE int,double,real
    ! DIMS 1,2
-# 684 "subcol_utils.F90.in"
+# 683 "subcol_utils.F90.in"
    subroutine subcol_field_get_firstsubcol_1dreal(field_sc, docheck, ngrdcol, lchnk, field)
    !-----------------------------------------------------------------------
    ! Retrieve the first subcolumn from a field dimensioned pcols*psubcols 
@@ -2248,11 +2233,11 @@ contains
             indx = indx + nsubcol
          end if
       end do
-# 734 "subcol_utils.F90.in"
+# 733 "subcol_utils.F90.in"
    end subroutine subcol_field_get_firstsubcol_1dreal
    ! TYPE int,double,real
    ! DIMS 1,2
-# 684 "subcol_utils.F90.in"
+# 683 "subcol_utils.F90.in"
    subroutine subcol_field_get_firstsubcol_2dreal(field_sc, docheck, ngrdcol, lchnk, field)
    !-----------------------------------------------------------------------
    ! Retrieve the first subcolumn from a field dimensioned pcols*psubcols 
@@ -2303,10 +2288,10 @@ contains
             indx = indx + nsubcol
          end if
       end do
-# 734 "subcol_utils.F90.in"
+# 733 "subcol_utils.F90.in"
    end subroutine subcol_field_get_firstsubcol_2dreal
 
-# 736 "subcol_utils.F90.in"
+# 735 "subcol_utils.F90.in"
    subroutine subcol_ptend_avg_shr(ptend_sc, ngrdcol, lchnk, ptend, usefilter, useweight)
    !-----------------------------------------------------------------------
    ! Average a subcolumn ptend to a grid ptend
@@ -2420,10 +2405,10 @@ contains
          end do
       end if
 
-# 849 "subcol_utils.F90.in"
+# 848 "subcol_utils.F90.in"
    end subroutine subcol_ptend_avg_shr
 
-# 851 "subcol_utils.F90.in"
+# 850 "subcol_utils.F90.in"
    subroutine subcol_ptend_get_firstsubcol(ptend_sc, docheck, ngrdcol, lchnk, ptend)
    !-----------------------------------------------------------------------
    ! Retrieve the first subcolumn from a ptend field dimensioned pcols*psubcols 
@@ -2527,13 +2512,13 @@ contains
          end do
       end if
 
-# 954 "subcol_utils.F90.in"
+# 953 "subcol_utils.F90.in"
    end subroutine subcol_ptend_get_firstsubcol
 
 
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_1d_int(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2582,11 +2567,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_1d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_2d_int(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2635,11 +2620,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_2d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_3d_int(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2688,11 +2673,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_3d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_4d_int(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2741,11 +2726,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_4d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_5d_int(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2794,11 +2779,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_5d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_6d_int(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2847,11 +2832,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_6d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_1d_double(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2900,11 +2885,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_1d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_2d_double(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -2953,11 +2938,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_2d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_3d_double(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3006,11 +2991,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_3d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_4d_double(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3059,11 +3044,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_4d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_5d_double(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3112,11 +3097,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_5d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_6d_double(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3165,11 +3150,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_6d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_1d_real(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3218,11 +3203,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_1d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_2d_real(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3271,11 +3256,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_2d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_3d_real(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3324,11 +3309,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_3d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_4d_real(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3377,11 +3362,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_4d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_5d_real(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3430,11 +3415,11 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_5d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 959 "subcol_utils.F90.in"
+# 958 "subcol_utils.F90.in"
    subroutine subcol_pack_6d_real(lchnk, field, field_sc)
    !-----------------------------------------------------------------------
    ! Pack the field defined on (pcols, psubcols, *) into (pcols*psubcols, *)
@@ -3483,12 +3468,12 @@ contains
             indx = indx + 1
          end do
       end do
-# 1007 "subcol_utils.F90.in"
+# 1006 "subcol_utils.F90.in"
    end subroutine subcol_pack_6d_real
 
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_1d_int(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -3558,11 +3543,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_1d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_2d_int(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -3632,11 +3617,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_2d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_3d_int(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -3706,11 +3691,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_3d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_4d_int(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -3780,11 +3765,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_4d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_5d_int(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -3854,11 +3839,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_5d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_6d_int(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -3928,11 +3913,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_6d_int
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_1d_double(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4002,11 +3987,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_1d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_2d_double(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4076,11 +4061,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_2d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_3d_double(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4150,11 +4135,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_3d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_4d_double(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4224,11 +4209,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_4d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_5d_double(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4298,11 +4283,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_5d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_6d_double(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4372,11 +4357,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_6d_double
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_1d_real(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4446,11 +4431,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_1d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_2d_real(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4520,11 +4505,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_2d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_3d_real(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4594,11 +4579,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_3d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_4d_real(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4668,11 +4653,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_4d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_5d_real(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4742,11 +4727,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_5d_real
    ! TYPE int,double,real
    ! DIMS 1,2,3,4,5,6
-# 1011 "subcol_utils.F90.in"
+# 1010 "subcol_utils.F90.in"
    subroutine subcol_unpack_6d_real(lchnk, field_sc, field, fillvalue)
    !-----------------------------------------------------------------------
    ! UnPack the field defined on (pcols*psubcols, *) into (pcols, psubcols, *)
@@ -4816,11 +4801,11 @@ contains
             end do
          end if
       end do
-# 1080 "subcol_utils.F90.in"
+# 1079 "subcol_utils.F90.in"
    end subroutine subcol_unpack_6d_real
 
    ! TYPE int,double,real
-# 1083 "subcol_utils.F90.in"
+# 1082 "subcol_utils.F90.in"
    integer(i4) function subcol_avg_inter_int(vals, lchnk, icol, indx1, indx2, usefilter, useweight) result(avgs)
    !------------------------------------------------------------------
    ! This function handles the transformation of the usefilter and useweight logicals to passing the
@@ -4835,7 +4820,6 @@ contains
       logical, intent(in) :: usefilter
       logical, intent(in) :: useweight
 
-      integer :: icnt
       integer :: nsubcol(pcols)
 
       call subcol_get_nsubcol(lchnk, nsubcol)
@@ -4849,10 +4833,10 @@ contains
          avgs = subcol_avg(vals,nsubcol(icol))
       end if
 
-# 1111 "subcol_utils.F90.in"
+# 1109 "subcol_utils.F90.in"
    end function subcol_avg_inter_int
    ! TYPE int,double,real
-# 1083 "subcol_utils.F90.in"
+# 1082 "subcol_utils.F90.in"
    real(r8) function subcol_avg_inter_double(vals, lchnk, icol, indx1, indx2, usefilter, useweight) result(avgs)
    !------------------------------------------------------------------
    ! This function handles the transformation of the usefilter and useweight logicals to passing the
@@ -4867,7 +4851,6 @@ contains
       logical, intent(in) :: usefilter
       logical, intent(in) :: useweight
 
-      integer :: icnt
       integer :: nsubcol(pcols)
 
       call subcol_get_nsubcol(lchnk, nsubcol)
@@ -4881,10 +4864,10 @@ contains
          avgs = subcol_avg(vals,nsubcol(icol))
       end if
 
-# 1111 "subcol_utils.F90.in"
+# 1109 "subcol_utils.F90.in"
    end function subcol_avg_inter_double
    ! TYPE int,double,real
-# 1083 "subcol_utils.F90.in"
+# 1082 "subcol_utils.F90.in"
    real(r4) function subcol_avg_inter_real(vals, lchnk, icol, indx1, indx2, usefilter, useweight) result(avgs)
    !------------------------------------------------------------------
    ! This function handles the transformation of the usefilter and useweight logicals to passing the
@@ -4899,7 +4882,6 @@ contains
       logical, intent(in) :: usefilter
       logical, intent(in) :: useweight
 
-      integer :: icnt
       integer :: nsubcol(pcols)
 
       call subcol_get_nsubcol(lchnk, nsubcol)
@@ -4913,11 +4895,11 @@ contains
          avgs = subcol_avg(vals,nsubcol(icol))
       end if
 
-# 1111 "subcol_utils.F90.in"
+# 1109 "subcol_utils.F90.in"
    end function subcol_avg_inter_real
 
    ! TYPE int,double,real
-# 1114 "subcol_utils.F90.in"
+# 1112 "subcol_utils.F90.in"
    integer(i4) function subcol_avg_int(vals, nsubcol, filter, weight) result(avgs)
    !------------------------------------------------------------------
    ! This function performs the averaging of subcolumn fields, using the optional &
@@ -4959,10 +4941,10 @@ contains
         avgs = fillval
      end if
 
-# 1155 "subcol_utils.F90.in"
+# 1153 "subcol_utils.F90.in"
    end function subcol_avg_int
    ! TYPE int,double,real
-# 1114 "subcol_utils.F90.in"
+# 1112 "subcol_utils.F90.in"
    real(r8) function subcol_avg_double(vals, nsubcol, filter, weight) result(avgs)
    !------------------------------------------------------------------
    ! This function performs the averaging of subcolumn fields, using the optional &
@@ -5004,10 +4986,10 @@ contains
         avgs = fillval
      end if
 
-# 1155 "subcol_utils.F90.in"
+# 1153 "subcol_utils.F90.in"
    end function subcol_avg_double
    ! TYPE int,double,real
-# 1114 "subcol_utils.F90.in"
+# 1112 "subcol_utils.F90.in"
    real(r4) function subcol_avg_real(vals, nsubcol, filter, weight) result(avgs)
    !------------------------------------------------------------------
    ! This function performs the averaging of subcolumn fields, using the optional &
@@ -5049,67 +5031,141 @@ contains
         avgs = fillval
      end if
 
-# 1155 "subcol_utils.F90.in"
+# 1153 "subcol_utils.F90.in"
    end function subcol_avg_real
 
-# 1157 "subcol_utils.F90.in"
+# 1155 "subcol_utils.F90.in"
    subroutine subcol_utils_init_restart(File, hdimids)
 
-     use pio,    only: file_desc_t, pio_def_var, pio_int, pio_double
-     type(file_desc_t),intent(in) :: File
-     integer ,intent(in)          :: hdimids(:)
+     use pio,           only: file_desc_t, pio_int, pio_double
+     use cam_pio_utils, only: cam_pio_def_dim, cam_pio_def_var
 
-     integer :: ierr
+     ! Dummy arguments
+     type(file_desc_t), intent(inout) :: File
+     integer,           intent(in)    :: hdimids(:)
 
-     ierr = pio_def_var(File, 'NSUBCOL2D', pio_int, hdimids, nsubcol_desc)
-! storing filter and weight data even if not being filled by subcolumn generator
-     ierr = pio_def_var(File, 'FILTER2D', pio_int, hdimids, filter2d_desc)
-     ierr = pio_def_var(File, 'WEIGHT2D', pio_double, hdimids, weight2d_desc)
+     ! Local variable
+     integer, allocatable          :: adimids(:)
 
-# 1170 "subcol_utils.F90.in"
+     call cam_pio_def_var(File, 'NSUBCOL2D', pio_int, hdimids, nsubcol_desc)
+     ! Storing filter and weight data even if not being filled by the current
+     !     subcolumn generator. While these are 2-D arrays, they don't match
+     !     the grid so we will have to recast them as 3-D
+
+     ! We will need a dimid for the subcol dimension
+     call cam_pio_def_dim(File, 'psubcols', psubcols, subcol_dimid,           &
+          existOK=.true.)
+     allocate(adimids(size(hdimids,1) + 1))
+     adimids(1:size(hdimids)) = hdimids(:)
+     adimids(size(hdimids) + 1) = subcol_dimid
+
+     call cam_pio_def_var(File, 'FILTER2D', pio_int,    adimids, filter2d_desc)
+     call cam_pio_def_var(File, 'WEIGHT2D', pio_double, adimids, weight2d_desc)
+
+# 1182 "subcol_utils.F90.in"
    end subroutine subcol_utils_init_restart
 
-# 1172 "subcol_utils.F90.in"
+# 1184 "subcol_utils.F90.in"
    subroutine subcol_utils_write_restart(File)
-     use pio,             only: file_desc_t, pio_write_darray
-     use cam_pio_utils,   only: get_phys_decomp
-     use pio,             only: io_desc_t
+     use cam_grid_support, only: cam_grid_write_dist_array
+     use cam_grid_support, only: cam_grid_id, cam_grid_dimensions
+     use ppgrid,           only: begchunk, endchunk
+     use pio,              only: file_desc_t
 
-
+     ! Dummy argument
      type(file_desc_t), intent(inout) :: File
 
-     integer :: ierr
-     type(io_desc_t), pointer           :: iodesc => null()
+     ! Local variables
+     integer                          :: c
+     integer                          :: adimlens(3)
+     integer                          :: fdimlens(3)
+     integer                          :: frank
+     integer                          :: grid_id
+     integer,  allocatable            :: unpacked_i(:,:,:)
+     real(r8), allocatable            :: unpacked_r(:,:,:)
+     character(len=*), parameter      :: subname = 'SUBCOL_UTILS_WRITE_RESTART'
 
-     call get_phys_decomp(iodesc, 1, 1, 1, nsubcol_desc%type)
-     call pio_write_darray(File, nsubcol_desc, iodesc, nsubcol2d, ierr)
+     ! File dimensions
+     grid_id = cam_grid_id('physgrid')
+     call cam_grid_dimensions(grid_id, fdimlens(1:2), frank)
 
-     call get_phys_decomp(iodesc, 1, 1, 1, filter2d_desc%type)
-     call pio_write_darray(File, filter2d_desc, iodesc, filter2d, ierr)
+     ! Write nsubcol2d
+     adimlens(1) = size(nsubcol2d, 1)
+     adimlens(2) = endchunk - begchunk + 1
+     call cam_grid_write_dist_array(File, grid_id, adimlens(1:2),             &
+             fdimlens(1:frank), nsubcol2d, nsubcol_desc)
 
-     call get_phys_decomp(iodesc, 1, 1, 1, weight2d_desc%type)
-     call pio_write_darray(File, weight2d_desc, iodesc, weight2d, ierr)
+     ! filter2d and weight2d are 3-D variables
+     fdimlens(frank + 1) = psubcols
+     frank = frank + 1
 
-# 1192 "subcol_utils.F90.in"
+     ! Write filter2d
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(filter2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for FILTER2D")
+     end if
+     ! Unpack filter2d for proper output
+     allocate(unpacked_i(pcols, psubcols, begchunk:endchunk))
+     do c = begchunk, endchunk
+       call subcol_unpack(c, filter2d(:,c), unpacked_i(:,:,c), 0)
+     end do
+     call cam_grid_write_dist_array(File, grid_id, adimlens,                  &
+             fdimlens(1:frank), unpacked_i, filter2d_desc)
+     deallocate(unpacked_i)
+
+     ! Write weight2d
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(weight2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for WEIGHT2D")
+     end if
+     ! Unpack weight2d for proper output
+     allocate(unpacked_r(pcols, psubcols, begchunk:endchunk))
+     do c = begchunk, endchunk
+       call subcol_unpack(c, weight2d(:,c), unpacked_r(:,:,c), 0.0_r8)
+     end do
+     call cam_grid_write_dist_array(File, grid_id, adimlens,                  &
+             fdimlens(1:frank), unpacked_r, weight2d_desc)
+     deallocate(unpacked_r)
+
+# 1249 "subcol_utils.F90.in"
    end subroutine subcol_utils_write_restart
 
-# 1194 "subcol_utils.F90.in"
+# 1251 "subcol_utils.F90.in"
    subroutine subcol_utils_read_restart(File)
-     use pio,           only: file_desc_t, pio_read_darray, pio_inq_varid, pio_int, pio_double
-     use cam_pio_utils, only: get_phys_decomp
-     use ppgrid,        only: begchunk, endchunk
-     use pio,           only: io_desc_t
+     use pio,              only: file_desc_t, pio_inq_varid
+     use cam_pio_utils,    only: cam_pio_handle_error
+     use cam_grid_support, only: cam_grid_id, cam_grid_read_dist_array
+     use cam_grid_support, only: cam_grid_dimensions
+     use ppgrid,           only: begchunk, endchunk
 
+     ! Dummy argument
      type(file_desc_t), intent(inout) :: File
 
-     integer                  :: ierr, isize, c
-     type(io_desc_t), pointer :: iodesc => null()
+     integer                          :: ierr, c
+     integer                          :: adimlens(3)
+     integer                          :: fdimlens(3)
+     integer                          :: grid_id
+     integer                          :: frank
+     integer,  allocatable            :: unpacked_i(:,:,:)
+     real(r8), allocatable            :: unpacked_r(:,:,:)
+     character(len=*), parameter      :: subname = 'SUBCOL_UTILS_READ_RESTART'
 
      call subcol_allocate_internal()
 
+     ! Array dimensions
+     adimlens(1) = size(nsubcol2d, 1)
+     adimlens(2) = endchunk - begchunk + 1
+     ! File dimensions
+     grid_id = cam_grid_id('physgrid')
+     call cam_grid_dimensions(grid_id, fdimlens(1:2), frank)
      ierr = pio_inq_varid(File, 'NSUBCOL2D', nsubcol_desc)
-     call get_phys_decomp(iodesc, 1, 1, 1, pio_int)
-     call pio_read_darray(File, nsubcol_desc, iodesc, nsubcol2d, ierr)
+     call cam_pio_handle_error(ierr, trim(subname)//': NSUBCOL2D not found')
+     call cam_grid_read_dist_array(File, grid_id, adimlens(1:2),              &
+          fdimlens(1:frank), nsubcol2d, nsubcol_desc)
 
      ! We need to update indcol2d so set nsubcol2d to itself
      do c = begchunk, endchunk
@@ -5117,14 +5173,44 @@ contains
      end do
 
      ierr = pio_inq_varid(File, 'FILTER2D', filter2d_desc)
-     call get_phys_decomp(iodesc, 1, 1, 1, pio_int)
-     call pio_read_darray(File, filter2d_desc, iodesc, filter2d, ierr)
+     call cam_pio_handle_error(ierr, trim(subname)//': FILTER2D not found')
+     ! Array dimensions
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(filter2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for FILTER2D")
+     end if
+     allocate(unpacked_i(pcols, psubcols, begchunk:endchunk))
+     ! File dimensions (good for both filter2d and weight2d)
+     frank = frank + 1
+     fdimlens(frank) = psubcols
+     call cam_grid_read_dist_array(File, grid_id, adimlens,                   &
+          fdimlens(1:frank), unpacked_i, filter2d_desc)
+     ! Pack filter2d for proper output
+     do c = begchunk, endchunk
+       call subcol_pack(c, unpacked_i(:,:,c), filter2d(:,c))
+     end do
+     deallocate(unpacked_i)
 
      ierr = pio_inq_varid(File, 'WEIGHT2D', weight2d_desc)
-     call get_phys_decomp(iodesc, 1, 1, 1, pio_double)
-     call pio_read_darray(File, weight2d_desc, iodesc, weight2d, ierr)
+     adimlens(1) = pcols
+     adimlens(2) = psubcols
+     adimlens(3) = endchunk - begchunk + 1
+     if ((pcols * psubcols) /= size(weight2d, 1)) then
+       call endrun(trim(subname)//": Unsupported size for WEIGHT2D")
+     end if
+     allocate(unpacked_r(pcols, psubcols, begchunk:endchunk))
+     call cam_pio_handle_error(ierr, trim(subname)//': WEIGHT2D not found')
+     call cam_grid_read_dist_array(File, grid_id, adimlens,                   &
+          fdimlens(1:frank), unpacked_r, weight2d_desc)
+     ! Pack weight2d for proper output
+     do c = begchunk, endchunk
+       call subcol_pack(c, unpacked_r(:,:,c), weight2d(:,c))
+     end do
+     deallocate(unpacked_r)
 
-# 1224 "subcol_utils.F90.in"
+# 1326 "subcol_utils.F90.in"
    end subroutine subcol_utils_read_restart
 
 end module subcol_utils

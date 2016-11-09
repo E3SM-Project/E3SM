@@ -364,7 +364,7 @@ sub postRun()
         print $CS "Run FAILED $sdate\n";
         exit(-1);
     }
-	elsif( -e "$config{'RUNDIR'}/$cpllogfile")
+    elsif( -e "$config{'RUNDIR'}/$cpllogfile")
     {
         open my $CPLLOG, "<", "$config{'RUNDIR'}/$cpllogfile" or warn "could not open $config{'RUNDIR'}/$cpllogfile, $!";
         my @cpllines = <$CPLLOG>;
@@ -375,6 +375,12 @@ sub postRun()
             if(@success)
             {
                 appendCaseStatus("run SUCCESSFUL $sdate");
+                if ($config{'RESUBMIT_QUEUED'} > 0) {
+                    my $prevdir = getcwd;
+                    chdir $config{'CASEROOT'};
+                    not system "./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE" or die "Could not change env_run.xml file";
+                    chdir($prevdir);
+                }
             }
             else
             {

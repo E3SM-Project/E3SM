@@ -1,29 +1,31 @@
-
 # String representation of pound since it is a cmake comment char.
 STRING(ASCII 35 POUND)
 
+function (prc var)
+  message("${var} ${${var}}")
+endfunction ()
+
 # Macro to create the individual tests
 macro(createTestExec execName execType macroNP macroNC 
-                     macroPLEV macroUSE_PIO macroWITH_ENERGY)
+                     macroPLEV macroUSE_PIO macroWITH_ENERGY macroQSIZE_D)
 
-  STRING(TOUPPER ${execType} EXEC_TYPE)
+# before calling this macro, be sure that these are set locally:
+# EXEC_INCLUDE_DIRS 
+# EXEC_SOURCES
 
   # Set the include directories
   SET(EXEC_MODULE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${execName}_modules")
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                      ${${EXEC_TYPE}_INCLUDE_DIRS}
+                      ${EXEC_INCLUDE_DIRS}
                       ${EXEC_MODULE_DIR}
                       )
 
-  # Set the source files for this executable
-  SET(EXEC_SOURCES ${${EXEC_TYPE}_SRCS})
-
-  # Backup the cmake variables
-  SET(tempNP ${NUM_POINTS})
-  SET(tempNC ${NUM_CELLS})
-  SET(tempPLEV ${NUM_PLEV})
-  SET(tempUSE_PIO ${PIO})
-  SET(tempWITH_ENERGY ${ENERGY_DIAGNOSTICS})
+  MESSAGE(STATUS "Building ${execName} derived from ${execType} with:")
+  MESSAGE(STATUS "  NP = ${macroNP}")
+  MESSAGE(STATUS "  PLEV = ${macroPLEV}")
+  MESSAGE(STATUS "  QSIZE_D = ${macroQSIZE_D}")
+  MESSAGE(STATUS "  PIO = ${macroUSE_PIO}")
+  MESSAGE(STATUS "  ENERGY = ${macroWITH_ENERGY}")
 
   # Set the variable to the macro variables
   SET(NUM_POINTS ${macroNP})
@@ -44,6 +46,12 @@ macro(createTestExec execName execType macroNP macroNC
     SET(ENERGY_DIAGNOSTICS)
   ENDIF ()
 
+  IF (${macroQSIZE_D})
+    SET(QSIZE_D ${macroQSIZE_D})
+  ELSE() 
+    SET(QSIZE_D)
+  ENDIF ()
+
 
   # This is needed to compile the test executables with the correct options
   SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
@@ -60,18 +68,10 @@ macro(createTestExec execName execType macroNP macroNC
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
   
-  IF (DEFINED USE_SRCMODS_PATH)
-    setSrcMods(USE_SRCMODS_PATH EXEC_SOURCES )
-  ENDIF()
-
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
 
   # Add this executable to a list 
-  SET(EXEC_LIST ${EXEC_LIST} ${execName} PARENT_SCOPE)
-
-  # More thought needs to go into this option
-  #IF (macroWITH_ENERGY)
-  #ENDIF ()
+  SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
   TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
@@ -80,25 +80,28 @@ macro(createTestExec execName execType macroNP macroNC
   SET_TARGET_PROPERTIES(${execName} 
                         PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
-  IF (NOT HOMME_FIND_BLASLAPACK)
-    TARGET_LINK_LIBRARIES(${execName} lapack blas)
-    ADD_DEPENDENCIES(${execName} blas lapack)
+  IF (HOMME_USE_MKL)
+    TARGET_LINK_LIBRARIES(${execName})
+  ELSE()
+    IF (NOT HOMME_FIND_BLASLAPACK)
+      TARGET_LINK_LIBRARIES(${execName} lapack blas)
+      ADD_DEPENDENCIES(${execName} blas lapack)
+    ENDIF()
   ENDIF()
 
   IF (HAVE_EXTRAE)
     TARGET_LINK_LIBRARIES(${execName} ${Extrae_LIBRARY})
   ENDIF ()
 
+  IF (HOMME_USE_TRILINOS)
+    TARGET_LINK_LIBRARIES(${execName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+  ENDIF()
+
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
-  # Restore the original the cmake variables
-  SET(NUM_POINTS ${tempNP})
-  SET(NUM_CELLS ${tempNC})
-  SET(NUM_PLEV ${tempPLEV})
-  SET(PIO ${tempUSE_PIO})
-  SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
-
 endmacro(createTestExec)
+
+
 
 macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
@@ -107,6 +110,9 @@ macro (copyDirFiles testDir)
   ENDFOREACH () 
   FOREACH (singleFile ${VCOORD_FILES}) 
     FILE(COPY ${singleFile} DESTINATION ${testDir}/vcoord)
+  ENDFOREACH () 
+  FOREACH (singleFile ${MESH_FILES}) 
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH () 
   FOREACH (singleFile ${NCL_FILES}) 
     FILE(COPY ${singleFile} DESTINATION ${testDir})
@@ -237,6 +243,24 @@ macro (setUpTestDir TEST_DIR)
   ENDIF() 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
 
+  FILE(APPEND ${THIS_TEST_SCRIPT} "NC_OUTPUT_REF=\"")
+  FOREACH (singleFile ${NC_OUTPUT_REF}) 
+    FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
+  ENDFOREACH ()
+  FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
+
+  FILE(APPEND ${THIS_TEST_SCRIPT} "NC_OUTPUT_CHECKREF=\"")
+  FOREACH (singleFile ${NC_OUTPUT_CHECKREF}) 
+    FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
+  ENDFOREACH ()
+  FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
+
+  FILE(APPEND ${THIS_TEST_SCRIPT} "TESTCASE_REF_TOL=\"")
+  FILE(APPEND ${THIS_TEST_SCRIPT} "${TESTCASE_REF_TOL}")
+  FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
+
+
+
 endmacro (setUpTestDir)
 
 macro(resetTestVariables)
@@ -245,11 +269,15 @@ macro(resetTestVariables)
   SET(EXEC_NAME)
   SET(NAMELIST_FILES)
   SET(VCOORD_FILES)
+  SET(MESH_FILES)
   SET(NCL_FILES)
   SET(REFSOLN_FILES)
   SET(MESH_FILES)
   SET(NC_OUTPUT_FILES)
   SET(OMP_NC_OUTPUT_FILES)
+  SET(NC_OUTPUT_REF)
+  SET(NC_OUTPUT_CHECKREF)
+  SET(TESTCASE_REF_TOL)
   SET(NUM_CPUS)
   SET(OMP_NAMELIST_FILES)
   SET(OMP_NUM_THREADS)
@@ -271,6 +299,12 @@ macro(printTestSummary)
       MESSAGE(STATUS "    ${singleFile}")
     ENDFOREACH () 
   ENDIF ()
+  IF (NOT "${MESH_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  mesh_files=")
+    FOREACH (singleFile ${MESH_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
   IF (NOT "${NCL_FILES}" STREQUAL "")
     MESSAGE(STATUS "  ncl_files=")
     FOREACH (singleFile ${NCL_FILES}) 
@@ -288,6 +322,22 @@ macro(printTestSummary)
     FOREACH (singleFile ${NC_OUTPUT_FILES}) 
       MESSAGE(STATUS "    ${singleFile}")
     ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${NC_OUTPUT_REF}" STREQUAL "")
+    MESSAGE(STATUS "  nc_output_files=")
+    FOREACH (singleFile ${NC_OUTPUT_REF}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${NC_OUTPUT_CHECKREF}" STREQUAL "")
+    MESSAGE(STATUS "  nc_output_files=")
+    FOREACH (singleFile ${NC_OUTPUT_CHECKREF}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${TESTCASE_REF_TOL}" STREQUAL "")
+    MESSAGE(STATUS "  testcase_ref_tol=")
+    MESSAGE(STATUS "  ${TESTCASE_REF_TOL}")
   ENDIF ()
   IF (NOT "${MESH_FILES}" STREQUAL "")
     MESSAGE(STATUS "  mesh_files=")
@@ -318,12 +368,6 @@ endmacro(printTestSummary)
 
 # Macro to create the individual tests
 macro(createTest testFile)
-
-  IF (${IS_BIG_ENDIAN}) 
-    SET(NAMELIST_DIR namelists/big_endian)
-  ELSE ()
-    SET(NAMELIST_DIR namelists/little_endian)
-  ENDIF ()
 
   SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testFile})
 

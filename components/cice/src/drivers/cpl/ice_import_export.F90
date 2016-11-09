@@ -193,6 +193,30 @@ contains
           do i = ilo, ihi
 
              n = n+1
+
+#ifdef MODAL_AER
+            !HW++ modal treatment
+
+            ! BC species 1 (=intersitial/external BC)
+            faero(i,j,1,iblk) = x2i(index_x2i_Faxa_bcphodry,n) &
+                              + x2i(index_x2i_Faxa_bcphidry,n)
+
+            ! BC species 2 (=cloud_water/within-ice BC)
+            faero(i,j,2,iblk) = x2i(index_x2i_Faxa_bcphiwet,n)
+
+            ! Combine all of the dust into one category
+            faero(i,j,3,iblk) = x2i(index_x2i_Faxa_dstwet1,n) &
+                              + x2i(index_x2i_Faxa_dstdry1,n) &
+                              + x2i(index_x2i_Faxa_dstwet2,n) &
+                              + x2i(index_x2i_Faxa_dstdry2,n) &
+                              + x2i(index_x2i_Faxa_dstwet3,n) &
+                              + x2i(index_x2i_Faxa_dstdry3,n) &
+                              + x2i(index_x2i_Faxa_dstwet4,n) &
+                              + x2i(index_x2i_Faxa_dstdry4,n)
+            !mgf--
+#else
+            ! bulk treatment
+
              faero(i,j,1,iblk) = x2i(index_x2i_Faxa_bcphodry,n)
 
              faero(i,j,2,iblk) = x2i(index_x2i_Faxa_bcphidry,n) &
@@ -207,6 +231,8 @@ contains
                   + x2i(index_x2i_Faxa_dstwet4,n) &
                   + x2i(index_x2i_Faxa_dstdry4,n)
 
+#endif
+!HW +++
           enddo    !i
        enddo    !j
 

@@ -4,9 +4,8 @@
 
 module pio_io_mod
   use kinds, only : int_kind, real_kind
-  use pio ! _EXTERNAL
+  use pio, nfsizekind=>PIO_OFFSET_KIND ! _EXTERNAL
   use pio_types ! _EXTERNAL
-  use pio_kinds, only: nfsizekind=>PIO_OffSet ! _EXTERNAL
 #ifdef _MPI
   !HOMME Specific:  abortmp, mpireal_t, mpiinteger_t
   use parallel_mod, only : abortmp,  mpi_info_null, mpireal_t,  mpiinteger_t, &
@@ -166,7 +165,7 @@ contains
     else
        call abortmp('one of the optional arguments name and varid must be provided')   
     end if
-    if(varptr%timedependent) call PIO_SetFrame(varptr%vardesc,start(2))
+    if(varptr%timedependent) call PIO_SetFrame(ncdf%FileID,varptr%vardesc,start(2))
     nullify(iodesc)
     do id=1,size(ncdf%decomplist)
        if(varptr%dimsid==ncdf%decomplist(id)%dimsid) then
@@ -209,7 +208,7 @@ contains
     end if
     ndims=size(start)	
     if(varptr%timedependent) then
-       call PIO_SetFrame(varptr%vardesc,start(ndims))
+       call PIO_SetFrame(ncdf%FileID, varptr%vardesc,start(ndims))
     end if
 
     nullify(iodesc)
@@ -253,7 +252,7 @@ contains
 
     if(varptr%timedependent) then
        ndims=size(start)
-       call PIO_SetFrame(varptr%vardesc,start(ndims))
+       call PIO_SetFrame(ncdf%FileID,varptr%vardesc,start(ndims))
     endif
     msize = size(var)
     nullify(iodesc)

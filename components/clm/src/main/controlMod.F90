@@ -39,6 +39,9 @@ module controlMod
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
+  use clm_varctl              , only: use_dynroot
+  use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
+  use clm_varctl              , only: nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -48,6 +51,7 @@ module controlMod
   public :: control_setNL ! Set namelist filename
   public :: control_init  ! initial run control information
   public :: control_print ! print run control information
+
   !
   !
   ! !PRIVATE TYPES:
@@ -100,12 +104,12 @@ contains
     ! Initialize CLM run control information
     !
     ! !USES:
-    use clm_time_manager , only : set_timemgr_init, get_timemgr_defaults
-    use fileutils        , only : getavu, relavu
-    use shr_string_mod   , only : shr_string_getParentDir
-    ! pflotran
-    use clm_pflotran_interfaceMod, only : clm_pf_readnl
-
+    use clm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
+    use fileutils                 , only : getavu, relavu
+    use shr_string_mod            , only : shr_string_getParentDir
+    use clm_pflotran_interfaceMod , only : clm_pf_readnl
+    use betr_initializeMod        , only : betr_readNL
+    !
     implicit none
     !
     ! !LOCAL VARIABLES:
@@ -138,6 +142,7 @@ contains
          fsurdat, fatmtopo, flndtopo, &
          paramfile, flanduse_timeseries,  fsnowoptics, fsnowaging,fsoilordercon
 
+
     ! History, restart options
 
     namelist /clm_inparm/  &
@@ -151,13 +156,21 @@ contains
     namelist /clm_inparm/ hist_wrtch4diag
 
     ! BGC info
-
+    namelist /clm_inparm/  &
+         nu_com
+    namelist /clm_inparm/  &
+         nu_com_phosphatase
+    namelist /clm_inparm/  &
+         nu_com_nfix
+         
     namelist /clm_inparm/  &
          suplnitro,suplphos
     namelist /clm_inparm/ &
          nfix_timeconst
     namelist /clm_inparm/ &
          spinup_state, override_bgc_restart_mismatch_dump
+    namelist /clm_inparm/ &
+         nyears_ad_carbon_only, spinup_mortality_factor
 
     namelist /clm_inparm / &
          co2_type
@@ -201,7 +214,9 @@ contains
     namelist /clm_inparm / use_c13, use_c14
 
     namelist /clm_inparm / use_ed, use_ed_spit_fire
-
+    
+    namelist /clm_inparm / use_betr
+        
     namelist /clm_inparm / use_lai_streams
 
     namelist /clm_inparm/  &
@@ -217,8 +232,17 @@ contains
          use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
          use_vancouver, use_mexicocity, use_noio
 
+    ! cpl_bypass variables
+    namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
+         co2_file, aero_file
+
     ! bgc & pflotran interface
     namelist /clm_inparm/ use_bgc_interface, use_clm_bgc, use_pflotran
+
+    namelist /clm_inparm/ use_dynroot
+
+    namelist /clm_inparm / &
+         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -377,6 +401,11 @@ contains
     if (use_pflotran) then
        call clm_pf_readnl(NLFilename)
     end if
+
+    if (use_betr) then
+       call betr_readNL( NLFilename )
+    endif    
+
     ! ----------------------------------------------------------------------
     ! consistency checks
     ! ----------------------------------------------------------------------
@@ -430,6 +459,17 @@ contains
           call endrun(msg='ERROR:: anoxia is turned on, but this currently requires turning on the CH4 submodel'//&
             errMsg(__FILE__, __LINE__))
        end if
+    end if
+
+    ! Consistency settings for co2 type
+    if (vsfm_satfunc_type /= 'brooks_corey'             .and. &
+        vsfm_satfunc_type /= 'smooth_brooks_corey_bz2'  .and. &
+        vsfm_satfunc_type /= 'smooth_brooks_corey_bz3'  .and. &
+        vsfm_satfunc_type /= 'van_genuchten') then
+       write(iulog,*)'vsfm_satfunc_type = ',vsfm_satfunc_type,' is not supported'
+       call endrun(msg=' ERROR:: choices are brooks_corey, smooth_brooks_corey_bz2, '//&
+            'smooth_brooks_corey_bz3 or van_genuchten'//&
+            errMsg(__FILE__, __LINE__))
     end if
 
     if (masterproc) then
@@ -518,9 +558,14 @@ contains
        call mpi_bcast (suplnitro, len(suplnitro), MPI_CHARACTER, 0, mpicom, ier)
        call mpi_bcast (nfix_timeconst, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
+       call mpi_bcast (nyears_ad_carbon_only, 1, MPI_INTEGER, 0, mpicom, ier)
+       call mpi_bcast (spinup_mortality_factor, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (override_bgc_restart_mismatch_dump, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if
     call mpi_bcast (suplphos, len(suplphos), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (nu_com, len(nu_com), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (nu_com_nfix, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -529,7 +574,11 @@ contains
     call mpi_bcast (use_ed, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_ed_spit_fire, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     if (use_cn .and. use_vertsoilc) then
        ! vertical soil mixing variables
@@ -624,6 +673,20 @@ contains
     call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
+    
+    !cpl_bypass
+     call mpi_bcast (metdata_type,   len(metdata_type),   MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (metdata_bypass, len(metdata_bypass), MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (metdata_biases, len(metdata_biases), MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (co2_file,       len(co2_file),       MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (aero_file,      len(aero_file),      MPI_CHARACTER, 0, mpicom, ier)
+
+
+    ! VSFM variable
+
+    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (vsfm_satfunc_type, len(vsfm_satfunc_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (vsfm_use_dynamic_linesearch, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -709,6 +772,8 @@ contains
           write(iulog,*) '   model is currently NOT in AD spinup mode.'
        else if ( spinup_state .eq. 1 ) then
           write(iulog,*) '   model is currently in AD spinup mode.'
+          write(iulog,*) '   nyears in carbon only mode = ', nyears_ad_carbon_only
+          write(iulog,*) '   dead wood mortality acceleration = ',spinup_mortality_factor
        else
           call endrun(msg=' error: spinup_state can only have integer value of 0 or 1'//&
                errMsg(__FILE__, __LINE__))
@@ -729,6 +794,7 @@ contains
        write(iulog, *) '   rootprof_exp                                          : ', rootprof_exp
        write(iulog, *) '   surfprof_exp                                          : ', surfprof_exp
        write(iulog, *) '   pftspecific_rootingprofile                            : ', pftspecific_rootingprofile
+       write(iulog, *) '   dynamic roots                                         : ', use_dynroot
     end if
        
     if (use_cn .and. .not. use_nitrif_denitrif) then
@@ -828,6 +894,14 @@ contains
                       ' by a factor of ', deepmixing_mixfact, '.'
     write(iulog,*) 'Albedo over melting lakes will approach values (visible, NIR):', lake_melt_icealb, &
                    'as compared with 0.60, 0.40 for cold frozen lakes with no snow.'
+
+    ! VSFM
+    if (use_vsfm) then
+       write(iulog,*)
+       write(iulog,*) 'VSFM Namelists:'
+       write(iulog, *) '  vsfm_satfunc_type                                      : ', vsfm_satfunc_type
+       write(iulog, *) '  vsfm_use_dynamic_linesearch                            : ', vsfm_use_dynamic_linesearch
+    endif
 
   end subroutine control_print
 

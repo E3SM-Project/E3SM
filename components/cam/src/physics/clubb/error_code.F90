@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id: error_code.F90 5324 2011-07-27 21:05:45Z dschanen@uwm.edu $
+! $Id: error_code.F90 7184 2014-08-11 15:23:43Z betlej@uwm.edu $
 !-------------------------------------------------------------------------------
 
 module error_code
@@ -26,14 +26,7 @@ module error_code
   private ! Default Scope
 
   public :: & 
-    clubb_no_error,  & 
-    clubb_var_less_than_zero, & 
-    clubb_var_equals_NaN,  & 
-    clubb_singular_matrix, & 
-    clubb_bad_lapack_arg, & 
-    clubb_rtm_level_not_found, & 
-    clubb_var_out_of_bounds, & 
-    reportError,  & 
+    report_error,  & 
     fatal_error, & 
     lapack_error,     & 
     clubb_at_least_debug_level,  & 
@@ -48,19 +41,20 @@ module error_code
 !$omp threadprivate(clubb_debug_level)
 
   ! Error Code Values
-  integer, parameter :: & 
+  integer, parameter, public :: & 
     clubb_no_error                 =  0, & 
     clubb_var_less_than_zero       =  1, & 
     clubb_var_equals_NaN           =  2, & 
     clubb_singular_matrix          =  3, & 
     clubb_bad_lapack_arg           =  4, & 
     clubb_rtm_level_not_found      =  5, & 
-    clubb_var_out_of_bounds        =  6
+    clubb_var_out_of_bounds        =  6, &
+    clubb_var_out_of_range         =  7
 
   contains
 
 !-------------------------------------------------------------------------------
-  subroutine reportError( err_code )
+  subroutine report_error( err_code )
 !
 ! Description: 
 !   Reports meaning of error code to console.
@@ -92,8 +86,7 @@ module error_code
       write(fstderr,*) "Variable in CLUBB is NaN."
 
     case ( clubb_bad_lapack_arg )
-      write(fstderr,*)  & 
-          "Argument used in LAPACK procedure is invalid."
+      write(fstderr,*) "Argument passed to a LAPACK procedure is invalid."
 
     case ( clubb_rtm_level_not_found )
       write(fstderr,*) "rtm level not found"
@@ -101,13 +94,16 @@ module error_code
     case ( clubb_var_out_of_bounds )
       write(fstderr,*) "Input variable is out of bounds."
 
+    case ( clubb_var_out_of_range )
+      write(fstderr,*) "A CLUBB variable had a value outside the valid range."
+
     case default
       write(fstderr,*) "Unknown error: ", err_code
 
     end select
 
     return
-  end subroutine reportError
+  end subroutine report_error
 !-------------------------------------------------------------------------------
   elemental function lapack_error( err_code )
 !

@@ -12,8 +12,9 @@ module physics_types
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
   use cam_logfile,  only: iulog
   use cam_abortutils,   only: endrun
-  use phys_control, only: waccmx_is
+  use phys_control, only: waccmx_is, use_mass_borrower
   use shr_const_mod,only: shr_const_rwv
+  use perf_mod,     only: t_startf, t_stopf
 
   implicit none
   private          ! Make default type private to the module
@@ -38,6 +39,7 @@ module physics_types
   public physics_state_copy  ! copy a physics_state object
   public physics_ptend_copy  ! copy a physics_ptend object
   public physics_ptend_sum   ! accumulate physics_ptend objects
+  public physics_ptend_scale ! Multiply physics_ptend objects by a constant factor.
   public physics_tend_init   ! initialize a physics_tend object
 
   public set_state_pdry      ! calculate dry air masses in state variable
@@ -224,6 +226,7 @@ contains
     integer :: i,k,m                               ! column,level,constituent indices
     integer :: ixcldice, ixcldliq                  ! indices for CLDICE and CLDLIQ
     integer :: ixnumice, ixnumliq
+    integer :: ixnumsnow, ixnumrain
     integer :: ncol                                ! number of columns
     character*40 :: name    ! param and tracer name for qneg3
 
@@ -273,6 +276,7 @@ contains
        end if
     end if
 
+    call t_startf ('physics_update')
     !-----------------------------------------------------------------------
     ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, the cpairv is the correct size and just copy
@@ -325,6 +329,8 @@ contains
     ! the indices will be set to -1)
     call cnst_get_ind('NUMICE', ixnumice, abort=.false.)
     call cnst_get_ind('NUMLIQ', ixnumliq, abort=.false.)
+    call cnst_get_ind('NUMRAI', ixnumrain, abort=.false.)
+    call cnst_get_ind('NUMSNO', ixnumsnow, abort=.false.)
   
     do m = 1, pcnst
        if(ptend%lq(m)) then
@@ -334,9 +340,17 @@ contains
 
           ! now test for mixing ratios which are too small
           ! don't call qneg3 for number concentration variables
-          if (m /= ixnumice  .and.  m /= ixnumliq) then
+          if (m /= ixnumice  .and.  m /= ixnumliq .and. &
+              m /= ixnumrain .and.  m /= ixnumsnow ) then
              name = trim(ptend%name) // '/' // trim(cnst_name(m))
-             call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m))
+!!== KZ_WATCON 
+             if(use_mass_borrower) then 
+                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
+                call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
+             else
+                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
+             end if 
+!!== KZ_WATCON 
           else
              do k = ptend%top_level, ptend%bot_level
                 ! checks for number concentration
@@ -445,6 +459,7 @@ contains
     ptend%lu    = .false.
     ptend%lv    = .false.
     ptend%psetcols = 0
+    call t_stopf ('physics_update')
 
   contains
 
@@ -687,6 +702,7 @@ contains
     integer :: ierr = 0
 
 !-----------------------------------------------------------------------
+    call t_startf('physics_ptend_sum')
     if (ptend%psetcols /= ptend_sum%psetcols) then
        call endrun('physics_ptend_sum error: ptend and ptend_sum must have the same value for psetcols')
     end if
@@ -815,8 +831,73 @@ contains
        end do
 
     end if
+    call t_stopf('physics_ptend_sum')
 
   end subroutine physics_ptend_sum
+
+!===============================================================================
+
+  subroutine physics_ptend_scale(ptend, fac, ncol)
+!-----------------------------------------------------------------------
+! Scale ptend fields for ptend logical flags = .true.
+! Where ptend logical flags = .false, don't change ptend.
+!
+! Assumes that input ptend is valid (e.g. that
+! ptend%lu .eqv. allocated(ptend%u)), and therefore
+! does not check allocation status of individual arrays.
+!-----------------------------------------------------------------------
+
+!------------------------------Arguments--------------------------------
+    type(physics_ptend), intent(inout)  :: ptend   ! Incoming ptend
+    real(r8), intent(in) :: fac                    ! Factor to multiply ptend by.
+    integer, intent(in)                 :: ncol    ! number of columns
+
+!---------------------------Local storage-------------------------------
+    integer :: m                                   ! constituent index
+
+!-----------------------------------------------------------------------
+
+    call t_startf('physics_ptend_scale')
+! Update u,v fields
+    if (ptend%lu) &
+         call multiply_tendency(ptend%u, &
+         ptend%taux_srf, ptend%taux_top)
+
+    if (ptend%lv) &
+         call multiply_tendency(ptend%v, &
+         ptend%tauy_srf, ptend%tauy_top)
+
+! Heat
+    if (ptend%ls) &
+         call multiply_tendency(ptend%s, &
+         ptend%hflux_srf, ptend%hflux_top)
+
+! Update constituents
+    do m = 1, pcnst
+       if (ptend%lq(m)) &
+            call multiply_tendency(ptend%q(:,:,m), &
+            ptend%cflx_srf(:,m), ptend%cflx_top(:,m))
+    end do
+    call t_stopf('physics_ptend_scale')
+
+  contains
+
+    subroutine multiply_tendency(tend_arr, flx_srf, flx_top)
+      real(r8), intent(inout) :: tend_arr(:,:) ! Tendency array (pcols, plev)
+      real(r8), intent(inout) :: flx_srf(:)    ! Surface flux (or stress)
+      real(r8), intent(inout) :: flx_top(:)    ! Top-of-model flux (or stress)
+
+      integer :: k
+
+      do k = ptend%top_level, ptend%bot_level
+         tend_arr(:ncol,k) = tend_arr(:ncol,k) * fac
+      end do
+      flx_srf(:ncol) = flx_srf(:ncol) * fac
+      flx_top(:ncol) = flx_top(:ncol) * fac
+
+    end subroutine multiply_tendency
+
+  end subroutine physics_ptend_scale
 
 !===============================================================================
 
@@ -945,6 +1026,7 @@ end subroutine physics_ptend_copy
        return
     end if
 
+!pw call t_startf('physics_ptend_init')
     if (present(ls)) then
        ptend%ls = ls
     else
@@ -972,6 +1054,7 @@ end subroutine physics_ptend_copy
     call physics_ptend_alloc(ptend, psetcols)
 
     call physics_ptend_reset(ptend)
+!pw call t_stopf('physics_ptend_init')
 
     return
   end subroutine physics_ptend_init

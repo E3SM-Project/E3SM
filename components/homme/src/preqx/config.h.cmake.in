@@ -54,8 +54,17 @@
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
+/* TRILINOS  library */
+#cmakedefine01 HAVE_TRILINOS
+
+/* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
+#cmakedefine01 TRILINOS_HAVE_ZOLTAN2
+
 /* Enable persistent MPI comm */
 #cmakedefine MPI_PERSISTENT
 
 /* Using Accelerator */
 #cmakedefine IS_ACCELERATOR
+
+/* Whether to use OpenMP4 */
+#cmakedefine OMP4

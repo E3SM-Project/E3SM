@@ -25,11 +25,11 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# List all tested compsets \033[0m
-    > %s testlist.xml compset
+    > %s compsets
     \033[1;32m# List all compsets tested by acme_developer \033[0m
-    > %s testlist.xml compset acme_developer
+    > %s compsets acme_developer
     \033[1;32m# List all grids tested by acme_developer \033[0m
-    > %s testlist.xml grid acme_developer
+    > %s grid acme_developer
 """ % ((os.path.basename(args[0]), ) * 6),
 
 description=description,
@@ -61,8 +61,8 @@ def list_tests(thing_to_list, categories):
     things = set()
     for category in categories:
         tests = update_acme_tests.get_test_suite(category)
-        for test, mods in tests:
-            testcase, grid, compset = test.split(".")
+        for test in tests:
+            testcase, _, grid, compset = acme_util.parse_test_name(test)[:4]
             if (thing_to_list == "compsets"):
                 things.add(compset)
             elif (thing_to_list == "grids"):

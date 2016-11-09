@@ -288,7 +288,7 @@ sub _computeValues
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
 		my $taskpernuma = ceil($taskpernode / 2);
-		$aprun .= " -S $taskpernuma -cc numa_mode ";
+		$aprun .= " -S $taskpernuma -cc numa_node ";
 	}
 	$aprun  .= " -n $taskcount -N $taskpernode -d $threadcount $self->{'DEFAULT_RUN_EXE_TEMPLATE_STR'} ";
 

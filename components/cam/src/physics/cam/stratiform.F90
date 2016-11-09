@@ -1,3 +1,4 @@
+
 module stratiform
 
 !-------------------------------------------------------------------------------------------------------
@@ -171,7 +172,7 @@ subroutine stratiform_init()
 
    use physics_buffer,  only: physics_buffer_desc, pbuf_get_index
    use constituents,    only: cnst_get_ind, cnst_name, cnst_longname, sflxnam, apcnst, bpcnst
-   use cam_history,     only: addfld, add_default, phys_decomp
+   use cam_history,     only: addfld, horiz_only, add_default
    use convect_shallow, only: convect_shallow_use_shfrc
    use phys_control,    only: cam_physpkg_is
    use physconst,       only: tmelt, rhodair, rh2o
@@ -203,18 +204,18 @@ subroutine stratiform_init()
 
    do m = 1, ncnst
       call cnst_get_ind( cnst_names(m), mm )
-      call addfld( cnst_name(mm), 'kg/kg   ', pver, 'A', cnst_longname(mm)                   , phys_decomp )
-      call addfld( sflxnam  (mm), 'kg/m2/s ',    1, 'A', trim(cnst_name(mm))//' surface flux', phys_decomp )
+      call addfld( cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm)                    )
+      call addfld( sflxnam  (mm),    horiz_only, 'A', 'kg/m2/s', trim(cnst_name(mm))//' surface flux' )
       if (history_amwg) then
          call add_default( cnst_name(mm), 1, ' ' )
          call add_default( sflxnam  (mm), 1, ' ' )
       endif
    enddo
 
-   call addfld (apcnst(ixcldliq), 'kg/kg   ', pver, 'A', trim(cnst_name(ixcldliq))//' after physics'  , phys_decomp)
-   call addfld (apcnst(ixcldice), 'kg/kg   ', pver, 'A', trim(cnst_name(ixcldice))//' after physics'  , phys_decomp)
-   call addfld (bpcnst(ixcldliq), 'kg/kg   ', pver, 'A', trim(cnst_name(ixcldliq))//' before physics' , phys_decomp)
-   call addfld (bpcnst(ixcldice), 'kg/kg   ', pver, 'A', trim(cnst_name(ixcldice))//' before physics' , phys_decomp)
+   call addfld (apcnst(ixcldliq), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' after physics'  )
+   call addfld (apcnst(ixcldice), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' after physics'  )
+   call addfld (bpcnst(ixcldliq), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' before physics' )
+   call addfld (bpcnst(ixcldice), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' before physics' )
 
    if( history_budget) then
       call add_default (cnst_name(ixcldliq), history_budget_histfile_num, ' ')
@@ -225,60 +226,60 @@ subroutine stratiform_init()
       call add_default (bpcnst   (ixcldice), history_budget_histfile_num, ' ')
    end if
 
-   call addfld ('FWAUT    ', 'fraction', pver, 'A', 'Relative importance of liquid autoconversion'            ,phys_decomp)
-   call addfld ('FSAUT    ', 'fraction', pver, 'A', 'Relative importance of ice autoconversion'               ,phys_decomp)
-   call addfld ('FRACW    ', 'fraction', pver, 'A', 'Relative importance of rain accreting liquid'            ,phys_decomp)
-   call addfld ('FSACW    ', 'fraction', pver, 'A', 'Relative importance of snow accreting liquid'            ,phys_decomp)
-   call addfld ('FSACI    ', 'fraction', pver, 'A', 'Relative importance of snow accreting ice'               ,phys_decomp)
-   call addfld ('CME      ', 'kg/kg/s ', pver, 'A', 'Rate of cond-evap within the cloud'                      ,phys_decomp)
-   call addfld ('CMEICE   ', 'kg/kg/s ', pver, 'A', 'Rate of cond-evap of ice within the cloud'               ,phys_decomp)
-   call addfld ('CMELIQ   ', 'kg/kg/s ', pver, 'A', 'Rate of cond-evap of liq within the cloud'               ,phys_decomp)
-   call addfld ('ICE2PR   ', 'kg/kg/s ', pver, 'A', 'Rate of conversion of ice to precip'                     ,phys_decomp)
-   call addfld ('LIQ2PR   ', 'kg/kg/s ', pver, 'A', 'Rate of conversion of liq to precip'                     ,phys_decomp)
-   call addfld ('ZMDLF    ', 'kg/kg/s ', pver, 'A', 'Detrained liquid water from ZM convection'               ,phys_decomp)
-   call addfld ('SHDLF    ', 'kg/kg/s ', pver, 'A', 'Detrained liquid water from shallow convection'          ,phys_decomp)
+   call addfld ('FWAUT', (/ 'lev' /), 'A', 'fraction', 'Relative importance of liquid autoconversion'            )
+   call addfld ('FSAUT', (/ 'lev' /), 'A', 'fraction', 'Relative importance of ice autoconversion'               )
+   call addfld ('FRACW', (/ 'lev' /), 'A', 'fraction', 'Relative importance of rain accreting liquid'            )
+   call addfld ('FSACW', (/ 'lev' /), 'A', 'fraction', 'Relative importance of snow accreting liquid'            )
+   call addfld ('FSACI', (/ 'lev' /), 'A', 'fraction', 'Relative importance of snow accreting ice'               )
+   call addfld ('CME', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of cond-evap within the cloud'                      )
+   call addfld ('CMEICE', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of cond-evap of ice within the cloud'               )
+   call addfld ('CMELIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of cond-evap of liq within the cloud'               )
+   call addfld ('ICE2PR', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of conversion of ice to precip'                     )
+   call addfld ('LIQ2PR', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of conversion of liq to precip'                     )
+   call addfld ('ZMDLF', (/ 'lev' /), 'A', 'kg/kg/s', 'Detrained liquid water from ZM convection'               )
+   call addfld ('SHDLF', (/ 'lev' /), 'A', 'kg/kg/s', 'Detrained liquid water from shallow convection'          )
 
-   call addfld ('PRODPREC ', 'kg/kg/s ', pver, 'A', 'Rate of conversion of condensate to precip'              ,phys_decomp)
-   call addfld ('EVAPPREC ', 'kg/kg/s ', pver, 'A', 'Rate of evaporation of falling precip'                   ,phys_decomp)
-   call addfld ('EVAPSNOW ', 'kg/kg/s ', pver, 'A', 'Rate of evaporation of falling snow'                     ,phys_decomp)
-   call addfld ('HPROGCLD ', 'W/kg'    , pver, 'A', 'Heating from prognostic clouds'                          ,phys_decomp)
-   call addfld ('HCME     ', 'W/kg'    , pver, 'A', 'Heating from cond-evap within the cloud'                 ,phys_decomp)
-   call addfld ('HEVAP    ', 'W/kg'    , pver, 'A', 'Heating from evaporation of falling precip'              ,phys_decomp)
-   call addfld ('HFREEZ   ', 'W/kg'    , pver, 'A', 'Heating rate due to freezing of precip'                  ,phys_decomp)
-   call addfld ('HMELT    ', 'W/kg'    , pver, 'A', 'Heating from snow melt'                                  ,phys_decomp)
-   call addfld ('HREPART  ', 'W/kg'    , pver, 'A', 'Heating from cloud ice/liquid repartitioning'            ,phys_decomp)
-   call addfld ('REPARTICE', 'kg/kg/s' , pver, 'A', 'Cloud ice tendency from cloud ice/liquid repartitioning' ,phys_decomp)
-   call addfld ('REPARTLIQ', 'kg/kg/s' , pver, 'A', 'Cloud liq tendency from cloud ice/liquid repartitioning' ,phys_decomp)
-   call addfld ('FICE     ', 'fraction', pver, 'A', 'Fractional ice content within cloud'                     ,phys_decomp)
-   call addfld ('ICWMR    ', 'kg/kg   ', pver, 'A', 'Prognostic in-cloud water mixing ratio'                  ,phys_decomp)
-   call addfld ('ICIMR    ', 'kg/kg   ', pver, 'A', 'Prognostic in-cloud ice mixing ratio'                    ,phys_decomp)
-   call addfld ('PCSNOW   ', 'm/s     ', 1   , 'A', 'Snow fall from prognostic clouds'                        ,phys_decomp)
+   call addfld ('PRODPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of conversion of condensate to precip'              )
+   call addfld ('EVAPPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling precip'                   )
+   call addfld ('EVAPSNOW', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling snow'                     )
+   call addfld ('HPROGCLD', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from prognostic clouds'                          )
+   call addfld ('HCME', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from cond-evap within the cloud'                 )
+   call addfld ('HEVAP', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from evaporation of falling precip'              )
+   call addfld ('HFREEZ', (/ 'lev' /), 'A', 'W/kg'    , 'Heating rate due to freezing of precip'                  )
+   call addfld ('HMELT', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from snow melt'                                  )
+   call addfld ('HREPART', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from cloud ice/liquid repartitioning'            )
+   call addfld ('REPARTICE', (/ 'lev' /), 'A', 'kg/kg/s' , 'Cloud ice tendency from cloud ice/liquid repartitioning' )
+   call addfld ('REPARTLIQ', (/ 'lev' /), 'A', 'kg/kg/s' , 'Cloud liq tendency from cloud ice/liquid repartitioning' )
+   call addfld ('FICE', (/ 'lev' /), 'A', 'fraction', 'Fractional ice content within cloud'                     )
+   call addfld ('ICWMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud water mixing ratio'                  )
+   call addfld ('ICIMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud ice mixing ratio'                    )
+   call addfld ('PCSNOW', horiz_only   , 'A', 'm/s', 'Snow fall from prognostic clouds'                        )
  
-   call addfld ('DQSED    ', 'kg/kg/s ', pver, 'A', 'Water vapor tendency from cloud sedimentation'           ,phys_decomp)
-   call addfld ('DLSED    ', 'kg/kg/s ', pver, 'A', 'Cloud liquid tendency from sedimentation'                ,phys_decomp)
-   call addfld ('DISED    ', 'kg/kg/s ', pver, 'A', 'Cloud ice tendency from sedimentation'                   ,phys_decomp)
-   call addfld ('HSED     ', 'W/kg    ', pver, 'A', 'Heating from cloud sediment evaporation'                 ,phys_decomp)
-   call addfld ('SNOWSED  ', 'm/s     ', 1   , 'A', 'Snow from cloud ice sedimentation'                       ,phys_decomp)
-   call addfld ('RAINSED  ', 'm/s     ', 1   , 'A', 'Rain from cloud liquid sedimentation'                    ,phys_decomp)
-   call addfld ('PRECSED  ', 'm/s     ', 1   , 'A', 'Precipitation from cloud sedimentation'                  ,phys_decomp)
+   call addfld ('DQSED', (/ 'lev' /), 'A', 'kg/kg/s', 'Water vapor tendency from cloud sedimentation'           )
+   call addfld ('DLSED', (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud liquid tendency from sedimentation'                )
+   call addfld ('DISED', (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud ice tendency from sedimentation'                   )
+   call addfld ('HSED', (/ 'lev' /), 'A', 'W/kg', 'Heating from cloud sediment evaporation'                 )
+   call addfld ('SNOWSED', horiz_only   , 'A', 'm/s', 'Snow from cloud ice sedimentation'                       )
+   call addfld ('RAINSED', horiz_only   , 'A', 'm/s', 'Rain from cloud liquid sedimentation'                    )
+   call addfld ('PRECSED', horiz_only   , 'A', 'm/s', 'Precipitation from cloud sedimentation'                  )
 
 
-   call addfld ('CNVCLD   ', 'fraction', 1,    'A', 'Vertically integrated convective cloud amount'           ,phys_decomp)
-   call addfld ('CLDST    ', 'fraction', pver, 'A', 'Stratus cloud fraction'                                  ,phys_decomp)
-   call addfld ('CONCLD   ', 'fraction', pver, 'A', 'Convective cloud cover'                                  ,phys_decomp)
+   call addfld ('CNVCLD', horiz_only,    'A', 'fraction', 'Vertically integrated convective cloud amount'           )
+   call addfld ('CLDST', (/ 'lev' /), 'A', 'fraction', 'Stratus cloud fraction'                                  )
+   call addfld ('CONCLD', (/ 'lev' /), 'A', 'fraction', 'Convective cloud cover'                                  )
 	
-   call addfld ('AST'      ,'fraction' , pver, 'A', 'Stratus cloud fraction'                                  ,phys_decomp)
-   call addfld ('LIQCLDF  ', 'fraction', pver, 'A', 'Stratus Liquid cloud fraction'                           ,phys_decomp)
-   call addfld ('ICECLDF  ', 'fraction', pver, 'A', 'Stratus ICE cloud fraction'                              ,phys_decomp)
-   call addfld ('IWC      ', 'kg/m3   ', pver, 'A', 'Grid box average ice water content'                      ,phys_decomp)
-   call addfld ('LWC      ', 'kg/m3   ', pver, 'A', 'Grid box average liquid water content'                   ,phys_decomp)
-   call addfld ('ICWNC    ', 'm-3     ', pver, 'A', 'Prognostic in-cloud water number conc'                   ,phys_decomp)
-   call addfld ('ICINC    ', 'm-3     ', pver, 'A', 'Prognostic in-cloud ice number conc'                     ,phys_decomp)
-   call addfld ('EFFLIQ   ', 'Micron  ', pver, 'A', 'Prognostic droplet effective radius'                     ,phys_decomp)
-   call addfld ('EFFLIQ_IND','Micron  ', pver, 'A', 'Prognostic droplet effective radius (indirect effect)'   ,phys_decomp)
-   call addfld ('EFFICE   ', 'Micron  ', pver, 'A', 'Prognostic ice effective radius'                         ,phys_decomp)
-   call addfld ('REL',       'micron',   pver, 'A', 'effective liquid drop radius'                            ,phys_decomp)
-   call addfld ('REI',       'micron',   pver, 'A', 'effective ice particle radius'                           ,phys_decomp)
+   call addfld ('AST'      , (/ 'lev' /), 'A','fraction' , 'Stratus cloud fraction'                                  )
+   call addfld ('LIQCLDF', (/ 'lev' /), 'A', 'fraction', 'Stratus Liquid cloud fraction'                           )
+   call addfld ('ICECLDF', (/ 'lev' /), 'A', 'fraction', 'Stratus ICE cloud fraction'                              )
+   call addfld ('IWC', (/ 'lev' /), 'A', 'kg/m3', 'Grid box average ice water content'                      )
+   call addfld ('LWC', (/ 'lev' /), 'A', 'kg/m3', 'Grid box average liquid water content'                   )
+   call addfld ('ICWNC', (/ 'lev' /), 'A', 'm-3', 'Prognostic in-cloud water number conc'                   )
+   call addfld ('ICINC', (/ 'lev' /), 'A', 'm-3', 'Prognostic in-cloud ice number conc'                     )
+   call addfld ('EFFLIQ', (/ 'lev' /), 'A', 'Micron', 'Prognostic droplet effective radius'                     )
+   call addfld ('EFFLIQ_IND', (/ 'lev' /), 'A','Micron', 'Prognostic droplet effective radius (indirect effect)'   )
+   call addfld ('EFFICE', (/ 'lev' /), 'A', 'Micron', 'Prognostic ice effective radius'                         )
+   call addfld ('REL',   (/ 'lev' /), 'A',       'micron', 'effective liquid drop radius'                            )
+   call addfld ('REI',   (/ 'lev' /), 'A',       'micron', 'effective ice particle radius'                           )
 
    if ( history_budget ) then
 
@@ -318,16 +319,16 @@ subroutine stratiform_init()
    endif
 
    ! History Variables for COSP/CFMIP
-   call addfld ('LS_FLXPRC', 'kg/m2/s', pverp, 'A', 'ls stratiform gbm interface rain+snow flux', phys_decomp)
-   call addfld ('LS_FLXSNW', 'kg/m2/s', pverp, 'A', 'ls stratiform gbm interface snow flux', phys_decomp)
-   call addfld ('PRACWO', '1/s', pver, 'A', 'Accretion of cloud water by rain', phys_decomp)
-   call addfld ('PSACWO', '1/s', pver, 'A', 'Accretion of cloud water by snow', phys_decomp)
-   call addfld ('PSACIO', '1/s', pver, 'A', 'Accretion of cloud ice by snow', phys_decomp)
+   call addfld ('LS_FLXPRC', (/ 'ilev' /), 'A', 'kg/m2/s', 'ls stratiform gbm interface rain+snow flux')
+   call addfld ('LS_FLXSNW', (/ 'ilev' /), 'A', 'kg/m2/s', 'ls stratiform gbm interface snow flux')
+   call addfld ('PRACWO', (/ 'lev' /), 'A', '1/s', 'Accretion of cloud water by rain')
+   call addfld ('PSACWO', (/ 'lev' /), 'A', '1/s', 'Accretion of cloud water by snow')
+   call addfld ('PSACIO', (/ 'lev' /), 'A', '1/s', 'Accretion of cloud ice by snow')
 
-   call addfld ('CLDLIQSTR   ', 'kg/kg', pver, 'A', 'Stratiform CLDLIQ', phys_decomp)
-   call addfld ('CLDICESTR   ', 'kg/kg', pver, 'A', 'Stratiform CLDICE', phys_decomp)
-   call addfld ('CLDLIQCON   ', 'kg/kg', pver, 'A', 'Convective CLDLIQ', phys_decomp)
-   call addfld ('CLDICECON   ', 'kg/kg', pver, 'A', 'Convective CLDICE', phys_decomp)
+   call addfld ('CLDLIQSTR', (/ 'lev' /), 'A', 'kg/kg', 'Stratiform CLDLIQ')
+   call addfld ('CLDICESTR', (/ 'lev' /), 'A', 'kg/kg', 'Stratiform CLDICE')
+   call addfld ('CLDLIQCON', (/ 'lev' /), 'A', 'kg/kg', 'Convective CLDLIQ')
+   call addfld ('CLDICECON', (/ 'lev' /), 'A', 'kg/kg', 'Convective CLDICE')
 
    prec_str_idx = pbuf_get_index('PREC_STR')
    snow_str_idx = pbuf_get_index('SNOW_STR')

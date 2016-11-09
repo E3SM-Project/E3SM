@@ -4,7 +4,7 @@ module mo_setinv
   use shr_kind_mod, only : r8 => shr_kind_r8
   use cam_logfile,  only : iulog
   use chem_mods,    only : inv_lst, nfs, gas_pcnst
-  use cam_history,  only : addfld, add_default, phys_decomp, outfld
+  use cam_history,  only : addfld, add_default, outfld
   use ppgrid,       only : pcols, pver
 
   implicit none
@@ -52,9 +52,9 @@ contains
     if (masterproc) write(iulog,*) 'setinv_inti: m,n2,o2,h2o ndx = ',m_ndx,n2_ndx,o2_ndx,h2o_ndx
 
     do i = 1,nfs
-      call addfld( trim(inv_lst(i))//'_dens', 'molecules/cm3', pver,'A', 'invariant density', phys_decomp )
-      !call addfld( trim(inv_lst(i))//'_mmr', 'kg/kg', pver,'A', 'invariant density', phys_decomp )
-      call addfld( trim(inv_lst(i))//'_vmr', 'mole/mole', pver,'A', 'invariant density', phys_decomp )
+      call addfld( trim(inv_lst(i))//'_dens', (/ 'lev' /),'A', 'molecules/cm3', 'invariant density' )
+      !call addfld( trim(inv_lst(i))//'_mmr', 'kg/kg', pver,'A', 'invariant density' )
+      call addfld( trim(inv_lst(i))//'_vmr', (/ 'lev' /),'A', 'mole/mole', 'invariant density' )
     enddo
       
   end subroutine setinv_inti

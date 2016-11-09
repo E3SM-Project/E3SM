@@ -93,7 +93,7 @@ contains
     use infnan, only : isnan
     use dyn_grid, only : get_dyn_grid_parm, get_horiz_grid_d
     use dof_mod, only : CreateMetaData
-    use shr_const_mod, only : pi=>shr_const_pi
+    use shr_const_mod, only : shr_const_pi
     use thread_mod,     only: omp_get_thread_num
 
 
@@ -208,8 +208,8 @@ contains
        end if
 
        if(unit_str .eq. 'degrees') then
-          lat = lat * pi/180_r8
-          lon = lon * pi/180_r8
+          lat = lat * shr_const_pi/180_r8
+          lon = lon * shr_const_pi/180_r8
        end if
 
        ierr = pio_inq_varid( ogfile, 'grid_imask', vid)

@@ -18,7 +18,7 @@ module restart_dynamics
    use cam_logfile,     only: iulog
    use dyn_comp,        only: dyn_import_t, dyn_export_t
    use pio,             only: var_desc_t, file_desc_t, pio_double, pio_unlimited, &
-         pio_def_var, pio_def_dim, io_desc_t, pio_offset, pio_put_var, &
+         pio_def_var, pio_def_dim, io_desc_t, pio_offset_kind, pio_put_var, &
          pio_write_darray, pio_setdebuglevel, pio_setframe, pio_freedecomp, &
          pio_initdecomp, pio_read_darray, pio_inq_varid, pio_get_var
 
@@ -239,7 +239,7 @@ CONTAINS
 
     do i=1,restartvarcnt
 
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
        if(timelevels>1) then
           if(ndims==3) then
              ierr = PIO_Def_Var(File, name, pio_double, alldims2d, vdesc)
@@ -298,7 +298,7 @@ CONTAINS
     integer :: ndcur, nscur
     real(r8) :: time, dtime, mold(1)
     integer :: i, s3d(1), s2d(1), ct
-    integer(kind=pio_offset) :: t
+    integer(kind=pio_offset_kind) :: t
     type(io_desc_t) :: iodesc3d, iodesc2d, iodesc4d, iodesc3dp1
     integer :: ndims, timelevels
     type(var_desc_t), pointer :: vdesc
@@ -342,7 +342,7 @@ CONTAINS
        ierr = pio_put_var(File,timedesc%varid, (/int(t)/), time)
     end do
     do i=1,restartvarcnt
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
        if(timelevels==1) then
           if(ndims==2) then
              call pio_write_darray(File, vdesc, iodesc2d, transfer(restartvars(i)%v2d(:,:), mold), ierr)
@@ -360,7 +360,7 @@ CONTAINS
              if(t==1) ct=n3m1
              if(t==2) ct=n3
 
-             call pio_setframe(vdesc, t)
+             call pio_setframe(File, vdesc, t)
              if(ndims==3) then
                 call pio_write_darray(File, vdesc, iodesc2d, transfer(restartvars(i)%v3d(:,:,ct), mold), ierr)
              else if(ndims==4) then
@@ -420,7 +420,8 @@ CONTAINS
   end function get_restart_decomp
 
 
-  subroutine get_restart_var(i,name, timelevels, ndims, vdesc)
+  subroutine get_restart_var(File, i,name, timelevels, ndims, vdesc)
+    type(File_desc_t),  intent(in) :: File
     integer, intent(in) :: i
     character(len=namlen), intent(out) :: name
     integer, intent(out) :: ndims, timelevels
@@ -433,7 +434,7 @@ CONTAINS
        allocate(restartvars(i)%vdesc)
     end if
     vdesc => restartvars(i)%vdesc
-    call pio_setframe(vdesc, int(-1,pio_offset))
+    call pio_setframe(File, vdesc, int(-1,pio_offset_kind))
 
   end subroutine get_restart_var
 
@@ -471,7 +472,7 @@ CONTAINS
     integer :: ierr
     integer :: timelevels
     integer :: i, ct
-    integer(kind=pio_offset) :: t
+    integer(kind=pio_offset_kind) :: t
     integer, pointer :: ldof(:)
 
     call dyn_init(file, NLFileName)
@@ -528,7 +529,7 @@ CONTAINS
     call init_restart_varlist()
 
     do i=1,restartvarcnt
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
 
        ierr = PIO_Inq_varid(File, name, vdesc)
        if(timelevels == 1) then
@@ -556,7 +557,7 @@ CONTAINS
           do t=1,timelevels
              if(t==1) ct=n3m1
              if(t==2) ct=n3
-             call pio_setframe(vdesc, t)
+             call pio_setframe(File, vdesc, t)
              if(ndims==3) then
                 call pio_read_darray(File, vdesc, iodesc2d, tmp(1:s2d), ierr)
                 restartvars(i)%v3d(:,:,ct) = reshape(tmp(1:s2d), dims2d)

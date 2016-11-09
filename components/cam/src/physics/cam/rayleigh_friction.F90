@@ -40,8 +40,8 @@ module rayleigh_friction
   integer, public   :: rayk0 = 2           ! vertical level at which rayleigh friction term is centered
   real (r8), public :: raykrange = 0._r8   ! range of rayleigh friction profile 
                                            ! if 0, range is set to satisfy x=2 (see below)
-  real (r8), public :: raytau0 = 0._r8     ! approximate value of decay time at model top (days)
-                                           ! if 0., no rayleigh friction is applied
+  real (r8), public :: raytau0 = huge(1._r8)! approximate value of decay time at model top (days)
+                                           ! if 0., no rayleigh friction is applied (set by namelist)
 
   ! 
   ! Private data

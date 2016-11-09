@@ -44,6 +44,60 @@
           STOP_N="11"
           DOUT_S="FALSE" />
 
+<ccsmtest NAME="TESTBUILDFAIL"
+          DESC="For testing infra only. Insta-fail build step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNFAIL"
+          DESC="For testing infra only. Insta-fail run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNPASS"
+          DESC="For testing infra only. Insta-pass run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNDIFF"
+          DESC="For testing infra only. Produces a canned hist file."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNSLOWPASS"
+          DESC="For testing infra only. After 5 minutes of sleep, pass run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="HOMME"
+          DESC="Run homme tests."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
 <ccsmtest NAME="ERT"
           DESC="exact restart from startup, default 2 month + 1 month (ERS with info dbug = 1)"
           INFO_DBUG="1"
@@ -61,7 +115,7 @@
           STOP_N="10"
           REST_OPTION="none"
           COMP_RUN_BARRIERS="TRUE"
-          TIMER_LEVEL="12"
+          TIMER_LEVEL="20"
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
 
@@ -132,7 +186,7 @@
           STOP_N="10"
           REST_OPTION="none"
           COMP_RUN_BARRIERS="TRUE"
-          TIMER_LEVEL="12"
+          TIMER_LEVEL="20"
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
           
@@ -142,7 +196,7 @@
           STOP_OPTION="ndays"
           STOP_N="10"
           REST_OPTION="none"
-          TIMER_LEVEL="12"
+          TIMER_LEVEL="20"
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
 

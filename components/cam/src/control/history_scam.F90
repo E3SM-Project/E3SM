@@ -13,7 +13,7 @@ module history_scam
 	                   tendnam, tottnam, fixcnam
    use ppgrid,       only: pver, pverp
    use pmgrid,       only: plev
-   use cam_history,  only: phys_decomp, dyn_decomp,  addfld, outfld, add_default
+   use cam_history,  only:    addfld, horiz_only, outfld, add_default
 
    use scamMod, only :divq3d,divt3d,wfld,divq,divt,divu,divv
 
@@ -50,25 +50,25 @@ CONTAINS
 !
 ! Call addfld to add each field to the Master Field List.
 !
-      call addfld ('TDIFF   ','K      ',plev,    'A','difference from observed temp', dyn_decomp)
+      call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp', gridname='gauss_grid')
 
-      call addfld ('TOBS    ','K      ',plev,    'A','observed temp', phys_decomp)
-      call addfld ('QDIFF   ','kg/kg   ',plev,    'A','difference from observed water',dyn_decomp)
+      call addfld ('TOBS',(/ 'lev' /),    'A','K','observed temp')
+      call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname='gauss_grid')
 
-      call addfld ('QOBS    ','kg/kg   ',plev,    'A','observed water',phys_decomp)
-      call addfld ('PRECOBS','mm/day',plev,    'A','Total (convective and large-scale) precipitation rate', phys_decomp)
-      call addfld ('DIVQ    ','kg/kg/s ',plev,    'A','Q advection tendency (horizontal)', phys_decomp)
-      call addfld ('DIVQ3D  ','kg/kg/s ',pver,    'A','Q advection tendency (horiz/vert combined)', dyn_decomp)
-      call addfld ('DIVV  ','m/s2    ',plev,    'A','V advection tendency (horizontal)', phys_decomp)
-      call addfld ('DIVU  ','m/s2    ',plev,    'A','U advection tendency (horizontal)', phys_decomp)
-      call addfld ('DIVT   ','K/s     ',plev,    'A','T advection tendency (horizontal)', phys_decomp)
-      call addfld ('DIVT3D ','K/s     ',pver,    'A','T advection tendency (horiz/vert combined)', dyn_decomp)
+      call addfld ('QOBS',(/ 'lev' /),    'A','kg/kg','observed water')
+      call addfld ('PRECOBS',(/ 'lev' /),    'A','mm/day','Total (convective and large-scale) precipitation rate')
+      call addfld ('DIVQ',(/ 'lev' /),    'A','kg/kg/s','Q advection tendency (horizontal)')
+      call addfld ('DIVQ3D',(/ 'lev' /),    'A','kg/kg/s','Q advection tendency (horiz/vert combined)', gridname='gauss_grid')
+      call addfld ('DIVV',(/ 'lev' /),    'A','m/s2','V advection tendency (horizontal)')
+      call addfld ('DIVU',(/ 'lev' /),    'A','m/s2','U advection tendency (horizontal)')
+      call addfld ('DIVT',(/ 'lev' /),    'A','K/s','T advection tendency (horizontal)')
+      call addfld ('DIVT3D',(/ 'lev' /),    'A','K/s','T advection tendency (horiz/vert combined)', gridname='gauss_grid')
 
-      call addfld ('SHFLXOBS','W/m2    ',1,    'A','Obs Surface sensible heat flux',phys_decomp)
-      call addfld ('LHFLXOBS','W/m2    ',1,    'A','Obs Surface latent heat flux',phys_decomp)
-      call addfld ('TRELAX  ','K      ',plev,    'A','t relaxation amount', dyn_decomp)
-      call addfld ('QRELAX  ','kg/kg  ',plev,    'A','q relaxation amount', dyn_decomp)
-      call addfld ('TAURELAX','seconds',plev,    'A','relaxation time constant', dyn_decomp)
+      call addfld ('SHFLXOBS',horiz_only,    'A','W/m2','Obs Surface sensible heat flux')
+      call addfld ('LHFLXOBS',horiz_only,    'A','W/m2','Obs Surface latent heat flux')
+      call addfld ('TRELAX',(/ 'lev' /),    'A','K','t relaxation amount', gridname='gauss_grid')
+      call addfld ('QRELAX',(/ 'lev' /),    'A','kg/kg','q relaxation amount', gridname='gauss_grid')
+      call addfld ('TAURELAX',(/ 'lev' /),    'A','seconds','relaxation time constant', gridname='gauss_grid')
       call add_default ('TDIFF     ', 1, ' ')
       call add_default ('QDIFF     ', 1, ' ')
    end subroutine scm_intht

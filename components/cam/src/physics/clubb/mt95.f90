@@ -128,6 +128,7 @@ module mt95
   end type genrand_srepr
 
   type(genrand_state), private, save  :: state
+!$omp threadprivate(state)
 
   interface assignment( = )
     module procedure genrand_load_state

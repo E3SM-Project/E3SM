@@ -27,11 +27,11 @@ nu_q=7e15
 nu_s=-1
 nu_top = 2.5e5
 se_ftype     = 0
-limiter_option = 4
+limiter_option = 8
 vert_remap_q_alg = 1
 hypervis_scaling = 0
 hypervis_order = 2
-hypervis_subcycle=4
+hypervis_subcycle=3
 hypervis_subcycle_q=1
 /
 &solver_nl

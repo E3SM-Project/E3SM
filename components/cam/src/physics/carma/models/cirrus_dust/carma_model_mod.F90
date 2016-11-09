@@ -1,3 +1,4 @@
+
 !! This module is used to define a particular CARMA microphysical model. For 
 !! simple cases, this may be the only code that needs to be modified. This module
 !! defines several constants and has the following methods:
@@ -1254,7 +1255,7 @@ contains
   !! @version May-2009
   subroutine CARMA_InitializeModel(carma, lq_carma, rc)
     use constituents,     only: cnst_get_ind, pcnst
-    use cam_history,      only: addfld, add_default, phys_decomp
+    use cam_history,      only: addfld, horiz_only, add_default
 
     implicit none
     
@@ -1573,7 +1574,7 @@ contains
       end if
     end if
     
-    call addfld('CRSLERFC', 'fraction', 1, 'A', 'CARMA soil erosion factor', phys_decomp)
+    call addfld('CRSLERFC', horiz_only, 'A', 'fraction', 'CARMA soil erosion factor')
 
     return
   end subroutine CARMA_InitializeModel

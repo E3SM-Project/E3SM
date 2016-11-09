@@ -228,7 +228,7 @@ contains
 
     fieldname = 'PS'
     call infld(fieldname, ncid_ini, 'lon', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, &
-         dyn_in%ps  , readvar, grid_map='DYN')
+         dyn_in%ps  , readvar, gridname='fv_centers')
     if(.not. readvar) call endrun(trim(subname)//' ERROR: PS not found on initial dataset.')
 
     call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'PS')
@@ -240,7 +240,7 @@ contains
     else
        allocate(phis_tmp(im, jm))
        call infld(fieldname, ncid_topo, 'lon', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, &
-            dyn_in%phis, readvar, grid_map='dyn')
+            dyn_in%phis, readvar, gridname='fv_centers')
        if (.not. readvar) &
             call endrun(trim(subname)//' ERROR: PHIS not found on topo dataset.')
        call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'PHIS')
@@ -256,20 +256,20 @@ contains
     fieldname = 'US'
     dyn_in%u3s = fillvalue
 
-    call infld(fieldname, ncid_ini, 'lon', 'lev', 'slat',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-        dyn_in%u3s, readvar, grid_map='DYN')
+    call infld(fieldname, ncid_ini, 'lon', 'slat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+        dyn_in%u3s, readvar, gridname='fv_u_stagger')
 
     if(.not. readvar) call endrun()
 
     fieldname = 'VS'
-    call infld(fieldname, ncid_ini, 'slon', 'lev', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-         dyn_in%v3s, readvar, grid_map='DYN')
+    call infld(fieldname, ncid_ini, 'slon', 'lat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+         dyn_in%v3s, readvar, gridname='fv_v_stagger')
     if(.not. readvar) call endrun()
 
     fieldname = 'T'
 
-    call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-       dyn_in%t3, readvar, grid_map='DYN')
+    call infld(fieldname, ncid_ini, 'lon', 'lat', 'lev', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+       dyn_in%t3, readvar, gridname='fv_centers')
     call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'T')
         
 
@@ -279,8 +279,8 @@ contains
        readvar   = .false.
        fieldname = cnst_name(m)
        if(cnst_read_iv(m)) then
-          call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-               dyn_in%tracer(:,:,:,m), readvar, grid_map='DYN')
+          call infld(fieldname, ncid_ini, 'lon', 'lat', 'lev', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+               dyn_in%tracer(:,:,:,m), readvar, gridname='fv_centers')
        end if
 	
        call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'CONSTS', m_cnst=m)
@@ -321,10 +321,12 @@ contains
     use carma_intr,   only: carma_implements_cnst, carma_init_cnst
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
+    use clubb_intr,   only: clubb_implements_cnst, clubb_init_cnst
     use stratiform,   only: stratiform_implements_cnst, stratiform_init_cnst
     use microp_driver, only: microp_driver_implements_cnst, microp_driver_init_cnst
     use phys_control,  only: phys_getopts
     use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
+    use unicon_cam,   only: unicon_implements_cnst, unicon_init_cnst
 #if ( defined SPMD )
     use mod_comm,           only: mp_sendirr, mp_recvirr
     use spmd_dyn, only: npes_xy, mpicom_xy
@@ -514,6 +516,9 @@ contains
           if (microp_driver_implements_cnst(cnst_name(m_cnst))) then
              call microp_driver_init_cnst(cnst_name(m_cnst),q3tmp , gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "microp_driver_init_cnst"'
+          else if (clubb_implements_cnst(cnst_name(m_cnst))) then
+             call clubb_init_cnst(cnst_name(m_cnst),q3tmp , gcid)
+             if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "clubb_init_cnst"'
           else if (stratiform_implements_cnst(cnst_name(m_cnst))) then
              call stratiform_init_cnst(cnst_name(m_cnst),q3tmp , gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "stratiform_init_cnst"'
@@ -532,6 +537,9 @@ contains
           else if (co2_implements_cnst(cnst_name(m_cnst))) then
              call co2_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "co2_init_cnst"'
+          else if (unicon_implements_cnst(cnst_name(m_cnst))) then
+             call unicon_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
+             if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "unicon_init_cnst"'
           else
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' set to 0.'
           end if

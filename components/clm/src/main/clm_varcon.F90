@@ -65,6 +65,7 @@ module clm_varcon
   real(r8) :: tfrz   = SHR_CONST_TKFRZ                      ! freezing temperature [K]
   real(r8), parameter :: tcrit  = 2.5_r8                    ! critical temperature to determine rain or snow
   real(r8) :: o2_molar_const = 0.209_r8                     ! constant atmospheric O2 molar ratio (mol/mol)
+  real(r8) :: oneatm = 1.01325e5_r8                         ! one standard atmospheric pressure [Pa]
 
   real(r8) :: bdsno = 250._r8                               ! bulk density snow (kg/m**3)
   real(r8) :: alpha_aero = 1.0_r8                           ! constant for aerodynamic parameter weighting
@@ -167,8 +168,9 @@ module clm_varcon
   !------------------------------------------------------------------
   ! Note some of these constants are also used in CNNitrifDenitrifMod
 
-  real(r8), parameter :: catomw = 12.011_r8 ! molar mass of C atoms (g/mol)
-
+  real(r8), parameter :: catomw = 12.011_r8     ! molar mass of C atoms (g/mol)
+  real(r8), parameter :: natomw = 14.007_r8     ! molar mass of N atoms (g/mol)
+  
   real(r8) :: s_con(ngases,4)    ! Schmidt # calculation constants (spp, #)
   data (s_con(1,i),i=1,4) /1898_r8, -110.1_r8, 2.834_r8, -0.02791_r8/ ! CH4
   data (s_con(2,i),i=1,4) /1801_r8, -120.1_r8, 3.7818_r8, -0.047608_r8/ ! O2

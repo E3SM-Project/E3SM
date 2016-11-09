@@ -2,7 +2,7 @@
       module mag_parms
 
       use shr_kind_mod,   only : r8 => shr_kind_r8
-      use mo_solar_parms, only : get_solar_parms
+      use mo_solar_parms, only : solar_parms_get
 
       implicit none
 
@@ -32,7 +32,7 @@
       real(r8) :: wkp                                             ! wrk solar mag factor
       real(r8) :: wf107                                           ! wrk solar mag factor
 
-      call get_solar_parms( kp_s = wkp, f107_s = wf107 )
+      call solar_parms_get( kp_s = wkp, f107_s = wf107 )
       if( present( by ) ) then
          by  =  0._r8
       end if

@@ -358,7 +358,7 @@ contains
 !$omp parallel do private(k,grad_tmp,i,j,v1,v2)
 #endif
           do k=1,nlev   
-             
+!dir$ simd
              grad_tmp(:,:,:) = gradient(elem(ie)%state%Q(:,:,k,q),deriv)*rrearth
 
              do j=1,np
@@ -393,6 +393,7 @@ contains
        rmp      => elem(ie)%rmp
        metdet   => elem(ie)%metdet
        metinv   => elem(ie)%metinv
+!dir$ simd
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
        D        => elem(ie)%D
        Dinv     => elem(ie)%Dinv
@@ -424,7 +425,7 @@ contains
 
                 end do
              end do
-
+!dir$ simd
              div_tmp(:,:) = divergence(grad_Q_np1(:,:,:,k,q,ie),deriv)*rrearth
 
              do j=1,np

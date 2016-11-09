@@ -32,7 +32,7 @@ contains
 
     use mo_chem_utls, only : get_spc_ndx, get_inv_ndx
     use spmd_utils,   only : masterproc
-    use cam_history,  only : addfld,phys_decomp
+    use cam_history,  only : addfld
     use cam_history,  only : add_default
     use ppgrid,       only : pver
     use phys_control, only : phys_getopts
@@ -128,7 +128,7 @@ contains
        return
     end if
 
-    call addfld( 'XPH_LWC','kg/kg   ',pver, 'A', 'pH value multiplied by lwc', phys_decomp)
+    call addfld( 'XPH_LWC',(/ 'lev' /), 'A','kg/kg', 'pH value multiplied by lwc')
     if ( history_aerosol ) then    
        call add_default ('XPH_LWC', 1, ' ') 
     endif

@@ -196,7 +196,7 @@ end subroutine ubc_setopts
 ! timestep dependent setting
 !-----------------------------------------------------------------------
 
-    use mo_solar_parms, only: get_solar_parms
+    use mo_solar_parms, only: solar_parms_get
     use mo_msis_ubc,    only: msis_timestep_init
     use mo_tgcm_ubc,    only: tgcm_timestep_init
     use mo_snoe,        only: snoe_timestep_init
@@ -211,7 +211,7 @@ end subroutine ubc_setopts
 
     if (.not.waccm) return
 
-    call get_solar_parms( kp_s = kp, f107_s = f107, f107a_s = f107a, ap_s = ap )
+    call solar_parms_get( kp_s = kp, f107_s = f107, f107a_s = f107a, ap_s = ap )
     call msis_timestep_init( ap, f107, f107a )
     call tgcm_timestep_init( pbuf2d, state )
     call snoe_timestep_init( kp, f107 )

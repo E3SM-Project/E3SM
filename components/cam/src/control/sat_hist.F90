@@ -16,7 +16,7 @@ module sat_hist
   use pio,           only: file_desc_t, iosystem_desc_t, iosystem_desc_t, var_desc_t, io_desc_t
   use pio,           only: pio_openfile, pio_redef, pio_enddef, pio_inq_dimid, pio_inq_varid, pio_seterrorhandling, pio_def_var
   use pio,           only: pio_inq_dimlen, pio_get_att, pio_put_att, pio_get_var, pio_put_var, pio_write_darray
-  use pio,           only: pio_real, pio_int, pio_double, pio_copy_att
+  use pio,           only: pio_real, pio_int, pio_double
   use pio,           only: PIO_WRITE,PIO_NOWRITE, PIO_NOERR, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_Rearr_box, PIO_GLOBAL
   use spmd_utils,    only: mpicom
 #ifdef SPMD
@@ -407,8 +407,8 @@ contains
   subroutine sat_hist_write( tape , nflds, nfils)
 
     use ppgrid,   only : pcols, begchunk, endchunk
-    use dyn_grid, only : get_dyn_grid_parm
-    use cam_pio_utils, only: phys_decomp, dyn_decomp
+    use phys_grid, only: phys_decomp
+    use dyn_grid, only: dyn_decomp
     use cam_history_support, only : active_entry
     use pio, only : pio_file_is_open
     implicit none
@@ -502,10 +502,9 @@ contains
 
 !-------------------------------------------------------------------------------
   subroutine dump_columns( File, hitem, ncols, nfils, fdims, ldims, owners  )
-    use cam_history_support,  only: field_info, hentry, hist_coords
+    use cam_history_support,  only: field_info, hentry, hist_coords, fillvalue
     use pionfwrite_mod, only: write_nf
-    use cam_pio_utils, only : fillvalue
-    use pio,            only: pio_initdecomp, pio_freedecomp, pio_setframe, pio_offset, pio_iam_iotask, pio_setdebuglevel
+    use pio,            only: pio_initdecomp, pio_freedecomp, pio_setframe, pio_iam_iotask, pio_setdebuglevel, pio_offset_kind
 
     type(File_desc_t),intent(inout)  :: File
     type(hentry),     intent(in), target     :: hitem
@@ -567,11 +566,11 @@ contains
        enddo
     enddo
 
-    call pio_setframe(vardesc, int(-1,kind=PIO_OFFSET))
+    call pio_setframe(File, vardesc, int(-1,kind=PIO_OFFSET_KIND))
 
     call pio_initdecomp(sat_iosystem, pio_double, dimlens, dof, iodesc )
-    if(pio_iam_iotask(sat_iosystem)) &
-         iodesc%start(ndims)=iodesc%start(ndims)+nfils-1
+
+    call pio_setframe(File, vardesc, int(nfils,kind=PIO_OFFSET_KIND))
 
     call pio_write_darray(File, vardesc, iodesc, buf, ierr, fillval=fillvalue)
 

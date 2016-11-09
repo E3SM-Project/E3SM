@@ -27,7 +27,7 @@
    
       subroutine init_hrates( )
         use mo_chem_utls, only : get_spc_ndx
-        use cam_history,  only : addfld, phys_decomp
+        use cam_history,  only : addfld
         use ppgrid,       only : pver
         use ref_pres,     only : ptop_ref, psurf_ref
 
@@ -52,32 +52,32 @@
 
         if (.not. has_hrates) return
 
-        call addfld( 'CPAIR', 'J/K/kg', pver, 'I', 'specific heat cap air', phys_decomp )
-        call addfld( 'QRS_AUR', 'K/s', pver, 'I', 'total auroral heating rate', phys_decomp )
-        call addfld( 'QRS_CO2NIR', 'K/s', pver, 'I', 'co2 nir heating rate', phys_decomp )
-        call addfld( 'QTHERMAL', 'K/s', pver, 'I', 'non-euv photolysis heating rate', phys_decomp )
-        call addfld( 'QRS_MLT', 'K/s', pver, 'I', 'Total heating rate (unmerged with tropospheric RT heating)', phys_decomp )
+        call addfld( 'CPAIR', (/ 'lev' /), 'I', 'J/K/kg', 'specific heat cap air' )
+        call addfld( 'QRS_AUR', (/ 'lev' /), 'I', 'K/s', 'total auroral heating rate' )
+        call addfld( 'QRS_CO2NIR', (/ 'lev' /), 'I', 'K/s', 'co2 nir heating rate' )
+        call addfld( 'QTHERMAL', (/ 'lev' /), 'I', 'K/s', 'non-euv photolysis heating rate' )
+        call addfld( 'QRS_MLT', (/ 'lev' /), 'I', 'K/s', 'Total heating rate (unmerged with tropospheric RT heating)' )
 
         attr = 'O2 + hv -> O1D + O3P solar heating rate < 200nm'
-        call addfld( 'QRS_SO2A', 'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_SO2A', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'O2 + hv -> O3P + O3P solar heating rate < 200nm'
-        call addfld( 'QRS_SO2B', 'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_SO2B', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'O3 + hv -> O1D + O2_1S solar heating rate < 200nm'
-        call addfld( 'QRS_SO3A', 'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_SO3A', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'O3 + hv -> O3P + O2 solar heating rate < 200nm'
-        call addfld( 'QRS_SO3B', 'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_SO3B', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'O2 + hv -> 2*O3P solar heating rate > 200nm'
-        call addfld( 'QRS_LO2B', 'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_LO2B', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'O3 + hv -> O1D + O2_1S solar heating rate > 200nm'
-        call addfld( 'QRS_LO3A', 'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_LO3A', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'O3 + hv -> O3P + O2 solar heating rate > 200nm'
-        call addfld( 'QRS_LO3B', 'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_LO3B', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'Total O3 solar heating > 200nm'
-        call addfld( 'QRS_LO3',  'K/s ', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_LO3', (/ 'lev' /), 'I',  'K/s', trim(attr) )
         attr = 'total euv heating rate'
-        call addfld( 'QRS_EUV', 'K/s', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'QRS_EUV', (/ 'lev' /), 'I', 'K/s', trim(attr) )
         attr = 'total jo2 euv photolysis rate'
-        call addfld( 'JO2_EUV', '/s', pver, 'I', trim(attr), phys_decomp )
+        call addfld( 'JO2_EUV', (/ 'lev' /), 'I', '/s', trim(attr) )
 
       end subroutine init_hrates
 

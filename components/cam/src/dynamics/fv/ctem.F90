@@ -6,7 +6,7 @@ module ctem
   use shr_kind_mod, only: r8 => shr_kind_r8
   use pmgrid,       only: plon, plev, plevp
   use cam_logfile,  only: iulog
-  use cam_history,  only: addfld, outfld, add_default, dyn_decomp
+  use cam_history,  only: addfld, horiz_only, outfld, add_default
 
   implicit none
 
@@ -599,24 +599,24 @@ lat_loop3 : &
 !-------------------------------------------------------------
 ! Initialize output buffer
 !-------------------------------------------------------------
-    call addfld ('VTH3d ','MK/S    ',plevp, 'A','Meridional Heat Flux: 3D zon. mean', dyn_decomp )
-    call addfld ('WTH3d ','MK/S    ',plevp, 'A','Vertical Heat Flux: 3D zon. mean', dyn_decomp )
-    call addfld ('UV3d  ','M2/S2   ',plevp, 'A','Meridional Flux of Zonal Momentum: 3D zon. mean', dyn_decomp )
-    call addfld ('UW3d  ','M2/S2   ',plevp, 'A','Vertical Flux of Zonal Momentum: 3D zon. mean', dyn_decomp )
+    call addfld ('VTH3d',(/ 'ilev' /), 'A','MK/S','Meridional Heat Flux: 3D zon. mean', gridname='fv_centers' )
+    call addfld ('WTH3d',(/ 'ilev' /), 'A','MK/S','Vertical Heat Flux: 3D zon. mean', gridname='fv_centers' )
+    call addfld ('UV3d',(/ 'ilev' /), 'A','M2/S2','Meridional Flux of Zonal Momentum: 3D zon. mean', gridname='fv_centers' )
+    call addfld ('UW3d',(/ 'ilev' /), 'A','M2/S2','Vertical Flux of Zonal Momentum: 3D zon. mean', gridname='fv_centers' )
     if( twod_output ) then
-       call addfld ('VTH2d ','MK/S    ',1, 'A','Meridional Heat Flux: 2D prj of zon. mean - defined on ilev',dyn_decomp )
-       call addfld ('WTH2d ','MK/S    ',1, 'A','Vertical Heat Flux: 2D prj of zon. mean - defined on ilev',dyn_decomp )
-       call addfld ('UV2d  ','M2/S2   ',1, 'A', &
-            'Meridional Flux of Zonal Momentum: 2D prj of zon. mean - defined on ilev',dyn_decomp )
-       call addfld ('UW2d  ','M2/S2   ',1, 'A', &
-            'Vertical Flux of Zonal Momentum; 2D prj of zon. mean - defined on ilev',dyn_decomp )
-       call addfld ('U2d   ','M/S     ',1, 'A','Zonal-Mean zonal wind - defined on ilev',dyn_decomp )
-       call addfld ('V2d   ','M/S     ',1, 'A','Zonal-Mean meridional wind - defined on ilev',dyn_decomp )
-       call addfld ('W2d   ','M/S     ',1, 'A','Zonal-Mean vertical wind - defined on ilev',dyn_decomp )
-       call addfld ('TH2d  ','K       ',1, 'A','Zonal-Mean potential temp - defined on ilev',dyn_decomp )
+       call addfld ('VTH2d',horiz_only, 'A','MK/S','Meridional Heat Flux: 2D prj of zon. mean - defined on ilev',gridname='fv_centers' )
+       call addfld ('WTH2d',horiz_only, 'A','MK/S','Vertical Heat Flux: 2D prj of zon. mean - defined on ilev',gridname='fv_centers' )
+       call addfld ('UV2d',horiz_only, 'A','M2/S2', &
+            'Meridional Flux of Zonal Momentum: 2D prj of zon. mean - defined on ilev',gridname='fv_centers' )
+       call addfld ('UW2d',horiz_only, 'A','M2/S2', &
+            'Vertical Flux of Zonal Momentum; 2D prj of zon. mean - defined on ilev',gridname='fv_centers' )
+       call addfld ('U2d',horiz_only, 'A','M/S','Zonal-Mean zonal wind - defined on ilev',gridname='fv_centers' )
+       call addfld ('V2d',horiz_only, 'A','M/S','Zonal-Mean meridional wind - defined on ilev',gridname='fv_centers' )
+       call addfld ('W2d',horiz_only, 'A','M/S','Zonal-Mean vertical wind - defined on ilev',gridname='fv_centers' )
+       call addfld ('TH2d',horiz_only, 'A','K','Zonal-Mean potential temp - defined on ilev',gridname='fv_centers' )
     end if
-    call addfld ('TH    ','K       ',plevp, 'A','Potential Temperature', dyn_decomp )
-    call addfld ('MSKtem','unitless',1    , 'A','TEM mask', dyn_decomp )
+    call addfld ('TH',(/ 'ilev' /), 'A','K','Potential Temperature', gridname='fv_centers' )
+    call addfld ('MSKtem',horiz_only    , 'A','unitless','TEM mask', gridname='fv_centers' )
     
 !-------------------------------------------------------------
 ! primary tapes: 3D fields

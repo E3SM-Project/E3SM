@@ -87,6 +87,7 @@ module RtmMod
 
   character(len=256) :: nlfilename_rof = 'rof_in' 
   character(len=256) :: nlfilename_lnd = 'lnd_in' 
+  real(r8), save :: delt_save             ! previous delt !BSINGH- declare and initialize it globally
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -976,6 +977,9 @@ contains
     call RtmHistFldsSet()
 
     if (masterproc) write(iulog,*) subname //':: Success '
+    delt_save = 0.0
+
+    call t_stopf('rtmi_grid')
 
   end subroutine Rtmini
   !=======================================================================
@@ -1028,7 +1032,7 @@ contains
     real(r8) :: delt                        ! delt associated with subcycling
     real(r8) :: delt_rtm                    ! real value of rtm_tstep
     integer , save :: nsub_save             ! previous nsub
-    real(r8), save :: delt_save             ! previous delt
+    !real(r8), save :: delt_save             ! previous delt !BSINGH- declare and initialize it globally
     logical , save :: first_time = .true.   ! first time flag (for backwards compatibility)
     character(len=256) :: filer             ! restart file name
     integer,parameter  :: dbug = 1          ! local debug flag
@@ -1339,7 +1343,7 @@ contains
     real(r8) , allocatable :: max_volr(:)
     real(r8) , allocatable :: tempr1(:,:),tempr2(:,:) ! temporary buffer for netcdf read
 
-    integer(kind=pio_offset), pointer   :: compdof(:) ! computational degrees of freedom for pio 
+    integer(kind=PIO_OFFSET_KIND), pointer   :: compdof(:) ! computational degrees of freedom for pio 
     integer :: nt,n,cnt,nr           ! indices
     logical :: readvar               ! read variable in or not
     integer :: ier                   ! status variable

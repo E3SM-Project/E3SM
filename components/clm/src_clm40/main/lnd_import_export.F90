@@ -105,6 +105,7 @@ contains
        a2l%forc_flood(g)   = -x2l(index_x2l_Flrr_flood,i)  
 
        a2l%volr(g)   = x2l(index_x2l_Flrr_volr,i) * (ldomain%area(g) * 1.e6_r8)
+       a2l%volrmch(g)= x2l(index_x2l_Flrr_volrmch,i) * (ldomain%area(g) * 1.e6_r8)
 
        ! Determine required receive fields
 
@@ -310,8 +311,10 @@ contains
        ! sign convention is positive downward with 
        ! hierarchy of atm/glc/lnd/rof/ice/ocn.  so water sent from land to rof is positive
 
-       l2x(index_l2x_Flrl_rofl,i) = clm_l2a%rofliq(g)
+       l2x(index_l2x_Flrl_rofsur,i) = clm_l2a%rofliq(g)
        l2x(index_l2x_Flrl_rofi,i) = clm_l2a%rofice(g)
+       l2x(index_l2x_Flrl_rofgwl,i) = 0.0_r8
+       l2x(index_l2x_Flrl_rofsub,i) = 0.0_r8
 
        ! glc coupling
 

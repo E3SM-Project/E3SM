@@ -152,7 +152,7 @@ subroutine diag_init()
 
   ! Declare the history fields for which this module contains outfld calls.
 
-   use cam_history,        only: addfld, add_default, phys_decomp
+   use cam_history,        only: addfld, horiz_only, add_default
    use constituent_burden, only: constituent_burden_init
    use cam_control_mod,    only: moist_physics, ideal_phys
    use tidal_diag,         only: tidal_diag_init 
@@ -169,145 +169,145 @@ subroutine diag_init()
 
    ! outfld calls in diag_phys_writeout
 
-   call addfld ('NSTEP   ','timestep',1,    'A','Model timestep',phys_decomp)
-   call addfld ('PHIS    ','m2/s2   ',1,    'I','Surface geopotential',phys_decomp)
+   call addfld ('NSTEP',horiz_only,    'A','timestep','Model timestep')
+   call addfld ('PHIS',horiz_only,    'I','m2/s2','Surface geopotential')
 
-   call addfld ('PS      ','Pa      ',1,    'A','Surface pressure',phys_decomp)
-   call addfld ('T       ','K       ',pver, 'A','Temperature',phys_decomp)
-   call addfld ('U       ','m/s     ',pver, 'A','Zonal wind',phys_decomp)
-   call addfld ('V       ','m/s     ',pver, 'A','Meridional wind',phys_decomp)
-   call addfld (cnst_name(1),'kg/kg ',pver, 'A',cnst_longname(1),phys_decomp)
+   call addfld ('PS',horiz_only,    'A','Pa','Surface pressure')
+   call addfld ('T',(/ 'lev' /), 'A','K','Temperature')
+   call addfld ('U',(/ 'lev' /), 'A','m/s','Zonal wind')
+   call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind')
+   call addfld (cnst_name(1),(/ 'lev' /), 'A','kg/kg',cnst_longname(1))
 
    ! State before physics
-   call addfld ('TBP     ','K       ',pver, 'A','Temperature (before physics)'       ,phys_decomp)
-   call addfld (bpcnst(1) ,'kg/kg   ',pver, 'A',cnst_longname(1)//' (before physics)',phys_decomp)
+   call addfld ('TBP',(/ 'lev' /), 'A','K','Temperature (before physics)'       )
+   call addfld (bpcnst(1) ,(/ 'lev' /), 'A','kg/kg',cnst_longname(1)//' (before physics)')
    ! State after physics
-   call addfld ('TAP     ','K       ',pver, 'A','Temperature (after physics)'       ,phys_decomp)
-   call addfld ('UAP     ','m/s     ',pver, 'A','Zonal wind (after physics)'        ,phys_decomp)
-   call addfld ('VAP     ','m/s     ',pver, 'A','Meridional wind (after physics)'   ,phys_decomp)
-   call addfld (apcnst(1) ,'kg/kg   ',pver, 'A',cnst_longname(1)//' (after physics)',phys_decomp)
+   call addfld ('TAP',(/ 'lev' /), 'A','K','Temperature (after physics)'       )
+   call addfld ('UAP',(/ 'lev' /), 'A','m/s','Zonal wind (after physics)'        )
+   call addfld ('VAP',(/ 'lev' /), 'A','m/s','Meridional wind (after physics)'   )
+   call addfld (apcnst(1) ,(/ 'lev' /), 'A','kg/kg',cnst_longname(1)//' (after physics)')
    if ( dycore_is('LR') .or. dycore_is('SE') ) then
-      call addfld ('TFIX    ','K/s     ',1,    'A'     ,'T fixer (T equivalent of Energy correction)',phys_decomp)
-      call addfld ('PTTEND_RESID','K/s ',pver, 'A'     ,&
-                   'T-tendency due to BAB kluge at end of tphysac (diagnostic not part of T-budget)' ,phys_decomp)
+      call addfld ('TFIX',horiz_only,    'A'     ,'K/s','T fixer (T equivalent of Energy correction)')
+      call addfld ('PTTEND_RESID',(/ 'lev' /), 'A'     ,'K/s',&
+                   'T-tendency due to BAB kluge at end of tphysac (diagnostic not part of T-budget)' )
    end if
-   call addfld ('TTEND_TOT   ','K/s' ,pver, 'A','Total temperature tendency'   ,phys_decomp)
+   call addfld ('TTEND_TOT',(/ 'lev' /), 'A','K/s' ,'Total temperature tendency'   )
   
    ! column burdens for all constituents except water vapor
    call constituent_burden_init
 
-   call addfld ('Z3      ','m       ',pver, 'A','Geopotential Height (above sea level)',phys_decomp)
-   call addfld ('Z1000   ','m       ',1,    'A','Geopotential Z at 700 mbar pressure surface',phys_decomp)
-   call addfld ('Z700    ','m       ',1,    'A','Geopotential Z at 700 mbar pressure surface',phys_decomp)
-   call addfld ('Z500    ','m       ',1,    'A','Geopotential Z at 500 mbar pressure surface',phys_decomp)
-   call addfld ('Z300    ','m       ',1,    'A','Geopotential Z at 300 mbar pressure surface',phys_decomp)
-   call addfld ('Z200    ','m       ',1,    'A','Geopotential Z at 200 mbar pressure surface',phys_decomp)
-   call addfld ('Z100    ','m       ',1,    'A','Geopotential Z at 100 mbar pressure surface',phys_decomp)
-   call addfld ('Z050    ','m       ',1,    'A','Geopotential Z at 50 mbar pressure surface',phys_decomp)
+   call addfld ('Z3',(/ 'lev' /), 'A','m','Geopotential Height (above sea level)')
+   call addfld ('Z1000',horiz_only,    'A','m','Geopotential Z at 700 mbar pressure surface')
+   call addfld ('Z700',horiz_only,    'A','m','Geopotential Z at 700 mbar pressure surface')
+   call addfld ('Z500',horiz_only,    'A','m','Geopotential Z at 500 mbar pressure surface')
+   call addfld ('Z300',horiz_only,    'A','m','Geopotential Z at 300 mbar pressure surface')
+   call addfld ('Z200',horiz_only,    'A','m','Geopotential Z at 200 mbar pressure surface')
+   call addfld ('Z100',horiz_only,    'A','m','Geopotential Z at 100 mbar pressure surface')
+   call addfld ('Z050',horiz_only,    'A','m','Geopotential Z at 50 mbar pressure surface')
 
-   call addfld ('ZZ      ','m2      ',pver, 'A','Eddy height variance' ,phys_decomp)
-   call addfld ('VZ      ','m2/s    ',pver, 'A','Meridional transport of geopotential energy',phys_decomp)
-   call addfld ('VT      ','K m/s   ',pver, 'A','Meridional heat transport',phys_decomp)
-   call addfld ('VU      ','m2/s2   ',pver, 'A','Meridional flux of zonal momentum' ,phys_decomp)
-   call addfld ('VV      ','m2/s2   ',pver, 'A','Meridional velocity squared' ,phys_decomp)
+   call addfld ('ZZ',(/ 'lev' /), 'A','m2','Eddy height variance' )
+   call addfld ('VZ',(/ 'lev' /), 'A','m2/s','Meridional transport of geopotential energy')
+   call addfld ('VT',(/ 'lev' /), 'A','K m/s   ','Meridional heat transport')
+   call addfld ('VU',(/ 'lev' /), 'A','m2/s2','Meridional flux of zonal momentum' )
+   call addfld ('VV',(/ 'lev' /), 'A','m2/s2','Meridional velocity squared' )
 
    if(prog_modal_aero) then !Only for prognostic aerosols
-      call addfld ('bc_a1_2 ','kg2/kg2 ',pver, 'A','bc_a1 squared',phys_decomp)
-      call addfld ('dst_a1_2','kg2/kg2 ',pver, 'A','dst_a1 squared',phys_decomp)
-      call addfld ('dst_a3_2','kg2/kg2 ',pver, 'A','dst_a3 squared',phys_decomp)
-      call addfld ('ncl_a1_2','kg2/kg2 ',pver, 'A','ncl_a1 squared',phys_decomp)
-      call addfld ('ncl_a2_2','kg2/kg2 ',pver, 'A','ncl_a2 squared',phys_decomp)
-      call addfld ('ncl_a3_2','kg2/kg2 ',pver, 'A','ncl_a3 squared',phys_decomp)
-      call addfld ('so4_a1_2','kg2/kg2 ',pver, 'A','so4_a1 squared',phys_decomp)
-      call addfld ('so4_a2_2','kg2/kg2 ',pver, 'A','so4_a2 squared',phys_decomp)
-      call addfld ('so4_a3_2','kg2/kg2 ',pver, 'A','so4_a3 squared',phys_decomp)
-      call addfld ('soa_a1_2','kg2/kg2 ',pver, 'A','soa_a1 squared',phys_decomp)
-      call addfld ('soa_a2_2','kg2/kg2 ',pver, 'A','soa_a2 squared',phys_decomp)
-      call addfld ('pom_a1_2','kg2/kg2 ',pver, 'A','pom_a1 squared',phys_decomp)
-      call addfld ('Vbc_a1  ','m/skg/kg',pver, 'A','Meridional bc_a1 transport',phys_decomp)
-      call addfld ('Vdst_a1 ','m/skg/kg',pver, 'A','Meridional dst_a1 transport',phys_decomp)
-      call addfld ('Vdst_a3 ','m/skg/kg',pver, 'A','Meridional dst_a3 transport',phys_decomp)
-      call addfld ('Vncl_a1 ','m/skg/kg',pver, 'A','Meridional ncl_a1 transport',phys_decomp)
-      call addfld ('Vncl_a2 ','m/skg/kg',pver, 'A','Meridional ncl_a2 transport',phys_decomp)
-      call addfld ('Vncl_a3 ','m/skg/kg',pver, 'A','Meridional ncl_a3 transport',phys_decomp)
-      call addfld ('Vso4_a1 ','m/skg/kg',pver, 'A','Meridional so4_a1 transport',phys_decomp)
-      call addfld ('Vso4_a2 ','m/skg/kg',pver, 'A','Meridional so4_a2 transport',phys_decomp)
-      call addfld ('Vso4_a3 ','m/skg/kg',pver, 'A','Meridional so4_a3 transport',phys_decomp)
-      call addfld ('Vsoa_a1 ','m/skg/kg',pver, 'A','Meridional soa_a1 transport',phys_decomp)
-      call addfld ('Vsoa_a2 ','m/skg/kg',pver, 'A','Meridional soa_a2 transport',phys_decomp)
-      call addfld ('Vpom_a1 ','m/skg/kg',pver, 'A','Meridional pom_a1 transport',phys_decomp)
+      call addfld ('bc_a1_2',(/ 'lev' /), 'A','kg2/kg2','bc_a1 squared')
+      call addfld ('dst_a1_2',(/ 'lev' /), 'A','kg2/kg2','dst_a1 squared')
+      call addfld ('dst_a3_2',(/ 'lev' /), 'A','kg2/kg2','dst_a3 squared')
+      call addfld ('ncl_a1_2',(/ 'lev' /), 'A','kg2/kg2','ncl_a1 squared')
+      call addfld ('ncl_a2_2',(/ 'lev' /), 'A','kg2/kg2','ncl_a2 squared')
+      call addfld ('ncl_a3_2',(/ 'lev' /), 'A','kg2/kg2','ncl_a3 squared')
+      call addfld ('so4_a1_2',(/ 'lev' /), 'A','kg2/kg2','so4_a1 squared')
+      call addfld ('so4_a2_2',(/ 'lev' /), 'A','kg2/kg2','so4_a2 squared')
+      call addfld ('so4_a3_2',(/ 'lev' /), 'A','kg2/kg2','so4_a3 squared')
+      call addfld ('soa_a1_2',(/ 'lev' /), 'A','kg2/kg2','soa_a1 squared')
+      call addfld ('soa_a2_2',(/ 'lev' /), 'A','kg2/kg2','soa_a2 squared')
+      call addfld ('pom_a1_2',(/ 'lev' /), 'A','kg2/kg2','pom_a1 squared')
+      call addfld ('Vbc_a1',(/ 'lev' /), 'A','m/skg/kg','Meridional bc_a1 transport')
+      call addfld ('Vdst_a1',(/ 'lev' /), 'A','m/skg/kg','Meridional dst_a1 transport')
+      call addfld ('Vdst_a3',(/ 'lev' /), 'A','m/skg/kg','Meridional dst_a3 transport')
+      call addfld ('Vncl_a1',(/ 'lev' /), 'A','m/skg/kg','Meridional ncl_a1 transport')
+      call addfld ('Vncl_a2',(/ 'lev' /), 'A','m/skg/kg','Meridional ncl_a2 transport')
+      call addfld ('Vncl_a3',(/ 'lev' /), 'A','m/skg/kg','Meridional ncl_a3 transport')
+      call addfld ('Vso4_a1',(/ 'lev' /), 'A','m/skg/kg','Meridional so4_a1 transport')
+      call addfld ('Vso4_a2',(/ 'lev' /), 'A','m/skg/kg','Meridional so4_a2 transport')
+      call addfld ('Vso4_a3',(/ 'lev' /), 'A','m/skg/kg','Meridional so4_a3 transport')
+      call addfld ('Vsoa_a1',(/ 'lev' /), 'A','m/skg/kg','Meridional soa_a1 transport')
+      call addfld ('Vsoa_a2',(/ 'lev' /), 'A','m/skg/kg','Meridional soa_a2 transport')
+      call addfld ('Vpom_a1',(/ 'lev' /), 'A','m/skg/kg','Meridional pom_a1 transport')
    endif
-   call addfld ('VQ      ','m/skg/kg',pver, 'A','Meridional water transport',phys_decomp)
-   call addfld ('QQ      ','kg2/kg2 ',pver, 'A','Eddy moisture variance',phys_decomp)
-   call addfld ('OMEGAV  ','m Pa/s2 ',pver ,'A','Vertical flux of meridional momentum' ,phys_decomp)
-   call addfld ('OMGAOMGA','Pa2/s2  ',pver ,'A','Vertical flux of vertical momentum' ,phys_decomp)
-   call addfld ('OMEGAQ  ','kgPa/kgs',pver ,'A','Vertical water transport' ,phys_decomp)
+   call addfld ('VQ',(/ 'lev' /), 'A','m/skg/kg','Meridional water transport')
+   call addfld ('QQ',(/ 'lev' /), 'A','kg2/kg2','Eddy moisture variance')
+   call addfld ('OMEGAV',(/ 'lev' /) ,'A','m Pa/s2 ','Vertical flux of meridional momentum' )
+   call addfld ('OMGAOMGA',(/ 'lev' /) ,'A','Pa2/s2','Vertical flux of vertical momentum' )
+   call addfld ('OMEGAQ',(/ 'lev' /) ,'A','kgPa/kgs','Vertical water transport' )
 
-   call addfld ('UU      ','m2/s2   ',pver, 'A','Zonal velocity squared' ,phys_decomp)
-   call addfld ('WSPEED  ','m/s     ',pver, 'X','Horizontal total wind speed maximum' ,phys_decomp)
-   call addfld ('WSPDSRFMX','m/s    ',1,    'X','Horizontal total wind speed maximum at the surface' ,phys_decomp)
-   call addfld ('WSPDSRFAV','m/s    ',1,    'A','Horizontal total wind speed average at the surface' ,phys_decomp)
+   call addfld ('UU',(/ 'lev' /), 'A','m2/s2','Zonal velocity squared' )
+   call addfld ('WSPEED',(/ 'lev' /), 'X','m/s','Horizontal total wind speed maximum' )
+   call addfld ('WSPDSRFMX',horiz_only,    'X','m/s','Horizontal total wind speed maximum at the surface' )
+   call addfld ('WSPDSRFAV',horiz_only,    'A','m/s','Horizontal total wind speed average at the surface' )
 
-   call addfld ('OMEGA   ','Pa/s    ',pver, 'A','Vertical velocity (pressure)',phys_decomp)
-   call addfld ('OMEGAT  ','K Pa/s  ',pver, 'A','Vertical heat flux' ,phys_decomp)
-   call addfld ('OMEGAU  ','m Pa/s2 ',pver, 'A','Vertical flux of zonal momentum' ,phys_decomp)
-   call addfld ('OMEGA850','Pa/s    ',1,    'A','Vertical velocity at 850 mbar pressure surface',phys_decomp)
-   call addfld ('OMEGA500','Pa/s    ',1,    'A','Vertical velocity at 500 mbar pressure surface',phys_decomp)
+   call addfld ('OMEGA',(/ 'lev' /), 'A','Pa/s','Vertical velocity (pressure)')
+   call addfld ('OMEGAT',(/ 'lev' /), 'A','K Pa/s  ','Vertical heat flux' )
+   call addfld ('OMEGAU',(/ 'lev' /), 'A','m Pa/s2 ','Vertical flux of zonal momentum' )
+   call addfld ('OMEGA850',horiz_only,    'A','Pa/s','Vertical velocity at 850 mbar pressure surface')
+   call addfld ('OMEGA500',horiz_only,    'A','Pa/s','Vertical velocity at 500 mbar pressure surface')
 
-   call addfld ('MQ      ','kg/m2   ',pver, 'A','Water vapor mass in layer',phys_decomp)
-   call addfld ('TMQ     ','kg/m2   ',1,    'A','Total (vertically integrated) precipitable water',phys_decomp)
-   call addfld ('TUQ     ','kg/m/s  ',1,    'A','Total (vertically integrated) zonal water flux',phys_decomp)
-   call addfld ('TVQ     ','kg/m/s  ',1,    'A','Total (vertically integrated) meridional water flux',phys_decomp)
-   call addfld ('RELHUM  ','percent ',pver, 'A','Relative humidity',phys_decomp)
-   call addfld ('RHW  ','percent '   ,pver, 'A','Relative humidity with respect to liquid',phys_decomp)
-   call addfld ('RHI  ','percent '   ,pver, 'A','Relative humidity with respect to ice',phys_decomp)
-   call addfld ('RHCFMIP','percent ' ,pver, 'A','Relative humidity with respect to water above 273 K, ice below 273 K',phys_decomp)
-   call addfld ('PSL     ','Pa      ',1,    'A','Sea level pressure',phys_decomp)
+   call addfld ('MQ',(/ 'lev' /), 'A','kg/m2','Water vapor mass in layer')
+   call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water')
+   call addfld ('TUQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) zonal water flux')
+   call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
+   call addfld ('RELHUM',(/ 'lev' /), 'A','percent','Relative humidity')
+   call addfld ('RHW',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to liquid')
+   call addfld ('RHI',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to ice')
+   call addfld ('RHCFMIP',(/ 'lev' /), 'A','percent' ,'Relative humidity with respect to water above 273 K, ice below 273 K')
+   call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure')
 
-   call addfld ('T850    ','K       ',1,    'A','Temperature at 850 mbar pressure surface',phys_decomp)
-   call addfld ('T500    ','K       ',1,    'A','Temperature at 500 mbar pressure surface',phys_decomp)
-   call addfld ('T300    ','K       ',1,    'A','Temperature at 300 mbar pressure surface',phys_decomp)
-   call addfld ('T200    ','K       ',1,    'A','Temperature at 200 mbar pressure surface',phys_decomp)
-   call addfld ('Q850    ','kg/kg   ',1,    'A','Specific Humidity at 850 mbar pressure surface',phys_decomp)
-   call addfld ('Q200    ','kg/kg   ',1,    'A','Specific Humidity at 700 mbar pressure surface',phys_decomp)
-   call addfld ('U850    ','m/s     ',1,    'A','Zonal wind at 850 mbar pressure surface',phys_decomp)
-   call addfld ('U250    ','m/s     ',1,    'A','Zonal wind at 250 mbar pressure surface',phys_decomp)
-   call addfld ('U200    ','m/s     ',1,    'A','Zonal wind at 200 mbar pressure surface',phys_decomp)
-   call addfld ('U010    ','m/s     ',1,    'A','Zonal wind at  10 mbar pressure surface',phys_decomp)
-   call addfld ('V850    ','m/s     ',1,    'A','Meridional wind at 850 mbar pressure surface',phys_decomp)
-   call addfld ('V200    ','m/s     ',1,    'A','Meridional wind at 200 mbar pressure surface',phys_decomp)
-   call addfld ('V250    ','m/s     ',1,    'A','Meridional wind at 250 mbar pressure surface',phys_decomp)
+   call addfld ('T850',horiz_only,    'A','K','Temperature at 850 mbar pressure surface')
+   call addfld ('T500',horiz_only,    'A','K','Temperature at 500 mbar pressure surface')
+   call addfld ('T300',horiz_only,    'A','K','Temperature at 300 mbar pressure surface')
+   call addfld ('T200',horiz_only,    'A','K','Temperature at 200 mbar pressure surface')
+   call addfld ('Q850',horiz_only,    'A','kg/kg','Specific Humidity at 850 mbar pressure surface')
+   call addfld ('Q200',horiz_only,    'A','kg/kg','Specific Humidity at 700 mbar pressure surface')
+   call addfld ('U850',horiz_only,    'A','m/s','Zonal wind at 850 mbar pressure surface')
+   call addfld ('U250',horiz_only,    'A','m/s','Zonal wind at 250 mbar pressure surface')
+   call addfld ('U200',horiz_only,    'A','m/s','Zonal wind at 200 mbar pressure surface')
+   call addfld ('U010',horiz_only,    'A','m/s','Zonal wind at  10 mbar pressure surface')
+   call addfld ('V850',horiz_only,    'A','m/s','Meridional wind at 850 mbar pressure surface')
+   call addfld ('V200',horiz_only,    'A','m/s','Meridional wind at 200 mbar pressure surface')
+   call addfld ('V250',horiz_only,    'A','m/s','Meridional wind at 250 mbar pressure surface')
 
-   call addfld ('TT      ','K2      ',pver, 'A','Eddy temperature variance' ,phys_decomp)
+   call addfld ('TT',(/ 'lev' /), 'A','K2','Eddy temperature variance' )
 
-   call addfld ('UBOT    ','m/s     ',1,    'A','Lowest model level zonal wind',phys_decomp)
-   call addfld ('VBOT    ','m/s     ',1,    'A','Lowest model level meridional wind',phys_decomp)
-   call addfld ('QBOT    ','kg/kg   ',1,    'A','Lowest model level water vapor mixing ratio',phys_decomp)
-   call addfld ('ZBOT    ','m       ',1,    'A','Lowest model level height', phys_decomp)
+   call addfld ('UBOT',horiz_only,    'A','m/s','Lowest model level zonal wind')
+   call addfld ('VBOT',horiz_only,    'A','m/s','Lowest model level meridional wind')
+   call addfld ('QBOT',horiz_only,    'A','kg/kg','Lowest model level water vapor mixing ratio')
+   call addfld ('ZBOT',horiz_only,    'A','m','Lowest model level height')
 
-   call addfld ('ATMEINT  ','J/m2    ',1, 'A','Vertically integrated total atmospheric energy ',phys_decomp)
+   call addfld ('ATMEINT',horiz_only, 'A','J/m2','Vertically integrated total atmospheric energy ')
 
-   call addfld ('T1000      ','K     ',1,   'A','Temperature at 1000 mbar pressure surface',phys_decomp)
-   call addfld ('T925       ','K     ',1,   'A','Temperature at 925 mbar pressure surface',phys_decomp)   
-   call addfld ('T700       ','K     ',1,   'A','Temperature at 700 mbar pressure surface',phys_decomp)
-   call addfld ('T010       ','K     ',1,   'A','Temperature at 10 mbar pressure surface',phys_decomp)
-   call addfld ('Q1000      ','kg/kg ',1,   'A','Specific Humidity at 1000 mbar pressure surface',phys_decomp)   
-   call addfld ('Q925       ','kg/kg ',1,   'A','Specific Humidity at 925 mbar pressure surface',phys_decomp)
+   call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
+   call addfld ('T925',horiz_only,   'A','K','Temperature at 925 mbar pressure surface')   
+   call addfld ('T700',horiz_only,   'A','K','Temperature at 700 mbar pressure surface')
+   call addfld ('T010',horiz_only,   'A','K','Temperature at 10 mbar pressure surface')
+   call addfld ('Q1000',horiz_only,   'A','kg/kg','Specific Humidity at 1000 mbar pressure surface')   
+   call addfld ('Q925',horiz_only,   'A','kg/kg','Specific Humidity at 925 mbar pressure surface')
 
-   call addfld ('T7001000   ','K     ',1,   'A','Temperature difference 700 mb - 1000 mb',phys_decomp)
-   call addfld ('TH7001000  ','K     ',1,   'A','Theta difference 700 mb - 1000 mb',phys_decomp)
-   call addfld ('THE7001000 ','K     ',1,   'A','ThetaE difference 700 mb - 1000 mb',phys_decomp)
+   call addfld ('T7001000',horiz_only,   'A','K','Temperature difference 700 mb - 1000 mb')
+   call addfld ('TH7001000',horiz_only,   'A','K','Theta difference 700 mb - 1000 mb')
+   call addfld ('THE7001000',horiz_only,   'A','K','ThetaE difference 700 mb - 1000 mb')
 
-   call addfld ('T8501000   ','K     ',1,   'A','Temperature difference 850 mb - 1000 mb',phys_decomp)
-   call addfld ('TH8501000  ','K     ',1,   'A','Theta difference 850 mb - 1000 mb',phys_decomp)   
-   call addfld ('THE8501000 ','K     ',1,   'A','ThetaE difference 850 mb - 1000 mb',phys_decomp)
-   call addfld ('T9251000   ','K     ',1,   'A','Temperature difference 925 mb - 1000 mb',phys_decomp) 
-   call addfld ('TH9251000  ','K     ',1,   'A','Theta difference 925 mb - 1000 mb',phys_decomp)   
-   call addfld ('THE9251000 ','K     ',1,   'A','ThetaE difference 925 mb - 1000 mb',phys_decomp) 
+   call addfld ('T8501000',horiz_only,   'A','K','Temperature difference 850 mb - 1000 mb')
+   call addfld ('TH8501000',horiz_only,   'A','K','Theta difference 850 mb - 1000 mb')   
+   call addfld ('THE8501000',horiz_only,   'A','K','ThetaE difference 850 mb - 1000 mb')
+   call addfld ('T9251000',horiz_only,   'A','K','Temperature difference 925 mb - 1000 mb') 
+   call addfld ('TH9251000',horiz_only,   'A','K','Theta difference 925 mb - 1000 mb')   
+   call addfld ('THE9251000',horiz_only,   'A','K','ThetaE difference 925 mb - 1000 mb') 
 
    ! This field is added by radiation when full physics is used
    if ( ideal_phys )then
-      call addfld('QRS     ', 'K/s     ', pver, 'A', 'Solar heating rate', phys_decomp)
+      call addfld('QRS', (/ 'lev' /), 'A', 'K/s', 'Solar heating rate')
    end if
  
    ! ----------------------------
@@ -425,8 +425,8 @@ subroutine diag_init()
    if (.not. moist_physics) return
 
 
-   call addfld ('PDELDRY ','Pa      ',pver, 'A','Dry pressure difference between levels',phys_decomp)
-   call addfld ('PSDRY   ','Pa      ',1,    'A','Surface pressure',phys_decomp)
+   call addfld ('PDELDRY',(/ 'lev' /), 'A','Pa','Dry pressure difference between levels')
+   call addfld ('PSDRY',horiz_only,    'A','Pa','Surface pressure')
 
    if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart') .or. chem_is('waccm_mozart_mam3')) then
       call add_default ('PS      ', 2, ' ')
@@ -437,11 +437,11 @@ subroutine diag_init()
 
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
-   call addfld ('DTCOND  ','K/s     ',pver, 'A','T tendency - moist processes',phys_decomp)
-   call addfld ('DTCOND_24_COS','K/s',pver, 'A','T tendency - moist processes 24hr. cos coeff.',phys_decomp)
-   call addfld ('DTCOND_24_SIN','K/s',pver, 'A','T tendency - moist processes 24hr. sin coeff.',phys_decomp)
-   call addfld ('DTCOND_12_COS','K/s',pver, 'A','T tendency - moist processes 12hr. cos coeff.',phys_decomp)
-   call addfld ('DTCOND_12_SIN','K/s',pver, 'A','T tendency - moist processes 12hr. sin coeff.',phys_decomp)
+   call addfld ('DTCOND',(/ 'lev' /), 'A','K/s','T tendency - moist processes')
+   call addfld ('DTCOND_24_COS',(/ 'lev' /), 'A','K/s','T tendency - moist processes 24hr. cos coeff.')
+   call addfld ('DTCOND_24_SIN',(/ 'lev' /), 'A','K/s','T tendency - moist processes 24hr. sin coeff.')
+   call addfld ('DTCOND_12_COS',(/ 'lev' /), 'A','K/s','T tendency - moist processes 12hr. cos coeff.')
+   call addfld ('DTCOND_12_SIN',(/ 'lev' /), 'A','K/s','T tendency - moist processes 12hr. sin coeff.')
 
    ! determine number of constituents for which convective tendencies must be computed
    if (history_budget) then
@@ -457,7 +457,7 @@ subroutine diag_init()
    end do
 
    if (diag_cnst_conv_tend == 'q_only' .or. diag_cnst_conv_tend == 'all' .or. history_budget) then
-      call addfld (dcconnam(1), 'kg/kg/s',pver,'A',trim(cnst_name(1))//' tendency due to moist processes',phys_decomp)
+      call addfld (dcconnam(1),(/ 'lev' /),'A', 'kg/kg/s',trim(cnst_name(1))//' tendency due to moist processes')
       if ( diag_cnst_conv_tend == 'q_only' .or. diag_cnst_conv_tend == 'all' ) then
          call add_default (dcconnam(1),                           1, ' ')
       end if
@@ -466,7 +466,7 @@ subroutine diag_init()
       end if
       if (diag_cnst_conv_tend == 'all' .or. history_budget) then
          do m = 2, pcnst
-            call addfld (dcconnam(m), 'kg/kg/s',pver,'A',trim(cnst_name(m))//' tendency due to moist processes',phys_decomp)
+            call addfld (dcconnam(m),(/ 'lev' /),'A', 'kg/kg/s',trim(cnst_name(m))//' tendency due to moist processes')
             if( diag_cnst_conv_tend == 'all' ) then
                call add_default (dcconnam(m),                           1, ' ')
             end if
@@ -477,51 +477,51 @@ subroutine diag_init()
       end if
    end if
 
-   call addfld ('PRECL   ','m/s     ',1,    'A','Large-scale (stable) precipitation rate (liq + ice)'                ,phys_decomp)
-   call addfld ('PRECC   ','m/s     ',1,    'A','Convective precipitation rate (liq + ice)'                          ,phys_decomp)
-   call addfld ('PRECT   ','m/s     ',1,    'A','Total (convective and large-scale) precipitation rate (liq + ice)'  ,phys_decomp)
-   call addfld ('PREC_PCW','m/s     ',1,    'A','LS_pcw precipitation rate',phys_decomp)
-   call addfld ('PREC_zmc','m/s     ',1,    'A','CV_zmc precipitation rate',phys_decomp)
-   call addfld ('PRECTMX ','m/s     ',1,    'X','Maximum (convective and large-scale) precipitation rate (liq+ice)'  ,phys_decomp)
-   call addfld ('PRECSL  ','m/s     ',1,    'A','Large-scale (stable) snow rate (water equivalent)'                  ,phys_decomp)
-   call addfld ('PRECSC  ','m/s     ',1,    'A','Convective snow rate (water equivalent)'                            ,phys_decomp)
-   call addfld ('PRECCav ','m/s     ',1,    'A','Average large-scale precipitation (liq + ice)'                      ,phys_decomp)
-   call addfld ('PRECLav ','m/s     ',1,    'A','Average convective precipitation  (liq + ice)'                      ,phys_decomp)
+   call addfld ('PRECL',horiz_only,    'A','m/s','Large-scale (stable) precipitation rate (liq + ice)'                )
+   call addfld ('PRECC',horiz_only,    'A','m/s','Convective precipitation rate (liq + ice)'                          )
+   call addfld ('PRECT',horiz_only,    'A','m/s','Total (convective and large-scale) precipitation rate (liq + ice)'  )
+   call addfld ('PREC_PCW',horiz_only,    'A','m/s','LS_pcw precipitation rate')
+   call addfld ('PREC_zmc',horiz_only,    'A','m/s','CV_zmc precipitation rate')
+   call addfld ('PRECTMX',horiz_only,    'X','m/s','Maximum (convective and large-scale) precipitation rate (liq+ice)'  )
+   call addfld ('PRECSL',horiz_only,    'A','m/s','Large-scale (stable) snow rate (water equivalent)'                  )
+   call addfld ('PRECSC',horiz_only,    'A','m/s','Convective snow rate (water equivalent)'                            )
+   call addfld ('PRECCav',horiz_only,    'A','m/s','Average large-scale precipitation (liq + ice)'                      )
+   call addfld ('PRECLav',horiz_only,    'A','m/s','Average convective precipitation  (liq + ice)'                      )
 
    ! outfld calls in diag_surf
 
-   call addfld ('SHFLX   ','W/m2    ',1,    'A','Surface sensible heat flux',phys_decomp)
-   call addfld ('LHFLX   ','W/m2    ',1,    'A','Surface latent heat flux',phys_decomp)
-   call addfld ('QFLX    ','kg/m2/s ',1,    'A','Surface water flux',phys_decomp)
+   call addfld ('SHFLX',horiz_only,    'A','W/m2','Surface sensible heat flux')
+   call addfld ('LHFLX',horiz_only,    'A','W/m2','Surface latent heat flux')
+   call addfld ('QFLX',horiz_only,    'A','kg/m2/s','Surface water flux')
 
-   call addfld ('TAUX    ','N/m2    ',1,    'A','Zonal surface stress',phys_decomp)
-   call addfld ('TAUY    ','N/m2    ',1,    'A','Meridional surface stress',phys_decomp)
-   call addfld ('TREFHT  ','K       ',1,    'A','Reference height temperature',phys_decomp)
-   call addfld ('TREFHTMN','K       ',1,    'M','Minimum reference height temperature over output period',phys_decomp)
-   call addfld ('TREFHTMX','K       ',1,    'X','Maximum reference height temperature over output period',phys_decomp)
-   call addfld ('QREFHT  ','kg/kg   ',1,    'A','Reference height humidity',phys_decomp)
-   call addfld ('U10     ','m/s     ',1,    'A','10m wind speed',phys_decomp)
-   call addfld ('RHREFHT ','fraction',1,    'A','Reference height relative humidity',phys_decomp)
+   call addfld ('TAUX',horiz_only,    'A','N/m2','Zonal surface stress')
+   call addfld ('TAUY',horiz_only,    'A','N/m2','Meridional surface stress')
+   call addfld ('TREFHT',horiz_only,    'A','K','Reference height temperature')
+   call addfld ('TREFHTMN',horiz_only,    'M','K','Minimum reference height temperature over output period')
+   call addfld ('TREFHTMX',horiz_only,    'X','K','Maximum reference height temperature over output period')
+   call addfld ('QREFHT',horiz_only,    'A','kg/kg','Reference height humidity')
+   call addfld ('U10',horiz_only,    'A','m/s','10m wind speed')
+   call addfld ('RHREFHT',horiz_only,    'A','fraction','Reference height relative humidity')
 
-   call addfld ('LANDFRAC','fraction',1,    'A','Fraction of sfc area covered by land',phys_decomp)
-   call addfld ('ICEFRAC ','fraction',1,    'A','Fraction of sfc area covered by sea-ice',phys_decomp)
-   call addfld ('OCNFRAC ','fraction',1,    'A','Fraction of sfc area covered by ocean',phys_decomp)
+   call addfld ('LANDFRAC',horiz_only,    'A','fraction','Fraction of sfc area covered by land')
+   call addfld ('ICEFRAC',horiz_only,    'A','fraction','Fraction of sfc area covered by sea-ice')
+   call addfld ('OCNFRAC',horiz_only,    'A','fraction','Fraction of sfc area covered by ocean')
 
-   call addfld ('TREFMNAV','K       ',1,    'A','Average of TREFHT daily minimum',phys_decomp)
-   call addfld ('TREFMXAV','K       ',1,    'A','Average of TREFHT daily maximum',phys_decomp)
+   call addfld ('TREFMNAV',horiz_only,    'A','K','Average of TREFHT daily minimum')
+   call addfld ('TREFMXAV',horiz_only,    'A','K','Average of TREFHT daily maximum')
 
-   call addfld ('TS      ','K       ',1,    'A','Surface temperature (radiative)',phys_decomp)
-   call addfld ('TSMN    ','K       ',1,    'M','Minimum surface temperature over output period',phys_decomp)
-   call addfld ('TSMX    ','K       ',1,    'X','Maximum surface temperature over output period',phys_decomp)
-   call addfld ('SNOWHLND','m       ',1,    'A','Water equivalent snow depth',phys_decomp)
-   call addfld ('SNOWHICE','m       ',1,    'A','Snow depth over ice',phys_decomp, fill_value = 1.e30_r8)
-   call addfld ('TBOT    ','K       ',1,    'A','Lowest model level temperature', phys_decomp)
+   call addfld ('TS',horiz_only,    'A','K','Surface temperature (radiative)')
+   call addfld ('TSMN',horiz_only,    'M','K','Minimum surface temperature over output period')
+   call addfld ('TSMX',horiz_only,    'X','K','Maximum surface temperature over output period')
+   call addfld ('SNOWHLND',horiz_only,    'A','m','Water equivalent snow depth')
+   call addfld ('SNOWHICE',horiz_only,    'A','m','Snow depth over ice', fill_value = 1.e30_r8)
+   call addfld ('TBOT',horiz_only,    'A','K','Lowest model level temperature')
 
-   call addfld ('ASDIR',   '1',       1,    'A','albedo: shortwave, direct', phys_decomp)
-   call addfld ('ASDIF',   '1',       1,    'A','albedo: shortwave, diffuse', phys_decomp)
-   call addfld ('ALDIR',   '1',       1,    'A','albedo: longwave, direct', phys_decomp)
-   call addfld ('ALDIF',   '1',       1,    'A','albedo: longwave, diffuse', phys_decomp)
-   call addfld ('SST',     'K',       1,    'A','sea surface temperature', phys_decomp)
+   call addfld ('ASDIR',       horiz_only,    'A',   '1','albedo: shortwave, direct')
+   call addfld ('ASDIF',       horiz_only,    'A',   '1','albedo: shortwave, diffuse')
+   call addfld ('ALDIR',       horiz_only,    'A',   '1','albedo: longwave, direct')
+   call addfld ('ALDIF',       horiz_only,    'A',   '1','albedo: longwave, diffuse')
+   call addfld ('SST',       horiz_only,    'A',     'K','sea surface temperature')
 
    ! defaults
    if (history_amwg) then
@@ -556,17 +556,17 @@ subroutine diag_init()
 
    ! outfld calls in diag_phys_tend_writeout
 
-   call addfld ('PTTEND  '   ,'K/s     ',pver, 'A','T total physics tendency'                             ,phys_decomp)
-   call addfld (ptendnam(       1),  'kg/kg/s ',pver, 'A',trim(cnst_name(       1))//' total physics tendency '      ,phys_decomp)
-   call addfld (ptendnam(ixcldliq),  'kg/kg/s ',pver, 'A',trim(cnst_name(ixcldliq))//' total physics tendency '      ,phys_decomp)
-   call addfld (ptendnam(ixcldice),  'kg/kg/s ',pver, 'A',trim(cnst_name(ixcldice))//' total physics tendency '      ,phys_decomp)
+   call addfld ('PTTEND'   ,(/ 'lev' /), 'A','K/s','T total physics tendency'                             )
+   call addfld (ptendnam(       1),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(       1))//' total physics tendency '      )
+   call addfld (ptendnam(ixcldliq),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(ixcldliq))//' total physics tendency '      )
+   call addfld (ptendnam(ixcldice),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(ixcldice))//' total physics tendency '      )
    if ( dycore_is('LR') )then
-      call addfld (dmetendnam(       1),'kg/kg/s ',pver, 'A', &
-           trim(cnst_name(       1))//' dme adjustment tendency (FV) ',phys_decomp)
-      call addfld (dmetendnam(ixcldliq),'kg/kg/s ',pver, 'A', &
-           trim(cnst_name(ixcldliq))//' dme adjustment tendency (FV) ',phys_decomp)
-      call addfld (dmetendnam(ixcldice),'kg/kg/s ',pver, 'A', &
-           trim(cnst_name(ixcldice))//' dme adjustment tendency (FV) ',phys_decomp)
+      call addfld (dmetendnam(       1),(/ 'lev' /), 'A','kg/kg/s', &
+           trim(cnst_name(       1))//' dme adjustment tendency (FV) ')
+      call addfld (dmetendnam(ixcldliq),(/ 'lev' /), 'A','kg/kg/s', &
+           trim(cnst_name(ixcldliq))//' dme adjustment tendency (FV) ')
+      call addfld (dmetendnam(ixcldice),(/ 'lev' /), 'A','kg/kg/s', &
+           trim(cnst_name(ixcldice))//' dme adjustment tendency (FV) ')
    end if
 
    if ( history_budget ) then
@@ -586,19 +586,19 @@ subroutine diag_init()
 
    ! outfld calls in diag_physvar_ic
 
-   call addfld ('QCWAT&IC   ','kg/kg   ',pver, 'I','q associated with cloud water'                   ,phys_decomp)
-   call addfld ('TCWAT&IC   ','kg/kg   ',pver, 'I','T associated with cloud water'                   ,phys_decomp)
-   call addfld ('LCWAT&IC   ','kg/kg   ',pver, 'I','Cloud water (ice + liq'                          ,phys_decomp)
-   call addfld ('CLOUD&IC   ','fraction',pver, 'I','Cloud fraction'                                  ,phys_decomp)
-   call addfld ('CONCLD&IC   ','fraction',pver, 'I','Convective cloud fraction'                      ,phys_decomp)
-   call addfld ('TKE&IC     ','m2/s2   ',pverp,'I','Turbulent Kinetic Energy'                        ,phys_decomp)
-   call addfld ('CUSH&IC    ','m       ',1,    'I','Convective Scale Height'                         ,phys_decomp)
-   call addfld ('KVH&IC     ','m2/s    ',pverp,'I','Vertical diffusion diffusivities (heat/moisture)',phys_decomp)
-   call addfld ('KVM&IC     ','m2/s    ',pverp,'I','Vertical diffusion diffusivities (momentum)'     ,phys_decomp)
-   call addfld ('PBLH&IC    ','m       ',1,    'I','PBL height'                                      ,phys_decomp)
-   call addfld ('TPERT&IC   ','K       ',1,    'I','Perturbation temperature (eddies in PBL)'        ,phys_decomp)
-   call addfld ('QPERT&IC   ','kg/kg   ',1,    'I','Perturbation specific humidity (eddies in PBL)'  ,phys_decomp)
-   call addfld ('TBOT&IC    ','K       ',1,    'I','Lowest model level temperature'                  ,phys_decomp)
+   call addfld ('QCWAT&IC',(/ 'lev' /), 'I','kg/kg','q associated with cloud water'                   )
+   call addfld ('TCWAT&IC',(/ 'lev' /), 'I','kg/kg','T associated with cloud water'                   )
+   call addfld ('LCWAT&IC',(/ 'lev' /), 'I','kg/kg','Cloud water (ice + liq'                          )
+   call addfld ('CLOUD&IC',(/ 'lev' /), 'I','fraction','Cloud fraction'                                  )
+   call addfld ('CONCLD&IC',(/ 'lev' /), 'I','fraction','Convective cloud fraction'                      )
+   call addfld ('TKE&IC',(/ 'ilev' /),'I','m2/s2','Turbulent Kinetic Energy'                        )
+   call addfld ('CUSH&IC',horiz_only,    'I','m','Convective Scale Height'                         )
+   call addfld ('KVH&IC',(/ 'ilev' /),'I','m2/s','Vertical diffusion diffusivities (heat/moisture)')
+   call addfld ('KVM&IC',(/ 'ilev' /),'I','m2/s','Vertical diffusion diffusivities (momentum)'     )
+   call addfld ('PBLH&IC',horiz_only,    'I','m','PBL height'                                      )
+   call addfld ('TPERT&IC',horiz_only,    'I','K','Perturbation temperature (eddies in PBL)'        )
+   call addfld ('QPERT&IC',horiz_only,    'I','kg/kg','Perturbation specific humidity (eddies in PBL)'  )
+   call addfld ('TBOT&IC',horiz_only,    'I','K','Lowest model level temperature'                  )
 
 
    ! Initial file - Optional fields
@@ -620,20 +620,20 @@ subroutine diag_init()
    end if
 
    ! CAM export state 
-   call addfld('a2x_BCPHIWET', 'kg/m2/s', 1, 'A', 'wetdep of hydrophilic black carbon',   phys_decomp)
-   call addfld('a2x_BCPHIDRY', 'kg/m2/s', 1, 'A', 'drydep of hydrophilic black carbon',   phys_decomp)
-   call addfld('a2x_BCPHODRY', 'kg/m2/s', 1, 'A', 'drydep of hydrophobic black carbon',   phys_decomp)
-   call addfld('a2x_OCPHIWET', 'kg/m2/s', 1, 'A', 'wetdep of hydrophilic organic carbon', phys_decomp)
-   call addfld('a2x_OCPHIDRY', 'kg/m2/s', 1, 'A', 'drydep of hydrophilic organic carbon', phys_decomp)
-   call addfld('a2x_OCPHODRY', 'kg/m2/s', 1, 'A', 'drydep of hydrophobic organic carbon', phys_decomp)
-   call addfld('a2x_DSTWET1',  'kg/m2/s', 1, 'A', 'wetdep of dust (bin1)',                phys_decomp)
-   call addfld('a2x_DSTDRY1',  'kg/m2/s', 1, 'A', 'drydep of dust (bin1)',                phys_decomp)
-   call addfld('a2x_DSTWET2',  'kg/m2/s', 1, 'A', 'wetdep of dust (bin2)',                phys_decomp)
-   call addfld('a2x_DSTDRY2',  'kg/m2/s', 1, 'A', 'drydep of dust (bin2)',                phys_decomp)
-   call addfld('a2x_DSTWET3',  'kg/m2/s', 1, 'A', 'wetdep of dust (bin3)',                phys_decomp)
-   call addfld('a2x_DSTDRY3',  'kg/m2/s', 1, 'A', 'drydep of dust (bin3)',                phys_decomp)
-   call addfld('a2x_DSTWET4',  'kg/m2/s', 1, 'A', 'wetdep of dust (bin4)',                phys_decomp)
-   call addfld('a2x_DSTDRY4',  'kg/m2/s', 1, 'A', 'drydep of dust (bin4)',                phys_decomp)
+   call addfld('a2x_BCPHIWET', horiz_only, 'A', 'kg/m2/s', 'wetdep of hydrophilic black carbon')
+   call addfld('a2x_BCPHIDRY', horiz_only, 'A', 'kg/m2/s', 'drydep of hydrophilic black carbon')
+   call addfld('a2x_BCPHODRY', horiz_only, 'A', 'kg/m2/s', 'drydep of hydrophobic black carbon')
+   call addfld('a2x_OCPHIWET', horiz_only, 'A', 'kg/m2/s', 'wetdep of hydrophilic organic carbon')
+   call addfld('a2x_OCPHIDRY', horiz_only, 'A', 'kg/m2/s', 'drydep of hydrophilic organic carbon')
+   call addfld('a2x_OCPHODRY', horiz_only, 'A', 'kg/m2/s', 'drydep of hydrophobic organic carbon')
+   call addfld('a2x_DSTWET1', horiz_only, 'A',  'kg/m2/s', 'wetdep of dust (bin1)')
+   call addfld('a2x_DSTDRY1', horiz_only, 'A',  'kg/m2/s', 'drydep of dust (bin1)')
+   call addfld('a2x_DSTWET2', horiz_only, 'A',  'kg/m2/s', 'wetdep of dust (bin2)')
+   call addfld('a2x_DSTDRY2', horiz_only, 'A',  'kg/m2/s', 'drydep of dust (bin2)')
+   call addfld('a2x_DSTWET3', horiz_only, 'A',  'kg/m2/s', 'wetdep of dust (bin3)')
+   call addfld('a2x_DSTDRY3', horiz_only, 'A',  'kg/m2/s', 'drydep of dust (bin3)')
+   call addfld('a2x_DSTWET4', horiz_only, 'A',  'kg/m2/s', 'wetdep of dust (bin4)')
+   call addfld('a2x_DSTDRY4', horiz_only, 'A',  'kg/m2/s', 'drydep of dust (bin4)')
 
    !---------------------------------------------------------
    ! CAM history fields for CAM-DOM/CAM-CSIM 
@@ -641,25 +641,25 @@ subroutine diag_init()
 
    ! CAM-DOM history fields
 #ifdef COUP_DOM
-   call addfld ('TSOCN&IC   ','m       ',1,    'I','Ocean tempertare',phys_decomp)
+   call addfld ('TSOCN&IC',horiz_only,    'I','m','Ocean tempertare')
    call add_default ('TSOCN&IC   ',0, 'I')
 #endif
 
   ! CAM-CSIM history fields
 
   do k=1,plevmx
-     call addfld (tsnam(k),'K       ',1,'A',tsnam(k)//' subsoil temperature',phys_decomp)
+     call addfld (tsnam(k),horiz_only,'A','K',tsnam(k)//' subsoil temperature')
   end do
-  call addfld ('SICTHK  '   ,'m       ',1,'A','Sea ice thickness',phys_decomp)
-  call addfld ('TSICE   '   ,'K       ',1,'A','Ice temperature',phys_decomp)
+  call addfld ('SICTHK'   ,horiz_only,'A','m','Sea ice thickness')
+  call addfld ('TSICE'   ,horiz_only,'A','K','Ice temperature')
   do k = 1,plevmx
-     call addfld (trim(tsnam(k))//'&IC','K       ',1,'I',tsnam(k)//' subsoil temperature',phys_decomp)
+     call addfld (trim(tsnam(k))//'&IC',horiz_only,'I','K',tsnam(k)//' subsoil temperature')
   end do
-  call addfld ('SICTHK&IC  ','m       ',1,'I','Sea ice thickness'                      ,phys_decomp)
-  call addfld ('TSICE&IC   ','K       ',1,'I','Ice temperature'                        ,phys_decomp)
-  call addfld ('SNOWHICE&IC','m       ',1,'I','Water equivalent snow depth'            ,phys_decomp)
-  call addfld ('ICEFRAC&IC ','fraction',1,'I','Fraction of sfc area covered by sea-ice',phys_decomp)
-  call addfld ('TSICERAD&IC','K       ',1,'I','Radiatively equivalent ice temperature' ,phys_decomp)
+  call addfld ('SICTHK&IC',horiz_only,'I','m','Sea ice thickness'                      )
+  call addfld ('TSICE&IC',horiz_only,'I','K','Ice temperature'                        )
+  call addfld ('SNOWHICE&IC',horiz_only,'I','m','Water equivalent snow depth'            )
+  call addfld ('ICEFRAC&IC',horiz_only,'I','fraction','Fraction of sfc area covered by sea-ice')
+  call addfld ('TSICERAD&IC',horiz_only,'I','K','Radiatively equivalent ice temperature' )
   do k = 1,plevmx
      call add_default(trim(tsnam(k))//'&IC',0, 'I')
   end do

@@ -1144,6 +1144,181 @@ contains
   end subroutine MeshPrint
 
 !======================================================================
+! subroutine MeshCubeTopologyCoords
+!======================================================================
+   subroutine MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3)
+    use parallel_mod,           only : abortmp
+    use dimensions_mod,         only : np,  max_elements_attached_to_node
+    use coordinate_systems_mod, only : cartesian3D_t, cube_face_number_from_cart, cube_face_number_from_sphere
+    use gridgraph_mod,          only : GridVertex_t
+    use gridgraph_mod,          only : GridEdge_t
+    use cube_mod,               only : CubeSetupEdgeIndex
+    use gridgraph_mod,          only : initgridedge, num_neighbors
+    use control_mod,            only : north, south, east, west, neast, seast, swest, nwest, partmethod
+    use params_mod,             only : SFCURVE, ZOLTAN2RCB, ZOLTAN2MJ, ZOLTAN2RIB, ZOLTAN2HSFC, ZOLTAN2PATOH, ZOLTAN2PHG, ZOLTAN2METIS, &
+                                       ZOLTAN2PARMETIS, ZOLTAN2SCOTCH, ZOLTAN2PTSCOTCH, ZOLTAN2BLOCK, ZOLTAN2CYCLIC, ZOLTAN2RANDOM, &
+                                       ZOLTAN2ZOLTAN, ZOLTAN2ND, ZOLTAN2PARMA
+    use kinds, only : iulog, real_kind
+
+    implicit none
+    type (GridEdge_t),   intent(inout) :: GridEdge(:)
+    type (GridVertex_t), intent(inout) :: GridVertex(:)
+    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim1(:)
+    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim2(:)
+    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim3(:)
+
+    real(kind=real_kind)             :: coordinates(4,3)
+    real(kind=real_kind)             :: centroid(3)
+    type (cartesian3D_t)             :: face_center
+
+    integer                          :: i, j, k, ll, m, loc
+    integer                          :: element_nodes(p_number_elements, 4)
+    integer                          :: EdgeWgtP,CornerWgt
+    integer                          :: normal_to_homme_ordering(8)
+    integer                          :: node_numbers(4)
+    integer, allocatable             :: index_table(:,:)
+
+    normal_to_homme_ordering(1) = south
+    normal_to_homme_ordering(2) =  east
+    normal_to_homme_ordering(3) = north
+    normal_to_homme_ordering(4) =  west
+    normal_to_homme_ordering(5) = swest
+    normal_to_homme_ordering(6) = seast
+    normal_to_homme_ordering(7) = neast
+    normal_to_homme_ordering(8) = nwest
+
+
+
+    if (SIZE(GridVertex) /= p_number_elements) then
+       call abortmp('MeshCubeTopology: Element count check failed in exodus_mesh. &
+            &Vertex array length not equal to number of elements.')
+    end if
+    if (p_number_elements_per_face /= p_number_elements) then
+       call abortmp('MeshCubeTopology: Element count check failed in exodus_mesh. &
+            &Element array length not equal to sum of face.')
+    end if
+
+    EdgeWgtP = np
+    CornerWgt = 1
+
+
+    call mesh_connectivity (element_nodes)
+
+
+    do i=1, p_number_elements
+       GridVertex(i)%number           = i
+       GridVertex(i)%face_number      = 0
+       GridVertex(i)%processor_number = 0
+       GridVertex(i)%SpaceCurve       = 0
+
+       GridVertex(i)%nbrs(:) = 0
+       GridVertex(i)%nbrs_face(:) = 0
+       GridVertex(i)%nbrs_wgt(:) = 0
+       GridVertex(i)%nbrs_wgt_ghost(:) = 1
+
+       !each elements has one side neighbor (first 4)
+       GridVertex(i)%nbrs_ptr(1) = 1
+       GridVertex(i)%nbrs_ptr(2) = 2
+       GridVertex(i)%nbrs_ptr(3) = 3
+       GridVertex(i)%nbrs_ptr(4) = 4
+       !don't know about corners yet
+       GridVertex(i)%nbrs_ptr(5:num_neighbors+1) = 5
+
+    end do
+
+
+    !create index table to find neighbors
+    call create_index_table(index_table, element_nodes)
+
+
+    ! side neighbors
+    call find_side_neighbors(GridVertex, normal_to_homme_ordering, element_nodes, EdgeWgtP, index_table)
+
+    if (partmethod .eq. ZOLTAN2RCB .OR. &
+        partmethod .eq. ZOLTAN2MJ .OR.  &
+        partmethod .eq. ZOLTAN2RIB .OR. &
+        partmethod .eq. ZOLTAN2HSFC .OR. &
+        partmethod .eq. ZOLTAN2PATOH .OR. &
+        partmethod .eq. ZOLTAN2PHG .OR. &
+        partmethod .eq. ZOLTAN2METIS .OR. &
+        partmethod .eq. ZOLTAN2PARMETIS .OR. &
+        partmethod .eq. ZOLTAN2PARMA .OR. &
+        partmethod .eq. ZOLTAN2SCOTCH .OR. &
+        partmethod .eq. ZOLTAN2PTSCOTCH .OR. &
+        partmethod .eq. ZOLTAN2BLOCK .OR. &
+        partmethod .eq. ZOLTAN2CYCLIC .OR. &
+        partmethod .eq. ZOLTAN2RANDOM .OR. &
+        partmethod .eq. ZOLTAN2ZOLTAN .OR. &
+        partmethod .eq. ZOLTAN2ND) then
+
+        allocate(coord_dim1(p_number_elements))
+        allocate(coord_dim2(p_number_elements))
+        allocate(coord_dim3(p_number_elements))
+    endif
+
+    ! set vertex faces
+    do i=1, p_number_elements
+       node_numbers = element_nodes(i,:)
+       coordinates = p_node_coordinates(node_numbers,:)
+       centroid = SUM(coordinates, dim=1)/4.0
+       face_center%x = centroid(1)
+       face_center%y = centroid(2)
+       face_center%z = centroid(3)
+       GridVertex(i)%face_number = cube_face_number_from_cart(face_center)
+
+       if (partmethod .eq. ZOLTAN2RCB .OR. &
+           partmethod .eq. ZOLTAN2MJ .OR.  &
+           partmethod .eq. ZOLTAN2RIB .OR. &
+           partmethod .eq. ZOLTAN2HSFC .OR. &
+           partmethod .eq. ZOLTAN2PATOH .OR. &
+           partmethod .eq. ZOLTAN2PHG .OR. &
+           partmethod .eq. ZOLTAN2METIS .OR. &
+           partmethod .eq. ZOLTAN2PARMETIS .OR. &
+           partmethod .eq. ZOLTAN2PARMA .OR. &
+           partmethod .eq. ZOLTAN2SCOTCH .OR. &
+           partmethod .eq. ZOLTAN2PTSCOTCH .OR. &
+           partmethod .eq. ZOLTAN2BLOCK .OR. &
+           partmethod .eq. ZOLTAN2CYCLIC .OR. &
+           partmethod .eq. ZOLTAN2RANDOM .OR. &
+           partmethod .eq. ZOLTAN2ZOLTAN .OR. &
+           partmethod .eq. ZOLTAN2ND) then
+                coord_dim1(i) = face_center%x
+                coord_dim2(i) = face_center%y
+                coord_dim3(i) = face_center%z
+        endif
+    end do
+
+
+    ! set side neighbor faces
+    do i=1, p_number_elements
+       do j=1,4 !look at each side
+          k = normal_to_homme_ordering(j)
+          loc =  GridVertex(i)%nbrs_ptr(k)
+          ll = GridVertex(i)%nbrs(loc)
+          GridVertex(i)%nbrs_face(loc) = GridVertex(ll)%face_number
+       end do
+    end do
+
+
+    ! find corner neighbor and faces (weights added also)
+    call find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, CornerWgt, index_table)
+
+
+    !done with the index table
+    deallocate(index_table)
+
+
+    call initgridedge(GridEdge,GridVertex)
+    do i=1,SIZE(GridEdge)
+       call CubeSetupEdgeIndex(GridEdge(i))
+    enddo
+
+    if(partmethod .eq. SFCURVE) then
+        call initialize_space_filling_curve(GridVertex, element_nodes)
+    endif
+  end subroutine MeshCubeTopologyCoords
+
+!======================================================================
 ! subroutine MeshCubeTopology
 !======================================================================
    subroutine MeshCubeTopology(GridEdge, GridVertex)

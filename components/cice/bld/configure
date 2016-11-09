@@ -64,6 +64,10 @@ OPTIONS
            the cice decompsition is determined external to configure
      ******************************************************
 
+     -bc_dep_to_snow_updates Switch to turn on updated BC deposition to
+                        ice and snow.  WARNING: not yet fully
+                        implemented!  Contact Hailong Wang (PNNL) or
+                        Susannah Burrows (PNNL) with questions.
      -cache <file>       Name of output cache file (default: config_cache.xml).
      -cachedir <file>    Name of directory where output cache file is written (default: CICE build directory).
      -cice_mode <mode>   Mode [prognostic | thermo_only | prescribed ]. (default: prognostic)
@@ -121,6 +125,7 @@ my %opts = (
 	    cache     => "config_cache.xml",
 	    );
 GetOptions(
+    "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
     "cice_mode=s"               => \$opts{'cice_mode'},
@@ -249,6 +254,14 @@ EOF
 if ($print>=2) { print "The configuration cache file will be created in $config_cache_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# Use updated treatment of BC in ice and snow?
+my $bc_dep_to_snow_updates_opt = (defined $opts{'bc_dep_to_snow_updates'}) ? 1 : 0;
+$cfg_ref->set('bc_dep_to_snow_updates', $bc_dep_to_snow_updates_opt);
+my $bc_dep_to_snow_updates = $bc_dep_to_snow_updates_opt ? 1:0;
+
+if ($print>=1) { print "Is bc_dep_to_snow_updates active (0-NO; 1-YES)?: $bc_dep_to_snow_updates$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Comp_intf option
 if (defined $opts{'comp_intf'}) {
     $cfg_ref->set('comp_intf', $opts{'comp_intf'});
@@ -333,6 +346,12 @@ EOF
 }
 
 my $cice_cppdefs = " -DCCSMCOUPLED -Dcoupled -Dncdf -DNCAT=$ncat -DNXGLOB=$nlon -DNYGLOB=$nlat -DNTR_AERO=$ntr_aero";
+
+# CICE ice model
+# BC deposition to ice and snow turned on
+if ($bc_dep_to_snow_updates) {
+    $cice_cppdefs .= " -DMODAL_AER";
+}
 
 #-----------------------------------------------------------------------------------------------
 # Determine if will set the cice decomposition

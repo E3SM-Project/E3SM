@@ -1,3 +1,4 @@
+
 module vertical_diffusion
 
   !----------------------------------------------------------------------------------------------------- !
@@ -114,12 +115,24 @@ module vertical_diffusion
 
   integer              :: pblh_idx, tpert_idx, qpert_idx
 
+  ! pbuf fields for unicon
+  integer              :: bprod_idx    = -1
+  integer              :: ipbl_idx     = -1
+  integer              :: kpblh_idx    = -1
+  integer              :: wstarPBL_idx = -1
+  integer              :: tkes_idx     = -1
+  integer              :: went_idx     = -1
+  integer              :: qtl_flx_idx  = -1            ! for use in cloud macrophysics when UNICON is on
+  integer              :: qti_flx_idx  = -1            ! for use in cloud macrophysics when UNICON is on
+
+  real(r8), parameter  :: unset_r8 = huge(1._r8)
   real(r8)             :: kv_top_pressure              ! Pressure defining the bottom of the upper atmosphere for kvh scaling (Pa)
   real(r8)             :: kv_top_scale                 ! Eddy diffusivity scale factor for upper atmosphere
   real(r8)             :: kv_freetrop_scale            ! Eddy diffusivity scale factor for the free troposphere
   real(r8)             :: eddy_lbulk_max               ! Maximum master length for diag_TKE
   real(r8)             :: eddy_leng_max                ! Maximum dissipation length for diag_TKE
   real(r8)             :: eddy_max_bot_pressure        ! Bottom pressure level (hPa) for eddy_leng_max
+  real(r8)             :: eddy_moist_entrain_a2l = unset_r8 ! Moist entrainment enhancement param
   logical              :: diff_cnsrv_mass_check        ! do mass conservation check
   logical              :: do_tms                       ! switch for turbulent mountain stress
   logical              :: do_iss                       ! switch for implicit turbulent surface stress
@@ -146,7 +159,7 @@ contains
     character(len=*), parameter :: subname = 'vd_readnl'
   
     namelist /vert_diff_nl/ kv_top_pressure, kv_top_scale, kv_freetrop_scale, eddy_lbulk_max, eddy_leng_max, &
-         eddy_max_bot_pressure, diff_cnsrv_mass_check, do_iss
+         eddy_max_bot_pressure, eddy_moist_entrain_a2l, diff_cnsrv_mass_check, do_iss
     !-----------------------------------------------------------------------------
   
     if (masterproc) then
@@ -171,6 +184,7 @@ contains
     call mpibcast(eddy_lbulk_max,                  1 , mpir8,   0, mpicom)
     call mpibcast(eddy_leng_max,                   1 , mpir8,   0, mpicom)
     call mpibcast(eddy_max_bot_pressure,           1 , mpir8,   0, mpicom)
+    call mpibcast(eddy_moist_entrain_a2l,          1 , mpir8,   0, mpicom)
     call mpibcast(diff_cnsrv_mass_check,           1 , mpilog,  0, mpicom)
     call mpibcast(do_iss,                          1 , mpilog,  0, mpicom)
 #endif
@@ -215,6 +229,17 @@ contains
     call pbuf_add_field('tpert', 'global', dtype_r8, (/pcols/),                       tpert_idx)
     call pbuf_add_field('qpert', 'global', dtype_r8, (/pcols,pcnst/),                 qpert_idx)
 
+    if (trim(shallow_scheme) == 'UNICON') then
+       call pbuf_add_field('bprod',    'global', dtype_r8, (/pcols,pverp/), bprod_idx)
+       call pbuf_add_field('ipbl',     'global', dtype_i4, (/pcols/),       ipbl_idx)
+       call pbuf_add_field('kpblh',    'global', dtype_i4, (/pcols/),       kpblh_idx)
+       call pbuf_add_field('wstarPBL', 'global', dtype_r8, (/pcols/),       wstarPBL_idx)
+       call pbuf_add_field('tkes',     'global', dtype_r8, (/pcols/),       tkes_idx)
+       call pbuf_add_field('went',     'global', dtype_r8, (/pcols/),       went_idx)
+       call pbuf_add_field('qtl_flx',  'global', dtype_r8, (/pcols, pverp/), qtl_flx_idx)
+       call pbuf_add_field('qti_flx',  'global', dtype_r8, (/pcols, pverp/), qti_flx_idx)
+    end if
+
   end subroutine vd_register
 
   ! =============================================================================== !
@@ -228,7 +253,7 @@ contains
     ! Calls initialization routines for subsidiary modules             !
     !----------------------------------------------------------------- !
 
-    use cam_history,       only : addfld, add_default, phys_decomp
+    use cam_history,       only : addfld, horiz_only, add_default
     use eddy_diff,         only : init_eddy_diff
     use hb_diff,           only : init_hb_diff
     use molec_diff,        only : init_molec_diff
@@ -318,7 +343,7 @@ contains
 
        call handle_errmsg(errstring, subname="init_molec_diff")
 
-       call addfld( 'TTPXMLC', 'K/S', 1, 'A', 'Top interf. temp. flux: molec. viscosity', phys_decomp )
+       call addfld( 'TTPXMLC', horiz_only, 'A', 'K/S', 'Top interf. temp. flux: molec. viscosity' )
        call add_default ( 'TTPXMLC', 1, ' ' )
        if( masterproc ) write(iulog,fmt='(a,i3,5x,a,i3)') 'NTOP_MOLEC =', ntop_molec, 'NBOT_MOLEC =', nbot_molec
     end if
@@ -343,19 +368,20 @@ contains
         if( masterproc ) write(iulog,*) &
              'vertical_diffusion_init: eddy_diffusivity scheme: UW Moist Turbulence Scheme by Bretherton and Park'
         ! Check compatibility of eddy and shallow scheme
-        if( shallow_scheme .ne. 'UW' .and. shallow_scheme .ne. 'off' ) then
+        if( masterproc ) write(iulog,*) 'vertical_diffusion: nturb, ntop_eddy, nbot_eddy ', nturb, ntop_eddy, nbot_eddy
+        if( shallow_scheme .ne. 'UW' .and. shallow_scheme .ne. 'off' .and. shallow_scheme .ne. 'UNICON' ) then
             write(iulog,*) 'ERROR: shallow convection scheme ', shallow_scheme,' is incompatible with eddy scheme ', eddy_scheme
             call endrun( 'convect_shallow_init: shallow_scheme and eddy_scheme are incompatible' )
         endif
         call init_eddy_diff( r8, pver, gravit, cpair, rair, zvir, latvap, latice, &
                              ntop_eddy, nbot_eddy, karman, eddy_lbulk_max, eddy_leng_max, &
-                             eddy_max_bot_pressure )
+                             eddy_max_bot_pressure, eddy_moist_entrain_a2l)
         if( masterproc ) write(iulog,*) 'vertical_diffusion: nturb, ntop_eddy, nbot_eddy ', nturb, ntop_eddy, nbot_eddy
     case ( 'HB', 'HBR')
         if( masterproc ) write(iulog,*) 'vertical_diffusion_init: eddy_diffusivity scheme:  Holtslag and Boville'
         call init_hb_diff(gravit, cpair, ntop_eddy, nbot_eddy, pref_mid, &
                           karman, eddy_scheme)
-        call addfld('HB_ri', 'no',      pver,  'A',  'Richardson Number (HB Scheme), I',  phys_decomp )
+        call addfld('HB_ri',      (/ 'lev' /),  'A', 'no',  'Richardson Number (HB Scheme), I' )
     end select
     
     ! The vertical diffusion solver must operate 
@@ -373,8 +399,8 @@ contains
 
        call handle_errmsg(errstring, subname="init_tms")
 
-       call addfld( 'TAUTMSX' ,'N/m2  ',  1,  'A',  'Zonal      turbulent mountain surface stress',  phys_decomp )
-       call addfld( 'TAUTMSY' ,'N/m2  ',  1,  'A',  'Meridional turbulent mountain surface stress',  phys_decomp )
+       call addfld( 'TAUTMSX' ,  horiz_only,  'A','N/m2',  'Zonal      turbulent mountain surface stress' )
+       call addfld( 'TAUTMSY' ,  horiz_only,  'A','N/m2',  'Meridional turbulent mountain surface stress' )
 
        if (history_amwg) then
           call add_default('TAUTMSX ', 1, ' ')
@@ -439,84 +465,84 @@ contains
     do k = 1, pcnst
        vdiffnam(k) = 'VD'//cnst_name(k)
        if( k == 1 ) vdiffnam(k) = 'VD01'    !**** compatibility with old code ****
-       call addfld( vdiffnam(k), 'kg/kg/s ', pver, 'A', 'Vertical diffusion of '//cnst_name(k), phys_decomp )
+       call addfld( vdiffnam(k), (/ 'lev' /), 'A', 'kg/kg/s', 'Vertical diffusion of '//cnst_name(k) )
     end do
 
-    call addfld( 'TKE'         , 'm2/s2'  , pverp  , 'A', 'Turbulent Kinetic Energy'                          , phys_decomp )
-    call addfld( 'PBLH'        , 'm'      , 1      , 'A', 'PBL height'                                        , phys_decomp )
-    call addfld( 'TPERT'       , 'K'      , 1      , 'A', 'Perturbation temperature (eddies in PBL)'          , phys_decomp )
-    call addfld( 'QPERT'       , 'kg/kg'  , 1      , 'A', 'Perturbation specific humidity (eddies in PBL)'    , phys_decomp )
-    call addfld( 'USTAR'       , 'm/s'    , 1      , 'A', 'Surface friction velocity'                         , phys_decomp )
-    call addfld( 'KVH'         , 'm2/s'   , pverp  , 'A', 'Vertical diffusion diffusivities (heat/moisture)'  , phys_decomp )
-    call addfld( 'KVM'         , 'm2/s'   , pverp  , 'A', 'Vertical diffusion diffusivities (momentum)'       , phys_decomp )
-    call addfld( 'KVT'         , 'm2/s'   , pverp  , 'A', 'Vertical diffusion kinematic molecular conductivity', phys_decomp )
-    call addfld( 'CGS'         , 's/m2'   , pverp  , 'A', 'Counter-gradient coeff on surface kinematic fluxes', phys_decomp )
-    call addfld( 'DTVKE'       , 'K/s'    , pver   , 'A', 'dT/dt vertical diffusion KE dissipation'           , phys_decomp )
-    call addfld( 'DTV'         , 'K/s'    , pver   , 'A', 'T vertical diffusion'                              , phys_decomp )
-    call addfld( 'DUV'         , 'm/s2'   , pver   , 'A', 'U vertical diffusion'                              , phys_decomp )
-    call addfld( 'DVV'         , 'm/s2'   , pver   , 'A', 'V vertical diffusion'                              , phys_decomp )
-    call addfld( 'QT'          , 'kg/kg'  , pver   , 'A', 'Total water mixing ratio'                          , phys_decomp )
-    call addfld( 'SL'          , 'J/kg'   , pver   , 'A', 'Liquid water static energy'                        , phys_decomp )
-    call addfld( 'SLV'         , 'J/kg'   , pver   , 'A', 'Liq wat virtual static energy'                     , phys_decomp )
-    call addfld( 'SLFLX'       , 'W/m2'   , pverp  , 'A', 'Liquid static energy flux'                         , phys_decomp ) 
-    call addfld( 'QTFLX'       , 'W/m2'   , pverp  , 'A', 'Total water flux'                                  , phys_decomp ) 
-    call addfld( 'UFLX'        , 'W/m2'   , pverp  , 'A', 'Zonal momentum flux'                               , phys_decomp ) 
-    call addfld( 'VFLX'        , 'W/m2'   , pverp  , 'A', 'Meridional momentm flux'                           , phys_decomp ) 
-    call addfld( 'WGUSTD'      , 'm/s'    , 1      , 'A', 'wind gusts from turbulence'                        , phys_decomp )
+    call addfld( 'TKE'         , (/ 'ilev' /)  , 'A', 'm2/s2'  , 'Turbulent Kinetic Energy'                           )
+    call addfld( 'PBLH'        , horiz_only      , 'A', 'm'      , 'PBL height'                                         )
+    call addfld( 'TPERT'       , horiz_only      , 'A', 'K'      , 'Perturbation temperature (eddies in PBL)'           )
+    call addfld( 'QPERT'       , horiz_only      , 'A', 'kg/kg'  , 'Perturbation specific humidity (eddies in PBL)'     )
+    call addfld( 'USTAR'       , horiz_only      , 'A', 'm/s'    , 'Surface friction velocity'                          )
+    call addfld( 'KVH'         , (/ 'ilev' /)  , 'A', 'm2/s'   , 'Vertical diffusion diffusivities (heat/moisture)'   )
+    call addfld( 'KVM'         , (/ 'ilev' /)  , 'A', 'm2/s'   , 'Vertical diffusion diffusivities (momentum)'        )
+    call addfld( 'KVT'         , (/ 'ilev' /)  , 'A', 'm2/s'   , 'Vertical diffusion kinematic molecular conductivity' )
+    call addfld( 'CGS'         , (/ 'ilev' /)  , 'A', 's/m2'   , 'Counter-gradient coeff on surface kinematic fluxes' )
+    call addfld( 'DTVKE'       , (/ 'lev' /)   , 'A', 'K/s'    , 'dT/dt vertical diffusion KE dissipation'            )
+    call addfld( 'DTV'         , (/ 'lev' /)   , 'A', 'K/s'    , 'T vertical diffusion'                               )
+    call addfld( 'DUV'         , (/ 'lev' /)   , 'A', 'm/s2'   , 'U vertical diffusion'                               )
+    call addfld( 'DVV'         , (/ 'lev' /)   , 'A', 'm/s2'   , 'V vertical diffusion'                               )
+    call addfld( 'QT'          , (/ 'lev' /)   , 'A', 'kg/kg'  , 'Total water mixing ratio'                           )
+    call addfld( 'SL'          , (/ 'lev' /)   , 'A', 'J/kg'   , 'Liquid water static energy'                         )
+    call addfld( 'SLV'         , (/ 'lev' /)   , 'A', 'J/kg'   , 'Liq wat virtual static energy'                      )
+    call addfld( 'SLFLX'       , (/ 'ilev' /)  , 'A', 'W/m2'   , 'Liquid static energy flux'                          ) 
+    call addfld( 'QTFLX'       , (/ 'ilev' /)  , 'A', 'W/m2'   , 'Total water flux'                                   ) 
+    call addfld( 'UFLX'        , (/ 'ilev' /)  , 'A', 'W/m2'   , 'Zonal momentum flux'                                ) 
+    call addfld( 'VFLX'        , (/ 'ilev' /)  , 'A', 'W/m2'   , 'Meridional momentm flux'                            ) 
+    call addfld( 'WGUSTD'      , horiz_only      , 'A', 'm/s'    , 'wind gusts from turbulence'                         )
 
     ! ---------------------------------------------------------------------------- !
     ! Below ( with '_PBL') are for detailed analysis of UW Moist Turbulence Scheme !
     ! ---------------------------------------------------------------------------- !
 
-    call addfld( 'qt_pre_PBL  ', 'kg/kg'  , pver   , 'A', 'qt_prePBL'                                         , phys_decomp )
-    call addfld( 'sl_pre_PBL  ', 'J/kg'   , pver   , 'A', 'sl_prePBL'                                         , phys_decomp )
-    call addfld( 'slv_pre_PBL ', 'J/kg'   , pver   , 'A', 'slv_prePBL'                                        , phys_decomp )
-    call addfld( 'u_pre_PBL   ', 'm/s'    , pver   , 'A', 'u_prePBL'                                          , phys_decomp )
-    call addfld( 'v_pre_PBL   ', 'm/s'    , pver   , 'A', 'v_prePBL'                                          , phys_decomp )
-    call addfld( 'qv_pre_PBL  ', 'kg/kg'  , pver   , 'A', 'qv_prePBL'                                         , phys_decomp )
-    call addfld( 'ql_pre_PBL  ', 'kg/kg'  , pver   , 'A', 'ql_prePBL'                                         , phys_decomp )
-    call addfld( 'qi_pre_PBL  ', 'kg/kg'  , pver   , 'A', 'qi_prePBL'                                         , phys_decomp )
-    call addfld( 't_pre_PBL   ', 'K'      , pver   , 'A', 't_prePBL'                                          , phys_decomp )
-    call addfld( 'rh_pre_PBL  ', '%'      , pver   , 'A', 'rh_prePBL'                                         , phys_decomp )
+    call addfld( 'qt_pre_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'qt_prePBL'                                          )
+    call addfld( 'sl_pre_PBL', (/ 'lev' /)   , 'A', 'J/kg'   , 'sl_prePBL'                                          )
+    call addfld( 'slv_pre_PBL', (/ 'lev' /)   , 'A', 'J/kg'   , 'slv_prePBL'                                         )
+    call addfld( 'u_pre_PBL', (/ 'lev' /)   , 'A', 'm/s'    , 'u_prePBL'                                           )
+    call addfld( 'v_pre_PBL', (/ 'lev' /)   , 'A', 'm/s'    , 'v_prePBL'                                           )
+    call addfld( 'qv_pre_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'qv_prePBL'                                          )
+    call addfld( 'ql_pre_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'ql_prePBL'                                          )
+    call addfld( 'qi_pre_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'qi_prePBL'                                          )
+    call addfld( 't_pre_PBL', (/ 'lev' /)   , 'A', 'K'      , 't_prePBL'                                           )
+    call addfld( 'rh_pre_PBL', (/ 'lev' /)   , 'A', '%'      , 'rh_prePBL'                                          )
 
-    call addfld( 'qt_aft_PBL  ', 'kg/kg'  , pver   , 'A', 'qt_afterPBL'                                       , phys_decomp )
-    call addfld( 'sl_aft_PBL  ', 'J/kg'   , pver   , 'A', 'sl_afterPBL'                                       , phys_decomp )
-    call addfld( 'slv_aft_PBL ', 'J/kg'   , pver   , 'A', 'slv_afterPBL'                                      , phys_decomp )
-    call addfld( 'u_aft_PBL   ', 'm/s'    , pver   , 'A', 'u_afterPBL'                                        , phys_decomp )
-    call addfld( 'v_aft_PBL   ', 'm/s'    , pver   , 'A', 'v_afterPBL'                                        , phys_decomp )
-    call addfld( 'qv_aft_PBL  ', 'kg/kg'  , pver   , 'A', 'qv_afterPBL'                                       , phys_decomp )
-    call addfld( 'ql_aft_PBL  ', 'kg/kg'  , pver   , 'A', 'ql_afterPBL'                                       , phys_decomp )
-    call addfld( 'qi_aft_PBL  ', 'kg/kg'  , pver   , 'A', 'qi_afterPBL'                                       , phys_decomp )
-    call addfld( 't_aft_PBL   ', 'K'      , pver   , 'A', 't_afterPBL'                                        , phys_decomp )
-    call addfld( 'rh_aft_PBL  ', '%'      , pver   , 'A', 'rh_afterPBL'                                       , phys_decomp )
+    call addfld( 'qt_aft_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'qt_afterPBL'                                        )
+    call addfld( 'sl_aft_PBL', (/ 'lev' /)   , 'A', 'J/kg'   , 'sl_afterPBL'                                        )
+    call addfld( 'slv_aft_PBL', (/ 'lev' /)   , 'A', 'J/kg'   , 'slv_afterPBL'                                       )
+    call addfld( 'u_aft_PBL', (/ 'lev' /)   , 'A', 'm/s'    , 'u_afterPBL'                                         )
+    call addfld( 'v_aft_PBL', (/ 'lev' /)   , 'A', 'm/s'    , 'v_afterPBL'                                         )
+    call addfld( 'qv_aft_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'qv_afterPBL'                                        )
+    call addfld( 'ql_aft_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'ql_afterPBL'                                        )
+    call addfld( 'qi_aft_PBL', (/ 'lev' /)   , 'A', 'kg/kg'  , 'qi_afterPBL'                                        )
+    call addfld( 't_aft_PBL', (/ 'lev' /)   , 'A', 'K'      , 't_afterPBL'                                         )
+    call addfld( 'rh_aft_PBL', (/ 'lev' /)   , 'A', '%'      , 'rh_afterPBL'                                        )
 
-    call addfld( 'slflx_PBL   ', 'J/m2/s' , pverp  , 'A', 'sl flux by PBL'                                    , phys_decomp ) 
-    call addfld( 'qtflx_PBL   ', 'kg/m2/s', pverp  , 'A', 'qt flux by PBL'                                    , phys_decomp ) 
-    call addfld( 'uflx_PBL    ', 'kg/m/s2', pverp  , 'A', 'u flux by PBL'                                     , phys_decomp ) 
-    call addfld( 'vflx_PBL    ', 'kg/m/s2', pverp  , 'A', 'v flux by PBL'                                     , phys_decomp ) 
+    call addfld( 'slflx_PBL', (/ 'ilev' /)  , 'A', 'J/m2/s' , 'sl flux by PBL'                                     ) 
+    call addfld( 'qtflx_PBL', (/ 'ilev' /)  , 'A', 'kg/m2/s', 'qt flux by PBL'                                     ) 
+    call addfld( 'uflx_PBL', (/ 'ilev' /)  , 'A', 'kg/m/s2', 'u flux by PBL'                                      ) 
+    call addfld( 'vflx_PBL', (/ 'ilev' /)  , 'A', 'kg/m/s2', 'v flux by PBL'                                      ) 
 
-    call addfld( 'slflx_cg_PBL', 'J/m2/s' , pverp  , 'A', 'sl_cg flux by PBL'                                 , phys_decomp ) 
-    call addfld( 'qtflx_cg_PBL', 'kg/m2/s', pverp  , 'A', 'qt_cg flux by PBL'                                 , phys_decomp ) 
-    call addfld( 'uflx_cg_PBL ', 'kg/m/s2', pverp  , 'A', 'u_cg flux by PBL'                                  , phys_decomp ) 
-    call addfld( 'vflx_cg_PBL ', 'kg/m/s2', pverp  , 'A', 'v_cg flux by PBL'                                  , phys_decomp ) 
+    call addfld( 'slflx_cg_PBL', (/ 'ilev' /)  , 'A', 'J/m2/s' , 'sl_cg flux by PBL'                                  ) 
+    call addfld( 'qtflx_cg_PBL', (/ 'ilev' /)  , 'A', 'kg/m2/s', 'qt_cg flux by PBL'                                  ) 
+    call addfld( 'uflx_cg_PBL', (/ 'ilev' /)  , 'A', 'kg/m/s2', 'u_cg flux by PBL'                                   ) 
+    call addfld( 'vflx_cg_PBL', (/ 'ilev' /)  , 'A', 'kg/m/s2', 'v_cg flux by PBL'                                   ) 
 
-    call addfld( 'qtten_PBL   ', 'kg/kg/s', pver   , 'A', 'qt tendency by PBL'                                , phys_decomp )
-    call addfld( 'slten_PBL   ', 'J/kg/s' , pver   , 'A', 'sl tendency by PBL'                                , phys_decomp )
-    call addfld( 'uten_PBL    ', 'm/s2'   , pver   , 'A', 'u tendency by PBL'                                 , phys_decomp )
-    call addfld( 'vten_PBL    ', 'm/s2'   , pver   , 'A', 'v tendency by PBL'                                 , phys_decomp )
-    call addfld( 'qvten_PBL   ', 'kg/kg/s', pver   , 'A', 'qv tendency by PBL'                                , phys_decomp )
-    call addfld( 'qlten_PBL   ', 'kg/kg/s', pver   , 'A', 'ql tendency by PBL'                                , phys_decomp )
-    call addfld( 'qiten_PBL   ', 'kg/kg/s', pver   , 'A', 'qi tendency by PBL'                                , phys_decomp )
-    call addfld( 'tten_PBL    ', 'K/s'    , pver   , 'A', 'T tendency by PBL'                                 , phys_decomp )
-    call addfld( 'rhten_PBL   ', '%/s'    , pver   , 'A', 'RH tendency by PBL'                                , phys_decomp )
+    call addfld( 'qtten_PBL', (/ 'lev' /)   , 'A', 'kg/kg/s', 'qt tendency by PBL'                                 )
+    call addfld( 'slten_PBL', (/ 'lev' /)   , 'A', 'J/kg/s' , 'sl tendency by PBL'                                 )
+    call addfld( 'uten_PBL', (/ 'lev' /)   , 'A', 'm/s2'   , 'u tendency by PBL'                                  )
+    call addfld( 'vten_PBL', (/ 'lev' /)   , 'A', 'm/s2'   , 'v tendency by PBL'                                  )
+    call addfld( 'qvten_PBL', (/ 'lev' /)   , 'A', 'kg/kg/s', 'qv tendency by PBL'                                 )
+    call addfld( 'qlten_PBL', (/ 'lev' /)   , 'A', 'kg/kg/s', 'ql tendency by PBL'                                 )
+    call addfld( 'qiten_PBL', (/ 'lev' /)   , 'A', 'kg/kg/s', 'qi tendency by PBL'                                 )
+    call addfld( 'tten_PBL', (/ 'lev' /)   , 'A', 'K/s'    , 'T tendency by PBL'                                  )
+    call addfld( 'rhten_PBL', (/ 'lev' /)   , 'A', '%/s'    , 'RH tendency by PBL'                                 )
 
-    call addfld ('ustar',     ' ',1, 'A',' ',phys_decomp)
-    call addfld ('obklen',    ' ',1, 'A',' ',phys_decomp)
+    call addfld ('ustar',horiz_only, 'A',     ' ',' ')
+    call addfld ('obklen',horiz_only, 'A',    ' ',' ')
 
     if( eddy_scheme .eq. 'diag_TKE' ) then    
-       call addfld( 'BPROD   ',  'M2/S3   ',pverp,   'A', 'Buoyancy Production'                               ,phys_decomp)
-       call addfld( 'SFI     ',  'FRACTION',pverp,   'A', 'Interface-layer sat frac'                          ,phys_decomp)    
-       call addfld( 'SPROD   ',  'M2/S3   ',pverp,   'A', 'Shear Production'                                  ,phys_decomp)   
+       call addfld( 'BPROD',(/ 'ilev' /),   'A',  'M2/S3', 'Buoyancy Production'                               )
+       call addfld( 'SFI',(/ 'ilev' /),   'A',  'FRACTION', 'Interface-layer sat frac'                          )    
+       call addfld( 'SPROD',(/ 'ilev' /),   'A',  'M2/S3', 'Shear Production'                                  )   
     endif
  
     ! ----------------------------
@@ -572,6 +598,16 @@ contains
         call pbuf_set_field(pbuf2d, smaw_idx,     0._r8)
         call pbuf_set_field(pbuf2d, tauresx_idx,  0._r8)
         call pbuf_set_field(pbuf2d, tauresy_idx,  0._r8)
+        if (trim(shallow_scheme) == 'UNICON') then
+           call pbuf_set_field(pbuf2d, bprod_idx,    1.0e-5_r8)
+           call pbuf_set_field(pbuf2d, ipbl_idx,     0    )
+           call pbuf_set_field(pbuf2d, kpblh_idx,    1    )
+           call pbuf_set_field(pbuf2d, wstarPBL_idx, 0.0_r8)
+           call pbuf_set_field(pbuf2d, tkes_idx,     0.0_r8)
+           call pbuf_set_field(pbuf2d, went_idx,     0.0_r8)
+           call pbuf_set_field(pbuf2d, qtl_flx_idx,  0.0_r8)
+           call pbuf_set_field(pbuf2d, qti_flx_idx,  0.0_r8)
+        end if
      end if
 
   end subroutine vertical_diffusion_init
@@ -680,6 +716,10 @@ contains
     integer(i4),pointer :: turbtype(:,:)                            ! Turbulent interface types [ no unit ]
     real(r8), pointer   :: smaw(:,:)                                ! Normalized Galperin instability function
                                                                     ! ( 0<= <=4.964 and 1 at neutral )
+
+    real(r8), pointer   :: qtl_flx(:,:)                             ! overbar(w'qtl') where qtl = qv + ql
+    real(r8), pointer   :: qti_flx(:,:)                             ! overbar(w'qti') where qti = qv + qi
+
     real(r8) :: cgs(pcols,pverp)                                    ! Counter-gradient star  [ cg/flux ]
     real(r8) :: cgh(pcols,pverp)                                    ! Counter-gradient term for heat
     real(r8) :: rztodt                                              ! 1./ztodt [ 1/s ]
@@ -695,7 +735,7 @@ contains
     real(r8) :: kvq(pcols,pverp)                                    ! Eddy diffusivity for constituents [ m2/s ]
     real(r8) :: kvh(pcols,pverp)                                    ! Eddy diffusivity for heat [ m2/s ]
     real(r8) :: kvm(pcols,pverp)                                    ! Eddy diffusivity for momentum [ m2/s ]
-    real(r8) :: bprod(pcols,pverp)                                  ! Buoyancy production of tke [ m2/s3 ]
+    real(r8), pointer :: bprod(:,:)                                 ! Buoyancy production of tke [ m2/s3 ]
     real(r8) :: sprod(pcols,pverp)                                  ! Shear production of tke [ m2/s3 ]
     real(r8) :: sfi(pcols,pverp)                                    ! Saturation fraction at interfaces [ fraction ]
     real(r8) :: sl(pcols,pver)
@@ -749,9 +789,11 @@ contains
     real(r8) :: t_pro(pcols,pver)
     real(r8), pointer :: tauresx(:)                                      ! Residual stress to be added in vdiff to correct
     real(r8), pointer :: tauresy(:)                                      ! for turb stress mismatch between sfc and atm accumulated.
-    real(r8) :: ipbl(pcols)
-    real(r8) :: kpblh(pcols)
-    real(r8) :: wstarPBL(pcols)
+    integer(i4), pointer :: ipbl(:)
+    integer(i4), pointer :: kpblh(:)
+    real(r8), pointer :: wstarPBL(:)
+    real(r8), pointer :: tkes(:)
+    real(r8), pointer :: went(:)
     real(r8) :: tpertPBL(pcols)
     real(r8) :: qpertPBL(pcols)
     real(r8) :: rairi(pcols,pver+1)                                 ! interface gas constant needed for compute_vdiff
@@ -847,6 +889,18 @@ contains
 
        call pbuf_get_field(pbuf, wsedl_idx, wsedl )
 
+       ! These fields are put into the pbuf for UNICON only.
+       if (trim(shallow_scheme) == 'UNICON') then
+          call pbuf_get_field(pbuf, bprod_idx,    bprod)
+          call pbuf_get_field(pbuf, ipbl_idx,     ipbl)
+          call pbuf_get_field(pbuf, kpblh_idx,    kpblh)
+          call pbuf_get_field(pbuf, wstarPBL_idx, wstarPBL)
+          call pbuf_get_field(pbuf, tkes_idx,     tkes)
+          call pbuf_get_field(pbuf, went_idx,     went)
+       else
+          allocate(bprod(pcols,pverp), ipbl(pcols), kpblh(pcols), wstarPBL(pcols), tkes(pcols), went(pcols))
+       end if
+
        ! Retrieve eddy diffusivities for heat and momentum from physics buffer
        ! from last timestep ( if first timestep, has been initialized by inidat.F90 )
 
@@ -861,7 +915,8 @@ contains
                                cgs      , tpert       , qpert      , wpert      , tke            , bprod   , &
                                sprod    , sfi         , kvinit     ,                                         &
                                tauresx  , tauresy     , ksrftms    ,                                         &
-                               ipbl(:)  , kpblh(:)    , wstarPBL(:), turbtype   , smaw )
+                               ipbl     , kpblh       , wstarPBL   , tkes       , went           , turbtype, &
+                               smaw )
 
        ! The diag_TKE scheme does not calculate the Monin-Obukhov length, which is used in dry deposition calculations.
        ! Use the routines from pbl_utils to accomplish this. Assumes ustar and rrho have been set.
@@ -912,9 +967,13 @@ contains
 
        ! Write out fields that are only used by this scheme
 
-       call outfld( 'BPROD   ', bprod(1,1), pcols, lchnk )
-       call outfld( 'SPROD   ', sprod(1,1), pcols, lchnk )
-       call outfld( 'SFI     ', sfi,        pcols, lchnk )
+       call outfld( 'BPROD   ', bprod, pcols, lchnk )
+       call outfld( 'SPROD   ', sprod, pcols, lchnk )
+       call outfld( 'SFI     ', sfi,   pcols, lchnk )
+
+       if (trim(shallow_scheme) /= 'UNICON') then
+          deallocate(bprod, ipbl, kpblh, wstarPBL, tkes, went)
+       end if
 
     case ( 'HB', 'HBR' )
 
@@ -1086,6 +1145,28 @@ contains
     qtflx_cg(:ncol,1) = 0._r8
     uflx_cg(:ncol,1)  = 0._r8
     vflx_cg(:ncol,1)  = 0._r8
+
+    if (trim(shallow_scheme) == 'UNICON') then
+       call pbuf_get_field(pbuf, qtl_flx_idx,  qtl_flx)
+       call pbuf_get_field(pbuf, qti_flx_idx,  qti_flx)
+       qtl_flx(:ncol,1) = 0._r8
+       qti_flx(:ncol,1) = 0._r8
+       do k = 2, pver
+          do i = 1, ncol
+             ! For use in the cloud macrophysics
+             ! Note that density is not addd here. Also, only consider local transport term.
+             qtl_flx(i,k) = - kvh(i,k)*(q_tmp(i,k-1,1)-q_tmp(i,k,1)+q_tmp(i,k-1,ixcldliq)-q_tmp(i,k,ixcldliq))/&
+                                       (state%zm(i,k-1)-state%zm(i,k))
+             qti_flx(i,k) = - kvh(i,k)*(q_tmp(i,k-1,1)-q_tmp(i,k,1)+q_tmp(i,k-1,ixcldice)-q_tmp(i,k,ixcldice))/&
+                                       (state%zm(i,k-1)-state%zm(i,k))
+          end do
+       end do
+       do i = 1, ncol
+          rhoair = state%pint(i,pverp)/(rair*((slv(i,pver)-gravit*state%zi(i,pverp))/cpair))
+          qtl_flx(i,pverp) = cflx(i,1)/rhoair
+          qti_flx(i,pverp) = cflx(i,1)/rhoair
+       end do
+    end if
 
     do k = 2, pver
        do i = 1, ncol

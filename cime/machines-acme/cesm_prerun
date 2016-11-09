@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 # cesm_prerun without performance data archiving: 
 #  ./cesm_prerun with the following argument keyword/value pairs, in any order
 #   -machine <system name>
@@ -69,9 +69,13 @@ if (-e $run_dir/cesm_prerun_done) then
 endif
 
 if ($app_jobid == 'unknown') then
-  if (($machine == 'edison') || ($machine == 'titan')) then
+  if ($machine == 'titan') then
 
     set app_jobid = $PBS_JOBID
+
+  else if (($machine == 'edison') || ($machine == 'corip1')) then
+
+    set app_jobid = $SLURM_JOB_ID
 
   else if ($machine == 'mira') then
 
@@ -80,7 +84,7 @@ if ($app_jobid == 'unknown') then
   endif  
 endif
 
-if (($machine == 'edison') || ($machine == 'titan')) then
+if ($machine == 'titan') then
 
   set string = `qstat -f $app_jobid | grep ctime`
   echo "job $app_jobid created: $string" >>& $caseroot/CaseStatus
@@ -92,6 +96,17 @@ if (($machine == 'edison') || ($machine == 'titan')) then
   echo "job $app_jobid eligible to run: $string" >>& $caseroot/CaseStatus
 
   set string = `qstat -f $app_jobid | grep start_time`
+  echo "job $app_jobid started: $string" >>& $caseroot/CaseStatus
+
+else if (($machine == 'edison') || ($machine == 'corip1')) then
+
+  set string = `sqs -f $app_jobid | grep SubmitTime | sed 's/ *\(SubmitTime=\S*\) *\(EligibleTime=\S*\) */\1/' `
+  echo "job $app_jobid submitted: $string" >>& $caseroot/CaseStatus
+
+  set string = `sqs -f $app_jobid | grep SubmitTime | sed 's/ *\(SubmitTime=\S*\) *\(EligibleTime=\S*\) */\2/' `
+  echo "job $app_jobid eligible: $string" >>& $caseroot/CaseStatus
+
+  set string = `sqs -f $app_jobid | grep StartTime | sed 's/ *\(StartTime=\S*\) *\(EndTime=\S*\) */\1/' `
   echo "job $app_jobid started: $string" >>& $caseroot/CaseStatus
 
 else if ($machine == 'mira') then

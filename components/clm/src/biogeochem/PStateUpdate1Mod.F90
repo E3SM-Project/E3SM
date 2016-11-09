@@ -20,6 +20,7 @@ module PStateUpdate1Mod
   use PatchType              , only : pft
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
+  use clm_varctl             , only : nu_com
   !
   implicit none
   save
@@ -65,7 +66,7 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
          !!! N deposition profile, will weathering profile be needed?  -X.YANG
-!         ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
+         ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
 !         nfixation_prof        => cnstate_vars%nfixation_prof_col          , & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
          
          pf                    => phosphorusflux_vars                        , &
@@ -147,10 +148,9 @@ contains
             end do
          end if
       end do
-
 !      endif ! if (.not.(use_pflotran .and. pf_cmode))
       !------------------------------------------------------------------
-
+      
       ! patch loop
 
       do fp = 1,num_soilp

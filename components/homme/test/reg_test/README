@@ -1,15 +1,14 @@
+Mark Taylor, 2016-02-19
 Mark Taylor, 2010-09-23
 Mike Levy, 2011-02-01
 
-We need to create a set of "official" regression tests.
-Here we are documenting the test cases in use at Sandia 
-as unofficial regression tests.
+HOMME regression tests
 
 These tests should be run in both the trunk and your branch
 to ensure changes you have made have not broken existing code.
 To check for bit-for-bit (BFB), output should be identical. To
 check for rounding-error level changes, several statistics are
-highlighted.
+highlighted for each test below.
 
 There are a couple of short BFB tests and an exact restart test
 that should be sufficient for changes to the 3D code that are
@@ -17,65 +16,137 @@ BFB.  Non-BFB changes require verifing minimal changes in l2
 solution errors,conservation errors, energy budget errors, and
 checking plots of the vorticity field and and tracers.
 
-Each script uses the build system in build/ to compile and runs
-with an appropriate namelist, but none are queue-ready on any
-machine at this time. They can be launched individually through
-the individual_tests/ directory, or you can run all of them
-(except baro-dg, because it takes significantly longer to run)
-with the alltests.sh script. Again, these can only be run
-interactively at the moment.
+To generate baselines:
+   cd /working/path1
+   cmake -C $MACHFILE -DUSE_NUM_PROCS=24  /path/to/homme/baseline/code
+   make -j4 clean
+   make -j4 baseline    make baselines in /working/path1/tests/baseline/
+   make -j4 check       run tests, store results in /working/path1/tests
+                        compare against self baselines 
+
+To compare a different branch against the baselines:
+   cd /working/path2
+   cmake -C $MACHFILE -DUSE_NUM_PROCS=24  -DHOMME_BASELINE_DIR=/working/path1
+   make -j4 clean
+   make -j4 check      run tests, store results in /working/path2/tests
+                       compare against results in $HOMME_BASELINE_DIR/tests/baseline
 
 
-Components tested:
 
-shallow water equations:
-   explicit leapfrog    
-   explicit Runge-Kutta 
-   sign-preserving limiter
-   hyperviscosity
-   conservation (inviscid)
-   PIO_INTERP output
+The above instructions assume you have queing disabled in your machine's cmake
+file.  If your cluster is supported by HOMME's testing system, and queing is
+enabled, then "make baseline" and "make check" above will submit jobs to the
+que and monitor their progress.  In this case, -DUSE_NUM_PROCS is ignored and
+the number of procs and nodes that will be used is configured for each test case.
+The queue support code is currently not maintained and is most likley broken.  
 
-primitive equations:
-   RK w/ subcycling
-   hyper-viscosity
-   conservation (inviscid)
-   conservation (with hyper-viscosity)
-   RK-SSP tracer advection
-   exact restart
-   PIO and PIO_INTERP output
+
+Instructions to create a new test:
+Determine executable (sweqx or preqx)
+Create new executable configuration (if needed).
+   i.e. homme/test_exec/swtcA
+Create cmake description of test and namelist:
+   homme/test/reg_test/run_tests/swtc2.cmake
+   homme/test/reg_test/namelists/swtc2.nl
+   homme/test/reg_test/run_tests/test-list.cmake   (update for new test)
+   
+
+
 
  
 =======================================================================
 SHALLOW WATER TESTS -- DETAILS
 
-swtc1.sh    Test case 1 from Williamson et al 1992 (advection)
-            Spectral Element core
-            Runge-kutta, inviscid test
+swtc1.cmake Test case 1 from Williamson et al 1992 (advection)
+            executable:     sweqx
+            configuration:  homme/test_execs/swtcA
+                NP=8, PLEV=4, USE_PIO=False  WITH_ENERGY=False
+            namelist options:
+               RK3-SSP, inviscid test
                Output using PIO_INTERP
-               NE=10, NP=8, dt=480
+               NE=10, dt=480, 12 days
+               transport only, with limiter_option=4
             Verification:
             verify l1,l2,max errors have not changed significantly
             (3-4 digits?  need to estimate their sensitivity)
             k= 1 12.00 days  l1,l2,linf=  0.5347100E-02  0.3621730E-02  0.6553164E-02
 
+            Using an RK3-SSP scheme with sign-preserving limiter, should verify 4 tracers
+            (one per level) remain positive to machine precision.  
 
 
-swtc5.sh    Williamson et al 1992, test case 5 (isolated mtn)
-            Spectral Element core
-            Explicit leapfrog + hyper-viscosity
-            Output using PIO_INTERP
-            NE=30, NP=4, dt=90
-            Verification:
+swtc2.cmake   Williamson et al 1992, test case 2 (steady state)
+              This test ensures the RK3-SSP (which is mostly used for advection tests)
+              also works for full shallow water.  
+              We run with 4 levels on an unstructured grid to test the 3D, unstructured grid
+              pack/boundary exchange/unpack code.  
+
+              executable:     sweqx
+              configuration:  homme/test_execs/swtcA
+                  NP=8  PLEV=4, USE_PIO=FALSE, WITH_ENERGY=FALSE
+              namelist options
+                 RK3-SSP
+                 Tensor-hyper-viscosity
+                 Output using PIO_INTERP
+                 grid: mountain_10_x2
+
+                 Verify l1,l2,max errors have not changed significantly:
+                 and that mass is conserved and identical on all 4 levels:
+  1.00 days  l1,l2,linf=  0.1045449E-06  0.1258886E-06  0.3304282E-06
+
+  u=   -0.496431514513851E-06   0.386396546491838E+02   0.153811206637787E+07
+  v=   -0.263754879572531E-04   0.237167291254892E-04  -0.253359330740395E-01
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+
+level =  1  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+level =  2  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+level =  3  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+level =  4  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+
+                 
+
+
+
+swtc5.cmake   Williamson et al 1992, test case 5 (isolated mtn)
+              executable:     sweqx
+              configuration:  homme/test_execs/swtcB
+                  NP=4  PLEV=1, USE_PIO=FALSE, WITH_ENERGY=FALSE
+              namelist options
+                 Leapfrog-trapazoidal
+                 hyper-viscosity
+                 Output using PIO_INTERP
+                 NE=30, dt=90, run for 15 days
+              Verification:
                 l1,l2,max errors have not changed (l1,l2,max errors 
                 are computed in swtc5ref.ncl, which compares against
 		NCAR's T213 reference sol)
-            geop error: l1,l2,mx = 0.000531657 0.00074751 0.00837253
+                geop error: l1,l2,mx = 0.000531657 0.00074751 0.00837253
 
 
-swtc6.sh   short time, low resolution Rossby wave test
+swtc6.cmake  short time, low resolution Rossby wave test
+              executable:     sweqx
+              configuration:  homme/test_execs/swtcC
+                  NP=8  PLEV=1, USE_PIO=FALSE, WITH_ENERGY=FALSE
+             executable:     sweqx
+             namelist options:   homme/test/reg_test/namelists/swtc6-short.nl
+                 NE=2, explicit leapfrog, no robert filter, no viscsoity, 
+                 dt=6, run for 1 day    
+                 cubed_sphere_map=2
+
+             Run two simulations, one with the internal NE=2 grid, the
+             second with a tempest NE=2 grid from a .g meshfile
+             RMS error between the two runs should be: (final time):
+             (computed via cprnc utility)
+ RMS geop                             6.6086E-12            NORMALIZED  7.2158E-16
+ RMS u                                2.1855E-13            NORMALIZED  6.7928E-15
+ RMS v                                1.8779E-13            NORMALIZED  9.2013E-15
+
            Verification:
            verifty mass and energy conservatin to machine precision
+           (timestep chosen very small to ensure energy conservation)
            verify enstrophy dissipation rate has not changed significantly
              (3-4 digits?).  Example output, last timestep: 
   M-M0/M0      = 0.0000E+00 dM/dt   /M  =  0.000000E+00
@@ -117,20 +188,47 @@ individual tests (i.e. exact restart, conservation), one should also:
 
 
 
-baro2b.sh   Test case from Jablonowski and Williamson 2006
-            Spectral Element core
-            (with 4 tracers, per ASP)
-            Runge-Kutta timestepping with subcycling + hyper-viscosity 
-            sign preserving limiter 
-            nu_p=nu
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
-            Run the configuration in this script, visually
-            compare plots produced in q.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro2b-ref.pdf in ref_sol/)
+baro2b.cmake  Test case from Jablonowski and Williamson 2006
+              executable:     preqx
+              configuration:  homme/test_execs/baroC
+                  NP=4  PLEV=26, USE_PIO=FALSE, WITH_ENERGY=TRUE
+              namelist options:  
+                  dt=150
+                  4 tracers, per ASP
+                  Runge-Kutta timestepping with subcycling + hyper-viscosity 
+                 (tstep_type=1, qsplit=4)
+                 sign preserving limiter 
+                 nu_p=nu
+                 NE=15, NP=4, PLEV=26, dt=150, 9 days.  
 
-baro2c.sh   first runs 9 days of the JW baroclinic test case (to get to an
+               Performn 2 runs, 1 thread and 4 threads
+               (2015/2 MT: disabled this slow running thread test, replaced by
+                 thread tests in baroCamMoist below)
+
+            verification:
+              compare 1 thread vs4 thread runs (should be identical)
+              Run the configuration in this script, visually
+              compare plots produced in q.pdf (either run
+              in branch AND trunk or compare to plots in
+              baro2b-ref.pdf in ref_sol/)
+
+baro2c.cmake   Test case from Jablonowski and Williamson 2006
+            executable:     preqx
+            configuration:  homme/test_execs/baroC
+                  NP=4  PLEV=26, USE_PIO=FALSE, WITH_ENERGY=TRUE
+            namelist options:  
+               NE=6
+               nmax = 2160 (9 days)
+               qsize=1
+               dt=360
+               nu=nu_s=4e16  (nu_p,nu_top=0)
+               monotone limiter
+
+               tstep=5 should run with dt=1800
+            restart run:  dt=30  LF
+            
+
+            first runs 9 days of the JW baroclinic test case (to get to an
             interesting flow field).  Then do a short restart run
             with a very small timestep to measure mass and energy
             conservation.  IE dissipation should be very small.
@@ -150,147 +248,71 @@ PE,d/dt,diss:  0.63765066746567E+03  0.12525807506476E-01  0.98007470195061E-11
  E,dE/dt       0.26233326563496E+10  0.63578287760417E-07
 Q1,Q diss, dQ^2/dt:  0.65215821593973E+04 kg/m^2  0.0000000E+00 -0.4239988E-03
         
-Verify that:
-  KE diss = -.25e-1
-  IE diss = +.25e-1
+Original Leapfrog w/o Robert filter code    
+(latest version does not support tracers, so Q stats no longer reported)
+  KE diss = -.24e-1
+  IE diss = +.24e-1
   PE diss = O(e-11)
   Q diss  = O(e-14)
-  dE/dt   = .8e-8   
+  dE/dt   = .5e-7   
   dQ^2/dt = -.42e-3
+
+2016-2/21: switch to RK5 for initial and restart run:
+RK5 code dissipates more than leapfrog w/o Robert filter, as expected:
+  KE diss = -.24e-1
+  IE diss = +.24e-1
+  PE diss = O(e-7)
+  dE/dt   = .55e-5
+  Q diss  = O(e-13)
+  dQ^2/dt = -.26e-6
+
+
+
+
+
 
 
 
 baro2d.sh   Test case from Jablonowski and Williamson 2006
             Same as baro2b.sh, but configred to match CAM-SE (Eulerian)
-            subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
-            monotone limiter            
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
-            Regression test runs for 9 day.  
-
+            executable:     preqx
+            configuration:  homme/test_execs/baroC
+                  NP=4  PLEV=26, USE_PIO=FALSE, WITH_ENERGY=TRUE
+              namelist options:  
+                subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
+                monotone limiter            
+                Output using PIO_INTERP
+                NE=15, NP=4, PLEV=26, dt=150, 9 days.
+ 
+             (no threading tests)
 
 
 baroCamMoist.cmake
-              Similar to baro2b.sh, but configured to match CAM-SE Lagrangian
+              Similar to baro2d.sh, but configured to match CAM-SE Lagrangian
               moisture is turned on, so Q1 field feeds back to dynamics.  
-              NE=6 run for 3 days
+
+              SE version
+              NE=6 run for 3 days, dt=480
+
+              SE-SL version
+              NE=2 run for 1 days, dt=1200, qsplit=3
+              on skybridge, this case is very very slow  - compiler issue with
+              one of the subroutines.  Changing to NE=2 for 1 day until this is fixed.
+
+
 
 
 
 ======================================================================================
-tests removed from ACME:
+other tests
 ======================================================================================
+templates.cmake 
 
-swtc1-dg.sh Test case 1 from Williamson et al 1992 (advection)
-            Discontinuous Galerkin core
-            Runge-kutta, inviscid test
-	    Output using PIO_INTERP
-            NE=10, NP=6, dt=100
-            Verification:
-            l1,l2,max errors have not changed significantly
-             (3-4 digits?  need to estimate their sensitivity)
-       12.00 days  l1,l2,linf=  0.7022180E-02  0.4124479E-02  0.3461017E-02
-
-
-swtc2-dg.sh Test case 2 from Williamson et al 1992 (steady-state)
-	    Discontinuous Galerkin core
-            Runge-kutta + viscosity
-            Output using PIO_INTERP
-            NE=6, NP=6, dt=30
-            Verification:  l1,l2,max errors have not changed significantly
-             (3-4 digits?  need to estimate their sensitivity)
-  5.00 days  l1,l2,linf=  0.1955934E-07  0.2790046E-07  0.2881657E-06
-
-
-
-swtc5-dg.sh Test case 5 from Williamson et al 1992 (isolated mtn)
-            Discontinuous Galerkin core
-            Runge-kutta + viscosity
-            Output using PIO_INTERP
-            NE=6, NP=6, dt=30
-            Verification: l1,l22,max errors have not changed (l1,l2,max errors 
-            are computed in swtc5ref.ncl, which compares against NCAR's 
-            T213 reference sol)
-            l1,l2,mx = 0.0109583 0.0154157 0.0734919
-
-
-
-baro1a.sh   Test case from Polvani et al 2004
-            Spectral Element core
-            Explicit leapfrog + viscosity
-            Output using PIO_INTERP
-            NE=9, NP=8, PLEV=20, dt=60
-            Run the configuration in this script, visually
-            compare plots produced in baro1a.pdf (either
-            run in branch AND trunk or compare to plots in
-            baro1a-ref.pdf in this directory)
-
-
-baro2a.sh   Test case from Jablonowski and Williamson 2006
-            Spectral Element core
-            No tracers
-            Explicit leapfrog + hyperviscosity
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
-
-            NOTE: tracer advection with leapfrog dynamics
-                  no longer supported. Need to update 
-                  reference plots to look at vorticty
-                  instead of tracers. (MT 2012/10)
-
-            Verification:
-            Run the configuration in this script, visually
-            compare plots produced in q.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro2a-ref.pdf in this directory)
-
-            l2 error in PS against T340 EUL result
-            l2 PS error at day 9:  1.13mb
-            plot PS, zeta, compare with reference plots.  
-
-
-baro1b.sh   Test case from Polvani et al 2004
-            Spectral Element core
-            Semi-implicit time-stepping
-            Output using PIO
-            NE=9, NP=8, PLEV=20, dt=600
-            Run the configuration in this script, visually
-            compare plots produced in baro1b.pdf (either
-            run in branch AND trunk or compare to plots in
-            baro1b-ref.pdf in this directory)
-
-            Verification: baro1[ab].sh 
-            run both tests, verify enstrophy norm has not changed significantly
-            ( 0.79e-5, 2-3 digits).  Plot vorticity with the NCL script provided and
-            compare with reference plots provided.  Plots should be 
-           visually identical.
-
-
-
-
-baro-dg.sh  Test case from Jablonowski and Williamson 2006
-            Discontinous Galerkin core
-            Runge-Kutta timestepping with viscosity
-            NE=20, NP=6, PLEV=26, dt=10
-            Run the configuration in this script, visually
-            compare plots produced in zeta.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro-dg-ref.pdf in ref_sol/)
-
-
-            This test is still very noisy, so these numbers should be
-            updated when the test works :) But for now, verify final
-            output and the statistics given by the NCL scripts on the
-            last day.
-      259200 time=   30.0000000000000       days
-  u=   -0.321240342997538E+02   0.639891385662766E+02   0.316917285108628E+08
-  v=   -0.456006221384880E+02   0.363723804401733E+02   0.268096107383425E+04
- ps=    0.896360869854064E+05   0.105148873963494E+06   0.865123395053191E+10
-temp=   0.216357094032624E+03   0.132267282279555E+04   0.103398193092533E+10
-  (0)	time = 30
-  (0)	ps min/max = 89626.2, 105149
-  (0)	zeta 850 min/max = -0.000254125, 0.000164322
-
-
-
+       Test the HOMME grid template generation.  This runs 1
+       timstep, and then outputs details about the grid and the GLL dual grid
+ 
+       Not tested: From this output, NCL scripts are used to convert
+       the data into a "*_latlon.nc" file used by CAM's interpic_new
+       utility, and a "*_scip.nc" file used by ESMF and Tempest
+       utilities that generate mapping files.
 

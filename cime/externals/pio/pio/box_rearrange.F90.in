@@ -2,8 +2,8 @@
 !>
 !!
 !! @file 
-!! $Revision$
-!! $LastChangedDate$
+!! $Revision: 819 $
+!! $LastChangedDate: 2013-05-31 13:32:27 -0500 (Fri, 31 May 2013) $
 !! @brief
 !!  Perform data rearrangement with each io processor
 !!  owning a rectangular box in the output domain
@@ -29,39 +29,7 @@
 ! cache communication pattern for rearranger in the ioDesc
 #define BOX_CACHE 1
 
-
-! communication algorithm options
-#define COLLECTIVE 0
-#define POINT_TO_POINT 1
-#define FLOW_CONTROL 2
-#define DEF_P2P_HANDSHAKE .true.
-#define DEF_P2P_ISEND .false.
-#define DEF_P2P_MAXREQ 64
-
-#ifndef _MPISERIAL
-#ifndef _NO_FLOW_CONTROL
-#define _USE_COMP2IO_FC 1
-#define _USE_IO2COMP_FC 1
-#endif  
-#endif
-!
-! The completely unreadable nature of the following lines is required by some compilers
-!
-#ifdef _USE_ALLTOALLW
-#define DEF_COMP2IO_OPTION 0
-#define DEF_IO2COMP_OPTION 0
-#else
-#ifdef _USE_COMP2IO_FC
-#define DEF_COMP2IO_OPTION 2
-#else
-#define DEF_COMP2IO_OPTION 1
-#endif
-#ifdef _USE_IO2COMP_FC
-#define DEF_IO2COMP_OPTION 2
-#else
-#define DEF_IO2COMP_OPTION 1
-#endif
-#endif
+#include "rearr_options.h"
 
 !> 
 !! \def TAG
@@ -74,13 +42,16 @@
 module box_rearrange
 
   use pio_kinds, only : pio_offset, r4, r8, i4, i8
-  use pio_types, only : io_desc_t, iosystem_desc_t
+  use pio_types
 #ifdef NO_MPI2
   use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, &
                           Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
 #else
   use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
                           
+#endif
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
 #endif
   use alloc_mod,      only : alloc_check, dealloc_check
   use pio_spmd_utils, only : pio_swapm
@@ -212,20 +183,39 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
 #else
 
 
-  ! begin
+  ! FIXME: Ideally the iodesc should contain the rearr and
+  ! the rearr_opts - however the current code sets the
+  ! rearr and rearr_opts on the IOsystem
+
+  ! The rearranger options in IODESC overrides the defaults
+  if(IOsystem%rearr_opts%comm_type == PIO_rearr_comm_p2p) then
+    if( (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_2d_disable) .or.&
+        (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_1d_io2comp) ) then
+      pio_option = POINT_TO_POINT
+    else
+      pio_option = FLOW_CONTROL
+    end if
+  else
+    pio_option = COLLECTIVE
+  end if
+
+  ! The rearranger options passed in to this function overrides
+  ! both the defaults and the options in IODESC
   if ( present( comm_option ) ) then
      if ((comm_option == COLLECTIVE) &
          .or. (comm_option == POINT_TO_POINT) &
          .or. (comm_option == FLOW_CONTROL)) then
          pio_option = comm_option
       endif
-  else
-     pio_option = DEF_COMP2IO_OPTION
   endif
+
   if (pio_option == FLOW_CONTROL) then
-    pio_hs     = DEF_P2P_HANDSHAKE
-    pio_isend  = DEF_P2P_ISEND
-    pio_maxreq = DEF_P2P_MAXREQ
+    pio_hs     = IOsystem%rearr_opts%comm_fc_opts_comp2io%enable_hs
+    pio_isend  = IOsystem%rearr_opts%comm_fc_opts_comp2io%enable_isend
+    pio_maxreq = IOsystem%rearr_opts%comm_fc_opts_comp2io%max_pend_req
+
+    ! The rearranger options passed to this function overrides
+    ! both the default and the options in IODESC
     if ( present(fc_options) ) then
       if (fc_options(1) == 0) then
         pio_hs = .false.
@@ -293,22 +283,31 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
       endif
     end do
 
-#ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
 
+#ifdef TIMING
+      call t_startf("a2a_box_rear_comp2io_{TYPE}")
+#endif
       call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
                          IOsystem%union_comm, ierror                       )
+#ifdef TIMING
+      call t_stopf("a2a_box_rear_comp2io_{TYPE}")
+#endif
       call CheckMPIReturn('box_rearrange', ierror)
     else
+
+#ifdef TIMING
+      call t_startf("swapm_box_rear_comp2io_{TYPE}")
 #endif
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
-#ifdef _USE_ALLTOALLW
-    endif
+#ifdef TIMING
+      call t_stopf("swapm_box_rear_comp2io_{TYPE}")
 #endif
+    endif
     call dealloc_check(a2a_sendcounts)
     call dealloc_check(a2a_displs)
     call dealloc_check(a2a_sendtypes)
@@ -324,6 +323,9 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
     endif
 #endif
 
+#ifdef TIMING
+    call t_startf("p2p_box_rear_comp2io_{TYPE}")
+#endif
     !
     ! send data from comp procs
     !
@@ -378,6 +380,10 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
     end do
 
     call dealloc_check(sreq, 'send requests')
+
+#ifdef TIMING
+    call t_stopf("p2p_box_rear_comp2io_{TYPE}")
+#endif
 
 #if DEBUG_BARRIER
     call MPI_BARRIER(IOsystem%union_comm,ierror)
@@ -477,19 +483,39 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   end do
 
 #else
+  ! FIXME: Ideally the iodesc should contain the rearr and
+  ! the rearr_opts - however the current code sets the
+  ! rearr and rearr_opts on the IOsystem
+
+  ! The rearranger options in IODESC overrides the defaults
+  if(IOsystem%rearr_opts%comm_type == PIO_rearr_comm_p2p) then
+    if( (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_2d_disable) .or.&
+        (IOsystem%rearr_opts%fcd == PIO_rearr_comm_fc_1d_comp2io) ) then
+      pio_option = POINT_TO_POINT
+    else
+      pio_option = FLOW_CONTROL
+    end if
+  else
+    pio_option = COLLECTIVE
+  end if
+
+  ! The rearranger options passed in to this function overrides
+  ! both the defaults and the options in IODESC
   if ( present( comm_option ) ) then
      if ((comm_option == COLLECTIVE) &
          .or. (comm_option == POINT_TO_POINT) &
          .or. (comm_option == FLOW_CONTROL)) then
          pio_option = comm_option
       endif
-  else
-     pio_option = DEF_IO2COMP_OPTION
   endif
+
   if (pio_option == FLOW_CONTROL) then
-    pio_hs     = DEF_P2P_HANDSHAKE
-    pio_isend  = DEF_P2P_ISEND
-    pio_maxreq = DEF_P2P_MAXREQ
+    pio_hs     = IOsystem%rearr_opts%comm_fc_opts_io2comp%enable_hs
+    pio_isend  = IOsystem%rearr_opts%comm_fc_opts_io2comp%enable_isend
+    pio_maxreq = IOsystem%rearr_opts%comm_fc_opts_io2comp%max_pend_req
+
+    ! The rearranger options passed to this function overrides
+    ! both the default and the options in IODESC
     if ( present(fc_options) ) then
       if (fc_options(1) == 0) then
         pio_hs = .false.
@@ -560,21 +586,29 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
       end do
     endif
 
-#ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
+#ifdef TIMING
+      call t_startf("a2a_box_rear_io2comp_{TYPE}")
+#endif
       call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
                          IOsystem%union_comm, ierror                          )
+#ifdef TIMING
+      call t_stopf("a2a_box_rear_io2comp_{TYPE}")
+#endif
       call CheckMPIReturn(subName, ierror)
     else
+#ifdef TIMING
+      call t_startf("swapm_box_rear_io2comp_{TYPE}")
 #endif
       call pio_swapm( nprocs, myrank,                               &
         iobuf,   niodof, a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         compbuf, ndof,   a2a_recvcounts, a2a_displs, a2a_recvtypes, &
         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq           )
-#ifdef _USE_ALLTOALLW
-    endif
+#ifdef TIMING
+      call t_stopf("swapm_box_rear_io2comp_{TYPE}")
 #endif
+    endif
     call dealloc_check(a2a_sendcounts)
     call dealloc_check(a2a_displs)
     call dealloc_check(a2a_sendtypes)
@@ -583,6 +617,9 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
   else
 
+#ifdef TIMING
+    call t_startf("p2p_box_rear_io2comp_{TYPE}")
+#endif
     call alloc_check(rreq, num_iotasks, 'recv requests')
 
     !
@@ -642,6 +679,9 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
       call dealloc_check(sreq,'send requests')
     endif
+#ifdef TIMING
+    call t_stopf("p2p_box_rear_io2comp_{TYPE}")
+#endif
 
   endif ! POINT_TO_POINT
 #endif  /* not _MPISERIAL */
@@ -745,11 +785,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do j=1,ndim
           if ( gcoord(j) < lb(j,i) ) then
              i = max(1,i-decompstep(j))
-             if(k>5000) print *,__FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
+             if(k>5000) print *,__PIO_FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
              cycle loop_ioproc
           else  if(gcoord(j) >= ub(j,i) ) then
              i = min(nioproc,i+decompstep(j))
-             if(k>5000) print *,__FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
+             if(k>5000) print *,__PIO_FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
              cycle loop_ioproc
           endif
        end do
@@ -1336,7 +1376,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do i=1,nrecvs
           recv_counts(rfrom(i)+1) = rcount(i)
        enddo
-       
+
        rbuf_size = sum(recv_counts)
        call alloc_check(rindex, rbuf_size, 'rindex buffer')
        rindex = 0

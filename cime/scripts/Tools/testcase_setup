@@ -169,19 +169,27 @@ my $testfile = "$caseroot/${case}.testdriver";
 my $tfwfh = new IO::File;
 $tfwfh->open(">>$testfilewrapper") or die "can't open file: $testfilewrapper $eol";
 print $tfwfh "#!/bin/csh -f $eol";
+
 print $tfwfh $batchdirectives . $eol;
+
+print $tfwfh "@ teststart_sec = `date -u +%s`$eol";
 print $tfwfh "$testfile$eol";
-print $tfwfh "if (\$status != 0) then$eol";
-print $tfwfh "  sed '/RUN\$/d' $caseroot/TestStatus >! $caseroot/TestStatus.new$eol";
-print $tfwfh "  mv $caseroot/TestStatus.new $caseroot/TestStatus$eol";
+print $tfwfh "@ testrc = \$status$eol";
+print $tfwfh "@ testend_sec = `date -u +%s`$eol";
+
+print $tfwfh "sed '/ RUN\$/d' $caseroot/TestStatus > $caseroot/TestStatus.new$eol";
+print $tfwfh "mv -f $caseroot/TestStatus.new $caseroot/TestStatus$eol";
+
+print $tfwfh "if (\$testrc != 0) then$eol";
 print $tfwfh "  echo 'FAIL $casebaseid RUN' >> $caseroot/TestStatus$eol";
-print $tfwfh "  exit -1$eol";
 print $tfwfh "else$eol";
-print $tfwfh "  sed '/RUN\$/d' $caseroot/TestStatus >! $caseroot/TestStatus.new$eol";
-print $tfwfh "  mv $caseroot/TestStatus.new $caseroot/TestStatus$eol";
 print $tfwfh "  echo 'PASS $casebaseid RUN' >> $caseroot/TestStatus$eol";
-print $tfwfh "  exit 0$eol";
 print $tfwfh "endif$eol";
+
+print $tfwfh "@ testtime = \$testend_sec - \$teststart_sec$eol";
+print $tfwfh "echo COMMENT TIME \$testtime >>& $caseroot/TestStatus$eol";
+
+print $tfwfh "exit \$testrc$eol";
 print $tfwfh "";
 $tfwfh->close();
 
@@ -263,7 +271,6 @@ my $testcase_begin = <<'END_BEGIN';
     set TESTSTATUS_LOG          = $CASEROOT/TestStatus.log
     set TESTSTATUS_OUT_NLCOMP   = $CASEROOT/TestStatus.nlcomp
 
-    echo "PEND ${CASEBASEID} RUN" >>&! $TESTSTATUS_OUT
     touch $TESTSTATUS_LOG
 
     set sdate = `date +"%Y-%m-%d %H:%M:%S"`
@@ -520,12 +527,7 @@ my $testcase_end = <<'END_TEST';
 
    #
    # summarize failed differences if any
-   ${SCRIPTSROOT}/Tools/component_write_comparefail.pl $RUNDIR $TESTSTATUS_LOG
-
-   # determine and output test time
-   @ testend_sec = `date -u +%s`
-   @ testtime = $testend_sec - $teststart_sec
-   echo "COMMENT Test time is $testtime seconds" >>& $TESTSTATUS_OUT
+   ${SCRIPTSROOT}/Tools/component_write_comparefail.pl $RUNDIR >>& $TESTSTATUS_LOG
 
    #======================================================================
    # Clean up

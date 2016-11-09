@@ -1,3 +1,4 @@
+
 module cloud_fraction
 
   ! Cloud fraction parameterization.
@@ -185,16 +186,19 @@ end subroutine cldfrc_getparams
 
 !===============================================================================
 
-subroutine cldfrc_init
+subroutine cldfrc_init(dp1_out)
 
    ! Initialize cloud fraction run-time parameters
 
-   use cam_history,   only:  phys_decomp, addfld
+   use cam_history,   only:   addfld
    use dycore,        only:  dycore_is, get_resolution
    !BSINGH - "use chemistry" is commented out to get rid of a circular dependency in unified convective trasport scheme
    ! The dependency was: chemistry->aerosol_intr->zm_conv_intr->zm_conv->cloud_fraction->chemistry 
    !use chemistry,     only:  chem_is
    use phys_control,  only:  phys_getopts
+   
+   ! args
+   real(r8), intent(out) :: dp1_out
    
    ! horizontal grid specifier
    character(len=32) :: hgrid
@@ -204,6 +208,9 @@ subroutine cldfrc_init
 
    integer :: k
    !-----------------------------------------------------------------------------
+
+   !for passing dp1 to clubb
+   dp1_out = dp1
 
    call phys_getopts(shallow_scheme_out = shallow_scheme ,&
                      eddy_scheme_out    = eddy_scheme    ,&
@@ -241,8 +248,8 @@ subroutine cldfrc_init
       write(iulog,*)'cldfrc_init: model level nearest 700 mb is',k700,'which is',pref_mid(k700),'pascals'
    end if
 
-   call addfld ('SH_CLD   ', 'fraction', pver, 'A', 'Shallow convective cloud cover'                          ,phys_decomp)
-   call addfld ('DP_CLD   ', 'fraction', pver, 'A', 'Deep convective cloud cover'                             ,phys_decomp)
+   call addfld ('SH_CLD', (/ 'lev' /), 'A', 'fraction', 'Shallow convective cloud cover'                          )
+   call addfld ('DP_CLD', (/ 'lev' /), 'A', 'fraction', 'Deep convective cloud cover'                             )
 
 end subroutine cldfrc_init
 

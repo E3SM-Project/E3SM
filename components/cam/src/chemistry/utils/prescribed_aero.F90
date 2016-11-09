@@ -106,7 +106,7 @@ contains
   subroutine prescribed_aero_init()
 
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld
     use ppgrid,      only : pver
     use error_messages, only: handle_err
     use ppgrid,         only: pcols, pver, begchunk, endchunk
@@ -161,13 +161,13 @@ contains
     i_c = 0
     fldloop:do i = 1,number_flds
        if(clim_modal_aero .and. index(trim(fields(i)%fldnam),'_c') > 1) then ! Only cloud borne species
-          call addfld(trim(fields(i)%fldnam)//'_D',trim(fields(i)%units), pver, 'A', 'prescribed aero', phys_decomp )
+          call addfld(trim(fields(i)%fldnam)//'_D', (/ 'lev' /), 'A',trim(fields(i)%units), 'prescribed aero' )
           call spec_c_to_a(trim(fields(i)%fldnam),spec_a)
-          call addfld(trim(spec_a)//'_D',trim(fields(i)%units), pver, 'A', 'prescribed aero', phys_decomp )
+          call addfld(trim(spec_a)//'_D', (/ 'lev' /), 'A',trim(fields(i)%units), 'prescribed aero' )
           i_c = i_c + 1
           if(i_c >= aero_cnt_c) exit fldloop
        else
-          call addfld(trim(fields(i)%fldnam)//'_D',trim(fields(i)%units), pver, 'A', 'prescribed aero', phys_decomp )
+          call addfld(trim(fields(i)%fldnam)//'_D', (/ 'lev' /), 'A',trim(fields(i)%units), 'prescribed aero' )
        endif
     enddo fldloop
 

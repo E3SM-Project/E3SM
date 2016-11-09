@@ -163,9 +163,6 @@ if (! $clean ) {
 		die "ERROR cesm_setup: $comp NINST value greater than $comp NTASKS";
 	    }
 	}
-	if($xmlvars{$nthrds} > 1){
-	    $build_threaded = "TRUE";
-	}
     }
 
     if ($build_threaded eq "TRUE" and $xmlvars{"COMPILER"} eq "nag") {

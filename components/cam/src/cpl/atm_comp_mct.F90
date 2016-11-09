@@ -23,7 +23,7 @@ module atm_comp_mct
   use atm_import_export
   use cam_comp
   use cam_instance     , only: cam_instance_init, inst_suffix
-  use cam_control_mod  , only: nsrest, adiabatic, ideal_phys, aqua_planet, eccen, obliqr, lambm0, mvelpp
+  use cam_control_mod  , only: nsrest, aqua_planet, eccen, obliqr, lambm0, mvelpp
   use radiation        , only: radiation_do, radiation_nextsw_cday
   use phys_grid        , only: get_ncols_p, ngcols, get_gcol_p, get_rlat_all_p, &
 	                       get_rlon_all_p, get_area_all_p
@@ -42,7 +42,7 @@ module atm_comp_mct
 #endif
   use time_manager     , only: get_curr_calday, advance_timestep, get_curr_date, get_nstep, &
                                get_step_size, timemgr_init, timemgr_check_restart
-  use ioFileMod             
+  use ioFileMod
   use perf_mod
   use cam_logfile      , only: iulog
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
@@ -204,8 +204,6 @@ CONTAINS
        call seq_infodata_GetData( infodata,                                           &
             case_name=caseid, case_desc=ctitle,                                       &
             start_type=starttype,                                                     &
-            atm_adiabatic=adiabatic,                                                  &
-            atm_ideal_phys=ideal_phys,                                                &
             aqua_planet=aqua_planet,                                                  &
             brnch_retain_casename=brnch_retain_casename,                              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
@@ -344,7 +342,9 @@ CONTAINS
           call atm_export( cam_out, a2x_a%rattr )
        else
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
-          call atm_import( x2a_a%rattr, cam_in )
+          ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
+	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
+          call atm_import( x2a_a%rattr, cam_in, .true. )
           call cam_run1 ( cam_in, cam_out ) 
        end if
 
@@ -749,7 +749,7 @@ CONTAINS
   subroutine atm_read_srfrest_mct( EClock, x2a_a, a2x_a)
 
     !-----------------------------------------------------------------------
-    use cam_pio_utils
+    use cam_pio_utils, only: cam_pio_openfile, cam_pio_closefile, pio_subsystem
     !
     ! Arguments
     !
@@ -819,7 +819,7 @@ CONTAINS
     end do
 
     call pio_freedecomp(File,iodesc)
-    call pio_closefile(File)
+    call cam_pio_closefile(File)
     deallocate(tmp)
 
   end subroutine atm_read_srfrest_mct
@@ -830,7 +830,8 @@ CONTAINS
        yr_spec, mon_spec, day_spec, sec_spec)
 
     !-----------------------------------------------------------------------
-    use cam_pio_utils
+    use cam_pio_utils, only: cam_pio_createfile, cam_pio_closefile, pio_subsystem
+    use cam_history_support, only: fillvalue
     !
     ! Arguments
     !
@@ -898,7 +899,7 @@ CONTAINS
     deallocate(varid_x2a, varid_a2x)
 
     call pio_freedecomp(File,iodesc)
-    call pio_closefile(file)
+    call cam_pio_closefile(file)
 
 
   end subroutine atm_write_srfrest_mct

@@ -1,13 +1,6 @@
 SET(CUSTOM_FLAG_FILES
   ${HOMME_SOURCE_DIR}/physics/column_model_mod.F90 
   ${HOMME_SOURCE_DIR}/src/share/prim_driver_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/bndry_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/derivative_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/edge_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/openacc_utils_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/prim_advection_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/viscosity_openacc_mod.F90
-
 )
 
 SET_SOURCE_FILES_PROPERTIES(
@@ -17,14 +10,4 @@ SET_SOURCE_FILES_PROPERTIES(
   "  -Mpreprocess -Mextend -Mflushz -O0 -mp -acc -Mcuda=6.5,cc35,ptxinfo -Minfo=accel -ta=tesla,pin"
 )
 
-SET_SOURCE_FILES_PROPERTIES(
-  ${HOMME_SOURCE_DIR}/src/share/openacc/bndry_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/derivative_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/edge_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/openacc_utils_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/prim_advection_openacc_mod.F90
-  ${HOMME_SOURCE_DIR}/src/share/openacc/viscosity_openacc_mod.F90
-  PROPERTIES GENERATED TRUE COMPILE_FLAGS
-  "  -Mpreprocess -Mextend -Mflushz -fast -mp -acc -Mcuda=6.5,cc35,ptxinfo -Minfo=accel -ta=tesla,pin -Minline=reshape"
-)
 

@@ -1,5 +1,6 @@
 
 
+
 module zm_conv_intr
 !---------------------------------------------------------------------------------
 ! Purpose:
@@ -12,9 +13,10 @@ module zm_conv_intr
 !---------------------------------------------------------------------------------
    use shr_kind_mod, only: r8=>shr_kind_r8
    use physconst,    only: cpair                              
+   use physconst,    only: latvap, gravit   !songxl 2014-05-20
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
-   use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran
-   use cam_history,  only: outfld, addfld, add_default, phys_decomp
+   use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigmem
+   use cam_history,  only: outfld, addfld, horiz_only, add_default
    use perf_mod
    use cam_logfile,  only: iulog
    
@@ -38,6 +40,13 @@ module zm_conv_intr
       dp_cldice_idx, &
       prec_dp_idx,   &
       snow_dp_idx
+
+!<songxl 2014-05-20------------------
+   integer :: hu_nm1_idx    !hu_nm1 index in physics buffer
+   integer :: cnv_nm1_idx   !cnv_nm1 index in physics buffer
+   integer :: tm1_idx,     &!tm1 index in physics buffer
+              qm1_idx       !qm1 index in physics buffer
+!>songxl 2014-05-20------------------
 
 !  indices for fields in the physics buffer
    integer  ::    cld_idx          = 0    
@@ -77,6 +86,19 @@ subroutine zm_conv_register
 ! deep gbm cloud liquid water (kg/kg)    
    call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)  
 
+!<songxl 2014-05-20-------------
+!  if(trigmem)then
+! moist static energy at n-1 time step (J/kg)
+    call pbuf_add_field('HU_NM1','global',dtype_r8,(/pcols,pver/), hu_nm1_idx)
+! moist convection index at n-1 time step(1=yes, 0=no)
+    call pbuf_add_field('CNV_NM1','global',dtype_r8,(/pcols,pver/), cnv_nm1_idx)
+! temperature at n-1 time step
+    call pbuf_add_field('TM1', 'global', dtype_r8,(/pcols,pver/), tm1_idx)
+! specific humidity at n-1 time step
+    call pbuf_add_field('QM1', 'global', dtype_r8,(/pcols,pver/), qm1_idx) 
+!  endif
+!>songxl 2014-05-20-------------
+
 end subroutine zm_conv_register
 
 !=========================================================================================
@@ -87,7 +109,7 @@ subroutine zm_conv_init(pref_edge)
 ! Purpose:  declare output fields, initialize variables needed by convection
 !----------------------------------------
 
-  use cam_history,    only: outfld, addfld, add_default, phys_decomp
+  use cam_history,    only: outfld, addfld, horiz_only, add_default
   use ppgrid,         only: pcols, pver
   use zm_conv,        only: zm_convi
   use pmgrid,         only: plev,plevp
@@ -116,47 +138,47 @@ subroutine zm_conv_init(pref_edge)
 !
 
 
-    call addfld ('PRECZ   ','m/s     ',1,    'A','total precipitation from ZM convection',        phys_decomp)
-    call addfld ('ZMDT    ','K/s     ',pver, 'A','T tendency - Zhang-McFarlane moist convection', phys_decomp)
-    call addfld ('ZMDQ    ','kg/kg/s ',pver, 'A','Q tendency - Zhang-McFarlane moist convection', phys_decomp)
-    call addfld ('ZMDICE ','kg/kg/s ',pver, 'A','Cloud ice tendency - Zhang-McFarlane convection',phys_decomp)
-    call addfld ('ZMDLIQ ','kg/kg/s ',pver, 'A','Cloud liq tendency - Zhang-McFarlane convection',phys_decomp)
-    call addfld ('EVAPTZM ','K/s     ',pver, 'A','T tendency - Evaporation/snow prod from Zhang convection',phys_decomp)
-    call addfld ('FZSNTZM ','K/s     ',pver, 'A','T tendency - Rain to snow conversion from Zhang convection',phys_decomp)
-    call addfld ('EVSNTZM ','K/s     ',pver, 'A','T tendency - Snow to rain prod from Zhang convection',phys_decomp)
-    call addfld ('EVAPQZM ','kg/kg/s ',pver, 'A','Q tendency - Evaporation from Zhang-McFarlane moist convection',phys_decomp)
+    call addfld ('PRECZ',horiz_only,    'A','m/s','total precipitation from ZM convection')
+    call addfld ('ZMDT',(/ 'lev' /), 'A','K/s','T tendency - Zhang-McFarlane moist convection')
+    call addfld ('ZMDQ',(/ 'lev' /), 'A','kg/kg/s','Q tendency - Zhang-McFarlane moist convection')
+    call addfld ('ZMDICE',(/ 'lev' /), 'A','kg/kg/s','Cloud ice tendency - Zhang-McFarlane convection')
+    call addfld ('ZMDLIQ',(/ 'lev' /), 'A','kg/kg/s','Cloud liq tendency - Zhang-McFarlane convection')
+    call addfld ('EVAPTZM',(/ 'lev' /), 'A','K/s','T tendency - Evaporation/snow prod from Zhang convection')
+    call addfld ('FZSNTZM',(/ 'lev' /), 'A','K/s','T tendency - Rain to snow conversion from Zhang convection')
+    call addfld ('EVSNTZM',(/ 'lev' /), 'A','K/s','T tendency - Snow to rain prod from Zhang convection')
+    call addfld ('EVAPQZM',(/ 'lev' /), 'A','kg/kg/s','Q tendency - Evaporation from Zhang-McFarlane moist convection')
     
-    call addfld ('ZMFLXPRC','kg/m2/s ',pverp, 'A','Flux of precipitation from ZM convection'       ,phys_decomp)
-    call addfld ('ZMFLXSNW','kg/m2/s ',pverp, 'A','Flux of snow from ZM convection'                ,phys_decomp)
-    call addfld ('ZMNTPRPD','kg/kg/s ',pver , 'A','Net precipitation production from ZM convection',phys_decomp)
-    call addfld ('ZMNTSNPD','kg/kg/s ',pver , 'A','Net snow production from ZM convection'         ,phys_decomp)
-    call addfld ('ZMEIHEAT','W/kg'    ,pver , 'A','Heating by ice and evaporation in ZM convection',phys_decomp)
+    call addfld ('ZMFLXPRC',(/ 'ilev' /), 'A','kg/m2/s','Flux of precipitation from ZM convection'       )
+    call addfld ('ZMFLXSNW',(/ 'ilev' /), 'A','kg/m2/s','Flux of snow from ZM convection'                )
+    call addfld ('ZMNTPRPD',(/ 'lev' /) , 'A','kg/kg/s','Net precipitation production from ZM convection')
+    call addfld ('ZMNTSNPD',(/ 'lev' /) , 'A','kg/kg/s','Net snow production from ZM convection'         )
+    call addfld ('ZMEIHEAT',(/ 'lev' /) , 'A','W/kg'    ,'Heating by ice and evaporation in ZM convection')
     
-    call addfld ('CMFMCDZM','kg/m2/s ',pverp,'A','Convection mass flux from ZM deep ',phys_decomp)
-    call addfld ('PRECCDZM','m/s     ',1,    'A','Convective precipitation rate from ZM deep',phys_decomp)
+    call addfld ('CMFMCDZM',(/ 'ilev' /),'A','kg/m2/s','Convection mass flux from ZM deep ')
+    call addfld ('PRECCDZM',horiz_only,    'A','m/s','Convective precipitation rate from ZM deep')
 
-    call addfld ('PCONVB','Pa'    ,1 , 'A','convection base pressure',phys_decomp)
-    call addfld ('PCONVT','Pa'    ,1 , 'A','convection top  pressure',phys_decomp)
+    call addfld ('PCONVB',horiz_only , 'A','Pa'    ,'convection base pressure')
+    call addfld ('PCONVT',horiz_only , 'A','Pa'    ,'convection top  pressure')
 
-    call addfld ('CAPE',   'J/kg',       1, 'A', 'Convectively available potential energy', phys_decomp)
-    call addfld ('FREQZM ','fraction  ',1  ,'A', 'Fractional occurance of ZM convection',phys_decomp) 
+    call addfld ('CAPE',       horiz_only, 'A',   'J/kg', 'Convectively available potential energy')
+    call addfld ('FREQZM',horiz_only  ,'A','fraction', 'Fractional occurance of ZM convection') 
 
-    call addfld ('ZMMTT ', 'K/s',     pver, 'A', 'T tendency - ZM convective momentum transport',phys_decomp)
-    call addfld ('ZMMTU',  'm/s2',    pver, 'A', 'U tendency - ZM convective momentum transport',  phys_decomp)
-    call addfld ('ZMMTV',  'm/s2',    pver, 'A', 'V tendency - ZM convective momentum transport',  phys_decomp)
+    call addfld ('ZMMTT',     (/ 'lev' /), 'A', 'K/s', 'T tendency - ZM convective momentum transport')
+    call addfld ('ZMMTU',    (/ 'lev' /), 'A',  'm/s2', 'U tendency - ZM convective momentum transport')
+    call addfld ('ZMMTV',    (/ 'lev' /), 'A',  'm/s2', 'V tendency - ZM convective momentum transport')
 
-    call addfld ('ZMMU',   'kg/m2/s', pver, 'A', 'ZM convection updraft mass flux',   phys_decomp)
-    call addfld ('ZMMD',   'kg/m2/s', pver, 'A', 'ZM convection downdraft mass flux', phys_decomp)
+    call addfld ('ZMMU', (/ 'lev' /), 'A',   'kg/m2/s', 'ZM convection updraft mass flux')
+    call addfld ('ZMMD', (/ 'lev' /), 'A',   'kg/m2/s', 'ZM convection downdraft mass flux')
 
-    call addfld ('ZMUPGU', 'm/s2',    pver, 'A', 'zonal force from ZM updraft pressure gradient term',       phys_decomp)
-    call addfld ('ZMUPGD', 'm/s2',    pver, 'A', 'zonal force from ZM downdraft pressure gradient term',     phys_decomp)
-    call addfld ('ZMVPGU', 'm/s2',    pver, 'A', 'meridional force from ZM updraft pressure gradient term',  phys_decomp)
-    call addfld ('ZMVPGD', 'm/s2',    pver, 'A', 'merdional force from ZM downdraft pressure gradient term', phys_decomp)
+    call addfld ('ZMUPGU',    (/ 'lev' /), 'A', 'm/s2', 'zonal force from ZM updraft pressure gradient term')
+    call addfld ('ZMUPGD',    (/ 'lev' /), 'A', 'm/s2', 'zonal force from ZM downdraft pressure gradient term')
+    call addfld ('ZMVPGU',    (/ 'lev' /), 'A', 'm/s2', 'meridional force from ZM updraft pressure gradient term')
+    call addfld ('ZMVPGD',    (/ 'lev' /), 'A', 'm/s2', 'merdional force from ZM downdraft pressure gradient term')
 
-    call addfld ('ZMICUU', 'm/s',     pver, 'A', 'ZM in-cloud U updrafts',      phys_decomp)
-    call addfld ('ZMICUD', 'm/s',     pver, 'A', 'ZM in-cloud U downdrafts',    phys_decomp)
-    call addfld ('ZMICVU', 'm/s',     pver, 'A', 'ZM in-cloud V updrafts',      phys_decomp)
-    call addfld ('ZMICVD', 'm/s',     pver, 'A', 'ZM in-cloud V downdrafts',    phys_decomp)
+    call addfld ('ZMICUU',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud U updrafts')
+    call addfld ('ZMICUD',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud U downdrafts')
+    call addfld ('ZMICVU',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V updrafts')
+    call addfld ('ZMICVD',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V downdrafts')
     
     call phys_getopts( history_budget_out = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
@@ -232,9 +254,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    use phys_grid,     only: get_lat_p, get_lon_p
    use time_manager,  only: get_nstep, is_first_step
+   use time_manager,  only: is_first_restart_step             !songxl 2011-09-20
    use physics_buffer, only : pbuf_get_field, physics_buffer_desc, pbuf_old_tim_idx
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
-   use check_energy,  only: check_energy_chng
    use physconst,     only: gravit
    use phys_control,  only: cam_physpkg_is
 
@@ -312,6 +334,13 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), pointer, dimension(:,:) :: flxsnow      ! Convective-scale flux of snow   at interfaces (kg/m2/s)
    real(r8), pointer, dimension(:,:) :: dp_cldliq
    real(r8), pointer, dimension(:,:) :: dp_cldice
+!<songxl 2014-05-20----------
+   real(r8), pointer, dimension(:,:) :: hu_nm1
+   real(r8), pointer, dimension(:,:) :: cnv_nm1
+   real(r8), pointer, dimension(:,:) :: tm1   ! intermediate T between n and n-1 time step
+   real(r8), pointer, dimension(:,:) :: qm1   ! intermediate q between n and n-1 time step
+!>songxl 2014-05-20---------
+
    real(r8) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
    real(r8) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
 
@@ -367,11 +396,27 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call pbuf_get_field(pbuf, prec_dp_idx,     prec )
    call pbuf_get_field(pbuf, snow_dp_idx,     snow )
 
+!<songxl 2014-05-20-----------------
+!   if(trigmem)then
+     call pbuf_get_field(pbuf, cnv_nm1_idx,     cnv_nm1)
+     call pbuf_get_field(pbuf, hu_nm1_idx,      hu_nm1 )
+     call pbuf_get_field(pbuf, tm1_idx,         tm1 )
+     call pbuf_get_field(pbuf, qm1_idx,         qm1 )
+   if(trigmem)then
+     if ( is_first_step() .or. is_first_restart_step() ) then
+       hu_nm1(:ncol,:pver) = cpair*state%t(:ncol,:pver) + gravit*state%zm(:ncol,:pver)   &
+                               + latvap*state%q(:ncol,:pver,1)
+       cnv_nm1(:ncol,:pver) = 0._r8
+       qm1(:ncol,:pver) =  state%q(:ncol,:pver,1)
+       tm1(:ncol,:pver) =  state%t(:ncol,:pver)
+     end if
+   end if
+!<songxl 2014-05-20-----------------
+
 !
 ! Begin with Zhang-McFarlane (1996) convection parameterization
 !
    call t_startf ('zm_convr')
-
    call zm_convr(   lchnk   ,ncol    , &
                     state%t       ,state%q(:,:,1)     ,prec    ,jctop   ,jcbot   , &
                     pblh    ,state%zm      ,state%phis    ,state%zi      ,ptend_loc%q(:,:,1)    , &
@@ -380,7 +425,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     tpert   ,dlf     ,pflx    ,zdu     ,rprd    , &
                     mu,md,du,eu,ed      , &
                     dp ,dsubcld ,jt,maxg,ideep   , &
-                    lengath ,ql      ,rliq  ,landfrac   )
+                    lengath ,ql      ,rliq  ,landfrac, hu_nm1, cnv_nm1, tm1, qm1 )  !songxl 2014-05-20   
+   call t_stopf ('zm_convr')
 
    call outfld('CAPE', cape, pcols, lchnk)        ! RBN - CAPE output
 !
@@ -406,6 +452,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
       end do
    end do
 
+
    if(convproc_do_aer .or. convproc_do_gas) then 
       call outfld('ZMMU', mu_out,      pcols, lchnk)
       call outfld('ZMMD', md_out,      pcols, lchnk)
@@ -417,7 +464,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    ftem(:ncol,:pver) = ptend_loc%s(:ncol,:pver)/cpair
    call outfld('ZMDT    ',ftem           ,pcols   ,lchnk   )
    call outfld('ZMDQ    ',ptend_loc%q(1,1,1) ,pcols   ,lchnk   )
-   call t_stopf ('zm_convr')
 
 !    do i = 1,pcols
 !    do i = 1,nco
@@ -446,7 +492,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
   lq(1) = .TRUE.
   call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conv_evap', ls=.true., lq=lq)
 
-   call t_startf ('zm_conv_evap')
 !
 ! Determine the phase of the precipitation produced and add latent heat of fusion
 ! Evaporate some of the precip directly into the environment (Sundqvist)
@@ -461,11 +506,13 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     dp_cldliq(:ncol,:) = 0._r8
     dp_cldice(:ncol,:) = 0._r8
 
+    call t_startf ('zm_conv_evap')
     call zm_conv_evap(state1%ncol,state1%lchnk, &
          state1%t,state1%pmid,state1%pdel,state1%q(:pcols,:pver,1), &
          ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
          rprd, cld, ztodt, &
          prec, snow, ntprprd, ntsnprd , flxprec, flxsnow)
+    call t_stopf ('zm_conv_evap')
 
     evapcdp(:ncol,:pver) = ptend_loc%q(:ncol,:pver,1)
 !
@@ -487,7 +534,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('PRECCDZM   ',prec,  pcols   ,lchnk   )
 
 
-   call t_stopf ('zm_conv_evap')
 
    call outfld('PRECZ   ', prec   , pcols, lchnk)
 

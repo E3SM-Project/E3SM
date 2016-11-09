@@ -1,0 +1,209 @@
+#! /usr/bin/env perl
+use strict;
+use Cwd;
+
+if ($#ARGV == -1) {
+    die " ERROR clm.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CIMEROOT            = `./xmlquery  CIMEROOT            -value`;
+my $SRCROOT             = `./xmlquery  SRCROOT             -value`;
+my $COMPSET	        = `./xmlquery  COMPSET	           -value`;
+my $CCSM_CO2_PPMV	= `./xmlquery  CCSM_CO2_PPMV	   -value`;
+my $CLM_CO2_TYPE	= `./xmlquery  CLM_CO2_TYPE	   -value`;
+my $CLM_USRDAT_NAME	= `./xmlquery  CLM_USRDAT_NAME	   -value`;
+my $CLM_CONFIG_OPTS	= `./xmlquery  CLM_CONFIG_OPTS	   -value`;
+my $CLM_NAMELIST_OPTS	= `./xmlquery  CLM_NAMELIST_OPTS   -value`;
+my $CLM_BLDNML_OPTS	= `./xmlquery  CLM_BLDNML_OPTS	   -value`;
+my $CLM_NML_USE_CASE	= `./xmlquery  CLM_NML_USE_CASE	   -value`;
+my $CLM_FORCE_COLDSTART = `./xmlquery  CLM_FORCE_COLDSTART -value`;
+my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	   -value`;
+my $COMP_GLC		= `./xmlquery  COMP_GLC		   -value`;
+my $DEBUG		= `./xmlquery  DEBUG		   -value`;
+my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT	   -value`;
+my $GLC_NEC		= `./xmlquery  GLC_NEC		   -value`;
+my $LND_GRID		= `./xmlquery  LND_GRID		   -value`;
+my $LND_NCPL		= `./xmlquery  LND_NCPL		   -value`;
+my $LND_DOMAIN_PATH	= `./xmlquery  LND_DOMAIN_PATH	   -value`;
+my $LND_DOMAIN_FILE	= `./xmlquery  LND_DOMAIN_FILE	   -value`;
+my $MASK_GRID		= `./xmlquery  MASK_GRID	   -value`;
+my $NTHRDS_LND		= `./xmlquery  NTHRDS_LND	   -value`;
+my $NTASKS_LND		= `./xmlquery  NTASKS_LND	   -value`;
+my $NINST_LND		= `./xmlquery  NINST_LND	   -value`;
+my $RUNDIR		= `./xmlquery  RUNDIR		   -value`;
+my $RUN_TYPE		= `./xmlquery  RUN_TYPE		   -value`;
+my $RUN_STARTDATE	= `./xmlquery  RUN_STARTDATE	   -value`;
+my $RUN_REFCASE		= `./xmlquery  RUN_REFCASE	   -value`;
+my $RUN_REFDATE		= `./xmlquery  RUN_REFDATE	   -value`;
+my $RUN_REFTOD		= `./xmlquery  RUN_REFTOD	   -value`;
+my $GLC_SMB		= `./xmlquery  GLC_SMB		   -value`;
+
+my @dirs = ("${CIMEROOT}/utils/perl5lib");
+unshift @INC, @dirs;
+require Config::SetupTools;
+my $sysmod; 
+
+if (! -d "$CASEROOT/Buildconf/clmconf" ) {
+    $sysmod = "mkdir $CASEROOT/Buildconf/clmconf";
+    system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
+}
+chdir "$CASEROOT/Buildconf/clmconf";
+
+#--------------------------------------------------------------------
+# Invoke clm configure - output will go in CASEROOT/Buildconf/clmconf
+#--------------------------------------------------------------------
+
+# The following translation is hard-wired for backwards compatibility
+# to support the differences between how the scripts specify the land grid
+# and how it is specified internally
+if ($LND_GRID eq 'T31' ) {$LND_GRID = '48x96'};
+if ($LND_GRID eq 'T42' ) {$LND_GRID = '64x128'};
+if ($LND_GRID eq 'T85' ) {$LND_GRID = '128x256'};
+if ($LND_GRID eq 'T341') {$LND_GRID = '512x1024'};
+
+my $config_opts;
+my $resolution;
+my $clmusr;
+if ($MASK_GRID ne "reg") {
+    $config_opts = " ";
+    $resolution = $LND_GRID;
+    $clmusr     = "";
+}
+if (($MASK_GRID eq "reg") && ($LND_GRID ne "CLM_USRDAT" )) {
+    $config_opts = "-sitespf_pt $LND_GRID";
+    $resolution  = $LND_GRID ;
+    $clmusr      = "";
+}
+if ( $LND_GRID eq "CLM_USRDAT" ) {
+    $config_opts=" ";
+    $resolution = $CLM_USRDAT_NAME;
+    $clmusr     = " -clm_usr_name $CLM_USRDAT_NAME";
+}
+if ("$COMPSET" =~ /1PT.*/ ) {
+    $config_opts = " -sitespf_pt reg";
+}
+
+$sysmod = "$SRCROOT/components/clm/bld/configure";
+$sysmod = "$sysmod  $config_opts -comp_intf $COMP_INTERFACE ";
+$sysmod = "$sysmod  $CLM_CONFIG_OPTS ";
+$sysmod = "$sysmod -usr_src $CASEROOT/SourceMods/src.clm";
+system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
+
+#--------------------------------------------------------------------
+# Invoke clm build-namelist - output will go in CASEROOT/Buildconf/clmconf
+#--------------------------------------------------------------------
+
+my $startfiletype = "finidat";
+my $start_type = "default";
+if ($RUN_TYPE eq "startup" ) {
+    if ($CLM_FORCE_COLDSTART eq "on") {$start_type = "cold";}
+} else {
+    if ($RUN_TYPE eq "hybrid" ) {
+	$start_type = "startup";
+    } else {
+	$start_type = $RUN_TYPE;
+    }
+}
+if ($RUN_TYPE eq "branch" ) {$startfiletype = "nrevsn";}
+
+my $inst_string;
+my $inst_counter = 1;
+while ($inst_counter <= $NINST_LND) {
+
+    # -----------------------------------------------------
+    # determine instance string 
+    # -----------------------------------------------------
+
+    $inst_string = "";       
+    if ($NINST_LND > 1) {
+	$inst_string = `printf _%04d $inst_counter`;
+
+	# If multi-instance case does not have restart file, use single-case restart
+	# for each instance
+	if ( (! -e "$RUNDIR/rpointer.lnd${inst_string}") && (-e "$RUNDIR/rpointer.lnd") ) {
+	    $sysmod = "cp -v $RUNDIR/rpointer.lnd $RUNDIR/rpointer.lnd${inst_string}";
+	    system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
+	}
+    }
+
+    # -----------------------------------------------------
+    # create clmconf/namelist
+    # -----------------------------------------------------
+
+    if ( -e "$CASEROOT/Buildconf/clm.input_data_list" ) {
+	$sysmod = "rm $CASEROOT/Buildconf/clm.input_data_list";
+	system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
+    }
+    my $clmicfile;
+    my $clm_startfile;
+    if (( $RUN_TYPE eq "hybrid") || ($RUN_TYPE eq "branch" )) {
+	$clm_startfile = "${RUN_REFCASE}.clm2${inst_string}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc";
+	if ( -e "$RUNDIR/$clm_startfile") {
+	    $clm_startfile = "$clm_startfile";
+	} else {
+	    $clm_startfile = "${RUN_REFCASE}.clm2.r.${RUN_REFDATE}-${RUN_REFTOD}.nc";
+	}
+	$clmicfile = " $startfiletype = \'$clm_startfile\'";
+    }
+
+    my $infile_text = "";
+    if ($clmicfile) {$infile_text .= "$startfiletype = \'$clm_startfile\' \n"; }
+
+    SetupTools::create_namelist_infile("$CASEROOT", 
+				       "$CASEROOT/user_nl_clm${inst_string}", 
+				       "$CASEROOT/Buildconf/clmconf/namelist", 
+				       "$infile_text");
+
+    # -----------------------------------------------------
+    # call build-namelist
+    # -----------------------------------------------------
+
+    my $glc_opts = "";
+    if ("$COMP_GLC" ne "sglc" ) {$glc_opts = "-glc_present -glc_smb .$GLC_SMB. ";}
+
+    my $usecase = " ";
+    if ($CLM_NML_USE_CASE ne "UNSET") {$usecase = "-use_case $CLM_NML_USE_CASE";}
+
+    my $start_ymd = `echo $RUN_STARTDATE | sed s/-//g`;
+    my $ignore = "-ignore_ic_date";
+    if (($RUN_STARTDATE =~ /.*-01-01.*/) || ($RUN_STARTDATE =~ /.*-09-01.*/)) {	$ignore = "-ignore_ic_year";}
+
+    $sysmod = "$SRCROOT/components/clm/bld/build-namelist -infile $CASEROOT/Buildconf/clmconf/namelist ";
+    $sysmod = "$sysmod -csmdata $DIN_LOC_ROOT -inputdata $CASEROOT/Buildconf/clm.input_data_list $ignore"; 
+    $sysmod = "$sysmod -namelist \" \&clm_inparm  start_ymd=$start_ymd $CLM_NAMELIST_OPTS \/\"";
+    $sysmod = "$sysmod $usecase $glc_opts -res $resolution $clmusr -clm_start_type $start_type";
+    $sysmod = "$sysmod -envxml_dir $CASEROOT -l_ncpl $LND_NCPL -lnd_frac ${LND_DOMAIN_PATH}/${LND_DOMAIN_FILE}";
+    $sysmod = "$sysmod -glc_nec $GLC_NEC -co2_ppmv $CCSM_CO2_PPMV -co2_type $CLM_CO2_TYPE ";
+    $sysmod = "$sysmod -config $CASEROOT/Buildconf/clmconf/config_cache.xml $CLM_BLDNML_OPTS";
+    if ($MASK_GRID ne "reg") {
+      $sysmod = "$sysmod -mask $MASK_GRID";
+    }
+    system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
+    
+    # -----------------------------------------------------
+    # move lnd_in to $RUNDIR
+    # -----------------------------------------------------
+
+    if ( -d ${RUNDIR} ) {
+	$sysmod = "cp $CASEROOT/Buildconf/clmconf/lnd_in ${RUNDIR}/lnd_in${inst_string}";
+	system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
+
+	# Only copy drv_flds_in namelist file if one doesn't already exist
+	if ( ! -f "${RUNDIR}/drv_flds_in" && -f "$CASEROOT/Buildconf/clmconf/drv_flds_in" ) {
+	    $sysmod = "cp $CASEROOT/Buildconf/clmconf/drv_flds_in ${RUNDIR}/. >& /dev/null";
+	    system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
+	}
+    }
+
+    # -----------------------------------------------------
+    # increment instance counter
+    # -----------------------------------------------------
+
+    $inst_counter = $inst_counter + 1;
+}
+
+exit (0);
+
+

@@ -1,4 +1,5 @@
-! $Id: mixing_length.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+!-----------------------------------------------------------------------
+! $Id: mixing_length.F90 7226 2014-08-19 15:52:41Z betlej@uwm.edu $
 !===============================================================================
 module mixing_length
 
@@ -11,10 +12,10 @@ module mixing_length
   contains
 
   !=============================================================================
-  subroutine compute_length( thvm, thlm, rtm, em, &
+  subroutine compute_length( thvm, thlm, rtm, em, Lscale_max, &
                              p_in_Pa, exner, thv_ds, mu, l_implemented, &
                              err_code, &
-                             Lscale )
+                             Lscale, Lscale_up, Lscale_down )
     ! Description:
     ! Larson's 5th moist, nonlocal length scale
 
@@ -44,9 +45,6 @@ module mixing_length
     use parameters_tunable, only:  &  ! Variable(s)
         lmin    ! Minimum value for Lscale                         [m]
 
-    use parameters_model, only:  & 
-        Lscale_max    ! Maximum value for Lscale                   [m]
-
     use grid_class, only:  & 
         gr,  & ! Variable(s)
         zm2zt ! Procedure(s)
@@ -57,10 +55,6 @@ module mixing_length
     use saturation, only:  & 
         sat_mixrat_liq, & ! Procedure(s)
         sat_mixrat_liq_lookup
-
-    use variables_diagnostic_module, only:  & 
-        Lscale_up,  & ! Variable(s)
-        Lscale_down
 
     use error_code, only:  & 
         clubb_at_least_debug_level, & ! Procedure(s)
@@ -78,12 +72,12 @@ module mixing_length
     implicit none
 
     ! External
-    intrinsic :: max, sqrt
+    intrinsic :: min, max, sqrt
 
     ! Constant Parameters
     real( kind = core_rknd ), parameter ::  & 
-      zlmin = 0.1_core_rknd !,  &
-    !zeps  = 1.e-10
+      zlmin = 0.1_core_rknd, & ! Minimum value for Lscale [m]
+      Lscale_sfclyr_depth = 500._core_rknd ! [m]
 
     ! Input Variables
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  & 
@@ -97,6 +91,9 @@ module mixing_length
     ! Note:  thv_ds used as a reference theta_l here
 
     real( kind = core_rknd ), intent(in) :: &
+      Lscale_max ! Maximum allowable value for Lscale             [m]
+
+    real( kind = core_rknd ), intent(in) :: &
       mu  ! mu Fractional extrainment rate per unit altitude      [1/m]
 
     logical, intent(in) :: &
@@ -107,9 +104,12 @@ module mixing_length
       err_code
 
     real( kind = core_rknd ), dimension(gr%nz), intent(out) ::  & 
-      Lscale  ! Mixing length                 [m]
+      Lscale,    & ! Mixing length      [m]
+      Lscale_up, & ! Mixing length up   [m]
+      Lscale_down  ! Mixing length down [m]
 
     ! Local Variables
+
     integer :: i, j, &
       err_code_Lscale
 
@@ -127,7 +127,7 @@ module mixing_length
     real( kind = core_rknd ) :: thl_par_j, rt_par_j, rc_par_j, thv_par_j
 
     ! Used in latent heating calculation
-    real( kind = core_rknd ) :: tl_par_j, rsl_par_j, beta_par_j, & 
+    real( kind = core_rknd ) :: tl_par_j, rsatl_par_j, beta_par_j, & 
             s_par_j
 
     ! Parcel quantities at grid level j-1
@@ -139,9 +139,8 @@ module mixing_length
     ! Variables to make L nonlocal
     real( kind = core_rknd ) :: Lscale_up_max_alt, Lscale_down_min_alt
 
-    real( kind = core_rknd ), parameter :: Lscale_sfclyr_depth = 500._core_rknd ! [m]
-
     ! ---- Begin Code ----
+
     err_code_Lscale = clubb_no_error
 
     !---------- Mixing length computation ----------------------------------
@@ -292,14 +291,14 @@ module mixing_length
         ! theta_l of the parcel and r_t of the parcel at grid level j.
         tl_par_j = thl_par_j*exner(j)
         if ( l_sat_mixrat_lookup ) then
-          rsl_par_j = sat_mixrat_liq_lookup( p_in_Pa(j), tl_par_j )
+          rsatl_par_j = sat_mixrat_liq_lookup( p_in_Pa(j), tl_par_j )
         else
-          rsl_par_j = sat_mixrat_liq( p_in_Pa(j), tl_par_j )
+          rsatl_par_j = sat_mixrat_liq( p_in_Pa(j), tl_par_j )
         end if
         ! SD's beta (eqn. 8)
         beta_par_j = ep*(Lv/(Rd*tl_par_j))*(Lv/(cp*tl_par_j))
         ! s from Lewellen and Yoh 1993 (LY) eqn. 1
-        s_par_j = (rt_par_j-rsl_par_j)/(1._core_rknd+beta_par_j*rsl_par_j)
+        s_par_j = (rt_par_j-rsatl_par_j)/(1._core_rknd+beta_par_j*rsatl_par_j)
         rc_par_j = max( s_par_j, zero_threshold )
 
         ! theta_v of entraining parcel at grid level j.
@@ -589,14 +588,14 @@ module mixing_length
         ! theta_l of the parcel and r_t of the parcel at grid level j.
         tl_par_j = thl_par_j*exner(j)
         if ( l_sat_mixrat_lookup ) then
-          rsl_par_j = sat_mixrat_liq_lookup( p_in_Pa(j), tl_par_j )
+          rsatl_par_j = sat_mixrat_liq_lookup( p_in_Pa(j), tl_par_j )
         else
-          rsl_par_j = sat_mixrat_liq( p_in_Pa(j), tl_par_j )
+          rsatl_par_j = sat_mixrat_liq( p_in_Pa(j), tl_par_j )
         end if
         ! SD's beta (eqn. 8)
         beta_par_j = ep*(Lv/(Rd*tl_par_j))*(Lv/(cp*tl_par_j))
         ! s from Lewellen and Yoh 1993 (LY) eqn. 1
-        s_par_j = (rt_par_j-rsl_par_j)/(1._core_rknd+beta_par_j*rsl_par_j)
+        s_par_j = (rt_par_j-rsatl_par_j)/(1._core_rknd+beta_par_j*rsatl_par_j)
         rc_par_j = max( s_par_j, zero_threshold )
 
         ! theta_v of the entraining parcel at grid level j.

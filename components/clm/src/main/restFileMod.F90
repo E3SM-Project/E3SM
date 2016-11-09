@@ -15,7 +15,7 @@ module restFileMod
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
-  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_ed
+  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_ed, use_betr
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
@@ -48,7 +48,11 @@ module restFileMod
   use atm2lndType          , only : atm2lnd_type
   use lnd2atmType          , only : lnd2atm_type
   use glc2lndMod           , only : glc2lnd_type
-  use lnd2glcMod           , only : lnd2glc_type 
+  use lnd2glcMod           , only : lnd2glc_type
+  use BeTRTracerType       , only : BeTRTracer_Type    
+  use TracerStateType      , only : TracerState_type
+  use TracerFluxType       , only : TracerFlux_Type
+  use tracercoefftype      , only : tracercoeff_type
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
@@ -92,9 +96,11 @@ contains
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-       soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-       waterflux_vars, waterstate_vars, EDbio_vars, &
-       phosphorusstate_vars,phosphorusflux_vars,rdate,noptr)
+       soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+       waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+       phosphorusstate_vars, phosphorusflux_vars,                                     &
+       betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
+       rdate, noptr)
     !
     ! !DESCRIPTION:
     ! Define/write CLM restart file.
@@ -126,10 +132,12 @@ contains
     type(waterstate_type)    , intent(inout) :: waterstate_vars  ! due to EDrest call
     type(waterflux_type)     , intent(in)    :: waterflux_vars
     type(EDbio_type)         , intent(inout) :: EDbio_vars       ! due to EDrest call
-
     type(phosphorusstate_type),intent(inout)    :: phosphorusstate_vars
     type(phosphorusflux_type) ,intent(in)     :: phosphorusflux_vars
-
+    type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
+    type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
+    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
+    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
     character(len=*)         , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                  , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -179,6 +187,8 @@ contains
 
     call soilhydrology_vars%restart (bounds, ncid, flag='define')
 
+    call soilstate_vars%restart (bounds, ncid, flag='define')
+
     call solarabs_vars%restart (bounds, ncid, flag='define')
 
     call temperature_vars%restart (bounds, ncid, flag='define')
@@ -202,24 +212,25 @@ contains
 
     if (use_cn) then
 
-       call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12')
+       call cnstate_vars%Restart(bounds, ncid, flag='define')
+
+       call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c13', &
-               c12_carbonstate_vars=carbonstate_vars)
+               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c14', &
-               c12_carbonstate_vars=carbonstate_vars)
+               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
        end if
 
        call carbonflux_vars%restart(bounds, ncid, flag='define')
        call nitrogenflux_vars%Restart(bounds, ncid, flag='define')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='define')
+       call nitrogenstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='define')
-
-       call cnstate_vars%Restart(bounds, ncid, flag='define')
+       call phosphorusstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
 
     end if
 
@@ -236,6 +247,12 @@ contains
             nitrogenstate_vars=nitrogenstate_vars, &
             carbonflux_vars=carbonflux_vars) 
     end if
+
+    if (use_betr) then
+       call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+       call tracerflux_vars%Restart( bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+       call tracercoeff_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+    endif
 
     if (present(rdate)) then 
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
@@ -267,6 +284,8 @@ contains
 
     call soilhydrology_vars%restart (bounds, ncid, flag='write')
 
+    call soilstate_vars%restart (bounds, ncid, flag='write')
+
     call solarabs_vars%restart (bounds, ncid, flag='write')
 
     call temperature_vars%restart (bounds, ncid, flag='write')
@@ -289,26 +308,27 @@ contains
     end if
 
     if (use_cn) then
+       call cnstate_vars%Restart(bounds, ncid, flag='write')
        call carbonstate_vars%restart(bounds, ncid, flag='write', &
-            carbon_type='c12')
+            carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13' )
+               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
+	       cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14' )
+               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
+	       cnstate_vars=cnstate_vars )
        end if
 
        call carbonflux_vars%restart(bounds, ncid, flag='write')
 
        call nitrogenflux_vars%Restart(bounds, ncid, flag='write')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='write')
+       call nitrogenstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='write')
-
-       call cnstate_vars%Restart(bounds, ncid, flag='write')
+       call phosphorusstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
 
     end if
 
@@ -325,6 +345,12 @@ contains
             nitrogenstate_vars=nitrogenstate_vars, &
             carbonflux_vars=carbonflux_vars) 
     end if
+
+    if (use_betr) then
+       call tracerstate_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+       call tracerflux_vars%Restart( bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+       call tracercoeff_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+    endif
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
 
@@ -354,9 +380,10 @@ contains
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-       soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-       waterflux_vars, waterstate_vars, EDbio_vars,&
-       phosphorusstate_vars,phosphorusflux_vars)
+       soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+       waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+       phosphorusstate_vars,phosphorusflux_vars,                                      &
+       betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -393,10 +420,12 @@ contains
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
     type(EDbio_type)         , intent(inout) :: EDbio_vars
-
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-
+    type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
+    type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
+    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
+    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -429,6 +458,8 @@ contains
 
     call soilhydrology_vars%restart (bounds, ncid, flag='read')
 
+    call soilstate_vars%restart (bounds, ncid, flag='read')
+
     call solarabs_vars%restart (bounds, ncid, flag='read')
 
     call temperature_vars%restart (bounds, ncid, flag='read')
@@ -458,27 +489,27 @@ contains
     end if
 
     if (use_cn) then
-
+       call cnstate_vars%Restart(bounds, ncid, flag='read')
        call carbonstate_vars%restart(bounds, ncid, flag='read', &
-            carbon_type='c12')
+            carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='read', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13')
+               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
+	       cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_carbonstate_vars%restart(bounds, ncid, flag='read', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14')
+               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
+	       cnstate_vars=cnstate_vars)
        end if
 
        call carbonflux_vars%restart(bounds, ncid, flag='read')
 
        call nitrogenflux_vars%Restart(bounds, ncid, flag='read')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='read')
+       call nitrogenstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='read')
-
-       call cnstate_vars%Restart(bounds, ncid, flag='read')
+       call phosphorusstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
 
     end if
 
@@ -496,6 +527,12 @@ contains
             carbonflux_vars=carbonflux_vars) 
     end if
 
+    if (use_betr) then
+      call tracerstate_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
+      call tracerflux_vars%Restart( bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
+      call tracercoeff_vars%Restart(bounds, ncid, flag='read', betrtracer_vars=betrtracer_vars)
+    endif
+        
     call hist_restart_ncd (bounds, ncid, flag='read')
 
     ! Do error checking on file
@@ -756,7 +793,7 @@ contains
     use clm_time_manager , only : get_nstep
     use clm_varctl       , only : caseid, ctitle, version, username, hostname, fsurdat
     use clm_varctl       , only : flanduse_timeseries, conventions, source
-    use clm_varpar       , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan
+    use clm_varpar       , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full
     use clm_varpar       , only : cft_lb, cft_ub, maxpatch_glcmec
     use decompMod        , only : get_proc_global
     !
@@ -797,6 +834,7 @@ contains
     call ncd_defdim(ncid , 'numrad'  , numrad         ,  dimid)
     call ncd_defdim(ncid , 'levcan'  , nlevcan        ,  dimid)
     call ncd_defdim(ncid , 'string_length', 64        ,  dimid)
+    call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
     if (create_glacier_mec_landunit) then
        call ncd_defdim(ncid , 'glc_nec', maxpatch_glcmec, dimid)
     end if

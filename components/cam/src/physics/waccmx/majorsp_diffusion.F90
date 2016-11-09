@@ -1,3 +1,4 @@
+
 module majorsp_diffusion
 
 !--------------------------------------------------------------------------
@@ -74,7 +75,7 @@ contains
     ! Define constants and coeficient matrices, phi and delta, in the initialization.
     !-------------------------------------------------------------------------------
     use constituents, only: cnst_mw, cnst_fixed_ubc
-    use cam_history,  only: addfld, add_default, phys_decomp
+    use cam_history,  only: addfld, add_default
     use phys_control, only: phys_getopts
 
     !------------------------------Arguments--------------------------------
@@ -114,9 +115,9 @@ contains
 
    ! Set names of major diffusion tendencies and declare them as history variables
     mjdiffnam(1) = 'MD'//cnst_name(indx_O2)
-    call addfld (mjdiffnam(1),'kg/kg/s ',pver, 'A','Major diffusion of '//cnst_name(indx_O2),phys_decomp)
+    call addfld (mjdiffnam(1),(/ 'lev' /), 'A','kg/kg/s','Major diffusion of '//cnst_name(indx_O2))
     mjdiffnam(2) = 'MD'//cnst_name(indx_O)
-    call addfld (mjdiffnam(2),'kg/kg/s ',pver, 'A','Major diffusion of '//cnst_name(indx_O),phys_decomp)
+    call addfld (mjdiffnam(2),(/ 'lev' /), 'A','kg/kg/s','Major diffusion of '//cnst_name(indx_O))
     call add_default (mjdiffnam(1), 1, ' ')
     call add_default (mjdiffnam(2), 1, ' ')
 

@@ -30,7 +30,6 @@ module glc_comp_mct
   ! glc driver modules
   use glc_cpl_indices
   use glc_mct_vars
-  use glc_import_export
 
   ! MPAS framework modules
   use mpas_framework
@@ -93,7 +92,7 @@ module glc_comp_mct
   integer :: itimestep, &  ! time step number for MPAS
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
-  integer, save :: glcStdErrUnit, glcStdOutUnit
+  integer :: glcStdErrUnit, glcStdOutUnit
 
 !=======================================================================
 
@@ -137,7 +136,7 @@ contains
     character(len=StrKIND) :: cpl_seq_option
 
     type (MPAS_Time_Type) :: currTime
-    integer :: iam,ierr
+    integer :: iam, ierr, ierr_local
     integer :: iyear0, imonth0
     character(len=StrKIND)  :: starttype          ! infodata start type
     character(len=StrKIND)  :: timeStamp
@@ -227,7 +226,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    errorCode = 0 
+    errorCode = 0
 
     call seq_cdata_setptrs(cdata_g, ID=glcID, mpicom=mpicom_g, &
          gsMap=gsMap_g, dom=dom_g, infodata=infodata)
@@ -240,7 +239,7 @@ contains
 #if (defined _MEMTRACE)
      if(iam == 0) then
          lbnum=1
-         call memmon_dump_fort('memmon.out','glc_init_mct:start::',lbnum) 
+         call memmon_dump_fort('memmon.out','glc_init_mct:start::',lbnum)
      endif
 #endif
 
@@ -249,7 +248,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   initialize the model run 
+!   initialize the model run
 !
 !-----------------------------------------------------------------------
 
@@ -266,7 +265,7 @@ contains
        write(stderrUnit, *) 'Start type is:', trim(starttype)
        call mpas_dmpar_global_abort(' glc_comp_mct ERROR: unknown starttype')
     end if
-   
+
 !-----------------------------------------------------------------------
 !
 !   first initializaiton phase of mpasli
@@ -287,7 +286,7 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, file='/dev/null', position='APPEND')
+       open(stdout_shr, status='SCRATCH')
     else
        inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -432,11 +431,11 @@ contains
     end if
 
     if ( trim(filename_interval_temp) == 'none' ) then
-        call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+        call mpas_expand_string(ref_time_temp, -1, mesh_filename_temp, mesh_filename)
     else
         call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
         call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
-        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, -1, mesh_filename, ierr)
     end if
 
     write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
@@ -470,9 +469,6 @@ contains
     ! Finalize the setup of blocks and fields
     !
     call mpas_bootstrap_framework_phase2(domain)
-
-    call mpas_timer_start("total time")
-
 
 
     ! Initialize the MPASLI core
@@ -530,18 +526,19 @@ contains
 
     call glc_SetGSMap_mct( mpicom_g, glcID, GSMap_g )
     lsize = mct_gsMap_lsize(gsMap_g, mpicom_g)
+    write(shrlogunit, *) ' MPASLI gsMap lsize is: ', lsize
 
     ! Initialize mct glc domain (needs glc initialization info)
     call glc_domain_mct( lsize, gsMap_g, dom_g )
-    
+
     ! Initialize mct attribute vectors
-    
+
     call mct_aVect_init(x2g_g, rList=seq_flds_x2g_fields, lsize=lsize)
     call mct_aVect_zero(x2g_g)
-    
+
     call mct_aVect_init(g2x_g, rList=seq_flds_g2x_fields, lsize=lsize)
     call mct_aVect_zero(g2x_g)
-    
+
     nsend = mct_avect_nRattr(g2x_g)
     nrecv = mct_avect_nRattr(x2g_g)
 
@@ -570,7 +567,8 @@ contains
     if ( alarmTimeStep < denInterval ) then
        ierr = 1
     end if
-    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+    ierr_local = ierr
+    call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
        write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
@@ -584,7 +582,8 @@ contains
        ierr = 1
     end if
 
-    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+    ierr_local = ierr
+    call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
        write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
@@ -663,7 +662,7 @@ contains
 !      block_ptr => block_ptr % next
 !    end do
 
-!    call ocn_analysis_compute_startup(domain, stream_manager, ierr) 
+!    call ocn_analysis_compute_startup(domain, stream_manager, ierr)
 
     ! Reset all output alarms, to prevent initial time step from writing any output, unless it's ringing.
     call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -675,7 +674,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call glc_export_mct(g2x_g % rAttr, errorCode)
+    call glc_export_mct(g2x_g, errorCode)
     if (errorCode /= 0) then
        call mpas_dmpar_global_abort('ERROR in glc_export_mct')
     endif
@@ -712,7 +711,7 @@ contains
 #if defined (_MEMTRACE)
     if(iam  == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','glc_init_mct:end::',lbnum) 
+        call memmon_dump_fort('memmon.out','glc_init_mct:end::',lbnum)
         call memmon_reset_addr()
     endif
 #endif
@@ -722,6 +721,12 @@ contains
     ierr = ior(ierr,err_tmp)
 
     write(stderrUnit,*) '=== glc_init_mct complete.'
+
+#ifndef MPAS_DEBUG
+    if ( iam /= 0 ) then
+       close(stdout_shr)
+    end if
+#endif
 
 !-----------------------------------------------------------------------
 !EOC
@@ -771,10 +776,17 @@ contains
       character(len=StrKIND), pointer :: config_restart_timestamp_name
 
       type (MPAS_Time_Type) :: currTime
-      character(len=StrKIND) :: timeStamp
-      integer :: err, err_tmp, globalErr
-      logical :: solveVelo
-      integer, dimension(:), pointer :: vertexMask
+      character(len=StrKIND) :: timeStamp, streamName
+      integer :: err, err_tmp, globalErr, streamDirection, my_proc_id
+      logical :: solveVelo, streamActive
+
+      my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+      if ( my_proc_id /= 0 ) then
+         open(glcStdErrUnit, status='SCRATCH')
+      end if
+#endif
 
       call mpas_io_units_set_stdout(glcStdOutUnit)
       call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -804,7 +816,7 @@ contains
       err = ior(err, err_tmp)
 
       ! Import state from coupler
-      call glc_import_mct(x2g_g % rAttr, err_tmp)
+      call glc_import_mct(x2g_g, err_tmp)
       err = ior(err,err_tmp)
 
       ! Initialize time average fields
@@ -824,7 +836,7 @@ contains
          itimestep = itimestep + 1
 
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
-         write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
+         call shr_sys_flush(stderrUnit)
 
          ! ===
          ! === Perform Timestep
@@ -870,6 +882,19 @@ contains
          ! ===
          call mpas_timer_start("write output")
 
+         ! Reset any restart alarms to prevent restart files being written without the coupler requesting it.
+         call mpas_stream_mgr_begin_iteration(domain % streamManager)
+
+         do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
+                    directionProperty=streamDirection, activeProperty=streamActive ) )
+
+            if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=err_tmp)
+               err = ior(err,err_tmp)
+            end if
+         end do
+         err = ior(err, err_tmp)
+
          ! These calls will handle ALL output streams that need writing.
          ! [Could add them individually, as the ocean does, if some other actions are needed when a
          ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
@@ -902,6 +927,7 @@ contains
              call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
          endif
 
+         write(stderrUnit,*) 'Completed timestep number ', iTimeStep
          call shr_sys_flush(stderrUnit)
       end do
       err = ior(err, err_tmp)
@@ -918,13 +944,24 @@ contains
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
-         open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-         write(22, *) trim(timeStamp)
-         close(22)
 
          ! Write a restart file, because the coupler asked for it.
-         call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID='restart', ierr=err_tmp)
-         err = ior(err,err_tmp)
+         call mpas_stream_mgr_begin_iteration(domain % streamManager)
+
+         do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
+                    directionProperty=streamDirection, activeProperty=streamActive ) )
+
+            if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
+               call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, ierr=err_tmp)
+               err = ior(err,err_tmp)
+            end if
+         end do
+
+         if ( domain % dminfo % my_proc_id == 0 ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) trim(timeStamp)
+            close(22)
+         end if
       end if
 
       ! Normalize time averaged fields
@@ -936,7 +973,7 @@ contains
 !      end do
 
       ! Export state to coupler
-      call glc_export_mct(g2x_g % rAttr, err_tmp)
+      call glc_export_mct(g2x_g, err_tmp)
       err = ior(err,err_tmp)
 
       ! Move time levels back the way MPAS will expect them on the next time step
@@ -955,6 +992,12 @@ contains
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+      if ( my_proc_id /= 0 ) then
+         close(glcStdErrUnit)
+      end if
+#endif
 
 !-----------------------------------------------------------------------
   end subroutine glc_run_mct!}}}
@@ -991,10 +1034,18 @@ contains
 !  local variables
 !
 !-----------------------------------------------------------------------
-    integer :: shrloglev, shrlogunit
+    integer :: shrloglev, shrlogunit, my_proc_id
     integer :: err, err_tmp, iErr
 
 !-----------------------------------------------------------------------
+
+    my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(glcStdErrUnit, status='SCRATCH')
+    end if
+#endif
 
     call mpas_io_units_set_stdout(glcStdOutUnit)
     call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -1010,7 +1061,6 @@ contains
        call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain % core % coreName))
     end if
 
-    call mpas_timer_stop("total time")
     call mpas_timer_write()
     call MPAS_stream_mgr_finalize(domain % streamManager)
     call mpas_framework_finalize(domain % dminfo, domain, io_system)
@@ -1018,6 +1068,12 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(glcStdErrUnit)
+    end if
+#endif
 
   end subroutine glc_final_mct!}}}
 
@@ -1177,7 +1233,7 @@ contains
 
 !-------------------------------------------------------------------
 !
-! Determine domain 
+! Determine domain
 ! Initialize attribute vector with special value
 !
 !-------------------------------------------------------------------
@@ -1210,9 +1266,10 @@ contains
         n = n + 1
         data(n) = lonCell(i) * r2d
       end do
-      
+
       block_ptr => block_ptr % next
     end do
+    !write(stderrUnit,*) 'lonrange',minval(data), maxval(data), n
     call mct_gGrid_importRattr(dom_g,"lon",data,lsize)
 
     n = 0
@@ -1224,13 +1281,16 @@ contains
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
+      !write(stderrUnit,*) 'lsize=',lsize,' nCellsSolve=', nCellsSolve
+
       do i = 1, nCellsSolve
         n = n + 1
         data(n) = latCell(i) * r2d
       end do
       block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_g,"lat",data,lsize) 
+    !write(stderrUnit,*) 'latrange',minval(data), maxval(data), n
+    call mct_gGrid_importRattr(dom_g,"lat",data,lsize)
 
     n = 0
     block_ptr => domain % blocklist
@@ -1251,6 +1311,7 @@ contains
       end do
       block_ptr => block_ptr % next
     end do
+    !write(stderrUnit,*) 'arearange',minval(data), maxval(data), n
     call mct_gGrid_importRattr(dom_g,"area",data,lsize)
 
     ! For now, assume mask and frac are 1 everywhere.
@@ -1266,6 +1327,161 @@ contains
   end subroutine glc_domain_mct!}}}
 
 
+!=================================================================================
+
+
+   subroutine glc_import_mct(x2g_g, errorCode)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+    type(mct_aVect)   , intent(inout) :: x2g_g
+
+! !OUTPUT PARAMETERS:
+
+   integer, intent(out) :: &
+      errorCode              ! returned error code
+
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   character (len=StrKIND) ::   &
+      label,                 &
+      message
+
+   integer ::  &
+      i,n
+
+   type (block_type), pointer :: block
+
+   type (mpas_pool_type), pointer :: meshPool
+   type (mpas_pool_type), pointer :: geometryPool
+   type (mpas_pool_type), pointer :: thermalPool
+
+   integer, pointer :: nCellsSolve
+
+   real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
+                                               basalOceanMassBal,&
+                                               surfaceTemperature,&
+                                               basalOceanHeatflx,&
+                                               OceanDensity
+
+    errorCode = 0
+
+    n = 0
+    block => domain % blocklist
+
+    do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+         ! Get variables from pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         !call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+
+         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         !call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
+         !call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
+         !call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
+         !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
+
+         do i = 1, nCellsSolve
+            n = n + 1
+            sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
+            !basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
+            !surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
+            !basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
+            !OceanDensity (i) = x2g_g % rAttr(, n)
+         end do
+
+         block => block % next
+    end do
+
+
+!Need to loop over blocks
+!Jer: Need to define local pointers to MPAS-LI arrays, get these arrays, and point to them with local pointers
+!Jer: Need to assign local pointers to x2g arrays (as in CESM)
+!Jer: then, need to re-get forcingPool fields and call maps_dmpar_exch_halo_field on them
+
+  end subroutine glc_import_mct
+
+
+!=================================================================================
+
+
+  subroutine glc_export_mct(g2x_g, errorCode)
+
+   use li_mask
+
+   !-------------------------------------------------------------------
+
+   type(mct_aVect) , intent(inout) :: g2x_g
+   integer, intent(out) :: errorCode
+
+   !-------------------------------------------------------------------
+   integer ::  &
+      i,n
+
+   type (block_type), pointer :: block
+
+   real (kind=RKIND), pointer :: config_sea_level
+
+   type (mpas_pool_type), pointer :: meshPool
+   type (mpas_pool_type), pointer :: geometryPool
+
+   integer, pointer :: nCellsSolve
+
+   real (kind=RKIND), dimension(:), pointer :: upperSurface
+   integer, dimension(:), pointer :: cellMask
+   !-------------------------------------------------------------------
+
+    errorCode = 0
+
+    n = 0
+    block => domain % blocklist
+
+    call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
+
+    do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+         ! Get variables from pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+         do i = 1, nCellsSolve
+            n = n + 1
+            g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
+            g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
+            ! Sg_icemask should be 1 in locations where GLC will use a SMB value
+            ! This is cells with ice or bare land (no ocean cells)
+            ! This can easily be checked by any cells where upperSurface is
+            ! above sea level!
+            if (upperSurface(i) > config_sea_level) then
+               g2x_g % rAttr(index_g2x_Sg_icemask, n) = 1
+            else
+               g2x_g % rAttr(index_g2x_Sg_icemask, n) = 0
+            endif
+
+            ! icemask_coupled_fluxes for now should be the same as icemask
+            ! If we add in the ability to prevent the ice sheet from evolving
+            ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
+            g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
+
+         end do
+
+         block => block % next
+    end do
+
+  end subroutine glc_export_mct
+
+
+!=================================================================================
 
 
   subroutine check_clocks_sync(MPASclock, Eclock, stderrUnit, err)
@@ -1360,7 +1576,7 @@ contains
       else
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
-     
+
 
       call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius)

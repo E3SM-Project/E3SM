@@ -155,7 +155,7 @@ contains
 !       case(iotype_netcdf,PIO_iotype_netcdf4c,PIO_iotype_netcdf4p)
        case(iotype_netcdf,PIO_iotype_netcdf4c)
           if (Ios%io_rank==0) then
-             if(debug) print *,__FILE__,__LINE__,name,value
+             if(debug) print *,__PIO_FILE__,__LINE__,name,value
              ierr=nf90_put_att(File%fh,varid,name,value)
           endif
        case(PIO_iotype_netcdf4p)

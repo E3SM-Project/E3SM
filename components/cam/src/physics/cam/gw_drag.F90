@@ -1,3 +1,4 @@
+
 module gw_drag
 
 !--------------------------------------------------------------------------
@@ -187,7 +188,7 @@ subroutine gw_init()
   ! parameterization.
   !-----------------------------------------------------------------------
 
-  use cam_history,      only: addfld, add_default, phys_decomp
+  use cam_history,      only: addfld, horiz_only, add_default
   use interpolate_data, only: lininterp
   use phys_control,     only: phys_getopts
   use physics_buffer,   only: pbuf_get_index
@@ -288,7 +289,7 @@ subroutine gw_init()
      write(iulog,*) ' '
      write(iulog,*) "GW_DRAG: pgwv = ", pgwv
      do l = -pgwv, pgwv
-        write (iulog,'(A,I2,A,F7.2)') "GW_DRAG: cref(",l,") = ",cref(l)
+        write (iulog,'(A,I4,A,F7.2)') "GW_DRAG: cref(",l,") = ",cref(l)
      enddo
      write(iulog,*) 'GW_DRAG: kwv = ', kwv
      write(iulog,*) 'GW_DRAG: fcrit2 = ', fcrit2
@@ -358,16 +359,16 @@ subroutine gw_init()
      if (trim(errstring) /= "") call endrun("gw_oro_init: "//errstring)
 
      ! Declare history variables for orographic term
-     call addfld ('TTGWORO ','K/s     ',pver, 'A', &
-          'T tendency - orographic gravity wave drag',phys_decomp)
-     call addfld ('UTGWORO ','m/s2    ',pver, 'A', &
-          'U tendency - orographic gravity wave drag',phys_decomp)
-     call addfld ('VTGWORO ','m/s2    ',pver, 'A', &
-          'V tendency - orographic gravity wave drag',phys_decomp)
-     call addfld ('TAUGWX  ','N/m2    ',1,    'A', &
-          'Zonal gravity wave surface stress',        phys_decomp)
-     call addfld ('TAUGWY  ','N/m2    ',1,    'A', &
-          'Meridional gravity wave surface stress',   phys_decomp)
+     call addfld ('TTGWORO',(/ 'lev' /), 'A','K/s', &
+          'T tendency - orographic gravity wave drag')
+     call addfld ('UTGWORO',(/ 'lev' /), 'A','m/s2', &
+          'U tendency - orographic gravity wave drag')
+     call addfld ('VTGWORO',(/ 'lev' /), 'A','m/s2', &
+          'V tendency - orographic gravity wave drag')
+     call addfld ('TAUGWX',horiz_only,    'A','N/m2', &
+          'Zonal gravity wave surface stress')
+     call addfld ('TAUGWY',horiz_only,    'A','N/m2', &
+          'Meridional gravity wave surface stress')
 
      if (history_amwg) then
         call add_default('TAUGWX  ', 1, ' ')
@@ -420,10 +421,10 @@ subroutine gw_init()
         call gw_spec_addflds(prefix=cm_pf, scheme="C&M", &
              history_waccm=history_waccm)
 
-        call addfld ('FRONTGF', 'K^2/M^2/S', pver, 'A', &
-             'Frontogenesis function at gws src level', phys_decomp)
-        call addfld ('FRONTGFA', 'K^2/M^2/S', pver, 'A', &
-             'Frontogenesis function at gws src level', phys_decomp)
+        call addfld ('FRONTGF', (/ 'lev' /), 'A', 'K^2/M^2/S', &
+             'Frontogenesis function at gws src level')
+        call addfld ('FRONTGFA', (/ 'lev' /), 'A', 'K^2/M^2/S', &
+             'Frontogenesis function at gws src level')
 
         if (history_waccm) then
            call add_default('FRONTGF', 1, ' ')
@@ -455,12 +456,12 @@ subroutine gw_init()
         call gw_spec_addflds(prefix=beres_pf, scheme="Beres", &
              history_waccm=history_waccm)
 
-        call addfld ('NETDT  ','K/s   ',pver, 'A', &
-             'Net heating rate',                   phys_decomp)
-        call addfld ('MAXQ0  ','K/day   ',1  ,  'A', &
-             'Max column heating rate',            phys_decomp)
-        call addfld ('HDEPTH  ','km    ',1,    'A', &
-             'Heating Depth',                      phys_decomp)
+        call addfld ('NETDT',(/ 'lev' /), 'A','K/s', &
+             'Net heating rate')
+        call addfld ('MAXQ0',horiz_only  ,  'A','K/day', &
+             'Max column heating rate')
+        call addfld ('HDEPTH',horiz_only,    'A','km', &
+             'Heating Depth')
 
         if (history_waccm) then
            call add_default('NETDT    ', 1, ' ')
@@ -470,8 +471,8 @@ subroutine gw_init()
 
      end if
 
-     call addfld ('EKGWSPEC' ,'M2/S   ',pver+1, 'A', &
-          'effective Kzz due to gw spectrum',phys_decomp)
+     call addfld ('EKGWSPEC' ,(/ 'ilev' /), 'A','M2/S', &
+          'effective Kzz due to gw spectrum')
 
      if (history_waccm) then
         call add_default('EKGWSPEC', 1, ' ')
@@ -480,8 +481,8 @@ subroutine gw_init()
   end if
 
   ! Total temperature tendency output.
-  call addfld ('TTGW','K/s     ',pver, 'A', &
-       'T tendency - gravity wave drag',phys_decomp)
+  call addfld ('TTGW',(/ 'lev' /), 'A','K/s', &
+       'T tendency - gravity wave drag')
 
   if ( history_budget ) then
      call add_default ('TTGW', history_budget_histfile_num, ' ')
@@ -886,7 +887,7 @@ end subroutine gw_tend
 
 ! Add all history fields for a gravity wave spectrum source.
 subroutine gw_spec_addflds(prefix, scheme, history_waccm)
-  use cam_history, only: addfld, add_default, phys_decomp
+  use cam_history, only: addfld, horiz_only, add_default
   use gw_common,   only: cref
 
   !------------------------------Arguments--------------------------------
@@ -911,51 +912,50 @@ subroutine gw_spec_addflds(prefix, scheme, history_waccm)
   !-----------------------------------------------------------------------
 
   ! Overall wind tendencies.
-  call addfld (trim(prefix)//'UTGWSPEC','m/s2',pver, 'A', &
-       trim(scheme)//' U tendency - gravity wave spectrum',  phys_decomp)
-  call addfld (trim(prefix)//'VTGWSPEC','m/s2',pver, 'A', &
-       trim(scheme)//' V tendency - gravity wave spectrum',  phys_decomp)
+  call addfld (trim(prefix)//'UTGWSPEC',(/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' U tendency - gravity wave spectrum')
+  call addfld (trim(prefix)//'VTGWSPEC',(/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' V tendency - gravity wave spectrum')
 
   ! Wind tendencies broken across five spectral bins.
-  call addfld (trim(prefix)//'UTEND1','m/s2',  pver, 'A', &
-       trim(scheme)//' U tendency   c < -40',                phys_decomp)
-  call addfld (trim(prefix)//'UTEND2','m/s2',  pver, 'A', &
-       trim(scheme)//' U tendency  -40 < c < -15',           phys_decomp)
-  call addfld (trim(prefix)//'UTEND3','m/s2',  pver, 'A', &
-       trim(scheme)//' U tendency  -15 < c <  15',           phys_decomp)
-  call addfld (trim(prefix)//'UTEND4','m/s2',  pver, 'A', &
-       trim(scheme)//' U tendency   15 < c <  40',           phys_decomp)
-  call addfld (trim(prefix)//'UTEND5','m/s2',  pver, 'A', &
-       trim(scheme)//' U tendency   40 < c ',                phys_decomp)
+  call addfld (trim(prefix)//'UTEND1',  (/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' U tendency   c < -40')
+  call addfld (trim(prefix)//'UTEND2',  (/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' U tendency  -40 < c < -15')
+  call addfld (trim(prefix)//'UTEND3',  (/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' U tendency  -15 < c <  15')
+  call addfld (trim(prefix)//'UTEND4',  (/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' U tendency   15 < c <  40')
+  call addfld (trim(prefix)//'UTEND5',  (/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' U tendency   40 < c ')
 
   ! Reynold's stress toward each cardinal direction, and net zonal stress.
-  call addfld (trim(prefix)//'TAUE' ,'Pa',   pver+1, 'A', &
-       trim(scheme)//' Eastward Reynolds stress',            phys_decomp)
-  call addfld (trim(prefix)//'TAUW' ,'Pa',   pver+1, 'A', &
-       trim(scheme)//' Westward Reynolds stress',            phys_decomp)
-  call addfld (trim(prefix)//'TAUNET' ,'Pa', pver+1, 'A', &
-       trim(scheme)//' E+W Reynolds stress',                 phys_decomp)
-  call addfld (trim(prefix)//'TAUN' ,'Pa',   pver+1, 'A', &
-       trim(scheme)//' Northward Reynolds stress',           phys_decomp)
-  call addfld (trim(prefix)//'TAUS' ,'Pa',   pver+1, 'A', &
-       trim(scheme)//' Southward Reynolds stress',           phys_decomp)
+  call addfld (trim(prefix)//'TAUE' ,   (/ 'ilev' /), 'A','Pa', &
+       trim(scheme)//' Eastward Reynolds stress')
+  call addfld (trim(prefix)//'TAUW' ,   (/ 'ilev' /), 'A','Pa', &
+       trim(scheme)//' Westward Reynolds stress')
+  call addfld (trim(prefix)//'TAUNET' , (/ 'ilev' /), 'A','Pa', &
+       trim(scheme)//' E+W Reynolds stress')
+  call addfld (trim(prefix)//'TAUN' ,   (/ 'ilev' /), 'A','Pa', &
+       trim(scheme)//' Northward Reynolds stress')
+  call addfld (trim(prefix)//'TAUS' ,   (/ 'ilev' /), 'A','Pa', &
+       trim(scheme)//' Southward Reynolds stress')
 
   ! Momentum flux in each direction.
-  call addfld (trim(prefix)//'EMF','Pa',       pver, 'A', &
-       trim(scheme)//' Eastward MF',                         phys_decomp)
-  call addfld (trim(prefix)//'WMF','Pa',       pver, 'A', &
-       trim(scheme)//' Westward MF',                         phys_decomp)
-  call addfld (trim(prefix)//'NMF','Pa',       pver, 'A', &
-       trim(scheme)//' Northward MF',                        phys_decomp)
-  call addfld (trim(prefix)//'SMF','Pa',       pver, 'A', &
-       trim(scheme)//' Southward MF',                        phys_decomp)
+  call addfld (trim(prefix)//'EMF',       (/ 'lev' /), 'A','Pa', &
+       trim(scheme)//' Eastward MF')
+  call addfld (trim(prefix)//'WMF',       (/ 'lev' /), 'A','Pa', &
+       trim(scheme)//' Westward MF')
+  call addfld (trim(prefix)//'NMF',       (/ 'lev' /), 'A','Pa', &
+       trim(scheme)//' Northward MF')
+  call addfld (trim(prefix)//'SMF',       (/ 'lev' /), 'A','Pa', &
+       trim(scheme)//' Southward MF')
 
   ! Temperature tendency terms.
-  call addfld (trim(prefix)//'TTGWSDF' ,'K/s', pver, 'A', &
-       trim(scheme)//' t tendency - diffusion term',         phys_decomp)
-  call addfld (trim(prefix)//'TTGWSKE' ,'K/s', pver, 'A', &
-       trim(scheme)//' t tendency - kinetic energy conversion term', &
-       phys_decomp)
+  call addfld (trim(prefix)//'TTGWSDF' , (/ 'lev' /), 'A','K/s', &
+       trim(scheme)//' t tendency - diffusion term')
+  call addfld (trim(prefix)//'TTGWSKE' , (/ 'lev' /), 'A','K/s', &
+       trim(scheme)//' t tendency - kinetic energy conversion term')
 
   ! Gravity wave source spectra by wave number.
   do l=-pgwv,pgwv
@@ -965,8 +965,8 @@ subroutine gw_spec_addflds(prefix, scheme, history_waccm)
      dumc1x = tau_fld_name(l, prefix, x_not_y=.true.)
      dumc1y = tau_fld_name(l, prefix, x_not_y=.false.)
      dumc2 = trim(scheme)//" tau at c= "//trim(fnum)//" m/s"
-     call addfld (trim(dumc1x),'Pa   ',pver, 'A',dumc2,phys_decomp)
-     call addfld (trim(dumc1y),'Pa   ',pver, 'A',dumc2,phys_decomp)
+     call addfld (trim(dumc1x),(/ 'lev' /), 'A','Pa',dumc2)
+     call addfld (trim(dumc1y),(/ 'lev' /), 'A','Pa',dumc2)
 
   end do
 

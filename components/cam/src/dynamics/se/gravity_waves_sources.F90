@@ -67,7 +67,7 @@ CONTAINS
     real(kind=real_kind), allocatable  ::  frontgf_thr(:,:,:,:)
     real(kind=real_kind), allocatable  ::  frontga_thr(:,:,:,:)
     
-    !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,ie,ncols,frontgf_thr,frontga_thr)
+    !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,ie,ncols,frontgf_thr,frontga_thr)
     ithr=omp_get_thread_num()
     nets=dom_mt(ithr)%start
     nete=dom_mt(ithr)%end

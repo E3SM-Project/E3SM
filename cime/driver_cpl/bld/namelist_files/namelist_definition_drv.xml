@@ -107,6 +107,19 @@ If CCSM_BGC is set to 'CO2_DMSA', then flds_co2_dmsa will be set to .true.
 </entry>
 
 <entry 
+id="flds_bgc"
+type="logical" 
+category="seq_flds" 
+group="seq_cplflds_inparm" >
+Previously, new fields that were needed to be passed between components
+for certain compsets were specified by cpp-variables. This has been
+modified to now be use cases. This use cases are specified in the
+namelist cpl_flds_inparm and are currently triggered by the xml variable ACME_BGC.
+This is a new master switch for turning ACME BGC off and on, just for testing.
+If ACME_BGC is set to 'TRUE', then flds_bgc will be set to .true.
+</entry>
+
+<entry 
 id="glc_nec"
 type="integer" 
 category="seq_flds" 
@@ -437,6 +450,16 @@ group="seq_infodata_inparm">
 If true, turn on diurnal cycle in computing atm/ocn fluxes
 default: false
 </entry>
+
+<entry
+id="gust_fac"
+type="real"
+category="control"
+group="seq_infodata_inparm">
+wind gustiness factor
+default: 0.0D0
+</entry>
+
 
 <entry 
 id="atm_gnam"
@@ -1831,6 +1854,14 @@ default: .false.
 </entry>
 
 <entry 
+id="profile_add_detail"
+type="logical"
+category="performance" 
+group="prof_inparm">
+default: .false.
+</entry>
+
+<entry 
 id="profile_outpe_num"
 type="integer"
 category="performance" 
@@ -1979,28 +2010,54 @@ valid values: 2denable,io2comp,comp2io,disable,default
 </entry>
 
 <entry 
-id="pio_rearr_comm_max_pend_req"
+id="pio_rearr_comm_max_pend_req_comp2io"
 type="integer"
 category="pio" 
 group="pio_default_inparm">
-pio rearranger communication max pending req
+pio rearranger communication max pending req (comp2io)
 </entry>
 
 <entry 
-id="pio_rearr_comm_enable_hs"
+id="pio_rearr_comm_enable_hs_comp2io"
 type="logical"
 category="pio" 
 group="pio_default_inparm">
-pio rearranger communication option: Enable handshake
+pio rearranger communication option: Enable handshake (comp2io)
 default: .true.
 </entry>
 
 <entry 
-id="pio_rearr_comm_enable_isend"
+id="pio_rearr_comm_enable_isend_comp2io"
 type="logical"
 category="pio" 
 group="pio_default_inparm">
-pio rearranger communication option: Enable isends
+pio rearranger communication option: Enable isends (comp2io)
+default: .false.
+</entry>
+
+<entry 
+id="pio_rearr_comm_max_pend_req_io2comp"
+type="integer"
+category="pio" 
+group="pio_default_inparm">
+pio rearranger communication max pending req (io2comp)
+</entry>
+
+<entry 
+id="pio_rearr_comm_enable_hs_io2comp"
+type="logical"
+category="pio" 
+group="pio_default_inparm">
+pio rearranger communication option: Enable handshake (io2comp)
+default: .true.
+</entry>
+
+<entry 
+id="pio_rearr_comm_enable_isend_io2comp"
+type="logical"
+category="pio" 
+group="pio_default_inparm">
+pio rearranger communication option: Enable isends (io2comp)
 default: .false.
 </entry>
 

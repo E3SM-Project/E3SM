@@ -33,8 +33,6 @@ module rof_comp_esmf
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
   use rtm_cpl_indices  , only : rtm_cpl_indices_set, nt_rtm, rtm_tracers
-  use rtm_cpl_indices  , only : index_r2x_Forr_rofl, index_r2x_Forr_rofi, index_r2x_Flrr_flood
-  use rtm_cpl_indices  , only : index_x2r_Flrl_rofl, index_x2r_Flrl_rofi, index_r2x_Flrr_volr
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
   use rof_import_export
 !

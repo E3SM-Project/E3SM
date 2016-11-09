@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 # edison syslog script: 
 #  mach_syslog <sampling interval (in seconds)> <job identifier> <time stamp> <run directory> <timing directory> <output directory> 
 
@@ -12,35 +12,60 @@ set dir = $6
 
 # wait until job mapping information is output before saving output file
 # (note that calling script 'touch'es the cesm log file before spawning this script, so that 'wc' does not fail)
-set nnodes = `qstat -f $jid | grep mppnodect | sed 's/ *Resource_List.mppnodect = *\([0-9]*\) */\1/' `
+set nnodes = `sqs -f $jid | grep NumNodes | sed 's/^ *NumNodes= *\([0-9]*\).*/\1/' `
 set outlth = 0
 while ($outlth < $nnodes)
   sleep 10
   set outlth = `wc \-l $run/cesm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
 end
-set remaining = `qstat -f $jid | grep Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
+
+set TimeLimit   = `sqs -f $jid | grep TimeLimit | sed 's/^ *RunTime=.*TimeLimit=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
+set limit_hours = `echo $TimeLimit | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+set limit_mins  = `echo $TimeLimit | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+set limit_secs  = `echo $TimeLimit | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
+if ("X$limit_hours" == "X") set limit_hours = 0
+if ("X$limit_mins" == "X")  set limit_mins  = 0
+if ("X$limit_secs" == "X")  set limit_secs  = 0
+@ limit = 3600 * $limit_hours + 60 * $limit_mins + $limit_secs
+
+set RunTime    = `sqs -f $jid | grep RunTime | sed 's/^ *RunTime=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
+set runt_hours = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+set runt_mins  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+set runt_secs  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
+if ("X$runt_hours" == "X") set runt_hours = 0
+if ("X$runt_mins" == "X")  set runt_mins  = 0
+if ("X$runt_secs" == "X")  set runt_secs  = 0
+@ runt = 3600 * $runt_hours + 60 * $runt_mins + $runt_secs
+
+@ remaining = $limit - $runt
 cat > $run/Walltime.Remaining <<EOF1
 $remaining $sample_interval
 EOF1
 /bin/cp -p $run/cesm.log.$lid $dir/cesm.log.$lid.$remaining
 
 while ($remaining > 0)
-  grep -a -i "nstep" $run/*atm.log.$lid | tail > $dir/atm.log.$lid.nstep.$remaining
-#  grep -a -i "nstep" $run/cesm.log.$lid | tail > $dir/cesm.log.$lid.nstep.$remaining
-  grep -a -i "timestep" $run/*lnd.log.$lid | tail > $dir/lnd.log.$lid.timestep.$remaining
-  grep -a -i "Step number" $run/*ocn.log.$lid | tail > $dir/ocn.log.$lid.stepnum.$remaining
-  grep -a -i "istep1" $run/*ice.log.$lid | tail > $dir/ice.log.$lid.istep.$remaining
+  grep -a -i -e "nstep" -e "model date" $run/*atm.log.$lid | tail > $dir/atm.log.$lid.nstep.$remaining
+# grep -a -i "nstep" $run/cesm.log.$lid | tail > $dir/cesm.log.$lid.nstep.$remaining
+  grep -a -i -e "timestep" -e "model date" $run/*lnd.log.$lid | tail > $dir/lnd.log.$lid.timestep.$remaining
+  grep -a -i -e "timestep" -e "Step number" -e "model date" $run/*ocn.log.$lid | tail > $dir/ocn.log.$lid.stepnum.$remaining
+  grep -a -i -e "timestep" -e "istep" -e "model date" $run/*ice.log.$lid | tail > $dir/ice.log.$lid.istep.$remaining
   grep -a -i "model date" $run/*cpl.log.$lid | tail > $dir/cpl.log.$lid.modeldata.$remaining
   cp -p -u $timing/* $dir
-  xtnodestat > $dir/xtnodestat.$lid.$remaining
-  showq > $dir/showq.$lid.$remaining
+# xtnodestat > $dir/xtnodestat.$lid.$remaining
+  sqs -w -a > $dir/sqsw.$lid.$remaining
   chmod a+r $dir/*
   sleep $sample_interval
-  set remaining = `qstat -f $jid | grep Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
-  if ("X$remaining" == "X") set remaining = 0
+  set RunTime    = `sqs -f $jid | grep RunTime | sed 's/^ *RunTime=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
+  set runt_hours = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+  set runt_mins  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+  set runt_secs  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
+  if ("X$runt_hours" == "X") set runt_hours = 0
+  if ("X$runt_mins" == "X")  set runt_mins  = 0
+  if ("X$runt_secs" == "X")  set runt_secs  = 0
+  @ runt = 3600 * $runt_hours + 60 * $runt_mins + $runt_secs
+  @ remaining = $limit - $runt
   cat > $run/Walltime.Remaining << EOF2
 $remaining $sample_interval
 EOF2
 
 end
-

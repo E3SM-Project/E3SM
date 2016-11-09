@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: mono_flux_limiter.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: mono_flux_limiter.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
 !===============================================================================
 module mono_flux_limiter
 
@@ -289,8 +289,7 @@ module mono_flux_limiter
         fstderr
 
     use clubb_precision, only:  & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
     use error_code, only:  &
         fatal_error, &  ! Procedure(s)
@@ -299,14 +298,14 @@ module mono_flux_limiter
     use fill_holes, only: &
         vertical_integral ! Procedure(s)
 
-    use stats_type, only:  &
+    use stats_type_utilities, only:  &
         stat_begin_update,  & ! Procedure(s)
         stat_end_update,  &
         stat_update_var
 
     use stats_variables, only:  &
-        zm,  & ! Variable(s)
-        zt,  &
+        stats_zm,  & ! Variable(s)
+        stats_zt,  &
         iwprtp_mfl,  &
         irtm_mfl,  &
         iwpthlp_mfl,  &
@@ -345,7 +344,7 @@ module mono_flux_limiter
     integer, intent(in) ::  & 
       solve_type  ! Variables being solved for.
 
-    real(kind=time_precision), intent(in) ::  &
+    real( kind = core_rknd ), intent(in) ::  &
       dt          ! Model timestep length                           [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
@@ -449,17 +448,17 @@ module mono_flux_limiter
 
 
     if ( l_stats_samp ) then
-       call stat_begin_update( iwpxp_mfl, wpxp / real( dt, kind = core_rknd ), zm )
-       call stat_begin_update( ixm_mfl, xm / real( dt, kind = core_rknd ), zt )
+       call stat_begin_update( iwpxp_mfl, wpxp / dt, stats_zm )
+       call stat_begin_update( ixm_mfl, xm / dt, stats_zt )
     endif
     if ( l_stats_samp .and. solve_type == mono_flux_thlm ) then
-       call stat_update_var( ithlm_enter_mfl, xm, zt )
-       call stat_update_var( ithlm_old, xm_old, zt )
-       call stat_update_var( iwpthlp_entermfl, xm, zm )
+       call stat_update_var( ithlm_enter_mfl, xm, stats_zt )
+       call stat_update_var( ithlm_old, xm_old, stats_zt )
+       call stat_update_var( iwpthlp_entermfl, xm, stats_zm )
     elseif ( l_stats_samp .and. solve_type == mono_flux_rtm ) then
-       call stat_update_var( irtm_enter_mfl, xm, zt )
-       call stat_update_var( irtm_old, xm_old, zt )
-       call stat_update_var( iwprtp_enter_mfl, xm, zm )
+       call stat_update_var( irtm_enter_mfl, xm, stats_zt )
+       call stat_update_var( irtm_old, xm_old, stats_zt )
+       call stat_update_var( iwprtp_enter_mfl, xm, stats_zm )
     endif
 
     ! Initialize arrays.
@@ -518,8 +517,8 @@ module mono_flux_limiter
        ! Find the value of xm without the contribution from the turbulent
        ! advection term.
        ! Note:  the contribution of xm_forcing at level gr%nz should be 0.
-       xm_without_ta(k) = xm_old(k) + real( dt, kind = core_rknd )*xm_forcing(k) &
-                          + real( dt, kind = core_rknd )*m_adv_term
+       xm_without_ta(k) = xm_old(k) + dt*xm_forcing(k) &
+                          + dt*m_adv_term
 
        ! Find the minimum usuable value of variable x at each vertical level.
        ! Since variable x must be one of theta_l, r_t, or a scalar, all of
@@ -562,14 +561,14 @@ module mono_flux_limiter
        ! Find the upper limit for w'x' for a monotonic turbulent flux.
        wpxp_mfl_max(k)  &
        = invrs_rho_ds_zm(k)  &
-                  * (   ( rho_ds_zt(k) / (real( dt, kind = core_rknd )*gr%invrs_dzt(k)) )  &
+                  * (   ( rho_ds_zt(k) / (dt*gr%invrs_dzt(k)) )  &
                         * ( xm_without_ta(k) - min_x_allowable(k) )  &
                       + rho_ds_zm(km1) * wpxp(km1)  )
 
        ! Find the lower limit for w'x' for a monotonic turbulent flux.
        wpxp_mfl_min(k)  &
        = invrs_rho_ds_zm(k)  &
-                  * (   ( rho_ds_zt(k) / (real( dt, kind = core_rknd )*gr%invrs_dzt(k)) )  &
+                  * (   ( rho_ds_zt(k) / (dt*gr%invrs_dzt(k)) )  &
                         * ( xm_without_ta(k) - max_x_allowable(k) )  &
                       + rho_ds_zm(km1) * wpxp(km1)  )
 
@@ -678,17 +677,17 @@ module mono_flux_limiter
     wpxp_mfl_max(gr%nz) = 0._core_rknd
 
     if ( l_stats_samp .and. solve_type == mono_flux_thlm ) then
-       call stat_update_var( ithlm_without_ta, xm_without_ta, zt )
-       call stat_update_var( ithlm_mfl_min, min_x_allowable, zt )
-       call stat_update_var( ithlm_mfl_max, max_x_allowable, zt )
-       call stat_update_var( iwpthlp_mfl_min, wpxp_mfl_min, zm )
-       call stat_update_var( iwpthlp_mfl_max, wpxp_mfl_max, zm )
+       call stat_update_var( ithlm_without_ta, xm_without_ta, stats_zt )
+       call stat_update_var( ithlm_mfl_min, min_x_allowable, stats_zt )
+       call stat_update_var( ithlm_mfl_max, max_x_allowable, stats_zt )
+       call stat_update_var( iwpthlp_mfl_min, wpxp_mfl_min, stats_zm )
+       call stat_update_var( iwpthlp_mfl_max, wpxp_mfl_max, stats_zm )
     elseif ( l_stats_samp .and. solve_type == mono_flux_rtm ) then
-       call stat_update_var( irtm_without_ta, xm_without_ta, zt )
-       call stat_update_var( irtm_mfl_min, min_x_allowable, zt )
-       call stat_update_var( irtm_mfl_max, max_x_allowable, zt )
-       call stat_update_var( iwprtp_mfl_min, wpxp_mfl_min, zm )
-       call stat_update_var( iwprtp_mfl_max, wpxp_mfl_max, zm )
+       call stat_update_var( irtm_without_ta, xm_without_ta, stats_zt )
+       call stat_update_var( irtm_mfl_min, min_x_allowable, stats_zt )
+       call stat_update_var( irtm_mfl_max, max_x_allowable, stats_zt )
+       call stat_update_var( iwprtp_mfl_min, wpxp_mfl_min, stats_zm )
+       call stat_update_var( iwprtp_mfl_max, wpxp_mfl_max, stats_zm )
     endif
 
 
@@ -739,7 +738,7 @@ module mono_flux_limiter
              ! rate of change multiplied by the time step length.  Add the
              ! product to xm to find the new xm resulting from the monotonic
              ! flux limiter.
-             xm(k) = xm(k) + dxm_dt_mfl_adjust(k) * real( dt, kind = core_rknd )
+             xm(k) = xm(k) + dxm_dt_mfl_adjust(k) * dt
 
           enddo
 
@@ -814,16 +813,16 @@ module mono_flux_limiter
 
     if ( l_stats_samp ) then
 
-       call stat_end_update( iwpxp_mfl, wpxp / real( dt, kind = core_rknd ), zm )
+       call stat_end_update( iwpxp_mfl, wpxp / dt, stats_zm )
 
-       call stat_end_update( ixm_mfl, xm / real( dt, kind = core_rknd ), zt )
+       call stat_end_update( ixm_mfl, xm / dt, stats_zt )
 
        if ( solve_type == mono_flux_thlm ) then
-          call stat_update_var( ithlm_exit_mfl, xm, zt )
-          call stat_update_var( iwpthlp_exit_mfl, xm, zm )
+          call stat_update_var( ithlm_exit_mfl, xm, stats_zt )
+          call stat_update_var( iwpthlp_exit_mfl, xm, stats_zm )
        elseif ( solve_type == mono_flux_rtm ) then
-          call stat_update_var( irtm_exit_mfl, xm, zt )
-          call stat_update_var( iwprtp_exit_mfl, xm, zm )
+          call stat_update_var( irtm_exit_mfl, xm, stats_zt )
+          call stat_update_var( iwprtp_exit_mfl, xm, stats_zm )
        endif
 
     endif
@@ -854,8 +853,7 @@ module mono_flux_limiter
         term_ma_zt_lhs ! Procedure(s)
 
     use clubb_precision, only:  & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
     implicit none
 
@@ -866,7 +864,7 @@ module mono_flux_limiter
       km1_tdiag = 3       ! Thermodynamic subdiagonal index.
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  &
+    real( kind = core_rknd ), intent(in) ::  &
       dt     ! Model timestep length                      [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
@@ -914,7 +912,7 @@ module mono_flux_limiter
 
        ! LHS xm time tendency.
        lhs(k_tdiag,k) &
-       = lhs(k_tdiag,k) + 1.0_core_rknd / real( dt, kind = core_rknd )
+       = lhs(k_tdiag,k) + 1.0_core_rknd / dt
 
     enddo ! xm loop: 2..gr%nz
 
@@ -948,13 +946,12 @@ module mono_flux_limiter
         gr  ! Variable(s)
 
     use clubb_precision, only:  & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
     implicit none
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  &
+    real( kind = core_rknd ), intent(in) ::  &
       dt                 ! Model timestep length                    [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
@@ -987,7 +984,7 @@ module mono_flux_limiter
        km1 = max( k-1, 1 )
 
        ! RHS xm time tendency.
-       rhs(k) = rhs(k) + xm_old(k) / real( dt, kind = core_rknd )
+       rhs(k) = rhs(k) + xm_old(k) / dt
 
        ! RHS xm turbulent advection (ta) term.
        ! Note:  Normally, the turbulent advection (ta) term is treated
@@ -1112,7 +1109,8 @@ module mono_flux_limiter
   end subroutine mfl_xm_solve
 
   !=============================================================================
-  subroutine calc_turb_adv_range( dt, pdf_params,  &
+  subroutine calc_turb_adv_range( dt, w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm, &
+                                  mixt_frac_zm, &
                                   low_lev_effect, high_lev_effect )
 
     ! Description:
@@ -1147,21 +1145,28 @@ module mono_flux_limiter
     use grid_class, only:  &
         gr  ! Variable(s)
 
-    use pdf_parameter_module, only: &
-        pdf_parameter  ! Type
-
     use clubb_precision, only:  & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
     implicit none
-    
-    ! Input Variables
-    real(kind=time_precision), intent(in) ::  &
-      dt        ! Model timestep length                            [s]
+   
+    ! Constant parameters 
+    logical, parameter ::  &
+      l_constant_thickness = .false.  ! Toggle constant or variable thickness.
 
-    type(pdf_parameter), dimension(gr%nz), intent(in) ::  &
-      pdf_params   ! PDF parameters     [units vary]
+    real( kind = core_rknd ), parameter ::  &
+      const_thick = 150.0_core_rknd  ! Constant thickness value               [m]
+
+    ! Input Variables
+    real( kind = core_rknd ), intent(in) ::  &
+      dt ! Model timestep length                       [s]
+
+    real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
+      w_1_zm,        & ! Mean w (1st PDF component)                   [m/s]
+      w_2_zm,        & ! Mean w (2nd PDF component)                   [m/s]
+      varnce_w_1_zm, & ! Variance of w (1st PDF component)            [m^2/s^2]
+      varnce_w_2_zm, & ! Variance of w (2nd PDF component)            [m^2/s^2]
+      mixt_frac_zm    ! Weight of 1st PDF component (Sk_w dependent) [-]
 
     ! Output Variables
     integer, dimension(gr%nz), intent(out) ::  &
@@ -1173,18 +1178,13 @@ module mono_flux_limiter
       vert_vel_up,  & ! Average upwards vertical velocity component   [m/s]
       vert_vel_down   ! Average downwards vertical velocity component [m/s]
 
-    real(kind=time_precision) ::  &
+    real(kind = core_rknd ) ::  &
       dt_one_grid_lev, & ! Amount of time to travel one grid box           [s]
       dt_all_grid_levs   ! Running count of amount of time taken to travel [s]
 
     integer :: k, j
 
-    logical, parameter ::  &
-      l_constant_thickness = .false.  ! Toggle constant or variable thickness.
-
-    real( kind = core_rknd ), parameter ::  &
-      const_thick = 150.0_core_rknd  ! Constant thickness value               [m]
-
+    ! ---- Begin Code ----
 
     if ( l_constant_thickness ) then ! thickness is a constant value.
 
@@ -1285,7 +1285,8 @@ module mono_flux_limiter
        ! vertical velocity.
        ! Note:  A level that has all vertical wind moving downwards will have a
        !        vert_vel_up value that is 0, and vice versa.
-       call mean_vert_vel_up_down( pdf_params, 0.0_core_rknd,  &
+       call mean_vert_vel_up_down( w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm, & !  In
+                                   mixt_frac_zm, 0.0_core_rknd,  & ! In
                                    vert_vel_down, vert_vel_up )
 
        ! The value of w'x' may only be altered between levels 3 and gr%nz-2.
@@ -1300,7 +1301,7 @@ module mono_flux_limiter
           j = k - 1
 
           ! Initialize the overall delta t counter to 0.
-          dt_all_grid_levs = 0.0_time_precision
+          dt_all_grid_levs = 0.0_core_rknd
 
           do ! loop downwards until answer is found.
 
@@ -1309,8 +1310,8 @@ module mono_flux_limiter
 
                 ! Compute the amount of time it takes to travel one grid level
                 ! upwards:  delta_t = delta_z / vert_vel_up.
-                dt_one_grid_lev = real( (1.0_core_rknd/gr%invrs_dzm(j)) / vert_vel_up(j), &
-                                        kind=time_precision )
+                dt_one_grid_lev =  (1.0_core_rknd/gr%invrs_dzm(j)) / vert_vel_up(j)
+                                       
 
                 ! Total time elapsed for crossing all grid levels that have been
                 ! passed, thus far.
@@ -1374,7 +1375,7 @@ module mono_flux_limiter
           j = k + 1
 
           ! Initialize the overall delta t counter to 0.
-          dt_all_grid_levs = 0.0_time_precision
+          dt_all_grid_levs = 0.0_core_rknd
 
           do ! loop upwards until answer is found.
 
@@ -1387,12 +1388,11 @@ module mono_flux_limiter
                 !        distance traveled is downwards.  Since vert_vel_down
                 !        has a negative value, dt_one_grid_lev will be a
                 !        positive value.
-                dt_one_grid_lev = real( -(1.0_core_rknd/gr%invrs_dzm(j-1)) / vert_vel_down(j-1), &
-                                        kind=time_precision )
+                dt_one_grid_lev = -(1.0_core_rknd/gr%invrs_dzm(j-1)) / vert_vel_down(j-1)
 
                 ! Total time elapsed for crossing all grid levels that have been
                 ! passed, thus far.
-                dt_all_grid_levs = real( dt_all_grid_levs + dt_one_grid_lev, kind=time_precision )
+                dt_all_grid_levs = dt_all_grid_levs + dt_one_grid_lev
 
                 ! Stop if has taken more than one model time step (overall) to
                 ! travel the entire extent of the current vertical grid level.
@@ -1462,7 +1462,8 @@ module mono_flux_limiter
   end subroutine calc_turb_adv_range
 
   !=============================================================================
-  subroutine mean_vert_vel_up_down( pdf_params, w_ref,  &
+  subroutine mean_vert_vel_up_down( w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm, &
+                                    mixt_frac_zm, w_ref, &
                                     mean_w_down, mean_w_up )
 
     ! Description
@@ -1496,28 +1497,28 @@ module mono_flux_limiter
     ! at any vertical level, are considered to approximately follow a
     ! distribution that is a mixture of two normal (or Gaussian) distributions.
     ! The values of w that are a part of the 1st normal distribution are
-    ! referred to as w1, and the values of w that are part of the 2nd normal
-    ! distribution are referred to as w2.  Note that these distributions
-    ! overlap, and there are many values of w that are found in both w1 and w2.
+    ! referred to as w_1, and the values of w that are part of the 2nd normal
+    ! distribution are referred to as w_2.  Note that these distributions
+    ! overlap, and there are many values of w that are found in both w_1 and w_2.
     !
     ! The probability density function (PDF) for w, P(w), is:
     !
-    ! P(w) = mixt_frac*P(w1) + (1-mixt_frac)*P(w2);
+    ! P(w) = mixt_frac*P(w_1) + (1-mixt_frac)*P(w_2);
     !
-    ! where "mixt_frac" is the weight of the 1st normal distribution, and P(w1) and
-    ! P(w2) are the equations for the 1st and 2nd normal distributions,
+    ! where "mixt_frac" is the weight of the 1st normal distribution, and P(w_1) and
+    ! P(w_2) are the equations for the 1st and 2nd normal distributions,
     ! respectively:
     !
-    ! P(w1) = 1 / ( sigma_w1 * sqrt(2*PI) ) 
-    !         * EXP[ -(w1-mu_w1)^2 / (2*sigma_w1^2) ]; and
+    ! P(w_1) = 1 / ( sigma_w_1 * sqrt(2*PI) ) 
+    !         * EXP[ -(w_1-mu_w_1)^2 / (2*sigma_w_1^2) ]; and
     !
-    ! P(w2) = 1 / ( sigma_w2 * sqrt(2*PI) ) 
-    !         * EXP[ -(w2-mu_w2)^2 / (2*sigma_w2^2) ].
+    ! P(w_2) = 1 / ( sigma_w_2 * sqrt(2*PI) ) 
+    !         * EXP[ -(w_2-mu_w_2)^2 / (2*sigma_w_2^2) ].
     !
-    ! The mean of the 1st normal distribution is mu_w1, and the standard
-    ! deviation of the 1st normal distribution is sigma_w1.  The mean of the
-    ! 2nd normal distribution is mu_w2, and the standard deviation of the 2nd
-    ! normal distribution is sigma_w2.
+    ! The mean of the 1st normal distribution is mu_w_1, and the standard
+    ! deviation of the 1st normal distribution is sigma_w_1.  The mean of the
+    ! 2nd normal distribution is mu_w_2, and the standard deviation of the 2nd
+    ! normal distribution is sigma_w_2.
     !
     ! The average value of w, distributed according to the probability
     ! distribution, between limits alpha and beta, is:
@@ -1536,8 +1537,8 @@ module mono_flux_limiter
     ! -inf <= w <= w|_ref, such that:
     !
     ! <w|_(-inf:w|_ref)> = INT(-inf:w|_ref) w P(w) dw.
-    !                    = mixt_frac * INT(-inf:w|_ref) w1 P(w1) dw1
-    !                      + (1-mixt_frac) * INT(-inf:w|_ref) w2 P(w2) dw2.
+    !                    = mixt_frac * INT(-inf:w|_ref) w_1 P(w_1) dw_1
+    !                      + (1-mixt_frac) * INT(-inf:w|_ref) w_2 P(w_2) dw_2.
     !
     ! For each normal distribution in the mixture of normal distribution, i
     ! (where "i" can be 1 or 2):
@@ -1553,14 +1554,14 @@ module mono_flux_limiter
     ! The mean of all values of w <= w|_ref is:
     !
     ! <w|_(-inf:w|_ref)> =
-    ! mixt_frac * { - ( sigma_w1 / sqrt(2*PI) ) 
-    !                 * EXP[ -(w|_ref-mu_w1)^2 / (2*sigma_w1^2) ]
-    !               + mu_w1 * (1/2)
-    !                 *[1 + erf( (w|_ref-mu_w1) / (sqrt(2)*sigma_w1) )] }
-    ! + (1-mixt_frac) * { - ( sigma_w2 / sqrt(2*PI) ) 
-    !                       * EXP[ -(w|_ref-mu_w2)^2 / (2*sigma_w2^2) ]
-    !                     + mu_w2 * (1/2)
-    !                       *[1 + erf( (w|_ref-mu_w2) / (sqrt(2)*sigma_w2) )] }.
+    ! mixt_frac * { - ( sigma_w_1 / sqrt(2*PI) ) 
+    !                 * EXP[ -(w|_ref-mu_w_1)^2 / (2*sigma_w_1^2) ]
+    !               + mu_w_1 * (1/2)
+    !                 *[1 + erf( (w|_ref-mu_w_1) / (sqrt(2)*sigma_w_1) )] }
+    ! + (1-mixt_frac) * { - ( sigma_w_2 / sqrt(2*PI) ) 
+    !                       * EXP[ -(w|_ref-mu_w_2)^2 / (2*sigma_w_2^2) ]
+    !                     + mu_w_2 * (1/2)
+    !                       *[1 + erf( (w|_ref-mu_w_2) / (sqrt(2)*sigma_w_2) )] }.
     !
     ! Average Positive Vertical Velocity
     ! ----------------------------------
@@ -1570,8 +1571,8 @@ module mono_flux_limiter
     ! w|_ref <= w <= inf, such that:
     !
     ! <w|_(w|_ref:inf)> = INT(w|_ref:inf) w P(w) dw.
-    !                   = mixt_frac * INT(w|_ref:inf) w1 P(w1) dw1
-    !                     + (1-mixt_frac) * INT(w|_ref:inf) w2 P(w2) dw2.
+    !                   = mixt_frac * INT(w|_ref:inf) w_1 P(w_1) dw_1
+    !                     + (1-mixt_frac) * INT(w|_ref:inf) w_2 P(w_2) dw_2.
     !
     ! For each normal distribution in the mixture of normal distribution, i
     ! (where "i" can be 1 or 2):
@@ -1587,14 +1588,14 @@ module mono_flux_limiter
     ! The mean of all values of w >= w|_ref is:
     !
     ! <w|_(w|_ref:inf)> =
-    ! mixt_frac * {   ( sigma_w1 / sqrt(2*PI) ) 
-    !                * EXP[ -(w|_ref-mu_w1)^2 / (2*sigma_w1^2) ]
-    !               + mu_w1 * (1/2)
-    !                 *[1 - erf( (w|_ref-mu_w1) / (sqrt(2)*sigma_w1) )] }
-    ! + (1-mixt_frac) * {   ( sigma_w2 / sqrt(2*PI) ) 
-    !                      * EXP[ -(w|_ref-mu_w2)^2 / (2*sigma_w2^2) ]
-    !                     + mu_w2 * (1/2)
-    !                       *[1 - erf( (w|_ref-mu_w2) / (sqrt(2)*sigma_w2) )] }.
+    ! mixt_frac * {   ( sigma_w_1 / sqrt(2*PI) ) 
+    !                * EXP[ -(w|_ref-mu_w_1)^2 / (2*sigma_w_1^2) ]
+    !               + mu_w_1 * (1/2)
+    !                 *[1 - erf( (w|_ref-mu_w_1) / (sqrt(2)*sigma_w_1) )] }
+    ! + (1-mixt_frac) * {   ( sigma_w_2 / sqrt(2*PI) ) 
+    !                      * EXP[ -(w|_ref-mu_w_2)^2 / (2*sigma_w_2^2) ]
+    !                     + mu_w_2 * (1/2)
+    !                       *[1 - erf( (w|_ref-mu_w_2) / (sqrt(2)*sigma_w_2) )] }.
     !
     ! Special Limitations:
     ! --------------------
@@ -1651,18 +1652,15 @@ module mono_flux_limiter
         sqrt_2pi, &
         sqrt_2
 
-    use pdf_parameter_module, only: &
-        pdf_parameter  ! type
-
     use anl_erf, only:  & 
         erf ! Procedure(s)
             ! The error function
 
-    use stats_type, only:  &
+    use stats_type_utilities, only:  &
         stat_update_var_pt  ! Procedure(s)
 
     use stats_variables, only:  &
-        zm,  & ! Variable(s)
+        stats_zm,  & ! Variable(s)
         imean_w_up, &
         imean_w_down, &
         l_stats_samp
@@ -1670,14 +1668,15 @@ module mono_flux_limiter
     use clubb_precision, only: &
       core_rknd ! Variable(s)
 
-    use constants_clubb, only: &    
-        zero_threshold
-
     implicit none
 
     ! Input Variables
-    type(pdf_parameter), dimension(gr%nz), intent(in) ::  &
-      pdf_params     ! PDF parameters
+    real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
+      w_1_zm,        & ! Mean w (1st PDF component)                   [m/s]
+      w_2_zm,        & ! Mean w (2nd PDF component)                   [m/s]
+      varnce_w_1_zm, & ! Variance of w (1st PDF component)            [m^2/s^2]
+      varnce_w_2_zm, & ! Variance of w (2nd PDF component)            [m^2/s^2]
+      mixt_frac_zm    ! Weight of 1st PDF component (Sk_w dependent) [-]
 
     real( kind = core_rknd ), intent(in) ::  &
       w_ref          ! Reference velocity, w|_ref (normally = 0)   [m/s]
@@ -1689,17 +1688,9 @@ module mono_flux_limiter
 
     ! Local Variables
 
-    ! PDF parameters unpacked and interpolated to momentum levels
-    real( kind = core_rknd ), dimension(gr%nz) :: &
-      w1,  & ! Mean of w for 1st normal distribution               [m/s]
-      w2,  & ! Mean of w for 2nd normal distribution               [m/s]
-      varnce_w1, & ! Variance of w for 1st normal distribution           [m^2/s^2]
-      varnce_w2, & ! Variance of w for 2nd normal distribution           [m^2/s^2]
-      mixt_frac    ! Weight of 1st normal distribution (Sk_w dependent)  [-]
-
     real( kind = core_rknd ) :: &
-      sigma_w1, & ! Standard deviation of w for 1st normal distribution    [m/s]
-      sigma_w2, & ! Standard deviation of w for 2nd normal distribution    [m/s]
+      sigma_w_1, & ! Standard deviation of w for 1st normal distribution    [m/s]
+      sigma_w_2, & ! Standard deviation of w for 2nd normal distribution    [m/s]
       mean_w_down_1st, & ! Mean w (<= w|_ref) from 1st normal distribution [m/s]
       mean_w_down_2nd, & ! Mean w (<= w|_ref) from 2nd normal distribution [m/s]
       mean_w_up_1st, &   ! Mean w (>= w|_ref) from 1st normal distribution [m/s]
@@ -1709,69 +1700,60 @@ module mono_flux_limiter
 
     integer :: k  ! Vertical loop index
 
-
-    ! All of the PDF parameters are computed on thermodynamic levels.
-    ! Interpolate the needed PDF parameters from thermodynamic levels
-    ! to momentum levels.
-    w1  = zt2zm( pdf_params%w1 )
-    w2  = zt2zm( pdf_params%w2 )
-    varnce_w1 = max(zt2zm( pdf_params%varnce_w1), zero_threshold )
-    varnce_w2 = max(zt2zm( pdf_params%varnce_w2), zero_threshold )
-    mixt_frac = zt2zm( pdf_params%mixt_frac )
-
+    ! ---- Begin Code ----
 
     ! Loop over momentum levels from 2 to gr%nz-1.  Levels 1 and gr%nz
     ! are not needed.
     do k = 2, gr%nz-1, 1
 
        ! Standard deviation of w for the 1st normal distribution.
-       sigma_w1 = sqrt( varnce_w1(k) )
+       sigma_w_1 = sqrt( varnce_w_1_zm(k) )
 
        ! Standard deviation of w for the 2nd normal distribution.
-       sigma_w2 = sqrt( varnce_w2(k) )
+       sigma_w_2 = sqrt( varnce_w_2_zm(k) )
 
 
        ! Contributions from the 1st normal distribution.
-       if ( w1(k) + 3._core_rknd*sigma_w1 <= w_ref ) then
+       if ( w_1_zm(k) + 3._core_rknd*sigma_w_1 <= w_ref ) then
 
           ! The entire 1st normal is on the negative side of w|_ref.
-          mean_w_down_1st = w1(k)
+          mean_w_down_1st = w_1_zm(k)
           mean_w_up_1st   = 0.0_core_rknd
 
-       elseif ( w1(k) - 3._core_rknd*sigma_w1 >= w_ref ) then
+       elseif ( w_1_zm(k) - 3._core_rknd*sigma_w_1 >= w_ref ) then
 
           ! The entire 1st normal is on the positive side of w|_ref.
           mean_w_down_1st = 0.0_core_rknd
-          mean_w_up_1st   = w1(k)
+          mean_w_up_1st   = w_1_zm(k)
 
        else
 
           ! The exponential calculation is pulled out as it is reused in both
           ! equations. This should save one calculation of the
-          ! exp( -(w_ref-w1(k))**2 ... etc. part of the formula.
+          ! exp( -(w_ref-w_1_zm(k))**2 ... etc. part of the formula.
           ! ~~EIHoppe//20090618
-          exp_cache = exp( -(w_ref-w1(k))**2 / (2.0_core_rknd*sigma_w1**2) ) 
+          exp_cache = exp( -(w_ref-w_1_zm(k))**2 / (2.0_core_rknd*sigma_w_1**2) ) 
 
           ! Added cache of the error function calculations.
           ! This should save one calculation of the erf(...) part
           ! of the formula.
           ! ~~EIHoppe//20090623
-          erf_cache = erf( (w_ref-w1(k)) / (sqrt_2*sigma_w1) )
+          erf_cache = erf( (w_ref-w_1_zm(k)) / (sqrt_2*sigma_w_1) )
 
           ! The 1st normal has values on both sides of w_ref.
           mean_w_down_1st =  &
-             - (sigma_w1/sqrt_2pi)  &
-!             * exp( -(w_ref-w1(k))**2 / (2.0_core_rknd*sigma_w1**2) )  &
+             - (sigma_w_1/sqrt_2pi)  &
+!             * exp( -(w_ref-w_1_zm(k))**2 / (2.0_core_rknd*sigma_w_1**2) )  &
              * exp_cache  &
-!             + w1(k) * 0.5_core_rknd*( 1.0_core_rknd + erf( (w_ref-w1(k)) / (sqrt_2*sigma_w1) ) )
-             + w1(k) * 0.5_core_rknd*( 1.0_core_rknd + erf_cache)
+!          + w_1(k) * 0.5_core_rknd*( 1.0_core_rknd + erf( (w_ref-w_1(k)) / (sqrt_2*sigma_w_1) ) )
+             + w_1_zm(k) * 0.5_core_rknd*( 1.0_core_rknd + erf_cache)
 
           mean_w_up_1st =  &
-             + (sigma_w1/sqrt_2pi)  &
-!             * exp( -(w_ref-w1(k))**2 / (2.0_core_rknd*sigma_w1**2) )  &
+             + (sigma_w_1/sqrt_2pi)  &
+!             * exp( -(w_ref-w_1(k))**2 / (2.0_core_rknd*sigma_w_1**2) )  &
              * exp_cache  &
-!             + w1(k) * 0.5_core_rknd*( 1.0_core_rknd - erf( (w_ref-w1(k)) / (sqrt_2*sigma_w1) ) )
-             + w1(k) * 0.5_core_rknd*( 1.0_core_rknd - erf_cache)
+!          + w_1(k) * 0.5_core_rknd*( 1.0_core_rknd - erf( (w_ref-w_1(k)) / (sqrt_2*sigma_w_1) ) )
+             + w_1_zm(k) * 0.5_core_rknd*( 1.0_core_rknd - erf_cache)
 
           ! /EIHoppe changes
 
@@ -1779,64 +1761,64 @@ module mono_flux_limiter
 
 
        ! Contributions from the 2nd normal distribution.
-       if ( w2(k) + 3._core_rknd*sigma_w2 <= w_ref ) then
+       if ( w_2_zm(k) + 3._core_rknd*sigma_w_2 <= w_ref ) then
 
           ! The entire 2nd normal is on the negative side of w|_ref.
-          mean_w_down_2nd = w2(k)
+          mean_w_down_2nd = w_2_zm(k)
           mean_w_up_2nd   = 0.0_core_rknd
 
-       elseif ( w2(k) - 3._core_rknd*sigma_w2 >= w_ref ) then
+       elseif ( w_2_zm(k) - 3._core_rknd*sigma_w_2 >= w_ref ) then
 
           ! The entire 2nd normal is on the positive side of w|_ref.
           mean_w_down_2nd = 0.0_core_rknd
-          mean_w_up_2nd   = w2(k)
+          mean_w_up_2nd   = w_2_zm(k)
 
        else
 
           ! The exponential calculation is pulled out as it is reused in both
           ! equations. This should save one calculation of the
-          ! exp( -(w_ref-w1(k))**2 ... etc. part of the formula.
+          ! exp( -(w_ref-w_1(k))**2 ... etc. part of the formula.
           ! ~~EIHoppe//20090618
-          exp_cache = exp( -(w_ref-w2(k))**2 / (2.0_core_rknd*sigma_w2**2) ) 
+          exp_cache = exp( -(w_ref-w_2_zm(k))**2 / (2.0_core_rknd*sigma_w_2**2) ) 
 
           ! Added cache of the error function calculations.
           ! This should save one calculation of the erf(...) part
           ! of the formula.
           ! ~~EIHoppe//20090623
-          erf_cache = erf( (w_ref-w2(k)) / (sqrt_2*sigma_w2) )
+          erf_cache = erf( (w_ref-w_2_zm(k)) / (sqrt_2*sigma_w_2) )
 
           ! The 2nd normal has values on both sides of w_ref.
           mean_w_down_2nd =  &
-             - (sigma_w2/sqrt_2pi)  &
-!             * exp( -(w_ref-w2(k))**2 / (2.0_core_rknd*sigma_w2**2) )  &
+             - (sigma_w_2/sqrt_2pi)  &
+!            * exp( -(w_ref-w_2_zm(k))**2 / (2.0_core_rknd*sigma_w_2**2) )  &
              * exp_cache  &
-!             + w2(k) * 0.5_core_rknd*( 1.0_core_rknd + erf( (w_ref-w2(k)) / (sqrt_2*sigma_w2) ) )
-             + w2(k) * 0.5_core_rknd*( 1.0_core_rknd + erf_cache)
+!       + w_2_zm(k) * 0.5_core_rknd*( 1.0_core_rknd + erf( (w_ref-w_2(k)) / (sqrt_2*sigma_w_2) ) )
+             + w_2_zm(k) * 0.5_core_rknd*( 1.0_core_rknd + erf_cache)
 
           mean_w_up_2nd =  &
-             + (sigma_w2/sqrt_2pi)  &
-!             * exp( -(w_ref-w2(k))**2 / (2.0_core_rknd*sigma_w2**2) )  &
+             + (sigma_w_2/sqrt_2pi)  &
+!            * exp( -(w_ref-w_2(k))**2 / (2.0_core_rknd*sigma_w_2**2) )  &
              * exp_cache  &
-!             + w2(k) * 0.5_core_rknd*( 1.0_core_rknd - erf( (w_ref-w2(k)) / (sqrt_2*sigma_w2) ) )
-             + w2(k) * 0.5_core_rknd*( 1.0_core_rknd - erf_cache)
+!          + w_2(k) * 0.5_core_rknd*( 1.0_core_rknd - erf( (w_ref-w_2(k)) / (sqrt_2*sigma_w_2) ) )
+             + w_2_zm(k) * 0.5_core_rknd*( 1.0_core_rknd - erf_cache)
 
           ! /EIHoppe changes
 
        endif
 
        ! Overall mean of downwards w.
-       mean_w_down(k) = mixt_frac(k) * mean_w_down_1st  &
-                        + ( 1.0_core_rknd - mixt_frac(k) ) * mean_w_down_2nd
+       mean_w_down(k) = mixt_frac_zm(k) * mean_w_down_1st  &
+                        + ( 1.0_core_rknd - mixt_frac_zm(k) ) * mean_w_down_2nd
 
        ! Overall mean of upwards w.
-       mean_w_up(k) = mixt_frac(k) * mean_w_up_1st  &
-                      + ( 1.0_core_rknd - mixt_frac(k) ) * mean_w_up_2nd
+       mean_w_up(k) = mixt_frac_zm(k) * mean_w_up_1st  &
+                      + ( 1.0_core_rknd - mixt_frac_zm(k) ) * mean_w_up_2nd
 
        if ( l_stats_samp ) then
 
-          call stat_update_var_pt( imean_w_up, k, mean_w_up(k), zm )
+          call stat_update_var_pt( imean_w_up, k, mean_w_up(k), stats_zm )
 
-          call stat_update_var_pt( imean_w_down, k, mean_w_down(k), zm )
+          call stat_update_var_pt( imean_w_down, k, mean_w_down(k), stats_zm )
 
        endif ! l_stats_samp
 

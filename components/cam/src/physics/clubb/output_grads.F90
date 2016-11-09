@@ -1,5 +1,6 @@
 !-------------------------------------------------------------------------------
-! $Id: output_grads.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: output_grads.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
+!===============================================================================
 module output_grads
 
 
@@ -37,7 +38,7 @@ module output_grads
 
 !-------------------------------------------------------------------------------
   subroutine open_grads( iunit, fdir, fname,  & 
-                         ia, iz, z, & 
+                         ia, iz, nlat, nlon, z, & 
                          day, month, year, rlat, rlon, & 
                          time, dtwrite, & 
                          nvar, grads_file )
@@ -49,14 +50,17 @@ module output_grads
 !   None
 !-------------------------------------------------------------------------------
     use constants_clubb, only:  & 
-        fstderr,  & ! Variable 
-        fstdout
+        fstderr,  & ! Constant(s)
+        sec_per_min
 
     use stat_file_module, only: & 
         stat_file ! Type
 
     use clubb_precision, only:  & 
         time_precision ! Variable
+
+    use stats_variables, only: &
+        l_allow_small_stats_tout
 
     implicit none
 
@@ -69,21 +73,28 @@ module output_grads
       fname    ! Name of file                          [-]
 
     integer, intent(in) :: & 
-      ia,                    & ! Lower Bound of z      [-]
-      iz                       ! Upper Bound of z      [-]
+      ia,   & ! Lower Bound of z (altitude)                     [-]
+      iz,   & ! Upper Bound of z (altitude)                     [-]
+      nlat, & ! Number of points in the y direction (latitude)  [-]
+      nlon    ! Number of points in the x direction (longitude) [-]
 
-    real( kind = core_rknd ), dimension(:), intent(in) :: z
+    real( kind = core_rknd ), dimension(:), intent(in) :: &
+      z ! Vertical levels       [m]
 
     integer, intent(in) ::  & 
       day,           & ! Day of Month at Model Start    [dd]
       month,         & ! Month of Year at Model start   [mm]
       year             ! Year at Model Start            [yyyy]
 
-    real( kind = core_rknd ), dimension(1), intent(in) :: &
-      rlat, rlon ! Latitude and Longitude [Degrees N/E]
+    real( kind = core_rknd ), dimension(nlat), intent(in) :: &
+      rlat ! Latitude [Degrees E]
 
-    real(kind=time_precision), intent(in) ::  & 
-      time,     & ! Time since Model start          [s]
+    real( kind = core_rknd ), dimension(nlon), intent(in) :: &
+      rlon ! Longitude [Degrees N]
+
+    real( kind = time_precision ), intent(in) ::  & 
+      time        ! Time since Model start          [s]
+    real( kind = core_rknd ), intent(in) :: &
       dtwrite     ! Time interval for output        [s]
 
     ! Number of GrADS variables to store            [#]
@@ -124,7 +135,10 @@ module output_grads
     grads_file%month = month
     grads_file%year  = year
 
-    allocate( grads_file%rlat(1), grads_file%rlon(1) )
+    grads_file%nlat  = nlat
+    grads_file%nlon  = nlon
+
+    allocate( grads_file%rlat(nlat), grads_file%rlon(nlon) )
 
     grads_file%rlat  = rlat
     grads_file%rlon  = rlon
@@ -132,6 +146,20 @@ module output_grads
     grads_file%dtwrite = dtwrite
 
     grads_file%nvar = nvar
+
+    ! Check to make sure the timestep is appropriate. GrADS does not support an
+    ! output timestep less than 1 minute.
+    if (dtwrite < sec_per_min) then
+      write(fstderr,*) "Warning: GrADS requires an output timestep of at least &
+                       &one minute, but the requested output timestep &
+                       &(stats_tout) is less than one minute."
+      if (.not. l_allow_small_stats_tout) then
+        write(fstderr,*) "To override this warning, set l_allow_small_stats_tout = &
+                         &.true. in the stats_setting namelist in the &
+                         &appropriate *_model.in file."
+        stop "Fatal error in open_grads"
+      end if
+    end if
 
     ! Check whether GrADS files already exists
 
@@ -213,7 +241,6 @@ module output_grads
 
     use constants_clubb, only:  & 
         fstderr,  & ! Variable 
-        fstdout,  &
         sec_per_hr, &
         sec_per_min
 
@@ -230,10 +257,10 @@ module output_grads
     character(len=*), intent(in) :: & 
       fdir, fname ! File directory and name
 
-    real(kind=time_precision), intent(in) :: & 
+    real( kind = time_precision ), intent(in) :: & 
       time    ! Current model time        [s]
 
-    real(kind=time_precision), intent(in) :: & 
+    real( kind = core_rknd ), intent(in) :: & 
       dtwrite ! Time interval between writes to the file    [s]
 
     ! Output Variables
@@ -256,7 +283,7 @@ module output_grads
       ia_in, iz_in, ntimes_in, nvar_in, & 
       day_in, month_in, year_in
 
-    real(kind=time_precision) :: dtwrite_in
+    real( kind = core_rknd ) :: dtwrite_in
 
     real( kind = core_rknd ), dimension(:), allocatable :: z_in
 
@@ -314,8 +341,8 @@ module output_grads
         read(unit=line,fmt=*) tmp, ntimes_in, tmp, date, dt
         read(unit=date(1:2),fmt=*) ihour
         read(unit=date(4:5),fmt=*) imin
-        time_grads = real( ihour, kind=time_precision ) * sec_per_hr &
-                   + real( imin, kind=time_precision ) * sec_per_min
+        time_grads = real( ihour, kind=time_precision) * real(sec_per_hr,kind=time_precision) &
+                   + real( imin, kind=time_precision ) * real(sec_per_min,kind=time_precision)
         read(unit=date(7:8),fmt=*) day_in
         read(unit=date(12:15),fmt=*) year_in
 
@@ -468,8 +495,10 @@ module output_grads
       stat_file ! Type
 
     use clubb_precision, only:  & 
-      time_precision, & ! Variable(s)
-      core_rknd
+      time_precision    ! Variable(s)
+
+!   use stat_file_module, only: &
+!     clubb_i, clubb_j ! Variable(s)
 
     implicit none
 
@@ -486,8 +515,8 @@ module output_grads
 
     ! Local Variables
     integer ::  & 
-      i,     & ! Loop indices
-      ios   ! I/O status
+      ivar, & ! Loop indices
+      ios     ! I/O status indicator
 
     character(len=15) :: date
 
@@ -505,7 +534,7 @@ module output_grads
     open( unit=grads_file%iounit, & 
           file=trim( grads_file%fdir )//trim( grads_file%fname )//'.dat', & 
           form='unformatted', access='direct', & 
-          recl=F_RECL*abs( grads_file%iz-grads_file%ia+1 ), & 
+          recl=F_RECL*abs( grads_file%iz-grads_file%ia+1 )*grads_file%nlon*grads_file%nlat, & 
           status='unknown', iostat=ios )
     if ( ios /= 0 ) then
       write(unit=fstderr,fmt=*)  & 
@@ -515,16 +544,18 @@ module output_grads
     end if
 
     if ( grads_file%ia <= grads_file%iz ) then
-      do i=1,grads_file%nvar
-        write(grads_file%iounit,rec=grads_file%nrecord)  & 
-          real( grads_file%var(i)%ptr(1,1,grads_file%ia:grads_file%iz), kind=r4)
+      do ivar=1,grads_file%nvar
+        write(grads_file%iounit,rec=grads_file%nrecord)  &
+          real( grads_file%var(ivar)%ptr(1:grads_file%nlon, &
+                                         1:grads_file%nlat,grads_file%ia:grads_file%iz), kind=r4)
         grads_file%nrecord = grads_file%nrecord + 1
       end do
 
     else
-      do i=1, grads_file%nvar
+      do ivar=1, grads_file%nvar
         write(grads_file%iounit,rec=grads_file%nrecord) & 
-          real( grads_file%var(i)%ptr(1,1,grads_file%ia:grads_file%iz:-1), kind=r4)
+          real( grads_file%var(ivar)%ptr(1:grads_file%nlon, &
+                                         1:grads_file%nlat,grads_file%ia:grads_file%iz:-1), kind=r4)
         grads_file%nrecord = grads_file%nrecord + 1
       end do
 
@@ -564,21 +595,34 @@ module output_grads
     end if
 
     write(unit=grads_file%iounit,fmt='(a)') 'DSET ^'//trim( grads_file%fname )//'.dat'
-    write(unit=grads_file%iounit,fmt='(a,e11.5)') 'UNDEF ',undef
-    write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'XDEF    1 LINEAR ', grads_file%rlon, ' 1.'
-    write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'YDEF    1 LINEAR ', grads_file%rlat, ' 1.'
-    if ( grads_file%ia == grads_file%iz ) then
+    write(unit=grads_file%iounit,fmt='(a,e12.5)') 'UNDEF ',undef
+
+    if ( grads_file%nlon == 1 ) then ! Use linear for a singleton X dimesion
+      write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'XDEF    1 LINEAR ', grads_file%rlon, ' 1.'
+    else
+      write(unit=grads_file%iounit,fmt='(a,i5,a)') 'XDEF', grads_file%nlon,' LEVELS '
+      write(unit=grads_file%iounit,fmt='(6f13.4)') grads_file%rlon
+    end if
+
+    if ( grads_file%nlat == 1 ) then ! Use linear for a singleton Y dimension
+      write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'YDEF    1 LINEAR ', grads_file%rlat, ' 1.'
+    else
+      write(unit=grads_file%iounit,fmt='(a,i5,a)') 'YDEF', grads_file%nlat,' LEVELS '
+      write(unit=grads_file%iounit,fmt='(6f13.4)') grads_file%rlat
+    end if
+
+    if ( grads_file%ia == grads_file%iz ) then ! If ia == iz, then Z is also singleton
       write(unit=grads_file%iounit,fmt='(a)') 'ZDEF    1 LEVELS 0.'
     else if ( grads_file%ia < grads_file%iz ) then
       write(unit=grads_file%iounit,fmt='(a,i5,a)')  & 
         'ZDEF', abs(grads_file%iz-grads_file%ia)+1,' LEVELS '
       write(unit=grads_file%iounit,fmt='(6f13.4)')  & 
-        (grads_file%z(i-grads_file%ia+1),i=grads_file%ia,grads_file%iz)
+        (grads_file%z(ivar-grads_file%ia+1),ivar=grads_file%ia,grads_file%iz)
     else
       write(unit=grads_file%iounit,fmt='(a,i5,a)')  & 
         'ZDEF',abs(grads_file%iz-grads_file%ia)+1,' LEVELS '
-      write(grads_file%iounit,'(6f13.4)') (grads_file%z(grads_file%ia-i+1), &
-        i=grads_file%ia,grads_file%iz,-1)
+      write(grads_file%iounit,'(6f13.4)') (grads_file%z(grads_file%ia-ivar+1), &
+        ivar=grads_file%ia,grads_file%iz,-1)
     end if
 
     call format_date( grads_file%day, grads_file%month, grads_file%year, grads_file%time, & ! In
@@ -593,11 +637,11 @@ module output_grads
     ! Variables description
     write(unit=grads_file%iounit,fmt='(a,i5)') 'VARS', grads_file%nvar
 
-    do i=1, grads_file%nvar, 1
+    do ivar=1, grads_file%nvar, 1
       write(unit=grads_file%iounit,fmt='(a,i5,a,a)') & 
-        grads_file%var(i)%name(1:len_trim(grads_file%var(i)%name)), & 
+        grads_file%var(ivar)%name(1:len_trim(grads_file%var(ivar)%name)), & 
         abs(grads_file%iz-grads_file%ia)+1,' 99 ', & 
-        grads_file%var(i)%description(1:len_trim(grads_file%var(i)%description))
+        grads_file%var(ivar)%description(1:len_trim(grads_file%var(ivar)%description))
     end do
 
     write(unit=grads_file%iounit,fmt='(a)') 'ENDVARS'
@@ -624,14 +668,13 @@ module output_grads
 !   None
 !---------------------------------------------------------
     use clubb_precision, only:  & 
-      time_precision, & ! Variable(s)
-      core_rknd
+      time_precision    ! Variable(s)
 
     use calendar, only:  & 
       compute_current_date ! Procedure(s)
 
     use calendar, only: & 
-      month ! Variable(s)
+      month_names ! Variable(s)
 
     use constants_clubb, only: &
       sec_per_hr, & ! Variable(s)
@@ -674,9 +717,9 @@ module output_grads
 
     date = 'hh:mmZddmmmyyyy'
     write(unit=date(7:8),fmt='(i2.2)') iday
-    write(unit=date(9:11),fmt='(a3)') month(imonth)
+    write(unit=date(9:11),fmt='(a3)') month_names(imonth)
     write(unit=date(12:15),fmt='(i4.4)') iyear
-    write(unit=date(1:2),fmt='(i2.2)') floor( time/sec_per_hr )
+    write(unit=date(1:2),fmt='(i2.2)') floor(time/real(sec_per_hr,kind=time_precision ))
     write(unit=date(4:5),fmt='(i2.2)')  & 
       int( mod( nint( time ), nint(sec_per_hr) ) / nint(min_per_hr) )
 
@@ -697,8 +740,6 @@ module output_grads
       sec_per_hr, &
       sec_per_min
 
-    use clubb_precision, only:  & 
-      time_precision ! Variable(s)
 
     implicit none
 
@@ -706,7 +747,7 @@ module output_grads
     intrinsic :: max, floor
 
     ! Input Variables
-    real(kind=time_precision), intent(in) :: &
+    real(kind=core_rknd), intent(in) :: &
       dtwrite_sec ! Time increment in GrADS [s]
 
     ! Output Variables
@@ -716,7 +757,7 @@ module output_grads
     character(len=2), intent(out) :: units ! Units on dtwrite_ctl
 
     ! Local variables
-    real(kind=time_precision) :: &
+    real(kind=core_rknd) :: &
       dtwrite_min, & ! Time increment [minutes]
       dtwrite_hrs, & ! Time increment [hours]
       dtwrite_days   ! Time increment [days]
@@ -725,20 +766,20 @@ module output_grads
 
     ! Since GrADs can't handle a time increment of less than a minute we assume
     ! 1 minute output for an output frequency of less than a minute.
-    dtwrite_min = real( floor( dtwrite_sec/sec_per_min ), kind=time_precision )
-    dtwrite_min = max( 1._time_precision, dtwrite_min )
+    dtwrite_min = real( floor( dtwrite_sec/sec_per_min ), kind=core_rknd )
+    dtwrite_min = max( 1._core_rknd, dtwrite_min )
 
-    if ( dtwrite_min <= 99._time_precision ) then
+    if ( dtwrite_min <= 99._core_rknd ) then
       dtwrite_ctl = int( dtwrite_min )
       units = 'mn'
     else
       dtwrite_hrs = dtwrite_sec / sec_per_hr
-      if ( dtwrite_hrs <= 99._time_precision ) then
+      if ( dtwrite_hrs <= 99._core_rknd ) then
         dtwrite_ctl = int( dtwrite_hrs )
         units = 'hr'
       else
         dtwrite_days = dtwrite_sec / sec_per_day
-        if ( dtwrite_days <= 99._time_precision ) then
+        if ( dtwrite_days <= 99._core_rknd ) then
           dtwrite_ctl = int( dtwrite_days )
           units = 'dy'
         else

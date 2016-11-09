@@ -43,10 +43,10 @@ contains
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    type(carbonstate_type)   , intent(in)    :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(in)    :: c14_carbonstate_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
+    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars

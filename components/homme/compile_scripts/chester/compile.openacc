@@ -28,9 +28,7 @@ cmake                                                                          \
   -DHDF5_DIR=$HDF5_DIR                                                         \
   -DPREQX_NP=4                                                                 \
   -DPREQX_PLEV=$NLEVELS                                                        \
-  -DBUILD_HOMME_SWDGX=FALSE                                                    \
   -DBUILD_HOMME_SWEQX=FALSE                                                    \
-  -DBUILD_HOMME_PRIMDGX=FALSE                                                  \
   -DENABLE_OPENMP=TRUE                                                         \
   -DHOMME_PROJID=STF006                                                        \
   -DENABLE_OPENACC=TRUE                                                        \

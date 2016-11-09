@@ -1,4 +1,6 @@
-!$Id: pos_definite_module.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+!-------------------------------------------------------------------------
+!$Id: pos_definite_module.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
+!===============================================================================
 module pos_definite_module
 
   implicit none
@@ -53,8 +55,7 @@ module pos_definite_module
       zero_threshold
 
     use clubb_precision, only:  & 
-      time_precision, & ! Variable(s)
-      core_rknd
+      core_rknd ! Variable(s)
 
     use error_code, only: &
       clubb_at_least_debug_level
@@ -65,7 +66,7 @@ module pos_definite_module
     intrinsic :: eoshift, kind, any, min, max
 
     ! Input variables
-    real(kind=time_precision), intent(in) :: & 
+    real( kind = core_rknd ), intent(in) :: & 
       dt ! Timestep    [s]
 
     character(len=2), intent(in) :: & 
@@ -138,10 +139,10 @@ module pos_definite_module
       flux_minus(k) = -min( zero_threshold, flux_np1(k) ) ! defined on flux levels
 
       if ( field_grid == "zm" ) then
-        dz_over_dt(k) = ( 1._core_rknd/gr%invrs_dzm(k) ) / real( dt, kind = core_rknd )
+        dz_over_dt(k) = ( 1._core_rknd/gr%invrs_dzm(k) ) / dt
 
       else if ( field_grid == "zt" ) then
-        dz_over_dt(k) = ( 1._core_rknd/gr%invrs_dzt(k) ) / real( dt, kind = core_rknd )
+        dz_over_dt(k) = ( 1._core_rknd/gr%invrs_dzt(k) ) / dt
 
       end if
 
@@ -192,24 +193,24 @@ module pos_definite_module
     flux_lim(1) = flux_np1(1)
     flux_lim(gr%nz) = flux_np1(gr%nz)
 
-    flux_pd = ( flux_lim - flux_np1 ) / real( dt, kind = core_rknd )
+    flux_pd = ( flux_lim - flux_np1 ) / dt
 
     field_nonlim = field_np1
 
     ! Apply change to field at n+1
     if ( field_grid == "zt" ) then
 
-      field_np1 = -real( dt, kind = core_rknd ) * ddzm( flux_lim - flux_np1 ) + field_np1
+      field_np1 = -dt * ddzm( flux_lim - flux_np1 ) + field_np1
 
     else if ( field_grid == "zm" ) then
 
-      field_np1 = -real( dt, kind = core_rknd ) * ddzt( flux_lim - flux_np1 ) + field_np1
+      field_np1 = -dt * ddzt( flux_lim - flux_np1 ) + field_np1
 
     end if
 
     ! Determine the total time tendency in field due to this calculation
     ! (for diagnostic purposes)
-    field_pd = ( field_np1 - field_nonlim ) / real( dt, kind = core_rknd )
+    field_pd = ( field_np1 - field_nonlim ) / dt
 
     ! Replace the non-limited flux with the limited flux
     flux_np1 = flux_lim

@@ -100,6 +100,9 @@ module TemperatureType
      real(r8), pointer    :: fact_col              (:,:) ! used in computing tridiagonal matrix
      real(r8), pointer    :: c_h2osfc_col          (:)   ! heat capacity of surface water
 
+     ! For VSFM model
+     real(r8), pointer :: t_soil_col_1d            (:)   ! 1D temperature of soil layers (Kelvin)
+
    contains
 
      procedure, public  :: Init         
@@ -232,6 +235,9 @@ contains
     allocate(this%xmf_h2osfc_col           (begc:endc))                      ; this%xmf_h2osfc_col           (:)   = nan
     allocate(this%fact_col                 (begc:endc, -nlevsno+1:nlevgrnd)) ; this%fact_col                 (:,:) = nan
     allocate(this%c_h2osfc_col             (begc:endc))                      ; this%c_h2osfc_col             (:)   = nan
+
+    ! For VSFM model
+    allocate(this%t_soil_col_1d            ((endc-begc+1)*nlevgrnd))         ; this%t_soil_col_1d            (:) = nan
 
   end subroutine InitAllocate
 
@@ -1043,7 +1049,7 @@ contains
     end if
 
     if ( use_ed ) then
-       write(iulog,*) 'SPM before this one line 1040 '
+!       write(iulog,*) 'SPM before this one line 1040 '
        call extract_accum_field ('ED_GDD0', rbufslp, nstep)
        this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
     end if
@@ -1279,7 +1285,7 @@ contains
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
           end if
        end do
-       write(iulog,*) 'SPM before this one line 1258 '
+!       write(iulog,*) 'SPM before this one line 1258 '
        call update_accum_field  ('GDD0', rbufslp, nstep)
        call extract_accum_field ('GDD0', this%gdd0_patch, nstep)
 

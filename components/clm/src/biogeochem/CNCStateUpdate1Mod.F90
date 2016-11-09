@@ -40,6 +40,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, update cpool carbon state
     !
+
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
@@ -73,7 +74,7 @@ contains
   end subroutine CStateUpdate0
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate1(&
+  subroutine CStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars)
@@ -82,12 +83,16 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
+    use tracer_varcon       , only : is_active_betr_bgc
+    use subgridAveMod       , only : p2c
+    use decompMod           , only : bounds_type    
     ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds  
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(cnstate_type)     , intent(in)    :: cnstate_vars
+    type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     !
@@ -123,56 +128,74 @@ contains
          cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
       end do
 
-      !------------------------------------------------------------------
-      ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
-      !------------------------------------------------------------------
-      ! plant to litter fluxes
-      do j = 1,nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            ! phenology and dynamic land cover fluxes
-            cf%decomp_cpools_sourcesink_col(c,j,i_met_lit) = &
-                 ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
-            cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit) = &
-                 ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
-            cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit) = &
-                 ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
-            cf%decomp_cpools_sourcesink_col(c,j,i_cwd) = &
-                 ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
-         end do
-      end do
 
-      ! litter and SOM HR fluxes
-      do k = 1, ndecomp_cascade_transitions
+      if (is_active_betr_bgc) then
+         !summarize litter carbon input
+         ! plant to litter fluxes
          do j = 1,nlevdecomp
             ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                    cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) &
-                    - ( cf%decomp_cascade_hr_vr_col(c,j,k) + cf%decomp_cascade_ctransfer_vr_col(c,j,k)) *dt
+               ! phenology and dynamic land cover fluxes
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
+                    ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
+                    ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
+                    ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
+                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
+            enddo
+         enddo  
+
+      elseif (.not.(use_pflotran .and. pf_cmode)) then
+
+         ! plant to litter fluxes
+
+         do j = 1,nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               ! phenology and dynamic land cover fluxes
+               cf%decomp_cpools_sourcesink_col(c,j,i_met_lit) = &
+                    ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
+               cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit) = &
+                    ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
+               cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit) = &
+                    ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
+               cf%decomp_cpools_sourcesink_col(c,j,i_cwd) = &
+                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
             end do
          end do
-      end do
-      do k = 1, ndecomp_cascade_transitions
-         if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+
+         ! litter and SOM HR fluxes
+         do k = 1, ndecomp_cascade_transitions
             do j = 1,nlevdecomp
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
-                       cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) &
-                       + cf%decomp_cascade_ctransfer_vr_col(c,j,k)*dt
+                  cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
+                       cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) &
+                       - ( cf%decomp_cascade_hr_vr_col(c,j,k) + cf%decomp_cascade_ctransfer_vr_col(c,j,k)) *dt
                end do
             end do
-         end if
-      end do
-
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
-      !------------------------------------------------------------------
-
+         end do
+         do k = 1, ndecomp_cascade_transitions
+            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+               do j = 1,nlevdecomp
+                  ! column loop
+                  do fc = 1,num_soilc
+                     c = filter_soilc(fc)
+                     cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
+                          cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) &
+                          + cf%decomp_cascade_ctransfer_vr_col(c,j,k)*dt
+                  end do
+               end do
+            end if
+         end do
+      endif   !end if is_active_betr_bgc()
+    
+    
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -357,6 +380,14 @@ contains
 
       end do ! end of patch loop
 
+      if(is_active_betr_bgc)then
+
+         !the following is introduced to fix the spinup problem with simultaneous nitrogen competition
+
+         call p2c(bounds, num_soilc, filter_soilc, &
+            cs%frootc_patch(bounds%begp:bounds%endp), &
+            cnstate_vars%frootc_nfix_scalar_col(bounds%begc:bounds%endc))
+      endif     
     end associate 
 
   end subroutine CStateUpdate1

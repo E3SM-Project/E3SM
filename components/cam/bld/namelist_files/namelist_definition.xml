@@ -53,6 +53,218 @@
           This is an optional attribute that is mainly useful for variables
           that have only a small number of allowed values.
                                                                         -->
+<!-- Nudging Parameters -->
+
+<entry id="Nudge_Model" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Toggle Model Nudging ON/OFF.
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_Path" type="char*256" input_pathname="abs" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Full pathname of analyses data to use for nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_File_Template" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Template for Nudging analyses file names.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Times_Per_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of analyses files per day.
+       Default: none
+       </entry>
+
+<entry id="Model_Times_Per_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of time to update model data per day.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Uprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for U nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Ucoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for U nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for V nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vcoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for V nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Tprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for T nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Tcoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for T nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Qprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for Q nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Qcoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for Q nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_PSprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for PS nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_PScoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for PS nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Beg_Year" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Year at which Nudging Begins.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Beg_Month" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Month at which Nudging Begins.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Beg_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Day at which Nudging Begins.
+       Default: none
+       </entry>
+
+<entry id="Nudge_End_Year" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Year at which Nudging Ends.
+       Default: none
+       </entry>
+
+<entry id="Nudge_End_Month" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Month at which Nudging Ends.
+       Default: none
+       </entry>
+
+<entry id="Nudge_End_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Day at which Nudging Ends.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lo" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LOW Coeffcient for Horizontal Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_hi" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       HIGH Coeffcient for Horizontal Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lat0" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LAT0 of Horizonalt Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_latWidth" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Width of LAT Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_latDelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of LAT Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lon0" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LON0 of Horizontal Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lonWidth" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Width of LON Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lonDelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of LON Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_lo" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LOW Coeffcient for Vertical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_hi" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       HIGH Coeffcient for Vertical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Hindex" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       HIGH Level Index for Verical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Hdelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of HIGH end of Vertical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Lindex" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LOW Level Index for Verical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Ldelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of LOW end of Vertical Window.
+       Default: none
+       </entry>
+
 
 <!-- Nudging Parameters -->
 
@@ -884,6 +1096,26 @@ model.
 Default: 5
 </entry>
 
+<!-- Fixers -->
+
+<entry id="use_mass_borrower" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new mass borrower (instead of QNEG3).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_qqflx_fixer" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to use the new qqflx fixer (instead of QNEG4). 
+Default: set by build-namelist.
+</entry>
+
+<entry id="print_fixer_message" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to printout fixer diagnostic message. 
+Default: set by build-namelist.
+</entry>
+
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -1148,7 +1380,7 @@ Default: none
 <!-- History and Initial Conditions Output -->
 
 <entry id="avgflag_pertape" type="char*1(6)"  category="history"
-       group="cam_inparm" valid_values="A,B,I,X,M" >
+       group="cam_history_nl" valid_values="A,B,I,X,M" >
 Sets the averaging flag for all variables on a particular history file
 series. Valid values are:
 
@@ -1165,51 +1397,51 @@ Defaults: set in code via the addfld and add_default subroutine calls.
 </entry>
 
 <entry id="empty_htapes" type="logical"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 If true don't put any of the variables on the history tapes by
 default. Only output the variables that the user explicitly lists in
 the <varname>fincl#</varname> namelist items.  Default: FALSE
 </entry>
 
 <entry id="fexcl1" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 1st history file (by default the name
 of this file contains the string "h0").
 Default: none
 </entry>
 <entry id="fexcl2" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 2nd history file (by default the name
 of this file contains the string "h1").
 Default: none
 </entry>
 <entry id="fexcl3" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 3rd history file (by default the name
 of this file contains the string "h2").
 Default: none
 </entry>
 <entry id="fexcl4" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 4th history file (by default the name
 of this file contains the string "h3").
 Default: none
 </entry>
 <entry id="fexcl5" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 5th history file (by default the name
 of this file contains the string "h4").
 Default: none
 </entry>
 <entry id="fexcl6" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 6th history file (by default the name
 of this file contains the string "h5").
 Default: none
 </entry>
 
 <entry id="fincl1" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to include on the first history file (by default the name of
 this file contains the string "h0").  The added fields must be in Master
 Field List.  The averaging flag for the output field can be specified by
@@ -1225,31 +1457,31 @@ are:
 Default:  set in code via the addfld and add_default subroutine calls.
 </entry>
 <entry id="fincl2" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 2nd history file (by default
 the name of this file contains the string "h1").
 Default: none.
 </entry>
 <entry id="fincl3" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 3rd history file (by default
 the name of this file contains the string "h2").
 Default: none.
 </entry>
 <entry id="fincl4" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 4th history file (by default
 the name of this file contains the string "h3").
 Default: none.
 </entry>
 <entry id="fincl5" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 5th history file (by default
 the name of this file contains the string "h4").
 Default: none.
 </entry>
 <entry id="fincl6" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 6th history file (by default
 the name of this file contains the string "h5").
 Default: none.
@@ -1302,13 +1534,13 @@ Default: none.
 </entry>
 
 <entry id="collect_column_output" type="logical(6)" category="history"
-   group="cam_inparm" valid_values="">
+   group="cam_history_nl" valid_values="">
 Collect all column data into a single field and output in ncol format,
 much faster than default when you have a lot of columns.
 </entry>
 
 <entry id="fincl1lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of columns or contiguous columns at which the fincl1 fields will be
 output. Individual columns are specified as a string using a longitude
 degree (greater or equal to 0.) followed by a single character
@@ -1323,66 +1555,66 @@ north to 20 north.
 Default: none
 </entry>
 <entry id="fincl2lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 2nd history file.
 </entry>
 <entry id="fincl3lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 3rd history file.
 </entry>
 <entry id="fincl4lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 4th history file.
 </entry>
 <entry id="fincl5lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 5th history file.
 </entry>
 <entry id="fincl6lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 6th history file.
 </entry>
 
 
 <entry id="fwrtpr1" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 1st history file.
 Default: none
 </entry>
 <entry id="fwrtpr2" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 2nd history file.
 Default: none
 </entry>
 <entry id="fwrtpr3" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 3rd history file.
 Default: none
 </entry>
 <entry id="fwrtpr4" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 4th history file.
 Default: none
 </entry>
 <entry id="fwrtpr5" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 5th history file.
 Default: none
 </entry>
 <entry id="fwrtpr6" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 6th history file.
 Default: none
 </entry>
 
 <entry id="hfilename_spec" type="char*256(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 
 Array of history filename specifiers.  The filenames of up to six history
 output files can be controlled via this variable.  Filename specifiers give
@@ -1449,7 +1681,7 @@ Default: 1
 </entry>
 
 <entry id="inithist" type="char*8"  category="history"
-       group="cam_inparm" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
+       group="cam_history_nl" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
 Frequency that initial files will be output: 6-hourly, daily, monthly,
 yearly, or never.  Valid values: 'NONE', '6-HOURLY', 'DAILY', 'MONTHLY',
 'YEARLY', 'CAMIOP', 'ENDOFRUN'.
@@ -1457,14 +1689,14 @@ Default: 'YEARLY'
 </entry>
 
 <entry id="inithist_all" type="logical"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 If false then include only REQUIRED fields on IC file.  If true then
 include required AND optional fields on IC file.  
 Default: FALSE
 </entry>
 
 <entry id="mfilt" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Array containing the maximum number of time samples written to a history
 file.  The first value applies to the primary history file, the second
 through sixth to the auxillary history files.
@@ -1472,7 +1704,7 @@ Default: 1,30,30,30,30,30
 </entry>
 
 <entry id="lcltod_start" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Array containing the starting time of day for local time history averaging. 
 Used in conjuction with lcltod_stop. If lcltod_stop is less than lcltod_start, 
 then the time range wraps around 24 hours. The start time is included in the 
@@ -1482,7 +1714,7 @@ Default: none
 </entry>
 
 <entry id="lcltod_stop" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Array containing the stopping time of day for local time history averaging. 
 Used in conjuction with lcltod_start. If lcltod_stop is less than lcltod_start, 
 then the time range wraps around 24 hours. The stop time is not included in the 
@@ -1492,7 +1724,7 @@ Default: none
 </entry>
 
 <entry id="ndens" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="1,2" > 
+       group="cam_history_nl" valid_values="1,2" > 
 
 Array specifying the precision of real data written to each history file
 series. Valid values are 1 or 2. '1' implies output real values are 8-byte
@@ -1503,7 +1735,7 @@ Default: 2,2,2,2,2,2
 
 
 <entry id="nhtfrq" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" > 
+       group="cam_history_nl" valid_values="" > 
 
 Array of write frequencies for each history file series.
 If <varname>nhtfrq(1)</varname> = 0, the file will be a monthly average.
@@ -1513,6 +1745,46 @@ timesteps.  If <varname>nhtfrq(i)</varname> &lt; 0, frequency is specified
 as number of hours.
 
 Default: 0,-24,-24,-24,-24,-24
+</entry>
+
+<entry id="interpolate_output" type="logical(10)" category="history"
+    group="cam_history_nl" valid_values="">
+If interpolate_output(k) = .true., then the k'th history file will be
+interpolated to a lat/lon grid before output.
+Default: .false.
+</entry>
+
+<entry id="interpolate_nlat" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="">
+Size of latitude dimension of grid for interpolated output.
+If interpolate_nlat and interpolate_nlon are zero, reasonable values
+will be chosen by the dycore based on the run resolution.
+Default: 0
+</entry>
+
+<entry id="interpolate_nlon" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="">
+Size of longitude dimension of grid for interpolated output.
+If interpolate_nlat and interpolate_nlon are zero, reasonable values
+will be chosen by the dycore based on the run resolution.
+Default: 0
+</entry>
+
+<entry id="interpolate_type" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="0,1">
+Selects interpolation method for output on lat/lon grid.
+0: Use SE's native high-order method.
+1: Use a bilinear method.
+Default: 1 (bilinear)
+</entry>
+
+<entry id="interpolate_gridtype" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="1,2,3">
+Selects output grid type for lat/lon interpolated output.
+1: Equally spaced, including poles (FV scalars output grid).
+2: Gauss grid (CAM Eulerian).
+3: Equally spaced, no poles (FV staggered velocity).
+Default: 1
 </entry>
 
 <!-- Initial Conditions -->
@@ -1560,13 +1832,6 @@ try reading constituent data from the IC file; just use the
 internally-specified defaults.
 Default: TRUE
 </entry>
-
-<entry id="use_64bit_nc" type="logical"  category="history"
-       group="cam_inparm" valid_values="" >
-Use 64-bit netCDF format for cam history files.
-Default: TRUE
-</entry>
-
 
 <!-- COSP Cloud Simulator control LOGICALS -->
 
@@ -1798,6 +2063,14 @@ This default logical is set in cospsimulator_intr.F90
 Default: FALSE
 </entry>
 
+<!-- Cloud Macro/Micro-physics -->
+
+<entry id="cld_macmic_num_steps" type="integer" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Number of macrophysics/microphysics substeps.
+Default: 1
+</entry>
+
 <!-- Cldwat -->
 <entry id="cldwat_icritc" type="real" category="conv"
        group="cldwat_nl" valid_values="" >
@@ -1873,11 +2146,35 @@ cloud liquid (cldliq).
 Default: .true.
 </entry>
 
+<entry id="micro_mg_num_steps" type="integer" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Number of substeps over MG microphysics.
+Default: 1
+</entry>
+
+<entry id="micro_mg_precip_frac_method" type="char*16" category="microphys"
+       group="micro_mg_nl" valid_values="max_overlap,in_cloud" >
+Type of precipitation fraction.
+Default: max_overlap
+</entry>
+
+<entry id="micro_mg_berg_eff_factor" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Efficiency factor for berg
+Default: 1
+</entry>
+
 <entry id="microp_uniform" type="logical" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Switch to control whether MG microphysics performs a uniform calculation or not
 (useful for sub-columns)
 Default: .false.
+</entry>
+
+<entry id="ice_sed_ai" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Fall speed parameter for cloud ice
+Default: 700.0
 </entry>
 
 <entry id="micro_mg_dcs" type="real" category="microphys"
@@ -1886,11 +2183,92 @@ Autoconversion size threshold for cloud ice to snow (m)
 Default: set by build-namelist
 </entry>
 
+<entry id="micro_mg_dcs_tdep" type="logical" category="microphysics"
+       group="micro_mg_nl" valid_values="" >
+Switch to turn on temperature dependent DCS.
+Default: .false.
+</entry>
+
+<entry id="micro_mg_accre_enhan_fac" type="real" category="microphysics"
+       group="phys_ctl_nl" valid_values="" >
+Accretion enhancement factor from namelist
+Default: 1.0_r8
+</entry>
+
+<entry id="prc_coef1" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable coefficient for autoconversion
+Default: 1350.0_r8
+</entry>
+
+<entry id="prc_exp" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable exponent coefficient for autoconversion 
+Default: 2.47_r8
+</entry>
+
+<entry id="prc_exp1" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable exponent coefficient for autoconversion
+Default: -1.79_r8
+</entry>
+
+<entry id="cld_sed" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+scale factor for cloud sedimentation velocity
+Default: 1.0D0
+</entry>
+
+
+
+
 <!-- micro_aero -->
-<entry id="microp_aero_bulk_scale" type="real" category="conv"
+<entry id="microp_aero_bulk_scale" type="real" category="microphysics"
        group="microp_aero_nl" valid_values="" >
 prescribed aerosol bulk sulfur scale factor
 Default: 2 
+</entry>
+
+<entry id="microp_aero_wsub_scheme" type="integer" category="microphysics"
+       group="microp_aero_nl" valid_values="" >
+Updraft velocity paramterization option for ice nucleation.
+Default: 1
+</entry>
+
+<entry id="use_hetfrz_classnuc" type="logical" category="microphys"
+       group="phys_ctl_nl" valid_values="" >
+Switch to turn on heterogeneous freezing code.
+Default: .false.
+</entry>
+
+<entry id="hist_hetfrz_classnuc" type="logical" category="microphys"
+       group="hetfrz_classnuc_nl" valid_values="" >
+Add diagnostic output for heterogeneous freezing code.
+Default: .false.
+</entry>
+
+<entry id="use_preexisting_ice" type="logical" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+Switch to turn on treatment of pre-existing ice in the ice nucleation code.
+Default: .false.
+</entry>
+
+<entry id="hist_preexisting_ice" type="logical" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+Add diagnostics for pre-existing ice option in ice nucleation code to history output.
+Default: .false.
+</entry>
+
+<entry id="nucleate_ice_subgrid" type="real" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+Subgrid scaling factor for relative humidity in ice nucleation code.
+Default: set by build-namelist
+</entry>
+
+<entry id="so4_sz_thresh_icenuc" type="real" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+ice nucleation SO2 size threshold for aitken mode
+Default: set by build-namelist
 </entry>
 
 <!-- hkconv Moist Convection -->
@@ -1946,6 +2324,17 @@ Minimum rh for high stable clouds.
 Default: set by build-namelist
 </entry>
 
+<entry id="cldfrc_rhminp" type="real" category="cldfrc" group="cldfrc_nl" valid_values="" >
+Minimum rh for high stable clouds poleward of 60 degrees.
+**This is valid only for RK microphysis scheme**
+Default: set to cldfrc_rhminh
+</entry>
+
+<entry id="cldfrc_rhminp_botmb" type="real" category="cldfrc" group="cldfrc_nl" valid_values="" >
+Maximum pressure level (mbars) where the <varname>cldfrc_rhminp</varname> setting is applied.
+Default: 300. mbar
+</entry>
+
 <entry id="cldfrc_sh1" type="real" category="cldfrc"
        group="cldfrc_nl" valid_values="" >
 parameter for shallow convection cloud fraction.
@@ -1995,6 +2384,18 @@ Critical RH for ice clouds (Wilson & Ballard scheme).
 Default: 0.93
 </entry>
 
+<entry id="cldfrc2m_rhmini" type="real" category="conv"
+       group="cldfrc2m_nl" valid_values="" >
+Minimum rh for ice cloud fraction &gt; 0.
+Default: set by build-namelist
+</entry>
+
+<entry id="cldfrc2m_rhmaxi" type="real" category="conv"
+       group="cldfrc2m_nl" valid_values="" >
+rhi at which ice cloud fraction = 1.
+Default: set by build-namelist
+</entry>
+
 <!-- condensate to rain autoconversion coefficient -->
 <entry id="zmconv_c0_lnd" type="real" category="conv"
        group="zmconv_nl" valid_values="" >
@@ -2019,6 +2420,45 @@ Default: set by build-namelist
 Relaxation time in ZM deep convection scheme.
 Default: set by build-namelist
 </entry>
+
+<entry id="zmconv_dmpdz" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Parcel fractional mass entrainment rate
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_alfa" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Maximum downdraft mass flux fraction
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_trigmem" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Trigger and memory option in ZM deep convection scheme.
+Default: FALSE
+</entry>
+
+<entry id="zmconv_tiedke_add" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+A ZM deep convection parameter
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_cape_cin" type="integer" category="conv"
+       group="zmconv_nl" valid_values="" >
+Number of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_mx_bot_lyr_adj" type="integer" category="conv"
+       group="zmconv_nl" valid_values="" >
+Bottom layer adjustment for setting "launching" level(mx) (to be at maximum moist static energy)
+Default: set by build-namelist
+</entry>
+
+
+
 
 <!-- Cloud sedimentation -->
 
@@ -2194,10 +2634,10 @@ Default: 10
 <!-- Moist Convection and Microphysics -->
 
 <entry id="deep_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="ZM,off" >
+       group="phys_ctl_nl" valid_values="ZM,UNICON,CLUBB_SGS,off" >
 Type of deep convection scheme employed.  'ZM' for Zhang-McFarlane;
 'off' for none.
-Default: 'ZM'
+Default: 'ZM' unless using 'UNICON'
 </entry>
 
 <entry id="microp_scheme" type="char*16" category="conv"
@@ -2212,7 +2652,7 @@ Default: set by build-namelist (depends on value set in configure).
        group="phys_ctl_nl" valid_values="park,RK,CLUBB_SGS" >
 Type of macrophysics scheme employed.  'park' for Park
 (1998); 'RK' for Rasch and Kristjansson (1998); 'CLUBB_SGS' clubb.
-Default: 'park'
+Default: set by build-namelist
 </entry>
 
 <entry id="do_clubb_sgs" type="logical" category="conv"
@@ -2222,10 +2662,10 @@ Default: FALSE
 </entry>
 
 <entry id="shallow_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS" >
+       group="phys_ctl_nl" valid_values="Hack,UW,CLUBB_SGS,UNICON" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
 'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS'
-for CLUBB_SGS.
+for CLUBB_SGS; or UNICON which doesn't distinquish shallow and deep.
 Default: set by build-namelist (depends on <varname>eddy_scheme</varname>).
 </entry>
 
@@ -2234,6 +2674,12 @@ Default: set by build-namelist (depends on <varname>eddy_scheme</varname>).
 Logical switch to turn on turbulent mountain stress calculation in 
 vertical diffusion routine.
 Default: set by build-namelist
+</entry>
+
+<entry id="micro_do_icesupersat" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Apply ice supersaturation adjustment code
+Default: .false.
 </entry>
 
 <entry id="eddy_lbulk_max" type="real" category="conv"
@@ -2263,6 +2709,12 @@ Bottom pressure level at which namelist values for eddy_leng_max and
 eddy_lbulk_max are applied. Default values are used at lower levels (i.e. the 
 boundary layer).
 Default: 100.e3 (hPa)
+</entry>
+
+<entry id="eddy_moist_entrain_a2l" type="real" category="conv"
+       group="vert_diff_nl" valid_values="" >
+Moist entrainment enhancement parameter.
+Default: set by build-namelist
 </entry>
 
 <entry id="kv_top_pressure" type="real" category="conv"
@@ -2312,6 +2764,293 @@ Default: .false.
 This is part of PNNL bug fixes under Polar project.It fixes the
 liq cloud fraction bug in macro and micro physics
 Default: .false.
+</entry>
+
+<entry id="clubb_cloudtop_cooling" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Apply cloud top radiative cooling parameterization
+Default: .false.
+</entry>
+
+<entry id="clubb_rainevap_turb" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Include effects of precip evaporation on turbulent moments
+Default: .false.
+</entry>
+
+<entry id="clubb_expldiff" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Explicit diffusion on temperature and moisture when CLUBB is on
+Default: .false.
+</entry>
+
+<entry id="clubb_stabcorrect" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+CLUBB do explicit diffusion with a stability correction
+Default: .false.
+</entry>
+
+<!-- Clubb timestep -->
+<entry id="clubb_timestep" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+CLUBB timestep.
+Default: set by build-namelist
+</entry>
+
+<entry id="clubb_rnevap_effic" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Rain evaporation efficiency factor.
+Default: set by build-namelist
+</entry>      
+
+<entry id="clubb_do_adv" type="logical" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Switch for CLUBB_ADV
+Default: FALSE
+</entry>
+
+<entry id="clubb_do_deep" type="logical" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Switch for CLUBBND_CAM
+Default: FALSE
+</entry>
+
+<entry id="clubb_liq_deep" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb liquid deep convection factor
+Default: 8.e-6
+</entry>
+
+<entry id="clubb_liq_sh" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb liquid shallow convection factor
+Default: 10.e-6
+</entry>
+
+<entry id="clubb_ice_deep" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb  ice deep convection factor
+Default: 25.e-6
+</entry>
+
+<entry id="clubb_ice_sh" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb ice shallow convection factor
+Default: 50.e-6
+</entry>
+
+<entry id="clubb_tk1" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 268.15D0
+</entry>
+
+<entry id="clubb_tk2" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+temperature thresholds determining the fraction of condensate detrained from ZM as ice
+Default: 238.15D0
+</entry>
+
+
+<!-- Clubb tunable parameters -->
+
+<entry id="C1" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="C2rt" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant associated with the dissipation of the variance of total water
+Default: 1.0
+</entry>
+
+<entry id="C6rt" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 4.0
+</entry>
+
+<entry id="C6rtb" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+High skewness of Newtonian damping of water flux
+Default: 6.0
+</entry>
+
+<entry id="C7" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Low skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="C7b" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+High skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="C8" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant associated with Newtonian damping of the third moment of vertical velocity
+Default: 4.2
+</entry>
+
+<entry id="C11" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Low skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.7
+</entry>
+
+<entry id="C11b" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+High skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.35
+</entry>
+
+<entry id="C14" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant of Newtonian damping of the variances of u-wind and v-wind
+Default: 1.0
+</entry>
+
+<entry id="beta" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant related to skewness of liquid water potential temperature and total water
+Default: 2.4
+</entry>
+
+<entry id="gamma_coef" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant of the width of PDF in w-coordinate Low Skw. gamma coef. Skw. Fnct
+Default: 0.32
+</entry>
+
+<entry id="mu" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Fractional parcel entrainment rate per unit height (1/m)
+Default: 0.001
+</entry>
+
+<entry id="nu1" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Background coefficient of eddy diffusion
+Default: 20.0
+</entry>
+
+<!-- Parameters to indirectly control clubb tunable parameters-->
+
+<entry id="clubb_C1" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="clubb_C2rt" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of total water
+Default: 1.0
+</entry>
+
+<entry id="clubb_C2thl" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+C2 coef. for the thlp2_dp1 term
+Default: 1.0 or clubb_C2rt if it is specified
+</entry>
+
+<entry id="clubb_C2rtthl" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+C2 coef. for the rtpthlp_dp1 term
+Default: 1.3 or 1.3*clubb_C2rt if it is specified
+</entry>
+
+<entry id="clubb_C6rt" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 4.0
+</entry>
+
+<entry id="clubb_C6rtb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewness of Newtonian damping of water flux
+Default: 6.0
+</entry>
+
+<entry id="clubb_C7" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="clubb_C7b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="clubb_C8" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with Newtonian damping of the third moment of vertical velocity
+Default: 4.2
+</entry>
+
+<entry id="clubb_C11" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.7
+</entry>
+
+<entry id="clubb_C11b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.35
+</entry>
+
+<entry id="clubb_C14" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant of Newtonian damping of the variances of u-wind and v-wind
+Default: 1.0
+</entry>
+
+<entry id="clubb_beta" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant related to skewness of liquid water potential temperature and total water
+Default: 2.4
+</entry>
+
+<entry id="clubb_gamma_coef" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant of the width of PDF in w-coordinate
+Default: 0.32
+</entry>
+
+<entry id="clubb_gamma_coefb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High Skw. gamma coef. Skw. Fnct.
+Default: 0.32 or clubb_gamma_coef if it is specified
+</entry>
+
+<entry id="clubb_mu" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Fractional parcel entrainment rate per unit height (1/m)
+Default: 0.001
+</entry>
+
+<entry id="clubb_nu1" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Background coefficient of eddy diffusion
+Default: 20.0
+
+<entry id="clubb_c_K10" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of Kh_zm
+Default: 0.60
+</entry>
+
+<entry id="clubb_wpxp_L_thresh"  type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Lscale threshold: damp C6 & C7  [m]
+Default: 60.0D0
 </entry>
 
 <!-- CARMA Sectional Microphysics -->
@@ -2894,7 +3633,11 @@ Default: set by build-namelist
 
 <entry id="cam_chempkg" type="char*16" category="build"
        group="phys_ctl_nl" valid_values="waccm_mozart,waccm_ghg,trop_mozart,
-                                         trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam7,
+                                         trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus_soag,
+					 trop_mam4_mom,trop_mam7,trop_mam9,
+                                         linoz_mam3,linoz_mam4_resus,
+					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
+					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
@@ -3016,6 +3759,21 @@ Default: .false.
 </entry>
 
 
+<!-- Flag to turn on/off amicphys codes -->
+<entry id="mam_amicphys_optaa" type="integer"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+invokes new microphysics code (single call to amicphys routine) if > 0
+Default: 0
+</entry>
+
+
+<!-- number of so4(+nh4) monolayers needed to "age" a carbon particle -->
+<entry id="n_so4_monolayers_pcage" type="real"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+number of so4(+nh4) monolayers needed to "age" a carbon particle
+Default: Set by namelist
+</entry>
+
 
 <!-- Diagnostics -->
 
@@ -3072,6 +3830,12 @@ Default: .true. if WACCM physics is on, .false. otherwise.
 Switch to fix a bug in ndrop.F90 for "repeated g1 eqn".
 Default: .false. 
 
+
+<entry id="history_clubb" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostics specific to CLUBB.
+Default: .true.
+</entry>
 
 <!-- Radiation -->
 <entry id="radiation_scheme" type="char*16" category="radiation"
@@ -3141,8 +3905,14 @@ to make this functionality default
 Default: FALSE
 </entry>
 
+<entry id="raytau0" type="real"  category="physc_test"
+       group="cam_inparm" valid_values="" >
+Approximate value of decay time at model top (days);
+#if 0., no rayleigh friction is applied
+Default: 0.0D0
+</entry>
 
-<entry id="mode_defs" type="char*256(60)"  category="radiation"
+<entry id="mode_defs" type="char*256(100)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Definitions for the aerosol modes that may be used in the rad_climate and
 rad_diag_* variables.
@@ -3496,6 +4266,18 @@ Default: set by build-namelist.
 <entry id="aer_drydep_list" type="char*16(1000)" category="cam_chem"
        group="aerosol_nl" valid_values="" >
 List of aerosol species that undergo sediment (dry deposition).
+Default: set by build-namelist.
+</entry>
+
+<entry id="sol_factb_interstitial" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Tuning for below cloud scavenging of interstitial modal aerosols.
+Default: set by build-namelist.
+</entry>
+
+<entry id="sol_factic_interstitial" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Tuning for in-cloud scavenging of interstitial modal aerosols.
 Default: set by build-namelist.
 </entry>
 
@@ -3944,6 +4726,99 @@ if <varname>saerodep_flx_type</varname> is 'FIXED'.
 Default: 0 seconds
 </entry>
 
+<entry id="mam_mom_datapath" type="char*256" input_pathname="abs" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>mam_mom_filelist</varname>.
+Default: 'atm/cam/chem/trop_mam/marine_BGC/'
+</entry>
+
+<entry id="mam_mom_filename" type="char*256" input_pathname="rel:mam_mom_datapath" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Filename of dataset for prescribed marine organic matter ocean concentrations.
+Default: 'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'
+</entry>
+
+<entry id="mam_mom_filelist" type="char*256" input_pathname="rel:mam_mom_datapath" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Filename of file that contains a sequence of filenames for prescribed
+marine organic matter ocean concentrations.  The filenames in this
+file are relative to the directory specified
+by <varname>mam_mom_datapath</varname>.
+Default: none
+</entry>
+
+<entry id="mam_mom_rmfile" type="logical" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Remove the file containing prescribed aerosol deposition fluxes from
+local disk when no longer needed.
+Default: FALSE
+</entry>
+
+<entry id="mam_mom_specifier" type="char*32(22)" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Names of variables containing aerosol data in the prescribed aerosol datasets.
+Default: 'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'
+</entry>
+
+<entry id="mam_mom_datatype" type="char*32" category="cam_chem"
+       group="mam_mom_nl" valid_values="CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for data in mam_mom files.
+Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'CYCLICAL'
+</entry>
+
+<entry id="mam_mom_cycle_yr" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+The  cycle year of the prescribed aerosol flux data
+if <varname>mam_mom_type</varname>  is 'CYCLICAL'.
+Format: YYYY
+Default: 1
+</entry>
+
+<entry id="mam_mom_fixed_ymd" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+The date at which the prescribed aerosol flux data is fixed
+if <varname>mam_mom_type</varname> is 'FIXED'.
+Format: YYYYMMDD
+Default: 0
+</entry>
+
+<entry id="mam_mom_fixed_tod" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+The time of day (seconds) corresponding to <varname>mam_mom_fixed_ymd</varname>
+at which the prescribed aerosol flux data is fixed
+if <varname>mam_mom_type</varname> is 'FIXED'.
+Default: 0 seconds
+</entry>
+
+<entry id="mam_mom_bubble_thickness" type="real" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Bubble film thickness (in m) for marine organic aerosol emission
+mechanism.  The physically reasonable range is approximately
+(0.1 - 1) x 10^ -6.
+Default: 0.1e-6
+</entry>
+
+<entry id="mam_mom_mixing_state" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Switch to select mixing state assumption in marine organic aerosol
+code. Currently implemented options: 0 : total external mixture, add
+to mass; 1 : total external mixture, replace mass; 2 : total internal
+mixture, add to mass; 3 : total internal mixture, replace mass.
+Default:0
+</entry>
+
+<entry id="mam_mom_parameterization" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Selection of alternate parameterizations for marine organic matter
+emissions.  Set fmoa=1 for Burrows et al., 2014 parameterization;
+fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for
+simple parameterization based on Quinn et al., 2014; fmoa=4 for
+Rinaldi et al. (JGR, 2013).
+Default:1
+</entry>
+
 <entry id="prescribed_ghg_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="prescribed_ghg_nl" valid_values="" >
 Full pathname of the directory that contains the files specified in
@@ -4275,7 +5150,7 @@ Default: 1
 
 <entry id="chlorine_loading_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
-Filename of dataset for linoz cholirine loading.
+Filename of dataset for linoz chlorine loading.
 Default: none.
 </entry>
 <entry id="chlorine_loading_type" type="char*8" category="cam_chem"
@@ -4690,46 +5565,6 @@ Default: TRUE
 
 <!-- SE dycore -->
 
-<entry id="interpolate_analysis" type="logical(6)" category="se"
-    group="analysis_nl" valid_values="">
-If interpolate_analysis(k) = .true., then the k'th history file will be
-interpolated to a lat/lon grid before output.
-Default: Set by build-namelist (probably all .false.).
-</entry>
-
-<entry id="interp_nlat" type="integer" category="se"
-    group="analysis_nl" valid_values="">
-Latitude dimension of grid for interpolated output.
-If interp_nlat and interp_nlon are zero, reasonable values will be chosen
-based on the cubed-sphere resolution.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="interp_nlon" type="integer" category="se"
-    group="analysis_nl" valid_values="">
-Longitude dimension of grid for interpolated output.
-If interp_nlat and interp_nlon are zero, reasonable values will be chosen
-based on the cubed-sphere resolution.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="interp_type" type="integer" category="se"
-    group="analysis_nl" valid_values="0,1">
-Selects interpolation method for output on lat/lon grid.
-0: Use SE's native high-order method.
-1: Use a bilinear method.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="interp_gridtype" type="integer" category="se"
-    group="analysis_nl" valid_values="1,2,3">
-Selects output grid type for lat/lon interpolated output.
-1: Equally spaced, including poles (FV scalars output grid).
-2: Gauss grid (CAM Eulerian).
-3: Equally spaced, no poles (FV staggered velocity).
-Default: Set by build-namelist.
-</entry>
-
 <entry id="se_nsplit" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Number of dynamics steps per physics timestep.
@@ -4913,6 +5748,12 @@ Default: Set by build-namelist.
 <entry id="max_hypervis_courant" type="real" category="se"
        group="ctl_nl" valid_values="" >
 Default: Set by build-namelist.
+</entry>
+
+<entry id="vthreads" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of vertical threads.
+Default: 1.
 </entry>
 
 

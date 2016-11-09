@@ -15,7 +15,7 @@ module restart_dynamics
   use pmgrid,         only: plon, plat, plev
   use constituents,   only: pcnst
   use dyn_comp,       only: dyn_import_t, dyn_export_t
-  use cam_abortutils,     only: endrun
+  use cam_abortutils, only: endrun
   use fv_control_mod, only: tmass0
   use dynamics_vars,  only: T_FVDYCORE_STATE
   use cam_logfile,    only: iulog
@@ -23,7 +23,7 @@ module restart_dynamics
   use metdata,        only: write_met_restart, read_met_restart
 #endif
   use pio,            only: file_desc_t, io_desc_t, var_desc_t, &
-                             pio_double, pio_unlimited, pio_offset, &
+                             pio_double, pio_unlimited, pio_offset_kind, &
                              pio_setdebuglevel, pio_setframe, &
                              pio_def_var, pio_def_dim, &
                              pio_inq_varid, &
@@ -114,9 +114,9 @@ CONTAINS
   end subroutine set_r_var
   
   subroutine init_restart_varlistw(dyn_out)
-    use cam_abortutils,      only: endrun
-    use dyn_comp, only  : dyn_export_t
-    use constituents, only : cnst_name
+    use cam_abortutils,  only: endrun
+    use dyn_comp,        only: dyn_export_t
+    use constituents,    only: cnst_name
 
     type(dyn_export_t) :: dyn_out
     integer :: vcnt=1
@@ -157,9 +157,9 @@ CONTAINS
   end subroutine init_restart_varlistw
 
   subroutine init_restart_varlistr(dyn_in)
-    use cam_abortutils,      only: endrun
-    use dyn_comp, only  : dyn_import_t
-    use constituents, only : cnst_name
+    use cam_abortutils, only: endrun
+    use dyn_comp,       only: dyn_import_t
+    use constituents,   only: cnst_name
 
     type(dyn_import_t) :: dyn_in
     integer :: vcnt=1
@@ -201,17 +201,19 @@ CONTAINS
 
 
 
-  subroutine init_restart_dynamics(File, hdimids, dyn_out)
+  subroutine init_restart_dynamics(File, dyn_out)
 
-    use dyn_comp, only: dyn_export_t
-    use dyn_grid, only: get_horiz_grid_dim_d
-    use hycoef,   only: init_restart_hycoef
+    use dyn_comp,         only: dyn_export_t
+    use dyn_grid,         only: get_horiz_grid_dim_d
+    use hycoef,           only: init_restart_hycoef
+    use cam_grid_support, only: cam_grid_write_attr, cam_grid_id
+    use cam_grid_support, only: cam_grid_header_info_t
 
     ! Input arguments
     type(File_desc_t),  intent(inout) :: File
-    integer,            pointer       :: hdimids(:)
     type(Dyn_export_t), intent(in)    :: dyn_out
 
+    integer :: hdimids(2)
     integer :: vdimids(2)
     integer :: hdim1, hdim2
     character(len=namlen) :: name
@@ -220,11 +222,11 @@ CONTAINS
     integer :: i, ierr, timelevels
     type(var_desc_t), pointer :: vdesc
     integer :: ndims
+    type(cam_grid_header_info_t) :: info
     
     call init_restart_hycoef(File, vdimids)
 
     call get_horiz_grid_dim_d(hdim1, hdim2)
-    allocate(hdimids(2))
     ierr = PIO_Def_Dim(File, 'lon',hdim1, hdimids(1))
     ierr = PIO_Def_Dim(File, 'lat',hdim2, hdimids(2))
 
@@ -286,7 +288,7 @@ CONTAINS
     integer :: ndcur, nscur
     real(r8) :: time, mold(1), null(0)
     integer :: i, s3d(1), s2d(1), ct
-    integer(kind=pio_offset) :: t
+    integer(kind=pio_offset_kind) :: t
     integer :: ndims, isize(1), timelevels
     type(var_desc_t), pointer :: vdesc
     integer :: hdim1, hdim2
@@ -401,7 +403,7 @@ CONTAINS
        allocate(restartvars(i)%vdesc)
     end if
     vdesc => restartvars(i)%vdesc
-    call pio_setframe(vdesc,int(-1,kind=pio_offset))
+    call pio_setframe(vdesc,int(-1,kind=pio_offset_kind))
   end subroutine get_restart_var
 
   subroutine read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)
@@ -464,10 +466,7 @@ CONTAINS
 
     do i=1,restartvarcnt
        call get_restart_var(i, name, timelevels, ndims, vdesc)
-
-
        ierr = PIO_Inq_varid(File, name, vdesc)
-
        if(ndims==2) then
           call pio_read_darray(File, vdesc, iodesc2d, tmp(1:s2d), ierr)
           restartvars(i)%v2d(:,:) = reshape(tmp(1:s2d), dims3d(1:2))

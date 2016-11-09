@@ -18,7 +18,12 @@ module seasalt_model
 
   public :: seasalt_depvel
 
+  public :: has_mam_mom
+  public :: advance_ocean_data
+  public :: init_ocean_data
+
   logical :: seasalt_active = .false.
+  logical :: has_mam_mom = .false.
 
   integer, parameter :: seasalt_nbin = 4
   integer, parameter :: seasalt_nnum = 0
@@ -33,7 +38,7 @@ module seasalt_model
    !=============================================================================
    !=============================================================================
    subroutine seasalt_init
-     use cam_history,   only: addfld, add_default, phys_decomp, fieldname_len
+     use cam_history,   only: addfld, add_default, fieldname_len
      use constituents,  only: cnst_get_ind
 
      character(len=fieldname_len) :: dummy
@@ -47,10 +52,10 @@ module seasalt_model
      if (.not.seasalt_active) return
 
      dummy = 'RH'
-     call addfld (dummy,'frac',pver, 'A','RH in dry dep calc',phys_decomp)
+     call addfld (dummy,(/ 'lev' /), 'A','frac','RH in dry dep calc')
      do m = 1,seasalt_nbin
         dummy = trim(seasalt_names(m)) // 'DI'
-        call addfld (dummy,'m/s ',pver, 'A',trim(seasalt_names(m))//' deposition diameter',phys_decomp)
+        call addfld (dummy,(/ 'lev' /), 'A','m/s',trim(seasalt_names(m))//' deposition diameter')
      enddo
 
    end subroutine seasalt_init
@@ -127,5 +132,18 @@ module seasalt_model
                                  vlc_dry,vlc_trb,vlc_grv)
 
   endsubroutine seasalt_depvel
+
+! The following stubs are introduced as analogs to the subroutines in
+! the modal version of seasalt_model.F90.
+  subroutine init_ocean_data()
+  end subroutine init_ocean_data
+
+  subroutine advance_ocean_data(state, pbuf2d)
+    use physics_types,  only : physics_state
+    use ppgrid,         only : begchunk, endchunk
+    use physics_buffer, only : physics_buffer_desc
+    type(physics_state), intent(in)    :: state(begchunk:endchunk)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+  end subroutine advance_ocean_data
 
 end module seasalt_model

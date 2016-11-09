@@ -12,7 +12,7 @@ module sox_cldaero_mod
   use modal_aero_data, only : numptrcw_amode, lptr_nh4_cw_amode
   use modal_aero_data, only : cnst_name_cw, specmw_so4_amode
   use cam_history,     only : outfld
-  use cam_history,     only : addfld, add_default, phys_decomp
+  use cam_history,     only : addfld, horiz_only, add_default
   use chem_mods,       only : adv_mass
   use physconst,       only : gravit
   use phys_control,    only : phys_getopts
@@ -61,11 +61,11 @@ contains
        l = lptr_so4_cw_amode(m)
        if (l > 0) then
           call addfld (&
-               trim(cnst_name_cw(l))//'AQSO4','kg/m2/s ',1,  'A', &
-               trim(cnst_name_cw(l))//' aqueous phase chemistry',phys_decomp)
+               trim(cnst_name_cw(l))//'AQSO4',horiz_only,  'A','kg/m2/s', &
+               trim(cnst_name_cw(l))//' aqueous phase chemistry')
           call addfld (&
-               trim(cnst_name_cw(l))//'AQH2SO4','kg/m2/s ',1,  'A', &
-               trim(cnst_name_cw(l))//' aqueous phase chemistry',phys_decomp)
+               trim(cnst_name_cw(l))//'AQH2SO4',horiz_only,  'A','kg/m2/s', &
+               trim(cnst_name_cw(l))//' aqueous phase chemistry')
           if ( history_aerosol ) then 
              call add_default (trim(cnst_name_cw(l))//'AQSO4', 1, ' ')
              call add_default (trim(cnst_name_cw(l))//'AQH2SO4', 1, ' ')
@@ -74,10 +74,10 @@ contains
 
     end do
 
-    call addfld ('AQSO4_H2O2','kg/m2/s ',1,  'A', &
-         'SO4 aqueous phase chemistry due to H2O2',phys_decomp)
-    call addfld ('AQSO4_O3','kg/m2/s ',1,  'A', &
-         'SO4 aqueous phase chemistry due to O3',phys_decomp)
+    call addfld ('AQSO4_H2O2',horiz_only,  'A','kg/m2/s', &
+         'SO4 aqueous phase chemistry due to H2O2')
+    call addfld ('AQSO4_O3',horiz_only,  'A','kg/m2/s', &
+         'SO4 aqueous phase chemistry due to O3')
 
     if ( history_aerosol ) then    
        call add_default ('AQSO4_H2O2', 1, ' ')
@@ -106,8 +106,10 @@ contains
     integer :: i,k
 
     logical :: mode7
+    logical :: mode9
 
     mode7 = ntot_amode == 7
+    mode9 = ntot_amode == 9
 
     conc_obj => cldaero_allocate()
 
@@ -124,8 +126,8 @@ contains
 
     conc_obj%no3c(:,:) = 0._r8
 
-    if (mode7) then
-#if ( defined MODAL_AERO_7MODE )
+    if (mode7 .or. mode9) then
+#if ( defined MODAL_AERO_7MODE || defined MODAL_AERO_9MODE )
 !put ifdef here so ifort will compile 
        id_so4_1a = lptr_so4_cw_amode(1) - loffset
        id_so4_2a = lptr_so4_cw_amode(2) - loffset

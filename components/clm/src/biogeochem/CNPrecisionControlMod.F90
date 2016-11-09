@@ -36,6 +36,7 @@ contains
     use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif
     use clm_varpar , only : nlevdecomp, crop_prog
     use pftvarcon  , only : nc3crop
+    use tracer_varcon          , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -663,86 +664,84 @@ contains
 
       end do ! end of pft loop
 
-      ! column loop
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
+      if (.not. is_active_betr_bgc) then
 
-         do j = 1,nlevdecomp
-            ! initialize the column-level C and N truncation terms
-            cc = 0._r8
-            if ( use_c13 ) cc13 = 0._r8
-            if ( use_c14 ) cc14 = 0._r8
-            cn = 0._r8
-            cp = 0._r8
-
-            ! do tests on state variables for precision control
-            ! for linked C-N state variables, perform precision test on
-            ! the C component, but truncate both C and N components
-
-
-            ! all decomposing pools C and N
-            ! add P pools  -- X.YANG
-            do k = 1, ndecomp_pools
-
-               if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
-                  cc = cc + cs%decomp_cpools_vr_col(c,j,k)
-                  cs%decomp_cpools_vr_col(c,j,k) = 0._r8
-                  cn = cn + ns%decomp_npools_vr_col(c,j,k)
-                  ns%decomp_npools_vr_col(c,j,k) = 0._r8
-                  if ( use_c13 ) then
-                     cc13 = cc13 + c13cs%decomp_cpools_vr_col(c,j,k)
-                     c13cs%decomp_cpools_vr_col(c,j,k) = 0._r8
-                  endif
-                  if ( use_c14 ) then
-                     cc14 = cc14 + c14cs%decomp_cpools_vr_col(c,j,k)
-                     c14cs%decomp_cpools_vr_col(c,j,k) = 0._r8
-                  endif
-
-                  cp = cp + ps%decomp_ppools_vr_col(c,j,k)
-                  ps%decomp_ppools_vr_col(c,j,k) = 0._r8
-               end if
-
-            end do
-
-            ! not doing precision control on soil mineral N, since it will
-            ! be getting the N truncation flux anyway.
-
-            cs%ctrunc_vr_col(c,j) = cs%ctrunc_vr_col(c,j) + cc
-            ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
-            ps%ptrunc_vr_col(c,j) = ps%ptrunc_vr_col(c,j) + cp
-            if ( use_c13 ) then
-               c13cs%ctrunc_vr_col(c,j) = c13cs%ctrunc_vr_col(c,j) + cc13
-            endif
-            if ( use_c14 ) then
-               c14cs%ctrunc_vr_col(c,j) = c14cs%ctrunc_vr_col(c,j) + cc14
-            endif
-         end do
-
-      end do   ! end of column loop
-
-      if (use_nitrif_denitrif) then
-         ! remove small negative perturbations for stability purposes, if any should arise.
-
+         ! column loop
          do fc = 1,num_soilc
             c = filter_soilc(fc)
+
             do j = 1,nlevdecomp
-               if (abs(ns%smin_no3_vr_col(c,j)) < ncrit/1e4_r8) then
-                  if ( ns%smin_no3_vr_col(c,j)  < 0._r8 ) then
-                     write(iulog, *) '-10^-12 < smin_no3 < 0. resetting to zero.'
-                     write(iulog, *) 'smin_no3_vr_col(c,j), c, j: ', ns%smin_no3_vr_col(c,j), c, j
-                     ns%smin_no3_vr_col(c,j) = 0._r8
-                  endif
-               end if
-               if (abs(ns%smin_nh4_vr_col(c,j)) < ncrit/1e4_r8) then
-                  if ( ns%smin_nh4_vr_col(c,j)  < 0._r8 ) then
-                     write(iulog, *) '-10^-12 < smin_nh4 < 0. resetting to zero.'
-                     write(iulog, *) 'smin_nh4_vr_col(c,j), c, j: ', ns%smin_nh4_vr_col(c,j), c, j
-                     ns%smin_nh4_vr_col(c,j) = 0._r8
-                  endif
-               end if
+               ! initialize the column-level C and N truncation terms
+               cc = 0._r8
+               if ( use_c13 ) cc13 = 0._r8
+               if ( use_c14 ) cc14 = 0._r8
+               cn = 0._r8
+
+               ! do tests on state variables for precision control
+               ! for linked C-N state variables, perform precision test on
+               ! the C component, but truncate both C and N components
+
+
+               ! all decomposing pools C and N
+               do k = 1, ndecomp_pools
+
+                  if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
+                     cc = cc + cs%decomp_cpools_vr_col(c,j,k)
+                     cs%decomp_cpools_vr_col(c,j,k) = 0._r8
+                     cn = cn + ns%decomp_npools_vr_col(c,j,k)
+                     ns%decomp_npools_vr_col(c,j,k) = 0._r8
+                     if ( use_c13 ) then
+                        cc13 = cc13 + c13cs%decomp_cpools_vr_col(c,j,k)
+                        c13cs%decomp_cpools_vr_col(c,j,k) = 0._r8
+                     endif
+                     if ( use_c14 ) then
+                        cc14 = cc14 + c14cs%decomp_cpools_vr_col(c,j,k)
+                        c14cs%decomp_cpools_vr_col(c,j,k) = 0._r8
+                     endif
+                  end if
+
+               end do
+
+               ! not doing precision control on soil mineral N, since it will
+               ! be getting the N truncation flux anyway.
+
+               cs%ctrunc_vr_col(c,j) = cs%ctrunc_vr_col(c,j) + cc
+               ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
+               if ( use_c13 ) then
+                  c13cs%ctrunc_vr_col(c,j) = c13cs%ctrunc_vr_col(c,j) + cc13
+               endif
+               if ( use_c14 ) then
+                  c14cs%ctrunc_vr_col(c,j) = c14cs%ctrunc_vr_col(c,j) + cc14
+               endif
             end do
-         end do
-      endif
+
+         end do   ! end of column loop
+
+         if (use_nitrif_denitrif) then
+            ! remove small negative perturbations for stability purposes, if any should arise.
+
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               do j = 1,nlevdecomp
+                  if (abs(ns%smin_no3_vr_col(c,j)) < ncrit/1e4_r8) then
+                     if ( ns%smin_no3_vr_col(c,j)  < 0._r8 ) then
+                        write(iulog, *) '-10^-12 < smin_no3 < 0. resetting to zero.'
+                        write(iulog, *) 'smin_no3_vr_col(c,j), c, j: ', ns%smin_no3_vr_col(c,j), c, j
+                        ns%smin_no3_vr_col(c,j) = 0._r8
+                     endif
+                  end if
+                  if (abs(ns%smin_nh4_vr_col(c,j)) < ncrit/1e4_r8) then
+                     if ( ns%smin_nh4_vr_col(c,j)  < 0._r8 ) then
+                        write(iulog, *) '-10^-12 < smin_nh4 < 0. resetting to zero.'
+                        write(iulog, *) 'smin_nh4_vr_col(c,j), c, j: ', ns%smin_nh4_vr_col(c,j), c, j
+                        ns%smin_nh4_vr_col(c,j) = 0._r8
+                     endif
+                  end if
+               end do
+            end do
+         endif
+
+      endif ! if (.not. is_active_betr_bgc)
 
     end associate
 

@@ -4,6 +4,7 @@ my @groups = qw(run_modes
                 decomposition
                 init_setup
                 cvtgenerator
+                init_ssh_and_landicepressure
                 time_integration
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
@@ -22,6 +23,8 @@ my @groups = qw(run_modes
                 vmix_tanh
                 cvmix
                 forcing
+                shortwaveradiation
+                frazil_ice
                 land_ice_fluxes
                 advection
                 bottom_drag
@@ -32,6 +35,7 @@ my @groups = qw(run_modes
                 split_explicit_ts
                 testing
                 debug
+                constrain_haney_number
                 baroclinic_channel
                 lock_exchange
                 internal_waves
@@ -40,8 +44,17 @@ my @groups = qw(run_modes
                 cvmix_wswsbf
                 iso
                 soma
+                ziso
+                sub_ice_shelf_2d
+                periodic_planar
+                ecosys_column
+                sea_mount
+                isomip
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
+                tracer_forcing_ecosystracers
+                tracer_forcing_dmstracers
+                tracer_forcing_macromoleculestracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus
@@ -52,6 +65,13 @@ my @groups = qw(run_modes
                 am_testcomputeinterval
                 am_highfrequencyoutput
                 am_timefilters
+                am_lagrparttrack
                 am_eliassenpalm
                 am_mixedlayerdepths
+                am_regionalstats
+                am_timeseriesstats
+                am_pointwisestats
+                am_debugdiagnostics
+                am_rpncalculator
+                am_transecttransport
                 );

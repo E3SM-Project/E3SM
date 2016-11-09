@@ -7,7 +7,7 @@ module nctopo_util_mod
   !          This utility is not used during normal CAM simulations.
   !          It will be run if the user sets smooth_phis_numcycle>0 in the
   !          atm_in namelist, and adds PHIS_SM, SGH_SM and SGH30_SM to
-  !          on of the history files. 
+  !          one of the history files. 
   !
   ! 
   ! Author:  M. Taylor (3/2011)
@@ -30,29 +30,28 @@ contains
 
 
 
-  subroutine nctopo_util_inidat( ncid_topo, iodesc, elem)
-    use control_mod,      only: smooth_phis_numcycle
-    use parallel_mod,     only: par
-    use bndry_mod,     only: bndry_exchangev
-    use dof_mod, only           : putUniquePoints
-    use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
-    use edgetype_mod, only : EdgeBuffer_t
-    use ncdio_atm, only : infld
-    use cam_abortutils,     only: endrun
-    use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
+  subroutine nctopo_util_inidat(ncid_topo, elem)
+    use control_mod,    only: smooth_phis_numcycle
+    use parallel_mod,   only: par
+    use bndry_mod,      only: bndry_exchangev
+    use dof_mod,        only: putUniquePoints
+    use edge_mod,       only: edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
+    use edgetype_mod,   only : EdgeBuffer_t
+    use dyn_grid,       only: dyn_decomp
+    use ncdio_atm,      only: infld
+    use cam_abortutils, only: endrun
+    use pio,            only: file_desc_t
 
     implicit none
     type(file_desc_t),intent(inout) :: ncid_topo
-    type(io_desc_t),intent(inout) :: iodesc
     type(element_t), pointer :: elem(:)
 
     real(r8), allocatable :: tmp(:,:)
-    integer :: tlncols, ig, ie, start, j, t, k
+    integer :: ie, i, j, indx
     character(len=40) :: fieldname
     logical :: found
     integer :: kptr
     type(EdgeBuffer_t) :: edge
-    integer :: lsize, nets,nete
 
     if (smooth_phis_numcycle==0) return
 
@@ -61,48 +60,66 @@ contains
        call endrun('PHIS topo generation code code requires npes_se==npes_cam')
     end if
 
-    tlncols = pio_get_local_array_size(iodesc)	
-    allocate(tmp(tlncols,1))
+    allocate(tmp(npsq,nelemd))
+    tmp = 0.0_r8
 
     allocate(PHISdyn(np,np,nelemd))
+    PHISdyn = 0.0_r8
     allocate(SGHdyn(np,np,nelemd))
+    SGHdyn = 0.0_r8
     allocate(SGH30dyn(np,np,nelemd))
+    SGH30dyn = 0.0_r8
 
 
     fieldname = 'PHIS'
     if(par%masterproc  ) write(iulog,*) 'nctopo utility: reading PHIS:'
-    call infld(fieldname, ncid_topo, iodesc, tmp(:,1), found)
+    call infld(fieldname, ncid_topo, 'ncol',                                  &
+         1, npsq, 1, nelemd, tmp(:,:), found, gridname='GLL')
     if(.not. found) then
        call endrun('Could not find PHIS field on input datafile')
     end if
-    start=1
     do ie=1,nelemd
-       call putUniquePoints(elem(ie)%idxP, tmp(start:,1),PHISdyn(:,:,ie))
-       start=start+elem(ie)%idxP%numUniquePts
+       indx = 1
+       do j = 1, np
+          do i = 1, np
+             PHISdyn(i,j,ie) = tmp(indx,ie)
+             indx = indx + 1
+          end do
+       end do
     end do
 
     fieldname = 'SGH'
     if(par%masterproc  ) write(iulog,*) 'nctopo utility: reading SGH:'
-    call infld(fieldname, ncid_topo, iodesc, tmp(:,1), found)
+    call infld(fieldname, ncid_topo, 'ncol',                                  &
+         1, npsq, 1, nelemd, tmp(:,:), found, gridname='GLL')
     if(.not. found) then
        call endrun('Could not find SGH field on input datafile')
     end if
-    start=1
     do ie=1,nelemd
-       call putUniquePoints(elem(ie)%idxP, tmp(start:,1),SGHdyn(:,:,ie))
-       start=start+elem(ie)%idxP%numUniquePts
+       indx = 1
+       do j = 1, np
+          do i = 1, np
+             SGHdyn(i,j,ie) = tmp(indx,ie)
+             indx = indx + 1
+          end do
+       end do
     end do
     
     fieldname = 'SGH30'
     if(par%masterproc  ) write(iulog,*) 'nctopo utility: reading SGH30:'
-    call infld(fieldname, ncid_topo, iodesc, tmp(:,1), found)
+    call infld(fieldname, ncid_topo, 'ncol',                                  &
+         1, npsq, 1, nelemd, tmp(:,:), found, gridname='GLL')
     if(.not. found) then
        call endrun('Could not find SGH30 field on input datafile')
     end if
-    start=1
     do ie=1,nelemd
-       call putUniquePoints(elem(ie)%idxP, tmp(start:,1),SGH30dyn(:,:,ie))
-       start=start+elem(ie)%idxP%numUniquePts
+       indx = 1
+       do j = 1, np
+          do i = 1, np
+             SGH30dyn(i,j,ie) = tmp(indx,ie)
+             indx = indx + 1
+          end do
+       end do
     end do
     
     ! update non-unique points:
@@ -128,9 +145,11 @@ contains
      
     
     deallocate(tmp)
+    deallocate(PHISdyn)
+    deallocate(SGHdyn)
+    deallocate(SGH30dyn)
 
-
-  end subroutine 
+  end subroutine nctopo_util_inidat
 
 
 

@@ -1,3 +1,21 @@
+timing_160320: Added routines t_set_prefixf and t_unset_prefixf.
+               Setting the prefix adds this to the beginning of all subsequent 
+               timer event names (defined in t_startf/t_stopf).
+               Also doubling default hash index tablesize to 2048.
+               [Patrick Worley]
+timing_160124: Added option to prefix timer names with detail level. This is
+               controlled by a new namelist variable (profile_add_detail).
+               The default is to not enable this option. It is meant to be
+               used for inspecting the profile detail definitions and
+               associated logic.
+               [Patrick Worley]
+timing_150903: Changed API to be compatible with NCAR CIME version of timing
+               library: (a) changed handle argument from integer8 to integer
+               in t_startf and t_stopf, and disabled use of handles in these
+               routines until gptl.c can be updated; (b) added MaxThreads
+               optional argument to t_initf, though it does not do anything
+               yet.
+               [Patrick Worley]
 timing_150518: Disabled abort when calling GPTL routines before GPTLinitialize
                (so can use with Chombo library, for example); changed top 
                level default from nanotimer to MPI_WTIME. 

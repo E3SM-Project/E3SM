@@ -40,7 +40,7 @@ contains
        atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
        waterflux_vars, waterstate_vars, &
        soilhydrology_vars, aerosol_vars, &
-       soil_water_retention_curve)
+       soil_water_retention_curve, betrtracer_vars, tracerflux_vars, tracerstate_vars)
     !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of soil/snow
@@ -61,7 +61,7 @@ contains
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak 
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
-    use clm_varctl           , only : use_cn
+    use clm_varctl           , only : use_cn, use_betr
     use clm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use clm_time_manager     , only : get_step_size, get_nstep
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
@@ -69,6 +69,13 @@ contains
     use SoilHydrologyMod     , only : CLMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater 
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+    use TracerParamsMod      , only : pre_diagnose_soilcol_water_flux, diagnose_advect_water_flux, calc_smp_l
+    use BetrBGCMod           , only : calc_dew_sub_flux
+    use tracerfluxType       , only : tracerflux_type
+    use tracerstatetype      , only : tracerstate_type
+    use BeTRTracerType       , only : betrtracer_type        
+    use clm_varctl           , only : use_vsfm
+    use SoilHydrologyMod     , only : DrainageVSFM
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -91,6 +98,9 @@ contains
     type(aerosol_type)       , intent(inout) :: aerosol_vars
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
+    type(betrtracer_type)     , intent(in)    :: betrtracer_vars                    ! betr configuration information
+    type(tracerflux_type)     , intent(inout) :: tracerflux_vars                    ! tracer flux
+    type(tracerstate_type)    , intent(inout) :: tracerstate_vars                   ! tracer state variables data structure    
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                    ! indices
@@ -142,6 +152,11 @@ contains
          h2osno_top         => waterstate_vars%h2osno_top_col         , & ! Output: [real(r8) (:)   ]  mass of snow in top layer (col) [kg]    
          wf                 => waterstate_vars%wf_col                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m 
          wf2                => waterstate_vars%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 
+         h2osoi_liqvol      => waterstate_vars%h2osoi_liqvol_col      , & ! Output: [real(r8) (:,:) ]  volumetric liquid water content
+         h2osoi_icevol      => waterstate_vars%h2osoi_icevol_col      , & ! Output: [real(r8) (:,:) ]  volumetric liquid water content         
+         air_vol            => waterstate_vars%air_vol_col            , & ! Output: [real(r8) (:,:) ]  volumetric air porosity
+         eff_porosity       => soilstate_vars%eff_porosity_col        , & ! Output: [real(r8) (:,:) ]  effective soil porosity
+
 
          watsat             => soilstate_vars%watsat_col              , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          sucsat             => soilstate_vars%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)             
@@ -161,10 +176,13 @@ contains
       call BuildSnowFilter(bounds, num_nolakec, filter_nolakec, &
            num_snowc, filter_snowc, num_nosnowc, filter_nosnowc)
 
+         
       ! Determine the change of snow mass and the snow water onto soil
 
       call SnowWater(bounds, num_snowc, filter_snowc, num_nosnowc, filter_nosnowc, &
            atm2lnd_vars, waterflux_vars, waterstate_vars, aerosol_vars)
+
+            
 
       ! mapping soilmoist from CLM to VIC layers for runoff calculations
       if (use_vichydro) then
@@ -179,10 +197,32 @@ contains
            energyflux_vars, soilhydrology_vars, soilstate_vars, temperature_vars, &
            waterflux_vars, waterstate_vars)
 
+      if (use_betr) then
+        call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+          waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi))
+      endif
+      
+      if (use_vsfm) then
+         call DrainageVSFM(bounds, num_hydrologyc, filter_hydrologyc, &
+              num_urbanc, filter_urbanc,&
+              temperature_vars, soilhydrology_vars, soilstate_vars, &
+              waterstate_vars, waterflux_vars)
+      endif
+
       call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
             soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &
             soil_water_retention_curve)
-
+            
+      if (use_betr) then
+        call diagnose_advect_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+             waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi),                              &
+             soilhydrology_vars%qcharge_col(bounds%begc:bounds%endc), waterflux_vars)                
+        
+        call calc_smp_l(bounds, 1, nlevgrnd, num_hydrologyc, filter_hydrologyc, &
+             temperature_vars%t_soisno_col(bounds%begc:bounds%endc, 1:nlevgrnd), &
+             soilstate_vars, waterstate_vars, soil_water_retention_curve)
+      endif
+             
       if (use_vichydro) then
          ! mapping soilmoist from CLM to VIC layers for runoff calculations
          call CLMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -192,6 +232,12 @@ contains
       call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
            soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars) 
 
+      if (use_betr) then
+         !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
+         !Jinyun Tang, Feb 4, 2015
+         call calc_dew_sub_flux(bounds, num_hydrologyc, filter_hydrologyc, &
+              waterstate_vars, waterflux_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars)      
+      endif           
       ! Natural compaction and metamorphosis.
       call SnowCompaction(bounds, num_snowc, filter_snowc, &
            temperature_vars, waterstate_vars)
@@ -343,6 +389,11 @@ contains
                  .or. ctype(c) == icol_roof) .and. j > nlevurb) then
             else
                h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) + h2osoi_ice(c,j)/(dz(c,j)*denice)
+               h2osoi_liqvol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o)
+               h2osoi_icevol(c,j) = h2osoi_ice(c,j)/(dz(c,j)*denice)
+               air_vol(c,j)       = max(1.e-4_r8,watsat(c,j) - h2osoi_vol(c,j))
+               eff_porosity(c,j)  = max(0.01_r8,watsat(c,j) - h2osoi_ice(c,j)/(dz(c,j)*denice))
+               
             end if
          end do
       end do
@@ -372,22 +423,6 @@ contains
             end do
          end do
       end if
-
-      ! Update smp_l for history and for ch4Mod.
-      ! ZMS: Note, this form, which seems to be the same as used in SoilWater, DOES NOT distinguish between
-      ! ice and water volume, in contrast to the soilpsi calculation above. It won't be used in ch4Mod if
-      ! t_soisno <= tfrz, though.
-      do j = 1, nlevgrnd
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-
-            s_node = max(h2osoi_vol(c,j)/watsat(c,j), 0.01_r8)
-            s_node = min(1.0_r8, s_node)
-
-            smp_l(c,j) = -sucsat(c,j)*s_node**(-bsw(c,j))
-            smp_l(c,j) = max(smpmin(c), smp_l(c,j))
-         end do
-      end do
 
       if (use_cn) then
          ! Available soil water up to a depth of 0.05 m.
