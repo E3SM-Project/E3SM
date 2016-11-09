@@ -206,7 +206,7 @@
                      description="Whether to re-compute SST and sea-ice fields from surface input data set; should be set to .true. when running case 8"
                      possible_values="true or false"/>
 
-                <nml_option name="config_frac_seaice"           type="logical"       default_value="false"
+                <nml_option name="config_frac_seaice"           type="logical"       default_value="true"
                      units="-"
                      description="Whether to switch sea-ice threshold from 0.5 to 0.02"
                      possible_values="true or false"/>

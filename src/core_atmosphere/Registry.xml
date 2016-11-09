@@ -149,7 +149,7 @@
                      description="Scaling coefficient of $\delta x^3$ to obtain $\nabla^4$ diffusion coefficient"
                      possible_values="Non-negative real values"/>
 
-                <nml_option name="config_del4u_div_factor" type="real" default_value="1.0" in_defaults="false"
+                <nml_option name="config_del4u_div_factor" type="real" default_value="10.0" in_defaults="false"
                      units="-"
                      description="Scaling factor for the divergent component of $\nabla^4 u$ calculation"
                      possible_values="Positive real values"/>
@@ -239,7 +239,7 @@
                      description="Amount of upwinding in APVM"
                      possible_values="0 $\leq$ config_apvm_upwinding $\leq$ 1"/>
 
-                <nml_option name="config_h_ScaleWithMesh" type="logical" default_value="true"
+                <nml_option name="config_h_ScaleWithMesh" type="logical" default_value="true" in_defaults="false"
                      units="-"
                      description="Scale eddy viscosities with mesh-density function for horizontal diffusion"
                      possible_values=".true. or .false."/>
@@ -1725,7 +1725,7 @@
 
                 <!-- NAMELIST VARIABLES ADDED FOR PHYSICS CONFIGURATION: -->
                 
-                <nml_option name="config_frac_seaice" type="logical" default_value="false" in_defaults="false"
+                <nml_option name="config_frac_seaice" type="logical" default_value="true" in_defaults="false"
                      units="-"
                      description="logical for configuration of fractional sea-ice"
                      possible_values=".true. for sea-ice between 0 or 1; .false. for sea-ice equal to 0 or 1 (flag)."/>
