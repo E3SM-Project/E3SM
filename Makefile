@@ -160,31 +160,6 @@ ifort:
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
-ifort-phi:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpiifort" \
-	"CC_PARALLEL = mpiicc" \
-	"CXX_PARALLEL = mpiicpc" \
-	"FC_SERIAL = ifort" \
-	"CC_SERIAL = icc" \
-	"CXX_SERIAL = icpc" \
-	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -O0 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -O0 -g -traceback" \
-	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
-	"LDFLAGS_DEBUG = -O0 -g -fpe0 -traceback" \
-	"FFLAGS_OMP = -qopenmp" \
-	"CFLAGS_OMP = -qopenmp" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
-
 ifort-scorep:
 	( $(MAKE) all \
 	"FC_PARALLEL = scorep --compiler mpif90" \

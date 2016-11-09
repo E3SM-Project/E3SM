@@ -5,15 +5,6 @@ For general information on how to install MPAS, see https://mpas-dev.github.io.
 Additional notes on building MPAS on specific architectures are summarized here.
 
 
-ifort-phi: Compiling MPAS on Intel Xeon Phi Knights Landing
-----------
-The compiler options specified in the Makefile apply to the Knights Landing
-architecture only, not the Knights Corner architecture. The latter requires
-cross-compiling amongst others and is not supported by this release of MPAS.
-The compiler optimization settings are conservative and users may experiment
-with additional options such as "-xMIC-AVX512" and/or "-align array64byte".
-
-
 gfortran-clang: Compiling MPAS on MacOSX (10.11 El Capitan - 10.12 Sierra)
 ----------
 MPAS should compile out of the box on MacOSX with the standard (OS) clang compiler
