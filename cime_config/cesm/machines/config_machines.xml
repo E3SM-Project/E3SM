@@ -940,13 +940,13 @@
 	<command name="load">netcdf/4.4.1</command>
       </modules>
       <modules mpilib="mpt">
-	<command name="load">netcdf/4.4.1</command>
-<!--	<command name="load">netcdf-mpi/4.4.1</command> -->
-	<command name="load">pnetcdf/1.7.0</command>
+	<command name="load">netcdf-mpi/4.4.1</command> 
+<!--	<command name="load">pnetcdf/1.7.0</command> currently broken -->
       </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
+      <env name="PNETCDF">/picnic/u/home/jedwards</env>
     </environment_variables>
   </machine>
 
