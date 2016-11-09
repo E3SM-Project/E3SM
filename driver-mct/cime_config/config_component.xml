@@ -3065,6 +3065,8 @@
     <values>
       <value compset="_DLND.*_CISM\d">year</value>
       <value compset="_MPAS"       >hour</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day</value>
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
@@ -3089,6 +3091,8 @@
       <value compset="_DATM.*_DOCN%US20">24</value>
       <value compset="_MPAS">1</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
+      <value compset=".+" grid="a%ne4np4">12</value>
+      <value compset=".+" grid="a%ne11np4">12</value>
       <value compset=".+" grid="a%ne60np4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>
       <value compset=".+" grid="a%ne240np4">96</value>
@@ -3099,6 +3103,8 @@
       <value compset=".+" grid="1x1_urbanc">48</value>
       <value compset=".+" grid="1x1_mexico">24</value>
       <value compset=".+" grid="1x1_vancou">24</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
       <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
@@ -3115,6 +3121,8 @@
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -3128,6 +3136,8 @@
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -3149,6 +3159,9 @@
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oRRS18to6">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oRRS15to5">96</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -3162,6 +3175,8 @@
     <default_value>1</default_value>
     <values>
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -3172,11 +3187,15 @@
     <type>integer</type>
     <default_value>8</default_value>
     <values>
+      <value compset=".+" grid="a%ne4np4">6</value>
+      <value compset=".+" grid="a%ne11np4">6</value>
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">8</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -3343,6 +3362,7 @@
       <value compset="^2000.+DATM%NYF"				>379.000</value>
       <value compset="^2000.+DATM%IAF"				>379.000</value>
       <value compset="^HIST.+DATM"				>367.0</value>
+      <value compset="^20TR.+DATM"				>367.0</value>
       <value compset="^4804.+DATM"				>367.0</value>
       <value compset="^RCP2.+DATM"				>367.0</value>
       <value compset="^RCP4.+DATM"				>367.0</value>
@@ -3350,6 +3370,7 @@
       <value compset="^RCP8.+DATM"				>367.0</value>
       <value compset="^2000.+XATM"				>379.000</value>
       <value compset="^HIST.+CAM"				>0.000001</value>
+      <value compset="^20TR.+CAM"				>0.000001</value>
       <value compset="^5505.+CAM"				>0.000001</value>
       <value compset="^RCP2.+CAM"				>0.000001</value>
       <value compset="^RCP4.+CAM"				>0.000001</value>
@@ -3361,6 +3382,12 @@
       <value compset="^AR95"					>368.9</value>
       <value compset="^AR97"					>368.9</value>
       <value compset="^2003"					>367.0</value>
+      <value compset="^1850.+AV1C"				>284.725</value>
+      <value compset="^20TR.+AV1C"				>284.725</value>
+      <value compset="^2000.+AV1C-03"				>368.865</value>
+      <value compset="^2000.+AV1C-04"				>368.865</value>
+      <value compset="^2000.+AV1C-04P"				>368.865</value>
+      <value compset="^2000.+AV1C-L"				>368.865</value>
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
