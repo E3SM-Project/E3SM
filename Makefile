@@ -149,11 +149,36 @@ ifort:
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"FFLAGS_OMP = -openmp" \
-	"CFLAGS_OMP = -openmp" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+ifort-scorep:
+	( $(MAKE) all \
+	"FC_PARALLEL = scorep --compiler mpif90" \
+	"CC_PARALLEL = scorep --compiler mpicc" \
+	"CXX_PARALLEL = scorep --compiler mpicxx" \
+	"FC_SERIAL = ifort" \
+	"CC_SERIAL = icc" \
+	"CXX_SERIAL = icpc" \
+	"FFLAGS_PROMOTION = -real-size 64" \
+	"FFLAGS_OPT = -O3 -g -convert big_endian -FR" \
+	"CFLAGS_OPT = -O3 -g" \
+	"CXXFLAGS_OPT = -O3 -g" \
+	"LDFLAGS_OPT = -O3 -g" \
+	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
+	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
@@ -177,7 +202,7 @@ ifort-gcc:
 	"CFLAGS_DEBUG = -g" \
 	"CXXFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"FFLAGS_OMP = -openmp" \
+	"FFLAGS_OMP = -qopenmp" \
 	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -193,6 +218,31 @@ gfortran:
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
+	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"CFLAGS_OPT = -O3 -m64" \
+	"CXXFLAGS_OPT = -O3 -m64" \
+	"LDFLAGS_OPT = -O3 -m64" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"CFLAGS_DEBUG = -g -m64" \
+	"CXXFLAGS_DEBUG = -O3 -m64" \
+	"LDFLAGS_DEBUG = -g -m64" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+gfortran-clang:
+	( $(MAKE) all \
+	"FC_PARALLEL = mpif90" \
+	"CC_PARALLEL = mpicc -cc=clang" \
+	"CXX_PARALLEL = mpicxx -cxx=clang++" \
+	"FC_SERIAL = gfortran" \
+	"CC_SERIAL = clang" \
+	"CXX_SERIAL = clang++" \
 	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
 	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
 	"CFLAGS_OPT = -O3 -m64" \
@@ -309,8 +359,8 @@ intel-nersc:
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -openmp" \
-	"CFLAGS_OMP = -openmp" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
 	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -gen-interfaces -warn interfaces -traceback" \
 	"CFLAGS_DEBUG = -g -traceback" \
 	"CXXFLAGS_DEBUG = -g -traceback" \
@@ -386,6 +436,11 @@ ifneq "$(NETCDF)" ""
 	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
 		LIBS += $(NCLIBF)
 	endif # CHECK FOR NETCDF4
+	ifneq "$(NETCDFF)" ""
+		FCINCLUDES += -I$(NETCDFF)/include
+		LIBS += -L$(NETCDFF)/lib
+		LIBS += $(NCLIBF)
+	endif
 	LIBS += $(NCLIB)
 endif
 
@@ -610,7 +665,24 @@ endif
 endif
 
 
-mpas_main:
+compiler_test:
+ifeq "$(OPENMP)" "true"
+	@echo "Testing compiler for OpenMP support"
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@rm -fr conftest.*
+endif
+
+
+mpas_main: compiler_test
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
