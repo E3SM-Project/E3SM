@@ -874,7 +874,6 @@ end if
     !
     implicit none
     !
-#include "finclude/petscsys.h"
     ! !ARGUMENTS:
     class(soilstate_type)            :: this
     type(bounds_type), intent(in)    :: bounds_proc

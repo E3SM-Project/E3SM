@@ -659,6 +659,7 @@ sub write_filepath_cesmbld
 		     "external_models/mpp/src/mpp/thermal",
 		     "external_models/mpp/src/mpp/util",
 		     "external_models/mpp/src/mpp/vsfm",
+                     "external_models/emi/src/",
 		     "utils", 
 		     "cpl" );
 

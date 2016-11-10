@@ -13,7 +13,15 @@ module domainLateralMod
   ! - Information regarding lateral connectivity of the land grid,
   ! - PETSc-based framework to exchange data across processors.
   !
+#include <petsc/finclude/petsc.h>
+  !
   ! !USES:
+  use petscsys
+  use petscvec
+  use petscmat
+  use petscts
+  use petscdm
+  use petscdmda
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
@@ -25,17 +33,6 @@ module domainLateralMod
   ! !PUBLIC TYPES:
   implicit none
   private
-  !
-#include "finclude/petscsys.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscvec.h90"
-#include "finclude/petscmat.h"
-#include "finclude/petscmat.h90"
-#include "finclude/petscdm.h"
-#include "finclude/petscdm.h90"
-#include "finclude/petscis.h"
-#include "finclude/petscis.h90"
-#include "finclude/petscviewer.h"    
   !
   type, public :: domainlateral_type
 
@@ -380,8 +377,6 @@ contains
     use UnstructuredGridType, only : ScatterDataG2L
     !
     implicit none
-    !
-#include "finclude/petscsys.h"
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in)  :: bounds_proc       ! bound information at processor level

@@ -64,6 +64,8 @@ contains
     use clm_varctl       , only: lateral_connectivity, domain_decomp_type
     use decompInitMod    , only: decompInit_lnd_using_gp, decompInit_ghosts
     use domainLateralMod , only: ldomain_lateral, domainlateral_init
+    use SoilTemperatureMod, only : init_soil_temperature
+    use ExternalModelInterfaceMod, only : EMI_Determine_Active_EMs
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -106,6 +108,7 @@ contains
     call landunit_varcon_init()
     call ncd_pio_init()
     call clm_petsc_init()
+    call init_soil_temperature()
 
     if (masterproc) call control_print()
 
@@ -275,6 +278,9 @@ contains
     call lun%Init (bounds_proc%begl_all, bounds_proc%endl_all)
     call col%Init (bounds_proc%begc_all, bounds_proc%endc_all)
     call pft%Init (bounds_proc%begp_all, bounds_proc%endp_all)
+
+    ! Determine the number of active external models.
+    call EMI_Determine_Active_EMs()
 
     ! Build hierarchy and topological info for derived types
     ! This is needed here for the following call to decompInit_glcp
@@ -898,24 +904,27 @@ contains
     ! CLM initialization - third phase
     !
     ! !USES:
-    use clm_varpar     , only : nlevsoi, nlevgrnd, nlevsno, max_patch_per_col
-    use landunit_varcon, only : istsoil, istcrop, istice_mec, istice_mec
-    use landunit_varcon, only : istice, istdlak, istwet, max_lunit
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use clm_varctl     , only : use_vsfm, vsfm_use_dynamic_linesearch
-    use clm_varctl     , only : vsfm_include_seepage_bc, vsfm_satfunc_type
-    use clm_varctl     , only : vsfm_lateral_model_type
-    use clm_varctl     , only : use_petsc_thermal_model
-    use clm_varctl     , only : lateral_connectivity
-    use clm_varctl     , only : finidat
-    use decompMod      , only : get_proc_clumps
-    use mpp_varpar     , only : mpp_varpar_init
-    use mpp_varcon     , only : mpp_varcon_init_landunit
-    use mpp_varcon     , only : mpp_varcon_init_column
-    use mpp_varctl     , only : mpp_varctl_init_vsfm
-    use mpp_varctl     , only : mpp_varctl_init_petsc_thermal
-    use mpp_bounds     , only : mpp_bounds_init_proc_bounds
-    use mpp_bounds     , only : mpp_bounds_init_clump
+    use clm_varpar               , only : nlevsoi, nlevgrnd, nlevsno, max_patch_per_col
+    use landunit_varcon          , only : istsoil, istcrop, istice_mec, istice_mec
+    use landunit_varcon          , only : istice, istdlak, istwet, max_lunit
+    use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use clm_varctl               , only : use_vsfm, vsfm_use_dynamic_linesearch
+    use clm_varctl               , only : vsfm_include_seepage_bc, vsfm_satfunc_type
+    use clm_varctl               , only : vsfm_lateral_model_type
+    use clm_varctl               , only : use_petsc_thermal_model
+    use clm_varctl               , only : lateral_connectivity
+    use clm_varctl               , only : finidat
+    use decompMod                , only : get_proc_clumps
+    use mpp_varpar               , only : mpp_varpar_init
+    use mpp_varcon               , only : mpp_varcon_init_landunit
+    use mpp_varcon               , only : mpp_varcon_init_column
+    use mpp_varctl               , only : mpp_varctl_init_vsfm
+    use mpp_varctl               , only : mpp_varctl_init_petsc_thermal
+    use mpp_bounds               , only : mpp_bounds_init_proc_bounds
+    use mpp_bounds               , only : mpp_bounds_init_clump
+    use ExternalModelInterfaceMod, only : EMI_Init_EM
+    use ExternalModelConstants   , only : EM_ID_VSFM
+    use ExternalModelConstants   , only : EM_ID_PTM
 
     implicit none
 
@@ -958,8 +967,13 @@ contains
 
     call mpp_bounds_init_clump(get_proc_clumps())
 
-    call initialize_vsfm()
-    call initialize_petsc_thermal_model()
+    if (use_vsfm) then
+       call EMI_Init_EM(EM_ID_VSFM)
+    endif
+
+    if (use_petsc_thermal_model) then
+       call EMI_Init_EM(EM_ID_PTM)
+    endif
 
     call t_stopf('clm_init3')
 
@@ -967,296 +981,27 @@ contains
   end subroutine initialize3
 
   !-----------------------------------------------------------------------
-  subroutine initialize_vsfm( )
-    !
-    ! !DESCRIPTION:
-    ! Initialization VSFM
-    !
-    ! !USES:
-    use spmdMod                , only : mpicom, npes
-    use clm_varctl             , only : use_vsfm
-    use filterMod              , only : filter
-    use decompMod              , only : get_proc_clumps
-    use clm_varpar             , only : nlevgrnd, nlevsno
-    use clm_varctl             , only : finidat
-    use shr_infnan_mod         , only : shr_infnan_isnan
-    use abortutils             , only : endrun
-    use shr_infnan_mod         , only : isnan => shr_infnan_isnan
-    use clm_varctl             , only : vsfm_lateral_model_type
-#ifdef USE_PETSC_LIB
-    use MultiPhysicsProbVSFM     , only : vsfm_mpp
-    use MPPVSFMALM_Initialize    , only : MPPVSFMALM_Init
-    use MultiPhysicsProbConstants, only : VAR_MASS
-    use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
-    use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
-#endif
-    !
-    ! !ARGUMENTS
-    implicit none
-    !
-#ifdef USE_PETSC_LIB
-#include "finclude/petscsys.h"
-#endif
-    !
-    ! !LOCAL VARIABLES:
-    integer               :: nclumps               ! number of clumps on this processor
-    integer               :: nc                    ! clump index
-    integer               :: c,g,fc,j,l            ! do loop indices
-    type(bounds_type)     :: bounds_proc
-    real(r8)              :: z_up, z_dn            ! [m]
-
-    real(r8), pointer     :: z(:,:)                ! centeroid at "z" level [m]
-    real(r8), pointer     :: zi(:,:)               ! interface level below a "z" level (m)
-    real(r8), pointer     :: dz(:,:)               ! layer thickness at "z" level (m)
-    real(r8), pointer     :: h2osoi_liq(:,:)       ! liquid water (kg/m2)
-    real(r8), pointer     :: h2osoi_ice(:,:)       ! ice water (kg/m2)
-    real(r8), pointer     :: smp_l(:,:)            ! soil matrix potential [mm]
-    real(r8), pointer     :: zwt(:)                ! water table depth (m)
-    real(r8), pointer     :: vsfm_mass_col_1d(:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
-    real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
-    real(r8), pointer     :: mflx_snowlyr_col_1d(:)! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    real(r8), pointer     :: mflx_snowlyr_col(:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    real(r8), pointer     :: soilp_col(:,:)        ! soil liquid pressure [Pa]
-    real(r8), pointer     :: vsfm_soilp_col_1d(:)  ! 1D soil liquid pressure for VSFM [Pa]
-    real(r8), pointer     :: xc_col(:)             ! x-position of grid cell [m]
-    real(r8), pointer     :: yc_col(:)             ! y-position of grid cell [m]
-    real(r8), pointer     :: zc_col(:)             ! z-position of grid cell [m]
-    real(r8), pointer     :: area_col(:)           ! area of grid cell [m^2]
-    integer, pointer      :: grid_owner(:)         ! MPI rank owner of grid cell
-
-    integer               :: nblocks
-    integer               :: beg_idx
-    integer               :: ndata_send              ! number of data sent by local mpi rank
-    integer               :: ndata_recv              ! number of data received by local mpi rank
-    real(r8), pointer     :: data_send(:)            ! data sent by local mpi rank
-    real(r8), pointer     :: data_recv(:)            ! data received by local mpi rank
-    logical               :: restart_vsfm          ! does VSFM need to be restarted
-#ifdef USE_PETSC_LIB
-    PetscInt              :: jwt                   ! index of first unsaturated soil layer
-    PetscInt              :: idx                   ! 1D index for (c,j)
-    PetscInt              :: soe_auxvar_id         ! Index of system-of-equation's (SoE's) auxvar
-    PetscErrorCode        :: ierr                  ! get error code from PETSc
-    PetscInt              :: discretization_type   !
-#endif
-    integer              :: ncells_ghost          ! total number of ghost gridcells on the processor
-    integer              :: nlunits_ghost         ! total number of ghost landunits on the processor
-    integer              :: ncols_ghost           ! total number of ghost columns on the processor
-    integer              :: npfts_ghost           ! total number of ghost pfts on the processor
-    integer              :: nCohorts_ghost        ! total number of ghost cohorts on the processor
-
-    character(len=32)    :: subname = 'initialize3'
-    !----------------------------------------------------------------------
-
-    z                    =>    col%z
-    zi                   =>    col%zi                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-    dz                   =>    col%dz                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-
-    h2osoi_liq           =>    waterstate_vars%h2osoi_liq_col     ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
-    h2osoi_ice           =>    waterstate_vars%h2osoi_ice_col     ! Output: [real(r8) (:,:) ]  ice water (kg/m2)
-    smp_l                =>    soilstate_vars%smp_l_col           ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
-    zwt                  =>    soilhydrology_vars%zwt_col         ! Output: [real(r8) (:)   ]  water table depth (m)
-    vsfm_mass_col_1d     =>    waterstate_vars%vsfm_mass_col_1d   ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
-    vsfm_smpl_col_1d     =>    waterstate_vars%vsfm_smpl_col_1d   ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
-    mflx_snowlyr_col_1d  =>    waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    mflx_snowlyr_col     =>    waterflux_vars%mflx_snowlyr_col    ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    vsfm_soilp_col_1d    =>    waterstate_vars%vsfm_soilp_col_1d  ! Output: [real(r8) (:)   ]  1D soil liquid pressure from VSFM [Pa]
-    soilp_col            =>    waterstate_vars%soilp_col          ! Input:  [real(r8) (:)   ]  col soil liquid pressure
-
-    if (.not.use_vsfm) return
-
-#ifdef USE_PETSC_LIB
-
-    call get_proc_bounds(bounds_proc)
-    nclumps = get_proc_clumps()
-
-    if (nclumps /= 1) then
-       call endrun(msg='ERROR clm_initializeMod: '//&
-           'VSFM model only supported for clumps = 1')
-    endif
-
-    if (npes > 1) then
-       if (vsfm_lateral_model_type /= 'none' .or. &
-           vsfm_lateral_model_type /= 'source_sink') then
-       call endrun(msg='ERROR clm_initializeMod: ' // &
-            'For a parallel run, vsfm_lateral_model_type should be ' // &
-            'none or source_sink' // errMsg(__FILE__, __LINE__))
-       endif
-    endif
-
-    nc = 1
-
-    call MPPVSFMALM_Init(iam)
-
-    ! PreSolve: Allows saturation value to be computed based on ICs and stored
-    !           in GE auxvar
-    call vsfm_mpp%sysofeqns%SetDtime(1.d0)
-    call vsfm_mpp%sysofeqns%PreSolve()
-
-    ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
-    !            SoE auxvar
-    call vsfm_mpp%sysofeqns%PostSolve()
-
-
-    restart_vsfm = .false.
-
-    if (nsrest == nsrStartup) then
-
-       if (finidat == ' ') then
-       else
-          restart_vsfm = .true.
-       end if
-
-    else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
-       restart_vsfm = .true.
-    end if
-
-    if (restart_vsfm) then
-
-       if (masterproc) then
-          write(iulog,*)'Setting initial conditions for VSFM'
-       end if
-
-       ! Save data in 1D array for VSFM
-       do c = bounds_proc%begc, bounds_proc%endc
-          do j = 1, nlevgrnd
-
-             ! Ensure that soilp_col has valid values
-             if (shr_infnan_isnan(soilp_col(c,j))) then
-                write(iulog, *) 'VSFM is on and soilp_col = NaN for: '
-                write(iulog, *) 'c = ',c
-                write(iulog, *) 'j = ',j
-                write(iulog, *) 'Possible source of error: The finidat or restart file being ' // &
-                   'used may have been produced with VSFM turned off.'
-                call endrun(msg=errMsg(__FILE__, __LINE__))
-             endif
-
-             idx = (c-bounds_proc%begc)*nlevgrnd + j
-             vsfm_soilp_col_1d(idx) = soilp_col(c,j)
-          end do
-          idx = c-bounds_proc%begc+1
-          mflx_snowlyr_col_1d(idx) = mflx_snowlyr_col(c)
-       end do
-
-       ! Set the initial conditions
-       call vsfm_mpp%Restart(vsfm_soilp_col_1d)
-
-       ! PreSolve: Allows saturation value to be computed based on ICs and stored
-       !           in GE auxvar
-       call vsfm_mpp%sysofeqns%SetDtime(1.d0)
-       call vsfm_mpp%sysofeqns%PreSolve()
-
-       ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
-       !            SoE auxvar
-       call vsfm_mpp%sysofeqns%PostSolve()
-
-    else
-       mflx_snowlyr_col_1d(:) = 0._r8
-    end if
-
-    ! Get total mass
-    soe_auxvar_id = 1;
-    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
-                                          VAR_MASS,          &
-                                          soe_auxvar_id,     &
-                                          vsfm_mass_col_1d)
-
-    ! Get liquid soil matrix potential
-    soe_auxvar_id = 1;
-    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,       &
-                                          VAR_SOIL_MATRIX_POT,   &
-                                          soe_auxvar_id,         &
-                                          vsfm_smpl_col_1d)
-
-    ! Put the data in CLM's data structure
-    do fc = 1,filter(nc)%num_hydrologyc
-       c = filter(nc)%hydrologyc(fc)
-
-       ! initialization
-       jwt = -1
-
-       ! Loops in decreasing j so WTD can be computed in the same loop
-       do j = nlevgrnd, 1, -1
-          idx = (c-bounds_proc%begc)*nlevgrnd + j
-
-          if (.not. restart_vsfm) then
-             h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
-             h2osoi_ice(c,j) = 0.d0
-          end if
-
-          smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
-
-          if (jwt == -1) then
-             ! Find the first soil that is unsaturated
-             if (smp_l(c,j) < 0._r8) jwt = j
-          end if
-
-       end do
-
-       if (jwt == -1 .or. jwt == nlevgrnd) then
-          ! Water table below or in the last layer
-          zwt(c) = zi(c,nlevgrnd)
-       else
-          z_dn = (zi(c,jwt-1) + zi(c,jwt  ))/2._r8
-          z_up = (zi(c,jwt ) + zi(c,jwt+1))/2._r8
-          zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - &
-                   smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
-        endif
-     end do
-
-#else
-
-    call endrun(msg='ERROR clm_initializeMod: '//&
-                'use_vsfm = true but code was not compiled ' // &
-                'using -DUSE_PETSC_LIB')
-#endif
-
-  end subroutine initialize_vsfm
-
-  !-----------------------------------------------------------------------
-  subroutine initialize_petsc_thermal_model( )
-    !
-    ! !DESCRIPTION:
-    ! Initialization PETSc-based thermal model
-    !
-    ! !USES:
-#ifdef USE_PETSC_LIB
-    use MPPThermalTBasedALM_Initialize, only : MPPThermalTBasedALM_Init
-#endif
-    !
-    ! !ARGUMENTS
-    implicit none
-    !
-
-#ifdef USE_PETSC_LIB
-
-    call MPPThermalTBasedALM_Init(iam)
-
-#else
-
-    call endrun(msg='ERROR clm_initializeMod: '//&
-                'use_petsc_thermal_model = true but code was not compiled ' // &
-                'using -DUSE_PETSC_LIB')
-#endif
-
-  end subroutine initialize_petsc_thermal_model
-
-  !-----------------------------------------------------------------------
   subroutine clm_petsc_init()
     !
     ! !DESCRIPTION:
     ! Initialize PETSc
     !
+#ifdef USE_PETSC_LIB
+#include <petsc/finclude/petsc.h>
+#endif
     ! !USES:
     use spmdMod    , only : mpicom
     use clm_varctl , only : use_vsfm
     use clm_varctl , only : lateral_connectivity
     use clm_varctl , only : use_petsc_thermal_model
+#ifdef USE_PETSC_LIB
+    use petscsys
+#endif
     !
     implicit none
-#ifdef USE_PETSC_LIB
-#include "finclude/petscsys.h"
     !
     ! !LOCAL VARIABLES:
+#ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr                  ! get error code from PETSc
 #endif
 

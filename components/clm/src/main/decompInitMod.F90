@@ -1019,23 +1019,21 @@ contains
     ! data structure using graph partitioning approach.  This assumes each pe
     ! has the same number of clumps set by clump_pproc.
     !
+#ifdef USE_PETSC_LIB
+#include <petsc/finclude/petsc.h>
+#endif
     ! !USES:
     use clm_varctl, only : nsegspc
+#ifdef USE_PETSC_LIB
+    use petscsys
+    use petscvec
+    use petscmat
+    use petscdm
+#endif
     !
     ! !ARGUMENTS:
     implicit none
     !
-#ifdef USE_PETSC_LIB
-#include "finclude/petscsys.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscvec.h90"
-#include "finclude/petscmat.h"
-#include "finclude/petscmat.h90"
-#include "finclude/petscdm.h"
-#include "finclude/petscdm.h90"
-#include "finclude/petscis.h"
-#include "finclude/petscis.h90"
-#endif
     !
     integer , intent(in) :: amask(:)
     integer , intent(in) :: lni,lnj                     ! domain global size

@@ -542,6 +542,8 @@ contains
     ! !DESCRIPTION:
     !   Initialize ghost/halo landunits
     !
+#include <petsc/finclude/petsc.h>
+    !
     ! !USES
     use decompMod            , only : get_proc_bounds
     use subgridWeightsMod    , only : compute_higher_order_weights
@@ -550,10 +552,9 @@ contains
     use landunit_varcon      , only : max_lunit
     use spmdMod              , only : mpicom
     use LandunitMod
+    use petscsys
     !
     implicit none
-    !
-#include "finclude/petscsys.h"
     !
     ! !LOCAL VARIABLES:
     type(bounds_type)    :: bounds_proc             ! temporary
@@ -680,6 +681,8 @@ contains
     ! !DESCRIPTION:
     !   Initialize ghost/halo columns
     !
+#include <petsc/finclude/petsc.h>
+    !
     ! !USES
     use decompMod            , only : get_proc_bounds
     use subgridWeightsMod    , only : compute_higher_order_weights
@@ -688,10 +691,9 @@ contains
     use landunit_varcon      , only : max_lunit
     use spmdMod              , only : mpicom
     use ColumnMod
+    use petscsys
     !
     implicit none
-    !
-#include "finclude/petscsys.h"
     !
     ! !LOCAL VARIABLES:
     type(bounds_type)   :: bounds_proc             ! temporary
@@ -864,7 +866,10 @@ contains
     ! !DESCRIPTION:
     !   Initialize ghost/halo patch
     !
+#include <petsc/finclude/petsc.h>
+    !
     ! !USES
+    use petscsys
     use decompMod            , only : get_proc_bounds
     use subgridWeightsMod    , only : compute_higher_order_weights
     use domainLateralMod     , only : ldomain_lateral
@@ -872,10 +877,9 @@ contains
     use landunit_varcon      , only : max_lunit
     use spmdMod              , only : mpicom
     use PatchMod
+    use petscsys
     !
     implicit none
-    !
-#include "finclude/petscsys.h"
     !
     ! !LOCAL VARIABLES:
     type(bounds_type)    :: bounds_proc             ! temporary
