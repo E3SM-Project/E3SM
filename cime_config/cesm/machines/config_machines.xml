@@ -924,6 +924,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+	<command name="load">ncarenv/1.0</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/16.0.3</command>
