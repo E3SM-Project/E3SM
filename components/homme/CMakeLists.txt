@@ -69,8 +69,12 @@ IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
   SET (HOMME_USE_TRILINOS TRUE)
 ELSE ()
   SET(HOMME_USE_CXX FALSE)
-  SET(HOMME_USE_TRILINOS FALSE)
 ENDIF ()
+
+IF (${HOMME_USE_TRILINOS}) 
+  SET (HOMME_USE_CXX TRUE)
+ENDIF()
+
 
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
@@ -82,12 +86,6 @@ ENDIF ()
 ##############################################################################
 INCLUDE(SetCompilerFlags)
 
-# Print the compiler flags to be used
-MESSAGE(STATUS "Fortran Flags = ${CMAKE_Fortran_FLAGS}")
-MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
-MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
-MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
-##############################################################################
 
 OPTION(ENABLE_PERSISTENT_MPI "Enable persistent MPI" OFF)
 IF (${ENABLE_PERSISTENT_MPI})
@@ -115,10 +113,30 @@ ELSE()
     ADD_SUBDIRECTORY(libs/lapack)
   ENDIF()
 ENDIF()
+
 IF (${HOMME_USE_TRILINOS})
   MESSAGE(STATUS "This configuration of requires Trilinos")
   FIND_PACKAGE(Trilinos REQUIRED)
+  SET(HAVE_TRILINOS TRUE)
+  IF("${Trilinos_PACKAGE_LIST}"  MATCHES ".*Zoltan2*.")
+    MESSAGE(STATUS "Trilinos is compiled with Zoltan2 Trilinos_PACKAGE_LIST:${Trilinos_PACKAGE_LIST}")
+    MESSAGE(STATUS "ENABLING ZOLTAN2")
+    SET(TRILINOS_HAVE_ZOLTAN2 TRUE)
+  ENDIF ()
+  add_definitions(${Trilinos_CXX_COMPILER_FLAGS})
+  include_directories(${Trilinos_TPL_INCLUDE_DIRS})
+  include_directories(${Trilinos_INCLUDE_DIRS})
+  link_directories(${Trilinos_LIBRARY_DIRS})
+  link_directories(${Trilinos_TPL_LIBRARY_DIRS})
 ENDIF ()
+
+# Print the compiler flags to be used
+MESSAGE(STATUS "\nFortran Flags = ${CMAKE_Fortran_FLAGS}")
+MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
+MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
+MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS} \n")
+##############################################################################
+
 
 # Zoltan partitioning library
 IF (DEFINED ZOLTAN_DIR)
