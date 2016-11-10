@@ -1,6 +1,62 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 11-10-2016
+Tag: cime5.2.0-alpha.9
+Answer Changes: None
+Tests: script_regression_tests
+Dependencies:
+
+Brief Summary:port to updated cori and new laramie systems, erio test and gmake fix.
+
+User interface changes: 
+
+Modified files: git diff --name-status
+A       cime_config/acme/allactive/testmods_dirs/cam/outfrq9s/shell_commands
+D       cime_config/acme/allactive/testmods_dirs/cam/outfrq9s/xmlchange_cmnds
+A       cime_config/acme/allactive/testmods_dirs/force_netcdf_pio/shell_commands
+D       cime_config/acme/allactive/testmods_dirs/force_netcdf_pio/xmlchange_cmnds
+M       cime_config/acme/config_archive.xml
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/buildlib.pio
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+A       cime_config/cesm/allactive/testmods_dirs/allactive/cism/oneway/shell_commands
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cism/oneway/xmlchange_cmnds
+M       cime_config/cesm/config_archive.xml
+M       cime_config/cesm/machines/config_batch.xml
+M       cime_config/cesm/machines/config_compilers.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/cesm/machines/config_pio.xml
+M       driver_cpl/cime_config/buildexe
+M       driver_cpl/cime_config/config_component.xml
+M       scripts/Tools/compare_test_results
+M       share/csm_share/shr/shr_strdata_mod.F90
+M       tools/cprnc/summarize_cprnc_diffs
+M       utils/python/CIME/SystemTests/erio.py
+M       utils/python/CIME/SystemTests/homme.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/buildlib.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_st_archive.py
+M       utils/python/CIME/case_test.py
+M       utils/python/CIME/compare_test_results.py
+M       utils/python/CIME/hist_utils.py
+M       utils/python/CIME/nmlgen.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/user_mod_support.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 11-02-2016
 Tag: cime5.2.0-alpha.8
 Answer Changes: None
