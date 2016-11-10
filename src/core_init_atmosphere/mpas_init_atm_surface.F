@@ -11,6 +11,7 @@
  use mpas_pool_routines
  use mpas_timekeeping
  use mpas_timer
+ use mpas_abort, only : mpas_dmpar_global_abort
  
  use init_atm_hinterp
  use init_atm_llxy
@@ -81,6 +82,13 @@
 
  end do
 
+ !
+ ! Ensure that no output alarms are still ringing for the 'surface' stream after
+ ! we exit the time loop above; the main run routine may write out all other
+ ! output streams with ringing alarms.
+ !
+ call mpas_stream_mgr_reset_alarms(stream_manager, streamID='surface', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
  end subroutine init_atm_case_sfc
 
 !==================================================================================================
@@ -115,6 +123,7 @@
  real(kind=RKIND), dimension(:,:), allocatable :: maskslab
 
  integer, dimension(:), pointer :: landmask
+ integer :: global_max_landmask
  real(kind=RKIND), dimension(:), pointer :: destField1d
  real(kind=RKIND), dimension(:), pointer :: sst, xice
 
@@ -129,14 +138,28 @@
 
  call mpas_pool_get_dimension(dims, 'nCells', nCells)
 
+!
+! Try to determine whether we have used a 'grid.nc' or a 'static.nc' file as input. 
+! If we are working from a 'grid.nc', we expect that the global maximum of the landmask 
+! will be 0.
+!
+ call mpas_dmpar_max_int(dminfo, maxval(landmask(1:nCells)), global_max_landmask)
+ if (global_max_landmask == 0) then
+    call mpas_dmpar_global_abort('*******************************************************************************', deferredAbort=.true.)
+    call mpas_dmpar_global_abort('The global maximum of the ''landmask'' field is zero, which suggests that this',  deferredAbort=.true.)
+    call mpas_dmpar_global_abort('field was not in the input file.  A ''landmask'' field is needed to properly',    deferredAbort=.true.)
+    call mpas_dmpar_global_abort('interpolate surface fields.',                                                     deferredAbort=.true.)
+    call mpas_dmpar_global_abort('Please rerun after specifying a static or initial conditions file as input in',   deferredAbort=.true.)
+    call mpas_dmpar_global_abort('the ''streams.init_atmosphere'' file.',                                           deferredAbort=.true.)
+    call mpas_dmpar_global_abort('*******************************************************************************')
+ end if
+
 !open intermediate file:
  call read_met_init(trim(config_sfc_prefix),.false.,timeString,istatus)
  if(istatus /= 0) then
-    write(0,*) '********************************************************************************'
-    write(0,*) 'Error opening surface file '//   &
-                trim(config_sfc_prefix)//':'//timeString(1:13)
-    write(0,*) '********************************************************************************'
-    call mpas_dmpar_abort(dminfo)
+    call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+    call mpas_dmpar_global_abort('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      deferredAbort=.true.)
+    call mpas_dmpar_global_abort('********************************************************************************')
  else
     write(0,*) 'Processing file ',trim(config_sfc_prefix)//':'//timeString(1:13)
  end if
@@ -145,7 +168,7 @@
  have_landmask = .false.
  call read_next_met_field(field,istatus)
  do while (istatus == 0)
-    if(index(field % field, 'LANDSEA') /= 0) then
+    if(trim(field % field) == 'LANDSEA') then
        have_landmask = .true.
        if(.not.allocated(maskslab)) allocate(maskslab(-2:field % nx+3, field % ny))
        maskslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
@@ -165,11 +188,9 @@
 !read sea-surface temperatures and seaice data. open intermediate file:
  call read_met_init(trim(config_sfc_prefix),.false.,timeString(1:13),istatus)
  if(istatus /= 0) then
-    write(0,*) '********************************************************************************'
-    write(0,*) 'Error opening surface file '//   &
-                trim(config_sfc_prefix)//':'//timeString(1:13)
-    write(0,*) '********************************************************************************'
-    call mpas_dmpar_abort(dminfo)
+    call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+    call mpas_dmpar_global_abort('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      deferredAbort=.true.)
+    call mpas_dmpar_global_abort('********************************************************************************')
  end if
 
  if(.not. have_landmask) then
@@ -183,7 +204,7 @@
  do while (istatus == 0)
 
     !sea-surface data:
-    if(index(field % field, 'SKINTEMP') /= 0 .or. index(field % field, 'SST') /= 0) then
+    if((trim(field % field) == 'SKINTEMP') .or. (trim(field % field) ==  'SST')) then
 !      write(0,*) '... Processing SST:'
        sst(1:nCells) = 0.0_RKIND
        destField1d => sst
@@ -208,7 +229,7 @@
        deallocate(field%slab)
 
     !sea-ice data:
-    else if(index(field % field, 'SEAICE') /= 0) then
+    else if(trim(field % field) == 'SEAICE') then
 !      write(0,*) '... Processing SEAICE:'
        xice(1:nCells) = 0.0_RKIND
        destField1d => xice

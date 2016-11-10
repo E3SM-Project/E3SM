@@ -87,7 +87,7 @@ module init_atm_core
    !   call atm_initialize_advection_rk(mesh)
    !   call atm_initialize_deformation_weights(mesh)
   
-      call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
+      call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
    
    end function init_atm_core_run

@@ -1,3 +1,12 @@
+!==================================================================================================
+! copied for implementation in MPAS from WRF version 3.6.1.
+
+! modifications made to sourcecode:
+! * used preprocessing option to define the variable dx as a function of the horizontal grid.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-25.
+
+!==================================================================================================
+
 ! WRf:model_layer:physics
 !
 !
