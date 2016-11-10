@@ -290,7 +290,9 @@ def _archive_restarts(case, archive, archive_entry,
                             try:
                                 os.remove(srcfile)
                             except OSError as e:
-                                logger.warn("interim restart file %s does not exist " %srcfile)
+                                logger.warn("unable to remove interim restart file %s" %srcfile)
+                        else:
+                            logger.warn("interim restart file %s does not exist" %srcfile)
 
     return histfiles_savein_rundir
 
