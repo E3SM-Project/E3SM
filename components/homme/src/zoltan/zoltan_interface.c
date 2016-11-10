@@ -15,9 +15,9 @@
 #include "stdio.h"
 
 //#define VISUALIZEOUTPUT
-
+//#define VISUALIZEINPUT
 void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, int *nparts, MPI_Fint *comm,
-    double *xcoord, double *ycoord, double *zcoord, int *result_parts, int *partmethod) {
+    double *xcoord, double *ycoord, double *zcoord,  int *coord_dimension, int *result_parts, int *partmethod, int *mappingmethod) {
   MPI_Comm c_comm = MPI_Comm_f2c(*comm);
 
 
@@ -47,34 +47,73 @@ void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, 
                     xcoord[n], ycoord[n], zcoord[n]);
       }
     }
-
     fprintf(f2,"pause-1\n");
     fclose(f2);
-
-
   }
 #endif
 
 #if HAVE_TRILINOS
 #if TRILINOS_HAVE_ZOLTAN2
-  zoltan_partition_problem(nelem, xadj,adjncy,adjwgt,vwgt, nparts, c_comm,
-      xcoord, ycoord, zcoord, result_parts, partmethod);
-#else
-  int mype2, size2;
+  sort_graph(nelem,xadj,adjncy,adjwgt,vwgt);
+
+#ifdef WRITE_INPUT_FILE
+  {
+    int mype2, size2;
     MPI_Comm_rank(c_comm, &mype2);
     MPI_Comm_size(c_comm, &size2);
     if (mype2 == 0) {
+      int i = 0, j = 0;
+      FILE *f2 = fopen("homme_graph.bin", "wb");
+      fwrite(nelem,sizeof(int),1,f2); // write 10 bytes to our buffer
+      fwrite(xadj+ *nelem,sizeof(int),1,f2); // write 10 bytes to our buffer
+      fwrite(xadj,sizeof(int),*nelem + 1,f2); // write 10 bytes to our buffer
+      fwrite(adjncy,sizeof(int),xadj[*nelem],f2); // write 10 bytes to our buffer
+      fwrite(adjwgt,sizeof(double),xadj[*nelem],f2); // write 10 bytes to our buffer
+      fclose(f2);
 
-      printf("Zoltan cannot be used, Trilinos is not compiled with Zoltan2.");
+
+      f2 = fopen("homme_coords.bin", "wb");
+      fwrite(nelem,sizeof(int),1,f2); // write 10 bytes to our buffer
+      fwrite(coord_dimension,sizeof(int),1,f2); // write 10 bytes to our buffer
+      fwrite(xcoord,sizeof(double),*nelem, f2); // write 10 bytes to our buffer
+      fwrite(ycoord,sizeof(double),*nelem, f2); // write 10 bytes to our buffer
+      fwrite(zcoord,sizeof(double),*nelem, f2); // write 10 bytes to our buffer
+      fclose(f2);
     }
-    exit(1);
+  }
 #endif
+
+  if (*partmethod > 5 && *partmethod <= 22){
+    zoltan_partition_problem(
+        nelem, xadj,adjncy,adjwgt,vwgt,
+        nparts,
+        c_comm,
+        xcoord, ycoord, zcoord, coord_dimension,
+        result_parts, partmethod, mappingmethod);
+  }
+  if (*partmethod == 5 || *mappingmethod > 1){
+    zoltan_map_problem(
+            nelem, xadj,adjncy,adjwgt,vwgt,
+            nparts,
+            c_comm,
+            xcoord, ycoord, zcoord, coord_dimension,
+            result_parts, partmethod, mappingmethod);
+  }
 #else
   int mype2, size2;
   MPI_Comm_rank(c_comm, &mype2);
   MPI_Comm_size(c_comm, &size2);
   if (mype2 == 0) {
 
+    printf("Zoltan cannot be used, Trilinos is not compiled with Zoltan2.");
+  }
+  exit(1);
+#endif
+#else
+  int mype2, size2;
+  MPI_Comm_rank(c_comm, &mype2);
+  MPI_Comm_size(c_comm, &size2);
+  if (mype2 == 0) {
     printf("Zoltan cannot be used, HOMME is not compiled with Trilinos.");
   }
   exit(1);
@@ -88,6 +127,7 @@ void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, 
     int i = 0, j =0;
     FILE *f2 = fopen("plot.gnuplot", "w");
 
+    fprintf(f2,"unset key\n");
     FILE **coord_files = (FILE **) malloc(sizeof(FILE*) * size);
     for (i = 0; i< size; ++i){
       char str[20];
@@ -105,7 +145,7 @@ void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, 
       int findex = result_parts[j];
       fprintf(coord_files[findex - 1],"%lf %lf %lf\n", xcoord[j], ycoord[j], zcoord[j]);
     }
-    for (int i = 0; i< size; ++i){
+    for (i = 0; i< size; ++i){
       fclose(coord_files[i]);
     }
 
@@ -127,3 +167,64 @@ void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, 
 #endif
 
 }
+
+void z2printmetrics_(
+    int *nelem,
+    int *xadj,int *adjncy,double *adjwgt,double *vwgt,
+    int *nparts, MPI_Fint *comm,
+    int *result_parts) {
+  MPI_Comm c_comm = MPI_Comm_f2c(*comm);
+
+#if HAVE_TRILINOS
+#if TRILINOS_HAVE_ZOLTAN2
+  zoltan2_print_metrics(
+      nelem,
+      xadj,adjncy,adjwgt,vwgt,
+      nparts, c_comm,
+      result_parts);
+#else
+  int mype2, size2;
+  MPI_Comm_rank(c_comm, &mype2);
+  MPI_Comm_size(c_comm, &size2);
+  if (mype2 == 0) {
+
+    printf("Zoltan cannot be used since it is not compiled with Trilinos.");
+  }
+  exit(1);
+#endif
+#else
+  int mype2, size2;
+  MPI_Comm_rank(c_comm, &mype2);
+  MPI_Comm_size(c_comm, &size2);
+  if (mype2 == 0) {
+
+    printf("Zoltan cannot be used since it is not compiled with Trilinos.");
+  }
+  exit(1);
+
+#endif
+}
+void Z2PRINTMETRICS(
+    int *nelem,
+    int *xadj,int *adjncy,double *adjwgt,double *vwgt,
+    int *nparts, MPI_Fint *comm,
+    int *result_parts) {
+  z2printmetrics_( nelem, xadj,adjncy,adjwgt,vwgt, nparts, comm, result_parts);
+}
+void z2printmetrics(
+    int *nelem,
+    int *xadj,int *adjncy,double *adjwgt,double *vwgt,
+    int *nparts, MPI_Fint *comm,
+    int *result_parts) {
+  z2printmetrics_(nelem, xadj, adjncy, adjwgt, vwgt, nparts, comm, result_parts);
+}
+void zoltanpart(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, int *nparts, MPI_Fint *comm,
+    double *xcoord, double *ycoord, double *zcoord, int *coord_dimension, int *result_parts, int *partmethod, int *mappingmethod) {
+  zoltanpart_(nelem, xadj,adjncy,adjwgt,vwgt, nparts, comm, xcoord, ycoord, zcoord, coord_dimension, result_parts,partmethod, mappingmethod);
+}
+
+void ZOLTANPART(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, int *nparts, MPI_Fint *comm,
+    double *xcoord, double *ycoord, double *zcoord, int *coord_dimension, int *result_parts, int *partmethod, int *mappingmethod) {
+  zoltanpart_(nelem, xadj,adjncy,adjwgt,vwgt, nparts, comm, xcoord, ycoord, zcoord, coord_dimension, result_parts,partmethod, mappingmethod);
+}
+

@@ -24,6 +24,8 @@ module mesh_mod
   public  :: MeshCubeEdgeCount  ! called anytime afer MeshOpen
   public  :: MeshCubeElemCount  ! called anytime afer MeshOpen
   public  :: MeshCubeTopology   ! called afer MeshOpen
+  public  :: MeshCubeTopologyCoords   ! called afer MeshOpen
+
   public  :: MeshSetCoordinates ! called after MeshCubeTopology    
   public  :: MeshPrint          ! show the contents of the Mesh after it has been loaded into the module
   public  :: MeshClose  
@@ -1146,37 +1148,45 @@ contains
 !======================================================================
 ! subroutine MeshCubeTopologyCoords
 !======================================================================
-   subroutine MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3)
+   subroutine MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use parallel_mod,           only : abortmp
     use dimensions_mod,         only : np,  max_elements_attached_to_node
-    use coordinate_systems_mod, only : cartesian3D_t, cube_face_number_from_cart, cube_face_number_from_sphere
+    use coordinate_systems_mod, only : cartesian2D_t, cartesian3D_t, cube_face_number_from_cart, cube_face_number_from_sphere, cart2cubedsphere
     use gridgraph_mod,          only : GridVertex_t
     use gridgraph_mod,          only : GridEdge_t
     use cube_mod,               only : CubeSetupEdgeIndex
     use gridgraph_mod,          only : initgridedge, num_neighbors
-    use control_mod,            only : north, south, east, west, neast, seast, swest, nwest, partmethod
+    use control_mod,            only : north, south, east, west, neast, seast, swest, nwest, partmethod, z2_map_method, coord_transform_method
     use params_mod,             only : SFCURVE, ZOLTAN2RCB, ZOLTAN2MJ, ZOLTAN2RIB, ZOLTAN2HSFC, ZOLTAN2PATOH, ZOLTAN2PHG, ZOLTAN2METIS, &
                                        ZOLTAN2PARMETIS, ZOLTAN2SCOTCH, ZOLTAN2PTSCOTCH, ZOLTAN2BLOCK, ZOLTAN2CYCLIC, ZOLTAN2RANDOM, &
-                                       ZOLTAN2ZOLTAN, ZOLTAN2ND, ZOLTAN2PARMA
+                                       ZOLTAN2ZOLTAN, ZOLTAN2ND, ZOLTAN2PARMA, &
+                                       ZOLTAN2MJRCB, ZOLTAN2_1PHASEMAP,  &
+                                       Z2_NO_TASK_MAPPING, Z2_TASK_MAPPING, Z2_OPTIMIZED_TASK_MAPPING
+    use params_mod,             only : SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
+
     use kinds, only : iulog, real_kind
 
     implicit none
     type (GridEdge_t),   intent(inout) :: GridEdge(:)
     type (GridVertex_t), intent(inout) :: GridVertex(:)
-    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim1(:)
-    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim2(:)
-    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim3(:)
+    real(kind=real_kind),allocatable, intent(inout) :: coord_dim1(:)
+    real(kind=real_kind),allocatable, intent(inout) :: coord_dim2(:)
+    real(kind=real_kind),allocatable, intent(inout) :: coord_dim3(:)
+    integer, intent(inout) :: coord_dimension
 
+    real (kind=real_kind)            :: x,y,z, rangex
     real(kind=real_kind)             :: coordinates(4,3)
     real(kind=real_kind)             :: centroid(3)
     type (cartesian3D_t)             :: face_center
+    type (cartesian2D_t)             :: face_center_2d
 
-    integer                          :: i, j, k, ll, m, loc
+    integer                          :: i, j, k, ll, m, loc, face_no
     integer                          :: element_nodes(p_number_elements, 4)
     integer                          :: EdgeWgtP,CornerWgt
     integer                          :: normal_to_homme_ordering(8)
     integer                          :: node_numbers(4)
     integer, allocatable             :: index_table(:,:)
+
 
     normal_to_homme_ordering(1) = south
     normal_to_homme_ordering(2) =  east
@@ -1187,6 +1197,7 @@ contains
     normal_to_homme_ordering(7) = neast
     normal_to_homme_ordering(8) = nwest
 
+    coord_dimension = 3
 
 
     if (SIZE(GridVertex) /= p_number_elements) then
@@ -1249,6 +1260,10 @@ contains
         partmethod .eq. ZOLTAN2CYCLIC .OR. &
         partmethod .eq. ZOLTAN2RANDOM .OR. &
         partmethod .eq. ZOLTAN2ZOLTAN .OR. &
+        partmethod .eq. ZOLTAN2MJRCB .OR. &
+        partmethod .eq. ZOLTAN2_1PHASEMAP .OR. &
+        z2_map_method .eq. Z2_TASK_MAPPING .OR. &
+        z2_map_method .eq. Z2_OPTIMIZED_TASK_MAPPING .OR. &
         partmethod .eq. ZOLTAN2ND) then
 
         allocate(coord_dim1(p_number_elements))
@@ -1266,6 +1281,7 @@ contains
        face_center%z = centroid(3)
        GridVertex(i)%face_number = cube_face_number_from_cart(face_center)
 
+
        if (partmethod .eq. ZOLTAN2RCB .OR. &
            partmethod .eq. ZOLTAN2MJ .OR.  &
            partmethod .eq. ZOLTAN2RIB .OR. &
@@ -1281,13 +1297,145 @@ contains
            partmethod .eq. ZOLTAN2CYCLIC .OR. &
            partmethod .eq. ZOLTAN2RANDOM .OR. &
            partmethod .eq. ZOLTAN2ZOLTAN .OR. &
+           partmethod .eq. ZOLTAN2MJRCB .OR. &
+           partmethod .eq. ZOLTAN2_1PHASEMAP .OR. &
+           z2_map_method .eq. Z2_TASK_MAPPING .OR. &
+           z2_map_method .eq. Z2_OPTIMIZED_TASK_MAPPING .OR. &
            partmethod .eq. ZOLTAN2ND) then
-                coord_dim1(i) = face_center%x
-                coord_dim2(i) = face_center%y
-                coord_dim3(i) = face_center%z
+                rangex = 1.7 ! ~pi/2
+                if (coord_transform_method == SPHERE_COORDS) then
+                    coord_dim1(i) = face_center%x
+                    coord_dim2(i) = face_center%y
+                    coord_dim3(i) = face_center%z
+                elseif (coord_transform_method == CUBE_COORDS) then
+                    face_no = GridVertex(i)%face_number
+                    face_center_2d = cart2cubedsphere(face_center, face_no)
+
+                    if (face_no .EQ. 1) then
+                        x = face_center_2d%x
+                        y = -(face_center_2d%y)  !+ ((cube_yend-cube_ystart) * face_no)
+                        z = 1
+                    elseif (face_no .EQ. 2) then
+                        x = 1
+                        y = -(face_center_2d%y)  !+ ((cube_yend-cube_ystart) * face_no)
+                        z = -(face_center_2d%x)  !+ ((cube_xend-cube_xstart) * face_no)
+                    elseif(face_no .EQ. 3) then
+                        x = -(face_center_2d%x)  !+ ((cube_xend-cube_xstart) * face_no)
+                        y = -(face_center_2d%y)  !+ ((cube_yend-cube_ystart) * face_no)
+                        z = -1
+                    elseif(face_no .EQ. 4) then
+                        x = -1
+                        y = -(face_center_2d%y) !+ ((cube_yend-cube_ystart) * face_no)
+                        z = (face_center_2d%x)  !+ ((cube_xend-cube_xstart) * face_no)
+                    elseif(face_no .EQ. 5) then
+                        x = (face_center_2d%x) !+ ((cube_xend-cube_xstart) * face_no)
+                        y = 1
+                        z = (face_center_2d%y) !+ ((cube_yend-cube_ystart) * face_no)
+                    elseif(face_no .EQ. 6) then
+                        x = (face_center_2d%x) !+ ((cube_xend-cube_xstart) * face_no)
+                        y = -1
+                        z = -(face_center_2d%y) !+ ((cube_yend-cube_ystart) * face_no)
+                    endif
+
+                elseif (coord_transform_method == FACE_2D_LB_COORDS) then
+                    face_no = GridVertex(i)%face_number
+                    face_center_2d = cart2cubedsphere(face_center, face_no)
+                    if (face_no .EQ. 1) then
+                        x = (face_center_2d%x)  + rangex * face_no !+ ((cube_xend-cube_xstart) * face_no)
+                        y = -(face_center_2d%y)
+                        z = 1
+                    elseif (face_no .EQ. 2) then
+                        y = -(face_center_2d%y)
+                        z = 1
+                        x = (face_center_2d%x)  + rangex * face_no  !+ ((cube_xend-cube_xstart) * face_no)
+                    elseif(face_no .EQ. 3) then
+                        x = (face_center_2d%x)   + rangex * face_no !+ ((cube_xend-cube_xstart) * face_no)
+                        y = -(face_center_2d%y)
+                        z = 1
+                    elseif(face_no .EQ. 4) then
+                        x = (face_center_2d%x)   + rangex * face_no !+ ((cube_xend-cube_xstart) * face_no)
+                        y = -(face_center_2d%y)
+                        z = 1
+                    elseif(face_no .EQ. 5) then
+                        x = (face_center_2d%x)
+                        z = 1
+                        y = (face_center_2d%y)
+
+                        if (y > 0) then
+                            x = x + rangex
+                            y = -y + rangex
+                        else
+                            x = -x + 3 * rangex
+                            y = y + rangex
+                        endif
+
+
+                        !if (y > centery + cube_ystart) then
+                            !x = x + (cube_xend-cube_xstart)
+                            !y = -y + (cube_yend-cube_ystart)
+                        !else
+                            !x = -x + 3 * (cube_xend-cube_xstart)
+                            !y = y - cube_ystart + cube_yend
+                        !endif
+
+                    elseif(face_no .EQ. 6) then
+                        x = (face_center_2d%x)
+                        z = 1
+                        y = (face_center_2d%y)
+                        if (x > 0) then
+                            z = x
+                            x = y
+                            y = z
+                            z = 1
+                            y = y - rangex
+                            x = x + 2 * rangex
+                        else
+                            z = x
+                            x = y
+                            y = z
+                            z = 1
+                            x = -x + 4 * rangex
+                            y = -y - rangex
+                        endif
+
+                        !if (x > centerx + cube_xstart) then
+                        !    z = x
+                        !    x = y
+                        !    y = z
+                        !    z = 1
+                        !    y = y - ((cube_yend-cube_ystart))
+                        !    x = x + 2 * ((cube_xend-cube_xstart) )
+                        !else
+                        !    z = x
+                        !    x = y
+                        !    y = z
+                        !    z = 1
+                        !    x = -x + 4 * (cube_xend-cube_xstart)
+                        !    y = -y - ((cube_yend-cube_ystart))
+                        !endif
+
+                    endif
+                else
+                    coord_dim1(i) = face_center%x
+                    coord_dim2(i) = face_center%y
+                    coord_dim3(i) = face_center%z
+                endif
+
+                coord_dim1(i) = x
+                coord_dim2(i) = y
+                coord_dim3(i) = z
         endif
     end do
 
+    if (coord_transform_method == SPHERE_COORDS) then
+        coord_dimension = 3
+    elseif (coord_transform_method == CUBE_COORDS) then
+        coord_dimension = 3
+    elseif (coord_transform_method == FACE_2D_LB_COORDS) then
+        coord_dimension = 2
+    else
+        coord_dimension = 3
+    endif
 
     ! set side neighbor faces
     do i=1, p_number_elements
@@ -1298,7 +1446,6 @@ contains
           GridVertex(i)%nbrs_face(loc) = GridVertex(ll)%face_number
        end do
     end do
-
 
     ! find corner neighbor and faces (weights added also)
     call find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, CornerWgt, index_table)

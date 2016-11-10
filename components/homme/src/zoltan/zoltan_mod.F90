@@ -8,23 +8,26 @@ module zoltan_mod
   implicit none
 
   private 
-  integer, parameter :: VertexWeight = 1000
-  integer, parameter :: EdgeWeight = 1000
+  integer, parameter :: VertexWeight = 1
+  integer, parameter :: EdgeWeight = 1
 
-  public :: genzoltanpart, getfixmeshcoordinates
+  public :: genzoltanpart, getfixmeshcoordinates, printMetrics
 
 contains
-  subroutine getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3) !result(cartResult)
+  subroutine getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension) !result(cartResult)
 
     use gridgraph_mod,          only : GridVertex_t
+    use control_mod,            only : coord_transform_method
     use cube_mod,               only : cube_xstart, cube_xend, cube_ystart, cube_yend,convert_gbl_index
     use coordinate_systems_mod, only : cartesian2D_t, cartesian3D_t, cubedsphere2cart
     use dimensions_mod,         only : ne
+    use params_mod,             only : SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
 
     type (GridVertex_t), intent(inout) :: GridVertex(:)
     type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim1(:)
     type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim2(:)
     type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim3(:)
+    integer, intent(inout) :: coord_dimension
     !type(cartesian3D_t)     ,  allocatable   :: cartResult(:)
     !type (real(kind=real_kind)),  allocatable   :: coord_dim1(:)
     !type (real(kind=real_kind)),  allocatable   :: coord_dim2(:)
@@ -33,7 +36,7 @@ contains
 
     integer ie,je,face_no, nelem, i
     real (kind=real_kind)  :: dx,dy, startx, starty
-    real (kind=real_kind)  :: x,y,z
+    real (kind=real_kind)  :: x,y,z, centerx, centery
     type (cartesian2D_t) :: corner1, corner2, corner3, corner4
     type(cartesian3D_t)  :: cart1, cart2, cart3, cart4
 
@@ -42,6 +45,16 @@ contains
     allocate(coord_dim1(nelem))
     allocate(coord_dim2(nelem))
     allocate(coord_dim3(nelem))
+
+    if (coord_transform_method == SPHERE_COORDS) then
+        coord_dimension = 3
+    elseif (coord_transform_method == CUBE_COORDS) then
+        coord_dimension = 3
+    elseif (coord_transform_method == FACE_2D_LB_COORDS) then
+        coord_dimension = 2
+    else
+        coord_dimension = 3
+    endif
 
     do i=1,nelem
       call convert_gbl_index(GridVertex(i)%number,ie,je,face_no)
@@ -59,14 +72,177 @@ contains
       corner3%y = starty+dy
       corner4%x = startx
       corner4%y = starty+dy
+      centerx = (cube_xend-cube_xstart)/2
+      centery = (cube_yend-cube_ystart)/2
 
-      cart1 = cubedsphere2cart(corner1, face_no)
-      cart2 = cubedsphere2cart(corner2, face_no)
-      cart3 = cubedsphere2cart(corner3, face_no)
-      cart4 = cubedsphere2cart(corner4, face_no)
-      x = (cart1%x + cart2%x + cart3%x + cart4%x) / 4.0
-      y = (cart1%y + cart2%y + cart3%y + cart4%y) / 4.0
-      z = (cart1%z + cart2%z + cart3%z + cart4%z) / 4.0
+      !!!!!!!!SPHERE COORDS
+      if (coord_transform_method == SPHERE_COORDS) then
+
+        !coord_dimension = 3
+        cart1 = cubedsphere2cart(corner1, face_no)
+        cart2 = cubedsphere2cart(corner2, face_no)
+        cart3 = cubedsphere2cart(corner3, face_no)
+        cart4 = cubedsphere2cart(corner4, face_no)
+        x = (cart1%x + cart2%x + cart3%x + cart4%x) / 4.0
+        y = (cart1%y + cart2%y + cart3%y + cart4%y) / 4.0
+        z = (cart1%z + cart2%z + cart3%z + cart4%z) / 4.0
+
+      elseif (coord_transform_method == CUBE_COORDS) then
+        !!!!CUBE COORDS
+        !coord_dimension = 3
+        if (face_no .EQ. 1) then
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = 1
+        elseif (face_no .EQ. 2) then
+            x = 1
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = -(corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+        elseif(face_no .EQ. 3) then
+            x = -(corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = -1
+        elseif(face_no .EQ. 4) then
+            x = -1
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+        elseif(face_no .EQ. 5) then
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+            y = 1
+            z = (corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+        elseif(face_no .EQ. 6) then
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+            y = -1
+            z = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+        endif
+
+      elseif (coord_transform_method == FACE_2D_LB_COORDS) then
+        !FACE COORDINATES each for face has an half up or down
+        !coord_dimension = 2
+
+        if (face_no .EQ. 1) then
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = 1
+        elseif (face_no .EQ. 2) then
+            !x = 1
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            !z = -(corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+            z = 1
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+        elseif(face_no .EQ. 3) then
+            !x = -(corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+            !y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            !z = -1
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = 1
+        elseif(face_no .EQ. 4) then
+            !x = -1
+            !y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            !z = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+            y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = 1
+        elseif(face_no .EQ. 5) then
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) )
+            !y = 1
+            !z = (corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = 1
+            y = (corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart))
+
+            if (y > centery + cube_ystart) then
+                x = x + (cube_xend-cube_xstart)
+                y = -y + (cube_yend-cube_ystart)
+            else
+                x = -x + 3 * (cube_xend-cube_xstart)
+                y = y - cube_ystart + cube_yend
+            endif
+
+        elseif(face_no .EQ. 6) then
+            x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) )
+            !y = -1
+            !z = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+            z = 1
+            y = (corner1%y + corner2%y + corner3%y + corner4%y) / 4.0! - ((cube_yend-cube_ystart))
+
+
+            if (x > centerx + cube_xstart) then
+                z = x
+                x = y
+                y = z
+                z = 1
+                y = y - ((cube_yend-cube_ystart))
+                x = x + 2 * ((cube_xend-cube_xstart) )
+            else
+                z = x
+                x = y
+                y = z
+                z = 1
+                x = -x + 4 * (cube_xend-cube_xstart)
+                y = -y - ((cube_yend-cube_ystart))
+            endif
+
+        endif
+      else
+    !      if (face_no .EQ. 1) then
+    !        x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+    !        y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 + ((cube_yend-cube_ystart) * face_no)
+    !        z = 1
+    !      elseif (face_no .EQ. 2) then
+    !        !x = 1
+    !        y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+    !        !z = -(corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+    !        z = 1
+    !        x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+    !      elseif(face_no .EQ. 3) then
+    !        !x = -(corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+    !        !y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+    !        !z = -1
+    !        x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+    !        y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+    !        z = 1
+    !      elseif(face_no .EQ. 4) then
+    !        !x = -1
+    !        !y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+    !        !z = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) * face_no)
+    !        x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 + ((cube_xend-cube_xstart) * face_no)
+    !        y = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+    !        z = 1
+    !      elseif(face_no .EQ. 5) then
+    !        x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) )
+    !        !y = 1
+    !        !z = (corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+    !        z = -1
+    !        y = (corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart))
+    !
+    !        if (y > centery + cube_ystart) then
+    !            x = x + (cube_xend-cube_xstart)
+    !            y = -y + (cube_yend-cube_ystart)
+    !        else
+    !            x = -x + 3 * (cube_xend-cube_xstart)
+    !            y = y - cube_ystart + cube_yend
+    !        endif
+    !
+    !      elseif(face_no .EQ. 6) then
+    !        x = (corner1%x + corner2%x + corner3%x + corner4%x) / 4.0 !+ ((cube_xend-cube_xstart) )
+    !        !y = -1
+    !        !z = -(corner1%y + corner2%y + corner3%y + corner4%y) / 4.0 !+ ((cube_yend-cube_ystart) * face_no)
+    !        z = 2
+    !        y = (corner1%y + corner2%y + corner3%y + corner4%y) / 4.0! - ((cube_yend-cube_ystart))
+    !
+    !
+    !        if (Y < centerY + cube_ystart) then
+    !            y = -y - ((cube_yend-cube_ystart))
+    !            x = x +  ((cube_xend-cube_xstart) )
+    !        else
+    !            x = -x + 3 * (cube_xend-cube_xstart)
+    !            y = +y - ((cube_yend-cube_ystart))
+    !        endif
+    !
+    !      endif
+      endif
+
       coord_dim1(i) = x
       coord_dim2(i) = y
       coord_dim3(i) = z
@@ -78,16 +254,41 @@ contains
   end subroutine getfixmeshcoordinates
 
 
-  subroutine genzoltanpart(GridEdge,GridVertex, comm, coord_dim1, coord_dim2, coord_dim3)
+  subroutine printMetrics(GridEdge,GridVertex, comm)
+    use gridgraph_mod, only : GridVertex_t, GridEdge_t
+    use dimensions_mod , only : npart
+
+    implicit none
+    type (GridVertex_t), intent(inout) :: GridVertex(:)
+    type (GridEdge_t),   intent(inout) :: GridEdge(:)
+    type (integer),   intent(in) :: comm
+
+    integer , target, allocatable :: xadj(:),adjncy(:)    ! Adjacency structure for METIS
+    real(kind=REAL_KIND),  target, allocatable :: vwgt(:),adjwgt(:)    ! Weights for the adj struct for METIS
+    integer                       :: nelem_edge,nelem
+
+    nelem_edge=SIZE(GridEdge)
+    nelem = SIZE(GridVertex)
+
+    allocate(xadj(nelem+1))
+    allocate(vwgt(nelem))
+    allocate(adjncy(nelem_edge))
+    allocate(adjwgt(nelem_edge))
+    vwgt(:)=VertexWeight
+    call CreateMeshGraph(GridVertex,xadj,adjncy,adjwgt)
+    CALL Z2PRINTMETRICS(nelem,xadj,adjncy,adjwgt,vwgt,npart, comm, GridVertex%processor_number)
+  end subroutine printMetrics
+
+  subroutine genzoltanpart(GridEdge,GridVertex, comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use gridgraph_mod, only : GridVertex_t, GridEdge_t, freegraph, createsubgridgraph, printgridvertex
     use kinds, only : int_kind
     use parallel_mod , only : iam, FrameWeight, PartitionForNodes,&
          PartitionForFrames, FrameCount, numFrames
     use dimensions_mod , only : nmpi_per_node, npart, nnodes, nelem
-    use control_mod, only:  partmethod
-    use params_mod, only : wrecursive
+    !use control_mod, only:  partmethod
+    !use params_mod, only : wrecursive
     use, intrinsic :: iso_c_binding, only : C_CHAR, C_NULL_CHAR
-    use control_mod, only : partmethod
+    use control_mod, only : partmethod, z2_map_method
 
     implicit none 
     type (GridVertex_t), intent(inout) :: GridVertex(:)
@@ -96,6 +297,7 @@ contains
     type (real(kind=real_kind)),intent(in) :: coord_dim1(:)
     type (real(kind=real_kind)),intent(in) :: coord_dim2(:)
     type (real(kind=real_kind)),intent(in) :: coord_dim3(:)
+    integer, intent(inout) :: coord_dimension
 
 
     integer , target, allocatable :: xadj(:),adjncy(:)    ! Adjacency structure for METIS
@@ -106,10 +308,10 @@ contains
 
     type (GridVertex_t), allocatable   :: SubVertex(:)
 
-    real(kind=4), allocatable   :: tpwgts(:)
+    !real(kind=4), allocatable   :: tpwgts(:)
     real(kind=4)                :: tmp
 
-    integer(kind=int_kind), allocatable          :: part(:)
+    !integer(kind=int_kind), allocatable          :: part(:)
     integer, allocatable          :: part_nl(:),local2global_nl(:)
     integer, allocatable          :: part_fl(:),local2global_fl(:)
 
@@ -131,8 +333,8 @@ contains
     !print *, "nelem_edge = ", nelem_edge
     !print *, "npart = ", npart
 
-    allocate(tpwgts(npart))
-    allocate(part(nelem))
+    !allocate(tpwgts(npart))
+    !allocate(part(nelem))
     allocate(xadj(nelem+1))
     allocate(vwgt(nelem))
     allocate(adjncy(nelem_edge))
@@ -140,7 +342,7 @@ contains
 
     call CreateMeshGraph(GridVertex,xadj,adjncy,adjwgt)
     vwgt(:)=VertexWeight
-    CALL ZOLTANPART(nelem,xadj,adjncy,adjwgt,vwgt, npart, comm, coord_dim1, coord_dim2, coord_dim3, GridVertex%processor_number, partmethod)
+    CALL ZOLTANPART(nelem,xadj,adjncy,adjwgt,vwgt, npart, comm, coord_dim1, coord_dim2, coord_dim3,coord_dimension,  GridVertex%processor_number, partmethod, z2_map_method)
 
   end subroutine genzoltanpart
 
