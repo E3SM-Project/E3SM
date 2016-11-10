@@ -924,6 +924,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+	<command name="load">ncarenv/1.0</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/16.0.3</command>
@@ -941,12 +942,12 @@
       </modules>
       <modules mpilib="mpt">
 	<command name="load">netcdf-mpi/4.4.1</command> 
-<!--	<command name="load">pnetcdf/1.7.0</command> currently broken -->
+<!--	<command name="load">pnetcdf/1.7.0</command> -->
       </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
-      <env name="PNETCDF">/picnic/u/home/jedwards</env>
+      <env name="PNETCDF">/picnic/u/home/jedwards/</env>
     </environment_variables>
   </machine>
 
