@@ -111,8 +111,8 @@ contains
     case (vsfm)
 #ifdef USE_PETSC_LIB
        call MPPVSFMALM_Solve(bounds, num_hydrologyc, filter_hydrologyc, &
-            num_urbanc, filter_urbanc, soilhydrology_vars, soilstate_vars, &
-            waterflux_vars, waterstate_vars, temperature_vars)
+            soilhydrology_vars, soilstate_vars, waterflux_vars,         &
+            waterstate_vars, temperature_vars)
 #endif
     case default
 
