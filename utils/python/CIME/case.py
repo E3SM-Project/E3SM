@@ -92,7 +92,7 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
-        
+
         self.thread_count = None
         self.tasks_per_node = None
         self.num_nodes = None
@@ -105,7 +105,7 @@ class Case(object):
 
     def initialize_derived_attributes(self):
         """
-        These are derived variables which can be used in the config_* files 
+        These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
         """
         env_mach_pes = self.get_env("mach_pes")
@@ -113,11 +113,11 @@ class Case(object):
         total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
-        logger.warn("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
+        logger.debug("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
         self.num_nodes = env_mach_pes.get_total_nodes(total_tasks, self.thread_count)
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
         smt_factor = self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")
-        
+
         self.cores_per_task = ((self.get_value("MAX_TASKS_PER_NODE")/smt_factor) \
                                / self.tasks_per_node) * 2
 

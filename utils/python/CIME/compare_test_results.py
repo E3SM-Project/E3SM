@@ -83,6 +83,12 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                     compare_result = TEST_FAIL_STATUS
                     all_pass_or_skip = False
 
+                # Following the logic in SystemTestsCommon._compare_baseline:
+                # We'll print the comment if it's a brief one-liner; otherwise
+                # the comment will only appear in the log file
+                if "\n" not in detailed_comments:
+                    compare_comment = detailed_comments
+
             brief_result = "%s %s %s"%(compare_result, test_name, BASELINE_PHASE)
             if compare_comment:
                 brief_result += " %s"%(compare_comment)
