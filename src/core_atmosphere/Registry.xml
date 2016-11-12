@@ -2211,10 +2211,6 @@
                      description="z/L height over Monin-Obukhov length"
                      packages="bl_mynn_in;bl_ysu_in"/>
 
-                <var name="znt" type="real" dimensions="nCells Time" units="m"
-                     description="Roughness length"
-                     packages="bl_mynn_in;bl_ysu_in"/>
-
                 <var name="br" type="real" dimensions="nCells Time" units="unitless"
                      description="Richardson number"
                      packages="bl_mynn_in;bl_ysu_in"/>
@@ -2664,6 +2660,9 @@
 
                 <var name="z0" type="real" dimensions="nCells Time" units="m"
                      description="roughness height"/>
+
+                <var name="znt" type="real" dimensions="nCells Time" units="m"
+                     description="roughness length"/>
 
                 <var name="zs" type="real" dimensions="nCells Time" units="m"
                      description="depth of centers of soil layers"/>

@@ -145,6 +145,8 @@
  call mpas_pool_get_array(sfc_input,'xland'     , xland     )
  call mpas_pool_get_array(sfc_input,'sfc_albbck', albbck    )
 
+ nullify(mavail)
+ nullify(ust)
  call mpas_pool_get_array(diag_physics,'sfc_emibck', embck     )
  call mpas_pool_get_array(diag_physics,'mavail'    , mavail    )
  call mpas_pool_get_array(diag_physics,'sfc_albedo', sfc_albedo)
@@ -275,14 +277,15 @@
           sfc_albedo(iCell) = albbck(iCell) / (1+scfx(is,isn))
        endif
     endif
-    ust(iCell)    = 0.0001
     thc(iCell)    = therin(is,isn) / 100.
     z0(iCell)     = sfz0(is,isn) / 100.
-    znt(iCell)    = z0(iCell)
-    mavail(iCell) = slmo(is,isn)
+    znt(iCell)    = z0(icell)
     embck(iCell)  = sfem(is,isn)
     sfc_emiss(iCell) = embck(iCell)
 
+    if(associated(mavail)) mavail(iCell) = slmo(is,isn)
+    if(associated(ust)) ust(iCell) = 0.0001
+ 
     !set sea-ice points to land with ice/snow surface properties:
     if(xice(iCell) .ge. xice_threshold) then
        albbck(iCell) = albd(isice,isn) / 100.
@@ -299,7 +302,8 @@
        thc(iCell) = therin(isice,isn) / 100.
        z0(icell)  = sfz0(isice,isn) / 100.
        znt(iCell) = z0(iCell)
-       mavail(iCell) = slmo(isice,isn)
+
+       if(associated(mavail)) mavail(iCell) = slmo(isice,isn)
     endif
 
  enddo
