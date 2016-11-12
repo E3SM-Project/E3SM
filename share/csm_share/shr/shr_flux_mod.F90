@@ -278,11 +278,12 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
     
         !--- compute some needed quantities ---
 
-        vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+        ! old version
+        !vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
 
-        ! ACME version
         !--- vmag+ugust (convective gustiness) Limit to a max precip 6 cm/day = 0.00069444 mm/s.
-        !vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) + ugust(min(prec_gust(n),6.94444e-4_R8)
+        !--- reverts to original formula if gust_fac=0 
+        vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) +  ugust(min(prec_gust(n),6.94444e-4_R8)))
 
 
         thvbot = thbot(n) * (1.0_R8 + loc_zvir * qbot(n)) ! virtual temp (K)
