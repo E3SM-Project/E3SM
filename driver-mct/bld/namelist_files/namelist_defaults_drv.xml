@@ -108,6 +108,7 @@
 <wall_time_limit>-1.0</wall_time_limit>
 <force_stop_at>month</force_stop_at>
 <flux_diurnal>.false.</flux_diurnal>
+<gust_fac>0.0D0</gust_fac>
 
 <run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers>
 <run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers>
